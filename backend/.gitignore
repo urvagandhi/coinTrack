@@ -34,3 +34,10 @@ build/
 ### OS ###
 .DS_Store
 Thumbs.db
+
+### Environment Variables ###
+.env
+.env.local
+.env.production
+.env.test
+*.env
