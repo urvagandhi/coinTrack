@@ -92,13 +92,22 @@ The frontend will be available at `http://localhost:5173`
 
 ## API Documentation
 
+
 ### Authentication Endpoints
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
+- `POST /login` - User login
+- `POST /api/register` - User registration
 
 ### User Management
 - `GET /api/users/profile` - Get user profile
 - `PUT /api/users/profile` - Update user profile
+
+### Zerodha Integration
+- `POST /api/zerodha/connect` - Link Zerodha account (requestToken, appUserId)
+- `GET /api/zerodha/me` - Get Zerodha link status
+- `GET /api/zerodha/holdings` - Get holdings
+- `GET /api/zerodha/positions` - Get positions
+- `GET /api/zerodha/orders` - Get orders
+- `GET /api/zerodha/sips` - Get mutual fund SIPs
 
 ### Health Check
 - `GET /actuator/health` - Application health status
@@ -144,6 +153,7 @@ npm run build
 
 ## Database Configuration
 
+
 Update `backend/src/main/resources/application.properties`:
 
 ```properties
@@ -151,7 +161,7 @@ Update `backend/src/main/resources/application.properties`:
 spring.data.mongodb.uri=mongodb://localhost:27017/coinTrack
 
 # MongoDB Atlas (cloud)
-spring.data.mongodb.uri=mongodb+srv://username:password@cluster.mongodb.net/coinTrack
+spring.data.mongodb.uri=mongodb+srv://<username>:<password>@cluster.mongodb.net/Finance
 ```
 
 ## Project Setup Notes
