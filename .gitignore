@@ -1,5 +1,6 @@
 # Ignore sensitive Spring Boot config
 backend/src/main/resources/application.properties
+
 # Root level ignores
 HELP.md
 *.log
@@ -9,14 +10,6 @@ backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-
-# Frontend specific (Node.js)
-frontend/node_modules/
-frontend/dist/
-frontend/.env.local
-frontend/.env.development.local
-frontend/.env.test.local
-frontend/.env.production.local
 
 ### IDE ###
 ### STS ###
