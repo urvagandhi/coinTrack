@@ -9,6 +9,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -115,11 +121,31 @@ public class ZerodhaService {
     }
 
     // /**
-    //  * Step 8: Example - fetch SIP orders from Zerodha API
-    //  */
-    // public Object getSIPOrders(String appUserId) throws IOException, KiteException {
-    //     KiteConnect kite = clientFor(appUserId);
-    //     return kite.getSIP();
+    // * Step 8: Example - fetch SIP orders from Zerodha API
+    // */
+    // public Object getSIPOrders(String appUserId) throws IOException,
+    // KiteException {
+    // KiteConnect kite = clientFor(appUserId);
+    // return kite.getSIP();
     // }
+
+    // Fetch SIPs for the user using Zerodha MF API - REST API
+    public Object getSIPs(String appUserId) {
+        ZerodhaAccount account = zerodhaRepo.findByAppUserId(appUserId)
+                .orElseThrow(() -> new RuntimeException("Zerodha not linked for this user"));
+        if (account.getKiteAccessToken() == null) {
+            throw new IllegalStateException("No active token. Please login again.");
+        }
+        if (isTokenExpired(account)) {
+            throw new IllegalStateException("Zerodha session expired. Please relogin.");
+        }
+        String url = "https://api.kite.trade/mf/sips";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "token " + apiKey + ":" + account.getKiteAccessToken());
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+        return response.getBody();
+    }
 
 }

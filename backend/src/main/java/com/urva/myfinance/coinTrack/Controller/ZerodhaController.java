@@ -96,12 +96,17 @@ public class ZerodhaController {
         return zerodhaService.getMFHoldings(appUserId);
     }
 
-    // /**
-    //  * Step 8: Example - fetch mutual fund orders from Zerodha API
-    //  */
-    // @GetMapping("/mf/sip")
-    // public Object getSIPOrders(@RequestParam String appUserId) throws IOException, KiteException {
-    //     return zerodhaService.getSIPOrders(appUserId);
-    // }
+    /**
+     * Step 8: Example - fetch mutual fund orders from Zerodha API
+     */
+    @GetMapping("/mf/sips")
+    public ResponseEntity<?> getSIPs(@RequestParam String appUserId) {
+        try {
+            Object sips = zerodhaService.getSIPs(appUserId);
+            return ResponseEntity.ok(sips);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Failed to fetch SIPs: " + e.getMessage());
+        }
+    }
 
 }
