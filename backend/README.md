@@ -1,153 +1,161 @@
+---
+
 # Finance Dashboard Backend
 
-This is the backend service for the Finance Dashboard application built with Spring Boot.
+A robust Spring Boot backend for the CoinTrack personal finance platform, featuring secure user authentication, MongoDB integration, and seamless Zerodha API connectivity.
 
-## Technologies Used
+---
 
-- **Java 21**
-- **Spring Boot 3.5.5**
-- **Spring Security** with JWT authentication
-- **Spring Data MongoDB** for database operations
-- **Maven** for dependency management
-- **Lombok** for reducing boilerplate code
+## 🚀 Features
 
-## Key Features
+- **JWT Authentication**: Secure login and protected endpoints.
+- **User Management**: Register, login, and manage user profiles.
+- **Zerodha Integration**: Link accounts, fetch holdings, positions, orders, and SIPs.
+- **MongoDB**: Flexible, cloud-ready data storage.
+- **Production-Ready Security**: BCrypt password hashing, CORS, and secrets management.
 
-- JWT-based authentication and authorization
-- RESTful API endpoints
-- MongoDB database integration
-- User management system
-- Security configuration with Spring Security
-- Actuator endpoints for monitoring
+---
 
-## Prerequisites
+## 🗂️ Project Structure
 
-- Java 21 or higher
-- MongoDB (local or cloud instance)
-- Maven 3.6+ (or use the included Maven wrapper)
-
-## Getting Started
-
-### 1. Clone and Setup
-```bash
-cd backend
+```
+backend/
+├── src/
+│   ├── main/
+│   │   ├── java/com/urva/myfinance/coinTrack/
+│   │   │   ├── Config/         # SecurityConfig, JwtFilter
+│   │   │   ├── Controller/     # LoginController, UserController, ZerodhaController
+│   │   │   ├── Model/          # User, UserPrincipal, DatabaseSequence, ZerodhaAccount
+│   │   │   ├── Repository/     # UserRepository, ZerodhaAccountRepository
+│   │   │   └── Service/        # UserService, JWTService, ZerodhaService, etc.
+│   │   └── resources/
+│   │       ├── application.properties           # Sensitive config (gitignored)
+│   │       ├── application-secret.properties    # Secrets-Example (gitignored, see below)
+│   │       └── ...
+│   └── test/
+│       └── java/com/urva/myfinance/coinTrack/
+└── README.md
 ```
 
-### 2. Configure Database
-Update `src/main/resources/application.properties` with your MongoDB connection details:
+---
+
+## ⚙️ Configuration & Secrets
+
+**Never commit real secrets!**
+
+- `application.properties`: General config (safe for sharing, but gitignored).
+- `application-secret.properties`: Place all sensitive info here (MongoDB URI, Zerodha API keys, etc).
+  - Not tracked by git.
+  - Copy from `application-secret.properties.example` and fill in your values.
+
+**Example:**
+
 ```properties
-spring.data.mongodb.uri=mongodb://localhost:27017/coinTrack
-# or for MongoDB Atlas
-# spring.data.mongodb.uri=mongodb+srv://username:password@cluster.mongodb.net/coinTrack
+spring.data.mongodb.uri=mongodb+srv://<username>:<password>@cluster.mongodb.net/Finance
+zerodha.api.key=your_kite_api_key
+zerodha.api.secret=your_kite_api_secret
+zerodha.redirect.url=http://localhost:8080/api/kite/callback
 ```
 
-### 3. Build the Project
+---
+
+## 🔒 Security
+
+- **JWT**: All protected endpoints require a valid token in the `Authorization` header.
+- **Password Hashing**: BCrypt for all user passwords.
+- **CORS/CSRF**: Configured for safe frontend-backend communication.
+- **Secrets**: Use `application-secret.properties` for all credentials.
+
+---
+
+## 🛠️ How It Works
+
+1. **User Registration & Login**:
+
+   - Register via `/api/register`, login via `/login`.
+   - Receive a JWT for all further requests.
+2. **Zerodha Account Linking**:
+
+   - Redirect user to Zerodha login, receive `requestToken` in callback.
+   - Call `/api/zerodha/connect` with `requestToken` and `appUserId`.
+   - Fetch holdings, positions, orders, and SIPs using dedicated endpoints.
+3. **Token Expiry**:
+
+   - Zerodha tokens are valid for the trading day.
+   - If expired, user is prompted to re-login with Zerodha.
+4. **Security:**- All sensitive endpoints require a valid JWT.
+
+   - Passwords are hashed using BCrypt.
+   - CORS and CSRF are configured for secure frontend-backend communication.
+
+---
+
+## 📚 API Endpoints
+
+**Authentication**
+
+- `POST /login` — User login
+- `POST /api/register` — User registration
+
+**User**
+
+- `GET /api/users/profile` — Get profile
+- `PUT /api/users/profile` — Update profile
+
+**Zerodha**
+
+- `POST /api/zerodha/connect` — Link Zerodha account
+- `GET /api/zerodha/me` — Link status
+- `GET /api/zerodha/holdings` — Holdings
+- `GET /api/zerodha/positions` — Positions
+- `GET /api/zerodha/orders` — Orders
+- `GET /api/zerodha/sips` — Mutual fund SIPs
+
+**Health**
+
+- `GET /actuator/health` — Health check
+
+---
+
+## 🏗️ Development & Deployment
+
+### Build & Run
+
 ```bash
-# Using Maven wrapper (recommended)
 ./mvnw clean install
-
-# Or using system Maven
-mvn clean install
-```
-
-### 4. Run the Application
-```bash
-# Using Maven wrapper
 ./mvnw spring-boot:run
-
-# Or using system Maven
-mvn spring-boot:run
-
-# Or run the JAR file
-java -jar target/finance-dashboard-0.0.1-SNAPSHOT.jar
 ```
-
-The application will start on `http://localhost:8080`
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-
-### User Management
-- `GET /api/users/profile` - Get user profile
-- `PUT /api/users/profile` - Update user profile
-
-### Health Check
-- `GET /actuator/health` - Application health status
-
-## Project Structure
-
-```
-src/
-├── main/
-│   ├── java/
-│   │   └── com/urva/myfinance/coinTrack/
-│   │       ├── FinanceDashboardApplication.java
-│   │       ├── Config/
-│   │       │   └── SecurityConfig.java
-│   │       ├── Controllers/
-│   │       │   ├── LoginController.java
-│   │       │   └── UserController.java
-│   │       ├── Model/
-│   │       │   ├── User.java
-│   │       │   ├── UserPrincipal.java
-│   │       │   └── DatabaseSequence.java
-│   │       ├── Repository/
-│   │       │   └── UserRepository.java
-│   │       └── Service/
-│   │           ├── UserService.java
-│   │           ├── JWTService.java
-│   │           ├── CustomerUserDetailService.java
-│   │           └── SequenceGeneratorService.java
-│   └── resources/
-│       ├── application.properties
-│       ├── static/
-│       └── templates/
-└── test/
-    └── java/
-        └── com/urva/myfinance/coinTrack/
-            └── FinanceDashboardApplicationTests.java
-```
-
-## Development
 
 ### Running Tests
+
 ```bash
 ./mvnw test
 ```
 
-### Building for Production
+### Production Build
+
 ```bash
 ./mvnw clean package -DskipTests
+java -jar target/coinTrack-0.0.1-SNAPSHOT.jar
 ```
 
-### Development Mode
-For development with auto-restart on file changes:
-```bash
-./mvnw spring-boot:run -Dspring-boot.run.fork=false
-```
+---
 
-## Configuration
+## 🧑‍💻 Contributing
 
-### Application Properties
-- `application.properties` - Main configuration
-- `application-test.properties` - Test environment configuration
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Run tests to ensure everything works
+6. Submit a pull request
 
-### Security
-- JWT token expiration and secret key configuration
-- CORS settings for frontend integration
-- Authentication and authorization rules
+---
 
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Add tests for new functionality
-4. Run tests to ensure everything works
-5. Submit a pull request
-
-## License
+## 📄 License
 
 This project is licensed under the MIT License.
+
+- **Password Hashing:** User passwords are stored securely using BCrypt.
+- **CORS/CSRF:** Configured for secure frontend-backend communication.
+- **Secrets Management:** Never commit real secrets. Use `application-secret.properties` and keep it out of git.
