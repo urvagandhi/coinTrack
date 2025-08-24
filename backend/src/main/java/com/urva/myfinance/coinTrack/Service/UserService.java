@@ -1,4 +1,4 @@
-package com.urva.myfinance.finance_dashboard.Service;
+package com.urva.myfinance.coinTrack.Service;
 
 import java.util.List;
 import java.util.Optional;
@@ -9,8 +9,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.urva.myfinance.finance_dashboard.Model.User;
-import com.urva.myfinance.finance_dashboard.Repository.UserRepository;
+import com.urva.myfinance.coinTrack.Model.User;
+import com.urva.myfinance.coinTrack.Repository.UserRepository;
 
 @Service
 public class UserService {

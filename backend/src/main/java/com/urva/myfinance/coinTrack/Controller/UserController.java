@@ -1,4 +1,4 @@
-package com.urva.myfinance.finance_dashboard.Controllers;
+package com.urva.myfinance.coinTrack.Controller;
 
 import java.util.List;
 
@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urva.myfinance.finance_dashboard.Model.User;
-import com.urva.myfinance.finance_dashboard.Service.UserService;
+import com.urva.myfinance.coinTrack.Model.User;
+import com.urva.myfinance.coinTrack.Service.UserService;
 
 @RestController
 @CrossOrigin

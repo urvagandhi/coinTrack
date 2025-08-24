@@ -1,6 +1,7 @@
-package com.urva.myfinance.finance_dashboard.Model;
+package com.urva.myfinance.coinTrack.Model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -11,19 +12,19 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Document(collection = "users")
+@Document(collection = "zerodha_accounts")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class ZerodhaAccount {
     @Id
     private String id;
-    private String username;
-    private String name;
-    private LocalDate dateOfBirth;
-    private String email;
-    private String phoneNumber;
-    private String password;
+
+    private String appUserId; // Reference to your User._id
+    private String kiteUserId;       // Zerodha's userId (e.g. "AB1234")
+    private String kiteAccessToken;  // Access token from Kite
+    private String kitePublicToken;  // Optional: useful for some API calls
+    private LocalDateTime kiteTokenCreatedAt; // When token was issued
 
     @CreatedDate
     private LocalDate createdAt;

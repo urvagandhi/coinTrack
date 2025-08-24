@@ -10,9 +10,9 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.urva.myfinance</groupId>
-	<artifactId>finance-dashboard</artifactId>
+	<artifactId>coinTrack</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>finance-dashboard</name>
+	<name>coinTrack</name>
 	<description>Project for Spring Boot</description>
 	<url />
 	<licenses>
@@ -60,6 +60,14 @@
 			<artifactId>jjwt-jackson</artifactId>
 			<version>0.12.5</version>
 			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Kite Connect API -->
+		<!-- https://central.sonatype.com/artifact/com.zerodhatech.kiteconnect/kiteconnect -->
+		<dependency>
+			<groupId>com.zerodhatech.kiteconnect</groupId>
+			<artifactId>kiteconnect</artifactId>
+			<version>3.5.1</version>
 		</dependency>
 
 

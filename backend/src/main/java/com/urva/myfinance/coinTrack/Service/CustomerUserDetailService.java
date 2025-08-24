@@ -1,13 +1,13 @@
-package com.urva.myfinance.finance_dashboard.Service;
+package com.urva.myfinance.coinTrack.Service;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.urva.myfinance.finance_dashboard.Model.User;
-import com.urva.myfinance.finance_dashboard.Model.UserPrincipal;
-import com.urva.myfinance.finance_dashboard.Repository.UserRepository;
+import com.urva.myfinance.coinTrack.Model.User;
+import com.urva.myfinance.coinTrack.Model.UserPrincipal;
+import com.urva.myfinance.coinTrack.Repository.UserRepository;
 
 @Service
 public class CustomerUserDetailService implements UserDetailsService {

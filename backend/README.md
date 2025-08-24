@@ -36,9 +36,9 @@ cd backend
 ### 2. Configure Database
 Update `src/main/resources/application.properties` with your MongoDB connection details:
 ```properties
-spring.data.mongodb.uri=mongodb://localhost:27017/finance_dashboard
+spring.data.mongodb.uri=mongodb://localhost:27017/coinTrack
 # or for MongoDB Atlas
-# spring.data.mongodb.uri=mongodb+srv://username:password@cluster.mongodb.net/finance_dashboard
+# spring.data.mongodb.uri=mongodb+srv://username:password@cluster.mongodb.net/coinTrack
 ```
 
 ### 3. Build the Project
@@ -83,7 +83,7 @@ The application will start on `http://localhost:8080`
 src/
 ├── main/
 │   ├── java/
-│   │   └── com/urva/myfinance/finance_dashboard/
+│   │   └── com/urva/myfinance/coinTrack/
 │   │       ├── FinanceDashboardApplication.java
 │   │       ├── Config/
 │   │       │   └── SecurityConfig.java
@@ -107,7 +107,7 @@ src/
 │       └── templates/
 └── test/
     └── java/
-        └── com/urva/myfinance/finance_dashboard/
+        └── com/urva/myfinance/coinTrack/
             └── FinanceDashboardApplicationTests.java
 ```
 

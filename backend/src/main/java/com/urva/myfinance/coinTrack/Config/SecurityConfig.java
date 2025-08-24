@@ -1,4 +1,4 @@
-package com.urva.myfinance.finance_dashboard.Config;
+package com.urva.myfinance.coinTrack.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

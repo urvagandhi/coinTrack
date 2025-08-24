@@ -1,11 +1,11 @@
-package com.urva.myfinance.finance_dashboard.Controllers;
+package com.urva.myfinance.coinTrack.Controller;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urva.myfinance.finance_dashboard.Model.User;
-import com.urva.myfinance.finance_dashboard.Service.UserService;
+import com.urva.myfinance.coinTrack.Model.User;
+import com.urva.myfinance.coinTrack.Service.UserService;
 
 @RestController
 public class LoginController {
@@ -18,6 +18,11 @@ public class LoginController {
 
     @PostMapping("/login")
     public String login(@RequestBody User user) {
-        return service.verifyUser(user);
+        try {
+            String result = service.verifyUser(user);
+            return result;
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
     }
 }

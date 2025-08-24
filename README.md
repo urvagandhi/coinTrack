@@ -7,7 +7,7 @@ A full-stack personal finance management application with secure user authentica
 This project is organized as a monorepo with separate frontend and backend applications:
 
 ```
-finance_dashboard/
+coinTrack/
 ├── backend/                 # Spring Boot REST API
 │   ├── src/
 │   ├── pom.xml
@@ -49,7 +49,7 @@ finance_dashboard/
 ### 1. Clone the Repository
 ```bash
 git clone <your-repo-url>
-cd finance_dashboard
+cd coinTrack
 ```
 
 ### 2. Setup Backend
@@ -148,15 +148,15 @@ Update `backend/src/main/resources/application.properties`:
 
 ```properties
 # Local MongoDB
-spring.data.mongodb.uri=mongodb://localhost:27017/finance_dashboard
+spring.data.mongodb.uri=mongodb://localhost:27017/coinTrack
 
 # MongoDB Atlas (cloud)
-spring.data.mongodb.uri=mongodb+srv://username:password@cluster.mongodb.net/finance_dashboard
+spring.data.mongodb.uri=mongodb+srv://username:password@cluster.mongodb.net/coinTrack
 ```
 
 ## Project Setup Notes
 
-- The original package name `com.urva.myfinance.finance-dashboard` was invalid and has been changed to `com.urva.myfinance.finance_dashboard`
+- The original package name `com.urva.myfinance.finance-dashboard` was invalid and has been changed to `com.urva.myfinance.coinTrack`
 - Maven wrapper files are included for consistent builds across environments
 - ESLint and TypeScript configurations are set up for code quality
 - Development tools are configured for hot reloading and debugging

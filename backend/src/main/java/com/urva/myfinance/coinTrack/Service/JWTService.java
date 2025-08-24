@@ -1,6 +1,7 @@
-package com.urva.myfinance.finance_dashboard.Service;
+package com.urva.myfinance.coinTrack.Service;
 
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -28,7 +30,7 @@ public class JWTService {
             KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
             SecretKey sk = keyGenerator.generateKey();
             this.secretKey = Base64.getEncoder().encodeToString(sk.getEncoded());
-        } catch (Exception e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to generate secret key for JWT", e);
         }
     }
@@ -39,7 +41,7 @@ public class JWTService {
                 .claims(claims)
                 .subject(authentication.getName())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 60 * 60 * 30))
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30))
                 .signWith(getKey())
                 .compact();
     }
@@ -66,7 +68,7 @@ public class JWTService {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             throw new RuntimeException("Failed to extract claims from token", e);
         }
     }

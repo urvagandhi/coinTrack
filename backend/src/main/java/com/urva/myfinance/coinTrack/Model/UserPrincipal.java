@@ -1,4 +1,4 @@
-package com.urva.myfinance.finance_dashboard.Model;
+package com.urva.myfinance.coinTrack.Model;
 
 import java.util.Collection;
 import java.util.Collections;

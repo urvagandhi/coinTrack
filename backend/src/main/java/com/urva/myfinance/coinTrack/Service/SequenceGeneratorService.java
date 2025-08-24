@@ -1,4 +1,4 @@
-package com.urva.myfinance.finance_dashboard.Service;
+package com.urva.myfinance.coinTrack.Service;
 
 import java.util.Objects;
 
@@ -10,7 +10,7 @@ import static org.springframework.data.mongodb.core.query.Query.query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import com.urva.myfinance.finance_dashboard.Model.DatabaseSequence;
+import com.urva.myfinance.coinTrack.Model.DatabaseSequence;
 
 @Service
 public class SequenceGeneratorService {

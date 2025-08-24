@@ -1,4 +1,4 @@
-package com.urva.myfinance.finance_dashboard;
+package com.urva.myfinance.coinTrack;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

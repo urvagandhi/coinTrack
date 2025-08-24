@@ -1,4 +1,4 @@
-package com.urva.myfinance.finance_dashboard.Model;
+package com.urva.myfinance.coinTrack.Model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
