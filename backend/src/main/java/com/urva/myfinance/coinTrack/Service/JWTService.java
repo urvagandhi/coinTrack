@@ -19,7 +19,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.io.DecodingException;
+import io.jsonwebtoken.security.InvalidKeyException;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.WeakKeyException;
 
 @Service
 public class JWTService {
@@ -36,29 +39,45 @@ public class JWTService {
     }
 
     public String generateToken(Authentication authentication) {
-        Map<String, Object> claims = new HashMap<>();
-        return Jwts.builder()
-                .claims(claims)
-                .subject(authentication.getName())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30))
-                .signWith(getKey())
-                .compact();
+        try {
+            Map<String, Object> claims = new HashMap<>();
+            return Jwts.builder()
+                    .claims(claims)
+                    .subject(authentication.getName())
+                    .issuedAt(new Date(System.currentTimeMillis()))
+                    .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30))
+                    .signWith(getKey())
+                    .compact();
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException("Failed to generate JWT token for user: " + authentication.getName(), e);
+        }
     }
 
     private Key getKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (DecodingException | WeakKeyException e) {
+            throw new RuntimeException("Failed to decode secret key for JWT", e);
+        }
     }
 
     // Validating
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        try {
+            return extractClaim(token, Claims::getSubject);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to extract username from JWT token", e);
+        }
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
+        try {
+            final Claims claims = extractAllClaims(token);
+            return claimsResolver.apply(claims);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to extract claim from JWT token", e);
+        }
     }
 
     private Claims extractAllClaims(String token) {
@@ -74,19 +93,30 @@ public class JWTService {
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
         try {
+            final String username = extractUsername(token);
             return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
         } catch (Exception e) {
+            // Log the error but return false for security
+            // System.out.println("JWT validation failed: " + e.getMessage());
             return false;
         }
     }
 
     private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        try {
+            return extractExpiration(token).before(new Date());
+        } catch (Exception e) {
+            // If we can't extract expiration, consider token expired for security
+            return true;
+        }
     }
 
     private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        try {
+            return extractClaim(token, Claims::getExpiration);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to extract expiration date from JWT token", e);
+        }
     }
 }

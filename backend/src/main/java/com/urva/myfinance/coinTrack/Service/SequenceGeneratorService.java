@@ -19,12 +19,16 @@ public class SequenceGeneratorService {
     private MongoOperations mongoOperations;
 
     public String generateSequence(String seqName) {
-        DatabaseSequence counter = mongoOperations.findAndModify(
-                query(where("_id").is(seqName)),
-                new Update().inc("seq", 1),
-                options().returnNew(true).upsert(true),
-                DatabaseSequence.class);
+        try {
+            DatabaseSequence counter = mongoOperations.findAndModify(
+                    query(where("_id").is(seqName)),
+                    new Update().inc("seq", 1),
+                    options().returnNew(true).upsert(true),
+                    DatabaseSequence.class);
 
-        return String.valueOf(!Objects.isNull(counter) ? counter.getSeq() : 1);
+            return String.valueOf(!Objects.isNull(counter) ? counter.getSeq() : 1);
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating sequence for: " + seqName + ". " + e.getMessage(), e);
+        }
     }
 }

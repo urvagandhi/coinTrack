@@ -1,23 +1,24 @@
 package com.urva.myfinance.coinTrack.Service;
 
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.json.JSONException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.urva.myfinance.coinTrack.Model.ZerodhaAccount;
 import com.urva.myfinance.coinTrack.Repository.ZerodhaAccountRepository;
 import com.zerodhatech.kiteconnect.KiteConnect;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Service
 public class ZerodhaService {
@@ -92,32 +93,56 @@ public class ZerodhaService {
      * Step 4: Example - fetch holdings from Zerodha API
      */
     public Object getHoldings(String appUserId) throws IOException, KiteException {
-        KiteConnect kite = clientFor(appUserId);
-        return kite.getHoldings();
+        try {
+            KiteConnect kite = clientFor(appUserId);
+            return kite.getHoldings();
+        } catch (IOException | KiteException e) {
+            throw e; // Re-throw specific exceptions
+        } catch (JSONException e) {
+            throw new RuntimeException("Unexpected error fetching holdings for user: " + appUserId, e);
+        }
     }
 
     /**
      * Step 5: Example - fetch positions from Zerodha API
      */
     public Object getPositions(String appUserId) throws IOException, KiteException {
-        KiteConnect kite = clientFor(appUserId);
-        return kite.getPositions();
+        try {
+            KiteConnect kite = clientFor(appUserId);
+            return kite.getPositions();
+        } catch (IOException | KiteException e) {
+            throw e; // Re-throw specific exceptions
+        } catch (JSONException e) {
+            throw new RuntimeException("Unexpected error fetching positions for user: " + appUserId, e);
+        }
     }
 
     /**
      * Step 6: Example - fetch orders from Zerodha API
      */
     public Object getOrders(String appUserId) throws IOException, KiteException {
-        KiteConnect kite = clientFor(appUserId);
-        return kite.getOrders();
+        try {
+            KiteConnect kite = clientFor(appUserId);
+            return kite.getOrders();
+        } catch (IOException | KiteException e) {
+            throw e; // Re-throw specific exceptions
+        } catch (JSONException e) {
+            throw new RuntimeException("Unexpected error fetching orders for user: " + appUserId, e);
+        }
     }
 
     /**
      * Step 7: Example - fetch mutual fund holdings from Zerodha API
      */
     public Object getMFHoldings(String appUserId) throws IOException, KiteException {
-        KiteConnect kite = clientFor(appUserId);
-        return kite.getMFHoldings();
+        try {
+            KiteConnect kite = clientFor(appUserId);
+            return kite.getMFHoldings();
+        } catch (IOException | KiteException e) {
+            throw e; // Re-throw specific exceptions
+        } catch (JSONException e) {
+            throw new RuntimeException("Unexpected error fetching MF holdings for user: " + appUserId, e);
+        }
     }
 
     // /**
@@ -130,22 +155,28 @@ public class ZerodhaService {
     // }
 
     // Fetch SIPs for the user using Zerodha MF API - REST API
+    @SuppressWarnings("UseSpecificCatch")
     public Object getSIPs(String appUserId) {
-        ZerodhaAccount account = zerodhaRepo.findByAppUserId(appUserId)
-                .orElseThrow(() -> new RuntimeException("Zerodha not linked for this user"));
-        if (account.getKiteAccessToken() == null) {
-            throw new IllegalStateException("No active token. Please login again.");
+        try {
+            ZerodhaAccount account = zerodhaRepo.findByAppUserId(appUserId)
+                    .orElseThrow(() -> new RuntimeException("Zerodha not linked for this user"));
+            if (account.getKiteAccessToken() == null) {
+                throw new IllegalStateException("No active token. Please login again.");
+            }
+            if (isTokenExpired(account)) {
+                throw new IllegalStateException("Zerodha session expired. Please relogin.");
+            }
+            String url = "https://api.kite.trade/mf/sips";
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "token " + apiKey + ":" + account.getKiteAccessToken());
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+            return response.getBody();
+        } catch (RuntimeException e) {
+            throw e; // Re-throw expected exceptions
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error fetching SIPs for user: " + appUserId, e);
         }
-        if (isTokenExpired(account)) {
-            throw new IllegalStateException("Zerodha session expired. Please relogin.");
-        }
-        String url = "https://api.kite.trade/mf/sips";
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "token " + apiKey + ":" + account.getKiteAccessToken());
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        return response.getBody();
     }
-
 }

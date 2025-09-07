@@ -2,6 +2,8 @@ package com.urva.myfinance.coinTrack.Controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,27 +29,77 @@ public class UserController {
     }
 
     @RequestMapping("/users")
-    public List<User> getUsers() {
-        return service.getAllUsers();
+    public ResponseEntity<?> getUsers() {
+        try {
+            List<User> users = service.getAllUsers();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching users: " + e.getMessage());
+        }
     }
 
     @GetMapping("/users/{id}")
-    public User getUser(@PathVariable String id) {
-        return service.getUserById(id);
+    public ResponseEntity<?> getUser(@PathVariable String id) {
+        try {
+            User user = service.getUserById(id);
+            if (user != null) {
+                return ResponseEntity.ok(user);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User not found with id: " + id);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching user: " + e.getMessage());
+        }
     }
 
     @PostMapping("/register")
-    public User registerUser(@RequestBody User user){
-        return service.registerUser(user);
+    public ResponseEntity<?> registerUser(@RequestBody User user){
+        try {
+            User registeredUser = service.registerUser(user);
+            if (registeredUser != null) {
+                return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Failed to register user. Please check username and password are provided.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error registering user: " + e.getMessage());
+        }
     }
 
     @PutMapping("/users/{id}")
-    public User updateUser(@PathVariable String id, @RequestBody User user) {
-        return service.updateUser(id, user);
+    public ResponseEntity<?> updateUser(@PathVariable String id, @RequestBody User user) {
+        try {
+            User updatedUser = service.updateUser(id, user);
+            if (updatedUser != null) {
+                return ResponseEntity.ok(updatedUser);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User not found with id: " + id);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating user: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/users/{id}")
-    public void deleteUser(@PathVariable String id) {
-        service.deleteUser(id);
+    public ResponseEntity<?> deleteUser(@PathVariable String id) {
+        try {
+            boolean deleted = service.deleteUser(id);
+            if (deleted) {
+                return ResponseEntity.ok("User deleted successfully");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User not found with id: " + id);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting user: " + e.getMessage());
+        }
     }
 }

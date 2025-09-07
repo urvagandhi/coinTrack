@@ -12,6 +12,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 
+import org.json.JSONException;
+
 @RestController
 @RequestMapping("/api/zerodha")
 public class ZerodhaController {
@@ -32,68 +34,140 @@ public class ZerodhaController {
     @PostMapping("/connect")
     public ResponseEntity<?> connectZerodha(
             @RequestParam String requestToken,
-            @RequestParam String appUserId) throws KiteException {
+            @RequestParam String appUserId) {
         try {
             ZerodhaAccount account = zerodhaService.connectZerodha(requestToken, appUserId);
             return ResponseEntity.ok(account);
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("IO Error: " + e.getMessage());
+        } catch (KiteException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Kite API Error: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + e.getMessage());
         }
     }
 
     /**
      * Step 2: Get active Kite client (test only, not for frontend)
-     * You usually won’t expose KiteConnect object directly,
+     * You usually won't expose KiteConnect object directly,
      * instead fetch holdings/orders and return JSON.
      */
     @GetMapping("/me")
-    public String getZerodhaStatus(@RequestParam String appUserId) {
-        KiteConnect kite = zerodhaService.clientFor(appUserId);
-        return "Zerodha linked ✅ for UserId=" + appUserId +
-                " (kiteUserId=" + kite.getUserId() + ")";
+    public ResponseEntity<?> getZerodhaStatus(@RequestParam String appUserId) {
+        try {
+            KiteConnect kite = zerodhaService.clientFor(appUserId);
+            String statusMessage = "Zerodha linked ✅ for UserId=" + appUserId +
+                    " (kiteUserId=" + kite.getUserId() + ")";
+            return ResponseEntity.ok(statusMessage);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        } catch (NullPointerException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error getting Zerodha status: " + e.getMessage());
+        }
     }
 
     /**
      * Step 3: Example - fetch profile from Zerodha API
      */
     @GetMapping("/profile")
-    public Object getProfile(@RequestParam String appUserId) throws IOException, KiteException {
-        KiteConnect kite = zerodhaService.clientFor(appUserId);
-        return kite.getProfile();
+    public ResponseEntity<?> getProfile(@RequestParam String appUserId) {
+        try {
+            KiteConnect kite = zerodhaService.clientFor(appUserId);
+            Object profile = kite.getProfile();
+            return ResponseEntity.ok(profile);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("IO Error: " + e.getMessage());
+        } catch (KiteException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Kite API Error: " + e.getMessage());
+        } catch (JSONException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching profile: " + e.getMessage());
+        }
     }
 
     /**
      * Step 4: Example - fetch holdings from Zerodha API
      */
     @GetMapping("/stocks/holdings")
-    public Object getHoldings(@RequestParam String appUserId) throws IOException, KiteException {
-        return zerodhaService.getHoldings(appUserId);
+    public ResponseEntity<?> getHoldings(@RequestParam String appUserId) {
+        try {
+            Object holdings = zerodhaService.getHoldings(appUserId);
+            return ResponseEntity.ok(holdings);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("IO Error: " + e.getMessage());
+        } catch (KiteException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Kite API Error: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching holdings: " + e.getMessage());
+        }
     }
 
     /**
      * Step 5: Example - fetch positions from Zerodha API
      */
     @GetMapping("/stocks/positions")
-    public Object getPositions(@RequestParam String appUserId) throws IOException, KiteException {
-        return zerodhaService.getPositions(appUserId);
+    public ResponseEntity<?> getPositions(@RequestParam String appUserId) {
+        try {
+            Object positions = zerodhaService.getPositions(appUserId);
+            return ResponseEntity.ok(positions);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("IO Error: " + e.getMessage());
+        } catch (KiteException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Kite API Error: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching positions: " + e.getMessage());
+        }
     }
 
     /**
      * Step 6: Example - fetch orders from Zerodha API
      */
     @GetMapping("/stocks/orders")
-    public Object getOrders(@RequestParam String appUserId) throws IOException, KiteException {
-        return zerodhaService.getOrders(appUserId);
+    public ResponseEntity<?> getOrders(@RequestParam String appUserId) {
+        try {
+            Object orders = zerodhaService.getOrders(appUserId);
+            return ResponseEntity.ok(orders);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("IO Error: " + e.getMessage());
+        } catch (KiteException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Kite API Error: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching orders: " + e.getMessage());
+        }
     }
 
     /**
      * Step 7: Example - fetch mutual fund holdings from Zerodha API
      */
     @GetMapping("/mf/holdings")
-    public Object getMFHoldings(@RequestParam String appUserId) throws IOException, KiteException {
-        return zerodhaService.getMFHoldings(appUserId);
+    public ResponseEntity<?> getMFHoldings(@RequestParam String appUserId) {
+        try {
+            Object mfHoldings = zerodhaService.getMFHoldings(appUserId);
+            return ResponseEntity.ok(mfHoldings);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("IO Error: " + e.getMessage());
+        } catch (KiteException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Kite API Error: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching MF holdings: " + e.getMessage());
+        }
     }
 
     /**
@@ -105,7 +179,8 @@ public class ZerodhaController {
             Object sips = zerodhaService.getSIPs(appUserId);
             return ResponseEntity.ok(sips);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to fetch SIPs: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to fetch SIPs: " + e.getMessage());
         }
     }
 

@@ -42,13 +42,10 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // here whole AuthenticationManager is called,
-    // and then it will talk further to the UserDetailsService through
-    // AuthenticationProvider
     @Bean
-    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService) {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(passwordEncoder);
+        authProvider.setUserDetailsService(userDetailsService);
         return authProvider;
     }
 

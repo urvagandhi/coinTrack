@@ -20,10 +20,16 @@ public class CustomerUserDetailService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UsernameNotFoundException("User not found: " + username);
+        try {
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                throw new UsernameNotFoundException("User not found: " + username);
+            }
+            return new UserPrincipal(user);
+        } catch (UsernameNotFoundException e) {
+            throw e; // Re-throw expected exception
+        } catch (Exception e) {
+            throw new UsernameNotFoundException("Error loading user details for username: " + username + ". " + e.getMessage());
         }
-        return new UserPrincipal(user);
     }
 }
