@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/app/contexts/AuthContext';
+import Link from 'next/link';
 
 export default function DashboardPage() {
     const { user, logout } = useAuth();
@@ -13,12 +14,14 @@ export default function DashboardPage() {
                     <div className="flex justify-between items-center py-6">
                         <div className="flex items-center">
                             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                CoinTrack Dashboard
+                                coinTrack Dashboard
                             </h1>
                         </div>
                         <div className="flex items-center space-x-4">
                             <span className="text-gray-700 dark:text-gray-300">
-                                Welcome, {user?.name || user?.username}!
+                                {user && (
+                                    <Link href="/profile">Welcome, {user.name || user.username}!</Link>
+                                )}
                             </span>
                             <button
                                 onClick={logout}
