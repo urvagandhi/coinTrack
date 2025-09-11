@@ -43,7 +43,6 @@ public class JWTService {
             Map<String, Object> claims = new HashMap<>();
             return Jwts.builder()
                     .claims(claims)
-                    .subject(authentication.getName())
                     .issuedAt(new Date(System.currentTimeMillis()))
                     .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30))
                     .signWith(getKey())
@@ -97,8 +96,6 @@ public class JWTService {
             final String username = extractUsername(token);
             return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
         } catch (Exception e) {
-            // Log the error but return false for security
-            // System.out.println("JWT validation failed: " + e.getMessage());
             return false;
         }
     }

@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.urva.myfinance.coinTrack.DTO.LoginRequest;
+import com.urva.myfinance.coinTrack.DTO.LoginResponse;
 import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Service.UserService;
 
@@ -20,9 +22,14 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User user) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
-            String result = service.verifyUser(user);
+            // Convert LoginRequest to User for service method
+            User user = new User();
+            user.setUsername(loginRequest.getUsernameOrEmail()); // This will be handled in service
+            user.setPassword(loginRequest.getPassword());
+
+            LoginResponse result = service.verifyUser(user);
             return ResponseEntity.ok(result);
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

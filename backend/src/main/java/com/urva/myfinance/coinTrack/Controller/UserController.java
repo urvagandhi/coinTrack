@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @CrossOrigin
 @RequestMapping("/api")
@@ -56,7 +58,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user){
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
             User registeredUser = service.registerUser(user);
             if (registeredUser != null) {
@@ -100,6 +102,39 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error deleting user: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/users/verify")
+    public ResponseEntity<?> verifyToken(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Missing or invalid Authorization header");
+            }
+
+            String token = authHeader.substring(7);
+
+            boolean isValid = service.isTokenValid(token);
+
+            if (!isValid) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid or expired token");
+            }
+
+            User user = service.getUserByToken(token);
+            if (user != null) {
+                user.setPassword(null);
+                return ResponseEntity.ok(user);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User not found");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error verifying token: " + e.getMessage());
         }
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.urva.myfinance.coinTrack.DTO.LoginResponse;
 import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Repository.UserRepository;
 
@@ -21,7 +22,8 @@ public class UserService {
     private final AuthenticationManager authManager;
     private final JWTService jwtService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authManager, JWTService jwtService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+            AuthenticationManager authManager, JWTService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authManager = authManager;
@@ -104,18 +106,58 @@ public class UserService {
         }
     }
 
-    public String verifyUser(User user) {
+    public LoginResponse verifyUser(User user) {
         try {
+            // Find user by username or email
+            User foundUser = userRepository.findByUsername(user.getUsername());
+            if (foundUser == null) {
+                foundUser = userRepository.findByEmail(user.getUsername()); // username field might contain email
+            }
+            
+            if (foundUser == null) {
+                throw new RuntimeException("Invalid username or password");
+            }
+
+            // Use the actual username for authentication
             Authentication authentication = authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(foundUser.getUsername(), user.getPassword()));
             if (authentication.isAuthenticated()) {
-                return jwtService.generateToken(authentication);
+                String token = jwtService.generateToken(authentication);
+                return new LoginResponse(token, foundUser);
             } else {
-                return "Invalid username or password";
+                throw new RuntimeException("Invalid username or password");
             }
         } catch (AuthenticationException e) {
-            throw new RuntimeException("Error verifying user: " + e.getMessage(), e);
+            throw new RuntimeException("Invalid username or password");
+        }
+    }
+
+    public User getUserByToken(String token) {
+        try {
+            String username = jwtService.extractUsername(token);
+            return userRepository.findByUsername(username);
+        } catch (Exception e) {
+            throw new RuntimeException("Error extracting user from token: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean isTokenValid(String token) {
+        try {
+            String username = jwtService.extractUsername(token);
+            User user = userRepository.findByUsername(username);
+            if (user != null) {
+                // Create UserDetails-like object for validation
+                org.springframework.security.core.userdetails.UserDetails userDetails = 
+                    org.springframework.security.core.userdetails.User.builder()
+                        .username(user.getUsername())
+                        .password(user.getPassword())
+                        .authorities("USER")
+                        .build();
+                return jwtService.validateToken(token, userDetails);
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
         }
     }
 }
