@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
     // Public routes that don't require authentication
     const publicRoutes = ['/login', '/register'];
     const isPublicRoute = publicRoutes.includes(pathname);
-    
+
     // Check if route exists (basic check for known routes)
     const knownRoutes = ['/login', '/register', '/dashboard', '/'];
     const isKnownRoute = knownRoutes.includes(pathname) || pathname.startsWith('/dashboard/');

@@ -49,10 +49,10 @@ export default function RegisterPage() {
         }
 
         // Password validation
-        if (password.length < 8) {
-            setError('Password must be at least 8 characters long');
-            return false;
-        }
+        // if (password.length < 8) {
+        //     setError('Password must be at least 8 characters long');
+        //     return false;
+        // }
 
         if (password !== confirmPassword) {
             setError('Passwords do not match');
@@ -69,8 +69,8 @@ export default function RegisterPage() {
             age--;
         }
 
-        if (age < 13) {
-            setError('You must be at least 13 years old to register');
+        if (age < 18) {
+            setError('You must be at least 18 years old to register');
             return false;
         }
 

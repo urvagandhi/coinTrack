@@ -21,7 +21,6 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @CrossOrigin
-@RequestMapping("/api")
 public class UserController {
 
     private final UserService service;

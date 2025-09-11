@@ -10,18 +10,23 @@ export default function NotFound() {
                             <div className="text-center">
                                 {/* 404 Background Section */}
                                 <div
-                                    className="relative h-96 bg-center bg-no-repeat bg-cover flex items-center justify-center mb-8"
+                                    className="relative h-150 bg-center bg-no-repeat bg-cover mb-8"
                                     style={{
                                         backgroundImage: "url('https://cdn.dribbble.com/users/285475/screenshots/2083086/dribbble_1.gif')"
                                     }}
                                 >
-                                    <h1 className="text-8xl font-bold text-gray-800 relative z-10">
-                                        404
-                                    </h1>
+                                    <div className="absolute inset-0 flex items-start justify-center">
+                                        <h1
+                                            className="text-8xl font-bold text-black relative z-10"
+                                            style={{ textShadow: '0 6px 20px rgba(0,0,0,0.45)' }}
+                                        >
+                                            404
+                                        </h1>
+                                    </div>
                                 </div>
 
                                 {/* Content Box */}
-                                <div className="mt-[-50px] relative z-20">
+                                <div className="mt-[-125px] relative z-20">
                                     <h3 className="text-3xl font-bold mb-4 text-gray-800">
                                         Look like you're lost
                                     </h3>

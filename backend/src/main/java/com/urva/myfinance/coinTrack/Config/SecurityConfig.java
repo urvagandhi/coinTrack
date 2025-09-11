@@ -33,8 +33,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Enable CORS with your config
                 .csrf(customizer -> customizer.disable())
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/api/register", "/login").permitAll()
-                        .requestMatchers("/api/users/verify", "/users/verify").authenticated() // Allow both paths
+                        .requestMatchers("/register", "/login", "/users", "/users/verify").permitAll()
                         .anyRequest().authenticated())
                 // Disable default form login for API endpoints
                 .formLogin(form -> form.disable())
@@ -48,7 +47,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
+            PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder);
         return authProvider;
