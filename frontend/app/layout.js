@@ -26,9 +26,9 @@ export default function RootLayout({ children }) {
       >
         <AuthProvider>
           <AuthGuard>
-            <div className="min-h-screen pb-10">{children}</div>
+            <div className="min-h-screen">{children}</div>
             {/* Footer Start */}
-            <footer className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200/50 shadow-lg">
+            <footer className="bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200/50 shadow-lg">
               <div className="max-w-7xl mx-auto px-6 py-4">
                 <div className="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0">
                   <div className="flex items-center space-x-2">
