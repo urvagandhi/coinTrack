@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Enable CORS with your config
                 .csrf(customizer -> customizer.disable())
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/register", "/login", "/users", "/users/verify").permitAll()
+                        .requestMatchers("/register", "/login", "/users", "/users/verify", "/api/zerodha/**").permitAll()
                         .anyRequest().authenticated())
                 // Disable default form login for API endpoints
                 .formLogin(form -> form.disable())

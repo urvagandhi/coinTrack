@@ -1,18 +1,21 @@
 package com.urva.myfinance.coinTrack.Controller;
 
+import java.io.IOException;
+
+import org.json.JSONException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.urva.myfinance.coinTrack.Model.ZerodhaAccount;
 import com.urva.myfinance.coinTrack.Service.ZerodhaService;
 import com.zerodhatech.kiteconnect.KiteConnect;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.io.IOException;
-
-import org.json.JSONException;
 
 @RestController
 @RequestMapping("/api/zerodha")
@@ -32,9 +35,20 @@ public class ZerodhaController {
      * @throws KiteException
      */
     @PostMapping("/connect")
-    public ResponseEntity<?> connectZerodha(
+    public ResponseEntity<?> connectZerodhaPost(
             @RequestParam String requestToken,
             @RequestParam String appUserId) {
+        return connectZerodha(requestToken, appUserId);
+    }
+
+    @GetMapping("/connect")
+    public ResponseEntity<?> connectZerodhaGet(
+            @RequestParam String requestToken,
+            @RequestParam String appUserId) {
+        return connectZerodha(requestToken, appUserId);
+    }
+
+    private ResponseEntity<?> connectZerodha(String requestToken, String appUserId) {
         try {
             ZerodhaAccount account = zerodhaService.connectZerodha(requestToken, appUserId);
             return ResponseEntity.ok(account);
