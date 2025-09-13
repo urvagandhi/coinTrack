@@ -21,6 +21,11 @@ public class ZerodhaAccount {
     private String id;
 
     private String appUserId; // Reference to your User._id
+
+    // Per-user Zerodha API credentials
+    private String zerodhaApiKey;
+    private String zerodhaApiSecret;
+
     private String kiteUserId;       // Zerodha's userId (e.g. "AB1234")
     private String kiteAccessToken;  // Access token from Kite
     private String kitePublicToken;  // Optional: useful for some API calls

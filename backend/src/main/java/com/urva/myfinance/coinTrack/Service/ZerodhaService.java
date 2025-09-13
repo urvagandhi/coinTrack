@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.json.JSONException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -22,14 +21,28 @@ import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
 
 @Service
 public class ZerodhaService {
+    /**
+     * Get ZerodhaAccount by appUserId
+     */
+    public ZerodhaAccount getAccountByAppUserId(String appUserId) {
+        return zerodhaRepo.findByAppUserId(appUserId)
+                .orElseThrow(() -> new RuntimeException("No Zerodha account for user: " + appUserId));
+    }
+    /**
+     * Set or update Zerodha API key/secret for a user
+     */
+    public ZerodhaAccount setZerodhaCredentials(String appUserId, String apiKey, String apiSecret) {
+        ZerodhaAccount account = zerodhaRepo.findByAppUserId(appUserId)
+                .orElse(new ZerodhaAccount());
+        account.setAppUserId(appUserId);
+        account.setZerodhaApiKey(apiKey);
+        account.setZerodhaApiSecret(apiSecret);
+        return zerodhaRepo.save(account);
+    }
 
     private final ZerodhaAccountRepository zerodhaRepo;
 
-    @Value("${zerodha.api.key}")
-    private String apiKey;
-
-    @Value("${zerodha.api.secret}")
-    private String apiSecret;
+    // Removed hardcoded API key/secret. Now fetched per-user from DB.
 
     public ZerodhaService(ZerodhaAccountRepository zerodhaRepo) {
         this.zerodhaRepo = zerodhaRepo;
@@ -42,13 +55,22 @@ public class ZerodhaService {
             throws IOException, KiteException {
 
         try {
-            KiteConnect kite = new KiteConnect(apiKey);
-            com.zerodhatech.models.User kiteUser = kite.generateSession(requestToken, apiSecret);
-
             ZerodhaAccount account = zerodhaRepo.findByAppUserId(appUserId)
                     .orElse(new ZerodhaAccount());
 
+            // Fetch API key/secret from DB (must be set previously)
+            String apiKey = account.getZerodhaApiKey();
+            String apiSecret = account.getZerodhaApiSecret();
+            if (apiKey == null || apiSecret == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Zerodha API key/secret not set for user.");
+            }
+
+            KiteConnect kite = new KiteConnect(apiKey);
+            com.zerodhatech.models.User kiteUser = kite.generateSession(requestToken, apiSecret);
+
             account.setAppUserId(appUserId);
+            account.setZerodhaApiKey(apiKey);
+            account.setZerodhaApiSecret(apiSecret);
             account.setKiteUserId(kiteUser.userId);
             account.setKiteAccessToken(kiteUser.accessToken);
             account.setKitePublicToken(kiteUser.publicToken);
@@ -83,7 +105,11 @@ public class ZerodhaService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Zerodha session expired. Please relogin.");
         }
 
-        KiteConnect kite = new KiteConnect(apiKey);
+            String apiKey = account.getZerodhaApiKey();
+            if (apiKey == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Zerodha API key not set for this user.");
+            }
+            KiteConnect kite = new KiteConnect(apiKey);
         kite.setUserId(account.getKiteUserId());
         kite.setAccessToken(account.getKiteAccessToken());
         return kite;
@@ -168,6 +194,10 @@ public class ZerodhaService {
             }
             String url = "https://api.kite.trade/mf/sips";
             HttpHeaders headers = new HttpHeaders();
+            String apiKey = account.getZerodhaApiKey();
+            if (apiKey == null) {
+                throw new IllegalStateException("Zerodha API key not set for this user.");
+            }
             headers.set("Authorization", "token " + apiKey + ":" + account.getKiteAccessToken());
             HttpEntity<String> entity = new HttpEntity<>(headers);
             RestTemplate restTemplate = new RestTemplate();

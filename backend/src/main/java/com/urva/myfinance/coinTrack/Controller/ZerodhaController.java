@@ -20,6 +20,43 @@ import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
 @RestController
 @RequestMapping("/zerodha")
 public class ZerodhaController {
+    /**
+     * Endpoint to get Zerodha login URL for a user (uses API key from DB)
+     */
+    @GetMapping("/login-url")
+    public ResponseEntity<?> getZerodhaLoginUrl(@RequestParam String appUserId) {
+        try {
+            ZerodhaAccount account = zerodhaService.getAccountByAppUserId(appUserId);
+            String apiKey = account.getZerodhaApiKey();
+            if (apiKey == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("API key not set for user");
+            }
+            String url = "https://kite.zerodha.com/connect/login?api_key=" + apiKey + "&v=3";
+            return ResponseEntity.ok(url);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to generate login URL: " + e.getMessage());
+        }
+    }
+    /**
+     * Endpoint to set/update Zerodha API key and secret for a user (accepts JSON body)
+     */
+    public static class ZerodhaCredentialsDTO {
+        public String appUserId;
+        public String zerodhaApiKey;
+        public String zerodhaApiSecret;
+    }
+
+    @PostMapping("/set-credentials")
+    public ResponseEntity<?> setZerodhaCredentials(@org.springframework.web.bind.annotation.RequestBody ZerodhaCredentialsDTO credentials) {
+        try {
+            zerodhaService.setZerodhaCredentials(credentials.appUserId, credentials.zerodhaApiKey, credentials.zerodhaApiSecret);
+            return ResponseEntity.ok("Zerodha API credentials updated for user " + credentials.appUserId);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to update Zerodha credentials: " + e.getMessage());
+        }
+    }
 
     private final ZerodhaService zerodhaService;
 
