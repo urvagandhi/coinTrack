@@ -1,78 +1,99 @@
-// Stock symbol to company name mapping
-export const stockNameMapping = {
-    // NSE/BSE stocks
+// Stock and fund name mapping utility
+const stockNames = {
+    // Stock symbols to company names
     'HDBFS': 'HDFC Financial Services Ltd',
-    'TTML': 'Tata Teleservices (Maharashtra) Ltd',
-    'INFY': 'Infosys Limited',
-    'TCS': 'Tata Consultancy Services Limited',
-    'RELIANCE': 'Reliance Industries Limited',
-    'HDFCBANK': 'HDFC Bank Limited',
-    'ICICIBANK': 'ICICI Bank Limited',
+    'TTML': 'Tata Teleservices (Maharashtra)',
+    
+    // Add more stock mappings as needed
+    'RELIANCE': 'Reliance Industries Ltd',
+    'TCS': 'Tata Consultancy Services',
+    'INFY': 'Infosys Ltd',
+    'HDFC': 'HDFC Bank Ltd',
+    'ICICIBANK': 'ICICI Bank Ltd',
+    'KOTAKBANK': 'Kotak Mahindra Bank',
     'SBIN': 'State Bank of India',
-    'BHARTIARTL': 'Bharti Airtel Limited',
-    'ITC': 'ITC Limited',
-    'KOTAKBANK': 'Kotak Mahindra Bank Limited',
-    'LT': 'Larsen & Toubro Limited',
-    'ASIANPAINT': 'Asian Paints Limited',
-    'MARUTI': 'Maruti Suzuki India Limited',
-    'HCLTECH': 'HCL Technologies Limited',
-    'WIPRO': 'Wipro Limited',
-    'ULTRACEMCO': 'UltraTech Cement Limited',
-    'AXISBANK': 'Axis Bank Limited',
-    'TITAN': 'Titan Company Limited',
-    'NESTLEIND': 'Nestle India Limited',
-    'SUNPHARMA': 'Sun Pharmaceutical Industries Limited',
-    'BAJFINANCE': 'Bajaj Finance Limited',
-    'POWERGRID': 'Power Grid Corporation of India Limited',
-    'NTPC': 'NTPC Limited',
-    'ONGC': 'Oil and Natural Gas Corporation Limited',
-    'TECHM': 'Tech Mahindra Limited',
-    'M&M': 'Mahindra & Mahindra Limited',
-    'TATAMOTORS': 'Tata Motors Limited',
-    'JSWSTEEL': 'JSW Steel Limited',
-    'HINDALCO': 'Hindalco Industries Limited',
-    'COALINDIA': 'Coal India Limited',
-    'BRITANNIA': 'Britannia Industries Limited',
-    'DRREDDY': 'Dr. Reddy\'s Laboratories Limited',
-    'EICHERMOT': 'Eicher Motors Limited',
-    'BAJAJFINSV': 'Bajaj Finserv Limited',
-    'CIPLA': 'Cipla Limited',
-    'GRASIM': 'Grasim Industries Limited',
-    'SHREECEM': 'Shree Cement Limited',
-    'DIVISLAB': 'Divi\'s Laboratories Limited',
-    'HEROMOTOCO': 'Hero MotoCorp Limited',
-    'ADANIPORTS': 'Adani Ports and Special Economic Zone Limited',
-    'TATASTEEL': 'Tata Steel Limited',
-    'BPCL': 'Bharat Petroleum Corporation Limited',
-    'HINDUNILVR': 'Hindustan Unilever Limited',
-    
-    // Add more as needed
+    'BHARTIARTL': 'Bharti Airtel Ltd',
+    'ITC': 'ITC Ltd',
+    'HCLTECH': 'HCL Technologies',
+    'WIPRO': 'Wipro Ltd',
+    'ASIANPAINT': 'Asian Paints Ltd',
+    'MARUTI': 'Maruti Suzuki India Ltd',
+    'LT': 'Larsen & Toubro Ltd',
+    'ULTRACEMCO': 'UltraTech Cement Ltd',
+    'NESTLEIND': 'Nestle India Ltd',
+    'TITAN': 'Titan Company Ltd',
+    'BAJFINANCE': 'Bajaj Finance Ltd',
+    'AXISBANK': 'Axis Bank Ltd',
+    'POWERGRID': 'Power Grid Corporation',
+    'TECHM': 'Tech Mahindra Ltd',
+    'SUNPHARMA': 'Sun Pharmaceutical Industries',
+    'TATASTEEL': 'Tata Steel Ltd',
+    'ONGC': 'Oil & Natural Gas Corporation',
+    'NTPC': 'NTPC Ltd',
+    'COALINDIA': 'Coal India Ltd',
+    'BAJAJFINSV': 'Bajaj Finserv Ltd',
+    'HDFCLIFE': 'HDFC Life Insurance',
+    'BRITANNIA': 'Britannia Industries Ltd',
+    'DRREDDY': 'Dr. Reddy\'s Laboratories',
+    'EICHERMOT': 'Eicher Motors Ltd',
+    'GRASIM': 'Grasim Industries Ltd',
+    'HINDALCO': 'Hindalco Industries Ltd',
+    'INDUSINDBK': 'IndusInd Bank Ltd',
+    'JSWSTEEL': 'JSW Steel Ltd',
+    'M&M': 'Mahindra & Mahindra Ltd',
+    'CIPLA': 'Cipla Ltd',
+    'DIVISLAB': 'Divi\'s Laboratories Ltd',
+    'TATACONSUM': 'Tata Consumer Products Ltd',
+    'ADANIPORTS': 'Adani Ports and SEZ Ltd',
 };
 
-// Function to get company name from trading symbol
-export const getCompanyName = (tradingSymbol) => {
-    if (!tradingSymbol) return 'Unknown Company';
+const fundNames = {
+    // Mutual fund ISIN to short names
+    'INF174KA1HV3': 'Kotak Multicap Fund - Direct',
+    'INF966L01AT0': 'Quant Large Cap Fund - Direct',
+    'INF247L01445': 'Motilal Oswal Midcap Fund - Direct',
+    'INF247L01BQ9': 'Motilal Oswal Nifty Microcap 250 Index Fund - Direct',
     
-    // Remove common suffixes and normalize
-    const cleanSymbol = tradingSymbol.replace(/-EQ$|\.NS$|\.BO$/i, '').toUpperCase();
-    
-    return stockNameMapping[cleanSymbol] || tradingSymbol;
+    // Add more fund mappings as needed
+    'INF247L01GQ7': 'SBI Large Cap Fund - Direct',
+    'INF247L01BQ9': 'SBI Small Cap Fund - Direct',
+    'INF090I01239': 'ICICI Prudential Bluechip Fund - Direct',
+    'INF966L01AT0': 'UTI Nifty 50 Index Fund - Direct',
 };
 
-// Function to get short company name (for display in tables)
-export const getShortCompanyName = (tradingSymbol) => {
-    const fullName = getCompanyName(tradingSymbol);
+export function getShortCompanyName(symbol) {
+    if (!symbol) return 'Unknown';
     
-    // If it's the same as trading symbol, return as is
-    if (fullName === tradingSymbol) return tradingSymbol;
-    
-    // If it's a long company name, try to shorten it
-    if (fullName.length > 30) {
-        // Remove common suffixes
-        return fullName
-            .replace(/ Limited$| Ltd$| Corporation$| Corp$| Industries$| Services$| Technologies$| Company$/, '')
-            .trim();
+    // Check if it's a fund ISIN first
+    if (fundNames[symbol]) {
+        return fundNames[symbol];
     }
     
-    return fullName;
-};
+    // Check if it's a stock symbol
+    if (stockNames[symbol]) {
+        return stockNames[symbol];
+    }
+    
+    // Return the symbol itself if no mapping found
+    return symbol;
+}
+
+export function getFundName(fundName, tradingSymbol) {
+    // If we have a proper fund name from API, use it
+    if (fundName && fundName !== tradingSymbol) {
+        return fundName;
+    }
+    
+    // Otherwise, try to map from ISIN
+    return getShortCompanyName(tradingSymbol);
+}
+
+export function formatFundName(fullFundName) {
+    if (!fullFundName) return 'Unknown Fund';
+    
+    // Clean up fund names for better display
+    return fullFundName
+        .replace(/\s*-\s*DIRECT PLAN$/i, ' - Direct')
+        .replace(/\s+/g, ' ')
+        .trim();
+}

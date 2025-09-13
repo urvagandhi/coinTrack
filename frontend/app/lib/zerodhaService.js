@@ -167,5 +167,24 @@ export const zerodhaService = {
         }
 
         return await response.json();
+    },
+
+    // Get profile information
+    getProfile: async (appUserId) => {
+        const token = localStorage.getItem('authToken');
+
+        const response = await fetch(`${API_BASE_URL}/zerodha/profile?appUserId=${appUserId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error || 'Failed to get profile');
+        }
+
+        return await response.json();
     }
 };
