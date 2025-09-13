@@ -46,10 +46,15 @@ export default function MainLayout({ children }) {
                     {/* Right: Controls */}
                     <div className="flex items-center space-x-3">
                         {/* Profile Avatar */}
-                        <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                            <User className="w-5 h-5" />
-                            <span href="/profile" alt="Profile" className="w-8 h-8 object-cover" />
-                        </button>
+                        <a
+                            href="/profile"
+                            className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-300 hover:ring-2 hover:ring-blue-200 focus:outline-none"
+                            aria-label="Go to profile"
+                        >
+                            {/* Replace with user image if available, fallback to icon */}
+                            {/* Example: user?.avatarUrl ? <img src={user.avatarUrl} alt="Profile" className="w-8 h-8 object-cover" /> : <User className="w-5 h-5 text-gray-500" /> */}
+                            <User className="w-5 h-5 text-gray-500" />
+                        </a>
                     </div>
                 </nav>
                 {/* Main Content */}
