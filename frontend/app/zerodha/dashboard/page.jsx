@@ -9,6 +9,7 @@ export default function ZerodhaDashboard() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [holdings, setHoldings] = useState(null);
     const [mfHoldings, setMfHoldings] = useState(null);
     const [sips, setSips] = useState(null);
@@ -24,6 +25,7 @@ export default function ZerodhaDashboard() {
     const loadZerodhaData = async () => {
         setLoading(true);
         setError('');
+        setSuccessMessage('');
 
         try {
             // Check account status first
@@ -38,24 +40,49 @@ export default function ZerodhaDashboard() {
                 zerodhaService.getProfile(user.id)
             ]);
 
+            let loadedCount = 0;
+            let totalCount = 4;
+
             if (holdingsData.status === 'fulfilled') {
                 console.log('Holdings data received:', holdingsData.value);
                 setHoldings(holdingsData.value);
+                loadedCount++;
+            } else {
+                console.error('Failed to load holdings:', holdingsData.reason);
             }
+            
             if (mfHoldingsData.status === 'fulfilled') {
                 console.log('MF Holdings data received:', mfHoldingsData.value);
                 setMfHoldings(mfHoldingsData.value);
+                loadedCount++;
+            } else {
+                console.error('Failed to load MF holdings:', mfHoldingsData.reason);
             }
+            
             if (sipsData.status === 'fulfilled') {
                 console.log('SIPs data received:', sipsData.value);
                 setSips(sipsData.value);
+                loadedCount++;
+            } else {
+                console.error('Failed to load SIPs:', sipsData.reason);
             }
+            
             if (profileData.status === 'fulfilled') {
                 console.log('Profile data received:', profileData.value);
                 setProfile(profileData.value);
+                loadedCount++;
+            } else {
+                console.error('Failed to load profile:', profileData.reason);
+            }
+
+            // Show success message
+            if (loadedCount > 0) {
+                setSuccessMessage(`Successfully refreshed ${loadedCount}/${totalCount} data sections`);
+                setTimeout(() => setSuccessMessage(''), 3000); // Clear after 3 seconds
             }
 
         } catch (err) {
+            console.error('Error loading Zerodha data:', err);
             setError(err.message);
         } finally {
             setLoading(false);
@@ -135,8 +162,11 @@ export default function ZerodhaDashboard() {
                         <button
                             onClick={loadZerodhaData}
                             disabled={loading}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 flex items-center gap-2 transition-colors"
                         >
+                            {loading && (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            )}
                             {loading ? 'Refreshing...' : 'Refresh Data'}
                         </button>
                     </div>
@@ -154,6 +184,17 @@ export default function ZerodhaDashboard() {
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                                 </svg>
                                 {error}
+                            </div>
+                        </div>
+                    )}
+
+                    {successMessage && (
+                        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+                            <div className="flex items-center">
+                                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                {successMessage}
                             </div>
                         </div>
                     )}
