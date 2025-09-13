@@ -33,34 +33,52 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
-        String token = null;
-        String username = null;
+    String authHeader = request.getHeader("Authorization");
+    String token = null;
+    String username = null;
 
-        try {
+    System.out.println("[JwtFilter] Incoming request: " + request.getRequestURI());
+    System.out.println("[JwtFilter] Authorization header: " + authHeader);
+
+    try {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7);
-                username = jwtService.extractUsername(token);
+                System.out.println("[JwtFilter] Extracted token: " + token);
+                try {
+                    username = jwtService.extractUsername(token);
+                    System.out.println("[JwtFilter] Extracted username: " + username);
+                } catch (Exception e) {
+                    System.out.println("[JwtFilter] Failed to extract username: " + e.getMessage());
+                }
+            } else {
+                System.out.println("[JwtFilter] No Bearer token found in Authorization header.");
             }
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 try {
                     UserDetails userDetails = applicationContext.getBean(UserDetailsService.class)
                             .loadUserByUsername(username);
+                    System.out.println("[JwtFilter] Loaded user details for: " + username);
                     if (jwtService.validateToken(token, userDetails)) {
+                        System.out.println("[JwtFilter] Token validated for user: " + username);
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                 userDetails, null, userDetails.getAuthorities());
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authToken);
                     } else {
+                        System.out.println("[JwtFilter] Token validation failed for user: " + username);
                     }
                 } catch (BeansException | UsernameNotFoundException e) {
+                    System.out.println("[JwtFilter] UserDetailsService error: " + e.getMessage());
                     SecurityContextHolder.clearContext();
                 }
             } else if (username == null) {
+                System.out.println("[JwtFilter] Username is null after token extraction.");
             } else {
+                System.out.println("[JwtFilter] Authentication already present in SecurityContextHolder.");
             }
         } catch (Exception e) {
+            System.out.println("[JwtFilter] Exception: " + e.getMessage());
             SecurityContextHolder.clearContext();
         }
 
