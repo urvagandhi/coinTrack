@@ -18,7 +18,7 @@ import com.zerodhatech.kiteconnect.KiteConnect;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
 
 @RestController
-@RequestMapping("/api/zerodha")
+@RequestMapping("/zerodha")
 public class ZerodhaController {
 
     private final ZerodhaService zerodhaService;

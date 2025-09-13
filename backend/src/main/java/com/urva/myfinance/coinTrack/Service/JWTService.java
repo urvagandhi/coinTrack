@@ -43,11 +43,12 @@ public class JWTService {
             Map<String, Object> claims = new HashMap<>();
             return Jwts.builder()
                     .claims(claims)
+                    .subject(authentication.getName())
                     .issuedAt(new Date(System.currentTimeMillis()))
                     .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30))
                     .signWith(getKey())
                     .compact();
-        } catch (InvalidKeyException e) {
+        } catch (InvalidKeyException e) {   
             throw new RuntimeException("Failed to generate JWT token for user: " + authentication.getName(), e);
         }
     }
