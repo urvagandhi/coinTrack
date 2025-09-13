@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.Controller;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import org.json.JSONException;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Model.ZerodhaAccount;
+import com.urva.myfinance.coinTrack.Service.UserService;
 import com.urva.myfinance.coinTrack.Service.ZerodhaService;
 import com.zerodhatech.kiteconnect.KiteConnect;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
@@ -31,15 +34,82 @@ public class ZerodhaController {
             if (apiKey == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("API key not set for user");
             }
-            String url = "https://kite.zerodha.com/connect/login?api_key=" + apiKey + "&v=3";
+            
+            // Option 1: Basic URL - requires Zerodha Developer Console redirect URL to be set to http://localhost:8080/zerodha/callback
+            String url = "https://kite.zerodha.com/connect/login?api_key=" + apiKey + "&v=3&redirect_params=" + java.net.URLEncoder.encode("appUserId=" + appUserId, "UTF-8");
+            
+            // Option 2: If you prefer to specify redirect in URL (uncomment below and comment above)
+            // String callbackUrl = java.net.URLEncoder.encode("http://localhost:8080/zerodha/callback?appUserId=" + appUserId, "UTF-8");
+            // String url = "https://kite.zerodha.com/connect/login?api_key=" + apiKey + "&v=3&redirect_url=" + callbackUrl;
+            
             return ResponseEntity.ok(url);
-        } catch (Exception e) {
+        } catch (UnsupportedEncodingException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to generate login URL: " + e.getMessage());
         }
     }
+
     /**
-     * Endpoint to set/update Zerodha API key and secret for a user (accepts JSON body)
+     * Zerodha callback endpoint - automatically handles request_token and exchanges for access_token
+     * 
+     * IMPORTANT: You must configure this URL in your Zerodha Developer Console:
+     * 1. Go to https://developers.zerodha.com/apps
+     * 2. Edit your app
+     * 3. Set Redirect URL to: http://localhost:8080/zerodha/callback
+     * 4. For production, use: https://yourdomain.com/zerodha/callback
+     */
+    @GetMapping("/callback")
+    public ResponseEntity<?> zerodhaCallback(
+            @RequestParam String request_token,
+            @RequestParam String appUserId,
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String status) {
+        try {
+            if (!"success".equals(status)) {
+                // Redirect to frontend with error
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .header("Location", "http://localhost:3000/zerodha?error=authentication_failed")
+                        .build();
+            }
+
+            // Automatically exchange request_token for access_token
+            zerodhaService.connectZerodha(request_token, appUserId);
+            
+            // Redirect to frontend with success
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header("Location", "http://localhost:3000/zerodha?success=true&connected=true")
+                    .build();
+                    
+        } catch (ResponseStatusException e) {
+            // Redirect to frontend with error details
+            String errorMsg = java.net.URLEncoder.encode(e.getReason(), java.nio.charset.StandardCharsets.UTF_8);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header("Location", "http://localhost:3000/zerodha?error=" + errorMsg)
+                    .build();
+        } catch (IOException e) {
+            // Redirect to frontend with IO error
+            String errorMsg = java.net.URLEncoder.encode("IO Error: " + e.getMessage(), java.nio.charset.StandardCharsets.UTF_8);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header("Location", "http://localhost:3000/zerodha?error=" + errorMsg)
+                    .build();
+        } catch (KiteException e) {
+            // Redirect to frontend with Kite API error
+            String errorMsg = java.net.URLEncoder.encode("Kite API Error: " + e.getMessage(), java.nio.charset.StandardCharsets.UTF_8);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header("Location", "http://localhost:3000/zerodha?error=" + errorMsg)
+                    .build();
+        } catch (Exception e) {
+            // Redirect to frontend with generic error
+            String errorMsg = java.net.URLEncoder.encode("Failed to connect Zerodha: " + e.getMessage(), java.nio.charset.StandardCharsets.UTF_8);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header("Location", "http://localhost:3000/zerodha?error=" + errorMsg)
+                    .build();
+        }
+    }
+
+    /**
+     * Endpoint to set/update Zerodha API key and secret for a user (accepts JSON
+     * body)
      */
     public static class ZerodhaCredentialsDTO {
         public String appUserId;
@@ -48,9 +118,11 @@ public class ZerodhaController {
     }
 
     @PostMapping("/set-credentials")
-    public ResponseEntity<?> setZerodhaCredentials(@org.springframework.web.bind.annotation.RequestBody ZerodhaCredentialsDTO credentials) {
+    public ResponseEntity<?> setZerodhaCredentials(
+            @org.springframework.web.bind.annotation.RequestBody ZerodhaCredentialsDTO credentials) {
         try {
-            zerodhaService.setZerodhaCredentials(credentials.appUserId, credentials.zerodhaApiKey, credentials.zerodhaApiSecret);
+            zerodhaService.setZerodhaCredentials(credentials.appUserId, credentials.zerodhaApiKey,
+                    credentials.zerodhaApiSecret);
             return ResponseEntity.ok("Zerodha API credentials updated for user " + credentials.appUserId);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -59,9 +131,11 @@ public class ZerodhaController {
     }
 
     private final ZerodhaService zerodhaService;
+    private final UserService userService;
 
-    public ZerodhaController(ZerodhaService zerodhaService) {
+    public ZerodhaController(ZerodhaService zerodhaService, UserService userService) {
         this.zerodhaService = zerodhaService;
+        this.userService = userService;
     }
 
     /**
@@ -109,8 +183,13 @@ public class ZerodhaController {
     public ResponseEntity<?> getZerodhaStatus(@RequestParam String appUserId) {
         try {
             KiteConnect kite = zerodhaService.clientFor(appUserId);
-            String statusMessage = "Zerodha linked ✅ for UserId=" + appUserId +
-                    " (kiteUserId=" + kite.getUserId() + ")";
+
+            // Get the user name from UserService
+            User user = userService.getUserById(appUserId);
+            String appUserName = (user != null && user.getName() != null) ? user.getName() : appUserId;
+
+            String statusMessage = "Zerodha linked for User = " + appUserName +
+                    " (Zerodha ID = " + kite.getUserId() + ")";
             return ResponseEntity.ok(statusMessage);
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());

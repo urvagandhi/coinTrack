@@ -2,10 +2,10 @@
 
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useState, useEffect } from 'react';
-import { 
-    UserIcon, 
-    CameraIcon, 
-    PencilIcon, 
+import {
+    UserIcon,
+    CameraIcon,
+    PencilIcon,
     ShieldCheckIcon,
     CurrencyDollarIcon,
     ChartBarIcon,
@@ -15,7 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function ProfilePage() {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [showPasswordFields, setShowPasswordFields] = useState(false);
     const [profileData, setProfileData] = useState({
@@ -120,37 +120,11 @@ export default function ProfilePage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-blue-900">
-            {/* Header */}
-            <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 dark:border-gray-700/50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-6">
-                        <div className="flex items-center">
-                            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                My Profile
-                            </h1>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <button
-                                onClick={() => window.history.back()}
-                                className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-                            >
-                                Back to Dashboard
-                            </button>
-                            <button
-                                onClick={logout}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
+
                     {/* Profile Card */}
                     <div className="lg:col-span-1">
                         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
@@ -158,7 +132,7 @@ export default function ProfilePage() {
                             <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 h-32">
                                 <div className="absolute inset-0 bg-black/10"></div>
                             </div>
-                            
+
                             {/* Profile Picture */}
                             <div className="relative px-6 pb-6">
                                 <div className="flex flex-col items-center -mt-16">
@@ -172,7 +146,7 @@ export default function ProfilePage() {
                                             <CameraIcon className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    
+
                                     <div className="text-center mt-4">
                                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                                             {profileData.name || profileData.username}
@@ -212,7 +186,7 @@ export default function ProfilePage() {
 
                     {/* Profile Details */}
                     <div className="lg:col-span-2 space-y-6">
-                        
+
                         {/* Personal Information */}
                         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
                             <div className="flex items-center justify-between mb-6">
@@ -463,14 +437,12 @@ export default function ProfilePage() {
                                         </div>
                                         <button
                                             onClick={() => handleNotificationChange(key, !value)}
-                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                                value ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
-                                            }`}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                                                }`}
                                         >
                                             <span
-                                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                                    value ? 'translate-x-6' : 'translate-x-1'
-                                                }`}
+                                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
                                             />
                                         </button>
                                     </div>
