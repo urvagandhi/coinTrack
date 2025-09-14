@@ -1,109 +1,78 @@
----
+# coinTrack Backend
 
-# Finance Dashboard Backend
-
-A robust Spring Boot backend for the CoinTrack personal finance platform, featuring secure user authentication, MongoDB integration, and seamless Zerodha API connectivity.
+Spring Boot backend for the CoinTrack personal finance platform, featuring secure user authentication, MongoDB integration, and Zerodha API connectivity.
 
 ---
 
-## 🚀 Features
+## Features
 
-- **JWT Authentication**: Secure login and protected endpoints.
-- **User Management**: Register, login, and manage user profiles.
-- **Zerodha Integration**: Link accounts, fetch holdings, positions, orders, and SIPs.
-- **MongoDB**: Flexible, cloud-ready data storage.
-- **Production-Ready Security**: BCrypt password hashing, CORS, and secrets management.
+- JWT Authentication: Secure login and protected endpoints
+- User Management: Register, login, and manage user profiles
+- Zerodha Integration: Link accounts, fetch holdings, positions, orders, and SIPs
+- MongoDB: Flexible, cloud-ready data storage
+- Production-Ready Security: BCrypt password hashing, CORS, and secrets management
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 backend/
-├── src/
-│   ├── main/
-│   │   ├── java/com/urva/myfinance/coinTrack/
-│   │   │   ├── Config/         # SecurityConfig, JwtFilter
-│   │   │   ├── Controller/     # LoginController, UserController, ZerodhaController
-│   │   │   ├── Model/          # User, UserPrincipal, DatabaseSequence, ZerodhaAccount
-│   │   │   ├── Repository/     # UserRepository, ZerodhaAccountRepository
-│   │   │   └── Service/        # UserService, JWTService, ZerodhaService, etc.
-│   │   └── resources/
-│   │       ├── application.properties           # Sensitive config (gitignored)
-│   │       ├── application-secret.properties    # Secrets-Example (gitignored, see below)
-│   │       └── ...
-│   └── test/
-│       └── java/com/urva/myfinance/coinTrack/
+├── src/main/java/com/urva/myfinance/coinTrack/
+│   ├── Config/         # SecurityConfig, JwtFilter
+│   ├── Controller/     # LoginController, UserController, ZerodhaController
+│   ├── DTO/            # Data Transfer Objects
+│   ├── Model/          # User, UserPrincipal, DatabaseSequence, ZerodhaAccount
+│   ├── Repository/     # UserRepository, ZerodhaAccountRepository
+│   └── Service/        # UserService, JWTService, ZerodhaService, etc.
+├── src/main/resources/
+│   ├── application.properties           # General config (gitignored)
+│   ├── application-secret.properties    # Secrets (gitignored)
+│   ├── static/
+│   └── templates/
+├── pom.xml
+├── mvnw, mvnw.cmd
 └── README.md
 ```
 
 ---
 
-## ⚙️ Configuration & Secrets
+## Configuration & Secrets
 
-**Never commit real secrets!**
+- Never commit real secrets!
+- All sensitive info (MongoDB URI, Zerodha API keys, JWT secret) goes in `application-secret.properties` (gitignored).
 
-- `application.properties`: General config (safe for sharing, but gitignored).
-- `application-secret.properties`: Place all sensitive info here (MongoDB URI, Zerodha API keys, etc).
-  - Not tracked by git.
-  - Copy from `application-secret.properties.example` and fill in your values.
-
-**Example:**
+**Example `application-secret.properties`:**
 
 ```properties
 spring.data.mongodb.uri=mongodb+srv://<username>:<password>@cluster.mongodb.net/Finance
 zerodha.api.key=your_kite_api_key
 zerodha.api.secret=your_kite_api_secret
+jwt.secret=your-very-strong-secret
 zerodha.redirect.url=http://localhost:8080/api/kite/callback
 ```
 
 ---
 
-## 🔒 Security
+## Security
 
-- **JWT**: All protected endpoints require a valid token in the `Authorization` header.
-- **Password Hashing**: BCrypt for all user passwords.
-- **CORS/CSRF**: Configured for safe frontend-backend communication.
-- **Secrets**: Use `application-secret.properties` for all credentials.
-
----
-
-## 🛠️ How It Works
-
-1. **User Registration & Login**:
-
-   - Register via `/api/register`, login via `/login`.
-   - Receive a JWT for all further requests.
-2. **Zerodha Account Linking**:
-
-   - Redirect user to Zerodha login, receive `requestToken` in callback.
-   - Call `/api/zerodha/connect` with `requestToken` and `appUserId`.
-   - Fetch holdings, positions, orders, and SIPs using dedicated endpoints.
-3. **Token Expiry**:
-
-   - Zerodha tokens are valid for the trading day.
-   - If expired, user is prompted to re-login with Zerodha.
-4. **Security:**- All sensitive endpoints require a valid JWT.
-
-   - Passwords are hashed using BCrypt.
-   - CORS and CSRF are configured for secure frontend-backend communication.
+- All protected endpoints require a valid JWT in the `Authorization` header
+- Passwords are hashed using BCrypt
+- CORS/CSRF configured for safe frontend-backend communication
 
 ---
 
-## 📚 API Endpoints
+## API Endpoints
 
 **Authentication**
-
 - `POST /login` — User login
 - `POST /api/register` — User registration
 
 **User**
-
 - `GET /api/users/profile` — Get profile
 - `PUT /api/users/profile` — Update profile
 
 **Zerodha**
-
 - `POST /api/zerodha/connect` — Link Zerodha account
 - `GET /api/zerodha/me` — Link status
 - `GET /api/zerodha/holdings` — Holdings
@@ -112,12 +81,11 @@ zerodha.redirect.url=http://localhost:8080/api/kite/callback
 - `GET /api/zerodha/sips` — Mutual fund SIPs
 
 **Health**
-
 - `GET /actuator/health` — Health check
 
 ---
 
-## 🏗️ Development & Deployment
+## Development & Deployment
 
 ### Build & Run
 
@@ -141,7 +109,7 @@ java -jar target/coinTrack-0.0.1-SNAPSHOT.jar
 
 ---
 
-## 🧑‍💻 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -152,10 +120,6 @@ java -jar target/coinTrack-0.0.1-SNAPSHOT.jar
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License.
-
-- **Password Hashing:** User passwords are stored securely using BCrypt.
-- **CORS/CSRF:** Configured for secure frontend-backend communication.
-- **Secrets Management:** Never commit real secrets. Use `application-secret.properties` and keep it out of git.
+MIT License – see LICENSE file.

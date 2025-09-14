@@ -1,35 +1,40 @@
 # coinTrack
 
-Professional, secure, and extensible personal finance management backend. 
-
-Frontend will be implemented in the near future.
+Professional, secure, and extensible personal finance management platform.
 
 ---
 
-## Folder Structure
+## Project Structure
 
 ```
 coinTrack/
-├── backend/                  # Spring Boot REST API (Java 21)
-│   ├── src/
-│   │   └── main/
-│   │       ├── java/
-│   │       │   └── com/urva/myfinance/coinTrack/
-│   │       │       ├── Config/         # Security & JWT config
-│   │       │       ├── Controllers/    # REST controllers
-│   │       │       ├── Model/          # Entity models
-│   │       │       ├── Repository/     # MongoDB repositories
-│   │       │       └── Service/        # Business logic & Zerodha integration
-│   │       └── resources/
-│   │           ├── application-secret.properties  # Secrets (gitignored)
-│   │           ├── static/
-│   │           └── templates/
+├── backend/   # Spring Boot REST API (Java 21)
+│   ├── src/main/java/com/urva/myfinance/coinTrack/
+│   │   ├── Config/         # Security & JWT config
+│   │   ├── Controller/     # REST controllers
+│   │   ├── DTO/            # Data Transfer Objects
+│   │   ├── Model/          # Entity models
+│   │   ├── Repository/     # MongoDB repositories
+│   │   └── Service/        # Business logic & Zerodha integration
+│   ├── src/main/resources/
+│   │   ├── application.properties
+│   │   ├── application-secret.properties  # Secrets (gitignored)
+│   │   ├── static/
+│   │   └── templates/
 │   ├── pom.xml
 │   ├── mvnw, mvnw.cmd
 │   └── README.md
+├── frontend/  # Next.js 14+ (React)
+│   ├── app/           # Pages & layouts
+│   ├── components/    # Reusable UI components
+│   ├── contexts/      # React context providers
+│   ├── lib/           # Utility libraries
+│   ├── public/        # Static assets
+│   ├── package.json
+│   └── README.md
 ├── .gitignore
 ├── .gitattributes
-└── README.md                  # Project documentation
+└── README.md
 ```
 
 ---
@@ -37,6 +42,7 @@ coinTrack/
 ## Technologies
 
 - **Backend:** Java 21, Spring Boot 3.5.5, Spring Security (JWT), Spring Data MongoDB, Maven, Lombok
+- **Frontend:** Next.js 14+, React, Tailwind CSS
 - **Database:** MongoDB (local or Atlas)
 - **API Integration:** Zerodha Kite Connect
 
@@ -64,6 +70,7 @@ spring.data.mongodb.uri=mongodb+srv://<username>:<password>@cluster.mongodb.net/
 ### Prerequisites
 
 - Java 21+
+- Node.js 18+
 - MongoDB (local or Atlas)
 
 ### 1. Clone the Repository
@@ -83,15 +90,20 @@ cd backend
 # API: http://localhost:8080
 ```
 
-### 3. Backend Setup
+### 3. Frontend Setup
 
-```
-Will be Implemnted further
+```bash
+cd frontend
+npm install
+npm run dev
+# App: http://localhost:3000
 ```
 
 ---
 
 ## Development & Testing
+
+### Backend
 
 ```bash
 cd backend
@@ -99,15 +111,29 @@ cd backend
 ./mvnw test
 ```
 
+### Frontend
+
+```bash
+cd frontend
+npm run dev
+npm run test # If tests are implemented
+```
+
 ---
 
 ## Architecture
 
-- **Controller Layer:** REST API endpoints
-- **Service Layer:** Business logic, Zerodha integration
-- **Repository Layer:** MongoDB data access
-- **Model Layer:** Entity definitions
-- **Security Layer:** JWT authentication, role-based access
+- **Backend:**
+	- Controller Layer: REST API endpoints
+	- Service Layer: Business logic, Zerodha integration
+	- Repository Layer: MongoDB data access
+	- Model Layer: Entity definitions
+	- Security Layer: JWT authentication, role-based access
+- **Frontend:**
+	- Next.js App Router structure
+	- AuthGuard for protected routes
+	- Context API for authentication state
+	- Modular components and layouts
 
 ---
 

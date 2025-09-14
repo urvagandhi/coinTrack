@@ -34,10 +34,15 @@ const navigationItems = [
 		icon: <Wallet className="w-5 h-5" />,
 	},
 	{
+		label: "Calculator",
+		href: "/calculator",
+		icon: <BarChart2 className="w-5 h-5 rotate-90" />,
+	},
+	{
 		label: "Security",
 		href: "/security",
 		icon: <Shield className="w-5 h-5" />,
-	},
+	},	
 ];
 
 export function Sidebar({ isCollapsed, setIsCollapsed }) {
