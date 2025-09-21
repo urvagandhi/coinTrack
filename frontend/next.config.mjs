@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Fix workspace root detection for multiple lockfiles
+  outputFileTracingRoot: process.cwd(),
+
   // Add proxy configuration for API calls
   async rewrites() {
       return [

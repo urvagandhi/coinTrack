@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Home, BarChart2, LogOut, Wallet, Shield } from "lucide-react";
+import { Home, BarChart2, LogOut, Wallet, Shield, Building2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 // Minimal Tooltip implementation
 function TooltipProvider({ children }) { return children; }
@@ -22,6 +22,11 @@ const navigationItems = [
 		label: "Dashboard",
 		href: "/dashboard",
 		icon: <Home className="w-5 h-5" />,
+	},
+	{
+		label: "Brokers",
+		href: "/brokers",
+		icon: <Building2 className="w-5 h-5" />,
 	},
 	{
 		label: "Zerodha",

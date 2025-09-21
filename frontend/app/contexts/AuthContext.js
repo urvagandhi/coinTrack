@@ -85,8 +85,16 @@ export const AuthProvider = ({ children }) => {
                 router.push('/dashboard');
                 return { success: true };
             } else {
-                const errorData = await response.json();
-                return { success: false, error: errorData.message || 'Login failed' };
+                // Try to parse error response as JSON, but handle non-JSON responses
+                let errorMessage = 'Login failed';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorData.error || 'Login failed';
+                } catch (parseError) {
+                    // If response is not JSON (e.g., HTML error page), use status text
+                    errorMessage = `Login failed: ${response.status} ${response.statusText}`;
+                }
+                return { success: false, error: errorMessage };
             }
         } catch (error) {
             console.error('Login error:', error);
