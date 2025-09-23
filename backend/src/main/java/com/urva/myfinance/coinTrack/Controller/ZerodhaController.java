@@ -279,6 +279,7 @@ public class ZerodhaController {
      * Step 7: Example - fetch mutual fund holdings from Zerodha API
      */
     @GetMapping("/mf/holdings")
+    
     public ResponseEntity<?> getMFHoldings(@RequestParam String appUserId) {
         try {
             Object mfHoldings = zerodhaService.getMFHoldings(appUserId);

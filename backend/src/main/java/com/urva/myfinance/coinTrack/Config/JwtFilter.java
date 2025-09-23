@@ -4,12 +4,14 @@ import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -23,13 +25,14 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * JWT authentication filter that validates Bearer tokens on each request.
- * Extracts JWT token from Authorization header and sets up Spring Security context.
+ * Extracts JWT token from Authorization header and sets up Spring Security
+ * context.
  */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
-    
+
     private final JWTService jwtService;
     private final ApplicationContext applicationContext;
 
@@ -39,18 +42,19 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Filters incoming requests to validate JWT tokens and set up authentication context.
+     * Filters incoming requests to validate JWT tokens and set up authentication
+     * context.
      * 
-     * @param request HTTP request
-     * @param response HTTP response
+     * @param request     HTTP request
+     * @param response    HTTP response
      * @param filterChain filter chain to continue processing
      * @throws ServletException if servlet error occurs
-     * @throws IOException if I/O error occurs
+     * @throws IOException      if I/O error occurs
      */
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
-        
+
         String authHeader = request.getHeader("Authorization");
         String token = null;
         String username = null;
@@ -62,7 +66,7 @@ public class JwtFilter extends OncePerRequestFilter {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7);
                 logger.debug("Extracted JWT token from Authorization header");
-                
+
                 try {
                     username = jwtService.extractUsername(token);
                     logger.debug("Extracted username from token: {}", username);
@@ -76,10 +80,10 @@ public class JwtFilter extends OncePerRequestFilter {
                 try {
                     UserDetailsService userDetailsService = applicationContext.getBean(UserDetailsService.class);
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                    
+
                     if (jwtService.validateToken(token, userDetails)) {
                         logger.debug("JWT token validated successfully for user: {}", username);
-                        
+
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                 userDetails, null, userDetails.getAuthorities());
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -88,7 +92,7 @@ public class JwtFilter extends OncePerRequestFilter {
                         logger.warn("JWT token validation failed for user: {}", username);
                         SecurityContextHolder.clearContext();
                     }
-                } catch (Exception e) {
+                } catch (BeansException | UsernameNotFoundException e) {
                     logger.warn("Error during user authentication: {}", e.getMessage());
                     SecurityContextHolder.clearContext();
                 }
@@ -111,9 +115,11 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
-        return path.startsWith("/api/auth/") || 
-               path.endsWith("/callback") ||
-               path.equals("/api/health") ||
-               path.equals("/actuator/health");
+        return path.startsWith("/api/auth/") ||
+                path.endsWith("/callback") ||
+                path.equals("/api/health") ||
+                path.equals("/actuator/health") ||
+                path.equals("/api/brokers/zerodha/login-url") ||
+                path.equals("/api/brokers/zerodha/callback");
     }
 }

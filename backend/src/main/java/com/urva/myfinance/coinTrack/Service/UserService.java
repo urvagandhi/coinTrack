@@ -131,7 +131,7 @@ public class UserService {
                 // Create LoginResponse with individual fields
                 LoginResponse loginResponse = new LoginResponse();
                 loginResponse.setToken(token);
-                loginResponse.setUserId(Long.valueOf(foundUser.getId()));
+                loginResponse.setUserId(foundUser.getId());
                 loginResponse.setUsername(foundUser.getUsername());
                 loginResponse.setEmail(foundUser.getEmail());
                 loginResponse.setMobile(foundUser.getPhoneNumber());
@@ -203,7 +203,7 @@ public class UserService {
                 // Create LoginResponse with individual fields
                 LoginResponse loginResponse = new LoginResponse();
                 loginResponse.setToken(token);
-                loginResponse.setUserId(Long.valueOf(foundUser.getId()));
+                loginResponse.setUserId(foundUser.getId());
                 loginResponse.setUsername(foundUser.getUsername());
                 loginResponse.setEmail(foundUser.getEmail());
                 loginResponse.setMobile(foundUser.getPhoneNumber());

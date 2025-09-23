@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.DTO.LoginRequest;
 import com.urva.myfinance.coinTrack.DTO.LoginResponse;
+import com.urva.myfinance.coinTrack.DTO.RegisterUserDTO;
 import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Service.UserService;
 
@@ -80,15 +81,38 @@ public class UserController {
      * @return created user information
      */
     @PostMapping("/auth/register")
-    public ResponseEntity<?> register(@Valid @RequestBody User user) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterUserDTO dto) {
         try {
-            logger.info("Registration attempt for username: {}", user.getUsername());
+            logger.info("Registration attempt for username: {}", dto.getUsername());
+
+            // Map DTO to domain User
+            User user = new User();
+            user.setUsername(dto.getUsername());
+            String fullName = dto.getFirstName() != null ? dto.getFirstName() : "";
+            if (dto.getLastName() != null && !dto.getLastName().isEmpty()) {
+                fullName = fullName.isEmpty() ? dto.getLastName() : fullName + " " + dto.getLastName();
+            }
+            user.setName(fullName.isEmpty() ? null : fullName);
+            user.setEmail(dto.getEmail());
+            user.setPhoneNumber(dto.getMobile());
+            user.setPassword(dto.getPassword());
 
             User registeredUser = userService.registerUser(user);
             if (registeredUser != null) {
-                // Remove password from response
+                // Try to authenticate immediately and return token + user info
+                try {
+                    LoginResponse loginResponse = userService.authenticate(registeredUser.getUsername(), dto.getPassword());
+                    if (loginResponse != null) {
+                        logger.info("User registered and authenticated: {}", registeredUser.getUsername());
+                        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
+                    }
+                } catch (Exception ex) {
+                    logger.warn("Registration succeeded but auto-login failed: {}", ex.getMessage());
+                }
+
+                // Fallback: remove password and return created user
                 registeredUser.setPassword(null);
-                logger.info("User registered successfully: {}", user.getUsername());
+                logger.info("User registered successfully: {}", registeredUser.getUsername());
                 return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
