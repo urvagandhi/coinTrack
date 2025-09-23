@@ -2,15 +2,14 @@ package com.urva.myfinance.coinTrack.Config;
 
 import java.io.IOException;
 
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -22,73 +21,99 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+/**
+ * JWT authentication filter that validates Bearer tokens on each request.
+ * Extracts JWT token from Authorization header and sets up Spring Security context.
+ */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
-    @Autowired
-    private JWTService jwtService;
+    
+    private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
+    
+    private final JWTService jwtService;
+    private final ApplicationContext applicationContext;
 
-    @Autowired
-    ApplicationContext applicationContext;
+    public JwtFilter(JWTService jwtService, ApplicationContext applicationContext) {
+        this.jwtService = jwtService;
+        this.applicationContext = applicationContext;
+    }
 
+    /**
+     * Filters incoming requests to validate JWT tokens and set up authentication context.
+     * 
+     * @param request HTTP request
+     * @param response HTTP response
+     * @param filterChain filter chain to continue processing
+     * @throws ServletException if servlet error occurs
+     * @throws IOException if I/O error occurs
+     */
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
-    String authHeader = request.getHeader("Authorization");
-    String token = null;
-    String username = null;
+        
+        String authHeader = request.getHeader("Authorization");
+        String token = null;
+        String username = null;
 
-    System.out.println("[JwtFilter] Incoming request: " + request.getRequestURI());
-    System.out.println("[JwtFilter] Authorization header: " + authHeader);
+        logger.debug("Processing request: {} {}", request.getMethod(), request.getRequestURI());
 
-    try {
+        try {
+            // Extract JWT token from Authorization header
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7);
-                System.out.println("[JwtFilter] Extracted token: " + token);
+                logger.debug("Extracted JWT token from Authorization header");
+                
                 try {
                     username = jwtService.extractUsername(token);
-                    System.out.println("[JwtFilter] Extracted username: " + username);
+                    logger.debug("Extracted username from token: {}", username);
                 } catch (Exception e) {
-                    System.out.println("[JwtFilter] Failed to extract username: " + e.getMessage());
+                    logger.warn("Failed to extract username from token: {}", e.getMessage());
                 }
-            } else {
-                System.out.println("[JwtFilter] No Bearer token found in Authorization header.");
             }
 
+            // Validate token and set up authentication context
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 try {
-                    UserDetails userDetails = applicationContext.getBean(UserDetailsService.class)
-                            .loadUserByUsername(username);
-                    System.out.println("[JwtFilter] Loaded user details for: " + username);
+                    UserDetailsService userDetailsService = applicationContext.getBean(UserDetailsService.class);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    
                     if (jwtService.validateToken(token, userDetails)) {
-                        System.out.println("[JwtFilter] Token validated for user: " + username);
+                        logger.debug("JWT token validated successfully for user: {}", username);
+                        
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                 userDetails, null, userDetails.getAuthorities());
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authToken);
                     } else {
-                        System.out.println("[JwtFilter] Token validation failed for user: " + username);
+                        logger.warn("JWT token validation failed for user: {}", username);
+                        SecurityContextHolder.clearContext();
                     }
-                } catch (BeansException | UsernameNotFoundException e) {
-                    System.out.println("[JwtFilter] UserDetailsService error: " + e.getMessage());
+                } catch (Exception e) {
+                    logger.warn("Error during user authentication: {}", e.getMessage());
                     SecurityContextHolder.clearContext();
                 }
-            } else if (username == null) {
-                System.out.println("[JwtFilter] Username is null after token extraction.");
-            } else {
-                System.out.println("[JwtFilter] Authentication already present in SecurityContextHolder.");
             }
         } catch (Exception e) {
-            System.out.println("[JwtFilter] Exception: " + e.getMessage());
+            logger.error("Unexpected error in JWT filter: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * Determines if this filter should be skipped for certain endpoints.
+     * 
+     * @param request HTTP request
+     * @return true if filter should be skipped
+     * @throws ServletException if servlet error occurs
+     */
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
-        return "/login".equals(path) || "/api/register".equals(path);
+        return path.startsWith("/api/auth/") || 
+               path.endsWith("/callback") ||
+               path.equals("/api/health") ||
+               path.equals("/actuator/health");
     }
-
 }

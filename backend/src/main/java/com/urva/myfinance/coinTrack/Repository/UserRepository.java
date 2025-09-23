@@ -6,7 +6,9 @@ import com.urva.myfinance.coinTrack.Model.User;
 
 public interface UserRepository extends MongoRepository<User, String> {
 
-    public User findByUsername(String username);
+    User findByUsername(String username);
 
-    public User findByEmail(String email);
+    User findByEmail(String email);
+
+    User findByPhoneNumber(String phoneNumber);
 }

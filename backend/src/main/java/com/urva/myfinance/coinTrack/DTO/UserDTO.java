@@ -6,45 +6,40 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * DTO for user login responses.
- * Returns JWT token and user information without sensitive data.
+ * DTO for user profile responses.
+ * Contains user information without sensitive data like passwords.
+ * Used for API responses and client-side user data display.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class LoginResponse {
+public class UserDTO {
 
     /**
-     * JWT token for authenticated API access.
-     * Should be included in Authorization header for subsequent requests.
+     * Unique identifier for the user.
      */
-    private String token;
+    private Long id;
 
     /**
-     * Unique identifier for the authenticated user.
-     */
-    private Long userId;
-
-    /**
-     * Username of the authenticated user.
+     * Username of the user account.
      */
     private String username;
 
     /**
-     * Email address of the authenticated user.
+     * Email address of the user.
      */
     private String email;
 
     /**
-     * Mobile number of the authenticated user.
+     * Mobile number of the user.
      */
     private String mobile;
 
     /**
-     * First name of the authenticated user.
+     * First name of the user.
      */
     private String firstName;
 
     /**
-     * Last name of the authenticated user.
+     * Last name of the user.
      */
     private String lastName;
 
@@ -55,9 +50,14 @@ public class LoginResponse {
     private List<String> roles;
 
     /**
-     * Token expiration timestamp.
+     * Account creation timestamp.
      */
-    private LocalDateTime tokenExpiry;
+    private LocalDateTime createdAt;
+
+    /**
+     * Last account update timestamp.
+     */
+    private LocalDateTime updatedAt;
 
     /**
      * Account activation status.
@@ -65,40 +65,42 @@ public class LoginResponse {
     private Boolean isActive;
 
     /**
+     * Email verification status.
+     */
+    private Boolean isEmailVerified;
+
+    /**
+     * Mobile verification status.
+     */
+    private Boolean isMobileVerified;
+
+    /**
      * Default constructor for JSON deserialization.
      */
-    public LoginResponse() {
+    public UserDTO() {
     }
 
     /**
      * Constructor with essential fields.
      * 
-     * @param token    the JWT token
-     * @param userId   the user ID
+     * @param id       the user ID
      * @param username the username
      * @param email    the email address
+     * @param mobile   the mobile number
      */
-    public LoginResponse(String token, Long userId, String username, String email) {
-        this.token = token;
-        this.userId = userId;
+    public UserDTO(Long id, String username, String email, String mobile) {
+        this.id = id;
         this.username = username;
         this.email = email;
+        this.mobile = mobile;
     }
 
-    public String getToken() {
-        return token;
+    public Long getId() {
+        return id;
     }
 
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getUsername() {
@@ -149,12 +151,20 @@ public class LoginResponse {
         this.roles = roles;
     }
 
-    public LocalDateTime getTokenExpiry() {
-        return tokenExpiry;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setTokenExpiry(LocalDateTime tokenExpiry) {
-        this.tokenExpiry = tokenExpiry;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public Boolean getIsActive() {
@@ -165,19 +175,37 @@ public class LoginResponse {
         this.isActive = isActive;
     }
 
+    public Boolean getIsEmailVerified() {
+        return isEmailVerified;
+    }
+
+    public void setIsEmailVerified(Boolean isEmailVerified) {
+        this.isEmailVerified = isEmailVerified;
+    }
+
+    public Boolean getIsMobileVerified() {
+        return isMobileVerified;
+    }
+
+    public void setIsMobileVerified(Boolean isMobileVerified) {
+        this.isMobileVerified = isMobileVerified;
+    }
+
     @Override
     public String toString() {
-        return "LoginResponse{" +
-                "token='" + (token != null ? "[PROTECTED]" : null) + '\'' +
-                ", userId=" + userId +
+        return "UserDTO{" +
+                "id=" + id +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", mobile='" + mobile + '\'' +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", roles=" + roles +
-                ", tokenExpiry=" + tokenExpiry +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
                 ", isActive=" + isActive +
+                ", isEmailVerified=" + isEmailVerified +
+                ", isMobileVerified=" + isMobileVerified +
                 '}';
     }
 }
