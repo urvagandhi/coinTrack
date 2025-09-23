@@ -14,8 +14,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
 
 import com.urva.myfinance.coinTrack.Service.UpstoxServiceImpl;
+import com.urva.myfinance.coinTrack.Service.JWTService;
+import com.urva.myfinance.coinTrack.Service.UserService;
+import com.urva.myfinance.coinTrack.Model.User;
+import com.urva.myfinance.coinTrack.Model.UpstoxAccount;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -33,9 +38,13 @@ public class UpstoxController {
     private static final Logger logger = LoggerFactory.getLogger(UpstoxController.class);
 
     private final UpstoxServiceImpl upstoxService;
+    private final JWTService jwtService;
+    private final UserService userService;
 
-    public UpstoxController(UpstoxServiceImpl upstoxService) {
+    public UpstoxController(UpstoxServiceImpl upstoxService, JWTService jwtService, UserService userService) {
         this.upstoxService = upstoxService;
+        this.jwtService = jwtService;
+        this.userService = userService;
     }
 
     /**
@@ -53,12 +62,32 @@ public class UpstoxController {
                         .body(createErrorResponse("Invalid or missing authentication token"));
             }
 
-            // TODO: Implement with actual Upstox OAuth URL generation
-            String loginUrl = "https://api.upstox.com/v2/login/authorization/dialog?api_key=YOUR_API_KEY";
-            Map<String, String> response = new HashMap<>();
-            response.put("loginUrl", loginUrl);
-            response.put("redirectUrl", loginUrl);
-            return ResponseEntity.ok(response);
+            // Get user's Upstox account to retrieve API key
+            try {
+                UpstoxAccount account = upstoxService.getAccountByAppUserId(userId);
+                String apiKey = account.getUpstoxApiKey();
+                String redirectUri = account.getUpstoxRedirectUri();
+                
+                if (!StringUtils.hasText(apiKey)) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(createErrorResponse("Upstox API key not configured for user"));
+                }
+                
+                if (!StringUtils.hasText(redirectUri)) {
+                    // Use default redirect URI
+                    redirectUri = "http://localhost:8080/api/brokers/upstox/callback";
+                }
+
+                String loginUrl = upstoxService.generateLoginUrl(userId, apiKey, redirectUri);
+                Map<String, String> response = new HashMap<>();
+                response.put("loginUrl", loginUrl);
+                response.put("redirectUrl", loginUrl);
+                return ResponseEntity.ok(response);
+                
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createErrorResponse("Upstox account not configured. Please set credentials first."));
+            }
         } catch (Exception e) {
             logger.error("Error generating Upstox login URL: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -303,9 +332,15 @@ public class UpstoxController {
         try {
             String authHeader = request.getHeader("Authorization");
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                // TODO: Use JWTService to extract user ID from token
-                // For now, return a placeholder
-                return "user_placeholder";
+                String token = authHeader.substring(7);
+                String username = jwtService.extractUsername(token);
+                if (username != null) {
+                    // Find user by username and get their ID
+                    User user = userService.findUserByUsername(username);
+                    if (user != null) {
+                        return user.getId();
+                    }
+                }
             }
         } catch (Exception e) {
             logger.error("Error extracting user ID from token: {}", e.getMessage());
