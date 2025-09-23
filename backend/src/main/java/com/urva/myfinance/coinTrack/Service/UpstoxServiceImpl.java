@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.urva.myfinance.coinTrack.Model.UpstoxAccount;
@@ -109,7 +110,7 @@ public class UpstoxServiceImpl implements BrokerService {
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
 
-                if (responseBody.containsKey("access_token")) {
+                if (responseBody != null && responseBody.containsKey("access_token")) {
                     String accessToken = (String) responseBody.get("access_token");
                     String refreshToken = (String) responseBody.get("refresh_token");
                     Integer expiresIn = (Integer) responseBody.get("expires_in");
@@ -168,7 +169,7 @@ public class UpstoxServiceImpl implements BrokerService {
                 throw new RuntimeException("Upstox API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error connecting Upstox account for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to connect Upstox account: " + e.getMessage(), e);
         }
@@ -209,7 +210,7 @@ public class UpstoxServiceImpl implements BrokerService {
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
 
-                if (responseBody.containsKey("access_token")) {
+                if (responseBody != null && responseBody.containsKey("access_token")) {
                     String accessToken = (String) responseBody.get("access_token");
                     String newRefreshToken = (String) responseBody.get("refresh_token");
                     Integer expiresIn = (Integer) responseBody.get("expires_in");
@@ -235,14 +236,17 @@ public class UpstoxServiceImpl implements BrokerService {
                     log.info("Successfully refreshed Upstox token for user: {}", appUserId);
                     return refreshResponse;
                 } else {
-                    String errorDescription = (String) responseBody.get("error_description");
+                    String errorDescription = "Unknown error";
+                    if (responseBody != null && responseBody.containsKey("error_description")) {
+                        errorDescription = (String) responseBody.get("error_description");
+                    }
                     throw new RuntimeException("Upstox token refresh failed: " + errorDescription);
                 }
             } else {
                 throw new RuntimeException("Upstox refresh API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error refreshing Upstox token for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to refresh Upstox token: " + e.getMessage(), e);
         } finally {
@@ -266,11 +270,15 @@ public class UpstoxServiceImpl implements BrokerService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-                
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("status", "success");
                 result.put("broker", getBrokerName());
-                result.put("data", responseBody.get("data"));
+                Object data = null;
+                if (responseBody != null) {
+                    data = responseBody.get("data");
+                }
+                result.put("data", data);
                 result.put("lastUpdated", LocalDateTime.now());
 
                 log.info("Successfully fetched holdings for Upstox user: {}", appUserId);
@@ -279,7 +287,7 @@ public class UpstoxServiceImpl implements BrokerService {
                 throw new RuntimeException("Upstox holdings API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error fetching Upstox holdings for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to fetch Upstox holdings: " + e.getMessage(), e);
         }
@@ -301,11 +309,15 @@ public class UpstoxServiceImpl implements BrokerService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-                
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("status", "success");
                 result.put("broker", getBrokerName());
-                result.put("data", responseBody.get("data"));
+                Object data = null;
+                if (responseBody != null) {
+                    data = responseBody.get("data");
+                }
+                result.put("data", data);
                 result.put("lastUpdated", LocalDateTime.now());
 
                 log.info("Successfully fetched orders for Upstox user: {}", appUserId);
@@ -314,7 +326,7 @@ public class UpstoxServiceImpl implements BrokerService {
                 throw new RuntimeException("Upstox orders API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error fetching Upstox orders for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to fetch Upstox orders: " + e.getMessage(), e);
         }
@@ -383,11 +395,15 @@ public class UpstoxServiceImpl implements BrokerService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-                
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("status", "success");
                 result.put("broker", getBrokerName());
-                result.put("data", responseBody.get("data"));
+                Object data = null;
+                if (responseBody != null) {
+                    data = responseBody.get("data");
+                }
+                result.put("data", data);
                 result.put("lastUpdated", LocalDateTime.now());
 
                 log.info("Successfully fetched positions for Upstox user: {}", appUserId);
@@ -396,7 +412,7 @@ public class UpstoxServiceImpl implements BrokerService {
                 throw new RuntimeException("Upstox positions API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error fetching Upstox positions for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to fetch Upstox positions: " + e.getMessage(), e);
         }
@@ -415,15 +431,21 @@ public class UpstoxServiceImpl implements BrokerService {
 
             // Fetch holdings, positions, and margins for comprehensive portfolio
             Map<String, Object> portfolioData = new HashMap<>();
-            
+
             try {
                 // Fetch holdings
                 String holdingsUrl = upstoxApiBaseUrl + "/v2/portfolio/long-term-holdings";
-                ResponseEntity<Map> holdingsResponse = restTemplate.exchange(holdingsUrl, HttpMethod.GET, request, Map.class);
+                ResponseEntity<Map> holdingsResponse = restTemplate.exchange(holdingsUrl, HttpMethod.GET, request,
+                        Map.class);
                 if (holdingsResponse.getStatusCode().is2xxSuccessful() && holdingsResponse.getBody() != null) {
-                    portfolioData.put("holdings", holdingsResponse.getBody().get("data"));
+                    Map<String, Object> holdingsBody = holdingsResponse.getBody();
+                    Object holdingsData = null;
+                    if (holdingsBody != null) {
+                        holdingsData = holdingsBody.get("data");
+                    }
+                    portfolioData.put("holdings", holdingsData);
                 }
-            } catch (Exception e) {
+            } catch (RestClientException e) {
                 log.warn("Failed to fetch holdings for user {}: {}", appUserId, e.getMessage());
                 portfolioData.put("holdings", null);
             }
@@ -431,11 +453,17 @@ public class UpstoxServiceImpl implements BrokerService {
             try {
                 // Fetch positions
                 String positionsUrl = upstoxApiBaseUrl + "/v2/portfolio/short-term-positions";
-                ResponseEntity<Map> positionsResponse = restTemplate.exchange(positionsUrl, HttpMethod.GET, request, Map.class);
+                ResponseEntity<Map> positionsResponse = restTemplate.exchange(positionsUrl, HttpMethod.GET, request,
+                        Map.class);
                 if (positionsResponse.getStatusCode().is2xxSuccessful() && positionsResponse.getBody() != null) {
-                    portfolioData.put("positions", positionsResponse.getBody().get("data"));
+                    Map<String, Object> positionsBody = positionsResponse.getBody();
+                    Object positionsData = null;
+                    if (positionsBody != null) {
+                        positionsData = positionsBody.get("data");
+                    }
+                    portfolioData.put("positions", positionsData);
                 }
-            } catch (Exception e) {
+            } catch (RestClientException e) {
                 log.warn("Failed to fetch positions for user {}: {}", appUserId, e.getMessage());
                 portfolioData.put("positions", null);
             }
@@ -443,11 +471,17 @@ public class UpstoxServiceImpl implements BrokerService {
             try {
                 // Fetch margins
                 String marginsUrl = upstoxApiBaseUrl + "/v2/user/get-funds-and-margin";
-                ResponseEntity<Map> marginsResponse = restTemplate.exchange(marginsUrl, HttpMethod.GET, request, Map.class);
+                ResponseEntity<Map> marginsResponse = restTemplate.exchange(marginsUrl, HttpMethod.GET, request,
+                        Map.class);
                 if (marginsResponse.getStatusCode().is2xxSuccessful() && marginsResponse.getBody() != null) {
-                    portfolioData.put("margins", marginsResponse.getBody().get("data"));
+                    Map<String, Object> marginsBody = marginsResponse.getBody();
+                    Object marginsData = null;
+                    if (marginsBody != null) {
+                        marginsData = marginsBody.get("data");
+                    }
+                    portfolioData.put("margins", marginsData);
                 }
-            } catch (Exception e) {
+            } catch (RestClientException e) {
                 log.warn("Failed to fetch margins for user {}: {}", appUserId, e.getMessage());
                 portfolioData.put("margins", null);
             }
@@ -516,11 +550,15 @@ public class UpstoxServiceImpl implements BrokerService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-                
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("status", "success");
                 result.put("broker", getBrokerName());
-                result.put("order_id", responseBody.get("data"));
+                Object orderId = null;
+                if (responseBody != null) {
+                    orderId = responseBody.get("data");
+                }
+                result.put("order_id", orderId);
                 result.put("message", "Order placed successfully");
                 result.put("timestamp", LocalDateTime.now());
 
@@ -530,7 +568,7 @@ public class UpstoxServiceImpl implements BrokerService {
                 throw new RuntimeException("Upstox place order failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error placing Upstox order for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to place Upstox order: " + e.getMessage(), e);
         }
@@ -553,13 +591,17 @@ public class UpstoxServiceImpl implements BrokerService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-                
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("status", "success");
                 result.put("broker", getBrokerName());
                 result.put("order_id", orderId);
                 result.put("message", "Order cancelled successfully");
-                result.put("data", responseBody.get("data"));
+                Object data = null;
+                if (responseBody != null) {
+                    data = responseBody.get("data");
+                }
+                result.put("data", data);
                 result.put("timestamp", LocalDateTime.now());
 
                 log.info("Successfully cancelled order for Upstox user: {}, order_id: {}", appUserId, orderId);
@@ -568,7 +610,7 @@ public class UpstoxServiceImpl implements BrokerService {
                 throw new RuntimeException("Upstox cancel order failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error cancelling Upstox order for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to cancel Upstox order: " + e.getMessage(), e);
         }
@@ -590,12 +632,16 @@ public class UpstoxServiceImpl implements BrokerService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-                
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("status", "success");
                 result.put("broker", getBrokerName());
                 result.put("instrument", instrument);
-                result.put("data", responseBody.get("data"));
+                Object data = null;
+                if (responseBody != null) {
+                    data = responseBody.get("data");
+                }
+                result.put("data", data);
                 result.put("timestamp", LocalDateTime.now());
 
                 log.info("Successfully fetched quote for Upstox user: {}, instrument: {}", appUserId, instrument);
@@ -604,7 +650,7 @@ public class UpstoxServiceImpl implements BrokerService {
                 throw new RuntimeException("Upstox quote API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error fetching Upstox quote for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to fetch Upstox quote: " + e.getMessage(), e);
         }
@@ -626,11 +672,15 @@ public class UpstoxServiceImpl implements BrokerService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-                
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("status", "success");
                 result.put("broker", getBrokerName());
-                result.put("data", responseBody.get("data"));
+                Object data = null;
+                if (responseBody != null) {
+                    data = responseBody.get("data");
+                }
+                result.put("data", data);
                 result.put("lastUpdated", LocalDateTime.now());
 
                 log.info("Successfully fetched margins for Upstox user: {}", appUserId);
@@ -639,7 +689,7 @@ public class UpstoxServiceImpl implements BrokerService {
                 throw new RuntimeException("Upstox margins API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error fetching Upstox margins for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to fetch Upstox margins: " + e.getMessage(), e);
         }
@@ -681,7 +731,7 @@ public class UpstoxServiceImpl implements BrokerService {
             if (response.getStatusCode().is2xxSuccessful()) {
                 return response.getBody();
             }
-        } catch (Exception e) {
+        } catch (RestClientException e) {
             log.error("Error fetching Upstox user profile: {}", e.getMessage());
         }
         return null;
@@ -712,12 +762,14 @@ public class UpstoxServiceImpl implements BrokerService {
             ResponseEntity<Map> response = restTemplate.exchange(instrumentsUrl, HttpMethod.GET, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return response.getBody().get("data");
+                Map<String, Object> responseBody = response.getBody();
+                return responseBody != null ? responseBody.get("data") : null;
             } else {
-                throw new RuntimeException("Upstox instruments API call failed with status: " + response.getStatusCode());
+                throw new RuntimeException(
+                        "Upstox instruments API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException("Unexpected error fetching instruments for user: " + appUserId, e);
         }
     }
@@ -737,12 +789,14 @@ public class UpstoxServiceImpl implements BrokerService {
             ResponseEntity<Map> response = restTemplate.exchange(orderHistoryUrl, HttpMethod.GET, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return response.getBody().get("data");
+                Map<String, Object> responseBody = response.getBody();
+                return responseBody != null ? responseBody.get("data") : null;
             } else {
-                throw new RuntimeException("Upstox order history API call failed with status: " + response.getStatusCode());
+                throw new RuntimeException(
+                        "Upstox order history API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException("Unexpected error fetching order history for user: " + appUserId, e);
         }
     }
@@ -762,12 +816,14 @@ public class UpstoxServiceImpl implements BrokerService {
             ResponseEntity<Map> response = restTemplate.exchange(orderDetailsUrl, HttpMethod.GET, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return response.getBody().get("data");
+                Map<String, Object> responseBody = response.getBody();
+                return responseBody != null ? responseBody.get("data") : null;
             } else {
-                throw new RuntimeException("Upstox order details API call failed with status: " + response.getStatusCode());
+                throw new RuntimeException(
+                        "Upstox order details API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException(
                     "Unexpected error fetching order details for user: " + appUserId + ", orderId: " + orderId, e);
         }
@@ -788,12 +844,13 @@ public class UpstoxServiceImpl implements BrokerService {
             ResponseEntity<Map> response = restTemplate.exchange(tradesUrl, HttpMethod.GET, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return response.getBody().get("data");
+                Map<String, Object> responseBody = response.getBody();
+                return responseBody != null ? responseBody.get("data") : null;
             } else {
                 throw new RuntimeException("Upstox trades API call failed with status: " + response.getStatusCode());
             }
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException("Unexpected error fetching trades for user: " + appUserId, e);
         }
     }
