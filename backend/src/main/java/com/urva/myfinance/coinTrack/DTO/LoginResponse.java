@@ -21,7 +21,7 @@ public class LoginResponse {
     /**
      * Unique identifier for the authenticated user.
      */
-    private Long userId;
+    private String userId;
 
     /**
      * Username of the authenticated user.
@@ -78,7 +78,7 @@ public class LoginResponse {
      * @param username the username
      * @param email    the email address
      */
-    public LoginResponse(String token, Long userId, String username, String email) {
+    public LoginResponse(String token, String userId, String username, String email) {
         this.token = token;
         this.userId = userId;
         this.username = username;
@@ -93,7 +93,7 @@ public class LoginResponse {
         this.token = token;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
