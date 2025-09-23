@@ -10,6 +10,10 @@ import com.urva.myfinance.coinTrack.Model.UpstoxAccount;
 @Repository
 public interface UpstoxAccountRepository extends MongoRepository<UpstoxAccount, String> {
     Optional<UpstoxAccount> findByAppUserId(String appUserId);
+
     Optional<UpstoxAccount> findByUserName(String userName);
+
+    Optional<UpstoxAccount> findByAccessToken(String accessToken);
+
     void deleteByAppUserId(String appUserId);
 }
