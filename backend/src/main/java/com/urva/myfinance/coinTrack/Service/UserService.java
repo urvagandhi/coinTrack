@@ -103,7 +103,8 @@ public class UserService {
             // Check if username already exists
             User existingUser = userRepository.findByUsername(user.getUsername());
             if (existingUser != null) {
-                throw new RuntimeException("Username already exists: " + user.getUsername() + ". Please choose a different username.");
+                throw new RuntimeException(
+                        "Username already exists: " + user.getUsername() + ". Please choose a different username.");
             }
 
             user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -258,6 +259,23 @@ public class UserService {
             return false;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * Find user by username.
+     * 
+     * @param username the username to search for
+     * @return User object if found, null otherwise
+     */
+    public User findUserByUsername(String username) {
+        try {
+            if (username == null || username.trim().isEmpty()) {
+                return null;
+            }
+            return userRepository.findByUsername(username);
+        } catch (Exception e) {
+            throw new RuntimeException("Error finding user by username: " + username + ". " + e.getMessage(), e);
         }
     }
 }

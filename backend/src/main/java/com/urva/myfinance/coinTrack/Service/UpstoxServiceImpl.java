@@ -63,6 +63,24 @@ public class UpstoxServiceImpl implements BrokerService {
         this.restTemplate = new RestTemplate();
     }
 
+    /**
+     * Generate Upstox OAuth2 login URL for user authentication.
+     * 
+     * @param appUserId   User ID
+     * @param apiKey      Upstox API key
+     * @param redirectUri Redirect URI for OAuth callback
+     * @return Login URL for Upstox authorization
+     */
+    public String generateLoginUrl(String appUserId, String apiKey, String redirectUri) {
+        if (!StringUtils.hasText(apiKey) || !StringUtils.hasText(redirectUri)) {
+            throw new IllegalArgumentException("API key and redirect URI are required");
+        }
+
+        String baseAuthUrl = "https://api.upstox.com/v2/login/authorization/dialog";
+        return String.format("%s?response_type=code&client_id=%s&redirect_uri=%s&state=%s",
+                baseAuthUrl, apiKey, redirectUri, appUserId);
+    }
+
     @Override
     public Map<String, Object> connect(String appUserId, Map<String, Object> credentials) {
         log.info("Connecting Upstox account for user: {}", appUserId);
