@@ -165,6 +165,27 @@ public class UserController {
     }
 
     /**
+     * Check if username is available.
+     * 
+     * @param username username to check
+     * @return availability status
+     */
+    @GetMapping("/auth/check-username/{username}")
+    public ResponseEntity<?> checkUsernameAvailability(@PathVariable String username) {
+        try {
+            boolean isAvailable = userService.isUsernameAvailable(username);
+            Map<String, Object> response = new HashMap<>();
+            response.put("username", username);
+            response.put("available", isAvailable);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error checking username availability: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Failed to check username availability"));
+        }
+    }
+
+    /**
      * Get all users (admin operation).
      * 
      * @return list of all users

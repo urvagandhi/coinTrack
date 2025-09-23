@@ -99,10 +99,25 @@ public class UserService {
             if (user.getUsername() == null || user.getPassword() == null) {
                 return null; // Invalid user
             }
+
+            // Check if username already exists
+            User existingUser = userRepository.findByUsername(user.getUsername());
+            if (existingUser != null) {
+                throw new RuntimeException("Username already exists: " + user.getUsername() + ". Please choose a different username.");
+            }
+
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             return userRepository.save(user);
         } catch (Exception e) {
             throw new RuntimeException("Error registering user: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean isUsernameAvailable(String username) {
+        try {
+            return !userRepository.existsByUsername(username);
+        } catch (Exception e) {
+            throw new RuntimeException("Error checking username availability: " + e.getMessage(), e);
         }
     }
 

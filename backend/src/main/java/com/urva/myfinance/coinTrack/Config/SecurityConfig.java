@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> request
 
                         // 🔓 Auth endpoints (public)
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify-token").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify-token", "/api/auth/check-username/*").permitAll()
 
                         // 🔓 Broker callbacks (public)
                         .requestMatchers("/api/zerodha/callback", "/api/upstox/callback", "/api/angelone/callback")
