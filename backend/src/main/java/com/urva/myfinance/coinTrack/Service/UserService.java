@@ -108,7 +108,7 @@ public class UserService {
 
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             return userRepository.save(user);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException("Error registering user: " + e.getMessage(), e);
         }
     }
