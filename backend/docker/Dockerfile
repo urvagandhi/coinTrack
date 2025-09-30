@@ -26,7 +26,7 @@ ENV SPRING_DEVTOOLS_RESTART_ENABLED=false \
 
 EXPOSE 8080
 
-# Use sh -c so we can expand the PORT env var with a default of 8080.
-# This sets the Spring property server.port from the PORT environment variable
-# provided by Render (or falls back to 8080 locally).
-ENTRYPOINT ["sh","-c","java -Dserver.port=${PORT:-8080} -jar /app/app.jar"]
+# Use sh -c so we can expand the PORT/SERVER_PORT env vars with a default of 8080.
+# Prioritize Render's PORT, then SERVER_PORT (some platforms use SERVER_PORT),
+# and fall back to 8080 locally.
+ENTRYPOINT ["sh","-c","java -Dserver.port=${PORT:-${SERVER_PORT:-8080}} -jar /app/app.jar"]
