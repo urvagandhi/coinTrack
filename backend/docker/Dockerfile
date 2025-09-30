@@ -18,7 +18,15 @@ WORKDIR /app
 
 # Copy jar from builder stage (wildcard in case of -SNAPSHOT naming)
 COPY --from=build /app/target/*.jar app.jar
+## In production, ensure Spring binds to the port Render assigns via the PORT env var.
+# Also disable Spring DevTools restart/livereload in the runtime container to avoid
+# unexpected restarts.
+ENV SPRING_DEVTOOLS_RESTART_ENABLED=false \
+	SPRING_DEVTOOLS_LIVERELOAD_ENABLED=false
 
 EXPOSE 8080
 
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+# Use sh -c so we can expand the PORT env var with a default of 8080.
+# This sets the Spring property server.port from the PORT environment variable
+# provided by Render (or falls back to 8080 locally).
+ENTRYPOINT ["sh","-c","java -Dserver.port=${PORT:-8080} -jar /app/app.jar"]
