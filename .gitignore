@@ -1,6 +1,10 @@
 # Ignore sensitive Spring Boot config
 backend/src/main/resources/application.properties
 
+# Environment variables
+.env
+backend/.env
+
 # Root level ignores
 HELP.md
 *.log
