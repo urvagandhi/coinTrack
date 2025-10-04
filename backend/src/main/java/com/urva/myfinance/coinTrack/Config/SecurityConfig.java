@@ -52,6 +52,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/brokers/zerodha/connect").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/brokers/zerodha/connect").permitAll()
 
+                        // Publicly allow root, static and favicon to avoid 403 on deployed root
+                        .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**", "/public/**").permitAll()
+
                         // 🔒 Everything else requires authentication
                         .anyRequest().authenticated())
                 .formLogin(form -> form.disable())

@@ -26,7 +26,8 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(@NonNull CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:3000", "http://127.0.0.1:3000", "https://localhost:3000")
+                // Allow local development origins and deployed frontend origin on Render
+                .allowedOrigins("http://localhost:3000", "http://127.0.0.1:3000", "https://localhost:3000", "https://cointrack-15gt.onrender.com")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
                 .allowedHeaders("*")
                 .exposedHeaders("Authorization", "Content-Type")
@@ -47,7 +48,9 @@ public class CorsConfig implements WebMvcConfigurer {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
-                "https://localhost:3000"));
+                "https://localhost:3000",
+                // Render deployment host - add your deployed frontend URL here
+                "https://cointrack-15gt.onrender.com"));
 
         // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
