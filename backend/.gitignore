@@ -41,3 +41,7 @@ Thumbs.db
 .env.production
 .env.test
 *.env
+
+
+
+!application.properties
