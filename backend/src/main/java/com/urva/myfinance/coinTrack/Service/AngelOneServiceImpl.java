@@ -38,7 +38,7 @@ public class AngelOneServiceImpl implements BrokerService {
     @Value("${angelone.api.base-url:https://apiconnect.angelbroking.com}")
     private String angelOneApiBaseUrl;
 
-    @Value("${angelone.api.login-endpoint:/rest/auth/angelbroking/user/v1/loginByPassword}")
+    @Value("${angelone.api.login-endpoint:/rest/auth/angelbroking/user/v1/loginByPIN}")
     private String loginEndpoint;
 
     @Value("${angelone.api.refresh-endpoint:/rest/auth/angelbroking/jwt/v1/generateTokens}")
@@ -81,10 +81,10 @@ public class AngelOneServiceImpl implements BrokerService {
             account.setAngelClientId(clientId);
             account.setAngelPin(pin);
 
-            // Prepare login request
+            // Prepare login request for loginByPIN endpoint
             Map<String, Object> loginRequest = new HashMap<>();
             loginRequest.put("clientcode", clientId);
-            loginRequest.put("password", pin);
+            loginRequest.put("pin", pin);
             loginRequest.put("totp", totp);
 
             HttpHeaders headers = new HttpHeaders();
