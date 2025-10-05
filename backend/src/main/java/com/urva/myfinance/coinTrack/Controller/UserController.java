@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.DTO.LoginRequest;
 import com.urva.myfinance.coinTrack.DTO.LoginResponse;
-import com.urva.myfinance.coinTrack.DTO.RegisterUserDTO;
+import com.urva.myfinance.coinTrack.DTO.user.RegisterUserDTO;
 import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Service.UserService;
 

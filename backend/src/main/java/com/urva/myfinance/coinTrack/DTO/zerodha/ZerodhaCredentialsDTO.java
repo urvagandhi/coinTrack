@@ -1,4 +1,4 @@
-package com.urva.myfinance.coinTrack.DTO;
+package com.urva.myfinance.coinTrack.DTO.zerodha;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

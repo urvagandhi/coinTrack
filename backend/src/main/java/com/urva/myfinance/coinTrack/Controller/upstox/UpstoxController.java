@@ -1,4 +1,4 @@
-package com.urva.myfinance.coinTrack.Controller;
+package com.urva.myfinance.coinTrack.Controller.upstox;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,13 +15,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.util.StringUtils;
 
-import com.urva.myfinance.coinTrack.Service.UpstoxServiceImpl;
+import com.urva.myfinance.coinTrack.Model.UpstoxAccount;
+import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Service.JWTService;
 import com.urva.myfinance.coinTrack.Service.UserService;
-import com.urva.myfinance.coinTrack.Model.User;
-import com.urva.myfinance.coinTrack.Model.UpstoxAccount;
+import com.urva.myfinance.coinTrack.Service.upstox.UpstoxServiceImpl;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

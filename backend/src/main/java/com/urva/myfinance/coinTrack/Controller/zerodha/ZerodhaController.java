@@ -1,4 +1,4 @@
-package com.urva.myfinance.coinTrack.Controller;
+package com.urva.myfinance.coinTrack.Controller.zerodha;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -16,7 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Model.ZerodhaAccount;
 import com.urva.myfinance.coinTrack.Service.UserService;
-import com.urva.myfinance.coinTrack.Service.ZerodhaServiceImpl;
+import com.urva.myfinance.coinTrack.Service.zerodha.ZerodhaServiceImpl;
 import com.zerodhatech.kiteconnect.KiteConnect;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
 

@@ -1,4 +1,4 @@
-package com.urva.myfinance.coinTrack.Controller;
+package com.urva.myfinance.coinTrack.Controller.angelone;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urva.myfinance.coinTrack.Service.AngelOneServiceImpl;
 import com.urva.myfinance.coinTrack.Service.JWTService;
+import com.urva.myfinance.coinTrack.Service.angelone.AngelOneServiceImpl;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

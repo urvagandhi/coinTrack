@@ -1,4 +1,4 @@
-package com.urva.myfinance.coinTrack.Service;
+package com.urva.myfinance.coinTrack.Service.angelone;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -19,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.urva.myfinance.coinTrack.Model.AngelOneAccount;
 import com.urva.myfinance.coinTrack.Repository.AngelOneAccountRepository;
+import com.urva.myfinance.coinTrack.Service.BrokerService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -201,7 +202,7 @@ public class AngelOneServiceImpl implements BrokerService {
 
             return response;
 
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             log.error("Error storing Angel One credentials for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to store Angel One credentials: " + e.getMessage(), e);
         }

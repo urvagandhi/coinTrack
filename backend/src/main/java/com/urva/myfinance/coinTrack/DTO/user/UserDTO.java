@@ -1,4 +1,4 @@
-package com.urva.myfinance.coinTrack.DTO;
+package com.urva.myfinance.coinTrack.DTO.user;
 
 import java.time.LocalDateTime;
 import java.util.List;
