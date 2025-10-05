@@ -151,6 +151,62 @@ public class AngelOneServiceImpl implements BrokerService {
         }
     }
 
+    /**
+     * Store AngelOne credentials without connecting.
+     * This method saves API credentials to database without making any API calls.
+     * 
+     * @param appUserId User ID
+     * @param credentials Map containing apiKey, clientId, pin, and optional totp
+     * @return Map with status and message
+     */
+    public Map<String, Object> storeCredentials(String appUserId, Map<String, Object> credentials) {
+        log.info("Storing Angel One credentials for user: {}", appUserId);
+
+        try {
+            String apiKey = (String) credentials.get("apiKey");
+            String clientId = (String) credentials.get("clientId");
+            String pin = (String) credentials.get("pin");
+            String totp = (String) credentials.get("totp");
+
+            if (!StringUtils.hasText(apiKey) || !StringUtils.hasText(clientId) || !StringUtils.hasText(pin)) {
+                throw new IllegalArgumentException(
+                        "Missing required Angel One credentials: apiKey, clientId, pin");
+            }
+
+            // Get or create account
+            AngelOneAccount account = angelOneAccountRepository.findByAppUserId(appUserId)
+                    .orElse(new AngelOneAccount());
+
+            // Set credentials (but don't connect)
+            account.setAppUserId(appUserId);
+            account.setAngelApiKey(apiKey);
+            account.setAngelClientId(clientId);
+            account.setAngelPin(pin);
+            if (StringUtils.hasText(totp)) {
+                account.setAngelTotp(totp);
+            }
+            account.setIsActive(false); // Not connected yet
+
+            // Save account
+            AngelOneAccount savedAccount = angelOneAccountRepository.save(account);
+
+            log.info("Successfully stored Angel One credentials for user: {} with clientId: {}", appUserId, clientId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "stored");
+            response.put("broker", getBrokerName());
+            response.put("clientId", clientId);
+            response.put("accountId", savedAccount.getId());
+            response.put("message", "Credentials stored successfully. Use /connect to authenticate.");
+
+            return response;
+
+        } catch (Exception e) {
+            log.error("Error storing Angel One credentials for user {}: {}", appUserId, e.getMessage(), e);
+            throw new RuntimeException("Failed to store Angel One credentials: " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public Map<String, Object> refreshToken(String appUserId) {
         log.info("Refreshing Angel One token for user: {}", appUserId);

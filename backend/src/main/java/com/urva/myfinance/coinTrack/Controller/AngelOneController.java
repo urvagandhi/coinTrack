@@ -88,7 +88,7 @@ public class AngelOneController {
                         .body(createErrorResponse("Invalid or missing authentication token"));
             }
 
-            // Use existing connect method from AngelOneServiceImpl
+            // Store credentials without connecting
             Map<String, Object> credentialsMap = new HashMap<>();
             credentialsMap.put("apiKey", credentials.getApiKey());
             credentialsMap.put("clientId", credentials.getClientId());
@@ -97,16 +97,13 @@ public class AngelOneController {
                 credentialsMap.put("totp", credentials.getTotp());
             }
 
-            Map<String, Object> result = angelOneService.connect(userId, credentialsMap);
-            if (result != null && "connected".equals(result.get("status"))) {
-                Map<String, String> response = new HashMap<>();
-                response.put("message", "AngelOne credentials stored and connected successfully");
-                response.put("broker", "angelone");
-                return ResponseEntity.ok(response);
+            Map<String, Object> result = angelOneService.storeCredentials(userId, credentialsMap);
+            if (result != null && "stored".equals(result.get("status"))) {
+                return ResponseEntity.ok(result);
             } else {
                 String errorMsg = result != null ? (String) result.get("message") : "Unknown error";
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(createErrorResponse("Failed to connect to AngelOne: " + errorMsg));
+                        .body(createErrorResponse("Failed to store credentials: " + errorMsg));
             }
         } catch (Exception e) {
             logger.error("Error storing AngelOne credentials: {}", e.getMessage());
