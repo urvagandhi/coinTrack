@@ -16,13 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.urva.myfinance.coinTrack.DTO.angelone.AngelOneCredentialsDTO;
 import com.urva.myfinance.coinTrack.Service.JWTService;
 import com.urva.myfinance.coinTrack.Service.angelone.AngelOneServiceImpl;
-import com.urva.myfinance.coinTrack.DTO.angelone.AngelOneCredentialsDTO;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 
 /**
  * Production-ready REST controller for AngelOne (Angel Broking SmartAPI) broker
@@ -150,7 +149,13 @@ public class AngelOneController {
 
             if (result != null && "stored".equals(result.get("status"))) {
                 logger.info("Successfully stored AngelOne credentials for user: {}", userId);
-                return ResponseEntity.ok(result);
+                // Normalize success response and use constant message
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "stored");
+                response.put("message", CREDENTIALS_STORED_SUCCESS);
+                response.put("broker", BROKER_NAME);
+                response.put("userId", result.get("userId"));
+                return ResponseEntity.ok(response);
             } else {
                 String errorMsg = result != null ? (String) result.get("message") : "Unknown error";
                 logger.error("Failed to store credentials for user {}: {}", userId, errorMsg);

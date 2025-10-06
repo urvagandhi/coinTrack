@@ -14,9 +14,11 @@ import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Service for generating Time-based One-Time Passwords (TOTP) from Base32-encoded secrets.
+ * Service for generating Time-based One-Time Passwords (TOTP) from
+ * Base32-encoded secrets.
  * 
- * Uses the com.eatthepath:java-otp library for RFC 6238 compliant TOTP generation.
+ * Uses the com.eatthepath:java-otp library for RFC 6238 compliant TOTP
+ * generation.
  * Default configuration:
  * - Time step: 30 seconds
  * - Password length: 6 digits
@@ -47,7 +49,8 @@ public class TotpService {
     /**
      * Generate a TOTP code from a Base32-encoded secret.
      * 
-     * @param base32Secret The Base32-encoded TOTP secret (e.g., from Google Authenticator)
+     * @param base32Secret The Base32-encoded TOTP secret (e.g., from Google
+     *                     Authenticator)
      * @return 6-digit TOTP code as a String (zero-padded if necessary)
      * @throws IllegalArgumentException if secret is invalid or null
      */
@@ -87,8 +90,10 @@ public class TotpService {
     }
 
     /**
-     * Validate if a provided TOTP code matches the expected code for the given secret.
-     * Checks current time window and adjacent windows (±1) for clock skew tolerance.
+     * Validate if a provided TOTP code matches the expected code for the given
+     * secret.
+     * Checks current time window and adjacent windows (±1) for clock skew
+     * tolerance.
      * 
      * @param base32Secret The Base32-encoded TOTP secret
      * @param providedCode The TOTP code to validate
@@ -102,7 +107,7 @@ public class TotpService {
         try {
             // Generate TOTP for current time
             String currentTotp = generateTotp(base32Secret);
-            
+
             // Direct match with current time window
             if (currentTotp.equals(providedCode.trim())) {
                 log.debug("TOTP validated successfully (current window)");
@@ -120,7 +125,7 @@ public class TotpService {
             Instant previousWindow = Instant.now().minusSeconds(30);
             int previousOtp = totpGenerator.generateOneTimePassword(key, previousWindow);
             String previousTotp = String.format("%0" + TOTP_PASSWORD_LENGTH + "d", previousOtp);
-            
+
             if (previousTotp.equals(providedCode.trim())) {
                 log.debug("TOTP validated successfully (previous window)");
                 return true;
@@ -130,7 +135,7 @@ public class TotpService {
             Instant nextWindow = Instant.now().plusSeconds(30);
             int nextOtp = totpGenerator.generateOneTimePassword(key, nextWindow);
             String nextTotp = String.format("%0" + TOTP_PASSWORD_LENGTH + "d", nextOtp);
-            
+
             if (nextTotp.equals(providedCode.trim())) {
                 log.debug("TOTP validated successfully (next window)");
                 return true;
@@ -139,7 +144,7 @@ public class TotpService {
             log.debug("TOTP validation failed - code does not match any valid window");
             return false;
 
-        } catch (Exception e) {
+        } catch (InvalidKeyException e) {
             log.error("Error validating TOTP: {}", e.getMessage());
             return false;
         }

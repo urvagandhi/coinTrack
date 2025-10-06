@@ -41,7 +41,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/health", "/api/health/**").permitAll()
 
                         // 🔓 Auth endpoints (public)
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify-token", "/api/auth/check-username/*").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify-token",
+                                "/api/auth/check-username/*")
+                        .permitAll()
 
                         // 🔓 Broker callbacks (public)
                         .requestMatchers("/api/zerodha/callback", "/api/upstox/callback", "/api/angelone/callback")
@@ -51,6 +53,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/brokers/zerodha/login-url").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/brokers/zerodha/connect").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/brokers/zerodha/connect").permitAll()
+
+                        // 🔓 AngelOne login + connect (both GET + POST)
+                        .requestMatchers(HttpMethod.GET, "/api/brokers/angelone/login-url").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/brokers/angelone/connect").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/brokers/angelone/connect").permitAll()
 
                         // Publicly allow root, static and favicon to avoid 403 on deployed root
                         .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**", "/public/**").permitAll()

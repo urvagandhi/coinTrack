@@ -44,13 +44,15 @@ public class CorsConfig implements WebMvcConfigurer {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow specific origins
-        configuration.setAllowedOrigins(Arrays.asList(
+        // Use allowedOriginPatterns instead of allowedOrigins to support wildcards with credentials
+        configuration.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
                 "https://localhost:3000",
                 // Render deployment host - add your deployed frontend URL here
-                "https://cointrack-15gt.onrender.com"));
+                "https://cointrack-15gt.onrender.com",
+                // Allow all origins for development/testing (like Postman)
+                "*"));
 
         // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));

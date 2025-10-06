@@ -2,10 +2,16 @@ package com.urva.myfinance.coinTrack.Util;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -77,7 +83,8 @@ public class EncryptionUtil {
             // Return Base64-encoded result
             return Base64.getEncoder().encodeToString(byteBuffer.array());
 
-        } catch (Exception e) {
+        } catch (InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException
+                | BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException e) {
             throw new RuntimeException("Encryption failed: " + e.getMessage(), e);
         }
     }
@@ -116,13 +123,15 @@ public class EncryptionUtil {
 
             return new String(plaintextBytes, StandardCharsets.UTF_8);
 
-        } catch (Exception e) {
+        } catch (InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException
+                | BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException e) {
             throw new RuntimeException("Decryption failed (data may be tampered): " + e.getMessage(), e);
         }
     }
 
     /**
-     * Check if a string appears to be encrypted (Base64 format with sufficient length).
+     * Check if a string appears to be encrypted (Base64 format with sufficient
+     * length).
      * 
      * @param data The data to check
      * @return true if data appears to be encrypted
