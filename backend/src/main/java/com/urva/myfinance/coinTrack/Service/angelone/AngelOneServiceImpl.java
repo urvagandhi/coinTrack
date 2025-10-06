@@ -20,6 +20,8 @@ import org.springframework.web.client.RestTemplate;
 import com.urva.myfinance.coinTrack.Model.AngelOneAccount;
 import com.urva.myfinance.coinTrack.Repository.AngelOneAccountRepository;
 import com.urva.myfinance.coinTrack.Service.BrokerService;
+import com.urva.myfinance.coinTrack.Service.TotpService;
+import com.urva.myfinance.coinTrack.Util.EncryptionUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,12 +36,14 @@ public class AngelOneServiceImpl implements BrokerService {
 
     private final AngelOneAccountRepository angelOneAccountRepository;
     private final RestTemplate restTemplate;
+    private final TotpService totpService;
+    private final EncryptionUtil encryptionUtil;
     private final Map<String, ReentrantLock> userLocks = new HashMap<>();
 
     @Value("${angelone.api.base-url:https://apiconnect.angelbroking.com}")
     private String angelOneApiBaseUrl;
 
-    @Value("${angelone.api.login-endpoint:/rest/auth/angelbroking/user/v1/loginByPIN}")
+    @Value("${angelone.api.login-endpoint:/rest/auth/angelbroking/user/v1/loginByPassword}")
     private String loginEndpoint;
 
     @Value("${angelone.api.refresh-endpoint:/rest/auth/angelbroking/jwt/v1/generateTokens}")
@@ -51,8 +55,13 @@ public class AngelOneServiceImpl implements BrokerService {
     @Value("${angelone.api.orders-endpoint:/rest/secure/angelbroking/order/v1/getOrderBook}")
     private String ordersEndpoint;
 
-    public AngelOneServiceImpl(AngelOneAccountRepository angelOneAccountRepository) {
+    public AngelOneServiceImpl(
+            AngelOneAccountRepository angelOneAccountRepository,
+            TotpService totpService,
+            EncryptionUtil encryptionUtil) {
         this.angelOneAccountRepository = angelOneAccountRepository;
+        this.totpService = totpService;
+        this.encryptionUtil = encryptionUtil;
         this.restTemplate = new RestTemplate();
     }
 
@@ -65,16 +74,51 @@ public class AngelOneServiceImpl implements BrokerService {
             String clientId = (String) credentials.get("clientId");
             String pin = (String) credentials.get("pin");
             String totp = (String) credentials.get("totp");
+            String totpSecret = (String) credentials.get("totpSecret");
 
             if (!StringUtils.hasText(apiKey) || !StringUtils.hasText(clientId) ||
-                    !StringUtils.hasText(pin) || !StringUtils.hasText(totp)) {
+                    !StringUtils.hasText(pin)) {
                 throw new IllegalArgumentException(
-                        "Missing required Angel One credentials: apiKey, clientId, pin, totp");
+                        "Missing required Angel One credentials: apiKey, clientId, pin");
             }
 
             // Get or create account
             AngelOneAccount account = angelOneAccountRepository.findByAppUserId(appUserId)
                     .orElse(new AngelOneAccount());
+
+            // Determine TOTP source and generate if needed
+            String finalTotp = totp;
+
+            if (!StringUtils.hasText(totp)) {
+                // No TOTP provided, try to generate from secret
+                String secretToUse = totpSecret;
+
+                // If no secret provided in request, try to use stored encrypted secret
+                if (!StringUtils.hasText(secretToUse) && StringUtils.hasText(account.getTotpSecret())) {
+                    try {
+                        secretToUse = encryptionUtil.decrypt(account.getTotpSecret());
+                        log.debug("Using stored TOTP secret for user: {}", appUserId);
+                    } catch (Exception e) {
+                        log.error("Failed to decrypt stored TOTP secret for user: {}", appUserId);
+                        throw new IllegalArgumentException(
+                                "Failed to decrypt stored TOTP secret. Please provide TOTP manually or update your TOTP secret.");
+                    }
+                }
+
+                if (StringUtils.hasText(secretToUse)) {
+                    try {
+                        finalTotp = totpService.generateTotp(secretToUse);
+                        log.debug("Generated TOTP dynamically for user: {}", appUserId);
+                    } catch (Exception e) {
+                        log.error("Failed to generate TOTP for user: {}", appUserId);
+                        throw new IllegalArgumentException(
+                                "Failed to generate TOTP code. Please check your TOTP secret or provide TOTP manually.");
+                    }
+                } else {
+                    throw new IllegalArgumentException(
+                            "TOTP is required. Provide either 'totp' code or 'totpSecret' for automatic generation.");
+                }
+            }
 
             // Set credentials
             account.setAppUserId(appUserId);
@@ -82,11 +126,23 @@ public class AngelOneServiceImpl implements BrokerService {
             account.setAngelClientId(clientId);
             account.setAngelPin(pin);
 
-            // Prepare login request for loginByPIN endpoint
+            // Store encrypted TOTP secret if provided (for future auto-generation)
+            if (StringUtils.hasText(totpSecret)) {
+                try {
+                    String encryptedSecret = encryptionUtil.encrypt(totpSecret);
+                    account.setTotpSecret(encryptedSecret);
+                    log.debug("TOTP secret encrypted and stored for user: {}", appUserId);
+                } catch (Exception e) {
+                    log.error("Failed to encrypt TOTP secret for user: {}", appUserId);
+                    throw new RuntimeException("Failed to encrypt TOTP secret", e);
+                }
+            }
+
+            // Prepare login request for loginByPassword endpoint
             Map<String, Object> loginRequest = new HashMap<>();
             loginRequest.put("clientcode", clientId);
             loginRequest.put("pin", pin);
-            loginRequest.put("totp", totp);
+            loginRequest.put("totp", finalTotp);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -155,9 +211,11 @@ public class AngelOneServiceImpl implements BrokerService {
     /**
      * Store AngelOne credentials without connecting.
      * This method saves API credentials to database without making any API calls.
+     * Supports storing TOTP secret for future automatic TOTP generation.
      * 
-     * @param appUserId User ID
-     * @param credentials Map containing apiKey, clientId, pin, and optional totp
+     * @param appUserId   User ID
+     * @param credentials Map containing apiKey, clientId, pin, and optional
+     *                    totpSecret
      * @return Map with status and message
      */
     public Map<String, Object> storeCredentials(String appUserId, Map<String, Object> credentials) {
@@ -167,7 +225,7 @@ public class AngelOneServiceImpl implements BrokerService {
             String apiKey = (String) credentials.get("apiKey");
             String clientId = (String) credentials.get("clientId");
             String pin = (String) credentials.get("pin");
-            String totp = (String) credentials.get("totp");
+            String totpSecret = (String) credentials.get("totpSecret");
 
             if (!StringUtils.hasText(apiKey) || !StringUtils.hasText(clientId) || !StringUtils.hasText(pin)) {
                 throw new IllegalArgumentException(
@@ -183,9 +241,19 @@ public class AngelOneServiceImpl implements BrokerService {
             account.setAngelApiKey(apiKey);
             account.setAngelClientId(clientId);
             account.setAngelPin(pin);
-            if (StringUtils.hasText(totp)) {
-                account.setAngelTotp(totp);
+
+            // Store encrypted TOTP secret if provided
+            if (StringUtils.hasText(totpSecret)) {
+                try {
+                    String encryptedSecret = encryptionUtil.encrypt(totpSecret);
+                    account.setTotpSecret(encryptedSecret);
+                    log.debug("TOTP secret encrypted and stored for user: {}", appUserId);
+                } catch (Exception e) {
+                    log.error("Failed to encrypt TOTP secret for user: {}", appUserId);
+                    throw new RuntimeException("Failed to encrypt TOTP secret", e);
+                }
             }
+
             account.setIsActive(false); // Not connected yet
 
             // Save account
@@ -858,5 +926,33 @@ public class AngelOneServiceImpl implements BrokerService {
         } catch (RuntimeException e) {
             throw new RuntimeException("Unexpected error fetching trades for user: " + appUserId, e);
         }
+    }
+
+    /**
+     * Connect to AngelOne WebSocket feed for real-time market data.
+     * Uses the feedToken obtained during login to establish WebSocket connection.
+     * 
+     * WebSocket endpoint: wss://smartapisocket.angelone.in/smart-stream
+     * 
+     * @param feedToken Feed token from login response
+     * @implNote This is a placeholder implementation. WebSocket connection will be
+     *           implemented using Spring WebSocket or a dedicated WebSocket client
+     *           library for real-time market data streaming.
+     */
+    public void connectWebSocket(String feedToken) {
+        log.info("WebSocket connection requested with feedToken: {}",
+                feedToken != null ? "***" + feedToken.substring(Math.max(0, feedToken.length() - 4)) : "null");
+
+        // TODO: Implement WebSocket connection
+        // 1. Establish connection to wss://smartapisocket.angelone.in/smart-stream
+        // 2. Authenticate using feedToken
+        // 3. Subscribe to required market data streams
+        // 4. Handle incoming real-time data
+        // 5. Implement reconnection logic for network failures
+        // 6. Manage subscription state and heart-beat messages
+
+        log.warn("WebSocket connection not yet implemented - placeholder method");
+        throw new UnsupportedOperationException("WebSocket functionality coming soon. " +
+                "This feature will enable real-time market data streaming from AngelOne SmartAPI.");
     }
 }

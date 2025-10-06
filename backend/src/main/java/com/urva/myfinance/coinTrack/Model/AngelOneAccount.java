@@ -1,5 +1,7 @@
 package com.urva.myfinance.coinTrack.Model;
 
+import java.time.Instant;
+
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.util.StringUtils;
 
@@ -27,8 +29,12 @@ public class AngelOneAccount extends BrokerAccount {
     private String angelPin; // Trading PIN
 
     @JsonIgnore
-    private String angelTotp; // TOTP for 2FA
+    private String angelTotp; // TOTP for 2FA (deprecated - use totpSecret instead)
 
+    @JsonIgnore
+    private String totpSecret; // Encrypted Base32-encoded TOTP secret for automatic TOTP generation
+
+    // Auth tokens
     @JsonIgnore
     private String jwtToken; // JWT authentication token
 
@@ -37,6 +43,13 @@ public class AngelOneAccount extends BrokerAccount {
 
     @JsonIgnore
     private String sessionToken; // Session token
+
+    // 🆕 Additions for WebSocket + tracking
+    @JsonIgnore
+    private String feedToken; // WebSocket live feed token
+
+    private String lastLoginStatus; // "SUCCESS" or error reason
+    private Instant lastConnectedAt; // time of last successful connect
 
     @Override
     public String getBrokerName() {
@@ -57,19 +70,21 @@ public class AngelOneAccount extends BrokerAccount {
                 !isTokenExpired();
     }
 
-    // Helper method to sync angelClientId with parent userId
     public void setAngelClientId(String angelClientId) {
         this.angelClientId = angelClientId;
         setUserId(angelClientId); // Keep parent userId in sync
     }
 
-    // Helper method to check if refresh token is available
     public boolean hasRefreshToken() {
         return StringUtils.hasText(refreshToken);
     }
 
-    // Helper method to check if session is active
     public boolean hasActiveSession() {
         return StringUtils.hasText(sessionToken) && hasValidToken();
+    }
+
+    // 🆕 Helper
+    public boolean hasFeedToken() {
+        return StringUtils.hasText(feedToken);
     }
 }

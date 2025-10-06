@@ -576,6 +576,13 @@ public class ZerodhaServiceImpl implements BrokerService {
         if (apiKey == null) {
             throw new RuntimeException("Zerodha API key not set for this user.");
         }
+
+        // Logging for debugging
+        System.out.println("[DEBUG] appUserId: " + appUserId);
+        System.out.println("[DEBUG] apiKey: " + apiKey);
+        System.out.println("[DEBUG] kiteUserId: " + account.getKiteUserId());
+        System.out.println("[DEBUG] kiteAccessToken: " + account.getKiteAccessToken());
+
         KiteConnect kite = new KiteConnect(apiKey);
         kite.setUserId(account.getKiteUserId());
         kite.setAccessToken(account.getKiteAccessToken());
