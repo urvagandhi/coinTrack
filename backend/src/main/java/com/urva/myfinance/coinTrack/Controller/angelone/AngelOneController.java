@@ -156,7 +156,8 @@ public class AngelOneController {
                 response.put("status", "stored");
                 response.put("message", CREDENTIALS_STORED_SUCCESS);
                 response.put("broker", BROKER_NAME);
-                response.put("userId", result.get("userId"));
+                response.put("userId", userId); // Use the extracted userId from token
+                response.put("accountId", result.get("accountId")); // Add accountId from service
                 return ResponseEntity.ok(response);
             } else {
                 String errorMsg = result != null ? (String) result.get("message") : "Unknown error";
@@ -225,7 +226,8 @@ public class AngelOneController {
                 response.put("status", "connected");
                 response.put("message", CONNECTION_SUCCESS);
                 response.put("broker", BROKER_NAME);
-                response.put("userId", result.get("userId"));
+                response.put("userId", userId); // Use our app userId from token
+                response.put("angelOneUserId", result.get("userId")); // AngelOne's userId
                 response.put("tokenExpiresAt", result.get("tokenExpiresAt"));
 
                 return ResponseEntity.ok(response);
