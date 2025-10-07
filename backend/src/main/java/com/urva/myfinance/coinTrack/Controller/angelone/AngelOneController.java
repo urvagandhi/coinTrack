@@ -559,14 +559,15 @@ public class AngelOneController {
 
         try {
             String userId = extractUserIdFromToken(request);
+            logger.debug("Extracted userId: {}", userId);
+
             if (userId == null) {
                 logger.warn("Unauthorized access attempt to /test-totp - missing or invalid token");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(createErrorResponse(AUTH_ERROR));
             }
 
-            // Call the service method to generate TOTP (assuming we add it to
-            // AngelOneServiceImpl)
+            // Call the service method to generate TOTP
             Map<String, Object> result = angelOneService.generateTestTotp(userId);
 
             logger.info("Successfully generated test TOTP for user: {}", userId);
