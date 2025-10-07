@@ -545,4 +545,37 @@ public class AngelOneController {
         error.put("broker", BROKER_NAME);
         return error;
     }
+
+    /**
+     * Test endpoint to manually generate TOTP for debugging.
+     * Fetches the stored TOTP secret from DB and generates the current TOTP code.
+     * 
+     * @param request HTTP request to extract user info
+     * @return TOTP code or error response
+     */
+    @GetMapping("/test-totp")
+    public ResponseEntity<?> testGenerateTotp(HttpServletRequest request) {
+        logger.info("GET /api/brokers/angelone/test-totp - Testing TOTP generation");
+
+        try {
+            String userId = extractUserIdFromToken(request);
+            if (userId == null) {
+                logger.warn("Unauthorized access attempt to /test-totp - missing or invalid token");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(createErrorResponse(AUTH_ERROR));
+            }
+
+            // Call the service method to generate TOTP (assuming we add it to
+            // AngelOneServiceImpl)
+            Map<String, Object> result = angelOneService.generateTestTotp(userId);
+
+            logger.info("Successfully generated test TOTP for user: {}", userId);
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            logger.error("Error generating test TOTP: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Failed to generate test TOTP: " + e.getMessage()));
+        }
+    }
 }

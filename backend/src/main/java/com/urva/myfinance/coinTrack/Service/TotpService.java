@@ -75,7 +75,12 @@ public class TotpService {
             int otp = totpGenerator.generateOneTimePassword(key, now);
 
             // Format as 6-digit string with leading zeros
-            return String.format("%0" + TOTP_PASSWORD_LENGTH + "d", otp);
+            String formattedOtp = String.format("%0" + TOTP_PASSWORD_LENGTH + "d", otp);
+
+            // Display generated TOTP to user
+            System.out.println("Generated TOTP: " + formattedOtp);
+
+            return formattedOtp;
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid Base32 secret format: {}", e.getMessage());

@@ -977,4 +977,44 @@ public class AngelOneServiceImpl implements BrokerService {
         throw new UnsupportedOperationException("WebSocket functionality coming soon. " +
                 "This feature will enable real-time market data streaming from AngelOne SmartAPI.");
     }
+
+    /**
+     * Test method to manually generate TOTP for debugging purposes.
+     * Fetches the stored TOTP secret from DB and generates the current TOTP code.
+     * 
+     * @param appUserId User ID
+     * @return Map containing the generated TOTP and status
+     */
+    public Map<String, Object> generateTestTotp(String appUserId) {
+        log.info("Generating test TOTP for user: {}", appUserId);
+
+        try {
+            // Get existing account
+            AngelOneAccount account = angelOneAccountRepository.findByAppUserId(appUserId)
+                    .orElseThrow(() -> new RuntimeException("Angel One account not found. Please store credentials first."));
+
+            // Check if TOTP secret exists
+            if (StringUtils.hasText(account.getTotpSecret())) {
+                // Decrypt the stored secret
+                String decryptedSecret = encryptionUtil.decrypt(account.getTotpSecret());
+                
+                // Generate TOTP
+                String otp = totpService.generateTotp(decryptedSecret);
+                
+                Map<String, Object> result = new HashMap<>();
+                result.put("status", "success");
+                result.put("totp", otp);
+                result.put("message", "TOTP generated successfully");
+                
+                log.info("Successfully generated test TOTP for user: {}", appUserId);
+                return result;
+            } else {
+                throw new RuntimeException("No TOTP secret stored for this account. Please store credentials with TOTP secret first.");
+            }
+
+        } catch (Exception e) {
+            log.error("Error generating test TOTP for user {}: {}", appUserId, e.getMessage(), e);
+            throw new RuntimeException("Failed to generate test TOTP: " + e.getMessage(), e);
+        }
+    }
 }
