@@ -189,9 +189,8 @@ public class AngelOneController {
             HttpServletRequest request,
             @RequestBody(required = false) AngelOneCredentialsDTO credentials) {
 
-        logger.info("POST /api/brokers/angelone/connect - Connecting account (TOTP: {}, Secret: {})",
-                credentials.getTotp() != null ? "provided" : "not provided",
-                credentials.getTotpSecret() != null ? "provided" : "not provided");
+        logger.info("POST /api/brokers/angelone/connect - Connecting account (body: {})",
+                credentials != null ? "provided" : "empty");
 
         try {
             String userId = extractUserIdFromToken(request);
