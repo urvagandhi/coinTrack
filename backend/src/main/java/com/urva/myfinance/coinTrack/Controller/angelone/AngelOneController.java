@@ -187,7 +187,7 @@ public class AngelOneController {
     @PostMapping("/connect")
     public ResponseEntity<?> connectAccount(
             HttpServletRequest request,
-            @Valid @RequestBody AngelOneCredentialsDTO credentials) {
+            @RequestBody(required = false) AngelOneCredentialsDTO credentials) {
 
         logger.info("POST /api/brokers/angelone/connect - Connecting account (TOTP: {}, Secret: {})",
                 credentials.getTotp() != null ? "provided" : "not provided",
@@ -203,18 +203,24 @@ public class AngelOneController {
 
             logger.debug("User {} attempting to connect AngelOne account", userId);
 
-            // Use existing connect method from AngelOneServiceImpl
+            // Prepare credentials map - use provided values or empty for database retrieval
             Map<String, Object> credentialsMap = new HashMap<>();
-            credentialsMap.put("apiKey", credentials.getApiKey());
-            credentialsMap.put("clientId", credentials.getClientId());
-            credentialsMap.put("pin", credentials.getPin());
-
-            // Add TOTP or TOTP secret (service layer will handle generation)
-            if (credentials.getTotp() != null && !credentials.getTotp().isBlank()) {
-                credentialsMap.put("totp", credentials.getTotp());
-            }
-            if (credentials.getTotpSecret() != null && !credentials.getTotpSecret().isBlank()) {
-                credentialsMap.put("totpSecret", credentials.getTotpSecret());
+            if (credentials != null) {
+                if (credentials.getApiKey() != null && !credentials.getApiKey().isBlank()) {
+                    credentialsMap.put("apiKey", credentials.getApiKey());
+                }
+                if (credentials.getClientId() != null && !credentials.getClientId().isBlank()) {
+                    credentialsMap.put("clientId", credentials.getClientId());
+                }
+                if (credentials.getPin() != null && !credentials.getPin().isBlank()) {
+                    credentialsMap.put("pin", credentials.getPin());
+                }
+                if (credentials.getTotp() != null && !credentials.getTotp().isBlank()) {
+                    credentialsMap.put("totp", credentials.getTotp());
+                }
+                if (credentials.getTotpSecret() != null && !credentials.getTotpSecret().isBlank()) {
+                    credentialsMap.put("totpSecret", credentials.getTotpSecret());
+                }
             }
 
             Map<String, Object> result = angelOneService.connect(userId, credentialsMap);
