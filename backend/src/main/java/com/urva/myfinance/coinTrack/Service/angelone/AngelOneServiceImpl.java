@@ -156,7 +156,7 @@ public class AngelOneServiceImpl implements BrokerService {
             // Prepare login request for loginByPassword endpoint
             Map<String, Object> loginRequest = new HashMap<>();
             loginRequest.put("clientcode", clientId);
-            loginRequest.put("pin", pin);
+            loginRequest.put("password", pin);
             loginRequest.put("totp", finalTotp);
 
             HttpHeaders headers = new HttpHeaders();
@@ -167,6 +167,10 @@ public class AngelOneServiceImpl implements BrokerService {
             headers.set("X-PrivateKey", apiKey);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(loginRequest, headers);
+
+            // Before the login request
+            log.info("Sending login request for user {}: clientcode={}, password=[REDACTED], totp=[REDACTED]", appUserId, clientId);
+            log.debug("Full login request body: {}", loginRequest);  // Only in debug mode for security
 
             // Make login API call
             String loginUrl = angelOneApiBaseUrl + loginEndpoint;
@@ -217,6 +221,9 @@ public class AngelOneServiceImpl implements BrokerService {
                         + (response != null ? response.getStatusCode() : "null response"));
             }
 
+        } catch (RestClientException e) {
+            log.error("RestClientException during login for user {}: {}", appUserId, e.getMessage(), e);
+            throw new RuntimeException("Failed to connect Angel One account: " + e.getMessage(), e);
         } catch (RuntimeException e) {
             log.error("Error connecting Angel One account for user {}: {}", appUserId, e.getMessage(), e);
             throw new RuntimeException("Failed to connect Angel One account: " + e.getMessage(), e);
