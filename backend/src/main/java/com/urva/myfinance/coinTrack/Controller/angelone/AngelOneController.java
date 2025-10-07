@@ -42,13 +42,13 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/api/brokers/angelone")
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {
-        RequestMethod.GET,
-        RequestMethod.POST,
-        RequestMethod.PUT,
-        RequestMethod.DELETE,
-        RequestMethod.OPTIONS
-})
+// @CrossOrigin(origins = "*", allowedHeaders = "*", methods = {
+//         RequestMethod.GET,
+//         RequestMethod.POST,
+//         RequestMethod.PUT,
+//         RequestMethod.DELETE,
+//         RequestMethod.OPTIONS
+// })
 @Validated
 public class AngelOneController {
 
