@@ -70,21 +70,36 @@ public class AngelOneServiceImpl implements BrokerService {
         log.info("Connecting Angel One account for user: {}", appUserId);
 
         try {
+            // Get existing account (must exist from credentials storage)
+            AngelOneAccount account = angelOneAccountRepository.findByAppUserId(appUserId)
+                    .orElseThrow(() -> new RuntimeException("Angel One account not found. Please store credentials first using /credentials endpoint."));
+
+            // Use provided credentials or fall back to stored ones
             String apiKey = (String) credentials.get("apiKey");
             String clientId = (String) credentials.get("clientId");
             String pin = (String) credentials.get("pin");
             String totp = (String) credentials.get("totp");
             String totpSecret = (String) credentials.get("totpSecret");
 
-            if (!StringUtils.hasText(apiKey) || !StringUtils.hasText(clientId) ||
-                    !StringUtils.hasText(pin)) {
-                throw new IllegalArgumentException(
-                        "Missing required Angel One credentials: apiKey, clientId, pin");
+            // If not provided, use stored credentials
+            if (!StringUtils.hasText(apiKey)) {
+                apiKey = account.getAngelApiKey();
+                if (!StringUtils.hasText(apiKey)) {
+                    throw new IllegalArgumentException("API key not found. Please provide apiKey or store credentials first.");
+                }
             }
-
-            // Get or create account
-            AngelOneAccount account = angelOneAccountRepository.findByAppUserId(appUserId)
-                    .orElse(new AngelOneAccount());
+            if (!StringUtils.hasText(clientId)) {
+                clientId = account.getAngelClientId();
+                if (!StringUtils.hasText(clientId)) {
+                    throw new IllegalArgumentException("Client ID not found. Please provide clientId or store credentials first.");
+                }
+            }
+            if (!StringUtils.hasText(pin)) {
+                pin = account.getAngelPin();
+                if (!StringUtils.hasText(pin)) {
+                    throw new IllegalArgumentException("PIN not found. Please provide pin or store credentials first.");
+                }
+            }
 
             // Determine TOTP source and generate if needed
             String finalTotp = totp;
