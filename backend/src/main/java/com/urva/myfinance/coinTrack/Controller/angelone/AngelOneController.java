@@ -8,16 +8,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.DTO.angelone.AngelOneCredentialsDTO;
+import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Service.JWTService;
+import com.urva.myfinance.coinTrack.Service.UserService;
 import com.urva.myfinance.coinTrack.Service.angelone.AngelOneServiceImpl;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,11 +43,11 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/brokers/angelone")
 // @CrossOrigin(origins = "*", allowedHeaders = "*", methods = {
-//         RequestMethod.GET,
-//         RequestMethod.POST,
-//         RequestMethod.PUT,
-//         RequestMethod.DELETE,
-//         RequestMethod.OPTIONS
+// RequestMethod.GET,
+// RequestMethod.POST,
+// RequestMethod.PUT,
+// RequestMethod.DELETE,
+// RequestMethod.OPTIONS
 // })
 @Validated
 public class AngelOneController {
@@ -66,10 +66,12 @@ public class AngelOneController {
 
     private final AngelOneServiceImpl angelOneService;
     private final JWTService jwtService;
+    private final UserService userService;
 
-    public AngelOneController(AngelOneServiceImpl angelOneService, JWTService jwtService) {
+    public AngelOneController(AngelOneServiceImpl angelOneService, JWTService jwtService, UserService userService) {
         this.angelOneService = angelOneService;
         this.jwtService = jwtService;
+        this.userService = userService;
     }
 
     /**
@@ -481,10 +483,10 @@ public class AngelOneController {
     }
 
     /**
-     * Extract user ID from JWT token in request.
+     * Extract user ID (MongoDB ObjectId) from JWT token in request.
      * 
      * @param request HTTP request
-     * @return user ID or null if invalid
+     * @return user ObjectId or null if invalid
      */
     private String extractUserIdFromToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
@@ -502,12 +504,22 @@ public class AngelOneController {
         }
 
         try {
-            String userId = jwtService.extractUsername(token);
-            if (userId == null || userId.isEmpty()) {
+            // Extract username from JWT token
+            String username = jwtService.extractUsername(token);
+            if (username == null || username.isEmpty()) {
                 logger.warn("JWT token contains null or empty username");
                 return null;
             }
-            return userId;
+
+            // Get user by username to retrieve ObjectId
+            User user = userService.getUserByToken(token);
+            if (user == null) {
+                logger.warn("User not found for username: {}", username);
+                return null;
+            }
+
+            // Return the MongoDB ObjectId
+            return user.getId();
         } catch (Exception ex) {
             logger.error("Failed to extract user ID from JWT: {}", ex.getMessage());
             return null;
