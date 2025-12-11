@@ -2,14 +2,50 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Check, Globe, Shield, TrendingUp, X, Zap } from 'lucide-react';
+import { ArrowRight, Check, Globe, Moon, Shield, Sun, TrendingUp, X, Zap } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
   const [activeModal, setActiveModal] = useState(null);
+  const [isDark, setIsDark] = useState(false);
+
+  // Initialize theme
+  useEffect(() => {
+    // Helper to get cookie
+    const getCookie = (name) => {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : null;
+    };
+
+    const themeCookie = getCookie('theme');
+
+    // Check cookie first, then system preference
+    if (themeCookie === 'dark' || (!themeCookie && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+      setIsDark(true);
+    } else {
+      document.documentElement.classList.remove('dark');
+      setIsDark(false);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = isDark ? 'light' : 'dark';
+
+    if (newTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      setIsDark(true);
+    }
+
+    // Set cookie for 1 year
+    document.cookie = `theme=${newTheme}; path=/; max-age=31536000`;
+  };
 
   const legalContent = {
     privacy: {
@@ -155,7 +191,14 @@ export default function HomePage() {
             ))}
           </nav>
 
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-full bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
             {loading ? (
               <div className="w-24 h-10 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
             ) : user ? (
@@ -170,13 +213,13 @@ export default function HomePage() {
               <>
                 <Link
                   href="/login"
-                  className="hidden sm:flex px-6 py-2.5 rounded-full text-gray-600 dark:text-gray-300 font-medium hover:text-purple-600 dark:hover:text-white hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
+                  className="px-6 py-2.5 rounded-full text-gray-600 dark:text-gray-300 font-medium hover:text-purple-600 dark:hover:text-white hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
                 >
                   Log in
                 </Link>
                 <Link
                   href="/register"
-                  className="px-6 py-2.5 rounded-full bg-purple-600 text-white font-medium hover:bg-purple-700 transition-all shadow-lg hover:shadow-purple-600/25 active:scale-95"
+                  className="hidden sm:flex px-6 py-2.5 rounded-full bg-purple-600 text-white font-medium hover:bg-purple-700 transition-all shadow-lg hover:shadow-purple-600/25 active:scale-95"
                 >
                   Sign up
                 </Link>

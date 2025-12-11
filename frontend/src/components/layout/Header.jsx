@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function Header({ onMenuClick, isMobile }) {
     const [isDarkMode, setIsDarkMode] = useState(false);
@@ -15,16 +15,37 @@ export default function Header({ onMenuClick, isMobile }) {
 
     // Initialize theme
     useEffect(() => {
-        const theme = localStorage.getItem('theme') || 'light';
-        setIsDarkMode(theme === 'dark');
-        document.documentElement.classList.toggle('dark', theme === 'dark');
+        // Helper to get cookie
+        const getCookie = (name) => {
+            const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+            return match ? match[2] : null;
+        };
+
+        const themeCookie = getCookie('theme');
+
+        // Check cookie first, then system preference
+        if (themeCookie === 'dark' || (!themeCookie && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            setIsDarkMode(true);
+        } else {
+            document.documentElement.classList.remove('dark');
+            setIsDarkMode(false);
+        }
     }, []);
 
     const toggleTheme = () => {
         const newTheme = isDarkMode ? 'light' : 'dark';
-        setIsDarkMode(!isDarkMode);
-        localStorage.setItem('theme', newTheme);
-        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+
+        if (newTheme === 'light') {
+            document.documentElement.classList.remove('dark');
+            setIsDarkMode(false);
+        } else {
+            document.documentElement.classList.add('dark');
+            setIsDarkMode(true);
+        }
+
+        // Set cookie for 1 year
+        document.cookie = `theme=${newTheme}; path=/; max-age=31536000`;
     };
 
     const handleLogout = async () => {

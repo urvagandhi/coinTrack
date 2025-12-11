@@ -117,6 +117,7 @@ export const endpoints = {
     // User management endpoints - mapped from UserController
     users: {
         list: '/api/users',                 // UserController @GetMapping("/users")
+        me: '/api/users/me',                // UserController @GetMapping("/users/me")
         getById: (id) => `/api/users/${id}`, // UserController @GetMapping("/users/{id}")
         update: (id) => `/api/users/${id}`,  // UserController @PutMapping("/users/{id}")
         delete: (id) => `/api/users/${id}`,  // UserController @DeleteMapping("/users/{id}")
@@ -170,7 +171,7 @@ export const endpoints = {
     // Adding as placeholders with graceful degradation
     market: {
         snapshot: '/api/market/snapshot',     // Not found in backend - will gracefully degrade
-        history: '/api/market/history',       // Not found in backend - will gracefully degrade  
+        history: '/api/market/history',       // Not found in backend - will gracefully degrade
         search: '/api/market/search',         // Not found in backend - will gracefully degrade
         quote: (symbol) => `/api/market/quote/${symbol}`, // Not found in backend - will gracefully degrade
     },
