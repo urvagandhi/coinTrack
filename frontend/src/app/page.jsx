@@ -1,19 +1,66 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { motion } from 'framer-motion';
-import { ArrowRight, Check, Globe, Shield, TrendingUp, Zap } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, Check, Globe, Shield, TrendingUp, X, Zap } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState } from 'react';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
+  const [activeModal, setActiveModal] = useState(null);
+
+  const legalContent = {
+    privacy: {
+      title: "Privacy Policy",
+      content: (
+        <div className="space-y-4">
+          <p>At coinTrack, we prioritize the protection of your personal information. This Privacy Policy outlines how we collect, use, and safeguard your data.</p>
+          <h4 className="font-bold text-lg">1. Data Collection</h4>
+          <p>We collect information you provide directly to us, such as when you create an account, update your profile, or contact customer support.</p>
+          <h4 className="font-bold text-lg">2. Data Usage</h4>
+          <p>We use your information to provide, maintain, and improve our services, including processing transactions and sending related information.</p>
+          <h4 className="font-bold text-lg">3. Data Security</h4>
+          <p>We implement industry-standard security measures to protect your personal data from unauthorized access, modification, or disclosure.</p>
+        </div>
+      )
+    },
+    terms: {
+      title: "Terms of Service",
+      content: (
+        <div className="space-y-4">
+          <p>By accessing or using coinTrack, you agree to be bound by these Terms of Service.</p>
+          <h4 className="font-bold text-lg">1. Acceptance of Terms</h4>
+          <p>Please read these terms carefully before accessing or using our services. If you do not agree to all the terms and conditions, then you may not access the website.</p>
+          <h4 className="font-bold text-lg">2. User Account</h4>
+          <p>You are responsible for safeguarding the password that you use to access the service and for any activities or actions under your password.</p>
+          <h4 className="font-bold text-lg">3. Limitations</h4>
+          <p>In no event shall coinTrack be liable for any damages arising out of the use or inability to use the materials on coinTrack's website.</p>
+        </div>
+      )
+    },
+    cookies: {
+      title: "Cookie Policy",
+      content: (
+        <div className="space-y-4">
+          <p>We use cookies to enhance your experience on our website. This Cookie Policy explains what cookies are and how we use them.</p>
+          <h4 className="font-bold text-lg">1. What are Cookies?</h4>
+          <p>Cookies are small text files that are stored on your device when you visit a website. They help the website remember your actions and preferences.</p>
+          <h4 className="font-bold text-lg">2. How We Use Cookies</h4>
+          <p>We use cookies to analyze site traffic, personalize content, and provide social media features. We also share information about your use of our site with our analytics partners.</p>
+          <h4 className="font-bold text-lg">3. Managing Cookies</h4>
+          <p>You can control and/or delete cookies as you wish. You can delete all cookies that are already on your computer and you can set most browsers to prevent them from being placed.</p>
+        </div>
+      )
+    }
+  };
 
   const features = [
     {
       icon: <TrendingUp className="w-6 h-6 text-purple-600" />,
       title: "Real-time Tracking",
-      description: "Monitor your crypto portfolio performance in real-time with live market data updates."
+      description: "Monitor your portfolio performance in real-time with live market data updates."
     },
     {
       icon: <Shield className="w-6 h-6 text-purple-600" />,
@@ -156,7 +203,7 @@ export default function HomePage() {
               >
                 Track your <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500">
-                  crypto wealth
+                  Portfolio  wealth
                 </span>
               </motion.h1>
               <motion.p
@@ -165,7 +212,7 @@ export default function HomePage() {
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="text-xl text-gray-600 dark:text-gray-400 max-w-lg mx-auto lg:mx-0 leading-relaxed"
               >
-                The most advanced crypto portfolio tracker. Real-time updates, deep analytics, and secure data encryption.
+                The most advanced portfolio tracker. Real-time updates, deep analytics, and secure data encryption.
               </motion.p>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -270,7 +317,7 @@ export default function HomePage() {
             <motion.div variants={fadeInUp} className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">Why coinTrack?</h2>
               <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Everything you need to manage your crypto investments in one place.
+                Everything you need to manage your investments in one place.
               </p>
             </motion.div>
             <div className="grid md:grid-cols-3 gap-8">
@@ -380,10 +427,10 @@ export default function HomePage() {
 
       {/* Footer */}
       {/* Footer */}
-      <footer className="bg-gray-50 dark:bg-black py-20 border-t border-gray-100 dark:border-gray-800">
+      <footer className="bg-gray-50 dark:bg-black py-12 border-t border-gray-100 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="grid md:grid-cols-12 gap-12 mb-16">
-            <div className="md:col-span-5 space-y-6">
+          <div className="grid md:grid-cols-12 gap-8 mb-8">
+            <div className="md:col-span-5 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 relative">
                   <Image
@@ -432,14 +479,14 @@ export default function HomePage() {
             <div className="md:col-span-2">
               <h4 className="font-bold text-gray-900 dark:text-white mb-6">Legal</h4>
               <ul className="space-y-4 text-sm text-gray-500 dark:text-gray-400">
-                <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Cookie Policy</a></li>
+                <li><button onClick={() => setActiveModal('privacy')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Privacy Policy</button></li>
+                <li><button onClick={() => setActiveModal('terms')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Terms of Service</button></li>
+                <li><button onClick={() => setActiveModal('cookies')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Cookie Policy</button></li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
+          <div className="pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-400">
             <p>&copy; {new Date().getFullYear()} coinTrack Inc. All rights reserved.</p>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -448,6 +495,60 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Legal Modal */}
+      <AnimatePresence>
+        {activeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+          >
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setActiveModal(null)}
+            />
+
+            {/* Modal Content */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-2xl bg-white/80 dark:bg-gray-900/90 backdrop-blur-2xl border border-white/20 dark:border-gray-700 rounded-3xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {legalContent[activeModal].title}
+                </h3>
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-8 overflow-y-auto text-gray-600 dark:text-gray-300 leading-relaxed">
+                {legalContent[activeModal].content}
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-black/20 text-center">
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="px-8 py-3 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors shadow-lg hover:shadow-purple-500/25"
+                >
+                  Understood
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
