@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLiveMarket } from '@/hooks/useLiveMarket';
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+
 import { api } from '@/lib/api';
-import StatsCard from '@/components/StatsCard';
-import PortfolioChart from '@/components/PortfolioChart';
 import Link from 'next/link';
 
 export default function Dashboard() {
     const { user } = useAuth();
-    const { marketData, isConnected } = useLiveMarket();
+    // const { marketData, isConnected } = useLiveMarket();
+    const marketData = null; // Placeholder to avoid breaking JSX
+    const isConnected = false;
     const [portfolioData, setPortfolioData] = useState(null);
     const [recentTransactions, setRecentTransactions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLiveMarket } from '@/hooks/useLiveMarket';
 
 export default function Header({ onMenuClick, isMobile }) {
     const [isDarkMode, setIsDarkMode] = useState(false);
