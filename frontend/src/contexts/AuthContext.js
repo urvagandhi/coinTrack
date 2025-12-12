@@ -17,7 +17,7 @@ const AUTH_ACTIONS = {
 };
 
 // DEV BYPASS CONFIGURATION
-const DEV_BYPASS = true; // Set to true to skip login
+const DEV_BYPASS = false; // Set to true to skip login
 const MOCK_USER = {
     id: 'dev-user-id',
     name: 'Dev User',

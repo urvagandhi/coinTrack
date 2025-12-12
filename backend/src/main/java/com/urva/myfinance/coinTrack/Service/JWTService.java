@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -24,16 +25,10 @@ import io.jsonwebtoken.security.WeakKeyException;
 
 @Service
 public class JWTService {
-    // Use a fixed key for persistence (In prod, use @Value from properties)
-    private static final String SECRET_STRING = "9a4f2c8d3b7a1e6f4c8d3b7a1e6f9a4f2c8d3b7a1e6f4c8d3b7a1e6f";
-    private String secretKey = SECRET_STRING;
+    private String secretKey;
 
-    public JWTService() {
-        // No-op or load from properties
-        // Ideally: this.secretKey =
-        // Base64.getEncoder().encodeToString(SECRET_STRING.getBytes());
-        // For simplicity in this prompt context:
-        this.secretKey = Base64.getEncoder().encodeToString(SECRET_STRING.getBytes());
+    public JWTService(@Value("${jwt.secret}") String secret) {
+        this.secretKey = Base64.getEncoder().encodeToString(secret.getBytes());
     }
 
     public String generateToken(Authentication authentication) {
