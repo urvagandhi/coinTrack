@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FnoDetailsDTO {
     private String symbol;
-    private String expiryDate; // ISO yyyy-MM-dd
+    private java.time.LocalDate expiryDate; // ISO yyyy-MM-dd
     private BigDecimal strikePrice; // nullable for futures
     private OptionType optionType; // nullable for futures (CALL/PUT)
     private FnoInstrumentType instrumentType; // FUTURE/OPTION

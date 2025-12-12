@@ -1,14 +1,12 @@
 package com.urva.myfinance.coinTrack.Service;
 
 import java.security.Key;
-import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
 import org.springframework.security.core.Authentication;
@@ -26,16 +24,16 @@ import io.jsonwebtoken.security.WeakKeyException;
 
 @Service
 public class JWTService {
-    private String secretKey = "";
+    // Use a fixed key for persistence (In prod, use @Value from properties)
+    private static final String SECRET_STRING = "9a4f2c8d3b7a1e6f4c8d3b7a1e6f9a4f2c8d3b7a1e6f4c8d3b7a1e6f";
+    private String secretKey = SECRET_STRING;
 
     public JWTService() {
-        try {
-            KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
-            SecretKey sk = keyGenerator.generateKey();
-            this.secretKey = Base64.getEncoder().encodeToString(sk.getEncoded());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to generate secret key for JWT", e);
-        }
+        // No-op or load from properties
+        // Ideally: this.secretKey =
+        // Base64.getEncoder().encodeToString(SECRET_STRING.getBytes());
+        // For simplicity in this prompt context:
+        this.secretKey = Base64.getEncoder().encodeToString(SECRET_STRING.getBytes());
     }
 
     public String generateToken(Authentication authentication) {

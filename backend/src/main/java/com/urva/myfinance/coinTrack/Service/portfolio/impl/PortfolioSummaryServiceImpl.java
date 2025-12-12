@@ -3,7 +3,6 @@ package com.urva.myfinance.coinTrack.Service.portfolio.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +35,6 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
     private final MarketDataService marketDataService;
 
     // Defined for future timezone usage if needed explicitly
-    private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
 
     @Autowired
     public PortfolioSummaryServiceImpl(CachedHoldingRepository holdingRepository,

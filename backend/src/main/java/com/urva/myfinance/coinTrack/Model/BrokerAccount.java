@@ -46,6 +46,8 @@ public class BrokerAccount {
 
     private LocalDateTime lastSuccessfulSync;
 
+    private LocalDateTime lastUsed;
+
     @Builder.Default
     private Boolean isActive = true;
 

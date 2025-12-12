@@ -82,34 +82,38 @@ public class NetPositionServiceImpl implements NetPositionService {
 
         // 4. Process Positions
         for (CachedPosition p : positions) {
-            // Skip F&O for now
-            if (p.getPositionType() == PositionType.FNO) {
-                continue;
-            }
-
-            // Map Enum Logic
-            boolean isIntraday = (p.getPositionType() == PositionType.INTRADAY);
-
-            // Treat DELIVERY and any potential LONG as delivery/holding-like
-            // Assuming PositionType only has INTRADAY, FNO, DELIVERY based on previous
-            // check,
-            // but being safe.
+            // Processing ALL positions including FNO
+            boolean isFno = (p.getPositionType() == PositionType.FNO);
             boolean isDelivery = (p.getPositionType() == PositionType.DELIVERY);
 
             Aggregator agg = aggregatorMap.computeIfAbsent(p.getSymbol(), Aggregator::new);
 
-            int qty = p.getQuantity().intValue();
+            if (isFno) {
+                agg.isDerivative = true;
+                // For FNO, we track separatel
+                int qty = p.getQuantity().intValue();
+                agg.brokerQtyMap.merge(p.getBroker(), qty, Integer::sum);
+                agg.totalQty += qty;
+                agg.totalFnoQty += qty;
 
-            // Add Broker Quantity
-            agg.brokerQtyMap.merge(p.getBroker(), qty, Integer::sum);
+                // Invested for FNO = BuyPrice * Qty
+                BigDecimal invested = p.getBuyPrice().multiply(p.getQuantity());
+                agg.totalFnoInvested = agg.totalFnoInvested.add(invested);
 
-            // Add to Total Quantity (Intraday adds to net exposure)
-            agg.totalQty += qty;
+                // Do NOT mix FNO into Delivery Avg Price
+            } else {
+                int qty = p.getQuantity().intValue();
+                agg.brokerQtyMap.merge(p.getBroker(), qty, Integer::sum);
+                agg.totalQty += qty;
 
-            // Add to Averages -> ONLY if Delivery (Not Intraday)
-            if (isDelivery) {
-                agg.totalInvestedForAvg = agg.totalInvestedForAvg.add(p.getQuantity().multiply(p.getBuyPrice()));
-                agg.totalDeliveryQtyForAvg += qty;
+                if (isDelivery) { // Delivery Position counts towards average
+                    agg.totalInvestedForAvg = agg.totalInvestedForAvg.add(p.getQuantity().multiply(p.getBuyPrice()));
+                    agg.totalDeliveryQtyForAvg += qty;
+                }
+                // Intraday just adds to Qty (Exposure), but usually doesn't affect "Invested"
+                // in same way?
+                // For simple Net Position, Intraday PL is Realized + Unrealized.
+                // Here we just calc Unrealized based on Avg Price.
             }
         }
 
@@ -130,49 +134,53 @@ public class NetPositionServiceImpl implements NetPositionService {
                     ? marketPrice.getPreviousClose()
                     : BigDecimal.ZERO;
 
-            // Calculate Weighted Average Buy Price
-            BigDecimal avgBuyPrice = BigDecimal.ZERO;
-            if (agg.totalDeliveryQtyForAvg != 0) {
-                avgBuyPrice = agg.totalInvestedForAvg.divide(
-                        BigDecimal.valueOf(agg.totalDeliveryQtyForAvg), 4, RoundingMode.HALF_UP);
-            }
-
             // F&O Logic
             BigDecimal mtmPL = null;
             BigDecimal fnoDayGain = null;
             BigDecimal fnoDayGainPercent = null;
+            BigDecimal avgBuyPrice = BigDecimal.ZERO;
+            BigDecimal investedValue = BigDecimal.ZERO;
 
-            // Calculate MTM for Derivatives
-            if (agg.isDerivative && agg.totalFnoQty != 0) {
-                // Avg Buy Price for FNO
-                BigDecimal fnoAvgBuy = (agg.totalFnoQty != 0)
-                        ? agg.totalFnoInvested.divide(BigDecimal.valueOf(agg.totalFnoQty), 4, RoundingMode.HALF_UP)
-                        : BigDecimal.ZERO;
-                BigDecimal totalQtyBD = BigDecimal.valueOf(agg.totalQty);
+            if (agg.isDerivative) {
+                // Parse Details for Multiplier (if needed for Display, but calculation uses
+                // Units)
+                // BigDecimal multiplier = (fnoDetails != null &&
+                // fnoDetails.getContractMultiplier() != null)
+                // ? fnoDetails.getContractMultiplier() : BigDecimal.ONE;
 
-                // MTM = (CMP - AvgBuy) * Qty
-                mtmPL = (cmp.subtract(fnoAvgBuy)).multiply(totalQtyBD).setScale(2, RoundingMode.HALF_UP);
+                // FNO Specifics
+                if (agg.totalFnoQty != 0) {
+                    // Avg Buy
+                    avgBuyPrice = agg.totalFnoInvested.divide(BigDecimal.valueOf(agg.totalFnoQty), 2,
+                            RoundingMode.HALF_UP);
 
-                // Day Gain for FNO
-                if (prevClose.compareTo(BigDecimal.ZERO) != 0 && cmp.compareTo(BigDecimal.ZERO) != 0) {
-                    fnoDayGain = (cmp.subtract(prevClose)).multiply(totalQtyBD).setScale(2, RoundingMode.HALF_UP);
-                    fnoDayGainPercent = (cmp.subtract(prevClose))
-                            .divide(prevClose, 4, RoundingMode.HALF_UP)
-                            .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
+                    // MTM = (CMP - AvgBuy) * Qty
+                    BigDecimal totalQtyBD = BigDecimal.valueOf(agg.totalQty);
+                    mtmPL = (cmp.subtract(avgBuyPrice)).multiply(totalQtyBD).setScale(2, RoundingMode.HALF_UP);
+
+                    // Day Gain
+                    if (prevClose.compareTo(BigDecimal.ZERO) != 0 && cmp.compareTo(BigDecimal.ZERO) != 0) {
+                        fnoDayGain = (cmp.subtract(prevClose)).multiply(totalQtyBD).setScale(2, RoundingMode.HALF_UP);
+                        fnoDayGainPercent = (cmp.subtract(prevClose))
+                                .divide(prevClose, 4, RoundingMode.HALF_UP)
+                                .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
+                    }
+
+                    investedValue = agg.totalFnoInvested;
                 }
+            } else {
+                // Equity Logic
+                if (agg.totalDeliveryQtyForAvg != 0) {
+                    avgBuyPrice = agg.totalInvestedForAvg.divide(
+                            BigDecimal.valueOf(agg.totalDeliveryQtyForAvg), 2, RoundingMode.HALF_UP);
+                }
+                BigDecimal totalQtyBD = BigDecimal.valueOf(agg.totalQty);
+                investedValue = totalQtyBD.multiply(avgBuyPrice);
             }
 
             // Financials
             BigDecimal totalQtyBD = BigDecimal.valueOf(agg.totalQty);
             BigDecimal currentValue = totalQtyBD.multiply(cmp);
-
-            // Invested Value: For Equity = Qty * AvgBuy. For FNO = Margin/Cost.
-            BigDecimal investedValue;
-            if (agg.isDerivative) {
-                investedValue = agg.totalFnoInvested;
-            } else {
-                investedValue = totalQtyBD.multiply(avgBuyPrice);
-            }
 
             BigDecimal unrealizedPL = currentValue.subtract(investedValue);
 
