@@ -135,21 +135,6 @@ const nextConfig = {
         destination: "/",
         permanent: true,
       },
-      {
-        source: "/login",
-        destination: "/access/login",
-        permanent: true,
-      },
-      {
-        source: "/register",
-        destination: "/access/register",
-        permanent: true,
-      },
-      {
-        source: "/forgot-password",
-        destination: "/access/forgot-password",
-        permanent: true,
-      },
     ];
   },
 
@@ -164,6 +149,20 @@ const nextConfig = {
    */
   async rewrites() {
     return [
+      // Auth Rewrites (Keep URL as /login but serve /access/login)
+      {
+        source: "/login",
+        destination: "/access/login",
+      },
+      {
+        source: "/register",
+        destination: "/access/register",
+      },
+      {
+        source: "/forgot-password",
+        destination: "/access/forgot-password",
+      },
+      // API Proxy
       {
         source: "/api/:path*",
         destination: `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080"

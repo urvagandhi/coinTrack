@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { authAPI, userAPI, tokenManager } from '../lib/api';
+import { createContext, useContext, useEffect, useReducer } from 'react';
+import { authAPI, tokenManager, userAPI } from '../lib/api';
 
 // Auth context
 const AuthContext = createContext(null);
@@ -112,12 +112,23 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const login = async (credentials) => {
+    const login = async (credentials, remember = false) => {
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
         dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
         try {
-            const response = await authAPI.login(credentials);
+            const response = await authAPI.login(credentials, remember);
+
+            // If OTP required, return immediately without setting user
+            if (response.requiresOtp) {
+                dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+                return {
+                    success: true,
+                    requiresOtp: true,
+                    username: response.username,
+                    message: response.message
+                };
+            }
 
             // Handle both possible response formats from backend
             const user = response.user || response.userDetails || response;
@@ -138,6 +149,33 @@ export function AuthProvider({ children }) {
                 success: false,
                 error: errorMessage,
                 details: error.response?.data
+            };
+        }
+    };
+
+    const verifyOtp = async (username, otp) => {
+        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+        dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+
+        try {
+            const response = await authAPI.verifyOtp(username, otp);
+
+            const user = response; // Response from verifyOtp is the user object/DTO with token
+
+            if (user) {
+                dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
+                return { success: true, user };
+            }
+
+            throw new Error('Verification failed');
+
+        } catch (error) {
+            const errorMessage = error.userMessage || error.message || 'OTP Verification failed';
+            dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+
+            return {
+                success: false,
+                error: errorMessage
             };
         }
     };
@@ -280,6 +318,7 @@ export function AuthProvider({ children }) {
 
         // Actions
         login,
+        verifyOtp,
         logout,
         register,
         updateProfile,
@@ -360,11 +399,11 @@ const refreshToken = async () => {
     const response = await api.post('/auth/refresh', {}, {
       withCredentials: true, // Send httpOnly cookies
     });
-    
+
     const newToken = response.data.accessToken;
     // Store in memory only
     setTokenInMemory(newToken);
-    
+
     return newToken;
   } catch (error) {
     logout();
@@ -378,7 +417,7 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401 && !error.config._retry) {
       error.config._retry = true;
-      
+
       try {
         const newToken = await refreshToken();
         error.config.headers.Authorization = `Bearer ${newToken}`;
@@ -387,7 +426,7 @@ api.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

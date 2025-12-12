@@ -65,6 +65,16 @@ public class LoginResponse {
     private Boolean isActive;
 
     /**
+     * Indicates if OTP verification is required to complete login.
+     */
+    private Boolean requiresOtp;
+
+    /**
+     * Additional message for the client (e.g., OTP sent notification).
+     */
+    private String message;
+
+    /**
      * Default constructor for JSON deserialization.
      */
     public LoginResponse() {
@@ -165,6 +175,22 @@ public class LoginResponse {
         this.isActive = isActive;
     }
 
+    public Boolean getRequiresOtp() {
+        return requiresOtp;
+    }
+
+    public void setRequiresOtp(Boolean requiresOtp) {
+        this.requiresOtp = requiresOtp;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
     @Override
     public String toString() {
         return "LoginResponse{" +
@@ -178,6 +204,8 @@ public class LoginResponse {
                 ", roles=" + roles +
                 ", tokenExpiry=" + tokenExpiry +
                 ", isActive=" + isActive +
+                ", requiresOtp=" + requiresOtp +
+                ", message='" + message + '\'' +
                 '}';
     }
 }

@@ -1,0 +1,14 @@
+export const authAPI = {
+    // ... existing ...
+    verifyOtp: async (username, otp) => {
+        const response = await api.post(endpoints.auth.verifyOtp, { username, otp });
+        const token = response.data.token || response.data.accessToken;
+        if (token) {
+            tokenManager.setToken(token);
+        }
+        return response.data;
+    }
+};
+
+// In endpoints.auth add:
+// verifyOtp: '/api/auth/verify-otp'

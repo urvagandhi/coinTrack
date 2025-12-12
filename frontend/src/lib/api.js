@@ -16,17 +16,22 @@ const api = axios.create({
 export const tokenManager = {
     getToken: () => {
         if (typeof window === 'undefined') return null;
-        return localStorage.getItem('ct_jwt');
+        return localStorage.getItem('ct_jwt') || sessionStorage.getItem('ct_jwt');
     },
 
-    setToken: (token) => {
+    setToken: (token, remember = true) => {
         if (typeof window === 'undefined') return;
-        localStorage.setItem('ct_jwt', token);
+        if (remember) {
+            localStorage.setItem('ct_jwt', token);
+        } else {
+            sessionStorage.setItem('ct_jwt', token);
+        }
     },
 
     removeToken: () => {
         if (typeof window === 'undefined') return;
         localStorage.removeItem('ct_jwt');
+        sessionStorage.removeItem('ct_jwt');
     },
 
     isTokenExpired: (token) => {
@@ -74,6 +79,13 @@ api.interceptors.response.use(
         return response;
     },
     (error) => {
+        console.error('API Error Response:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+            url: error.config?.url
+        });
+
         // Handle common error scenarios
         if (error.response?.status === 401) {
             // Token expired or invalid
@@ -90,13 +102,15 @@ api.interceptors.response.use(
             error.message = 'Network error. Please check your internet connection.';
         }
 
-        // Add user-friendly error messages
+        // Add user-friendly error messages from backend
         if (error.response?.data?.message) {
             error.userMessage = error.response.data.message;
+        } else if (error.response?.data?.error) {
+            error.userMessage = error.response.data.error;
         } else if (error.response?.status >= 500) {
             error.userMessage = 'Server error. Please try again later.';
         } else if (error.response?.status >= 400) {
-            error.userMessage = 'Invalid request. Please check your input.';
+            error.userMessage = error.response?.data || 'Invalid request. Please check your input.';
         }
 
         return Promise.reject(error);
@@ -111,6 +125,7 @@ export const endpoints = {
         loginLegacy: '/login',              // LoginController @PostMapping("/login") - fallback
         register: '/api/auth/register',     // UserController @PostMapping("/auth/register")
         verifyToken: '/api/auth/verify-token', // UserController @GetMapping("/auth/verify-token")
+        verifyOtp: '/api/auth/verify-otp',    // UserController @PostMapping("/auth/verify-otp")
         checkUsername: (username) => `/api/auth/check-username/${username}`, // UserController
     },
 
@@ -185,16 +200,40 @@ export const endpoints = {
     },
 };// API service functions
 export const authAPI = {
-    login: async (credentials) => {
-        const response = await api.post(endpoints.auth.login, credentials);
+    login: async (credentials, remember = false) => {
+        // Map frontend field to backend DTO field
+        const payload = {
+            usernameOrEmailOrMobile: credentials.usernameOrEmail || credentials.usernameOrEmailOrMobile,
+            password: credentials.password
+        };
+        
+        console.log('🔐 Sending login request to', endpoints.auth.login, 'with username:', payload.usernameOrEmailOrMobile);
+        
+        try {
+            const response = await api.post(endpoints.auth.login, payload);
 
-        // Handle both 'token' and 'accessToken' field names
-        const token = response.data.token || response.data.accessToken;
-        if (token) {
-            tokenManager.setToken(token);
+            console.log('✅ Login response received:', {
+                hasToken: !!response.data.token,
+                requiresOtp: response.data.requiresOtp,
+                hasUserId: !!response.data.userId,
+                username: response.data.username
+            });
+
+            // Handle both 'token' and 'accessToken' field names
+            const token = response.data.token || response.data.accessToken;
+            if (token) {
+                tokenManager.setToken(token, remember);
+            }
+
+            return response.data;
+        } catch (error) {
+            console.error('❌ Login API error:', {
+                status: error.response?.status,
+                message: error.userMessage || error.message,
+                data: error.response?.data
+            });
+            throw error;
         }
-
-        return response.data;
     },
 
     logout: async () => {
@@ -216,6 +255,31 @@ export const authAPI = {
     forgotPassword: async (email) => {
         const response = await api.post(endpoints.auth.forgotPassword, { email });
         return response.data;
+    },
+
+    verifyOtp: async (username, otp) => {
+        console.log('🔐 Verifying OTP for username:', username);
+        
+        try {
+            const response = await api.post(endpoints.auth.verifyOtp, { username, otp });
+
+            console.log('✅ OTP verified successfully, received token:', !!response.data.token);
+
+            // Handle both 'token' and 'accessToken' field names
+            const token = response.data.token || response.data.accessToken;
+            if (token) {
+                tokenManager.setToken(token);
+            }
+
+            return response.data;
+        } catch (error) {
+            console.error('❌ OTP verification failed:', {
+                status: error.response?.status,
+                message: error.userMessage || error.message,
+                data: error.response?.data
+            });
+            throw error;
+        }
     },
 };
 

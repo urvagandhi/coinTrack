@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.DTO.LoginRequest;
 import com.urva.myfinance.coinTrack.DTO.LoginResponse;
+import com.urva.myfinance.coinTrack.DTO.VerifyOtpRequest;
 import com.urva.myfinance.coinTrack.DTO.user.RegisterUserDTO;
 import com.urva.myfinance.coinTrack.Model.User;
 import com.urva.myfinance.coinTrack.Service.UserService;
@@ -46,7 +47,7 @@ public class UserController {
 
     /**
      * Authenticate user with username, email, or mobile number.
-     * 
+     *
      * @param loginRequest login credentials
      * @return JWT token and user information
      */
@@ -74,9 +75,23 @@ public class UserController {
         }
     }
 
+    @PostMapping("/auth/verify-otp")
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        try {
+            logger.info("OTP verification attempt for username: {}", request.getUsername());
+            LoginResponse response = userService.verifyOtp(request.getUsername(), request.getOtp());
+            logger.info("OTP verified successfully for user: {}", request.getUsername());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("OTP verification failed for user {}: {}", request.getUsername(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(createErrorResponse(e.getMessage()));
+        }
+    }
+
     /**
      * Register a new user account.
-     * 
+     *
      * @param user user registration data
      * @return created user information
      */
@@ -101,7 +116,8 @@ public class UserController {
             if (registeredUser != null) {
                 // Try to authenticate immediately and return token + user info
                 try {
-                    LoginResponse loginResponse = userService.authenticate(registeredUser.getUsername(), dto.getPassword());
+                    LoginResponse loginResponse = userService.authenticate(registeredUser.getUsername(),
+                            dto.getPassword());
                     if (loginResponse != null) {
                         logger.info("User registered and authenticated: {}", registeredUser.getUsername());
                         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
@@ -127,7 +143,7 @@ public class UserController {
 
     /**
      * Verify JWT token validity.
-     * 
+     *
      * @param request HTTP request containing Authorization header
      * @return user information if token is valid
      */
@@ -166,7 +182,7 @@ public class UserController {
 
     /**
      * Check if username is available.
-     * 
+     *
      * @param username username to check
      * @return availability status
      */
@@ -187,7 +203,7 @@ public class UserController {
 
     /**
      * Get all users (admin operation).
-     * 
+     *
      * @return list of all users
      */
     @GetMapping("/users")
@@ -206,7 +222,7 @@ public class UserController {
 
     /**
      * Get user by ID.
-     * 
+     *
      * @param id user ID
      * @return user information
      */
@@ -230,7 +246,7 @@ public class UserController {
 
     /**
      * Update user information.
-     * 
+     *
      * @param id   user ID
      * @param user updated user data
      * @return updated user information
@@ -256,7 +272,7 @@ public class UserController {
 
     /**
      * Delete user account.
-     * 
+     *
      * @param id user ID
      * @return success message
      */
@@ -282,13 +298,14 @@ public class UserController {
 
     /**
      * Create standardized error response.
-     * 
+     *
      * @param message error message
      * @return error response map
      */
     private Map<String, String> createErrorResponse(String message) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", message);
-        return error;
+        Map<String, String> response = new HashMap<>();
+        response.put("error", message);
+        response.put("message", message);
+        return response;
     }
 }
