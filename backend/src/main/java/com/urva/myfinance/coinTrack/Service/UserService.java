@@ -26,12 +26,29 @@ public class UserService {
     // Simple in-memory storage for OTPs: username -> OtpData
     private final java.util.Map<String, OtpData> otpStorage = new java.util.concurrent.ConcurrentHashMap<>();
 
+    // In-memory storage for Pending Registrations: username -> PendingRegistration
+    private final java.util.Map<String, PendingRegistration> pendingRegistrations = new java.util.concurrent.ConcurrentHashMap<>();
+
     private static class OtpData {
         String otp;
         long expiryTime;
         long creationTime;
 
         OtpData(String otp, long expiryTime) {
+            this.otp = otp;
+            this.expiryTime = expiryTime;
+            this.creationTime = System.currentTimeMillis();
+        }
+    }
+
+    private static class PendingRegistration {
+        User user;
+        String otp;
+        long expiryTime;
+        long creationTime;
+
+        PendingRegistration(User user, String otp, long expiryTime) {
+            this.user = user;
             this.otp = otp;
             this.expiryTime = expiryTime;
             this.creationTime = System.currentTimeMillis();
@@ -111,10 +128,15 @@ public class UserService {
         }
     }
 
-    public User registerUser(User user) {
+    /**
+     * Initiates user registration.
+     * Validates input, checks uniqueness, and sends OTP.
+     * DOES NOT save to DB yet.
+     */
+    public LoginResponse registerUser(User user) {
         try {
             if (user.getUsername() == null || user.getPassword() == null) {
-                return null; // Invalid user
+                throw new RuntimeException("Username and Password are required");
             }
 
             // Check if username already exists
@@ -124,11 +146,48 @@ public class UserService {
                         "Username already exists: " + user.getUsername() + ". Please choose a different username.");
             }
 
-            user.setPhoneNumber(normalizePhoneNumber(user.getPhoneNumber()));
+            if (userRepository.existsByEmail(user.getEmail())) {
+                throw new RuntimeException(
+                        "Email already exists: " + user.getEmail() + ". Please use a different email.");
+            }
+
+            String normalizedPhone = normalizePhoneNumber(user.getPhoneNumber());
+            if (userRepository.existsByPhoneNumber(normalizedPhone)) {
+                throw new RuntimeException(
+                        "Phone number already exists: " + user.getPhoneNumber() + ". Please use a different number.");
+            }
+
+            user.setPhoneNumber(normalizedPhone);
             user.setPassword(passwordEncoder.encode(user.getPassword()));
-            return userRepository.save(user);
+
+            // Generate OTP
+            String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+            long expiryTime = System.currentTimeMillis() + (5 * 60 * 1000); // 5 mins
+
+            // Store in Pending Registrations
+            pendingRegistrations.put(user.getUsername(), new PendingRegistration(user, otp, expiryTime));
+            logger.info("Stored pending registration for {}. OTP: {}", user.getUsername(), otp);
+
+            // Send OTP
+            String contact = user.getEmail() != null ? user.getEmail() : user.getPhoneNumber();
+            try {
+                notificationService.sendOtp(contact, otp);
+            } catch (Exception e) {
+                logger.error("Failed to send OTP to {}: {}", contact, e.getMessage());
+                // Proceed anyway so user can try resend or use dev OTP
+            }
+
+            LoginResponse response = new LoginResponse();
+            response.setMessage("OTP sent to " + contact + ". Please verify to complete registration.");
+            response.setRequiresOtp(true);
+            response.setUsername(user.getUsername());
+
+            return response;
+
         } catch (RuntimeException e) {
-            throw new RuntimeException("Error registering user: " + e.getMessage(), e);
+            throw new RuntimeException(e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("Error initiating registration: " + e.getMessage(), e);
         }
     }
 
@@ -202,13 +261,63 @@ public class UserService {
     /**
      * Verify OTP and issue Token.
      */
+    /**
+     * Verify OTP and issue Token.
+     * Handles both Login OTP and Registration OTP.
+     */
     public LoginResponse verifyOtp(String usernameOrEmailOrMobile, String otp) {
         try {
+            // 1. Check Pending Registrations first
+            // usernameOrEmailOrMobile might be just username during verify step
+            PendingRegistration pending = pendingRegistrations.get(usernameOrEmailOrMobile);
+
+            if (pending != null) {
+                // Verify Pending Registration OTP
+                if (System.currentTimeMillis() > pending.expiryTime) {
+                    pendingRegistrations.remove(usernameOrEmailOrMobile);
+                    throw new RuntimeException("Registration OTP expired. Please register again.");
+                }
+
+                if (!pending.otp.equals(otp)) {
+                    throw new RuntimeException("Invalid OTP");
+                }
+
+                // Success! Save user to DB
+                User user = pending.user;
+                user = userRepository.save(user);
+                pendingRegistrations.remove(usernameOrEmailOrMobile);
+
+                logger.info("User registered and verified successfully: {}", user.getUsername());
+
+                // Generate Token
+                // Create a dummy authentication token (we know credentials are valid because we
+                // just created them)
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                        user.getUsername(),
+                        null,
+                        java.util.Collections.emptyList());
+
+                String token = jwtService.generateToken(authentication);
+
+                LoginResponse loginResponse = new LoginResponse();
+                loginResponse.setToken(token);
+                loginResponse.setUserId(user.getId());
+                loginResponse.setUsername(user.getUsername());
+                loginResponse.setEmail(user.getEmail());
+                loginResponse.setMobile(user.getPhoneNumber());
+                loginResponse.setFirstName(user.getName());
+                loginResponse.setRequiresOtp(false);
+                loginResponse.setMessage("Account created and verified successfully!");
+
+                return loginResponse;
+            }
+
+            // 2. Fallback to Standard Login OTP Flow
             // Resolve user first to ensure we have the correct username key for OTP storage
             User user = findUserByUsernameEmailOrMobile(usernameOrEmailOrMobile);
 
             if (user == null) {
-                throw new RuntimeException("User not found");
+                throw new RuntimeException("User not found (or registration session expired)");
             }
 
             String username = user.getUsername();
@@ -260,10 +369,39 @@ public class UserService {
     /**
      * Resend OTP to user.
      * Enforces a 30-second cooldown period.
+     * Handles both DB Users and Pending Registrations.
      */
     public LoginResponse resendOtp(String usernameOrEmailOrMobile) {
         try {
             logger.info("Resend OTP requested for identifier: {}", usernameOrEmailOrMobile);
+
+            // 1. Check Pending Registrations
+            PendingRegistration pending = pendingRegistrations.get(usernameOrEmailOrMobile);
+            if (pending != null) {
+                long timeSinceCreation = System.currentTimeMillis() - pending.creationTime;
+                if (timeSinceCreation < 30 * 1000) {
+                    long remainingSeconds = 30 - (timeSinceCreation / 1000);
+                    throw new RuntimeException("Please wait " + remainingSeconds + " seconds.");
+                }
+
+                // Generate new OTP for pending user
+                String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+                pending.otp = otp;
+                pending.expiryTime = System.currentTimeMillis() + (5 * 60 * 1000);
+                pending.creationTime = System.currentTimeMillis(); // Reset cooldown
+
+                String contact = pending.user.getEmail() != null ? pending.user.getEmail()
+                        : pending.user.getPhoneNumber();
+                notificationService.sendOtp(contact, otp);
+                logger.info("Resent OTP to pending user: {}", pending.user.getUsername());
+
+                LoginResponse response = new LoginResponse();
+                response.setMessage("OTP resent successfully");
+                response.setRequiresOtp(true);
+                return response;
+            }
+
+            // 2. Check DB Users
             User user = findUserByUsernameEmailOrMobile(usernameOrEmailOrMobile);
             if (user == null) {
                 logger.warn("Resend OTP failed: User not found for {}", usernameOrEmailOrMobile);

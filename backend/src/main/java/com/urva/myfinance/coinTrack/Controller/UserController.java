@@ -125,28 +125,14 @@ public class UserController {
             user.setPhoneNumber(dto.getMobile());
             user.setPassword(dto.getPassword());
 
-            User registeredUser = userService.registerUser(user);
-            if (registeredUser != null) {
-                // Try to authenticate immediately and return token + user info
-                try {
-                    LoginResponse loginResponse = userService.authenticate(registeredUser.getUsername(),
-                            dto.getPassword());
-                    if (loginResponse != null) {
-                        logger.info("User registered and authenticated: {}", registeredUser.getUsername());
-                        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
-                    }
-                } catch (Exception ex) {
-                    logger.warn("Registration succeeded but auto-login failed: {}", ex.getMessage());
-                }
+            LoginResponse response = userService.registerUser(user);
+            logger.info("Registration initiated for: {}", user.getUsername());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-                // Fallback: remove password and return created user
-                registeredUser.setPassword(null);
-                logger.info("User registered successfully: {}", registeredUser.getUsername());
-                return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(createErrorResponse("Failed to register user"));
-            }
+            /*
+             * Legacy code removed: direct save and auto-login is no longer used.
+             * User must now verify OTP before account is created.
+             */
         } catch (Exception e) {
             logger.error("Error during registration: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
