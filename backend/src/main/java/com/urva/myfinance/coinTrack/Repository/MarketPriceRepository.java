@@ -10,4 +10,6 @@ import com.urva.myfinance.coinTrack.Model.MarketPrice;
 @Repository
 public interface MarketPriceRepository extends MongoRepository<MarketPrice, String> {
     Optional<MarketPrice> findBySymbol(String symbol);
+
+    java.util.List<MarketPrice> findBySymbolIn(java.util.List<String> symbols);
 }
