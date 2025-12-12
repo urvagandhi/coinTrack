@@ -19,6 +19,7 @@ import com.urva.myfinance.coinTrack.Model.Broker;
 import com.urva.myfinance.coinTrack.Model.BrokerAccount;
 import com.urva.myfinance.coinTrack.Model.CachedHolding;
 import com.urva.myfinance.coinTrack.Model.CachedPosition;
+import com.urva.myfinance.coinTrack.Model.ExpiryReason;
 import com.urva.myfinance.coinTrack.Model.SyncLog;
 import com.urva.myfinance.coinTrack.Model.SyncStatus;
 import com.urva.myfinance.coinTrack.Repository.BrokerAccountRepository;
@@ -27,6 +28,7 @@ import com.urva.myfinance.coinTrack.Repository.CachedPositionRepository;
 import com.urva.myfinance.coinTrack.Repository.SyncLogRepository;
 import com.urva.myfinance.coinTrack.Service.broker.BrokerService;
 import com.urva.myfinance.coinTrack.Service.broker.BrokerServiceFactory;
+import com.urva.myfinance.coinTrack.Service.broker.exception.BrokerException;
 import com.urva.myfinance.coinTrack.Service.sync.PortfolioSyncService;
 import com.urva.myfinance.coinTrack.Service.sync.SyncSafetyService;
 import com.urva.myfinance.coinTrack.Utils.HashUtil;
@@ -275,9 +277,7 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
         String appUserId = account.getUserId(); // Internal App User ID
 
         // 1. Validation
-        if (!Boolean.TRUE.equals(account.getIsActive()))
-
-        {
+        if (!Boolean.TRUE.equals(account.getIsActive())) {
             return createLog(appUserId, broker, SyncStatus.FAILURE, "Account is inactive", 0L);
         }
         if (!account.hasCredentials()) {
@@ -300,32 +300,55 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
         String message = "Sync complete";
         StringBuilder errorDetails = new StringBuilder();
 
-        // 2. Fetch & Update Holdings
         try {
-            List<CachedHolding> fetchedHoldings = service.fetchHoldings(account);
-            if (fetchedHoldings != null) {
-                updateHoldings(appUserId, broker, fetchedHoldings);
-                holdingsSuccess = true;
-            } else {
-                errorDetails.append("Holdings fetch returned null. ");
+            // 2. Fetch & Update Holdings
+            try {
+                List<CachedHolding> fetchedHoldings = service.fetchHoldings(account);
+                if (fetchedHoldings != null) {
+                    updateHoldings(appUserId, broker, fetchedHoldings);
+                    holdingsSuccess = true;
+                } else {
+                    errorDetails.append("Holdings fetch returned null. ");
+                }
+            } catch (BrokerException be) {
+                handleBrokerException(account, be);
+                throw be; // Re-throw to stop sync
+            } catch (Exception e) {
+                ExpiryReason reason = service.detectExpiry(e);
+                if (reason != ExpiryReason.NONE) {
+                    handleExpiry(account, reason, e.getMessage());
+                    throw new BrokerException("Detected expiry in Holdings", broker, e, reason);
+                }
+                errorDetails.append("Holdings failed: ").append(e.getMessage()).append(". ");
+                logger.error("Holdings fetch failed for user {} broker {}: {}", appUserId, broker, e.getMessage());
             }
-        } catch (Exception e) {
-            errorDetails.append("Holdings failed: ").append(e.getMessage()).append(". ");
-            logger.error("Holdings fetch failed for user {} broker {}: {}", appUserId, broker, e.getMessage());
-        }
 
-        // 3. Fetch & Update Positions
-        try {
-            List<CachedPosition> fetchedPositions = service.fetchPositions(account);
-            if (fetchedPositions != null) {
-                updatePositions(appUserId, broker, fetchedPositions);
-                positionsSuccess = true;
-            } else {
-                errorDetails.append("Positions fetch returned null. ");
+            // 3. Fetch & Update Positions
+            try {
+                List<CachedPosition> fetchedPositions = service.fetchPositions(account);
+                if (fetchedPositions != null) {
+                    updatePositions(appUserId, broker, fetchedPositions);
+                    positionsSuccess = true;
+                } else {
+                    errorDetails.append("Positions fetch returned null. ");
+                }
+            } catch (BrokerException be) {
+                handleBrokerException(account, be);
+                throw be;
+            } catch (Exception e) {
+                ExpiryReason reason = service.detectExpiry(e);
+                if (reason != ExpiryReason.NONE) {
+                    handleExpiry(account, reason, e.getMessage());
+                    throw new BrokerException("Detected expiry in Positions", broker, e, reason);
+                }
+                errorDetails.append("Positions failed: ").append(e.getMessage()).append(". ");
+                logger.error("Positions fetch failed for user {} broker {}: {}", appUserId, broker, e.getMessage());
             }
-        } catch (Exception e) {
-            errorDetails.append("Positions failed: ").append(e.getMessage()).append(". ");
-            logger.error("Positions fetch failed for user {} broker {}: {}", appUserId, broker, e.getMessage());
+
+        } catch (BrokerException be) {
+            // Log failure correctly
+            return createLog(appUserId, broker, SyncStatus.FAILURE, "Sync failed: " + be.getMessage(),
+                    java.time.Duration.between(startTime, LocalDateTime.now(INDIA_ZONE)).toMillis());
         }
 
         // 4. Determine Final Status
@@ -343,9 +366,7 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
         }
 
         long duration = java.time.Duration.between(startTime, LocalDateTime.now(INDIA_ZONE)).toMillis();
-        return
-
-        createLog(appUserId, broker, status, message, duration);
+        return createLog(appUserId, broker, status, message, duration);
     }
 
     private void updateHoldings(String userId, Broker broker, List<CachedHolding> fetchedList) {
@@ -436,5 +457,18 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
                 .timestamp(LocalDateTime.now(INDIA_ZONE))
                 .build();
         return syncLogRepository.save(log);
+    }
+
+    private void handleBrokerException(BrokerAccount account, BrokerException e) {
+        if (e.isTokenExpired() || (e.getExpiryReason() != null && e.getExpiryReason() != ExpiryReason.NONE)) {
+            handleExpiry(account, e.getExpiryReason(), e.getMessage());
+        }
+    }
+
+    private void handleExpiry(BrokerAccount account, ExpiryReason reason, String message) {
+        logger.warn("Expiry detected for account {}: {}", account.getId(), reason);
+        account.setIsActive(false);
+        account.setExpiryReason(reason);
+        brokerAccountRepository.save(account);
     }
 }

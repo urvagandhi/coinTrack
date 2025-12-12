@@ -24,4 +24,8 @@ public interface BrokerService {
     Optional<String> getLoginUrl();
 
     Optional<String> refreshToken(BrokerAccount account);
+
+    default com.urva.myfinance.coinTrack.Model.ExpiryReason detectExpiry(Exception e) {
+        return com.urva.myfinance.coinTrack.Model.ExpiryReason.NONE;
+    }
 }
