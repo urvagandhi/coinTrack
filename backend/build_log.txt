@@ -1,0 +1,54 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< com.urva.myfinance:coinTrack >--------------------
+[INFO] Building coinTrack 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.1:clean (default-clean) @ coinTrack ---
+[INFO] Deleting C:\Users\urvag\Downloads\Projects\coinTrack\backend\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ coinTrack ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ coinTrack ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 57 source files with javac [debug parameters release 21] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/urvag/Downloads/Projects/coinTrack/backend/src/main/java/com/urva/myfinance/coinTrack/Service/sync/impl/PortfolioSyncServiceImpl.java:[99,35] cannot find symbol
+  symbol:   method getAppUserId()
+  location: variable account of type com.urva.myfinance.coinTrack.Model.BrokerAccount
+[ERROR] /C:/Users/urvag/Downloads/Projects/coinTrack/backend/src/main/java/com/urva/myfinance/coinTrack/Service/sync/impl/PortfolioSyncServiceImpl.java:[172,61] cannot find symbol
+  symbol:   method findByUserIdAndBroker(java.lang.String,com.urva.myfinance.coinTrack.Model.Broker)
+  location: variable holdingRepository of type com.urva.myfinance.coinTrack.Repository.CachedHoldingRepository
+[ERROR] /C:/Users/urvag/Downloads/Projects/coinTrack/backend/src/main/java/com/urva/myfinance/coinTrack/Service/sync/impl/PortfolioSyncServiceImpl.java:[212,63] cannot find symbol
+  symbol:   method findByUserIdAndBroker(java.lang.String,com.urva.myfinance.coinTrack.Model.Broker)
+  location: variable positionRepository of type com.urva.myfinance.coinTrack.Repository.CachedPositionRepository
+[INFO] 3 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.766 s
+[INFO] Finished at: 2025-12-12T17:56:34+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.0:compile (default-compile) on project coinTrack: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/urvag/Downloads/Projects/coinTrack/backend/src/main/java/com/urva/myfinance/coinTrack/Service/sync/impl/PortfolioSyncServiceImpl.java:[99,35] cannot find symbol
+[ERROR]   symbol:   method getAppUserId()
+[ERROR]   location: variable account of type com.urva.myfinance.coinTrack.Model.BrokerAccount
+[ERROR] /C:/Users/urvag/Downloads/Projects/coinTrack/backend/src/main/java/com/urva/myfinance/coinTrack/Service/sync/impl/PortfolioSyncServiceImpl.java:[172,61] cannot find symbol
+[ERROR]   symbol:   method findByUserIdAndBroker(java.lang.String,com.urva.myfinance.coinTrack.Model.Broker)
+[ERROR]   location: variable holdingRepository of type com.urva.myfinance.coinTrack.Repository.CachedHoldingRepository
+[ERROR] /C:/Users/urvag/Downloads/Projects/coinTrack/backend/src/main/java/com/urva/myfinance/coinTrack/Service/sync/impl/PortfolioSyncServiceImpl.java:[212,63] cannot find symbol
+[ERROR]   symbol:   method findByUserIdAndBroker(java.lang.String,com.urva.myfinance.coinTrack.Model.Broker)
+[ERROR]   location: variable positionRepository of type com.urva.myfinance.coinTrack.Repository.CachedPositionRepository
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

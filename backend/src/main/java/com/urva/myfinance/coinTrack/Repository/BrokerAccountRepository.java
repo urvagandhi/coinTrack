@@ -14,4 +14,7 @@ public interface BrokerAccountRepository extends MongoRepository<BrokerAccount, 
     List<BrokerAccount> findByUserId(String userId);
 
     Optional<BrokerAccount> findByUserIdAndBroker(String userId, Broker broker);
+
+    org.springframework.data.domain.Page<BrokerAccount> findByIsActiveTrue(
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import com.urva.myfinance.coinTrack.Model.Broker;
 import com.urva.myfinance.coinTrack.Model.CachedHolding;
 
 @Repository
@@ -13,4 +14,6 @@ public interface CachedHoldingRepository extends MongoRepository<CachedHolding, 
     List<CachedHolding> findByUserId(String userId);
 
     Optional<CachedHolding> findByUserIdAndSymbol(String userId, String symbol);
+
+    List<CachedHolding> findByUserIdAndBroker(String userId, Broker broker);
 }

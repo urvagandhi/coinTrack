@@ -1,4 +1,4 @@
-package com.urva.myfinance.coinTrack.Util;
+package com.urva.myfinance.coinTrack.Utils;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -22,12 +22,12 @@ import com.urva.myfinance.coinTrack.Config.EncryptionConfig;
 
 /**
  * Utility class for encrypting and decrypting sensitive data using AES-256-GCM.
- * 
+ *
  * AES-GCM provides both confidentiality and authenticity, preventing tampering.
  * Each encryption uses a unique random IV (Initialization Vector).
- * 
+ *
  * Encrypted format: [IV (12 bytes)][Encrypted Data][Auth Tag (16 bytes)]
- * 
+ *
  * @author coinTrack Team
  * @version 1.0
  * @since 2025-01-06
@@ -51,7 +51,7 @@ public class EncryptionUtil {
 
     /**
      * Encrypt plaintext using AES-256-GCM.
-     * 
+     *
      * @param plaintext The text to encrypt
      * @return Base64-encoded encrypted data with IV prepended
      * @throws RuntimeException if encryption fails
@@ -91,7 +91,7 @@ public class EncryptionUtil {
 
     /**
      * Decrypt Base64-encoded ciphertext using AES-256-GCM.
-     * 
+     *
      * @param encryptedData Base64-encoded encrypted data with IV prepended
      * @return Decrypted plaintext
      * @throws RuntimeException if decryption fails or data is tampered
@@ -132,7 +132,7 @@ public class EncryptionUtil {
     /**
      * Check if a string appears to be encrypted (Base64 format with sufficient
      * length).
-     * 
+     *
      * @param data The data to check
      * @return true if data appears to be encrypted
      */
