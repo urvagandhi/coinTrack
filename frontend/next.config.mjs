@@ -149,19 +149,6 @@ const nextConfig = {
    */
   async rewrites() {
     return [
-      // Auth Rewrites (Keep URL as /login but serve /access/login)
-      {
-        source: "/login",
-        destination: "/access/login",
-      },
-      {
-        source: "/register",
-        destination: "/access/register",
-      },
-      {
-        source: "/forgot-password",
-        destination: "/access/forgot-password",
-      },
       // API Proxy
       {
         source: "/api/:path*",

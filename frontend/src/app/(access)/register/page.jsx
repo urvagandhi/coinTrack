@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
+import { useState } from 'react';
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -88,8 +88,19 @@ export default function RegisterPage() {
         }
 
         try {
-            // Prepare data for backend (exclude confirmPassword)
+            // Prepare data for backend (exclude confirmPassword and sanitize phone)
             const { confirmPassword, ...userData } = formData;
+
+            // Sanitize phone number to E.164 format (keep + and digits)
+            // Sanitize phone number to E.164 format
+            if (userData.phoneNumber) {
+                // Remove existing prefix if any, then add +91
+                let phone = userData.phoneNumber.replace(/[^0-9]/g, '');
+                if (phone.length === 10) {
+                    phone = '+91' + phone;
+                }
+                userData.phoneNumber = phone;
+            }
 
             const result = await register(userData);
             if (!result.success) {
@@ -180,16 +191,25 @@ export default function RegisterPage() {
                             <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Phone Number
                             </label>
-                            <input
-                                id="phoneNumber"
-                                name="phoneNumber"
-                                type="tel"
-                                required
-                                value={formData.phoneNumber}
-                                onChange={handleChange}
-                                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                                placeholder="Enter your phone number"
-                            />
+                            <div className="mt-1 relative rounded-md shadow-sm">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span className="text-gray-500 dark:text-gray-400 sm:text-sm border-r border-gray-300 dark:border-gray-600 pr-2">+91</span>
+                                </div>
+                                <input
+                                    id="phoneNumber"
+                                    name="phoneNumber"
+                                    type="tel"
+                                    required
+                                    maxLength={10}
+                                    value={formData.phoneNumber}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        setFormData(prev => ({ ...prev, phoneNumber: val }));
+                                    }}
+                                    className="appearance-none block w-full pl-14 pr-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    placeholder="8866241204"
+                                />
+                            </div>
                         </div>
 
                         <div>

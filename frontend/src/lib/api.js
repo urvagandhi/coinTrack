@@ -79,12 +79,15 @@ api.interceptors.response.use(
         return response;
     },
     (error) => {
-        console.error('API Error Response:', {
-            status: error.response?.status,
-            data: error.response?.data,
-            message: error.message,
-            url: error.config?.url
-        });
+        const errorDetails = {
+            status: error.response ? error.response.status : 'No Response (Network/CORS?)',
+            data: error.response ? error.response.data : 'No Data',
+            message: error.message || 'Unknown Error',
+            url: error.config ? error.config.url : 'Unknown URL',
+            method: error.config ? error.config.method : 'Unknown Method'
+        };
+
+        console.error('🚨 API Error:', errorDetails);
 
         // Handle common error scenarios
         if (error.response?.status === 401) {
@@ -110,7 +113,7 @@ api.interceptors.response.use(
         } else if (error.response?.status >= 500) {
             error.userMessage = 'Server error. Please try again later.';
         } else if (error.response?.status >= 400) {
-            error.userMessage = error.response?.data || 'Invalid request. Please check your input.';
+            error.userMessage = typeof error.response.data === 'string' ? error.response.data : 'Invalid request. Please check your input.';
         }
 
         return Promise.reject(error);
@@ -198,7 +201,9 @@ export const endpoints = {
         holdings: '/api/portfolio/holdings',   // Not found in backend - will gracefully degrade
         performance: '/api/portfolio/performance', // Not found in backend - will gracefully degrade
     },
-};// API service functions
+};
+
+// API service functions
 export const authAPI = {
     login: async (credentials, remember = false) => {
         // Map frontend field to backend DTO field
@@ -206,9 +211,9 @@ export const authAPI = {
             usernameOrEmailOrMobile: credentials.usernameOrEmail || credentials.usernameOrEmailOrMobile,
             password: credentials.password
         };
-        
+
         console.log('🔐 Sending login request to', endpoints.auth.login, 'with username:', payload.usernameOrEmailOrMobile);
-        
+
         try {
             const response = await api.post(endpoints.auth.login, payload);
 
@@ -228,9 +233,9 @@ export const authAPI = {
             return response.data;
         } catch (error) {
             console.error('❌ Login API error:', {
-                status: error.response?.status,
+                status: error.response ? error.response.status : 'N/A',
                 message: error.userMessage || error.message,
-                data: error.response?.data
+                data: error.response ? error.response.data : 'No Data'
             });
             throw error;
         }
@@ -259,7 +264,7 @@ export const authAPI = {
 
     verifyOtp: async (username, otp) => {
         console.log('🔐 Verifying OTP for username:', username);
-        
+
         try {
             const response = await api.post(endpoints.auth.verifyOtp, { username, otp });
 
@@ -274,9 +279,9 @@ export const authAPI = {
             return response.data;
         } catch (error) {
             console.error('❌ OTP verification failed:', {
-                status: error.response?.status,
+                status: error.response ? error.response.status : 'N/A',
                 message: error.userMessage || error.message,
-                data: error.response?.data
+                data: error.response ? error.response.data : 'No Data'
             });
             throw error;
         }

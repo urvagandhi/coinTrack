@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { ArrowRight, Eye, EyeOff, Loader, Lock, Mail } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Loader, Lock, Mail, Phone, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -24,7 +24,7 @@ export default function LoginPage() {
     const [rememberMe, setRememberMe] = useState(false);
     const { login, verifyOtp } = useAuth();
 
-    const redirectPath = searchParams.get('redirect') || '/main/dashboard';
+    const redirectPath = searchParams.get('redirect') || '/dashboard';
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -47,7 +47,17 @@ export default function LoginPage() {
         }
 
         try {
-            const result = await login(formData, rememberMe);
+            // Sanitize input if it looks like a phone number
+            const credentials = { ...formData };
+            if (/^\d{10}$/.test(credentials.usernameOrEmail)) {
+                // Exactly 10 digits -> Assume India +91
+                credentials.usernameOrEmail = '+91' + credentials.usernameOrEmail;
+            } else if (/^[\d\s\-\+\(\)]+$/.test(credentials.usernameOrEmail) && /\d/.test(credentials.usernameOrEmail)) {
+                // It contains digits and likely phone symbols, strip non-phone chars (keep +)
+                credentials.usernameOrEmail = credentials.usernameOrEmail.replace(/[^0-9+]/g, '');
+            }
+
+            const result = await login(credentials, rememberMe);
 
             if (result.requiresOtp) {
                 setTempUsername(result.username);
@@ -86,6 +96,14 @@ export default function LoginPage() {
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
+    };
+
+    const getInputIcon = () => {
+        const value = formData.usernameOrEmail;
+        if (!value) return <Mail className="h-5 w-5" />; // Default
+        if (value.includes('@')) return <Mail className="h-5 w-5" />;
+        if (/^\d+$/.test(value) || /^\+?\d+$/.test(value)) return <Phone className="h-5 w-5" />;
+        return <User className="h-5 w-5" />;
     };
 
     return (
@@ -181,7 +199,11 @@ export default function LoginPage() {
 
                             <button
                                 type="button"
-                                onClick={() => setShowOtpInput(false)}
+                                onClick={() => {
+                                    setShowOtpInput(false);
+                                    setOtp('');
+                                    setFormData(prev => ({ ...prev, password: '' }));
+                                }}
                                 className="w-full text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
                                 Back to Login
@@ -206,11 +228,14 @@ export default function LoginPage() {
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-                                        Username or Email
+                                        Username, Email or Phone
                                     </label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-purple-600 transition-colors">
-                                            <Mail className="h-5 w-5" />
+                                            {getInputIcon()}
+                                            {/^\d+$/.test(formData.usernameOrEmail) && (
+                                                <span className="ml-2 text-gray-500 dark:text-gray-400 text-sm border-l border-gray-300 dark:border-gray-600 pl-2 font-medium">+91</span>
+                                            )}
                                         </div>
                                         <input
                                             name="usernameOrEmail"
@@ -218,8 +243,9 @@ export default function LoginPage() {
                                             required
                                             value={formData.usernameOrEmail}
                                             onChange={handleChange}
-                                            className="block w-full pl-12 pr-4 py-3.5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-all"
-                                            placeholder="Enter your email or username"
+                                            className={`block w-full py-3.5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-all ${/^\d+$/.test(formData.usernameOrEmail) ? 'pl-28' : 'pl-12'
+                                                } pr-4`}
+                                            placeholder="Enter your email, username, or phone"
                                         />
                                     </div>
                                 </div>

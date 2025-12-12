@@ -203,7 +203,7 @@ export default function HomePage() {
               <div className="w-24 h-10 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
             ) : user ? (
               <Link
-                href="/main/dashboard"
+                href="/dashboard"
                 className="px-6 py-2.5 rounded-full bg-purple-600 text-white font-medium hover:bg-purple-700 transition-all flex items-center gap-2 shadow-lg hover:shadow-purple-600/25 ring-2 ring-purple-600 ring-offset-2 ring-offset-white dark:ring-offset-gray-900"
               >
                 Dashboard
@@ -264,7 +264,7 @@ export default function HomePage() {
                 className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
               >
                 <Link
-                  href={user ? "/main/dashboard" : "/register"}
+                  href={user ? "/dashboard" : "/register"}
                   className="px-8 py-4 rounded-full bg-purple-600 text-white text-lg font-bold hover:bg-purple-700 transition-all shadow-xl hover:shadow-purple-600/30 flex items-center justify-center gap-2"
                 >
                   Get Started Free

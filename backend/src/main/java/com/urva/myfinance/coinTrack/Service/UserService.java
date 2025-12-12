@@ -82,7 +82,7 @@ public class UserService {
                     existingUser.setEmail(user.getEmail());
                 }
                 if (user.getPhoneNumber() != null) {
-                    existingUser.setPhoneNumber(user.getPhoneNumber());
+                    existingUser.setPhoneNumber(normalizePhoneNumber(user.getPhoneNumber()));
                 }
                 if (user.getPassword() != null) {
                     existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -122,6 +122,7 @@ public class UserService {
                         "Username already exists: " + user.getUsername() + ". Please choose a different username.");
             }
 
+            user.setPhoneNumber(normalizePhoneNumber(user.getPhoneNumber()));
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             return userRepository.save(user);
         } catch (RuntimeException e) {
@@ -275,11 +276,14 @@ public class UserService {
             return user;
         }
 
-        // Try mobile (phone number)
+        // Try mobile (phone number) - normalize first
         try {
-            user = userRepository.findByPhoneNumber(identifier);
-            if (user != null) {
-                return user;
+            String normalizedInput = normalizePhoneNumber(identifier);
+            if (normalizedInput != null) {
+                user = userRepository.findByPhoneNumber(normalizedInput);
+                if (user != null) {
+                    return user;
+                }
             }
         } catch (Exception e) {
             // Phone number search failed, continue
@@ -357,6 +361,26 @@ public class UserService {
      * @param username the username to search for
      * @return User object if found, null otherwise
      */
+    /**
+     * Normalize phone number to E.164 format (e.g., +918866241204).
+     * Removes spaces, hyphens, and parentheses.
+     * Default to +91 if only 10 digits are provided.
+     */
+    private String normalizePhoneNumber(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return null;
+        }
+        // Remove all non-numeric characters except '+'
+        String cleaned = input.replaceAll("[^0-9+]", "");
+
+        // If it's exactly 10 digits, assume Indian number and prepend +91
+        if (cleaned.matches("^\\d{10}$")) {
+            return "+91" + cleaned;
+        }
+
+        return cleaned;
+    }
+
     public User findUserByUsername(String username) {
         try {
             if (username == null || username.trim().isEmpty()) {
