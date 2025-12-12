@@ -1,8 +1,8 @@
 'use client';
 
-import { useAuth } from '../../contexts/AuthContext';
-import { useState, useEffect } from 'react';
-import { User, Camera, Edit, Shield, DollarSign, TrendingUp, Bell, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Bell, Camera, DollarSign, Edit, Eye, EyeOff, Shield, TrendingUp, User } from 'lucide-react';
+import { useState } from 'react';
 
 export default function ProfilePage() {
     const { user } = useAuth();

@@ -1,11 +1,11 @@
 'use client';
 
-import { useAuth } from '../contexts/AuthContext';
-import { zerodhaService } from '../../lib/zerodhaService';
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { zerodhaService } from '@/lib/zerodhaService';
+import { useEffect, useState } from 'react';
 
 
-import { CheckCircleIcon, KeyIcon, LinkIcon, ExclamationCircleIcon } from '@heroicons/react/24/solid';
+import { CheckCircleIcon, ExclamationCircleIcon, LinkIcon } from '@heroicons/react/24/solid';
 
 export default function ZerodhaPage() {
     const { user } = useAuth();

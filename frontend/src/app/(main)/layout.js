@@ -1,7 +1,7 @@
 'use client';
 
 import AuthGuard from "@/components/auth/AuthGuard";
-import MainLayout from "@/components/MainLayout";
+import MainLayout from "@/components/layout/MainLayout";
 
 export default function Layout({ children }) {
     return (

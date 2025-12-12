@@ -2,172 +2,175 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { ArrowRight, BarChart3, TrendingUp, Wallet, Zap } from 'lucide-react';
-import Link from 'next/link';
+import {
+    ArrowUpRight,
+    Code,
+    ExternalLink,
+    FileText,
+    Info
+} from 'lucide-react';
 
-// Dummy Components to prevent import errors during restructuring
-const StatsCard = ({ title, value, change, icon, color = "purple" }) => (
-    <motion.div
-        whileHover={{ y: -5 }}
-        className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 p-6 rounded-2xl shadow-xl relative overflow-hidden group"
-    >
-        <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-${color}-500`}>
-            {icon}
+// Helper for the minimalist stats cards (Codolio style: White card, large number, info icon)
+const MinimalStatsCard = ({ label, value, subValue, info }) => (
+    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 flex-1 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex justify-between items-start mb-2">
+            <h3 className="text-gray-500 dark:text-gray-400 font-medium text-sm">{label}</h3>
+            {info && <Info className="w-4 h-4 text-gray-300 hover:text-gray-500 cursor-help" />}
         </div>
-        <div className="relative z-10">
-            <div className={`w-12 h-12 rounded-xl bg-${color}-100 dark:bg-${color}-900/30 flex items-center justify-center mb-4 text-${color}-600 dark:text-${color}-400`}>
-                {icon}
-            </div>
-            <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">{title}</h3>
-            <div className="flex items-baseline gap-2 mt-1">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{value}</h2>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${change >= 0
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    }`}>
-                    {change >= 0 ? '+' : ''}{change}%
-                </span>
-            </div>
+        <div className="flex items-baseline gap-2">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white">{value}</h2>
         </div>
-    </motion.div>
+        {subValue && (
+            <p className="text-sm text-gray-400 mt-1">{subValue}</p>
+        )}
+    </div>
 );
 
-const DummyChart = () => (
-    <div className="w-full h-64 bg-gray-50/50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 flex items-end justify-between px-4 pb-4 opacity-30">
-            {[40, 60, 45, 70, 50, 80, 65, 85, 75, 90, 60, 95].map((h, i) => (
-                <div key={i} className="w-1/12 mx-0.5 bg-purple-600 rounded-t-md" style={{ height: `${h}%` }} />
-            ))}
+// Progress Bar for "Topic Analysis" -> "Asset Allocation"
+const AllocationBar = ({ label, value, color = "orange", count }) => (
+    <div className="flex items-center gap-4 py-3">
+        <span className="w-32 text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+        <div className="flex-1 h-4 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${value}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className={`h-full rounded-full ${color === 'orange' ? 'bg-orange-500' : 'bg-blue-500'}`}
+            />
         </div>
-        <p className="text-gray-400 dark:text-gray-500 font-medium z-10">Portfolio Performance Chart (Coming Soon)</p>
+        <span className="w-16 text-right text-sm text-gray-500">{count}</span>
     </div>
 );
 
 export default function Dashboard() {
     const { user } = useAuth();
-    const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening';
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black p-4 sm:p-6 lg:p-8 transition-colors duration-300">
-            {/* Header */}
-            <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {greeting}, <span className="text-purple-600">{user?.name?.split(' ')[0] || 'Trader'}</span>!
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Here's what's happening with your portfolio today.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button className="px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm">
-                        Add Transaction
-                    </button>
-                    <button className="px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors shadow-lg shadow-purple-600/20">
-                        View Reports
-                    </button>
-                </div>
-            </header>
+        <div className="max-w-7xl mx-auto space-y-8">
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatsCard
-                    title="Total Balance"
-                    value="₹1,24,500"
-                    change={12.5}
-                    icon={<Wallet className="w-6 h-6" />}
-                    color="purple"
+            {/* 1. Header Section (My Workspace) */}
+            <div className="flex items-center gap-2 mb-6">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">My Workspace</h1>
+                <ArrowUpRight className="w-4 h-4 text-gray-400" />
+            </div>
+
+            {/* 2. Stats Grid (Codolio Style: Clean, white cards) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <MinimalStatsCard
+                    label="Total Balance"
+                    value="₹1.24L"
+                    info={true}
                 />
-                <StatsCard
-                    title="Total Invested"
-                    value="₹85,000"
-                    change={2.4}
-                    icon={<BarChart3 className="w-6 h-6" />}
-                    color="blue"
+                <MinimalStatsCard
+                    label="Invested Amount"
+                    value="₹85K"
+                    info={true}
                 />
-                <StatsCard
-                    title="Current Value"
-                    value="₹1,24,500"
-                    change={46.4}
-                    icon={<TrendingUp className="w-6 h-6" />}
-                    color="green"
-                />
-                <StatsCard
-                    title="Day's P&L"
-                    value="+₹1,200"
-                    change={1.2}
-                    icon={<Zap className="w-6 h-6" />}
-                    color="orange"
+                <MinimalStatsCard
+                    label="Day's Gain"
+                    value="+₹1.2K"
+                    info={true}
                 />
             </div>
 
-            {/* Content Grid */}
+            {/* 3. Main Content Split */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Chart Section */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 p-6 rounded-2xl shadow-xl">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Portfolio Analytics</h2>
-                            <select className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-lg p-2 focus:ring-2 focus:ring-purple-600 outline-none">
-                                <option>This Week</option>
-                                <option>This Month</option>
-                                <option>This Year</option>
-                            </select>
+
+                {/* Left Column (Content) */}
+                <div className="lg:col-span-2 space-y-8">
+
+                    {/* Tabs / Recent Section */}
+                    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm min-h-[300px]">
+                        <div className="flex items-center gap-6 border-b border-gray-100 dark:border-gray-800 pb-4 mb-6">
+                            <button className="text-gray-900 dark:text-white font-semibold border-b-2 border-orange-500 pb-4 -mb-4 px-1">
+                                Recent
+                            </button>
+                            <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 transition-colors pb-4 -mb-4 px-1">
+                                Custom Watchlists
+                            </button>
                         </div>
-                        <DummyChart />
+
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg group cursor-pointer transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
+                                        <Code className="w-5 h-5" />
+                                    </div>
+                                    <span className="font-medium text-gray-700 dark:text-gray-200">NIFTY 50 Options Strategy</span>
+                                </div>
+                                <span className="text-xs text-gray-400 group-hover:text-gray-500">Viewed Sep 22</span>
+                            </div>
+                            <div className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg group cursor-pointer transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
+                                        <FileText className="w-5 h-5" />
+                                    </div>
+                                    <span className="font-medium text-gray-700 dark:text-gray-200">Long Term Portfolio</span>
+                                </div>
+                                <span className="text-xs text-gray-400 group-hover:text-gray-500">Viewed Jul 8</span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Recent Transactions */}
-                    <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 p-6 rounded-2xl shadow-xl">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recent Transactions</h2>
-                            <Link href="/transactions" className="text-purple-600 text-sm font-medium hover:text-purple-700 flex items-center gap-1">
-                                View All <ArrowRight className="w-4 h-4" />
-                            </Link>
+                    {/* Topic Analysis -> Asset Allocation */}
+                    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center gap-2 mb-6">
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Asset Allocation</h2>
+                            <ArrowUpRight className="w-4 h-4 text-gray-400" />
                         </div>
-                        <div className="space-y-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-colors cursor-pointer">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${i % 2 === 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                            {i % 2 === 0 ? <TrendingUp className="w-5 h-5" /> : <BarChart3 className="w-5 h-5" />}
-                                        </div>
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900 dark:text-white">TATA MOTORS</h4>
-                                            <p className="text-xs text-gray-500">Today, 10:45 AM</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className={`font-bold ${i % 2 === 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {i % 2 === 0 ? '+₹4,500' : '-₹2,100'}
-                                        </p>
-                                        <p className="text-xs text-gray-500">Success</p>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="space-y-2">
+                            <AllocationBar label="Large Cap" value={45} count="45%" />
+                            <AllocationBar label="Mid Cap" value={30} count="30%" />
+                            <AllocationBar label="Small Cap" value={15} count="15%" />
+                            <AllocationBar label="T-Bills / Gold" value={10} count="10%" />
                         </div>
                     </div>
+
                 </div>
 
-                {/* Sidebar Widget (Market Overview) */}
+                {/* Right Column (Widgets) - NO Company Wise Sheet */}
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-6 rounded-2xl text-white shadow-xl">
-                        <h2 className="text-xl font-bold mb-2">Upgrade to Pro</h2>
-                        <p className="text-purple-100 text-sm mb-4">Get advanced analytics, AI insights, and unlimited transaction history.</p>
-                        <button className="w-full py-2.5 bg-white text-purple-600 font-bold rounded-xl hover:bg-purple-50 transition-colors text-sm">
-                            Try Pro for Free
-                        </button>
-                    </div>
 
-                    <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 p-6 rounded-2xl shadow-xl">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Market Overview</h2>
-                        <div className="space-y-3">
-                            {['NIFTY 50', 'SENSEX', 'BANK NIFTY'].map((idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-800 rounded-xl">
-                                    <span className="font-medium text-gray-700 dark:text-gray-300">{idx}</span>
-                                    <span className="font-semibold text-green-600">+0.85%</span>
-                                </div>
-                            ))}
+                    {/* Broker Integration Status Widget */}
+                    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Brokers Connected</h2>
+                            <ArrowUpRight className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <p className="text-xs text-gray-500 mb-6">Last Synced: 2 mins ago</p>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs">Z</div>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">Zerodha</span>
+                                <div className="ml-auto w-2 h-2 rounded-full bg-green-500" title="Connected"></div>
+                            </div>
+                            <div className="flex items-center gap-3 opacity-50">
+                                <div className="w-8 h-8 rounded bg-orange-50 flex items-center justify-center text-orange-600 font-bold text-xs">U</div>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">Upstox</span>
+                                <div className="ml-auto w-2 h-2 rounded-full bg-gray-300" title="Not Connected"></div>
+                            </div>
                         </div>
                     </div>
+
+                    {/* Extension / Promotion Card (Orange bg) */}
+                    <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20 rounded-2xl p-6 relative overflow-hidden group">
+                        <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-gray-900 dark:text-white">Pro Analytics</h3>
+                                <ExternalLink className="w-4 h-4 text-gray-500" />
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                                Get advanced insights on your portfolio volatility and tax harvesting opportunities.
+                            </p>
+                            <button className="w-full py-2 bg-white dark:bg-black text-orange-600 font-semibold text-sm rounded-lg shadow-sm hover:shadow transition-all">
+                                Try Pro
+                            </button>
+                        </div>
+                        {/* Decorational circles */}
+                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-orange-200/50 rounded-full blur-2xl group-hover:bg-orange-300/50 transition-colors" />
+                    </div>
+
                 </div>
             </div>
         </div>
