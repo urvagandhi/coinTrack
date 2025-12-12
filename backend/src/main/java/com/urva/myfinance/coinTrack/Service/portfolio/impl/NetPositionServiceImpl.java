@@ -53,6 +53,11 @@ public class NetPositionServiceImpl implements NetPositionService {
             BigDecimal totalInvestedForAvg = BigDecimal.ZERO;
             int totalDeliveryQtyForAvg = 0;
 
+            // FNO Helpers
+            boolean isDerivative = false;
+            BigDecimal totalFnoInvested = BigDecimal.ZERO;
+            int totalFnoQty = 0;
+
             Aggregator(String symbol) {
                 this.symbol = symbol;
             }
@@ -132,16 +137,49 @@ public class NetPositionServiceImpl implements NetPositionService {
                         BigDecimal.valueOf(agg.totalDeliveryQtyForAvg), 4, RoundingMode.HALF_UP);
             }
 
+            // F&O Logic
+            BigDecimal mtmPL = null;
+            BigDecimal fnoDayGain = null;
+            BigDecimal fnoDayGainPercent = null;
+
+            // Calculate MTM for Derivatives
+            if (agg.isDerivative && agg.totalFnoQty != 0) {
+                // Avg Buy Price for FNO
+                BigDecimal fnoAvgBuy = (agg.totalFnoQty != 0)
+                        ? agg.totalFnoInvested.divide(BigDecimal.valueOf(agg.totalFnoQty), 4, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO;
+                BigDecimal totalQtyBD = BigDecimal.valueOf(agg.totalQty);
+
+                // MTM = (CMP - AvgBuy) * Qty
+                mtmPL = (cmp.subtract(fnoAvgBuy)).multiply(totalQtyBD).setScale(2, RoundingMode.HALF_UP);
+
+                // Day Gain for FNO
+                if (prevClose.compareTo(BigDecimal.ZERO) != 0 && cmp.compareTo(BigDecimal.ZERO) != 0) {
+                    fnoDayGain = (cmp.subtract(prevClose)).multiply(totalQtyBD).setScale(2, RoundingMode.HALF_UP);
+                    fnoDayGainPercent = (cmp.subtract(prevClose))
+                            .divide(prevClose, 4, RoundingMode.HALF_UP)
+                            .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
+                }
+            }
+
             // Financials
             BigDecimal totalQtyBD = BigDecimal.valueOf(agg.totalQty);
             BigDecimal currentValue = totalQtyBD.multiply(cmp);
-            BigDecimal investedValue = totalQtyBD.multiply(avgBuyPrice);
+
+            // Invested Value: For Equity = Qty * AvgBuy. For FNO = Margin/Cost.
+            BigDecimal investedValue;
+            if (agg.isDerivative) {
+                investedValue = agg.totalFnoInvested;
+            } else {
+                investedValue = totalQtyBD.multiply(avgBuyPrice);
+            }
+
             BigDecimal unrealizedPL = currentValue.subtract(investedValue);
 
             BigDecimal dayGain = BigDecimal.ZERO;
             BigDecimal dayGainPercent = BigDecimal.ZERO;
 
-            if (prevClose.compareTo(BigDecimal.ZERO) != 0 && cmp.compareTo(BigDecimal.ZERO) != 0) {
+            if (!agg.isDerivative && prevClose.compareTo(BigDecimal.ZERO) != 0 && cmp.compareTo(BigDecimal.ZERO) != 0) {
                 dayGain = (cmp.subtract(prevClose)).multiply(totalQtyBD);
                 dayGainPercent = (cmp.subtract(prevClose))
                         .divide(prevClose, 4, RoundingMode.HALF_UP)
@@ -160,6 +198,11 @@ public class NetPositionServiceImpl implements NetPositionService {
                     .unrealizedPL(unrealizedPL.setScale(2, RoundingMode.HALF_UP))
                     .dayGain(dayGain.setScale(2, RoundingMode.HALF_UP))
                     .dayGainPercent(dayGainPercent.setScale(2, RoundingMode.HALF_UP))
+                    // F&O Fields
+                    .isDerivative(agg.isDerivative)
+                    .mtmPL(mtmPL)
+                    .fnoDayGain(fnoDayGain)
+                    .fnoDayGainPercent(fnoDayGainPercent)
                     .build());
         }
 

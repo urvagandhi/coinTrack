@@ -26,4 +26,16 @@ public class NetPositionDTO {
     private BigDecimal unrealizedPL;
     private BigDecimal dayGain;
     private BigDecimal dayGainPercent;
+
+    // Derivative Fields (Job 11)
+    private boolean isDerivative;
+    private String instrumentType; // FUTURES, OPTIONS
+    private BigDecimal strikePrice;
+    private String optionType; // CE, PE
+    private java.time.LocalDate expiryDate;
+    private BigDecimal mtmPL;
+    private Integer lotSize;
+    private Integer netLots;
+    private BigDecimal fnoDayGain;
+    private BigDecimal fnoDayGainPercent;
 }
