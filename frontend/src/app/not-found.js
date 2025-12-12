@@ -1,52 +1,79 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { Home } from 'lucide-react';
+import { Space_Mono } from 'next/font/google';
 import Link from 'next/link';
+
+const spaceMono = Space_Mono({
+    weight: ['400', '700'],
+    subsets: ['latin'],
+});
 
 export default function NotFound() {
     return (
-        <div className="min-h-screen bg-white font-serif">
-            <section className="py-10">
-                <div className="container mx-auto px-4">
-                    <div className="flex justify-center">
-                        <div className="w-full max-w-4xl">
-                            <div className="text-center">
-                                {/* 404 Background Section */}
-                                <div
-                                    className="relative h-150 bg-center bg-no-repeat bg-cover mb-8"
-                                    style={{
-                                        backgroundImage: "url('https://cdn.dribbble.com/users/285475/screenshots/2083086/dribbble_1.gif')"
-                                    }}
-                                >
-                                    <div className="absolute inset-0 flex items-start justify-center">
-                                        <h1
-                                            className="text-8xl font-bold text-black relative z-10"
-                                            style={{ textShadow: '0 6px 20px rgba(0,0,0,0.45)' }}
-                                        >
-                                            404
-                                        </h1>
-                                    </div>
-                                </div>
+        <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-black transition-colors duration-300 font-sans">
+            {/* Background Orbs */}
+            <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-blob" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-2000" />
+            </div>
 
-                                {/* Content Box */}
-                                <div className="mt-[-125px] relative z-20">
-                                    <h3 className="text-3xl font-bold mb-4 text-gray-800">
-                                        Look like you're lost
-                                    </h3>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full max-w-3xl relative z-10 px-6 text-center"
+            >
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="mb-8"
+                >
+                    <h1 className={`${spaceMono.className} text-9xl font-black text-black dark:text-white drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] select-none`}>
+                        404
+                    </h1>
+                    <h2 className="text-4xl font-bold text-gray-900 dark:text-white mt-4 tracking-tight">
+                        Look like you're lost
+                    </h2>
+                </motion.div>
 
-                                    <p className="text-gray-600 mb-6 text-lg">
-                                        The page you are looking for is not available!
-                                    </p>
+                {/* Preserved GIF Section - Floating Style with simple shadow */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                    className="relative w-full h-64 sm:h-80 mb-10 mx-auto max-w-lg rounded-3xl overflow-hidden shadow-2xl"
+                >
+                    <div
+                        className="absolute inset-0 bg-center bg-no-repeat bg-cover transform hover:scale-105 transition-transform duration-700"
+                        style={{
+                            backgroundImage: "url('https://cdn.dribbble.com/users/285475/screenshots/2083086/dribbble_1.gif')"
+                        }}
+                    />
+                </motion.div>
 
-                                    <Link
-                                        href="/"
-                                        className="inline-block bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded transition-colors duration-200 no-underline"
-                                    >
-                                        Go to Home
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                {/* Content & Action */}
+                <div className="relative z-20">
+                    <p className={`${spaceMono.className} text-gray-600 dark:text-gray-300 text-lg mb-10 max-w-md mx-auto font-medium leading-relaxed`}>
+                        The page you are looking for is not available or under maintenance!
+                    </p>
+
+                    <Link
+                        href="/"
+                        className={`${spaceMono.className} inline-flex items-center gap-2 py-4 px-8 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full shadow-lg hover:shadow-purple-600/30 transition-all transform hover:-translate-y-1 active:translate-y-0`}
+                    >
+                        <Home className="w-5 h-5" />
+                        Go to Home
+                    </Link>
                 </div>
-            </section>
+
+                <p className="mt-16 text-xs font-medium text-gray-400 dark:text-gray-600 uppercase tracking-widest">
+                    &copy; {new Date().getFullYear()} coinTrack
+                </p>
+            </motion.div>
         </div>
     );
 }
