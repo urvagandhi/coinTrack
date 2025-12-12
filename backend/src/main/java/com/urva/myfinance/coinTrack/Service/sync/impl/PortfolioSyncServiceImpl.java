@@ -281,6 +281,7 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
         }
     }
 
+    @SuppressWarnings("null")
     private SyncLog createLog(String userId, Broker broker, SyncStatus status, String message, Long duration) {
         SyncLog log = SyncLog.builder()
                 .userId(userId)

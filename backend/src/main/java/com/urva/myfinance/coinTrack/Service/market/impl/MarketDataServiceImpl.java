@@ -103,6 +103,7 @@ public class MarketDataServiceImpl implements MarketDataService {
         return result;
     }
 
+    @SuppressWarnings("null")
     @Override
     public MarketPrice fetchAndCachePrice(String symbol) {
         try {

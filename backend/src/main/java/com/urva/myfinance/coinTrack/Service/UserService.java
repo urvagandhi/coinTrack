@@ -74,6 +74,7 @@ public class UserService {
 
     public User getUserById(String id) {
         try {
+            @SuppressWarnings("null")
             Optional<User> user = userRepository.findById(id);
             return user.orElse(null);
         } catch (Exception e) {
@@ -81,6 +82,7 @@ public class UserService {
         }
     }
 
+    @SuppressWarnings("null")
     public User updateUser(String id, User user) {
         try {
             Optional<User> existingUserOpt = userRepository.findById(id);
@@ -115,6 +117,7 @@ public class UserService {
         }
     }
 
+    @SuppressWarnings("null")
     public boolean deleteUser(String id) {
         try {
             if (userRepository.existsById(id)) {
@@ -265,6 +268,7 @@ public class UserService {
      * Verify OTP and issue Token.
      * Handles both Login OTP and Registration OTP.
      */
+    @SuppressWarnings("null")
     public LoginResponse verifyOtp(String usernameOrEmailOrMobile, String otp) {
         try {
             // 1. Check Pending Registrations first
