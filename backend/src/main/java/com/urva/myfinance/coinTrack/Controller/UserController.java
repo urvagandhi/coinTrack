@@ -89,6 +89,19 @@ public class UserController {
         }
     }
 
+    @PostMapping("/auth/resend-otp")
+    public ResponseEntity<?> resendOtp(@RequestBody Map<String, String> request) {
+        String username = request.get("username");
+        try {
+            logger.info("Resend OTP request for: {}", username);
+            LoginResponse response = userService.resendOtp(username);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Resend OTP failed for {}: {}", username, e.getMessage());
+            return ResponseEntity.badRequest().body(createErrorResponse(e.getMessage()));
+        }
+    }
+
     /**
      * Register a new user account.
      *

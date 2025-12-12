@@ -29,10 +29,12 @@ public class UserService {
     private static class OtpData {
         String otp;
         long expiryTime;
+        long creationTime;
 
         OtpData(String otp, long expiryTime) {
             this.otp = otp;
             this.expiryTime = expiryTime;
+            this.creationTime = System.currentTimeMillis();
         }
     }
 
@@ -250,6 +252,74 @@ public class UserService {
 
         } catch (Exception e) {
             throw new RuntimeException("OTP Verification failed: " + e.getMessage());
+        }
+    }
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UserService.class);
+
+    /**
+     * Resend OTP to user.
+     * Enforces a 30-second cooldown period.
+     */
+    public LoginResponse resendOtp(String usernameOrEmailOrMobile) {
+        try {
+            logger.info("Resend OTP requested for identifier: {}", usernameOrEmailOrMobile);
+            User user = findUserByUsernameEmailOrMobile(usernameOrEmailOrMobile);
+            if (user == null) {
+                logger.warn("Resend OTP failed: User not found for {}", usernameOrEmailOrMobile);
+                throw new RuntimeException("User not found");
+            }
+
+            String username = user.getUsername();
+            logger.info("Found user for resend: {}", username);
+
+            // Check if OTP was requested recently (Rate Limiting)
+            OtpData existingOtp = otpStorage.get(username);
+            if (existingOtp != null) {
+                long timeSinceCreation = System.currentTimeMillis() - existingOtp.creationTime;
+                if (timeSinceCreation < 30 * 1000) { // 30 seconds
+                    long remainingSeconds = 30 - (timeSinceCreation / 1000);
+                    logger.warn("Resend OTP rate limited for {}. Remaining: {}s", username, remainingSeconds);
+                    throw new RuntimeException(
+                            "Please wait " + remainingSeconds + " seconds before requesting a new OTP.");
+                } else {
+                    // Explicitly remove old OTP if it exists but is past cooldown (even if not
+                    // strictly expired)
+                    // This ensures clean state
+                    otpStorage.remove(username);
+                    logger.info("Removed existing OTP for {}", username);
+                }
+            }
+
+            // Generate new 6-digit OTP
+            String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+            logger.info("Generated NEW OTP for {}: {}", username, otp); // DEBUG LOG - Remove in production
+
+            // Store OTP (valid for 5 minutes)
+            long expiryTime = System.currentTimeMillis() + (5 * 60 * 1000);
+            otpStorage.put(username, new OtpData(otp, expiryTime));
+            logger.info("Stored new OTP in memory for {}", username);
+
+            // Send OTP
+            String contact = user.getEmail() != null ? user.getEmail() : user.getPhoneNumber();
+            try {
+                notificationService.sendOtp(contact, otp);
+                logger.info("OTP sent to notification service for {}", contact);
+            } catch (Exception e) {
+                logger.error("Failed to send OTP notification to {}: {}", contact, e.getMessage());
+                // Note: We still return success to UI so user can try entering the OTP we
+                // logged (for dev)
+                // or retry later. In prod, might want to rollback storage.
+            }
+
+            LoginResponse response = new LoginResponse();
+            response.setMessage("OTP sent successfully");
+            response.setRequiresOtp(true);
+            return response;
+
+        } catch (Exception e) {
+            logger.error("Resend OTP exception: {}", e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 

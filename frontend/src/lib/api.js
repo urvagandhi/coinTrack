@@ -129,6 +129,7 @@ export const endpoints = {
         register: '/api/auth/register',     // UserController @PostMapping("/auth/register")
         verifyToken: '/api/auth/verify-token', // UserController @GetMapping("/auth/verify-token")
         verifyOtp: '/api/auth/verify-otp',    // UserController @PostMapping("/auth/verify-otp")
+        resendOtp: '/api/auth/resend-otp',    // UserController @PostMapping("/auth/resend-otp")
         checkUsername: (username) => `/api/auth/check-username/${username}`, // UserController
     },
 
@@ -279,6 +280,20 @@ export const authAPI = {
             return response.data;
         } catch (error) {
             console.error('❌ OTP verification failed:', {
+                status: error.response ? error.response.status : 'N/A',
+                message: error.userMessage || error.message,
+                data: error.response ? error.response.data : 'No Data'
+            });
+            throw error;
+        }
+    },
+    resendOtp: async (username) => {
+        try {
+            console.log('🔄 Resending OTP for:', username);
+            const response = await api.post(endpoints.auth.resendOtp, { username });
+            return response.data;
+        } catch (error) {
+            console.error('❌ Resend OTP failed:', {
                 status: error.response ? error.response.status : 'N/A',
                 message: error.userMessage || error.message,
                 data: error.response ? error.response.data : 'No Data'

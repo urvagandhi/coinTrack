@@ -180,6 +180,19 @@ export function AuthProvider({ children }) {
         }
     };
 
+    const resendOtp = async (username) => {
+        try {
+            const response = await authAPI.resendOtp(username);
+            return { success: true, message: response.message };
+        } catch (error) {
+            const errorMessage = error.userMessage || error.message || 'Failed to resend OTP';
+            return {
+                success: false,
+                error: errorMessage
+            };
+        }
+    };
+
     const logout = async () => {
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
 
@@ -319,6 +332,7 @@ export function AuthProvider({ children }) {
         // Actions
         login,
         verifyOtp,
+        resendOtp,
         logout,
         register,
         updateProfile,

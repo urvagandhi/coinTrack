@@ -42,7 +42,7 @@ public class SecurityConfig {
 
                         // 🔓 Auth endpoints (public)
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify-token",
-                                "/api/auth/check-username/*", "/api/auth/verify-otp")
+                                "/api/auth/check-username/*", "/api/auth/verify-otp", "/api/auth/resend-otp")
                         .permitAll()
 
                         // 🔓 Broker callbacks (public)

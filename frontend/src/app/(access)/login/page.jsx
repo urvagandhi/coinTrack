@@ -6,7 +6,7 @@ import { ArrowRight, Eye, EyeOff, Loader, Lock, Mail, Phone, User } from 'lucide
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -17,12 +17,14 @@ export default function LoginPage() {
     });
     const [otp, setOtp] = useState('');
     const [showOtpInput, setShowOtpInput] = useState(false);
+    const [timer, setTimer] = useState(30);
+    const [canResend, setCanResend] = useState(false);
     const [tempUsername, setTempUsername] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
-    const { login, verifyOtp } = useAuth();
+    const { login, verifyOtp, resendOtp } = useAuth();
 
     const redirectPath = searchParams.get('redirect') || '/dashboard';
 
@@ -96,6 +98,32 @@ export default function LoginPage() {
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
+    };
+
+    // Timer logic for OTP resend
+    useEffect(() => {
+        let interval;
+        if (showOtpInput && timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        } else if (timer === 0) {
+            setCanResend(true);
+        }
+        return () => clearInterval(interval);
+    }, [showOtpInput, timer]);
+
+    const handleResendOtp = async () => {
+        setCanResend(false);
+        setTimer(30);
+        setError('');
+
+        const result = await resendOtp(tempUsername);
+        if (!result.success) {
+            setError(result.error);
+            setCanResend(true); // Allow retry if failed (optional, or keep timer)
+            setTimer(0);
+        }
     };
 
     const getInputIcon = () => {
@@ -196,6 +224,23 @@ export default function LoginPage() {
                                     </>
                                 )}
                             </button>
+
+                            <div className="text-center mt-4 mb-2">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Didn't receive the code?{' '}
+                                    <button
+                                        type="button"
+                                        onClick={handleResendOtp}
+                                        disabled={!canResend}
+                                        className={`font-semibold ${canResend
+                                            ? 'text-purple-600 hover:text-purple-500 cursor-pointer'
+                                            : 'text-gray-400 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        {canResend ? 'Resend OTP' : `Resend in ${timer}s`}
+                                    </button>
+                                </p>
+                            </div>
 
                             <button
                                 type="button"
