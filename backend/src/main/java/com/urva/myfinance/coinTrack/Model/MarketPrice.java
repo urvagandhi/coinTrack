@@ -27,6 +27,7 @@ public class MarketPrice {
 
     private BigDecimal previousClose;
 
+    @SuppressWarnings("removal")
     @Indexed(name = "price_ttl_index", expireAfterSeconds = 15)
     private LocalDateTime updatedAt;
 }
