@@ -16,6 +16,16 @@ const AUTH_ACTIONS = {
     CLEAR_ERROR: 'CLEAR_ERROR',
 };
 
+// DEV BYPASS CONFIGURATION
+const DEV_BYPASS = true; // Set to true to skip login
+const MOCK_USER = {
+    id: 'dev-user-id',
+    name: 'Dev User',
+    email: 'dev@example.com',
+    role: 'admin',
+    isAdmin: true
+};
+
 // Initial state
 const initialState = {
     user: null,
@@ -87,6 +97,13 @@ export function AuthProvider({ children }) {
     const initializeAuth = async () => {
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
 
+        // DEV BYPASS LOGIC
+        if (DEV_BYPASS) {
+            console.warn('⚠️ AUTH BYPASS ENABLED: Logging in as Mock User');
+            dispatch({ type: AUTH_ACTIONS.SET_USER, payload: MOCK_USER });
+            return;
+        }
+
         try {
             const token = tokenManager.getToken();
 
@@ -113,6 +130,11 @@ export function AuthProvider({ children }) {
     };
 
     const login = async (credentials, remember = false) => {
+        if (DEV_BYPASS) {
+            dispatch({ type: AUTH_ACTIONS.SET_USER, payload: MOCK_USER });
+            return { success: true, user: MOCK_USER };
+        }
+
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
         dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
@@ -154,6 +176,11 @@ export function AuthProvider({ children }) {
     };
 
     const verifyOtp = async (username, otp) => {
+        if (DEV_BYPASS) {
+            dispatch({ type: AUTH_ACTIONS.SET_USER, payload: MOCK_USER });
+            return { success: true, user: MOCK_USER };
+        }
+
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
         dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
@@ -197,7 +224,7 @@ export function AuthProvider({ children }) {
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
 
         try {
-            await authAPI.logout();
+            if (!DEV_BYPASS) await authAPI.logout();
         } catch (error) {
             console.warn('Logout API call failed:', error.message);
         } finally {
@@ -393,64 +420,3 @@ export function withAuth(Component) {
 }
 
 export default AuthContext;
-
-/*
-TODO: Enhanced Security Implementation
-=============================================
-
-For production environments, consider implementing the following security enhancements:
-
-1. REFRESH TOKEN FLOW:
-   - Store access token in memory (not localStorage)
-   - Store refresh token in httpOnly cookie
-   - Implement automatic token refresh
-   - Add token refresh interceptor in axios
-
-2. IMPLEMENTATION EXAMPLE:
-
-const refreshToken = async () => {
-  try {
-    const response = await api.post('/auth/refresh', {}, {
-      withCredentials: true, // Send httpOnly cookies
-    });
-
-    const newToken = response.data.accessToken;
-    // Store in memory only
-    setTokenInMemory(newToken);
-
-    return newToken;
-  } catch (error) {
-    logout();
-    throw error;
-  }
-};
-
-// Add to axios interceptor:
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401 && !error.config._retry) {
-      error.config._retry = true;
-
-      try {
-        const newToken = await refreshToken();
-        error.config.headers.Authorization = `Bearer ${newToken}`;
-        return api.request(error.config);
-      } catch (refreshError) {
-        return Promise.reject(refreshError);
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
-
-3. BACKEND CHANGES NEEDED:
-   - Add refresh token endpoint
-   - Set httpOnly cookies for refresh tokens
-   - Implement token blacklisting
-   - Add CSRF protection
-
-Current implementation uses localStorage for simplicity as requested,
-but production apps should migrate to the refresh token approach.
-*/
