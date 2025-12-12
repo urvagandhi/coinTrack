@@ -28,6 +28,7 @@ import com.urva.myfinance.coinTrack.Repository.SyncLogRepository;
 import com.urva.myfinance.coinTrack.Service.broker.BrokerService;
 import com.urva.myfinance.coinTrack.Service.broker.BrokerServiceFactory;
 import com.urva.myfinance.coinTrack.Service.sync.PortfolioSyncService;
+import com.urva.myfinance.coinTrack.Service.sync.SyncSafetyService;
 import com.urva.myfinance.coinTrack.Utils.HashUtil;
 
 @Service
@@ -41,18 +42,21 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
     private final CachedPositionRepository positionRepository;
     private final SyncLogRepository syncLogRepository;
     private final BrokerServiceFactory brokerServiceFactory;
+    private final SyncSafetyService syncSafetyService;
 
     @Autowired
     public PortfolioSyncServiceImpl(BrokerAccountRepository brokerAccountRepository,
             CachedHoldingRepository holdingRepository,
             CachedPositionRepository positionRepository,
             SyncLogRepository syncLogRepository,
-            BrokerServiceFactory brokerServiceFactory) {
+            BrokerServiceFactory brokerServiceFactory,
+            SyncSafetyService syncSafetyService) {
         this.brokerAccountRepository = brokerAccountRepository;
         this.holdingRepository = holdingRepository;
         this.positionRepository = positionRepository;
         this.syncLogRepository = syncLogRepository;
         this.brokerServiceFactory = brokerServiceFactory;
+        this.syncSafetyService = syncSafetyService;
     }
 
     @Override
@@ -72,27 +76,59 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
 
     @Override
     public void syncAllActiveAccounts() {
-        int page = 0;
-        int size = 100;
-        Page<BrokerAccount> accountPage;
+        // 1. Global Lock
+        if (!syncSafetyService.tryGlobalSyncLock()) {
+            logger.warn("Global sync already running. Skipping execution.");
+            return;
+        }
 
-        do {
-            accountPage = brokerAccountRepository.findByIsActiveTrue(PageRequest.of(page, size));
-            for (BrokerAccount account : accountPage.getContent()) {
-                try {
-                    // Running sync in transaction for each account individually to isolate failures
-                    runFullSyncForAccount(account);
-                } catch (Exception e) {
-                    logger.error("Critical error syncing account {}: {}", account.getId(), e.getMessage());
-                }
+        try {
+            // 2. Market Hours Validation (CRON ONLY)
+            if (!syncSafetyService.isMarketOpen()) {
+                logger.info("Market is closed. Skipping global sync.");
+                return;
             }
-            page++;
-        } while (accountPage.hasNext());
+
+            int page = 0;
+            int size = 100;
+            Page<BrokerAccount> accountPage;
+
+            do {
+                accountPage = brokerAccountRepository.findByIsActiveTrue(PageRequest.of(page, size));
+                for (BrokerAccount account : accountPage.getContent()) {
+                    try {
+                        // Running sync in transaction for each account individually to isolate failures
+                        runFullSyncForAccount(account);
+                    } catch (Exception e) {
+                        logger.error("Critical error syncing account {}: {}", account.getId(), e.getMessage());
+                    }
+                }
+                page++;
+            } while (accountPage.hasNext());
+
+        } finally {
+            syncSafetyService.releaseGlobalSyncLock();
+        }
     }
 
     @Override
     @Transactional
     public SyncLog runFullSyncForAccount(BrokerAccount account) {
+        // 3. Account Lock
+        if (!syncSafetyService.tryAccountLock(account.getId())) {
+            logger.warn("Sync already running for account {}. Skipping.", account.getId());
+            return createLog(account.getUserId(), account.getBroker(), SyncStatus.FAILURE,
+                    "Sync locked: Already in progress", 0L);
+        }
+
+        try {
+            return executeSyncLogic(account);
+        } finally {
+            syncSafetyService.releaseAccountLock(account.getId());
+        }
+    }
+
+    private SyncLog executeSyncLogic(BrokerAccount account) {
         LocalDateTime startTime = LocalDateTime.now(INDIA_ZONE);
         Broker broker = account.getBroker();
         String brokerUserId = account.getBrokerUserId(); // Broker-specific User ID
