@@ -6,9 +6,9 @@ import { ArrowRight, Eye, EyeOff, Loader, Lock, Mail, Phone, User } from 'lucide
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [formData, setFormData] = useState({
@@ -377,5 +377,17 @@ export default function LoginPage() {
                 </p>
             </motion.div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
+                <Loader className="w-8 h-8 text-purple-600 animate-spin" />
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }
