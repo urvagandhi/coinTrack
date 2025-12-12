@@ -11,5 +11,7 @@ public interface PortfolioSyncService {
 
     void syncAllActiveAccounts();
 
+    com.urva.myfinance.coinTrack.DTO.ManualRefreshResponse triggerManualRefreshForUser(String userId);
+
     SyncLog runFullSyncForAccount(BrokerAccount account);
 }
