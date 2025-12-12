@@ -258,10 +258,7 @@ export const authAPI = {
         return response.data;
     },
 
-    forgotPassword: async (email) => {
-        const response = await api.post(endpoints.auth.forgotPassword, { email });
-        return response.data;
-    },
+    // forgotPassword removed as backend endpoint does not exist. Use resendOtp flow instead.
 
     verifyOtp: async (username, otp) => {
         console.log('🔐 Verifying OTP for username:', username);
@@ -314,22 +311,10 @@ export const userAPI = {
         return response.data;
     },
 
-    changePassword: async (passwordData) => {
-        // Try primary endpoint first, fallback to alternative
-        try {
-            const response = await api.post(endpoints.users.changePassword, passwordData);
-            return response.data;
-        } catch (error) {
-            if (error.response?.status === 404 && passwordData.userId) {
-                // Try alternative endpoint format
-                const response = await api.post(
-                    endpoints.users.changePasswordById(passwordData.userId),
-                    passwordData
-                );
-                return response.data;
-            }
-            throw error;
-        }
+    changePassword: async (userId, password) => {
+        // Use standard user update endpoint
+        const response = await api.put(endpoints.users.update(userId), { password });
+        return response.data;
     },
 };
 
