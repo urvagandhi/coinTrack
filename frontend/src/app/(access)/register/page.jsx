@@ -180,7 +180,7 @@ export default function RegisterPage() {
             const result = await verifyOtp(formData.username, otp);
             if (result.success) {
                 // Success! Redirect to dashboard
-                router.push('/main/dashboard');
+                router.push('/dashboard');
             } else {
                 setError(result.error || 'Invalid OTP');
             }

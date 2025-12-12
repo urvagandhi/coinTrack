@@ -26,7 +26,7 @@ export default function LoginPage() {
     const [rememberMe, setRememberMe] = useState(false);
     const { login, verifyOtp, resendOtp } = useAuth();
 
-    const redirectPath = searchParams.get('redirect') || '/main/dashboard';
+    const redirectPath = searchParams.get('redirect') || '/dashboard';
 
     const handleChange = (e) => {
         const { name, value } = e.target;
