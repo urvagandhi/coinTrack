@@ -174,22 +174,30 @@ export const endpoints = {
     }
 };
 
+// Helper to unwrap ApiResponse if present
+const unwrapResponse = (data) => {
+    if (data && typeof data === 'object' && data.success === true && 'data' in data) {
+        return data.data;
+    }
+    return data;
+};
+
 export const authAPI = {
     login: async (credentials) => {
         const { data } = await api.post(endpoints.auth.login, credentials);
-        return data; // Expect { token, user } or { requiresOtp }
+        return unwrapResponse(data); // Expect { token, user } or { requiresOtp }
     },
     verifyOtp: async (payload) => {
         const { data } = await api.post(endpoints.auth.verifyOtp, payload);
-        return data;
+        return unwrapResponse(data);
     },
     resendOtp: async (username) => {
         const { data } = await api.post(endpoints.auth.resendOtp, { username });
-        return data;
+        return unwrapResponse(data);
     },
     register: async (userData) => {
         const { data } = await api.post(endpoints.auth.register, userData);
-        return data;
+        return unwrapResponse(data);
     },
     logout: async () => {
         try {
@@ -205,67 +213,71 @@ export const authAPI = {
 export const userAPI = {
     getProfile: async () => {
         const { data } = await api.get(endpoints.users.me);
-        return data;
+        return unwrapResponse(data);
     },
     updateProfile: async (id, payload) => {
         const { data } = await api.put(endpoints.users.update(id), payload);
-        return data;
+        return unwrapResponse(data);
+    },
+    changePassword: async (id, newPassword) => {
+        const { data } = await api.post(`/api/users/${id}/change-password`, { password: newPassword });
+        return unwrapResponse(data);
     }
 };
 
 export const portfolioAPI = {
     getSummary: async () => {
         const { data } = await api.get(endpoints.portfolio.summary);
-        return data;
+        return unwrapResponse(data);
     },
     getHoldings: async () => {
         const { data } = await api.get(endpoints.portfolio.holdings);
-        return data || []; // Default to empty array
+        return unwrapResponse(data) || []; // Default to empty array
     },
     getPositions: async () => {
         const { data } = await api.get(endpoints.portfolio.positions);
-        return data || [];
+        return unwrapResponse(data) || [];
     }
 };
 
 export const brokerAPI = {
     getConnectUrl: async (brokerName) => {
         const { data } = await api.get(endpoints.brokers.connect(brokerName));
-        return data;
+        return unwrapResponse(data);
     },
     saveZerodhaCredentials: async (creds) => {
         const { data } = await api.post(endpoints.brokers.zerodha.saveCredentials, creds);
-        return data;
+        return unwrapResponse(data);
     },
     getStatus: async (brokerName) => {
         const { data } = await api.get(endpoints.brokers.status(brokerName));
-        return data;
+        return unwrapResponse(data);
     },
     handleCallback: async (brokerName, requestToken) => {
         const { data } = await api.post(endpoints.brokers.callback, {
             broker: brokerName,
             requestToken
         });
-        return data;
+        return unwrapResponse(data);
     }
 };
 
 export const notesAPI = {
     getAll: async () => {
         const { data } = await api.get(endpoints.notes.list);
-        return data.data || [];
+        return unwrapResponse(data) || [];
     },
     create: async (note) => {
         const { data } = await api.post(endpoints.notes.create, note);
-        return data.data;
+        return unwrapResponse(data);
     },
     update: async (id, note) => {
         const { data } = await api.put(endpoints.notes.update(id), note);
-        return data.data;
+        return unwrapResponse(data);
     },
     delete: async (id) => {
         const { data } = await api.delete(endpoints.notes.delete(id));
-        return data;
+        return unwrapResponse(data);
     }
 };
 

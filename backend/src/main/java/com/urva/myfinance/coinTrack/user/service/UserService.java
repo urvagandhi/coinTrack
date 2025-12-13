@@ -111,15 +111,33 @@ public class UserService {
                 if (user.getPhoneNumber() != null) {
                     existingUser.setPhoneNumber(normalizePhoneNumber(user.getPhoneNumber()));
                 }
-                if (user.getPassword() != null) {
-                    existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+                if (user.getBio() != null) {
+                    existingUser.setBio(user.getBio());
                 }
-
+                if (user.getLocation() != null) {
+                    existingUser.setLocation(user.getLocation());
+                }
                 return userRepository.save(existingUser);
             }
             return null; // User not found
         } catch (Exception e) {
             throw new RuntimeException("Error updating user with id: " + id + ". " + e.getMessage(), e);
+        }
+    }
+
+    @SuppressWarnings("null")
+    public void changePassword(String userId, String newPassword) {
+        try {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                user.setPassword(passwordEncoder.encode(newPassword));
+                userRepository.save(user);
+            } else {
+                throw new RuntimeException("User not found");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error changing password: " + e.getMessage(), e);
         }
     }
 

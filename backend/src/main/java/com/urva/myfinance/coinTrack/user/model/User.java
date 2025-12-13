@@ -25,6 +25,8 @@ public class User {
     private LocalDate dateOfBirth;
     private String email;
     private String phoneNumber;
+    private String bio;
+    private String location;
     private String password;
 
     @CreatedDate

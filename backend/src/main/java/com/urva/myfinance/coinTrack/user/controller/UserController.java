@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -269,6 +270,46 @@ public class UserController {
             logger.error("Error updating user {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error("Failed to update user"));
+        }
+    }
+
+    @PostMapping("/users/{id}/change-password")
+    public ResponseEntity<?> changePassword(@PathVariable String id, @RequestBody Map<String, String> payload) {
+        try {
+            String newPassword = payload.get("password");
+            if (newPassword == null || newPassword.length() < 8) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Password must be at least 8 characters"));
+            }
+
+            userService.changePassword(id, newPassword);
+            return ResponseEntity.ok(ApiResponse.success("Password updated successfully"));
+        } catch (Exception e) {
+            logger.error("Error changing password for user {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to change password"));
+        }
+    }
+
+    @GetMapping("/users/me")
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Not authenticated"));
+            }
+
+            String username = authentication.getName();
+            User user = userService.findUserByUsername(username);
+
+            if (user != null) {
+                user.setPassword(null);
+                return ResponseEntity.ok(ApiResponse.success(user));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
+            }
+        } catch (Exception e) {
+            logger.error("Error fetching current user: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to fetch profile"));
         }
     }
 

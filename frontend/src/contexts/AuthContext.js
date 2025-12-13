@@ -106,12 +106,17 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const login = async (credentials, remember = false) => {
+    const login = async (credentials) => {
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
         dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
         try {
-            const response = await authAPI.login(credentials);
+            let response = await authAPI.login(credentials);
+
+            // Handle ApiResponse wrapper if present
+            if (response.success && response.data) {
+                response = response.data;
+            }
 
             // CASE 1: OTP Required
             if (response.requiresOtp) {
@@ -126,8 +131,18 @@ export function AuthProvider({ children }) {
             }
 
             // CASE 2: Direct Success (Token + User)
-            const { token, user } = response;
-            if (token && user) {
+            // LoginResponse is flat, so we verify token and construct user object
+            const { token, ...userData } = response;
+
+            if (token) {
+                const user = {
+                    id: userData.userId,
+                    username: userData.username,
+                    email: userData.email,
+                    name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
+                    phoneNumber: userData.mobile
+                };
+
                 tokenManager.setToken(token, remember);
                 logger.info('Login successful', { userId: user.id });
                 dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
@@ -152,27 +167,26 @@ export function AuthProvider({ children }) {
         dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
         try {
-            const response = await authAPI.verifyOtp({ username, otp });
+            let response = await authAPI.verifyOtp({ username, otp });
 
-            // Expecting: { token, user } or similar normalized response from api.js
-            // If api.js normalized it, we should have checks here.
-            // Based on api.js implementation, verifyOtp calls endpoints.auth.verifyOtp
-            // which likely returns { token, ...userDetails }
+            // Handle ApiResponse wrapper if present
+            if (response.success && response.data) {
+                response = response.data;
+            }
 
-            // Check based on known backend response structure (often flattened or nested)
-            // Assuming normalization in api.js didn't change structure but ensured error handling
-            // We'll handle generic "token" presence
-
-            const token = response.token || response.accessToken;
-            const user = response.user || response; // Sometimes response IS the user object mixed with token
+            const { token, ...userData } = response;
 
             if (token) {
+                const user = {
+                    id: userData.userId,
+                    username: userData.username,
+                    email: userData.email,
+                    name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
+                    phoneNumber: userData.mobile
+                };
+
                 tokenManager.setToken(token, remember);
                 logger.info('OTP Verification successful', { username });
-
-                // If the response didn't contain full user profile, fetch it
-                // But typically verifyOtp returns user details.
-                // Let's assume 'user' is the object or present in response.
 
                 dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
                 return { success: true, user };
