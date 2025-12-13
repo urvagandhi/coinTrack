@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
             setTimer(30);
             setStep(STEPS.OTP);
         } catch (err) {
-            console.error('Identity Check Failed:', err);
+            logger.error('Identity Check Failed:', { error: err });
             setError(err.userMessage || 'User not found or connection failed.');
         } finally {
             setIsLoading(false);
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
                 throw new Error('Invalid response from server');
             }
         } catch (err) {
-            console.error('OTP Verification Failed:', err);
+            logger.error('OTP Verification Failed:', { error: err });
             setError(err.userMessage || 'Invalid OTP. Please try again.');
         } finally {
             setIsLoading(false);
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
             tokenManager.removeToken();
             setStep(STEPS.SUCCESS);
         } catch (err) {
-            console.error('Password Reset Failed:', err);
+            logger.error('Password Reset Failed:', { error: err });
             setError(err.userMessage || 'Failed to update password. Please try again.');
         } finally {
             setIsLoading(false);

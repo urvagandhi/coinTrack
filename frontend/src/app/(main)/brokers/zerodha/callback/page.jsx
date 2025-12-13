@@ -1,6 +1,7 @@
 'use client';
 
 import api from '@/lib/api';
+import { logger } from '@/lib/logger';
 import { CheckCircle, Loader2, XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -45,7 +46,7 @@ export default function ZerodhaCallbackPage() {
                 }, 1500);
 
             } catch (err) {
-                console.error("Token exchange failed", err);
+                logger.error("Token exchange failed", { error: err.message });
                 setStatus('error');
                 setMessage(err.response?.data?.message || 'Failed to exchange token with Zerodha.');
             }

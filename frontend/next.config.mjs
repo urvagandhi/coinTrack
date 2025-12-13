@@ -96,6 +96,7 @@ const nextConfig = {
    *
    * Note: This entire block is why Turbopack must be disabled.
    */
+  /*
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
       if (!config.optimization.splitChunks) {
@@ -113,6 +114,7 @@ const nextConfig = {
     }
     return config;
   },
+  */
 
   /**
    * Standalone output mode:

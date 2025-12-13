@@ -1,4 +1,5 @@
-import { format, formatDistanceToNow, parseISO, isValid } from 'date-fns';
+import { logger } from '@/lib/logger';
+import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
 
 // Currency formatting utilities
 export const formatters = {
@@ -16,7 +17,7 @@ export const formatters = {
         try {
             return new Intl.NumberFormat('en-IN', formatOptions).format(amount || 0);
         } catch (error) {
-            console.warn('Error formatting currency:', error);
+            logger.warn('Error formatting currency:', { error });
             return `₹${(amount || 0).toFixed(2)}`;
         }
     },
@@ -51,7 +52,7 @@ export const formatters = {
         try {
             return new Intl.NumberFormat('en-IN', formatOptions).format(value || 0);
         } catch (error) {
-            console.warn('Error formatting number:', error);
+            logger.warn('Error formatting number:', { error });
             return (value || 0).toString();
         }
     },
@@ -71,7 +72,7 @@ export const formatters = {
             const decimalValue = Math.abs(value) > 1 ? value / 100 : value;
             return new Intl.NumberFormat('en-IN', formatOptions).format(decimalValue || 0);
         } catch (error) {
-            console.warn('Error formatting percentage:', error);
+            logger.warn('Error formatting percentage:', { error });
             return `${((value || 0) * 100).toFixed(2)}%`;
         }
     },
@@ -104,7 +105,7 @@ export const formatters = {
 
             return format(dateObj, formatString);
         } catch (error) {
-            console.warn('Error formatting date:', error);
+            logger.warn('Error formatting date:', { error });
             return '';
         }
     },
@@ -126,7 +127,7 @@ export const formatters = {
 
             return formatDistanceToNow(dateObj, { addSuffix: true });
         } catch (error) {
-            console.warn('Error formatting relative date:', error);
+            logger.warn('Error formatting relative date:', { error });
             return '';
         }
     },
