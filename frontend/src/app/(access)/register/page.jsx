@@ -2,17 +2,10 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import Loader from 'lucide-react/dist/esm/icons/loader';
-import Lock from 'lucide-react/dist/esm/icons/lock';
-import Mail from 'lucide-react/dist/esm/icons/mail';
-import Phone from 'lucide-react/dist/esm/icons/phone';
-import User from 'lucide-react/dist/esm/icons/user';
+import { ArrowRight, Calendar, Eye, EyeOff, Loader, Lock, Mail, Phone, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function RegisterPage() {
@@ -36,7 +29,7 @@ export default function RegisterPage() {
     const [isResending, setIsResending] = useState(false);
     const { register, verifyOtp, resendOtp } = useAuth();
     // useRouter is needed for redirection
-    const router = require('next/navigation').useRouter();
+    const router = useRouter();
 
     useEffect(() => {
         let interval;
