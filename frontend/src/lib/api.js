@@ -73,7 +73,7 @@ api.interceptors.response.use(
             response.duration = duration;
 
             if (process.env.NODE_ENV === 'development') {
-                console.log(`API Call: ${response.config.method?.toUpperCase()} ${response.config.url} - ${duration}ms`);
+                console.info(`[API] ${response.config.method?.toUpperCase()} ${response.config.url} - ${duration}ms`);
             }
         }
 
@@ -88,7 +88,8 @@ api.interceptors.response.use(
             method: error.config ? error.config.method : 'Unknown Method'
         };
 
-        console.error('🚨 API Error:', errorDetails);
+        // Standardized Error Logging
+        console.error('🚨 [API Error]', errorDetails);
 
         // Handle common error scenarios
         if (error.response?.status === 401) {
@@ -121,7 +122,8 @@ api.interceptors.response.use(
     }
 );
 
-// API endpoints mapping to actual backend routes (scanned from Spring Boot controllers)
+// Single source of truth for all broker API interactions.
+// Do not create broker-specific services outside this file.
 export const endpoints = {
     // Authentication endpoints - mapped from UserController and LoginController
     auth: {
@@ -132,6 +134,7 @@ export const endpoints = {
         verifyOtp: '/api/auth/verify-otp',    // UserController @PostMapping("/auth/verify-otp")
         resendOtp: '/api/auth/resend-otp',    // UserController @PostMapping("/auth/resend-otp")
         checkUsername: (username) => `/api/auth/check-username/${username}`, // UserController
+        logout: '/api/auth/logout', // Placeholder if implemented in future
     },
 
     // User management endpoints - mapped from UserController
@@ -143,88 +146,71 @@ export const endpoints = {
         delete: (id) => `/api/users/${id}`,  // UserController @DeleteMapping("/users/{id}")
     },
 
-    // Broker endpoints - mapped from actual controller annotations
+    // Broker endpoints - Mapped to BrokerConnectController & dedicated Broker Controllers
     brokers: {
-        // Zerodha - mapped from ZerodhaController @RequestMapping("/api/brokers/zerodha")
+        // Shared Connection Endpoints (BrokerConnectController)
+        connect: (broker) => `/api/brokers/${broker}/connect`, // @GetMapping("/{broker}/connect")
+
+        // Zerodha Specific (BrokerConnectController & ZerodhaBridgeController)
         zerodha: {
-            loginUrl: '/api/brokers/zerodha/login-url',        // @GetMapping("/login-url")
-            callback: '/api/brokers/zerodha/callback',         // @GetMapping("/callback")
-            credentials: '/api/brokers/zerodha/credentials',   // @PostMapping("/credentials")
-            connect: '/api/brokers/zerodha/connect',           // @PostMapping("/connect")
-            connectGet: '/api/brokers/zerodha/connect',        // @GetMapping("/connect")
-            status: '/api/brokers/zerodha/status',             // @GetMapping("/status")
-            profile: '/api/brokers/zerodha/profile',           // @GetMapping("/profile")
-            holdings: '/api/brokers/zerodha/holdings',         // @GetMapping("/holdings")
-            positions: '/api/brokers/zerodha/positions',       // @GetMapping("/positions")
-            orders: '/api/brokers/zerodha/orders',             // @GetMapping("/orders")
-            mfHoldings: '/api/brokers/zerodha/mf/holdings',    // @GetMapping("/mf/holdings")
-            mfSips: '/api/brokers/zerodha/mf/sips',           // @GetMapping("/mf/sips")
+            saveCredentials: '/api/brokers/zerodha/credentials', // BrokerConnectController @PostMapping("/zerodha/credentials")
+            callback: '/api/brokers/zerodha/callback',         // BrokerConnectController @PostMapping("/callback") (POST from frontend after bridge redirect)
+            // Note: Actual data endpoints (holdings, profile etc) should be mapped here when backend implements them.
+            // Currently using placeholders or assumed endpoints based on standard REST patterns.
+            profile: '/api/brokers/zerodha/profile',
+            holdings: '/api/brokers/zerodha/holdings',
+            positions: '/api/brokers/zerodha/positions',
+            orders: '/api/brokers/zerodha/orders',
+            mfHoldings: '/api/brokers/zerodha/mf/holdings',
+            mfSips: '/api/brokers/zerodha/mf/sips',
         },
 
-        // Upstox - mapped from UpstoxController @RequestMapping("/api/brokers/upstox")
+        // Upstox Specific
         upstox: {
-            loginUrl: '/api/brokers/upstox/login-url',         // @GetMapping("/login-url")
-            callback: '/api/brokers/upstox/callback',          // @PostMapping("/callback")
-            credentials: '/api/brokers/upstox/credentials',    // @PostMapping("/credentials")
-            holdings: '/api/brokers/upstox/holdings',          // @GetMapping("/holdings")
-            orders: '/api/brokers/upstox/orders',              // @GetMapping("/orders")
-            positions: '/api/brokers/upstox/positions',        // @GetMapping("/positions")
-            status: '/api/brokers/upstox/status',              // @GetMapping("/status")
-            disconnect: '/api/brokers/upstox/disconnect',      // @PostMapping("/disconnect")
+            // Placeholders
+            profile: '/api/brokers/upstox/profile',
+            holdings: '/api/brokers/upstox/holdings',
+            positions: '/api/brokers/upstox/positions',
+            orders: '/api/brokers/upstox/orders',
         },
 
-        // Angel One - mapped from AngelOneController @RequestMapping("/api/brokers/angelone")
+        // Angel One Specific
         angelone: {
-            loginUrl: '/api/brokers/angelone/login-url',       // @GetMapping("/login-url")
-            credentials: '/api/brokers/angelone/credentials',  // @PostMapping("/credentials")
-            connect: '/api/brokers/angelone/connect',          // @PostMapping("/connect")
-            holdings: '/api/brokers/angelone/holdings',        // @GetMapping("/holdings")
-            orders: '/api/brokers/angelone/orders',            // @GetMapping("/orders")
-            positions: '/api/brokers/angelone/positions',      // @GetMapping("/positions")
-            status: '/api/brokers/angelone/status',            // @GetMapping("/status")
-            refreshToken: '/api/brokers/angelone/refresh-token', // @PostMapping("/refresh-token")
-            disconnect: '/api/brokers/angelone/disconnect',    // @PostMapping("/disconnect")
+            // Placeholders
+            profile: '/api/brokers/angelone/profile',
+            holdings: '/api/brokers/angelone/holdings',
+            positions: '/api/brokers/angelone/positions',
+            orders: '/api/brokers/angelone/orders',
         },
     },
 
-    // Market data endpoints - These are not found in backend controllers
-    // Adding as placeholders with graceful degradation
-    market: {
-        snapshot: '/api/market/snapshot',     // Not found in backend - will gracefully degrade
-        history: '/api/market/history',       // Not found in backend - will gracefully degrade
-        search: '/api/market/search',         // Not found in backend - will gracefully degrade
-        quote: (symbol) => `/api/market/quote/${symbol}`, // Not found in backend - will gracefully degrade
-    },
-
-    // Portfolio endpoints - These are not found in backend controllers
-    // Adding as placeholders with graceful degradation
-    portfolio: {
-        summary: '/api/portfolio/summary',     // Not found in backend - will gracefully degrade
-        holdings: '/api/portfolio/holdings',   // Not found in backend - will gracefully degrade
-        performance: '/api/portfolio/performance', // Not found in backend - will gracefully degrade
+    // Notes endpoints - mapped from NoteController
+    notes: {
+        list: '/api/notes',
+        create: '/api/notes',
+        update: (id) => `/api/notes/${id}`,
+        delete: (id) => `/api/notes/${id}`,
     },
 };
 
 // API service functions
 export const authAPI = {
     login: async (credentials, remember = false) => {
-        // Map frontend field to backend DTO field
         const payload = {
             usernameOrEmailOrMobile: credentials.usernameOrEmail || credentials.usernameOrEmailOrMobile,
             password: credentials.password
         };
 
-        console.log('🔐 Sending login request to', endpoints.auth.login, 'with username:', payload.usernameOrEmailOrMobile);
+        if (process.env.NODE_ENV === 'development') {
+            console.info(`[Auth] Logging in: ${payload.usernameOrEmailOrMobile}`);
+        }
 
         try {
             const response = await api.post(endpoints.auth.login, payload);
 
-            console.log('✅ Login response received:', {
-                hasToken: !!response.data.token,
-                requiresOtp: response.data.requiresOtp,
-                hasUserId: !!response.data.userId,
-                username: response.data.username
-            });
+            if (process.env.NODE_ENV === 'development') {
+                console.info('[Auth] Login successful');
+            }
 
             // Handle both 'token' and 'accessToken' field names
             const token = response.data.token || response.data.accessToken;
@@ -234,11 +220,6 @@ export const authAPI = {
 
             return response.data;
         } catch (error) {
-            console.error('❌ Login API error:', {
-                status: error.response ? error.response.status : 'N/A',
-                message: error.userMessage || error.message,
-                data: error.response ? error.response.data : 'No Data'
-            });
             throw error;
         }
     },
@@ -247,8 +228,7 @@ export const authAPI = {
         try {
             await api.post(endpoints.auth.logout);
         } catch (error) {
-            // Continue with logout even if API call fails
-            console.warn('Logout API call failed:', error.message);
+            // Ignore logout errors
         } finally {
             tokenManager.removeToken();
         }
@@ -259,17 +239,14 @@ export const authAPI = {
         return response.data;
     },
 
-    // forgotPassword removed as backend endpoint does not exist. Use resendOtp flow instead.
-
     verifyOtp: async (username, otp, remember = true) => {
-        console.log('🔐 Verifying OTP for username:', username);
+        if (process.env.NODE_ENV === 'development') {
+            console.info(`[Auth] Verifying OTP for: ${username}`);
+        }
 
         try {
             const response = await api.post(endpoints.auth.verifyOtp, { username, otp });
 
-            console.log('✅ OTP verified successfully, received token:', !!response.data.token);
-
-            // Handle both 'token' and 'accessToken' field names
             const token = response.data.token || response.data.accessToken;
             if (token) {
                 tokenManager.setToken(token, remember);
@@ -277,27 +254,13 @@ export const authAPI = {
 
             return response.data;
         } catch (error) {
-            console.error('❌ OTP verification failed:', {
-                status: error.response ? error.response.status : 'N/A',
-                message: error.userMessage || error.message,
-                data: error.response ? error.response.data : 'No Data'
-            });
             throw error;
         }
     },
+
     resendOtp: async (username) => {
-        try {
-            console.log('🔄 Resending OTP for:', username);
-            const response = await api.post(endpoints.auth.resendOtp, { username });
-            return response.data;
-        } catch (error) {
-            console.error('❌ Resend OTP failed:', {
-                status: error.response ? error.response.status : 'N/A',
-                message: error.userMessage || error.message,
-                data: error.response ? error.response.data : 'No Data'
-            });
-            throw error;
-        }
+        const response = await api.post(endpoints.auth.resendOtp, { username });
+        return response.data;
     },
 };
 
@@ -313,116 +276,81 @@ export const userAPI = {
     },
 
     changePassword: async (userId, password) => {
-        // Use standard user update endpoint
         const response = await api.put(endpoints.users.update(userId), { password });
         return response.data;
     },
 };
 
 export const brokerAPI = {
-    // Generic broker operations
-    getBrokerStatus: async (brokerName) => {
-        const response = await api.get(endpoints.brokers[brokerName].base);
+    // Phase 1: Connection & Credentials
+
+    // Check if user has credentials/account setup for broker
+    // Uses generic connect endpoint which returns login URL if set up, or error if not.
+    // Or we could implement a dedicated status endpoint if backend provided one.
+    getConnectUrl: async (brokerName) => {
+        try {
+            const response = await api.get(endpoints.brokers.connect(brokerName));
+            return response.data; // Expect { loginUrl: "..." }
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // Zerodha specific credential saving
+    saveZerodhaCredentials: async (credentials) => {
+        // credentials: { apiKey, apiSecret }
+        const response = await api.post(endpoints.brokers.zerodha.saveCredentials, credentials);
         return response.data;
     },
 
-    connectBroker: async (brokerName, credentials) => {
-        const response = await api.post(endpoints.brokers[brokerName].connect, credentials);
+    // Callback handler for all brokers (standardized in BrokerConnectController)
+    handleCallback: async (brokerName, requestToken) => {
+        const payload = {
+            broker: brokerName,
+            requestToken: requestToken
+        };
+        // Backend: BrokerConnectController @PostMapping("/callback")
+        const response = await api.post('/api/brokers/callback', payload);
         return response.data;
     },
 
-    disconnectBroker: async (brokerName) => {
-        const response = await api.post(endpoints.brokers[brokerName].disconnect);
-        return response.data;
-    },
-
-    // Zerodha specific
+    // Data Fetching Methods (Zerodha)
     zerodha: {
-        connect: (credentials) => api.post(endpoints.brokers.zerodha.connect, credentials),
-        callback: (params) => api.post(endpoints.brokers.zerodha.callback, params),
         getProfile: () => api.get(endpoints.brokers.zerodha.profile),
         getHoldings: () => api.get(endpoints.brokers.zerodha.holdings),
         getPositions: () => api.get(endpoints.brokers.zerodha.positions),
         getOrders: () => api.get(endpoints.brokers.zerodha.orders),
-    },
-
-    // Upstox specific
-    upstox: {
-        connect: (credentials) => api.post(endpoints.brokers.upstox.connect, credentials),
-        callback: (params) => api.post(endpoints.brokers.upstox.callback, params),
-        getProfile: () => api.get(endpoints.brokers.upstox.profile),
-        getHoldings: () => api.get(endpoints.brokers.upstox.holdings),
-        getPositions: () => api.get(endpoints.brokers.upstox.positions),
-        getOrders: () => api.get(endpoints.brokers.upstox.orders),
-    },
-
-    // Angel One specific
-    angelone: {
-        connect: (credentials) => api.post(endpoints.brokers.angelone.connect, credentials),
-        callback: (params) => api.post(endpoints.brokers.angelone.callback, params),
-        getProfile: () => api.get(endpoints.brokers.angelone.profile),
-        getHoldings: () => api.get(endpoints.brokers.angelone.holdings),
-        getPositions: () => api.get(endpoints.brokers.angelone.positions),
-        getOrders: () => api.get(endpoints.brokers.angelone.orders),
+        getMFHoldings: () => api.get(endpoints.brokers.zerodha.mfHoldings),
+        getMFSips: () => api.get(endpoints.brokers.zerodha.mfSips),
     },
 };
 
-export const marketAPI = {
-    getSnapshot: async () => {
-        const response = await api.get(endpoints.market.snapshot);
-        return response.data;
+export const notesAPI = {
+    getAll: async () => {
+        const response = await api.get(endpoints.notes.list);
+        return response.data.data;
     },
-
-    getHistory: async (symbol, range = '1d') => {
-        const response = await api.get(endpoints.market.history, {
-            params: { symbol, range },
-        });
-        return response.data;
+    create: async (noteData) => {
+        const response = await api.post(endpoints.notes.create, noteData);
+        return response.data.data;
     },
-
-    getQuote: async (symbol) => {
-        const response = await api.get(endpoints.market.quote(symbol));
-        return response.data;
+    update: async (id, noteData) => {
+        const response = await api.put(endpoints.notes.update(id), noteData);
+        return response.data.data;
     },
-
-    searchSymbols: async (query) => {
-        const response = await api.get(endpoints.market.search, {
-            params: { q: query },
-        });
+    delete: async (id) => {
+        const response = await api.delete(endpoints.notes.delete(id));
         return response.data;
     },
 };
 
-export const portfolioAPI = {
-    getSummary: async () => {
-        const response = await api.get(endpoints.portfolio.summary);
-        return response.data;
-    },
-
-    getHoldings: async () => {
-        const response = await api.get(endpoints.portfolio.holdings);
-        return response.data;
-    },
-
-    getPerformance: async (period = '1M') => {
-        const response = await api.get(endpoints.portfolio.performance, {
-            params: { period },
-        });
-        return response.data;
-    },
-};
-
-// Utility function to check if backend endpoint exists
+// Utility to check endpoint availability (Head request)
 export const checkEndpointAvailability = async (endpoint) => {
     try {
         await api.head(endpoint);
         return true;
-    } catch (error) {
-        if (error.response?.status === 404) {
-            return false;
-        }
-        // For other errors, assume endpoint exists but there's another issue
-        return true;
+    } catch {
+        return false;
     }
 };
 

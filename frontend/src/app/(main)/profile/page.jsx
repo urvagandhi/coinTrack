@@ -2,29 +2,35 @@
 
 import PageTransition from '@/components/ui/PageTransition';
 import { useAuth } from '@/contexts/AuthContext';
-import Bell from 'lucide-react/dist/esm/icons/bell';
-import Camera from 'lucide-react/dist/esm/icons/camera';
-import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
-import Edit from 'lucide-react/dist/esm/icons/edit';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import Save from 'lucide-react/dist/esm/icons/save';
-import Shield from 'lucide-react/dist/esm/icons/shield';
-import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
-import User from 'lucide-react/dist/esm/icons/user';
-import X from 'lucide-react/dist/esm/icons/x';
-import { useState } from 'react';
+import { userAPI } from '@/lib/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Bell, Camera, DollarSign, Edit, Eye, EyeOff, Save, Shield, TrendingUp, User, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
-    const { user } = useAuth();
+    const { user, login } = useAuth(); // getting login to update context if needed
+    const queryClient = useQueryClient();
+
+    // Fetch user profile from API to ensure authoritative state
+    const { data: apiUser, isLoading } = useQuery({
+        queryKey: ['profile'],
+        queryFn: userAPI.getProfile,
+        initialData: user, // Hydrate from AuthContext instantly
+        staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    });
+
     const [isEditing, setIsEditing] = useState(false);
     const [showPasswordFields, setShowPasswordFields] = useState(false);
+
+    // Form state - initialized from apiUser
     const [profileData, setProfileData] = useState({
-        name: user?.name || '',
-        username: user?.username || '',
-        email: user?.email || '',
-        bio: '',
-        location: '',
+        name: apiUser?.name || '',
+        username: apiUser?.username || '',
+        email: apiUser?.email || '',
+        bio: apiUser?.bio || '',
+        location: apiUser?.location || '',
+        phoneNumber: apiUser?.mobile || apiUser?.phoneNumber || '',
+        // These are static for now as per original mock, backend could provide them later
         joinDate: new Date().toLocaleDateString(),
         totalInvestment: 15420.50,
         totalProfit: 2840.75,
@@ -36,11 +42,28 @@ export default function ProfilePage() {
             weeklyReports: true
         }
     });
+
+    // Update form when apiUser loads/changes
+    useEffect(() => {
+        if (apiUser) {
+            setProfileData(prev => ({
+                ...prev,
+                name: apiUser.name || apiUser.firstName || '',
+                username: apiUser.username || '',
+                email: apiUser.email || '',
+                phoneNumber: apiUser.mobile || apiUser.phoneNumber || '',
+                bio: apiUser.bio || '',
+                location: apiUser.location || '',
+            }));
+        }
+    }, [apiUser]);
+
     const [passwords, setPasswords] = useState({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
+
     const [showPasswords, setShowPasswords] = useState({
         current: false,
         new: false,
@@ -78,21 +101,65 @@ export default function ProfilePage() {
         }));
     };
 
+    // Profile Update Mutation
+    const updateProfileMutation = useMutation({
+        mutationFn: (data) => userAPI.updateProfile(user.userId || user.id, data),
+        onSuccess: (updatedUser) => {
+            queryClient.setQueryData(['profile'], updatedUser);
+            // Optionally update AuthContext
+            alert("Profile updated successfully!");
+            setIsEditing(false);
+        },
+        onError: (error) => {
+            alert(error.userMessage || "Failed to update profile");
+        }
+    });
+
+    // Password Change Mutation
+    const changePasswordMutation = useMutation({
+        mutationFn: (data) => userAPI.changePassword(user.userId || user.id, data.newPassword),
+        onSuccess: () => {
+            alert("Password changed successfully!");
+            setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            setShowPasswordFields(false);
+        },
+        onError: (error) => {
+            alert(error.userMessage || "Failed to change password");
+        }
+    });
+
     const handleSaveProfile = async () => {
-        // TODO: Implement API call to update profile
-        console.log('Saving profile:', profileData);
-        setIsEditing(false);
+        updateProfileMutation.mutate({
+            name: profileData.name,
+            bio: profileData.bio,
+            location: profileData.location,
+            // Email and Username usually readonly, send them if backend supports update
+            email: profileData.email,
+            phoneNumber: profileData.phoneNumber
+        });
     };
 
     const handleChangePassword = async () => {
+        if (!passwords.currentPassword) {
+            alert('Current password is required');
+            return;
+        }
+        if (passwords.newPassword.length < 8) {
+            alert('New password must be at least 8 characters');
+            return;
+        }
+        if (!/[A-Z]/.test(passwords.newPassword) || !/[0-9]/.test(passwords.newPassword)) {
+            alert('Password must contain at least one uppercase letter and one number');
+            return;
+        }
         if (passwords.newPassword !== passwords.confirmPassword) {
             alert('New passwords do not match!');
             return;
         }
-        // TODO: Implement API call to change password
-        console.log('Changing password');
-        setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        setShowPasswordFields(false);
+
+        changePasswordMutation.mutate({
+            newPassword: passwords.newPassword
+        });
     };
 
     const stats = [
@@ -144,7 +211,7 @@ export default function ProfilePage() {
                                     <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-orange-400 to-pink-500">
                                         <div className="w-full h-full bg-white dark:bg-gray-800 rounded-full flex items-center justify-center overflow-hidden">
                                             <img
-                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.name || 'Urva'}`}
+                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.name || 'User'}`}
                                                 alt="Profile"
                                                 className="w-full h-full object-cover"
                                             />
@@ -210,15 +277,16 @@ export default function ProfilePage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {[
                                     { label: 'Full Name', field: 'name', type: 'text' },
-                                    { label: 'Username', field: 'username', type: 'text' },
+                                    { label: 'Username', field: 'username', type: 'text', readOnly: true },
                                     { label: 'Email', field: 'email', type: 'email' },
+                                    { label: 'Mobile', field: 'phoneNumber', type: 'text' },
                                     { label: 'Location', field: 'location', type: 'text', placeholder: 'City, Country' },
                                 ].map((item) => (
                                     <div key={item.field}>
                                         <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                                             {item.label}
                                         </label>
-                                        {isEditing ? (
+                                        {isEditing && !item.readOnly ? (
                                             <input
                                                 type={item.type}
                                                 value={profileData[item.field]}
@@ -227,7 +295,7 @@ export default function ProfilePage() {
                                                 className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
                                             />
                                         ) : (
-                                            <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent">
+                                            <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
                                                 {profileData[item.field] || <span className="text-gray-400 italic">Not provided</span>}
                                             </div>
                                         )}
@@ -264,10 +332,15 @@ export default function ProfilePage() {
                                     </button>
                                     <button
                                         onClick={handleSaveProfile}
-                                        className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                                        disabled={updateProfileMutation.isPending}
+                                        className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2 disabled:opacity-50"
                                     >
-                                        <Save className="w-4 h-4" />
-                                        Save Changes
+                                        {updateProfileMutation.isPending ? 'Saving...' : (
+                                            <>
+                                                <Save className="w-4 h-4" />
+                                                Save Changes
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             )}
@@ -326,9 +399,10 @@ export default function ProfilePage() {
                                         </button>
                                         <button
                                             onClick={handleChangePassword}
-                                            className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all"
+                                            disabled={changePasswordMutation.isPending}
+                                            className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                                         >
-                                            Update Password
+                                            {changePasswordMutation.isPending ? 'Updating...' : 'Update Password'}
                                         </button>
                                     </div>
                                 </div>

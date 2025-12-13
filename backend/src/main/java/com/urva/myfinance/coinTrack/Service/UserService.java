@@ -22,6 +22,7 @@ public class UserService {
     private final AuthenticationManager authManager;
     private final JWTService jwtService;
     private final NotificationService notificationService;
+    private final NoteService noteService;
 
     // Simple in-memory storage for OTPs: username -> OtpData
     private final java.util.Map<String, OtpData> otpStorage = new java.util.concurrent.ConcurrentHashMap<>();
@@ -56,12 +57,14 @@ public class UserService {
     }
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-            AuthenticationManager authManager, JWTService jwtService, NotificationService notificationService) {
+            AuthenticationManager authManager, JWTService jwtService, NotificationService notificationService,
+            NoteService noteService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authManager = authManager;
         this.jwtService = jwtService;
         this.notificationService = notificationService;
+        this.noteService = noteService;
     }
 
     public List<User> getAllUsers() {
@@ -292,6 +295,14 @@ public class UserService {
                 pendingRegistrations.remove(usernameOrEmailOrMobile);
 
                 logger.info("User registered and verified successfully: {}", user.getUsername());
+
+                // Create Default Notes
+                try {
+                    noteService.createDefaultNotesIfNoneExist(user.getId());
+                } catch (Exception e) {
+                    logger.error("Failed to create default notes for user {}: {}", user.getUsername(), e.getMessage());
+                    // Don't fail registration just because notes failed
+                }
 
                 // Generate Token
                 // Create a dummy authentication token (we know credentials are valid because we
