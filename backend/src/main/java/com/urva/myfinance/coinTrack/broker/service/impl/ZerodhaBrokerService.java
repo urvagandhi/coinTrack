@@ -24,12 +24,12 @@ import org.springframework.web.client.RestTemplate;
 
 import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
 import com.urva.myfinance.coinTrack.broker.model.ExpiryReason;
 import com.urva.myfinance.coinTrack.broker.service.BrokerService;
 import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
 import com.urva.myfinance.coinTrack.common.util.EncryptionUtil;
+import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
+import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
 
 /**
  * Zerodha Kite Connect broker service implementation.
@@ -83,20 +83,127 @@ public class ZerodhaBrokerService implements BrokerService {
 
     @Override
     public List<CachedHolding> fetchHoldings(BrokerAccount account) {
-        // TODO: Implement actual Kite API call to fetch holdings
-        // Endpoint: GET /portfolio/holdings
-        // Requires: Authorization header with access token
-        logger.debug("fetchHoldings called for account {} - returning empty (stub)", account.getId());
-        return Collections.emptyList();
+        if (!account.hasValidToken()) {
+            logger.warn("Attempted to fetch holdings with invalid token for account {}", account.getId());
+            return Collections.emptyList();
+        }
+
+        try {
+            String url = "https://api.kite.trade/portfolio/holdings";
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "token " + account.getZerodhaApiKey() + ":" + account.getZerodhaAccessToken());
+            headers.add("X-Kite-Version", "3");
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            org.springframework.core.ParameterizedTypeReference<Map<String, Object>> responseType = new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {
+            };
+
+            @SuppressWarnings("null")
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(url,
+                    org.springframework.http.HttpMethod.GET, entity, responseType);
+
+            Map<String, Object> body = response.getBody();
+            if (body == null || !"success".equals(body.get("status"))) {
+                logger.error("Failed to fetch Zerodha holdings: {}", body);
+                return Collections.emptyList();
+            }
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> data = (List<Map<String, Object>>) body.get("data");
+            if (data == null)
+                return Collections.emptyList();
+
+            return data.stream().map(item -> CachedHolding.builder()
+                    .userId(account.getUserId())
+                    .broker(Broker.ZERODHA)
+                    .symbol((String) item.get("tradingsymbol"))
+                    .quantity(safeBigDecimal(item.get("quantity")))
+                    .averageBuyPrice(safeBigDecimal(item.get("average_price")))
+                    .lastUpdated(LocalDateTime.now())
+                    .build()).collect(java.util.stream.Collectors.toList());
+
+        } catch (Exception e) {
+            logger.error("Error fetching Zerodha holdings", e);
+            throw new BrokerException("Failed to fetch holdings: " + e.getMessage(), Broker.ZERODHA);
+        }
     }
 
     @Override
     public List<CachedPosition> fetchPositions(BrokerAccount account) {
-        // TODO: Implement actual Kite API call to fetch positions
-        // Endpoint: GET /portfolio/positions
-        // Requires: Authorization header with access token
-        logger.debug("fetchPositions called for account {} - returning empty (stub)", account.getId());
-        return Collections.emptyList();
+        if (!account.hasValidToken()) {
+            logger.warn("Attempted to fetch positions with invalid token for account {}", account.getId());
+            return Collections.emptyList();
+        }
+
+        try {
+            String url = "https://api.kite.trade/portfolio/positions";
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "token " + account.getZerodhaApiKey() + ":" + account.getZerodhaAccessToken());
+            headers.add("X-Kite-Version", "3");
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            org.springframework.core.ParameterizedTypeReference<Map<String, Object>> responseType = new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {
+            };
+
+            @SuppressWarnings("null")
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(url,
+                    org.springframework.http.HttpMethod.GET, entity, responseType);
+
+            Map<String, Object> body = response.getBody();
+            if (body == null || !"success".equals(body.get("status"))) {
+                logger.error("Failed to fetch Zerodha positions: {}", body);
+                return Collections.emptyList();
+            }
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> data = (Map<String, Object>) body.get("data");
+            if (data == null)
+                return Collections.emptyList();
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> netPositions = (List<Map<String, Object>>) data.get("net");
+            if (netPositions == null)
+                return Collections.emptyList();
+
+            return netPositions.stream().map(item -> {
+                String product = (String) item.get("product");
+                com.urva.myfinance.coinTrack.portfolio.model.PositionType pType = com.urva.myfinance.coinTrack.portfolio.model.PositionType.INTRADAY;
+                if ("CNC".equalsIgnoreCase(product)) {
+                    pType = com.urva.myfinance.coinTrack.portfolio.model.PositionType.DELIVERY;
+                } else if ("NRML".equalsIgnoreCase(product)) {
+                    pType = com.urva.myfinance.coinTrack.portfolio.model.PositionType.FNO;
+                }
+
+                return CachedPosition.builder()
+                        .userId(account.getUserId())
+                        .broker(Broker.ZERODHA)
+                        .symbol((String) item.get("tradingsymbol"))
+                        .quantity(safeBigDecimal(item.get("quantity")))
+                        .buyPrice(safeBigDecimal(item.get("average_price")))
+                        .positionType(pType)
+                        .lastUpdated(LocalDateTime.now())
+                        .build();
+            }).collect(java.util.stream.Collectors.toList());
+
+        } catch (Exception e) {
+            logger.error("Error fetching Zerodha positions", e);
+            throw new BrokerException("Failed to fetch positions: " + e.getMessage(), Broker.ZERODHA);
+        }
+    }
+
+    private java.math.BigDecimal safeBigDecimal(Object value) {
+        if (value == null)
+            return java.math.BigDecimal.ZERO;
+        String s = String.valueOf(value);
+        if ("null".equalsIgnoreCase(s) || s.trim().isEmpty())
+            return java.math.BigDecimal.ZERO;
+        try {
+            return new java.math.BigDecimal(s);
+        } catch (NumberFormatException e) {
+            return java.math.BigDecimal.ZERO;
+        }
     }
 
     @Override

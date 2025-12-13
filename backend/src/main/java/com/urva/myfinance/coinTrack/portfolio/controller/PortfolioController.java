@@ -61,11 +61,33 @@ public class PortfolioController {
     }
 
     /**
-     * Get net positions for authenticated user.
-     * Uses SecurityContext Principal instead of manual token parsing.
+     * Get consolidated holdings (from all brokers).
+     * Filtered from Summary service to ensure consistency.
      */
-    @GetMapping("/net-positions")
-    public ResponseEntity<?> getNetPositions(Principal principal) {
+    @GetMapping("/holdings")
+    public ResponseEntity<?> getHoldings(Principal principal) {
+        logger.debug("Getting holdings for user: {}", principal.getName());
+
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null) {
+            logger.warn("User not found: {}", principal.getName());
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        }
+
+        PortfolioSummaryResponse summary = portfolioSummaryService.getPortfolioSummary(user.getId());
+        List<com.urva.myfinance.coinTrack.portfolio.dto.SummaryHoldingDTO> holdings = summary.getHoldingsList().stream()
+                .filter(h -> "HOLDING".equalsIgnoreCase(h.getType()))
+                .collect(java.util.stream.Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.success(holdings));
+    }
+
+    /**
+     * Get net positions for authenticated user.
+     * Renamed from /net-positions to /positions to match canonical API.
+     */
+    @GetMapping("/positions")
+    public ResponseEntity<?> getPositions(Principal principal) {
         logger.debug("Getting net positions for user: {}", principal.getName());
 
         User user = userRepository.findByUsername(principal.getName());

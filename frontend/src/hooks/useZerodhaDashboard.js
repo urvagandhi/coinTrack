@@ -1,50 +1,32 @@
-import { brokerAPI } from '@/lib/api';
+import { portfolioAPI } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 
 export function useZerodhaDashboard() {
-    // We can use a combined query or multiple queries.
-    // Given the dashboard loads everything, parallel queries are best.
+    // REFACTORED: Consumes canonical Portfolio API and filters for Zerodha
 
-    const holdingsQuery = useQuery({
-        queryKey: ['zerodha', 'holdings'],
-        queryFn: brokerAPI.getZerodhaHoldings,
+    const { data: summary, isLoading, error, refetch } = useQuery({
+        queryKey: ['portfolio', 'summary'],
+        queryFn: portfolioAPI.getSummary,
     });
 
-    const fundsQuery = useQuery({
-        queryKey: ['zerodha', 'funds'],
-        queryFn: brokerAPI.getZerodhaFunds,
-    });
+    // Derive Zerodha-specific views from the consolidated summary
+    const zerodhaHoldings = summary?.holdingsList?.filter(
+        h => h.broker === 'ZERODHA' && h.type === 'HOLDING'
+    ) || [];
 
-    const sipsQuery = useQuery({
-        queryKey: ['zerodha', 'sips'],
-        queryFn: brokerAPI.getZerodhaSIPs,
-    });
-
-    const profileQuery = useQuery({
-        queryKey: ['zerodha', 'profile'],
-        queryFn: brokerAPI.getZerodhaProfile,
-    });
-
-    const isLoading = holdingsQuery.isLoading || fundsQuery.isLoading || sipsQuery.isLoading || profileQuery.isLoading;
-    const error = holdingsQuery.error || fundsQuery.error || sipsQuery.error || profileQuery.error;
-
-    // Manual Refresh Function
-    const refreshAll = async () => {
-        await Promise.all([
-            holdingsQuery.refetch(),
-            fundsQuery.refetch(),
-            sipsQuery.refetch(),
-            profileQuery.refetch()
-        ]);
-    };
+    // Backend currently does not support specialized Profile/Funds/SIPs for specific brokers
+    // Returning null/empty to prevents runtime crashes.
+    const mfHoldings = [];
+    const sips = [];
+    const profile = null;
 
     return {
-        holdings: holdingsQuery.data,
-        mfHoldings: fundsQuery.data,
-        sips: sipsQuery.data,
-        profile: profileQuery.data,
+        holdings: zerodhaHoldings,
+        mfHoldings,
+        sips,
+        profile,
         isLoading,
         error,
-        refreshAll
+        refreshAll: refetch
     };
 }

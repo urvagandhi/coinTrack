@@ -135,7 +135,7 @@ graph TD
 
 ### API Contract (`src/lib/api.js`)
 This file is the **single source of truth** for all backend endpoints.
-- **Mappings**: named exports like `brokerAPI.getZerodhaHoldings` map to `/api/brokers/zerodha/holdings`.
+- **Mappings**: named exports like `portfolioAPI.getHoldings` map to `/api/portfolio/holdings`.
 - **Normalization**: Ensures `data` is always the payload, not the axios wrapper.
 - **Security**: auto-injects `Authorization: Bearer <token>` and handles 401 redirects globally.
 
@@ -144,7 +144,7 @@ This file is the **single source of truth** for all backend endpoints.
 2. **Redirect**: Backend returns Zerodha login URL -> Frontend redirects window.
 3. **Callback**: Zerodha redirects to `/brokers/zerodha/callback`.
 4. **Exchange**: Callback page sends `request_token` to Backend -> Backend returns success.
-5. **Dashboard**: Frontend redirects to Dashboard -> `useZerodhaDashboard` hook wakes up and fetches data.
+5. **Dashboard**: Frontend redirects to Dashboard -> `usePortfolioSummary` hook wakes up and fetches consolidated data.
 
 ---
 

@@ -163,10 +163,6 @@ export const endpoints = {
         status: (broker) => `/api/brokers/${broker}/status`,
         zerodha: {
             saveCredentials: '/api/brokers/zerodha/credentials',
-            holdings: '/api/brokers/zerodha/holdings',
-            funds: '/api/brokers/zerodha/funds', // Mutual Funds
-            sips: '/api/brokers/zerodha/sips',
-            profile: '/api/brokers/zerodha/profile',
         },
         callback: '/api/brokers/callback',
     },
@@ -239,22 +235,6 @@ export const brokerAPI = {
     },
     saveZerodhaCredentials: async (creds) => {
         const { data } = await api.post(endpoints.brokers.zerodha.saveCredentials, creds);
-        return data;
-    },
-    getZerodhaHoldings: async () => {
-        const { data } = await api.get(endpoints.brokers.zerodha.holdings);
-        return data;
-    },
-    getZerodhaFunds: async () => {
-        const { data } = await api.get(endpoints.brokers.zerodha.funds);
-        return data;
-    },
-    getZerodhaSIPs: async () => {
-        const { data } = await api.get(endpoints.brokers.zerodha.sips);
-        return data;
-    },
-    getZerodhaProfile: async () => {
-        const { data } = await api.get(endpoints.brokers.zerodha.profile);
         return data;
     },
     getStatus: async (brokerName) => {
