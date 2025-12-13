@@ -1,15 +1,14 @@
 'use client';
 
-import {
-    ArrowDownRight,
-    ArrowUpRight,
-    Briefcase,
-    ChevronDown,
-    Download,
-    Filter,
-    LineChart,
-    Wallet
-} from 'lucide-react';
+import ArrowDownRight from 'lucide-react/dist/esm/icons/arrow-down-right';
+import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import LineChart from 'lucide-react/dist/esm/icons/line-chart';
+import Wallet from 'lucide-react/dist/esm/icons/wallet';
+
 import dynamic from 'next/dynamic';
 
 // Mock Data Holdings

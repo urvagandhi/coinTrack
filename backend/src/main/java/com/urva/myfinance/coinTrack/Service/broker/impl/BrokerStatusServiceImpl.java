@@ -58,8 +58,10 @@ public class BrokerStatusServiceImpl implements BrokerStatusService {
                 .expiryReason(account.getExpiryReason() != null ? account.getExpiryReason() : ExpiryReason.NONE)
                 .lastSuccessfulSync(account.getLastSuccessfulSync())
                 .connectionStatus(status)
-                .tokenCreatedAt(account.getTokenCreatedAt())
-                .tokenExpiresAt(account.getTokenExpiresAt())
+                .tokenCreatedAt(Broker.ZERODHA.equals(broker) ? account.getZerodhaTokenCreatedAt()
+                        : account.getTokenCreatedAt())
+                .tokenExpiresAt(Broker.ZERODHA.equals(broker) ? account.getZerodhaTokenExpiresAt()
+                        : account.getTokenExpiresAt())
                 .build();
     }
 }

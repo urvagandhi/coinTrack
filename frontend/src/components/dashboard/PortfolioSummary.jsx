@@ -3,7 +3,9 @@
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { formatCurrency, formatDateTime, formatPercent } from '@/lib/format';
 import { motion } from 'framer-motion';
-import { Clock, TrendingDown, TrendingUp } from 'lucide-react';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import TrendingDown from 'lucide-react/dist/esm/icons/trending-down';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
 
 export default function PortfolioSummary() {
     const { data, isLoading } = usePortfolio();
@@ -23,28 +25,28 @@ export default function PortfolioSummary() {
             className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"
         >
             {/* Total Value */}
-            <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-xl backdrop-blur-sm">
-                <h3 className="text-gray-400 text-sm font-medium">Current Value</h3>
-                <div className="text-2xl font-bold text-white mt-1">
+            <div className="bg-card/40 border border-border/50 p-5 rounded-xl backdrop-blur-md shadow-sm">
+                <h3 className="text-muted-foreground text-sm font-medium">Current Value</h3>
+                <div className="text-2xl font-bold text-foreground mt-1">
                     {formatCurrency(data.totalCurrentValue)}
                 </div>
-                <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     Updated: {formatDateTime(data.lastAnySync)} // Fallback if lastAnySync missing?
                 </div>
             </div>
 
             {/* Invested Value */}
-            <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-xl backdrop-blur-sm">
-                <h3 className="text-gray-400 text-sm font-medium">Invested Value</h3>
-                <div className="text-2xl font-bold text-white mt-1">
+            <div className="bg-card/40 border border-border/50 p-5 rounded-xl backdrop-blur-md shadow-sm">
+                <h3 className="text-muted-foreground text-sm font-medium">Invested Value</h3>
+                <div className="text-2xl font-bold text-foreground mt-1">
                     {formatCurrency(data.totalInvestedValue)}
                 </div>
             </div>
 
             {/* Day Gain */}
-            <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-xl backdrop-blur-sm">
-                <h3 className="text-gray-400 text-sm font-medium">Day's Gain</h3>
+            <div className="bg-card/40 border border-border/50 p-5 rounded-xl backdrop-blur-md shadow-sm">
+                <h3 className="text-muted-foreground text-sm font-medium">Day's Gain</h3>
                 <div className={`text-2xl font-bold mt-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
                     {isPositive ? '+' : ''}{formatCurrency(data.totalDayGain)}
                 </div>
@@ -55,8 +57,8 @@ export default function PortfolioSummary() {
             </div>
 
             {/* Unrealized P/L */}
-            <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-xl backdrop-blur-sm">
-                <h3 className="text-gray-400 text-sm font-medium">Unrealized P/L</h3>
+            <div className="bg-card/40 border border-border/50 p-5 rounded-xl backdrop-blur-md shadow-sm">
+                <h3 className="text-muted-foreground text-sm font-medium">Unrealized P/L</h3>
                 <div className={`text-2xl font-bold mt-1 ${(data.totalUnrealizedPL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {(data.totalUnrealizedPL || 0) >= 0 ? '+' : ''}{formatCurrency(data.totalUnrealizedPL)}
                 </div>

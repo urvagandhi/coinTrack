@@ -1,9 +1,13 @@
 'use client';
 
+import ConnectBrokerDialog from '@/components/brokers/ConnectBrokerDialog';
 import PageTransition from '@/components/ui/PageTransition';
+import { useBrokerStatus } from '@/hooks/useBrokerStatus';
+import api from '@/lib/api';
 import { ArrowRight, Link as LinkIcon, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
 
-const BrokerCard = ({ name, description, color, connected = false }) => (
+const BrokerCard = ({ name, description, color, connected = false, onConnect, disabled }) => (
     <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-6 flex flex-col items-start transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white font-bold text-xl mb-4 shadow-lg`}>
             {name[0]}
@@ -11,12 +15,15 @@ const BrokerCard = ({ name, description, color, connected = false }) => (
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{name}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 min-h-[40px]">{description}</p>
 
-        <button className={`
+        <button
+            onClick={!connected ? onConnect : undefined}
+            disabled={disabled || connected}
+            className={`
             w-full py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 transition-all
             ${connected
-                ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 cursor-default'
-                : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 active:scale-95'
-            }
+                    ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 cursor-default'
+                    : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 active:scale-95 disabled:opacity-50'
+                }
         `}>
             {connected ? (
                 <>
@@ -25,8 +32,8 @@ const BrokerCard = ({ name, description, color, connected = false }) => (
                 </>
             ) : (
                 <>
-                    Connect
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    {disabled ? 'Loading...' : 'Connect'}
+                    {!disabled && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
                 </>
             )}
         </button>
@@ -34,14 +41,84 @@ const BrokerCard = ({ name, description, color, connected = false }) => (
 );
 
 export default function BrokersPage() {
-    // Mock Data
+    const { data: brokersStatus, isLoading } = useBrokerStatus();
+    const [isConnecting, setIsConnecting] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedBroker, setSelectedBroker] = useState(null);
+
+    const handleConnectClick = (brokerId) => {
+        const status = brokersStatus?.find(s => s.broker === brokerId);
+
+        // If Broker is Zerodha and NO credentials set, open dialog
+        if (brokerId === 'ZERODHA' && !status?.hasCredentials) {
+            setSelectedBroker(brokerId);
+            setDialogOpen(true);
+        } else {
+            // Already configured or other broker -> Direct Connect
+            handleConnectDirect(brokerId);
+        }
+    };
+
+    const handleDialogSubmit = async (credentials) => {
+        setIsConnecting(true);
+        try {
+            // 1. Save credentials
+            if (selectedBroker === 'ZERODHA') {
+                await api.post(`/api/brokers/zerodha/credentials`, {
+                    apiKey: credentials.zerodhaApiKey,
+                    apiSecret: credentials.zerodhaApiSecret
+                });
+
+                // 2. Connect (Get Login URL)
+                handleConnectDirect('ZERODHA');
+            } else {
+                // Fallback for others if needed
+                const { data } = await api.post(`/api/brokers/${selectedBroker}/connect`, credentials);
+                if (data.loginUrl) {
+                    window.location.href = data.loginUrl;
+                }
+            }
+        } catch (error) {
+            console.error("Failed to connect", error);
+            // Optional: Show toast error
+            setIsConnecting(false);
+        } finally {
+            if (selectedBroker !== 'ZERODHA') {
+                setIsConnecting(false);
+            }
+            setDialogOpen(false);
+        }
+    };
+
+    const handleConnectDirect = async (brokerId) => {
+        setIsConnecting(true);
+        try {
+            const { data } = await api.get(`/api/brokers/${brokerId}/connect`);
+            if (data.loginUrl) {
+                window.location.href = data.loginUrl;
+            }
+        } catch (error) {
+            console.error("Failed to get login URL", error);
+        } finally {
+            setIsConnecting(false);
+        }
+    };
+
+    // Merge status with static descriptions
     const brokers = [
-        { name: 'Zerodha', description: "India's largest stock broker. Offers free equity investments.", color: 'from-blue-500 to-blue-600', connected: true },
-        { name: 'Upstox', description: 'Low cost trading platform with advanced charts.', color: 'from-purple-500 to-purple-600', connected: false },
-        { name: 'Angel One', description: 'Full-service retail broker combining tech and advisory.', color: 'from-orange-500 to-red-500', connected: false },
-        { name: 'Groww', description: 'Simple investing for stocks and mutual funds.', color: 'from-teal-400 to-emerald-500', connected: false },
-        { name: '5Paisa', description: 'Flat fee discount brokerage for traders.', color: 'from-orange-400 to-orange-600', connected: false },
-    ];
+        { name: 'Zerodha', description: "India's largest stock broker. Offers free equity investments.", color: 'from-blue-500 to-blue-600', id: 'ZERODHA' },
+        { name: 'Upstox', description: 'Low cost trading platform with advanced charts.', color: 'from-purple-500 to-purple-600', id: 'UPSTOX' },
+        { name: 'Angel One', description: 'Full-service retail broker combining tech and advisory.', color: 'from-orange-500 to-red-500', id: 'ANGELONE' },
+        { name: 'Groww', description: 'Simple investing for stocks and mutual funds.', color: 'from-teal-400 to-emerald-500', id: 'GROWW' },
+        { name: '5Paisa', description: 'Flat fee discount brokerage for traders.', color: 'from-orange-400 to-orange-600', id: 'FYERS' },
+    ].map(b => {
+        const status = brokersStatus?.find(s => s.broker === b.id);
+        const connected = status?.connectionStatus === 'CONNECTED';
+        // Check for expiry: status.isTokenExpired might be true
+        return { ...b, connected, hasCredentials: status?.hasCredentials };
+    });
+
+    if (isLoading) return <div>Loading...</div>;
 
     return (
         <PageTransition>
@@ -64,7 +141,12 @@ export default function BrokersPage() {
                 {/* Brokers Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {brokers.map((broker) => (
-                        <BrokerCard key={broker.name} {...broker} />
+                        <BrokerCard
+                            key={broker.name}
+                            {...broker}
+                            onConnect={() => handleConnectClick(broker.id)}
+                            disabled={isConnecting}
+                        />
                     ))}
 
                     {/* "Coming Soon" Card */}
@@ -76,6 +158,13 @@ export default function BrokersPage() {
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">We are adding new brokers every week.</p>
                     </div>
                 </div>
+
+                <ConnectBrokerDialog
+                    isOpen={dialogOpen}
+                    onClose={() => setDialogOpen(false)}
+                    onSubmit={handleDialogSubmit}
+                    isConnecting={isConnecting}
+                />
             </div>
         </PageTransition>
     );

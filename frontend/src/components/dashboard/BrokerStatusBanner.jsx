@@ -2,7 +2,8 @@
 
 import { useBrokerStatus } from '@/hooks/useBrokerStatus';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, X } from 'lucide-react'; // Assuming lucide-react is installed per package.json
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import X from 'lucide-react/dist/esm/icons/x'; // Assuming lucide-react is installed per package.json
 import { useState } from 'react';
 
 export default function BrokerStatusBanner() {

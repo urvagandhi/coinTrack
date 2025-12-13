@@ -2,7 +2,17 @@
 
 import PageTransition from '@/components/ui/PageTransition';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Camera, DollarSign, Edit, Eye, EyeOff, Save, Shield, TrendingUp, User, X } from 'lucide-react';
+import Bell from 'lucide-react/dist/esm/icons/bell';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import Save from 'lucide-react/dist/esm/icons/save';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import User from 'lucide-react/dist/esm/icons/user';
+import X from 'lucide-react/dist/esm/icons/x';
 import { useState } from 'react';
 
 export default function ProfilePage() {

@@ -21,72 +21,105 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
-    private final CorsConfigurationSource corsConfigurationSource;
+        private final JwtFilter jwtFilter;
+        private final CorsConfigurationSource corsConfigurationSource;
 
-    public SecurityConfig(JwtFilter jwtFilter, CorsConfigurationSource corsConfigurationSource) {
-        this.jwtFilter = jwtFilter;
-        this.corsConfigurationSource = corsConfigurationSource;
-    }
+        public SecurityConfig(JwtFilter jwtFilter, CorsConfigurationSource corsConfigurationSource) {
+                this.jwtFilter = jwtFilter;
+                this.corsConfigurationSource = corsConfigurationSource;
+        }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(request -> request
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                                .csrf(csrf -> csrf.disable())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(request -> request
 
-                        // 🔓 Health check endpoint (public)
-                        .requestMatchers("/api/health", "/api/health/**").permitAll()
+                                                // 🔓 Health check endpoint (public)
+                                                .requestMatchers("/api/health", "/api/health/**").permitAll()
 
-                        // 🔓 Auth endpoints (public)
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify-token",
-                                "/api/auth/check-username/*", "/api/auth/verify-otp", "/api/auth/resend-otp")
-                        .permitAll()
+                                                // 🔓 Global CORS Preflight (OPTIONS) - Critical for frontend access
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 🔓 Broker callbacks (public)
-                        .requestMatchers("/api/zerodha/callback", "/api/upstox/callback", "/api/angelone/callback")
-                        .permitAll()
+                                                // 🔓 Auth endpoints (public)
+                                                .requestMatchers("/api/auth/login", "/api/auth/register",
+                                                                "/api/auth/verify-token",
+                                                                "/api/auth/check-username/*", "/api/auth/verify-otp",
+                                                                "/api/auth/resend-otp")
+                                                .permitAll()
 
-                        // 🔓 Zerodha login + connect (both GET + POST)
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/zerodha/login-url").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/zerodha/connect").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/brokers/zerodha/connect").permitAll()
+                                                // 🔓 Broker callbacks (public)
+                                                // Note: Controller uses /api/brokers/{broker}/callback
+                                                .requestMatchers("/api/brokers/ZERODHA/callback",
+                                                                "/api/brokers/UPSTOX/callback",
+                                                                "/api/brokers/ANGELONE/callback")
+                                                .permitAll()
+                                                .requestMatchers("/api/brokers/zerodha/callback",
+                                                                "/api/brokers/upstox/callback",
+                                                                "/api/brokers/angelone/callback")
+                                                .permitAll()
 
-                        // 🔓 AngelOne login + connect (both GET + POST)
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/angelone/login-url").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/angelone/connect").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/brokers/angelone/connect").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/angelone/test-totp").permitAll()
+                                                // 🔓 Zerodha login + connect (both GET + POST)
+                                                // Controller uses /api/brokers/ZERODHA/connect
+                                                .requestMatchers(HttpMethod.GET, "/api/brokers/ZERODHA/login-url",
+                                                                "/api/brokers/zerodha/login-url")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/brokers/ZERODHA/connect",
+                                                                "/api/brokers/zerodha/connect")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/brokers/ZERODHA/connect",
+                                                                "/api/brokers/zerodha/connect")
+                                                .permitAll()
 
-                        // Publicly allow root, static and favicon to avoid 403 on deployed root
-                        .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**", "/public/**").permitAll()
+                                                // 🔓 AngelOne login + connect (both GET + POST)
+                                                .requestMatchers(HttpMethod.GET, "/api/brokers/ANGELONE/login-url",
+                                                                "/api/brokers/angelone/login-url")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/brokers/ANGELONE/connect",
+                                                                "/api/brokers/angelone/connect")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/brokers/ANGELONE/connect",
+                                                                "/api/brokers/angelone/connect")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/brokers/ANGELONE/test-totp",
+                                                                "/api/brokers/angelone/test-totp")
+                                                .permitAll()
 
-                        // 🔒 Everything else requires authentication
-                        .anyRequest().authenticated())
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                                                // Publicly allow root, static and favicon to avoid 403 on deployed root
+                                                .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**",
+                                                                "/public/**")
+                                                .permitAll()
 
-        return http.build();
-    }
+                                                // 🔓 Zerodha Redirect Bridge (for localhost dev)
+                                                .requestMatchers("/zerodha/callback").permitAll()
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
+                                                // 🔒 Everything else requires authentication
+                                                .anyRequest().authenticated())
+                                .formLogin(form -> form.disable())
+                                .httpBasic(basic -> basic.disable())
+                                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-    @Bean
-    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);
-        return authProvider;
-    }
+                return http.build();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+                return config.getAuthenticationManager();
+        }
+
+        @Bean
+        public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
+                        PasswordEncoder passwordEncoder) {
+                DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+                authProvider.setPasswordEncoder(passwordEncoder);
+                return authProvider;
+        }
+
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 }

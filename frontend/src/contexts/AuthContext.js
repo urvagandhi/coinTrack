@@ -175,7 +175,7 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const verifyOtp = async (username, otp) => {
+    const verifyOtp = async (username, otp, remember = true) => {
         if (DEV_BYPASS) {
             dispatch({ type: AUTH_ACTIONS.SET_USER, payload: MOCK_USER });
             return { success: true, user: MOCK_USER };
@@ -185,7 +185,7 @@ export function AuthProvider({ children }) {
         dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
         try {
-            const response = await authAPI.verifyOtp(username, otp);
+            const response = await authAPI.verifyOtp(username, otp, remember);
 
             const user = response; // Response from verifyOtp is the user object/DTO with token
 

@@ -23,6 +23,11 @@ const nextConfig = {
    * - custom cacheGroups
    * - advanced Webpack overrides
    */
+  /**
+   * Transpile packages to fix ESM/CJS interop issues (e.g. lucide-react)
+   */
+  transpilePackages: ['lucide-react'],
+
   experimental: {
     // turbo: false, // Removed invalid key
   },

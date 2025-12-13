@@ -2,7 +2,11 @@
 
 import { authAPI, tokenManager, userAPI } from '@/lib/api';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, CheckCircle, Loader, Lock, Mail } from 'lucide-react';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
+import Loader from 'lucide-react/dist/esm/icons/loader';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Mail from 'lucide-react/dist/esm/icons/mail';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -241,8 +245,8 @@ export default function ForgotPasswordPage() {
                                     onClick={handleResendOtp}
                                     disabled={timer > 0 || isLoading}
                                     className={`font-semibold ${timer > 0
-                                            ? 'text-gray-400 cursor-not-allowed'
-                                            : 'text-purple-600 hover:text-purple-500 cursor-pointer'
+                                        ? 'text-gray-400 cursor-not-allowed'
+                                        : 'text-purple-600 hover:text-purple-500 cursor-pointer'
                                         }`}
                                 >
                                     {timer > 0 ? `Resend in ${timer}s` : 'Resend OTP'}
@@ -385,8 +389,8 @@ export default function ForgotPasswordPage() {
                                 <div
                                     key={i}
                                     className={`h-1.5 rounded-full transition-all duration-300 ${step >= i
-                                            ? 'w-8 bg-gradient-to-r from-purple-600 to-blue-600'
-                                            : 'w-2 bg-gray-200 dark:bg-gray-700'
+                                        ? 'w-8 bg-gradient-to-r from-purple-600 to-blue-600'
+                                        : 'w-2 bg-gray-200 dark:bg-gray-700'
                                         }`}
                                 />
                             ))}

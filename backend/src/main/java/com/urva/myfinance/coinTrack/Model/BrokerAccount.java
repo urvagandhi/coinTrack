@@ -32,6 +32,22 @@ public class BrokerAccount {
 
     private Broker broker;
 
+    private String zerodhaApiKey;
+
+    @JsonIgnore
+    private String encryptedZerodhaApiSecret;
+
+    // Zerodha session tokens
+    @JsonIgnore
+    private String zerodhaAccessToken;
+
+    @JsonIgnore
+    private String zerodhaPublicToken;
+
+    private LocalDateTime zerodhaTokenCreatedAt;
+
+    private LocalDateTime zerodhaTokenExpiresAt;
+
     @JsonIgnore
     private String accessToken;
 
@@ -59,14 +75,26 @@ public class BrokerAccount {
 
     // Utility methods
     public boolean hasCredentials() {
+        if (Broker.ZERODHA.equals(broker)) {
+            return zerodhaApiKey != null && !zerodhaApiKey.isEmpty();
+        }
         return accessToken != null && !accessToken.isEmpty();
     }
 
     public boolean hasValidToken() {
+        if (Broker.ZERODHA.equals(broker)) {
+            return zerodhaAccessToken != null && !isTokenExpired();
+        }
         return accessToken != null && !isTokenExpired();
     }
 
     public boolean isTokenExpired() {
+        if (Broker.ZERODHA.equals(broker)) {
+            if (zerodhaTokenExpiresAt == null) {
+                return true;
+            }
+            return LocalDateTime.now().isAfter(zerodhaTokenExpiresAt);
+        }
         if (tokenExpiresAt == null) {
             return true;
         }

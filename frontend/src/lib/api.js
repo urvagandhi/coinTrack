@@ -7,6 +7,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
 const api = axios.create({
     baseURL: API_BASE_URL,
     timeout: 30000,
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -260,7 +261,7 @@ export const authAPI = {
 
     // forgotPassword removed as backend endpoint does not exist. Use resendOtp flow instead.
 
-    verifyOtp: async (username, otp) => {
+    verifyOtp: async (username, otp, remember = true) => {
         console.log('🔐 Verifying OTP for username:', username);
 
         try {
@@ -271,7 +272,7 @@ export const authAPI = {
             // Handle both 'token' and 'accessToken' field names
             const token = response.data.token || response.data.accessToken;
             if (token) {
-                tokenManager.setToken(token);
+                tokenManager.setToken(token, remember);
             }
 
             return response.data;

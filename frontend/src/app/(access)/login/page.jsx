@@ -83,7 +83,7 @@ function LoginForm() {
         setIsLoading(true);
 
         try {
-            const result = await verifyOtp(tempUsername, otp);
+            const result = await verifyOtp(tempUsername, otp, rememberMe);
             if (result.success) {
                 router.push(redirectPath);
             } else {

@@ -1,8 +1,8 @@
 'use client';
 
-import api from '@/lib/axios';
+import api from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 // Simple toast implementation or standard alert

@@ -2,13 +2,11 @@
 
 import PageTransition from '@/components/ui/PageTransition';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-    Clock,
-    Edit2,
-    Plus,
-    Search,
-    Trash2
-} from 'lucide-react';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import Edit2 from 'lucide-react/dist/esm/icons/edit-2';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import { useState } from 'react';
 
 // Mock Data
