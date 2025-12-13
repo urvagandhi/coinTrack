@@ -1,8 +1,10 @@
 import axios from 'axios';
+import { logger } from './logger';
 
 // Base URLs from environment variables
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
 
+// Create axios instance
 // Create axios instance
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -11,7 +13,16 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    // Explicitly disable retries (handle in React Query)
+    retry: false,
+    transitional: { silentJSONParsing: true }
 });
+
+export const BROKERS = {
+    ZERODHA: 'zerodha',
+    UPSTOX: 'upstox',
+    ANGELONE: 'angelone'
+};
 
 // Token management utilities
 export const tokenManager = {
@@ -54,12 +65,13 @@ api.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // Add request timestamp for debugging
+        // Add request timestamp for metrics
         config.metadata = { startTime: new Date() };
 
         return config;
     },
     (error) => {
+        logger.error('[API] Request Error', { error: error.message });
         return Promise.reject(error);
     }
 );
@@ -67,290 +79,213 @@ api.interceptors.request.use(
 // Response interceptor to handle common scenarios
 api.interceptors.response.use(
     (response) => {
-        // Add response time for debugging
+        // Log API duration
         if (response.config.metadata?.startTime) {
             const duration = new Date() - response.config.metadata.startTime;
-            response.duration = duration;
-
-            if (process.env.NODE_ENV === 'development') {
-                console.info(`[API] ${response.config.method?.toUpperCase()} ${response.config.url} - ${duration}ms`);
+            // Only log if slow or explicit debug needed
+            if (duration > 1000) {
+                logger.warn('[API] Slow Request', {
+                    url: response.config.url,
+                    method: response.config.method,
+                    duration
+                });
             }
         }
-
         return response;
     },
     (error) => {
         const errorDetails = {
-            status: error.response ? error.response.status : 'No Response (Network/CORS?)',
-            data: error.response ? error.response.data : 'No Data',
-            message: error.message || 'Unknown Error',
-            url: error.config ? error.config.url : 'Unknown URL',
-            method: error.config ? error.config.method : 'Unknown Method'
+            status: error.response ? error.response.status : 'Network/CORS',
+            url: error.config ? error.config.url : 'Unknown',
+            method: error.config ? error.config.method : 'Unknown',
+            message: error.message
         };
 
-        // Standardized Error Logging
-        console.error('🚨 [API Error]', errorDetails);
+        // Suppress 401 logging as it's common during expiry
+        if (error.response?.status !== 401) {
+            logger.error('[API] Response Error', errorDetails);
+        }
 
-        // Handle common error scenarios
+        // Handle Token Expiry (401)
         if (error.response?.status === 401) {
-            // Token expired or invalid
             tokenManager.removeToken();
-
-            // Only redirect if we're in the browser and not already on login page
             if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-                window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                // Optionally force redirect, but usually AuthContext handles this state change
             }
         }
 
-        // Handle network errors
-        if (!error.response) {
-            error.message = 'Network error. Please check your internet connection.';
-        }
+        /**
+         * Error Contract:
+         * {
+         *   message: string (user-safe)
+         *   status: number | undefined
+         *   original: AxiosError
+         * }
+         *
+         * Components must only use `message`.
+         */
+        // Normalize Error Object for Frontend Consumption
+        // CONTRACT LOCK: All errors returned to components must use this shape
+        const normalizedError = {
+            message: error.response?.data?.message || error.response?.data?.error || 'An unexpected error occurred',
+            status: error.response?.status,
+            original: error // Keep original for deep debugging if needed
+        };
 
-        // Add user-friendly error messages from backend
-        if (error.response?.data?.message) {
-            error.userMessage = error.response.data.message;
-        } else if (error.response?.data?.error) {
-            error.userMessage = error.response.data.error;
-        } else if (error.response?.status >= 500) {
-            error.userMessage = 'Server error. Please try again later.';
-        } else if (error.response?.status >= 400) {
-            error.userMessage = typeof error.response.data === 'string' ? error.response.data : 'Invalid request. Please check your input.';
-        }
-
-        return Promise.reject(error);
+        return Promise.reject(normalizedError);
     }
 );
 
-// Single source of truth for all broker API interactions.
-// Do not create broker-specific services outside this file.
+// ============================================================================
+// API ENDPOINTS & SERVICES
+// CONTRACT LOCK: Only expose methods that return normalized data.
+// ============================================================================
+
 export const endpoints = {
-    // Authentication endpoints - mapped from UserController and LoginController
     auth: {
-        login: '/api/auth/login',           // UserController @PostMapping("/auth/login")
-        loginLegacy: '/login',              // LoginController @PostMapping("/login") - fallback
-        register: '/api/auth/register',     // UserController @PostMapping("/auth/register")
-        verifyToken: '/api/auth/verify-token', // UserController @GetMapping("/auth/verify-token")
-        verifyOtp: '/api/auth/verify-otp',    // UserController @PostMapping("/auth/verify-otp")
-        resendOtp: '/api/auth/resend-otp',    // UserController @PostMapping("/auth/resend-otp")
-        checkUsername: (username) => `/api/auth/check-username/${username}`, // UserController
-        logout: '/api/auth/logout', // Placeholder if implemented in future
+        login: '/api/auth/login',
+        register: '/api/auth/register',
+        verifyOtp: '/api/auth/verify-otp',
+        resendOtp: '/api/auth/resend-otp',
+        logout: '/api/auth/logout',
     },
-
-    // User management endpoints - mapped from UserController
     users: {
-        list: '/api/users',                 // UserController @GetMapping("/users")
-        me: '/api/users/me',                // UserController @GetMapping("/users/me")
-        getById: (id) => `/api/users/${id}`, // UserController @GetMapping("/users/{id}")
-        update: (id) => `/api/users/${id}`,  // UserController @PutMapping("/users/{id}")
-        delete: (id) => `/api/users/${id}`,  // UserController @DeleteMapping("/users/{id}")
+        me: '/api/users/me',
+        update: (id) => `/api/users/${id}`,
     },
-
-    // Broker endpoints - Mapped to BrokerConnectController & dedicated Broker Controllers
+    portfolio: {
+        summary: '/api/portfolio/summary',
+        holdings: '/api/portfolio/holdings',
+        positions: '/api/portfolio/positions',
+    },
     brokers: {
-        // Shared Connection Endpoints (BrokerConnectController)
-        connect: (broker) => `/api/brokers/${broker}/connect`, // @GetMapping("/{broker}/connect")
-
-        // Zerodha Specific (BrokerConnectController & ZerodhaBridgeController)
+        connect: (broker) => `/api/brokers/${broker}/connect`,
+        status: (broker) => `/api/brokers/${broker}/status`,
         zerodha: {
-            saveCredentials: '/api/brokers/zerodha/credentials', // BrokerConnectController @PostMapping("/zerodha/credentials")
-            callback: '/api/brokers/zerodha/callback',         // BrokerConnectController @PostMapping("/callback") (POST from frontend after bridge redirect)
-            // Note: Actual data endpoints (holdings, profile etc) should be mapped here when backend implements them.
-            // Currently using placeholders or assumed endpoints based on standard REST patterns.
-            profile: '/api/brokers/zerodha/profile',
+            saveCredentials: '/api/brokers/zerodha/credentials',
             holdings: '/api/brokers/zerodha/holdings',
-            positions: '/api/brokers/zerodha/positions',
-            orders: '/api/brokers/zerodha/orders',
-            mfHoldings: '/api/brokers/zerodha/mf/holdings',
-            mfSips: '/api/brokers/zerodha/mf/sips',
+            funds: '/api/brokers/zerodha/funds', // Mutual Funds
+            sips: '/api/brokers/zerodha/sips',
+            profile: '/api/brokers/zerodha/profile',
         },
-
-        // Upstox Specific
-        upstox: {
-            // Placeholders
-            profile: '/api/brokers/upstox/profile',
-            holdings: '/api/brokers/upstox/holdings',
-            positions: '/api/brokers/upstox/positions',
-            orders: '/api/brokers/upstox/orders',
-        },
-
-        // Angel One Specific
-        angelone: {
-            // Placeholders
-            profile: '/api/brokers/angelone/profile',
-            holdings: '/api/brokers/angelone/holdings',
-            positions: '/api/brokers/angelone/positions',
-            orders: '/api/brokers/angelone/orders',
-        },
+        callback: '/api/brokers/callback',
     },
-
-    // Notes endpoints - mapped from NoteController
     notes: {
         list: '/api/notes',
         create: '/api/notes',
         update: (id) => `/api/notes/${id}`,
         delete: (id) => `/api/notes/${id}`,
-    },
+    }
 };
 
-// API service functions
 export const authAPI = {
-    login: async (credentials, remember = false) => {
-        const payload = {
-            usernameOrEmailOrMobile: credentials.usernameOrEmail || credentials.usernameOrEmailOrMobile,
-            password: credentials.password
-        };
-
-        if (process.env.NODE_ENV === 'development') {
-            console.info(`[Auth] Logging in: ${payload.usernameOrEmailOrMobile}`);
-        }
-
-        try {
-            const response = await api.post(endpoints.auth.login, payload);
-
-            if (process.env.NODE_ENV === 'development') {
-                console.info('[Auth] Login successful');
-            }
-
-            // Handle both 'token' and 'accessToken' field names
-            const token = response.data.token || response.data.accessToken;
-            if (token) {
-                tokenManager.setToken(token, remember);
-            }
-
-            return response.data;
-        } catch (error) {
-            throw error;
-        }
+    login: async (credentials) => {
+        const { data } = await api.post(endpoints.auth.login, credentials);
+        return data; // Expect { token, user } or { requiresOtp }
     },
-
+    verifyOtp: async (payload) => {
+        const { data } = await api.post(endpoints.auth.verifyOtp, payload);
+        return data;
+    },
+    resendOtp: async (username) => {
+        const { data } = await api.post(endpoints.auth.resendOtp, { username });
+        return data;
+    },
+    register: async (userData) => {
+        const { data } = await api.post(endpoints.auth.register, userData);
+        return data;
+    },
     logout: async () => {
         try {
             await api.post(endpoints.auth.logout);
-        } catch (error) {
+        } catch (e) {
             // Ignore logout errors
         } finally {
             tokenManager.removeToken();
         }
-    },
-
-    register: async (userData) => {
-        const response = await api.post(endpoints.auth.register, userData);
-        return response.data;
-    },
-
-    verifyOtp: async (username, otp, remember = true) => {
-        if (process.env.NODE_ENV === 'development') {
-            console.info(`[Auth] Verifying OTP for: ${username}`);
-        }
-
-        try {
-            const response = await api.post(endpoints.auth.verifyOtp, { username, otp });
-
-            const token = response.data.token || response.data.accessToken;
-            if (token) {
-                tokenManager.setToken(token, remember);
-            }
-
-            return response.data;
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    resendOtp: async (username) => {
-        const response = await api.post(endpoints.auth.resendOtp, { username });
-        return response.data;
-    },
+    }
 };
 
 export const userAPI = {
     getProfile: async () => {
-        const response = await api.get(endpoints.users.me);
-        return response.data;
+        const { data } = await api.get(endpoints.users.me);
+        return data;
     },
+    updateProfile: async (id, payload) => {
+        const { data } = await api.put(endpoints.users.update(id), payload);
+        return data;
+    }
+};
 
-    updateProfile: async (id, userData) => {
-        const response = await api.put(endpoints.users.update(id), userData);
-        return response.data;
+export const portfolioAPI = {
+    getSummary: async () => {
+        const { data } = await api.get(endpoints.portfolio.summary);
+        return data;
     },
-
-    changePassword: async (userId, password) => {
-        const response = await api.put(endpoints.users.update(userId), { password });
-        return response.data;
+    getHoldings: async () => {
+        const { data } = await api.get(endpoints.portfolio.holdings);
+        return data || []; // Default to empty array
     },
+    getPositions: async () => {
+        const { data } = await api.get(endpoints.portfolio.positions);
+        return data || [];
+    }
 };
 
 export const brokerAPI = {
-    // Phase 1: Connection & Credentials
-
-    // Check if user has credentials/account setup for broker
-    // Uses generic connect endpoint which returns login URL if set up, or error if not.
-    // Or we could implement a dedicated status endpoint if backend provided one.
     getConnectUrl: async (brokerName) => {
-        try {
-            const response = await api.get(endpoints.brokers.connect(brokerName));
-            return response.data; // Expect { loginUrl: "..." }
-        } catch (error) {
-            throw error;
-        }
+        const { data } = await api.get(endpoints.brokers.connect(brokerName));
+        return data;
     },
-
-    // Zerodha specific credential saving
-    saveZerodhaCredentials: async (credentials) => {
-        // credentials: { apiKey, apiSecret }
-        const response = await api.post(endpoints.brokers.zerodha.saveCredentials, credentials);
-        return response.data;
+    saveZerodhaCredentials: async (creds) => {
+        const { data } = await api.post(endpoints.brokers.zerodha.saveCredentials, creds);
+        return data;
     },
-
-    // Callback handler for all brokers (standardized in BrokerConnectController)
+    getZerodhaHoldings: async () => {
+        const { data } = await api.get(endpoints.brokers.zerodha.holdings);
+        return data;
+    },
+    getZerodhaFunds: async () => {
+        const { data } = await api.get(endpoints.brokers.zerodha.funds);
+        return data;
+    },
+    getZerodhaSIPs: async () => {
+        const { data } = await api.get(endpoints.brokers.zerodha.sips);
+        return data;
+    },
+    getZerodhaProfile: async () => {
+        const { data } = await api.get(endpoints.brokers.zerodha.profile);
+        return data;
+    },
+    getStatus: async (brokerName) => {
+        const { data } = await api.get(endpoints.brokers.status(brokerName));
+        return data;
+    },
     handleCallback: async (brokerName, requestToken) => {
-        const payload = {
+        const { data } = await api.post(endpoints.brokers.callback, {
             broker: brokerName,
-            requestToken: requestToken
-        };
-        // Backend: BrokerConnectController @PostMapping("/callback")
-        const response = await api.post('/api/brokers/callback', payload);
-        return response.data;
-    },
-
-    // Data Fetching Methods (Zerodha)
-    zerodha: {
-        getProfile: () => api.get(endpoints.brokers.zerodha.profile),
-        getHoldings: () => api.get(endpoints.brokers.zerodha.holdings),
-        getPositions: () => api.get(endpoints.brokers.zerodha.positions),
-        getOrders: () => api.get(endpoints.brokers.zerodha.orders),
-        getMFHoldings: () => api.get(endpoints.brokers.zerodha.mfHoldings),
-        getMFSips: () => api.get(endpoints.brokers.zerodha.mfSips),
-    },
+            requestToken
+        });
+        return data;
+    }
 };
 
 export const notesAPI = {
     getAll: async () => {
-        const response = await api.get(endpoints.notes.list);
-        return response.data.data;
+        const { data } = await api.get(endpoints.notes.list);
+        return data.data || [];
     },
-    create: async (noteData) => {
-        const response = await api.post(endpoints.notes.create, noteData);
-        return response.data.data;
+    create: async (note) => {
+        const { data } = await api.post(endpoints.notes.create, note);
+        return data.data;
     },
-    update: async (id, noteData) => {
-        const response = await api.put(endpoints.notes.update(id), noteData);
-        return response.data.data;
+    update: async (id, note) => {
+        const { data } = await api.put(endpoints.notes.update(id), note);
+        return data.data;
     },
     delete: async (id) => {
-        const response = await api.delete(endpoints.notes.delete(id));
-        return response.data;
-    },
-};
-
-// Utility to check endpoint availability (Head request)
-export const checkEndpointAvailability = async (endpoint) => {
-    try {
-        await api.head(endpoint);
-        return true;
-    } catch {
-        return false;
+        const { data } = await api.delete(endpoints.notes.delete(id));
+        return data;
     }
 };
 

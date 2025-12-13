@@ -2,7 +2,7 @@
 
 import ConnectBrokerDialog from '@/components/brokers/ConnectBrokerDialog';
 import PageTransition from '@/components/ui/PageTransition';
-import { useBrokerStatus } from '@/hooks/useBrokerStatus';
+import { useBrokerConnection } from '@/hooks/useBrokerConnection';
 import api from '@/lib/api';
 import { ArrowRight, Link as LinkIcon, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
@@ -41,7 +41,7 @@ const BrokerCard = ({ name, description, color, connected = false, onConnect, di
 );
 
 export default function BrokersPage() {
-    const { data: brokersStatus, isLoading } = useBrokerStatus();
+    const { data: brokersStatus, isLoading } = useBrokerConnection();
     const [isConnecting, setIsConnecting] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedBroker, setSelectedBroker] = useState(null);
@@ -79,7 +79,8 @@ export default function BrokersPage() {
                 }
             }
         } catch (error) {
-            console.error("Failed to connect", error);
+            // Optional: logger.error via generic error boundary or just state
+            // console.error("Failed to connect", error);
             // Optional: Show toast error
             setIsConnecting(false);
         } finally {
@@ -98,7 +99,7 @@ export default function BrokersPage() {
                 window.location.href = data.loginUrl;
             }
         } catch (error) {
-            console.error("Failed to get login URL", error);
+            // console.error("Failed to get login URL", error);
         } finally {
             setIsConnecting(false);
         }

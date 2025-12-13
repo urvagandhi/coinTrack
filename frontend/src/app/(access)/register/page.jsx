@@ -165,7 +165,7 @@ export default function RegisterPage() {
                 setError(paramError || 'Registration failed');
             }
         } catch (err) {
-            console.error("Registration Error payload:", err);
+            // logger.error("Registration Error payload:", err);
             setError(err.userMessage || 'An unexpected error occurred');
         } finally {
             setIsLoading(false);

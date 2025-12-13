@@ -1,6 +1,6 @@
 'use client';
 
-import { usePortfolio } from '@/hooks/usePortfolio';
+import { usePortfolioSummary } from '@/hooks/usePortfolioSummary';
 import { formatCurrency, formatDateTime, formatPercent } from '@/lib/format';
 import { motion } from 'framer-motion';
 import Clock from 'lucide-react/dist/esm/icons/clock';
@@ -8,7 +8,7 @@ import TrendingDown from 'lucide-react/dist/esm/icons/trending-down';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
 
 export default function PortfolioSummary() {
-    const { data, isLoading } = usePortfolio();
+    const { data, isLoading } = usePortfolioSummary();
 
     if (isLoading) {
         return <div className="animate-pulse h-32 bg-gray-800/50 rounded-xl mb-6"></div>;

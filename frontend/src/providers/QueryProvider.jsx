@@ -9,11 +9,22 @@ export default function QueryProvider({ children }) {
             new QueryClient({
                 defaultOptions: {
                     queries: {
-                        staleTime: 15000, // 15 seconds
-                        refetchInterval: false,
+                        // Aggressive staleTime to minimize broker API calls
+                        // 60 seconds means data is considered fresh for 1 minute
+                        staleTime: 60 * 1000,
+
+                        // Cache time (garbage collection)
+                        // Keep unused data in cache for 10 minutes
+                        gcTime: 10 * 60 * 1000,
+
+                        // Disable automatic refetches that cause API spam
                         refetchOnWindowFocus: false,
+                        refetchOnReconnect: false,
+                        refetchOnMount: false,
+
+                        // Retry failed requests once before throwing error
+                        // Exception: 401/403 errors should ideally rely on API interceptor
                         retry: 1,
-                        refetchOnMount: true,
                     },
                 },
             })

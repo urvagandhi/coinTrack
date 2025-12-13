@@ -1,13 +1,13 @@
 'use client';
 
-import { useBrokerStatus } from '@/hooks/useBrokerStatus';
+import { useBrokerConnection } from '@/hooks/useBrokerConnection';
 import { AnimatePresence, motion } from 'framer-motion';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import X from 'lucide-react/dist/esm/icons/x'; // Assuming lucide-react is installed per package.json
 import { useState } from 'react';
 
 export default function BrokerStatusBanner() {
-    const { data: brokers } = useBrokerStatus();
+    const { data: brokers } = useBrokerConnection();
     const [dismissed, setDismissed] = useState([]);
 
     if (!brokers) return null;

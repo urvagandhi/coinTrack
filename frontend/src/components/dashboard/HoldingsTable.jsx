@@ -1,11 +1,11 @@
 'use client';
 
-import { useNetPositions } from '@/hooks/useNetPositions';
+import { usePortfolioPositions } from '@/hooks/usePortfolioPositions';
 import { formatCurrency, formatPercent } from '@/lib/format';
 import { motion } from 'framer-motion';
 
 export default function HoldingsTable() {
-    const { data: positions, isLoading } = useNetPositions();
+    const { data: positions, isLoading } = usePortfolioPositions();
 
     if (isLoading) {
         return <div className="space-y-4">
