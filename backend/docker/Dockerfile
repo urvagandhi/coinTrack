@@ -1,32 +1,54 @@
-# Stage 1: build the application
-FROM maven:3.9.4-eclipse-temurin-21 AS build
+# ==========================================
+# CoinTrack Backend - Production Dockerfile
+# ==========================================
+
+# 1. BUILD STAGE
+# Using Maven with Eclipse Temurin Java 21 on Alpine for minimal footprint
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
+
 WORKDIR /app
 
-# Copy only pom and download dependencies (cached layer)
+# Copy POM first to cache dependencies (layer optimization)
 COPY pom.xml .
-RUN mvn -B -DskipTests dependency:go-offline
+# Download dependencies without building source
+RUN mvn dependency:go-offline -B
 
-# Copy the rest of the source
+# Copy source code
 COPY src ./src
 
-# Build the jar (uses spring-boot-maven-plugin to create executable jar)
-RUN mvn -B -DskipTests package
+# Build the application
+# -DskipTests: Tests should be run in CI, not during container build
+RUN mvn clean package -DskipTests
 
-# Stage 2: create lightweight runtime image
-FROM eclipse-temurin:21-jre-jammy
+# 2. RUNTIME STAGE
+# Use JRE instead of JDK for smaller image size and security
+FROM eclipse-temurin:21-jre-alpine
+
+# Security: Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /app
 
-# Copy jar from builder stage (wildcard in case of -SNAPSHOT naming)
-COPY --from=build /app/target/*.jar app.jar
-## In production, ensure Spring binds to the port Render assigns via the PORT env var.
-# Also disable Spring DevTools restart/livereload in the runtime container to avoid
-# unexpected restarts.
-ENV SPRING_DEVTOOLS_RESTART_ENABLED=false \
-	SPRING_DEVTOOLS_LIVERELOAD_ENABLED=false
+# Copy JAR from builder stage
+COPY --from=builder /app/target/*.jar app.jar
 
+# Configuration: Set ownership to non-root user
+RUN chown appuser:appgroup app.jar
+
+# Security: Switch to non-root user
+USER appuser
+
+# Expose port (Documentation only, does not publish port)
 EXPOSE 8080
 
-# Use sh -c so we can expand the PORT/SERVER_PORT env vars with a default of 8080.
-# Prioritize Render's PORT, then SERVER_PORT (some platforms use SERVER_PORT),
-# and fall back to 8080 locally.
-ENTRYPOINT ["sh","-c","java -Dserver.port=${PORT:-${SERVER_PORT:-8080}} -jar /app/app.jar"]
+# Environment variables (Defaults, can be overridden)
+ENV SPRING_PROFILES_ACTIVE=prod
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget -q --spider http://localhost:8080/actuator/health || exit 1
+
+# Launch application
+# -XX:+UseContainerSupport: Make JVM aware of container CPU/Memory limits
+# -XX:MaxRAMPercentage=75.0: Allow JVM to use 75% of container memory
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
