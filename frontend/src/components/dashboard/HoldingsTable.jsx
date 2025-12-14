@@ -1,11 +1,20 @@
 'use client';
 
-import { usePortfolioPositions } from '@/hooks/usePortfolioPositions';
+import { portfolioAPI } from '@/lib/api';
 import { formatCurrency, formatPercent } from '@/lib/format';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 export default function HoldingsTable() {
-    const { data: positions, isLoading } = usePortfolioPositions();
+    const { data: holdingsData, isLoading } = useQuery({
+        queryKey: ['holdings'],
+        queryFn: portfolioAPI.getHoldings,
+        refetchInterval: 60000
+    });
+
+    const holdings = Array.isArray(holdingsData) ? holdingsData : (holdingsData?.data || []);
+    const displayHoldings = holdings.slice(0, 5); // Limit to top 5
 
     if (isLoading) {
         return <div className="space-y-4">
@@ -13,7 +22,7 @@ export default function HoldingsTable() {
         </div>;
     }
 
-    if (!positions || positions.length === 0) {
+    if (!holdings || holdings.length === 0) {
         return (
             <div className="text-center py-10 text-gray-500 bg-gray-900/30 rounded-xl border border-dashed border-gray-800">
                 No holdings found.
@@ -37,7 +46,7 @@ export default function HoldingsTable() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {positions.map((pos) => {
+                        {displayHoldings.map((pos) => {
                             const isAhPositive = (pos.unrealizedPL || 0) >= 0;
                             const isDayPositive = (pos.dayGain || 0) >= 0;
                             const pnlColor = isAhPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
@@ -45,35 +54,23 @@ export default function HoldingsTable() {
 
                             return (
                                 <motion.tr
-                                    key={pos.symbol}
+                                    key={`${pos.symbol}-${pos.broker}`} // unique key
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     className="group hover:bg-muted/30 transition-colors"
                                 >
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                                                    {pos.symbol}
-                                                </span>
-                                                <div className="flex items-center gap-1.5 mt-1">
-                                                    {/* Broker Tags */}
-                                                    {Object.keys(pos.brokerQuantityMap || {}).map(b => (
-                                                        <span key={b} className="px-1.5 py-0.5 bg-secondary text-secondary-foreground rounded-[4px] text-[9px] font-medium uppercase tracking-wide border border-border/50">
-                                                            {b}
-                                                        </span>
-                                                    ))}
-                                                    {pos.isDerivative && (
-                                                        <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 rounded-[4px] text-[9px] font-medium border border-purple-200 dark:border-purple-800/30">
-                                                            FNO
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-foreground group-hover:text-primary transition-colors">
+                                                {pos.symbol}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5">
+                                                {pos.broker}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <span className="text-foreground font-medium">{pos.totalQuantity}</span>
+                                        <span className="text-foreground font-medium">{pos.quantity}</span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <span className="text-muted-foreground">{formatCurrency(pos.averageBuyPrice)}</span>
@@ -91,10 +88,10 @@ export default function HoldingsTable() {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex flex-col items-end">
-                                            <span className={`text-xs font-semibold ${dayColor} px-1.5 py-0.5 rounded-full bg-opacity-10 ${isDayPositive ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                                            <span className={`text-xs font-semibold ${dayColor}`}>
                                                 {formatPercent(pos.dayGainPercent)}
                                             </span>
-                                            <span className={`text-[10px] mt-1 ${dayColor}`}>
+                                            <span className={`text-[10px] mt-0.5 ${dayColor} opacity-90`}>
                                                 {formatCurrency(pos.dayGain)}
                                             </span>
                                         </div>
@@ -105,6 +102,13 @@ export default function HoldingsTable() {
                     </tbody>
                 </table>
             </div>
+            {holdings.length > 5 && (
+                <div className="bg-muted/30 p-3 text-center border-t border-border">
+                    <Link href="/portfolio" className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
+                        View All Holdings →
+                    </Link>
+                </div>
+            )}
         </div>
     );
 }

@@ -44,6 +44,11 @@ export default function PortfolioPage() {
     const [activeTab, setActiveTab] = useState('holdings');
     const [positionView, setPositionView] = useState('EQUITY');
 
+    // Holdings State
+    const [holdingsSort, setHoldingsSort] = useState({ key: 'unrealizedPL', direction: 'desc' });
+    const [holdingsPage, setHoldingsPage] = useState(1);
+    const ITEMS_PER_PAGE = 20;
+
     // 1. Fetch Summary
     const { data: summary, isLoading: isLoadingSummary } = useQuery({
         queryKey: ['portfolioSummary'],
@@ -222,49 +227,118 @@ export default function PortfolioPage() {
                         {/* Tab Content */}
                         <div className="p-6">
                             {/* HOLDINGS TAB */}
-                            {activeTab === 'holdings' && (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4 pl-2">Instrument</th>
-                                                <th className="pb-4 text-right">Qty</th>
-                                                <th className="pb-4 text-right">Avg. Price</th>
-                                                <th className="pb-4 text-right">Current</th>
-                                                <th className="pb-4 text-right pr-2">P&L</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="space-y-4">
-                                            {isLoadingHoldings ? (
-                                                <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
-                                            ) : holdings.length === 0 ? (
-                                                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No holdings found.</td></tr>
-                                            ) : (
-                                                holdings.map((item, idx) => {
-                                                    const pnl = item.unrealizedPL;
-                                                    const isPos = pnl >= 0;
-                                                    return (
-                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                            <td className="py-4 pl-2">
-                                                                <div className="font-medium text-gray-900 dark:text-white">{item.symbol || item.instrument}</div>
-                                                                <div className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 inline-block px-1.5 py-0.5 rounded mt-1">
-                                                                    {item.exchange}
-                                                                </div>
-                                                            </td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.quantity}</td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
-                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.currentPrice)}</td>
-                                                            <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                                {formatCurrency(pnl)}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
+                            {/* HOLDINGS TAB */}
+                            {activeTab === 'holdings' && (() => {
+                                // Process Data
+                                const sortedHoldings = [...(holdings || [])].sort((a, b) => {
+                                    let valA = a[holdingsSort.key];
+                                    let valB = b[holdingsSort.key]; // symbol, quantity, unrealizedPL
+
+                                    if (holdingsSort.key === 'symbol') {
+                                        return holdingsSort.direction === 'asc'
+                                            ? (valA || '').localeCompare(valB || '')
+                                            : (valB || '').localeCompare(valA || '');
+                                    }
+                                    return holdingsSort.direction === 'asc' ? valA - valB : valB - valA;
+                                });
+
+                                const totalPages = Math.ceil(sortedHoldings.length / ITEMS_PER_PAGE);
+                                const paginatedHoldings = sortedHoldings.slice(
+                                    (holdingsPage - 1) * ITEMS_PER_PAGE,
+                                    holdingsPage * ITEMS_PER_PAGE
+                                );
+
+                                const handleSort = (key) => {
+                                    setHoldingsSort(prev => ({
+                                        key,
+                                        direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+                                    }));
+                                };
+
+                                return (
+                                    <div className="flex flex-col">
+                                        <div className="overflow-x-auto min-h-[400px]">
+                                            <table className="w-full">
+                                                <thead>
+                                                    <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                        <th
+                                                            className="pb-4 pl-2 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none"
+                                                            onClick={() => handleSort('symbol')}
+                                                        >
+                                                            Instrument {holdingsSort.key === 'symbol' && (holdingsSort.direction === 'asc' ? '↑' : '↓')}
+                                                        </th>
+                                                        <th
+                                                            className="pb-4 text-right cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none"
+                                                            onClick={() => handleSort('quantity')}
+                                                        >
+                                                            Qty {holdingsSort.key === 'quantity' && (holdingsSort.direction === 'asc' ? '↑' : '↓')}
+                                                        </th>
+                                                        <th className="pb-4 text-right">Avg. Price</th>
+                                                        <th className="pb-4 text-right">Current</th>
+                                                        <th
+                                                            className="pb-4 text-right pr-2 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none"
+                                                            onClick={() => handleSort('unrealizedPL')}
+                                                        >
+                                                            P&L {holdingsSort.key === 'unrealizedPL' && (holdingsSort.direction === 'asc' ? '↑' : '↓')}
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="space-y-4">
+                                                    {isLoadingHoldings ? (
+                                                        <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                    ) : sortedHoldings.length === 0 ? (
+                                                        <tr><td colSpan="5" className="text-center py-8 text-gray-500">No holdings found.</td></tr>
+                                                    ) : (
+                                                        paginatedHoldings.map((item, idx) => {
+                                                            const pnl = item.unrealizedPL;
+                                                            const isPos = pnl >= 0;
+                                                            return (
+                                                                <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                                    <td className="py-4 pl-2">
+                                                                        <div className="font-bold text-gray-900 dark:text-white">{item.symbol || item.instrument}</div>
+                                                                        <div className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">
+                                                                            {item.exchange}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.quantity}</td>
+                                                                    <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
+                                                                    <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.currentPrice)}</td>
+                                                                    <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                        {formatCurrency(pnl)}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* Pagination Controls */}
+                                        {totalPages > 1 && (
+                                            <div className="flex justify-center items-center space-x-2 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                                <button
+                                                    onClick={() => setHoldingsPage(p => Math.max(1, p - 1))}
+                                                    disabled={holdingsPage === 1}
+                                                    className="px-3 py-1 text-xs rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                                >
+                                                    Prev
+                                                </button>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                                    Page {holdingsPage} of {totalPages}
+                                                </span>
+                                                <button
+                                                    onClick={() => setHoldingsPage(p => Math.min(totalPages, p + 1))}
+                                                    disabled={holdingsPage === totalPages}
+                                                    className="px-3 py-1 text-xs rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* POSITIONS TAB */}
                             {/* POSITIONS TAB */}
