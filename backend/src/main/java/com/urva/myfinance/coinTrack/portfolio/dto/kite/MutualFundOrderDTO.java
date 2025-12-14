@@ -20,4 +20,7 @@ public class MutualFundOrderDTO {
     private String status;
     @JsonProperty("order_date")
     private String orderDate; // "2025-01-10"
+
+    @JsonProperty("order_timestamp")
+    private String orderTimestamp; // "2025-12-03 17:04:34"
 }

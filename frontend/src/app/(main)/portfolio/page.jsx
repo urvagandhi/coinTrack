@@ -467,7 +467,14 @@ export default function PortfolioPage() {
                                                 mfOrders.map((order, idx) => (
                                                     <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                                         <td className="py-4 pl-2 text-xs text-gray-500">
-                                                            {order.order_date ? new Date(order.order_date).toLocaleTimeString() : '-'}
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium text-gray-900 dark:text-gray-300">
+                                                                    {order.order_timestamp ? new Date(order.order_timestamp).toLocaleString() : '-'}
+                                                                </span>
+                                                                <span className="text-[10px] text-gray-400 mt-0.5">
+                                                                    Order Date: {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}
+                                                                </span>
+                                                            </div>
                                                         </td>
                                                         <td className="py-4 font-medium text-gray-900 dark:text-white max-w-xs truncate" title={order.fund}>
                                                             {order.fund}
@@ -559,6 +566,6 @@ export default function PortfolioPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
