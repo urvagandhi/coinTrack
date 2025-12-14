@@ -7,6 +7,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,21 +15,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
-import com.urva.myfinance.coinTrack.user.model.User;
-import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 import com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository;
-import com.urva.myfinance.coinTrack.user.service.UserService;
 import com.urva.myfinance.coinTrack.broker.service.BrokerConnectService;
 import com.urva.myfinance.coinTrack.broker.service.BrokerServiceFactory;
+import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
 import com.urva.myfinance.coinTrack.broker.service.impl.ZerodhaBrokerService;
 import com.urva.myfinance.coinTrack.common.util.EncryptionUtil;
 import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
+import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.service.UserService;
 
 /**
  * Controller for broker connection and credential management.
@@ -47,16 +49,19 @@ public class BrokerConnectController {
     private final BrokerAccountRepository accountRepository;
     private final EncryptionUtil encryptionUtil;
     private final BrokerServiceFactory brokerFactory;
+    private final String frontendUrl;
 
     @Autowired
     public BrokerConnectController(BrokerConnectService brokerConnectService, UserService userService,
             BrokerAccountRepository accountRepository, EncryptionUtil encryptionUtil,
-            BrokerServiceFactory brokerFactory) {
+            BrokerServiceFactory brokerFactory,
+            @Value("${frontend.url:http://localhost:3000}") String frontendUrl) {
         this.brokerConnectService = brokerConnectService;
         this.userService = userService;
         this.accountRepository = accountRepository;
         this.encryptionUtil = encryptionUtil;
         this.brokerFactory = brokerFactory;
+        this.frontendUrl = frontendUrl;
     }
 
     /**
@@ -64,10 +69,9 @@ public class BrokerConnectController {
      */
     @GetMapping("/{broker}/connect")
     public ResponseEntity<?> getConnectUrl(
-            @RequestHeader("Authorization") String token,
             @PathVariable("broker") String brokerName) {
 
-        User user = getUserFromToken(token);
+        User user = getAuthenticatedUser();
         if (user == null) {
             logger.warn("Unauthorized broker connect attempt for broker: {}", brokerName);
             return ResponseEntity.status(401).build();
@@ -98,7 +102,6 @@ public class BrokerConnectController {
             logger.warn("Invalid broker name: {}", brokerName);
             return ResponseEntity.badRequest().body("Invalid broker");
         } catch (Exception e) {
-            logger.error(LoggingConstants.BROKER_CONNECT_FAILED, brokerName, user.getId(), e.getMessage());
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
@@ -109,10 +112,9 @@ public class BrokerConnectController {
      */
     @PostMapping("/zerodha/credentials")
     public ResponseEntity<?> saveZerodhaCredentials(
-            @RequestHeader("Authorization") String token,
             @RequestBody Map<String, String> credentials) {
 
-        User user = getUserFromToken(token);
+        User user = getAuthenticatedUser();
         if (user == null) {
             logger.warn("Unauthorized Zerodha credential save attempt");
             return ResponseEntity.status(401).build();
@@ -156,10 +158,9 @@ public class BrokerConnectController {
      */
     @PostMapping("/callback")
     public ResponseEntity<?> handleBrokerCallback(
-            @RequestHeader("Authorization") String token,
             @RequestBody Map<String, String> payload) {
 
-        User user = getUserFromToken(token);
+        User user = getAuthenticatedUser();
         if (user == null) {
             logger.warn("Unauthorized broker callback attempt");
             return ResponseEntity.status(401).build();
@@ -188,6 +189,10 @@ public class BrokerConnectController {
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid broker in callback: {}", brokerName);
             return ResponseEntity.badRequest().body("Invalid broker");
+        } catch (BrokerException e) {
+            logger.warn("Broker connection failed: {}", e.getMessage());
+            // Safe to return 400 as this usually means invalid/expired token
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             logger.error(LoggingConstants.BROKER_CONNECT_FAILED, brokerName, user.getId(), e.getMessage(), e);
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
@@ -195,14 +200,30 @@ public class BrokerConnectController {
     }
 
     /**
-     * Extracts user from JWT token in Authorization header.
-     * TODO: Consider migrating to SecurityContext-based retrieval for consistency.
+     * Handles browser redirect from Zerodha.
+     * Redirects to Frontend Callback Page with request_token.
      */
-    private User getUserFromToken(String token) {
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
-        return userService.getUserByToken(token);
+    @GetMapping("/zerodha/callback")
+    public ResponseEntity<Void> handleBrowserCallback(
+            @RequestParam("request_token") String requestToken,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "action", required = false) String action) {
+
+        logger.info("Received browser callback from Zerodha. Request Token: {}", requestToken);
+
+        // Using configured frontend URL
+
+        StringBuilder redirectUrl = new StringBuilder(frontendUrl);
+        redirectUrl.append("?request_token=").append(requestToken);
+
+        if (status != null)
+            redirectUrl.append("&status=").append(status);
+        if (action != null)
+            redirectUrl.append("&action=").append(action);
+
+        return ResponseEntity.status(302)
+                .header("Location", redirectUrl.toString())
+                .build();
     }
 
     /**

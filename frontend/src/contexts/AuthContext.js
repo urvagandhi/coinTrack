@@ -77,17 +77,20 @@ export function AuthProvider({ children }) {
 
     const initializeAuth = async () => {
         logger.debug('Initializing Auth State');
+        // Do NOT set loading to true immediately if we have a token (optimistic auth)
+        // This prevents flickering to login page
+        const token = tokenManager.getToken();
+
+        if (!token || tokenManager.isTokenExpired(token)) {
+            logger.info('No valid token found during init, starting as guest');
+            dispatch({ type: AUTH_ACTIONS.LOGOUT });
+            return;
+        }
+
+        // If we have a token, start loading but don't clear user yet
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
 
         try {
-            const token = tokenManager.getToken();
-
-            if (!token || tokenManager.isTokenExpired(token)) {
-                logger.info('No valid token found, starting as guest');
-                dispatch({ type: AUTH_ACTIONS.LOGOUT });
-                return;
-            }
-
             // Verify token with backend and get user data
             const userData = await userAPI.getProfile();
 
@@ -95,14 +98,18 @@ export function AuthProvider({ children }) {
             dispatch({ type: AUTH_ACTIONS.SET_USER, payload: userData });
 
         } catch (error) {
-            logger.warn('Auth initialization failed', { error: error.message });
+            logger.warn('Auth initialization failed', { error: error.message, status: error.status });
 
-            // If token is invalid (401), strict cleanup
+            // CRITICAL: Only logout if explicitly 401 Unauthorized
+            // Network errors or 500s should NOT log the user out
             if (error.status === 401) {
+                logger.error('Token invalid (401), logging out');
                 tokenManager.removeToken();
+                dispatch({ type: AUTH_ACTIONS.LOGOUT });
+            } else {
+                // For other errors, keep the error state but don't destroy session
+                dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: 'Failed to refresh session: ' + error.message });
             }
-
-            dispatch({ type: AUTH_ACTIONS.LOGOUT });
         }
     };
 

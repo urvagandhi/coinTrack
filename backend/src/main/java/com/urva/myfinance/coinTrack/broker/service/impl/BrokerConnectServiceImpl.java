@@ -20,11 +20,14 @@ public class BrokerConnectServiceImpl implements BrokerConnectService {
 
     private final BrokerServiceFactory brokerFactory;
     private final BrokerAccountRepository accountRepository;
+    private final com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService portfolioSyncService;
 
     @Autowired
-    public BrokerConnectServiceImpl(BrokerServiceFactory brokerFactory, BrokerAccountRepository accountRepository) {
+    public BrokerConnectServiceImpl(BrokerServiceFactory brokerFactory, BrokerAccountRepository accountRepository,
+            com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService portfolioSyncService) {
         this.brokerFactory = brokerFactory;
         this.accountRepository = accountRepository;
+        this.portfolioSyncService = portfolioSyncService;
     }
 
     @Override
@@ -91,5 +94,15 @@ public class BrokerConnectServiceImpl implements BrokerConnectService {
 
         // 4. Save
         accountRepository.save(account);
+
+        // 5. Trigger Initial Sync
+        try {
+            portfolioSyncService.syncBrokerAccount(account);
+        } catch (Exception e) {
+            // Log but don't fail the connection if sync fails
+            // It will be picked up by the scheduler later
+            org.slf4j.LoggerFactory.getLogger(BrokerConnectServiceImpl.class)
+                    .error("Initial portfolio sync failed for user {}", userId, e);
+        }
     }
 }

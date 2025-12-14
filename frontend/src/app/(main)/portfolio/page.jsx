@@ -1,157 +1,269 @@
 'use client';
 
+import { portfolioAPI } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
+import { useState } from 'react';
+
+// Icons
 import ArrowDownRight from 'lucide-react/dist/esm/icons/arrow-down-right';
 import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import Download from 'lucide-react/dist/esm/icons/download';
-import Filter from 'lucide-react/dist/esm/icons/filter';
-import LineChart from 'lucide-react/dist/esm/icons/line-chart';
-import Wallet from 'lucide-react/dist/esm/icons/wallet';
-
-import dynamic from 'next/dynamic';
-
-// Mock Data Holdings
-const HOLDINGS = [
-    { id: 1, name: 'Reliance Industries', symbol: 'RELIANCE', type: 'Stock', invested: 45000, current: 52000, pnl: 15.5 },
-    { id: 2, name: 'HDFC Bank', symbol: 'HDFCBANK', type: 'Stock', invested: 30000, current: 28500, pnl: -5.0 },
-    { id: 3, name: 'Nippon India Small Cap', symbol: 'NIPPON', type: 'Mutual Fund', invested: 25000, current: 35000, pnl: 40.0 },
-    { id: 4, name: 'Sovereign Gold Bond', symbol: 'SGB', type: 'Gold', invested: 20000, current: 24500, pnl: 22.5 },
-    { id: 5, name: 'Tata Motors', symbol: 'TATAMOTORS', type: 'Stock', invested: 15000, current: 18250, pnl: 21.6 },
-];
-
-const StatCard = ({ title, value, subValue, isPositive, icon: Icon }) => (
-    <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-6 shadow-sm flex flex-col justify-between h-36 relative overflow-hidden group">
-        <div className="flex justify-between items-start z-10">
-            <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">{title}</p>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{value}</h3>
-            </div>
-            <div className={`p-2 rounded-lg ${isPositive ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-red-100 dark:bg-red-900/30 text-red-600'}`}>
-                <Icon className="w-5 h-5" />
-            </div>
-        </div>
-
-        <div className="z-10 flex items-center gap-2">
-            <span className={`text-sm font-bold flex items-center ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                {isPositive ? <ArrowUpRight className="w-4 h-4 mr-0.5" /> : <ArrowDownRight className="w-4 h-4 mr-0.5" />}
-                {subValue}
-            </span>
-            <span className="text-xs text-gray-400">vs last month</span>
-        </div>
-
-        {/* Decorational Background Icon */}
-        <Icon className="absolute -bottom-4 -right-4 w-24 h-24 text-gray-100 dark:text-gray-800/50 opacity-100 group-hover:scale-110 transition-transform duration-500" />
-    </div>
-);
+import PieChart from 'lucide-react/dist/esm/icons/pie-chart';
 
 // Dynamic Import to fix Recharts SSR issue
 const PortfolioAnalysisCharts = dynamic(() => import('@/components/dashboard/PortfolioAnalysisCharts'), {
     ssr: false,
-    loading: () => <div className="h-[300px] w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl"></div>
+    loading: () => <div className="h-[300px] w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
 });
 
+function StatCard({ title, value, subValue, isPositive, icon: Icon }) {
+    return (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{title}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</h3>
+                </div>
+                <div className={`p-3 rounded-xl ${isPositive ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'}`}>
+                    <Icon className="h-6 w-6" />
+                </div>
+            </div>
+            {subValue && (
+                <div className={`flex items-center text-sm ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {isPositive ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
+                    <span className="font-medium">{subValue}</span>
+                    <span className="text-gray-400 dark:text-gray-500 ml-1">vs yesterday</span>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function PortfolioPage() {
+    const [activeTab, setActiveTab] = useState('holdings');
+
+    // 1. Fetch Summary
+    const { data: summary, isLoading: isLoadingSummary } = useQuery({
+        queryKey: ['portfolioSummary'],
+        queryFn: portfolioAPI.getSummary,
+        refetchInterval: 60000 // Refresh every minute
+    });
+
+    // 2. Fetch Holdings
+    const { data: holdings = [], isLoading: isLoadingHoldings } = useQuery({
+        queryKey: ['holdings'],
+        queryFn: portfolioAPI.getHoldings,
+        refetchInterval: 60000
+    });
+
+    // 3. Fetch Positions
+    const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
+        queryKey: ['positions'],
+        queryFn: portfolioAPI.getPositions,
+        refetchInterval: 30000 // Faster refresh for positions
+    });
+
+    // Helper to format currency
+    const formatCurrency = (val) => {
+        if (val === undefined || val === null) return '₹0.00';
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 2
+        }).format(val);
+    };
+
+    // Helper to format percentage
+    const formatPercent = (val) => {
+        if (val === undefined || val === null) return '0.00%';
+        const isPos = val >= 0;
+        return `${isPos ? '+' : ''}${val?.toFixed(2)}%`;
+    };
+
     return (
-        <div className="max-w-7xl mx-auto space-y-8">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Portfolio Analysis</h1>
-                    <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-xs font-bold rounded-full border border-orange-200 dark:border-orange-800">
-                        PRO
-                    </span>
-                </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <Download className="w-4 h-4" />
-                    Report
-                </button>
+        <div className="space-y-8">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Portfolio</h1>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your investments and track performance.</p>
             </div>
 
-            {/* 1. Stats Row */}
+            {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
-                    title="Net Worth"
-                    value="₹1,68,250"
-                    subValue="12.4%"
-                    isPositive={true}
-                    icon={Wallet}
+                    title="Current Value"
+                    value={isLoadingSummary ? "Loading..." : formatCurrency(summary?.totalCurrentValue)}
+                    subValue={isLoadingSummary ? "" : formatPercent(summary?.totalDayGainPercent)}
+                    isPositive={summary?.totalDayGain >= 0}
+                    icon={PieChart}
                 />
                 <StatCard
-                    title="Total Gain/Loss"
-                    value="+₹23,250"
-                    subValue="8.2%"
+                    title="Total Invested"
+                    value={isLoadingSummary ? "Loading..." : formatCurrency(summary?.totalInvestedValue)}
+                    subValue={null}
                     isPositive={true}
-                    icon={LineChart}
-                />
-                <StatCard
-                    title="Day's Change"
-                    value="-₹840"
-                    subValue="0.5%"
-                    isPositive={false}
                     icon={Briefcase}
+                />
+                <StatCard
+                    title="Total P&L"
+                    value={isLoadingSummary ? "Loading..." : formatCurrency(summary?.totalUnrealizedPL)}
+                    subValue={isLoadingSummary ? "" : formatCurrency(summary?.totalDayGain)}
+                    isPositive={summary?.totalUnrealizedPL >= 0}
+                    icon={ArrowUpRight}
                 />
             </div>
 
-            {/* 2. Charts Section */}
-            <PortfolioAnalysisCharts />
+            {/* Main Content Area */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Tables */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        {/* Tabs */}
+                        <div className="flex border-b border-gray-100 dark:border-gray-700">
+                            {['holdings', 'positions', 'orders', 'mutual_funds'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-6 py-4 text-sm font-medium transition-colors ${activeTab === tab
+                                        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                                        }`}
+                                >
+                                    {tab.replace('_', ' ').charAt(0).toUpperCase() + tab.replace('_', ' ').slice(1)}
+                                </button>
+                            ))}
+                        </div>
 
-            {/* 3. Holdings Table (Advanced) */}
-            <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Current Holdings</h3>
-                    <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300">
-                            <Filter className="w-3.5 h-3.5" />
-                            Filter
-                        </button>
-                        <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300">
-                            Sort by ROI <ChevronDown className="w-3.5 h-3.5" />
-                        </button>
+                        {/* Tab Content */}
+                        <div className="p-6">
+                            {/* HOLDINGS TAB */}
+                            {activeTab === 'holdings' && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                <th className="pb-4">Instrument</th>
+                                                <th className="pb-4 text-right">Qty</th>
+                                                <th className="pb-4 text-right">Avg. Price</th>
+                                                <th className="pb-4 text-right">Current</th>
+                                                <th className="pb-4 text-right">P&L</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="space-y-4">
+                                            {isLoadingHoldings ? (
+                                                <tr><td colSpan="5" className="text-center py-4">Loading holdings...</td></tr>
+                                            ) : holdings.length === 0 ? (
+                                                <tr><td colSpan="5" className="text-center py-4 text-gray-500">No holdings found.</td></tr>
+                                            ) : (
+                                                holdings.map((item, idx) => {
+                                                    const pnl = (item.currentPrice - item.averagePrice) * item.quantity;
+                                                    const isPos = pnl >= 0;
+                                                    return (
+                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                                                            <td className="py-4">
+                                                                <div className="font-medium text-gray-900 dark:text-white">{item.symbol || item.instrument}</div>
+                                                                <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 inline-block px-2 py-0.5 rounded mt-1">
+                                                                    {item.type || 'EQ'}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.quantity}</td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averagePrice)}</td>
+                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.currentPrice)}</td>
+                                                            <td className={`py-4 text-right font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                {formatCurrency(pnl)}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* POSITIONS TAB */}
+                            {activeTab === 'positions' && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                <th className="pb-4">Instrument</th>
+                                                <th className="pb-4 text-right">Qty</th>
+                                                <th className="pb-4 text-right">Buy Avg</th>
+                                                <th className="pb-4 text-right">Sell Avg</th>
+                                                <th className="pb-4 text-right">P&L</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="space-y-4">
+                                            {isLoadingPositions ? (
+                                                <tr><td colSpan="5" className="text-center py-4">Loading positions...</td></tr>
+                                            ) : positions.length === 0 ? (
+                                                <tr><td colSpan="5" className="text-center py-4 text-gray-500">No active positions.</td></tr>
+                                            ) : (
+                                                positions.map((item, idx) => {
+                                                    const isPos = item.pnl >= 0;
+                                                    return (
+                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                                                            <td className="py-4">
+                                                                <div className="font-medium text-gray-900 dark:text-white">{item.tradingSymbol}</div>
+                                                                <div className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 inline-block px-2 py-0.5 rounded mt-1">
+                                                                    {item.productType}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.quantity}</td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averagePrice)}</td>
+                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">--</td> {/* Sell avg might not be in basic DTO yet */}
+                                                            <td className={`py-4 text-right font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                {formatCurrency(item.pnl)}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* ORDERS TAB (Stub) */}
+                            {activeTab === 'orders' && (
+                                <div className="text-center py-12">
+                                    <div className="inline-block p-4 rounded-full bg-gray-50 dark:bg-gray-700/50 mb-4">
+                                        <Briefcase className="h-8 w-8 text-gray-400" />
+                                    </div>
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">No Orders Found</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mt-1">Order history integration coming soon.</p>
+                                </div>
+                            )}
+
+                            {/* MUTUAL FUNDS TAB (Stub) */}
+                            {activeTab === 'mutual_funds' && (
+                                <div className="text-center py-12">
+                                    <div className="inline-block p-4 rounded-full bg-gray-50 dark:bg-gray-700/50 mb-4">
+                                        <PieChart className="h-8 w-8 text-gray-400" />
+                                    </div>
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Mutual Funds</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mt-1">Mutual fund tracking integration coming soon.</p>
+                                </div>
+                            )}
+
+                        </div>
                     </div>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-gray-50/50 dark:bg-gray-800/50 text-gray-500 font-medium">
-                            <tr>
-                                <th className="px-6 py-4">Instrument</th>
-                                <th className="px-6 py-4">Type</th>
-                                <th className="px-6 py-4 text-right">Invested</th>
-                                <th className="px-6 py-4 text-right">Current</th>
-                                <th className="px-6 py-4 text-right">P&L</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {HOLDINGS.map(holding => (
-                                <tr key={holding.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="font-bold text-gray-900 dark:text-white">{holding.name}</div>
-                                        <div className="text-xs text-gray-400">{holding.symbol}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded text-xs font-medium
-                                            ${holding.type === 'Stock' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                holding.type === 'Gold' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                                    'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}
-                                        `}>
-                                            {holding.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-400">
-                                        ₹{holding.invested.toLocaleString()}
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
-                                        ₹{holding.current.toLocaleString()}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className={`font-bold ${holding.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                            {holding.pnl >= 0 ? '+' : ''}{holding.pnl}%
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+
+                {/* Right Column: Charts */}
+                <div className="space-y-6">
+                    <PortfolioAnalysisCharts />
+
+                    {/* Quick Transfer / Action Card (Placeholder) */}
+                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
+                        <h3 className="text-lg font-bold mb-2">Add Funds</h3>
+                        <p className="text-blue-100 text-sm mb-4">Transfer funds instantly to your connected broker accounts.</p>
+                        <button className="w-full py-2 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-colors">
+                            Add Funds
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
