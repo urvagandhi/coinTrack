@@ -51,38 +51,74 @@ export default function PortfolioPage() {
     });
 
     // 2. Fetch Holdings
-    const { data: holdings = [], isLoading: isLoadingHoldings } = useQuery({
+    const { data: holdingsData, isLoading: isLoadingHoldings } = useQuery({
         queryKey: ['holdings'],
         queryFn: portfolioAPI.getHoldings,
         refetchInterval: 60000
     });
+    const holdings = holdingsData?.data || [];
 
     // 3. Fetch Positions
-    const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
+    const { data: positionsData, isLoading: isLoadingPositions } = useQuery({
         queryKey: ['positions'],
         queryFn: portfolioAPI.getPositions,
         refetchInterval: 30000
     });
+    const positions = positionsData?.data || [];
 
     // 4. Fetch Orders
-    const { data: orders = [], isLoading: isLoadingOrders } = useQuery({
+    const { data: ordersData, isLoading: isLoadingOrders } = useQuery({
         queryKey: ['orders'],
         queryFn: portfolioAPI.getOrders,
         refetchInterval: 15000
     });
+    const orders = ordersData?.data || [];
 
     // 5. Fetch Mutual Funds
-    const { data: mfHoldings = [], isLoading: isLoadingMf } = useQuery({
+    const { data: mfHoldingsData, isLoading: isLoadingMf } = useQuery({
         queryKey: ['mfHoldings'],
         queryFn: portfolioAPI.getMfHoldings,
         refetchInterval: 300000
     });
+    const mfHoldings = mfHoldingsData?.data || [];
 
-    // 6. Fetch Funds/Margins
+    // 6. Fetch Trades (New)
+    const { data: tradesData, isLoading: isLoadingTrades } = useQuery({
+        queryKey: ['trades'],
+        queryFn: portfolioAPI.getTrades,
+        refetchInterval: 60000
+    });
+    const trades = tradesData?.data || [];
+
+    // 7. Fetch MF Orders (New)
+    const { data: mfOrdersData, isLoading: isLoadingMfOrders } = useQuery({
+        queryKey: ['mfOrders'],
+        queryFn: portfolioAPI.getMfOrders,
+        refetchInterval: 60000
+    });
+    const mfOrders = mfOrdersData?.data || [];
+
+    // 8. Fetch Funds/Margins
+    // funds endpoint returns a single object which IS the DTO (FundsDTO), it has no inner 'data' for the list,
+    // BUT we added KiteResponseMetadata to FundsDTO, so it is the object itself.
+    // However, verify if funds endpoint returns { data: { ... } } or just { ... }.
+    // PortfolioSummaryService.getFunds returns FundsDTO.
+    // PortfolioController wraps it in ApiResponse.
+    // api.js unwraps ApiResponse.
+    // So fundsData IS the FundsDTO.
+    // FundsDTO has fields: equity, commodity.
+    // So fundsData.equity is correct.
     const { data: fundsData, isLoading: isLoadingFunds } = useQuery({
         queryKey: ['funds'],
         queryFn: portfolioAPI.getFunds,
         refetchInterval: 60000
+    });
+
+    // 9. Fetch Profile (New)
+    const { data: profile, isLoading: isLoadingProfile } = useQuery({
+        queryKey: ['profile'],
+        queryFn: portfolioAPI.getProfile,
+        refetchInterval: 300000
     });
 
     // Helper to format currency
@@ -167,17 +203,17 @@ export default function PortfolioPage() {
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                         {/* Tabs */}
-                        <div className="flex border-b border-gray-100 dark:border-gray-700 overflow-x-auto">
-                            {['holdings', 'positions', 'orders', 'mutual_funds'].map((tab) => (
+                        <div className="flex border-b border-gray-100 dark:border-gray-700 overflow-x-auto scrollbar-hide">
+                            {['holdings', 'positions', 'orders', 'trades', 'mutual_funds', 'mf_orders', 'profile'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={`px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab
-                                        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
+                                        ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
                                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                         }`}
                                 >
-                                    {tab.replace('_', ' ').charAt(0).toUpperCase() + tab.replace('_', ' ').slice(1)}
+                                    {tab.replace('_', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                                 </button>
                             ))}
                         </div>
@@ -190,34 +226,34 @@ export default function PortfolioPage() {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4">Instrument</th>
+                                                <th className="pb-4 pl-2">Instrument</th>
                                                 <th className="pb-4 text-right">Qty</th>
                                                 <th className="pb-4 text-right">Avg. Price</th>
                                                 <th className="pb-4 text-right">Current</th>
-                                                <th className="pb-4 text-right">P&L</th>
+                                                <th className="pb-4 text-right pr-2">P&L</th>
                                             </tr>
                                         </thead>
                                         <tbody className="space-y-4">
                                             {isLoadingHoldings ? (
-                                                <tr><td colSpan="5" className="text-center py-4">Loading holdings...</td></tr>
+                                                <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
                                             ) : holdings.length === 0 ? (
-                                                <tr><td colSpan="5" className="text-center py-4 text-gray-500">No holdings found.</td></tr>
+                                                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No holdings found.</td></tr>
                                             ) : (
                                                 holdings.map((item, idx) => {
                                                     const pnl = (item.currentPrice - item.averagePrice) * item.quantity;
                                                     const isPos = pnl >= 0;
                                                     return (
-                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
-                                                            <td className="py-4">
+                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                            <td className="py-4 pl-2">
                                                                 <div className="font-medium text-gray-900 dark:text-white">{item.symbol || item.instrument}</div>
-                                                                <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 inline-block px-2 py-0.5 rounded mt-1">
-                                                                    {item.type || 'EQ'}
+                                                                <div className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 inline-block px-1.5 py-0.5 rounded mt-1">
+                                                                    {item.exchange}
                                                                 </div>
                                                             </td>
                                                             <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.quantity}</td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averagePrice)}</td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
                                                             <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.currentPrice)}</td>
-                                                            <td className={`py-4 text-right font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                            <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                 {formatCurrency(pnl)}
                                                             </td>
                                                         </tr>
@@ -235,32 +271,32 @@ export default function PortfolioPage() {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4">Instrument</th>
+                                                <th className="pb-4 pl-2">Instrument</th>
                                                 <th className="pb-4 text-right">Qty</th>
                                                 <th className="pb-4 text-right">Buy Avg</th>
-                                                <th className="pb-4 text-right">P&L</th>
+                                                <th className="pb-4 text-right pr-2">P&L</th>
                                             </tr>
                                         </thead>
                                         <tbody className="space-y-4">
                                             {isLoadingPositions ? (
-                                                <tr><td colSpan="4" className="text-center py-4">Loading positions...</td></tr>
+                                                <tr><td colSpan="4" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
                                             ) : positions.length === 0 ? (
-                                                <tr><td colSpan="4" className="text-center py-4 text-gray-500">No active positions.</td></tr>
+                                                <tr><td colSpan="4" className="text-center py-8 text-gray-500">No active positions.</td></tr>
                                             ) : (
                                                 positions.map((item, idx) => {
-                                                    const isPos = item.pnl >= 0;
+                                                    const isPos = item.unrealizedPL >= 0;
                                                     return (
-                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
-                                                            <td className="py-4">
-                                                                <div className="font-medium text-gray-900 dark:text-white">{item.tradingSymbol}</div>
-                                                                <div className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 inline-block px-2 py-0.5 rounded mt-1">
-                                                                    {item.productType}
+                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                            <td className="py-4 pl-2">
+                                                                <div className="font-medium text-gray-900 dark:text-white">{item.symbol}</div>
+                                                                <div className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 inline-block px-1.5 py-0.5 rounded mt-1">
+                                                                    {item.isDerivative ? item.instrumentType : 'EQUITY'}
                                                                 </div>
                                                             </td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.quantity}</td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averagePrice)}</td>
-                                                            <td className={`py-4 text-right font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                                {formatCurrency(item.pnl)}
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.totalQuantity}</td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
+                                                            <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                {formatCurrency(item.unrealizedPL)}
                                                             </td>
                                                         </tr>
                                                     );
@@ -277,26 +313,26 @@ export default function PortfolioPage() {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4">Time</th>
+                                                <th className="pb-4 pl-2">Time</th>
                                                 <th className="pb-4">Instrument</th>
                                                 <th className="pb-4 text-center">Type</th>
                                                 <th className="pb-4 text-right">Qty</th>
                                                 <th className="pb-4 text-right">Price</th>
-                                                <th className="pb-4 text-right">Status</th>
+                                                <th className="pb-4 text-right pr-2">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody className="space-y-4">
                                             {isLoadingOrders ? (
-                                                <tr><td colSpan="6" className="text-center py-4">Loading orders...</td></tr>
+                                                <tr><td colSpan="6" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
                                             ) : orders.length === 0 ? (
-                                                <tr><td colSpan="6" className="text-center py-4 text-gray-500">No orders found for today.</td></tr>
+                                                <tr><td colSpan="6" className="text-center py-8 text-gray-500">No orders found for today.</td></tr>
                                             ) : (
                                                 orders.map((order, idx) => (
-                                                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
-                                                        <td className="py-4 text-xs text-gray-500">{order.orderTimestamp?.split(' ')[1] || order.orderTimestamp}</td>
+                                                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                        <td className="py-4 pl-2 text-xs text-gray-500">{order.orderTimestamp?.split(' ')[1] || order.orderTimestamp}</td>
                                                         <td className="py-4 font-medium text-gray-900 dark:text-white">
                                                             {order.tradingsymbol}
-                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
+                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
                                                                 {order.transactionType}
                                                             </span>
                                                         </td>
@@ -305,14 +341,53 @@ export default function PortfolioPage() {
                                                             {order.filledQuantity}/{order.quantity}
                                                         </td>
                                                         <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(order.averagePrice || order.price)}</td>
-                                                        <td className="py-4 text-right">
-                                                            <span className={`text-xs px-2 py-1 rounded-full ${order.status === 'COMPLETE' ? 'bg-green-100 text-green-700' :
-                                                                    order.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                                                                        'bg-yellow-100 text-yellow-700'
+                                                        <td className="py-4 text-right pr-2">
+                                                            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                                                order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                                                    'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
                                                                 }`}>
                                                                 {order.status}
                                                             </span>
                                                         </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* TRADES TAB */}
+                            {activeTab === 'trades' && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                <th className="pb-4 pl-2">Time</th>
+                                                <th className="pb-4">Instrument</th>
+                                                <th className="pb-4 text-center">Trade ID</th>
+                                                <th className="pb-4 text-right">Qty</th>
+                                                <th className="pb-4 text-right pr-2">Price</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="space-y-4">
+                                            {isLoadingTrades ? (
+                                                <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                            ) : trades.length === 0 ? (
+                                                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No trades executed today.</td></tr>
+                                            ) : (
+                                                trades.map((trade, idx) => (
+                                                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                        <td className="py-4 pl-2 text-xs text-gray-500">{trade.fillTimestamp?.split(' ')[1] || trade.fillTimestamp}</td>
+                                                        <td className="py-4 font-medium text-gray-900 dark:text-white">
+                                                            {trade.tradingsymbol}
+                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${trade.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                                {trade.transactionType}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-4 text-center text-xs text-gray-500 font-mono">{trade.tradeId}</td>
+                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">{trade.quantity}</td>
+                                                        <td className="py-4 text-right font-medium pr-2 text-gray-900 dark:text-white">{formatCurrency(trade.averagePrice)}</td>
                                                     </tr>
                                                 ))
                                             )}
@@ -327,34 +402,34 @@ export default function PortfolioPage() {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4">Fund</th>
+                                                <th className="pb-4 pl-2">Fund</th>
                                                 <th className="pb-4 text-right">Units</th>
                                                 <th className="pb-4 text-right">Avg. NAV</th>
                                                 <th className="pb-4 text-right">Last Price</th>
-                                                <th className="pb-4 text-right">P&L</th>
+                                                <th className="pb-4 text-right pr-2">P&L</th>
                                             </tr>
                                         </thead>
                                         <tbody className="space-y-4">
                                             {isLoadingMf ? (
-                                                <tr><td colSpan="5" className="text-center py-4">Loading mutual funds...</td></tr>
+                                                <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
                                             ) : mfHoldings.length === 0 ? (
-                                                <tr><td colSpan="5" className="text-center py-4 text-gray-500">No mutual fund holdings found.</td></tr>
+                                                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No mutual fund holdings found.</td></tr>
                                             ) : (
                                                 mfHoldings.map((mf, idx) => {
                                                     const pnl = parseFloat(mf.pnl);
                                                     const isPos = pnl >= 0;
                                                     return (
-                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
-                                                            <td className="py-4">
+                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                            <td className="py-4 pl-2">
                                                                 <div className="font-medium text-gray-900 dark:text-white max-w-xs truncate" title={mf.fund}>
                                                                     {mf.fund}
                                                                 </div>
-                                                                <div className="text-xs text-gray-400 mt-1">{mf.folio}</div>
+                                                                <div className="text-[10px] text-gray-400 mt-1">{mf.folio}</div>
                                                             </td>
                                                             <td className="py-4 text-right text-gray-600 dark:text-gray-300">{mf.quantity}</td>
                                                             <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.averagePrice)}</td>
                                                             <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.lastPrice)}</td>
-                                                            <td className={`py-4 text-right font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                            <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                 {formatCurrency(mf.pnl)}
                                                             </td>
                                                         </tr>
@@ -366,6 +441,96 @@ export default function PortfolioPage() {
                                 </div>
                             )}
 
+                            {/* MF ORDERS TAB */}
+                            {activeTab === 'mf_orders' && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                <th className="pb-4 pl-2">Time</th>
+                                                <th className="pb-4">Fund</th>
+                                                <th className="pb-4 text-center">Type</th>
+                                                <th className="pb-4 text-right">Amount</th>
+                                                <th className="pb-4 text-right pr-2">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="space-y-4">
+                                            {isLoadingMfOrders ? (
+                                                <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                            ) : mfOrders.length === 0 ? (
+                                                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No MF orders found.</td></tr>
+                                            ) : (
+                                                mfOrders.map((order, idx) => (
+                                                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                        <td className="py-4 pl-2 text-xs text-gray-500">{order.timestamp?.split(' ')[1] || order.timestamp}</td>
+                                                        <td className="py-4 font-medium text-gray-900 dark:text-white max-w-xs truncate" title={order.fund}>
+                                                            {order.fund}
+                                                        </td>
+                                                        <td className="py-4 text-center">
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                                {order.transactionType}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(order.amount)}</td>
+                                                        <td className="py-4 text-right pr-2">
+                                                            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                                                order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                                                    'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                                                                }`}>
+                                                                {order.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* PROFILE TAB */}
+                            {activeTab === 'profile' && (
+                                <div className="space-y-6">
+                                    {isLoadingProfile ? (
+                                        <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
+                                    ) : !profile ? (
+                                        <div className="text-center py-12 text-gray-500">No profile data available. Connect a broker.</div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-4">
+                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Account Details</h3>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Name</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.userName}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Email</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.email}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Broker</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.broker}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">User ID</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">{profile.userYield}</span> {/* Assuming userYield stores ID for now or adjust per DTO */}
+                                                </div>
+                                            </div>
+                                            <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-4">
+                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Broker Status</h3>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Connection Status</span>
+                                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Connected</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Last Synced</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Just now</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

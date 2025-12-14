@@ -124,6 +124,7 @@ public class ZerodhaBrokerService implements BrokerService {
                     .userId(account.getUserId())
                     .broker(Broker.ZERODHA)
                     .symbol((String) item.get("tradingsymbol"))
+                    .exchange((String) item.get("exchange"))
                     .quantity(safeBigDecimal(item.get("quantity")))
                     .averageBuyPrice(safeBigDecimal(item.get("average_price")))
                     .lastUpdated(LocalDateTime.now())

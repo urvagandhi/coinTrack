@@ -257,6 +257,14 @@ export const portfolioAPI = {
         const { data } = await api.get(endpoints.portfolio.mfHoldings);
         return unwrapResponse(data) || [];
     },
+    getMfOrders: async () => {
+        const { data } = await api.get(endpoints.portfolio.mfOrders); // Corrected from hardcoded string
+        return unwrapResponse(data) || [];
+    },
+    getTrades: async () => {
+        const { data } = await api.get('/api/portfolio/trades');
+        return unwrapResponse(data) || [];
+    },
     getProfile: async () => {
         const { data } = await api.get(endpoints.portfolio.profile);
         return unwrapResponse(data);

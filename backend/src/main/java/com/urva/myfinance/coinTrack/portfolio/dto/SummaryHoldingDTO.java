@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SummaryHoldingDTO {
     private String symbol;
+    private String exchange;
     private String broker; // Zerodha, Upstox, etc.
     private String type; // HOLDING or POSITION
 

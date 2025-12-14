@@ -30,6 +30,8 @@ public class CachedHolding {
 
     private String symbol;
 
+    private String exchange;
+
     private BigDecimal quantity;
 
     private BigDecimal averageBuyPrice;

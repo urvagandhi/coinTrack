@@ -144,6 +144,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
 
         return SummaryHoldingDTO.builder()
                 .symbol(h.getSymbol())
+                .exchange(h.getExchange())
                 .broker(h.getBroker() != null ? h.getBroker().name() : "UNKNOWN")
                 .type("HOLDING")
                 .quantity(qty.intValue()) // Cast to int for DTO
