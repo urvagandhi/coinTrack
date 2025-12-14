@@ -126,18 +126,21 @@ public class UserService {
     }
 
     @SuppressWarnings("null")
-    public void changePassword(String userId, String newPassword) {
+    public void changePassword(String userId, String oldPassword, String newPassword) {
         try {
             Optional<User> userOpt = userRepository.findById(userId);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
+                if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+                    throw new RuntimeException("Current password is incorrect");
+                }
                 user.setPassword(passwordEncoder.encode(newPassword));
                 userRepository.save(user);
             } else {
                 throw new RuntimeException("User not found");
             }
         } catch (Exception e) {
-            throw new RuntimeException("Error changing password: " + e.getMessage(), e);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -391,6 +394,8 @@ public class UserService {
             loginResponse.setEmail(user.getEmail());
             loginResponse.setMobile(user.getPhoneNumber());
             loginResponse.setFirstName(user.getName());
+            loginResponse.setBio(user.getBio());
+            loginResponse.setLocation(user.getLocation());
             loginResponse.setRequiresOtp(false);
 
             return loginResponse;
@@ -561,6 +566,8 @@ public class UserService {
                 loginResponse.setEmail(foundUser.getEmail());
                 loginResponse.setMobile(foundUser.getPhoneNumber());
                 loginResponse.setFirstName(foundUser.getName()); // Assuming name contains first name
+                loginResponse.setBio(foundUser.getBio());
+                loginResponse.setLocation(foundUser.getLocation());
                 return loginResponse;
             } else {
                 throw new RuntimeException("Invalid username or password");

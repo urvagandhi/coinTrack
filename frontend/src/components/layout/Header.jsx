@@ -6,18 +6,10 @@ import { ChevronRight, Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { useState } from 'react';
-
 export default function Header({ onMenuClick }) {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const pathname = usePathname();
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
-
-    const handleLogout = async () => {
-        setShowProfileMenu(false);
-        await logout();
-    };
 
     const generateBreadcrumbs = () => {
         // Remove trailing slash and split
@@ -92,50 +84,18 @@ export default function Header({ onMenuClick }) {
                 </button>
 
                 {/* Profile */}
-                <div className="relative ml-4 pl-4 border-l border-gray-200 dark:border-gray-800">
-                    <button
-                        onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="flex items-center gap-3 focus:outline-none"
-                    >
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{user?.name || 'Urva Gandhi'}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'study.urva@gmail.com'}</p>
-                        </div>
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-orange-400 to-pink-500 p-0.5 shadow-md transition-transform active:scale-95">
-                            <img
-                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Urva'}`}
-                                alt="Profile"
-                                className="w-full h-full rounded-full bg-white dark:bg-black"
-                            />
-                        </div>
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {showProfileMenu && (
-                        <>
-                            <div
-                                className="fixed inset-0 z-10"
-                                onClick={() => setShowProfileMenu(false)}
-                            />
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-20 animate-in fade-in slide-in-from-top-2">
-                                <Link
-                                    href="/profile"
-                                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                    onClick={() => setShowProfileMenu(false)}
-                                >
-                                    <span className="w-4 h-4">👤</span>
-                                    Profile
-                                </Link>
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
-                                >
-                                    <span className="w-4 h-4">🚪</span>
-                                    Logout
-                                </button>
-                            </div>
-                        </>
-                    )}
+                <div className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-800">
+                    <div className="text-right hidden sm:block">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{user?.name || 'Urva Gandhi'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'study.urva@gmail.com'}</p>
+                    </div>
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-orange-400 to-pink-500 p-0.5 cursor-pointer shadow-md">
+                        <img
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Urva'}`}
+                            alt="Profile"
+                            className="w-full h-full rounded-full bg-white dark:bg-black"
+                        />
+                    </div>
                 </div>
             </div>
         </header>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuth } from '@/contexts/AuthContext';
 import { Briefcase, FileText, Home, Link as LinkIcon, LogOut, StickyNote, UserCog, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -47,8 +48,14 @@ const SidebarItem = ({ icon: Icon, label, href, isActive, isDanger = false, isEx
 };
 
 export default function Sidebar({ isMobileOpen, onClose }) {
+	const { logout } = useAuth();
 	const pathname = usePathname();
 	const [isHovered, setIsHovered] = useState(false);
+
+	const handleLogout = async (e) => {
+		e.preventDefault();
+		await logout();
+	};
 
 	// Determine if expanded: Always expanded on mobile drawer, or hovered on desktop
 	const isExpanded = isMobileOpen || isHovered;
@@ -58,7 +65,7 @@ export default function Sidebar({ isMobileOpen, onClose }) {
 		if (isMobileOpen && onClose) {
 			onClose();
 		}
-	}, [pathname]);
+	}, [pathname, isMobileOpen, onClose]);
 
 	const navItems = [
 		{ icon: Home, label: 'Home', href: '/dashboard' },
@@ -70,7 +77,7 @@ export default function Sidebar({ isMobileOpen, onClose }) {
 
 	const bottomItems = [
 		{ icon: UserCog, label: 'Edit Profile', href: '/profile' },
-		{ icon: LogOut, label: 'Log Out', href: '/logout', isDanger: true },
+		{ icon: LogOut, label: 'Log Out', href: '#', isDanger: true, onClick: handleLogout },
 	];
 
 	return (
@@ -139,7 +146,10 @@ export default function Sidebar({ isMobileOpen, onClose }) {
 							isActive={pathname === item.href}
 							isDanger={item.isDanger}
 							isExpanded={isExpanded}
-							onClick={onClose}
+							onClick={(e) => {
+								if (item.onClick) item.onClick(e);
+								if (onClose) onClose();
+							}}
 						/>
 					))}
 				</div>

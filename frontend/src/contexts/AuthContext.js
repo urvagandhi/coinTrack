@@ -140,7 +140,10 @@ export function AuthProvider({ children }) {
                     username: userData.username,
                     email: userData.email,
                     name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
-                    phoneNumber: userData.mobile
+                    name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
+                    phoneNumber: userData.mobile,
+                    bio: userData.bio,
+                    location: userData.location,
                 };
 
                 tokenManager.setToken(token, remember);
@@ -182,7 +185,10 @@ export function AuthProvider({ children }) {
                     username: userData.username,
                     email: userData.email,
                     name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
-                    phoneNumber: userData.mobile
+                    name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
+                    phoneNumber: userData.mobile,
+                    bio: userData.bio,
+                    location: userData.location,
                 };
 
                 tokenManager.setToken(token, remember);

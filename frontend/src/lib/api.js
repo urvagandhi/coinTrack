@@ -219,8 +219,11 @@ export const userAPI = {
         const { data } = await api.put(endpoints.users.update(id), payload);
         return unwrapResponse(data);
     },
-    changePassword: async (id, newPassword) => {
-        const { data } = await api.post(`/api/users/${id}/change-password`, { password: newPassword });
+    changePassword: async (id, newPassword, oldPassword) => {
+        const { data } = await api.post(`/api/users/${id}/change-password`, {
+            password: newPassword,
+            oldPassword: oldPassword
+        });
         return unwrapResponse(data);
     }
 };

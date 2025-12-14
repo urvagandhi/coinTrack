@@ -277,16 +277,27 @@ public class UserController {
     public ResponseEntity<?> changePassword(@PathVariable String id, @RequestBody Map<String, String> payload) {
         try {
             String newPassword = payload.get("password");
-            if (newPassword == null || newPassword.length() < 8) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Password must be at least 8 characters"));
+            String oldPassword = payload.get("oldPassword");
+
+            if (oldPassword == null || oldPassword.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Current password is required"));
             }
 
-            userService.changePassword(id, newPassword);
+            if (newPassword == null || newPassword.length() < 8) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("New Password must be at least 8 characters"));
+            }
+
+            if (newPassword.equals(oldPassword)) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("New password cannot be the same as the current password"));
+            }
+
+            userService.changePassword(id, oldPassword, newPassword);
             return ResponseEntity.ok(ApiResponse.success("Password updated successfully"));
         } catch (Exception e) {
             logger.error("Error changing password for user {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to change password"));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 

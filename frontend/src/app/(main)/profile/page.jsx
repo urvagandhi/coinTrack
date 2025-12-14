@@ -3,12 +3,14 @@
 import PageTransition from '@/components/ui/PageTransition';
 import { useAuth } from '@/contexts/AuthContext';
 import { userAPI } from '@/lib/api';
+import { useToast } from "@/components/ui/use-toast";
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Camera, DollarSign, Edit, Eye, EyeOff, Save, Shield, TrendingUp, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
     const { user, login } = useAuth(); // getting login to update context if needed
+    const { toast } = useToast();
     const queryClient = useQueryClient();
 
     // Fetch user profile from API to ensure authoritative state
@@ -106,25 +108,40 @@ export default function ProfilePage() {
         mutationFn: (data) => userAPI.updateProfile(user.userId || user.id, data),
         onSuccess: (updatedUser) => {
             queryClient.setQueryData(['profile'], updatedUser);
-            // Optionally update AuthContext
-            alert("Profile updated successfully!");
+            toast({
+                title: "Profile Updated",
+                description: "Your profile details have been saved successfully.",
+                variant: "success",
+            });
             setIsEditing(false);
         },
         onError: (error) => {
-            alert(error.userMessage || "Failed to update profile");
+            toast({
+                title: "Update Failed",
+                description: error.message || "Failed to update profile",
+                variant: "destructive",
+            });
         }
     });
 
     // Password Change Mutation
     const changePasswordMutation = useMutation({
-        mutationFn: (data) => userAPI.changePassword(user.userId || user.id, data.newPassword),
+        mutationFn: (data) => userAPI.changePassword(user.userId || user.id, data.newPassword, data.currentPassword),
         onSuccess: () => {
-            alert("Password changed successfully!");
+            toast({
+                title: "Password Changed",
+                description: "Your password has been updated securely.",
+                variant: "success",
+            });
             setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
             setShowPasswordFields(false);
         },
         onError: (error) => {
-            alert(error.userMessage || "Failed to change password");
+            toast({
+                title: "Change Password Failed",
+                description: error.message || "Failed to change password",
+                variant: "destructive",
+            });
         }
     });
 
@@ -141,24 +158,29 @@ export default function ProfilePage() {
 
     const handleChangePassword = async () => {
         if (!passwords.currentPassword) {
-            alert('Current password is required');
+            toast({ title: "Validation Error", description: "Current password is required", variant: "destructive" });
             return;
         }
         if (passwords.newPassword.length < 8) {
-            alert('New password must be at least 8 characters');
+            toast({ title: "Validation Error", description: "New password must be at least 8 characters", variant: "destructive" });
+            return;
+        }
+        if (passwords.currentPassword === passwords.newPassword) {
+            toast({ title: "Validation Error", description: "New password cannot be the same as the current password", variant: "destructive" });
             return;
         }
         if (!/[A-Z]/.test(passwords.newPassword) || !/[0-9]/.test(passwords.newPassword)) {
-            alert('Password must contain at least one uppercase letter and one number');
+            toast({ title: "Validation Error", description: "Password must contain at least one uppercase letter and one number", variant: "destructive" });
             return;
         }
         if (passwords.newPassword !== passwords.confirmPassword) {
-            alert('New passwords do not match!');
+            toast({ title: "Validation Error", description: "New passwords do not match!", variant: "destructive" });
             return;
         }
 
         changePasswordMutation.mutate({
-            newPassword: passwords.newPassword
+            newPassword: passwords.newPassword,
+            currentPassword: passwords.currentPassword
         });
     };
 

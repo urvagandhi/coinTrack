@@ -79,21 +79,21 @@ class Logger {
             case 'DEBUG':
             case 'INFO':
                 if (hasContext) {
-                    console.log(formattedMessage, context);
+                    console.log(formattedMessage, safeStringify(context));
                 } else {
                     console.log(formattedMessage);
                 }
                 break;
             case 'WARN':
                 if (hasContext) {
-                    console.warn(formattedMessage, context);
+                    console.warn(formattedMessage, safeStringify(context));
                 } else {
                     console.warn(formattedMessage);
                 }
                 break;
             case 'ERROR':
                 if (hasContext) {
-                    console.error(formattedMessage, context);
+                    console.error(formattedMessage, safeStringify(context));
                 } else {
                     console.error(formattedMessage);
                 }

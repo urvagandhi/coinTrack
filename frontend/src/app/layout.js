@@ -1,3 +1,4 @@
+import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import QueryProvider from "@/providers/QueryProvider";
@@ -32,6 +33,7 @@ export default function RootLayout({ children }) {
           <AuthProvider>
             <ThemeProvider>
               {children}
+              <Toaster />
             </ThemeProvider>
           </AuthProvider>
         </QueryProvider>

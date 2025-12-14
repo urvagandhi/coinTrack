@@ -74,6 +74,9 @@ public class LoginResponse {
      */
     private String message;
 
+    private String bio;
+    private String location;
+
     /**
      * Default constructor for JSON deserialization.
      */
@@ -189,6 +192,22 @@ public class LoginResponse {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 
     @Override
