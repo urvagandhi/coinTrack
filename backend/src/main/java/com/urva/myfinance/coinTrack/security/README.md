@@ -80,12 +80,15 @@ public class SecurityConfig {
     // - Which require authentication
     // - Filter chain order
     // - CORS and CSRF settings
+    // - Exception Handling: Returns 401 (not 403) for unauthenticated requests
 }
 ```
 
 **Public Endpoints**:
 - `/login`, `/register`, `/verify-otp`
-- `/health`, `/api/zerodha/callback`
+- `/auth/login`, `/auth/register`, `/auth/verify-otp`
+- `/health/**`, `/zerodha/callback` (Bridge)
+- `/api/brokers/*/login-url`, `/api/brokers/*/callback` (if OAuth requires)
 - Swagger routes (dev only)
 
 ### JwtFilter

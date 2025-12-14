@@ -97,7 +97,7 @@ portfolio/
 ### Controllers
 | Controller | Endpoints | Purpose |
 |------------|-----------|---------|
-| `PortfolioController` | `GET /summary`, `GET /net-positions` | Return aggregated data |
+| `PortfolioController` | `GET /summary`, `/holdings`, `/positions`, `/orders`, `/trades`, `/funds`, `/mf/*` | Aggregated & Broker data |
 | `ManualRefreshController` | `POST /refresh` | Trigger portfolio sync |
 
 ### Core Services
@@ -128,6 +128,14 @@ PortfolioSyncService
 | `CachedPosition` | Positions from broker (intraday/F&O) |
 | `SyncLog` | Audit: when synced, success/failure |
 | `MarketPrice` | LTP cache by symbol |
+
+### Zerodha Guardrails (CRITICAL)
+Strict rules for data consistency:
+1. **No Re-computation**: P&L, M2M, and Realized P&L are taken **directly** from Zerodha. We do NOT calculate `(current - avg) * qty`.
+2. **F&O Safety**:
+   - `Current Value` = `Invested + PnL` (Avoids contract size multipliers).
+   - `Day Gain` = `M2M` (from Broker).
+3. **Flags**: `PortfolioSummaryResponse` includes `containsDerivatives` to suppress misleading percentage gains on summary level.
 
 ---
 

@@ -90,7 +90,7 @@ broker/
 |-------|---------------|-------------|
 | `BrokerConnectController` | Credential save, OAuth URL, callback handling | Business logic, DB queries |
 | `BrokerStatusController` | Return connection status | Token manipulation |
-| `ZerodhaBridgeController` | Redirect OAuth callback to frontend | Any processing |
+| `ZerodhaBridgeController` | **`/zerodha/callback`** | Browser Redirect → Frontend (Port 3000) |
 
 ### Services
 | Interface | Implementation | Responsibility |
@@ -113,6 +113,12 @@ BrokerService service = brokerFactory.getService(Broker.ZERODHA);
 | `Broker` | Enum | Supported broker identifiers |
 | `BrokerAccount` | Entity | Stores user's connection, tokens, API keys |
 | `ExpiryReason` | Enum | `DAILY_CUTOFF`, `TOKEN_REVOKED`, `MANUAL` |
+
+### Data Integrity & Mapping
+The Broker module is responsible for **preserving raw values**.
+- `ZerodhaBrokerService` maps `m2m`, `pnl`, `realised` directly from Kite API to `CachedPosition`.
+- **Constraint**: Do not apply rounding or logic conversion here. Store exactly what the broker returns.
+- **Normalization**: Done only at the DTO layer for frontend consumption.
 
 ---
 

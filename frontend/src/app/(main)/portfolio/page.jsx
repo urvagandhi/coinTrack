@@ -330,19 +330,19 @@ export default function PortfolioPage() {
                                                 orders.map((order, idx) => (
                                                     <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                                         <td className="py-4 pl-2 text-xs text-gray-500">
-                                                            {order.orderTimestamp ? new Date(order.orderTimestamp).toLocaleTimeString() : '-'}
+                                                            {order.order_timestamp ? new Date(order.order_timestamp).toLocaleTimeString() : '-'}
                                                         </td>
                                                         <td className="py-4 font-medium text-gray-900 dark:text-white">
                                                             {order.tradingsymbol}
-                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
-                                                                {order.transactionType}
+                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${order.transaction_type === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                                {order.transaction_type}
                                                             </span>
                                                         </td>
-                                                        <td className="py-4 text-center text-xs text-gray-500">{order.product} / {order.orderType}</td>
+                                                        <td className="py-4 text-center text-xs text-gray-500">{order.product} / {order.order_type}</td>
                                                         <td className="py-4 text-right text-gray-600 dark:text-gray-300">
-                                                            {order.filledQuantity}/{order.quantity}
+                                                            {order.filled_quantity}/{order.quantity}
                                                         </td>
-                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(order.averagePrice || order.price)}</td>
+                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(order.average_price || order.price)}</td>
                                                         <td className="py-4 text-right pr-2">
                                                             <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
                                                                 order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
@@ -381,17 +381,17 @@ export default function PortfolioPage() {
                                                 trades.map((trade, idx) => (
                                                     <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                                         <td className="py-4 pl-2 text-xs text-gray-500">
-                                                            {trade.tradeTimestamp ? new Date(trade.tradeTimestamp).toLocaleTimeString() : '-'}
+                                                            {trade.trade_timestamp ? new Date(trade.trade_timestamp).toLocaleTimeString() : '-'}
                                                         </td>
                                                         <td className="py-4 font-medium text-gray-900 dark:text-white">
                                                             {trade.tradingsymbol}
-                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${trade.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
-                                                                {trade.transactionType}
+                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${trade.transaction_type === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                                {trade.transaction_type}
                                                             </span>
                                                         </td>
-                                                        <td className="py-4 text-center text-xs text-gray-500 font-mono">{trade.tradeId}</td>
+                                                        <td className="py-4 text-center text-xs text-gray-500 font-mono">{trade.trade_id}</td>
                                                         <td className="py-4 text-right text-gray-600 dark:text-gray-300">{trade.quantity}</td>
-                                                        <td className="py-4 text-right font-medium pr-2 text-gray-900 dark:text-white">{formatCurrency(trade.averagePrice)}</td>
+                                                        <td className="py-4 text-right font-medium pr-2 text-gray-900 dark:text-white">{formatCurrency(trade.average_price)}</td>
                                                     </tr>
                                                 ))
                                             )}
@@ -431,8 +431,8 @@ export default function PortfolioPage() {
                                                                 <div className="text-[10px] text-gray-400 mt-1">{mf.folio}</div>
                                                             </td>
                                                             <td className="py-4 text-right text-gray-600 dark:text-gray-300">{mf.quantity}</td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.averagePrice)}</td>
-                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.lastPrice)}</td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.average_price)}</td>
+                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.last_price)}</td>
                                                             <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                 {formatCurrency(mf.pnl)}
                                                             </td>
@@ -467,14 +467,14 @@ export default function PortfolioPage() {
                                                 mfOrders.map((order, idx) => (
                                                     <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                                         <td className="py-4 pl-2 text-xs text-gray-500">
-                                                            {order.timestamp ? new Date(order.timestamp).toLocaleTimeString() : '-'}
+                                                            {order.order_date ? new Date(order.order_date).toLocaleTimeString() : '-'}
                                                         </td>
                                                         <td className="py-4 font-medium text-gray-900 dark:text-white max-w-xs truncate" title={order.fund}>
                                                             {order.fund}
                                                         </td>
                                                         <td className="py-4 text-center">
-                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
-                                                                {order.transactionType}
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${order.transaction_type === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                                {order.transaction_type}
                                                             </span>
                                                         </td>
                                                         <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(order.amount)}</td>
@@ -507,7 +507,11 @@ export default function PortfolioPage() {
                                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Account Details</h3>
                                                 <div className="flex justify-between">
                                                     <span className="text-sm text-gray-500 dark:text-gray-400">Name</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.userName}</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.user_name}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Short Name</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.user_shortname}</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-sm text-gray-500 dark:text-gray-400">Email</span>
@@ -519,7 +523,7 @@ export default function PortfolioPage() {
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-sm text-gray-500 dark:text-gray-400">User ID</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">{profile.userId}</span> {/* Assuming userYield stores ID for now or adjust per DTO */}
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">{profile.user_id}</span>
                                                 </div>
                                             </div>
                                             <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-4">

@@ -189,6 +189,9 @@ public class ZerodhaBrokerService implements BrokerService {
                         .symbol((String) item.get("tradingsymbol"))
                         .quantity(safeBigDecimal(item.get("quantity")))
                         .buyPrice(safeBigDecimal(item.get("average_price")))
+                        .mtm(safeBigDecimal(item.get("m2m")))
+                        .pnl(safeBigDecimal(item.get("pnl")))
+                        .realized(safeBigDecimal(item.get("realised")))
                         .positionType(pType)
                         .lastUpdated(LocalDateTime.now())
                         .build();

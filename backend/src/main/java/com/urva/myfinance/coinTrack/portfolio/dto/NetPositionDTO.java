@@ -38,4 +38,6 @@ public class NetPositionDTO {
     private Integer netLots;
     private BigDecimal fnoDayGain;
     private BigDecimal fnoDayGainPercent;
+
+    private String positionType;
 }

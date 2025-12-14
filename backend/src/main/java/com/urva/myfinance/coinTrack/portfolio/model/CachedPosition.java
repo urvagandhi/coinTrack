@@ -36,6 +36,11 @@ public class CachedPosition {
 
     private PositionType positionType;
 
+    // Zerodha P&L Fields
+    private BigDecimal mtm; // Day M2M
+    private BigDecimal pnl; // Unrealized P&L
+    private BigDecimal realized; // Realized P&L
+
     private LocalDateTime lastUpdated;
 
     private String checksumHash;

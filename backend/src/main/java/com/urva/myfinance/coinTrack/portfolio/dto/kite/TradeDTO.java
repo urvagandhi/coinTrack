@@ -1,6 +1,9 @@
 package com.urva.myfinance.coinTrack.portfolio.dto.kite;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.Data;
 
@@ -31,5 +34,6 @@ public class TradeDTO {
     private BigDecimal price;
 
     @com.fasterxml.jackson.annotation.JsonProperty("trade_timestamp")
-    private String tradeTimestamp;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime tradeTimestamp;
 }

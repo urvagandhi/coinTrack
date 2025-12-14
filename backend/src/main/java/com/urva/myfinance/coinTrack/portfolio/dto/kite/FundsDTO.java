@@ -41,6 +41,12 @@ public class FundsDTO extends KiteResponseMetadata {
 
         @com.fasterxml.jackson.annotation.JsonProperty("intraday_payin")
         private BigDecimal intradayPayin;
+
+        @com.fasterxml.jackson.annotation.JsonProperty("opening_balance")
+        private BigDecimal openingBalance;
+
+        @com.fasterxml.jackson.annotation.JsonProperty("live_balance")
+        private BigDecimal liveBalance;
     }
 
     @Data

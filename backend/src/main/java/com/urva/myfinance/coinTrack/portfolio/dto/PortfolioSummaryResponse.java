@@ -30,4 +30,12 @@ public class PortfolioSummaryResponse {
 
     // Detailed List
     private List<SummaryHoldingDTO> holdingsList;
+
+    // Metadata
+    private String type;
+    private List<String> source;
+
+    // Guardrail Metadata
+    private boolean containsDerivatives;
+    private Boolean dayGainPercentApplicable; // Nullable if not computed
 }

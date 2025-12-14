@@ -1,6 +1,9 @@
 package com.urva.myfinance.coinTrack.portfolio.dto.kite;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.Data;
 
@@ -19,10 +22,12 @@ public class OrderDTO {
     private String status;
 
     @com.fasterxml.jackson.annotation.JsonProperty("order_timestamp")
-    private String orderTimestamp; // Keep as String to avoid parsing complex formats immediately, or standard ISO
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime orderTimestamp;
 
     @com.fasterxml.jackson.annotation.JsonProperty("exchange_timestamp")
-    private String exchangeTimestamp;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime exchangeTimestamp;
     @com.fasterxml.jackson.annotation.JsonProperty("exchange")
     private String exchange;
 

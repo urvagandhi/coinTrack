@@ -183,6 +183,26 @@ We use a **Cached-First** approach.
 ### Safety Mechanisms
 - **SyncSafetyService**: Prevents "hammering" broker APIs. Enforces a cooldown (e.g., 1 min) between syncs for the same user.
 
+### Zerodha Guardrails (CRITICAL)
+We enforce strict financial correctness rules ("The Zerodha Constitution"):
+1. **No Re-computation**: Never recompute values Zerodha provides (e.g., `m2m`, `pnl`).
+2. **F&O Safety**:
+   - Never use `quantity * price` for derivatives.
+   - `Current Value` = `Invested + Total P&L`.
+   - `Day Gain` = `m2m` (from Broker).
+3. **Flags**: `PortfolioSummaryResponse` includes `containsDerivatives` and `dayGainPercentApplicable` to prevent misleading UI percentages for F&O portfolios.
+
+### Data Normalization Strategy
+- **Normalized DTOs**: (e.g., `SummaryHoldingDTO`, `NetPositionDTO`)
+    - CamelCase fields (`averageBuyPrice`).
+    - Broker-agnostic.
+    - USED by Frontend.
+- **Raw DTOs**: (e.g., `KitePosition`, `FundsDTO`)
+    - Snake_case fields (`average_price`, `m2m`) via `@JsonProperty`.
+    - Mirror Broker API exactly.
+    - INTERNAL only (mapped to Normalized DTOs before responding).
+    - EXCEPTION: Some raw lists (`KiteListResponse`) are passed through if no normalization logic exists yet, but Frontend MUST handle snake_case.
+
 ---
 
 ## 9. Error Handling Strategy
