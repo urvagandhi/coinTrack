@@ -21,10 +21,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.urva.myfinance.coinTrack.portfolio.model.MarketPrice;
-import com.urva.myfinance.coinTrack.portfolio.repository.MarketPriceRepository;
 import com.urva.myfinance.coinTrack.portfolio.market.MarketDataService;
 import com.urva.myfinance.coinTrack.portfolio.market.exception.MarketDataException;
+import com.urva.myfinance.coinTrack.portfolio.model.MarketPrice;
+import com.urva.myfinance.coinTrack.portfolio.repository.MarketPriceRepository;
 
 @Service
 public class MarketDataServiceImpl implements MarketDataService {
@@ -83,7 +83,10 @@ public class MarketDataServiceImpl implements MarketDataService {
         // Batch fetch from DB
         List<MarketPrice> cachedPrices = repository.findBySymbolIn(symbols);
         Map<String, MarketPrice> result = cachedPrices.stream()
-                .collect(Collectors.toMap(MarketPrice::getSymbol, Function.identity()));
+                .collect(Collectors.toMap(
+                        MarketPrice::getSymbol,
+                        Function.identity(),
+                        (existing, replacement) -> existing));
 
         // Identify missing symbols
         List<String> missingSymbols = symbols.stream()

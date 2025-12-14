@@ -28,7 +28,7 @@ export default function DashboardPage() {
 
                 {/* Holdings */}
                 <section>
-                    <h2 className="text-xl font-semibold mb-4 text-gray-200">Holdings</h2>
+                    <h2 className="text-xl font-semibold mb-4 text-black-200">Holdings</h2>
                     <HoldingsTable />
                 </section>
 

@@ -32,7 +32,7 @@ export default function PortfolioSummary() {
                 </div>
                 <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    Updated: {formatDateTime(data.lastAnySync)} // Fallback if lastAnySync missing?
+                    Updated: {data.lastAnySync ? formatDateTime(data.lastAnySync) : 'Just now'}
                 </div>
             </div>
 

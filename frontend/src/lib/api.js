@@ -160,6 +160,7 @@ export const endpoints = {
         orders: '/api/portfolio/orders',
         funds: '/api/portfolio/funds',
         mfHoldings: '/api/portfolio/mf/holdings',
+        mfOrders: '/api/portfolio/mf/orders',
         profile: '/api/portfolio/profile',
     },
     brokers: {

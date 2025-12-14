@@ -56,7 +56,7 @@ export default function PortfolioPage() {
         queryFn: portfolioAPI.getHoldings,
         refetchInterval: 60000
     });
-    const holdings = holdingsData?.data || [];
+    const holdings = Array.isArray(holdingsData) ? holdingsData : (holdingsData?.data || []);
 
     // 3. Fetch Positions
     const { data: positionsData, isLoading: isLoadingPositions } = useQuery({
@@ -64,7 +64,7 @@ export default function PortfolioPage() {
         queryFn: portfolioAPI.getPositions,
         refetchInterval: 30000
     });
-    const positions = positionsData?.data || [];
+    const positions = Array.isArray(positionsData) ? positionsData : (positionsData?.data || []);
 
     // 4. Fetch Orders
     const { data: ordersData, isLoading: isLoadingOrders } = useQuery({
@@ -72,7 +72,7 @@ export default function PortfolioPage() {
         queryFn: portfolioAPI.getOrders,
         refetchInterval: 15000
     });
-    const orders = ordersData?.data || [];
+    const orders = Array.isArray(ordersData) ? ordersData : (ordersData?.data || []);
 
     // 5. Fetch Mutual Funds
     const { data: mfHoldingsData, isLoading: isLoadingMf } = useQuery({
@@ -80,7 +80,7 @@ export default function PortfolioPage() {
         queryFn: portfolioAPI.getMfHoldings,
         refetchInterval: 300000
     });
-    const mfHoldings = mfHoldingsData?.data || [];
+    const mfHoldings = Array.isArray(mfHoldingsData) ? mfHoldingsData : (mfHoldingsData?.data || []);
 
     // 6. Fetch Trades (New)
     const { data: tradesData, isLoading: isLoadingTrades } = useQuery({
@@ -88,7 +88,7 @@ export default function PortfolioPage() {
         queryFn: portfolioAPI.getTrades,
         refetchInterval: 60000
     });
-    const trades = tradesData?.data || [];
+    const trades = Array.isArray(tradesData) ? tradesData : (tradesData?.data || []);
 
     // 7. Fetch MF Orders (New)
     const { data: mfOrdersData, isLoading: isLoadingMfOrders } = useQuery({
@@ -96,7 +96,7 @@ export default function PortfolioPage() {
         queryFn: portfolioAPI.getMfOrders,
         refetchInterval: 60000
     });
-    const mfOrders = mfOrdersData?.data || [];
+    const mfOrders = Array.isArray(mfOrdersData) ? mfOrdersData : (mfOrdersData?.data || []);
 
     // 8. Fetch Funds/Margins
     // funds endpoint returns a single object which IS the DTO (FundsDTO), it has no inner 'data' for the list,
@@ -181,7 +181,7 @@ export default function PortfolioPage() {
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Available Cash</p>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {isLoadingFunds ? "Loading..." : formatCurrency(fundsData?.equity?.available || 0)}
+                                {isLoadingFunds ? "Loading..." : formatCurrency(fundsData?.equity?.net || 0)}
                             </h3>
                         </div>
                         <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
@@ -240,7 +240,7 @@ export default function PortfolioPage() {
                                                 <tr><td colSpan="5" className="text-center py-8 text-gray-500">No holdings found.</td></tr>
                                             ) : (
                                                 holdings.map((item, idx) => {
-                                                    const pnl = (item.currentPrice - item.averagePrice) * item.quantity;
+                                                    const pnl = item.unrealizedPL;
                                                     const isPos = pnl >= 0;
                                                     return (
                                                         <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -329,7 +329,9 @@ export default function PortfolioPage() {
                                             ) : (
                                                 orders.map((order, idx) => (
                                                     <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                        <td className="py-4 pl-2 text-xs text-gray-500">{order.orderTimestamp?.split(' ')[1] || order.orderTimestamp}</td>
+                                                        <td className="py-4 pl-2 text-xs text-gray-500">
+                                                            {order.orderTimestamp ? new Date(order.orderTimestamp).toLocaleTimeString() : '-'}
+                                                        </td>
                                                         <td className="py-4 font-medium text-gray-900 dark:text-white">
                                                             {order.tradingsymbol}
                                                             <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
@@ -378,7 +380,9 @@ export default function PortfolioPage() {
                                             ) : (
                                                 trades.map((trade, idx) => (
                                                     <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                        <td className="py-4 pl-2 text-xs text-gray-500">{trade.fillTimestamp?.split(' ')[1] || trade.fillTimestamp}</td>
+                                                        <td className="py-4 pl-2 text-xs text-gray-500">
+                                                            {trade.tradeTimestamp ? new Date(trade.tradeTimestamp).toLocaleTimeString() : '-'}
+                                                        </td>
                                                         <td className="py-4 font-medium text-gray-900 dark:text-white">
                                                             {trade.tradingsymbol}
                                                             <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${trade.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
@@ -462,7 +466,9 @@ export default function PortfolioPage() {
                                             ) : (
                                                 mfOrders.map((order, idx) => (
                                                     <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                        <td className="py-4 pl-2 text-xs text-gray-500">{order.timestamp?.split(' ')[1] || order.timestamp}</td>
+                                                        <td className="py-4 pl-2 text-xs text-gray-500">
+                                                            {order.timestamp ? new Date(order.timestamp).toLocaleTimeString() : '-'}
+                                                        </td>
                                                         <td className="py-4 font-medium text-gray-900 dark:text-white max-w-xs truncate" title={order.fund}>
                                                             {order.fund}
                                                         </td>
@@ -513,7 +519,7 @@ export default function PortfolioPage() {
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-sm text-gray-500 dark:text-gray-400">User ID</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">{profile.userYield}</span> {/* Assuming userYield stores ID for now or adjust per DTO */}
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">{profile.userId}</span> {/* Assuming userYield stores ID for now or adjust per DTO */}
                                                 </div>
                                             </div>
                                             <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-4">
