@@ -2,6 +2,8 @@
 
 import NoteDialog from '@/components/notes/NoteDialog';
 import PageTransition from '@/components/ui/PageTransition';
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/use-toast";
 import { notesAPI } from '@/lib/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
@@ -61,6 +63,7 @@ export default function NotesPage() {
     const [selectedTag, setSelectedTag] = useState('All');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingNote, setEditingNote] = useState(null);
+    const { toast } = useToast();
     const queryClient = useQueryClient();
 
     // Fetch Notes
@@ -79,7 +82,11 @@ export default function NotesPage() {
 
     const onErrorOptimistic = (err, newUser, context) => {
         queryClient.setQueryData(['notes'], context.previousNotes);
-        alert(err.userMessage || "Operation failed");
+        toast({
+            title: "Operation Failed",
+            description: err.userMessage || "Failed to save note. Please try again.",
+            variant: "destructive",
+        });
     };
 
     // Create Mutation
@@ -89,6 +96,13 @@ export default function NotesPage() {
             { ...newNote, id: 'temp-' + Date.now(), updatedAt: new Date().toISOString() },
             ...old
         ]),
+        onSuccess: () => {
+            toast({
+                title: "Note Created",
+                description: "Your new note has been saved successfully.",
+                variant: "success",
+            });
+        },
         onError: onErrorOptimistic,
         onSettled: () => queryClient.invalidateQueries(['notes']),
     });
@@ -99,6 +113,13 @@ export default function NotesPage() {
         onMutate: ({ id, data }) => onMutateOptimistic((old) =>
             old.map(n => n.id === id ? { ...n, ...data, updatedAt: new Date().toISOString() } : n)
         ),
+        onSuccess: () => {
+            toast({
+                title: "Note Updated",
+                description: "Your note has been updated successfully.",
+                variant: "success",
+            });
+        },
         onError: onErrorOptimistic,
         onSettled: () => queryClient.invalidateQueries(['notes']),
     });
@@ -107,6 +128,13 @@ export default function NotesPage() {
     const deleteMutation = useMutation({
         mutationFn: notesAPI.delete,
         onMutate: (id) => onMutateOptimistic((old) => old.filter(n => n.id !== id)),
+        onSuccess: () => {
+            toast({
+                title: "Note Deleted",
+                description: "The note has been permanently removed.",
+                variant: "success", // Using success variant for positive confirmation
+            });
+        },
         onError: onErrorOptimistic,
         onSettled: () => queryClient.invalidateQueries(['notes']),
     });
@@ -120,9 +148,20 @@ export default function NotesPage() {
     };
 
     const handleDelete = (id) => {
-        if (confirm("Are you sure you want to delete this note?")) {
-            deleteMutation.mutate(id);
-        }
+        toast({
+            title: "Delete this note?",
+            description: "This action cannot be undone.",
+            variant: "destructive",
+            action: (
+                <ToastAction
+                    altText="Confirm Delete"
+                    onClick={() => deleteMutation.mutate(id)}
+                    className="border-red-500 hover:bg-red-500 hover:text-white dark:border-red-500 dark:hover:bg-red-500 dark:hover:text-white"
+                >
+                    Delete
+                </ToastAction>
+            ),
+        });
     };
 
     const handleEdit = (note) => {
