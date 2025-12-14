@@ -214,6 +214,16 @@ export function AuthProvider({ children }) {
         }
     };
 
+    const resendOtp = async (username) => {
+        try {
+            const response = await authAPI.resendOtp(username);
+            return { success: true, message: response.message };
+        } catch (error) {
+            logger.error('Resend OTP failed', { error: error.message });
+            return { success: false, error: error.message };
+        }
+    };
+
     const logout = async () => {
         logger.info('Logging out user');
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
@@ -237,6 +247,7 @@ export function AuthProvider({ children }) {
         ...state,
         login,
         verifyOtp,
+        resendOtp,
         logout,
         register: authAPI.register, // Pass-through
         // Utilities

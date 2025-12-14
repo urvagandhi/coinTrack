@@ -47,7 +47,7 @@ export default function PortfolioPage() {
     const { data: summary, isLoading: isLoadingSummary } = useQuery({
         queryKey: ['portfolioSummary'],
         queryFn: portfolioAPI.getSummary,
-        refetchInterval: 60000 // Refresh every minute
+        refetchInterval: 60000
     });
 
     // 2. Fetch Holdings
@@ -61,24 +61,48 @@ export default function PortfolioPage() {
     const { data: positions = [], isLoading: isLoadingPositions } = useQuery({
         queryKey: ['positions'],
         queryFn: portfolioAPI.getPositions,
-        refetchInterval: 30000 // Faster refresh for positions
+        refetchInterval: 30000
+    });
+
+    // 4. Fetch Orders
+    const { data: orders = [], isLoading: isLoadingOrders } = useQuery({
+        queryKey: ['orders'],
+        queryFn: portfolioAPI.getOrders,
+        refetchInterval: 15000
+    });
+
+    // 5. Fetch Mutual Funds
+    const { data: mfHoldings = [], isLoading: isLoadingMf } = useQuery({
+        queryKey: ['mfHoldings'],
+        queryFn: portfolioAPI.getMfHoldings,
+        refetchInterval: 300000
+    });
+
+    // 6. Fetch Funds/Margins
+    const { data: fundsData, isLoading: isLoadingFunds } = useQuery({
+        queryKey: ['funds'],
+        queryFn: portfolioAPI.getFunds,
+        refetchInterval: 60000
     });
 
     // Helper to format currency
     const formatCurrency = (val) => {
         if (val === undefined || val === null) return '₹0.00';
+        // Handle string inputs from DTOs if necessary
+        const num = typeof val === 'string' ? parseFloat(val) : val;
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR',
             maximumFractionDigits: 2
-        }).format(val);
+        }).format(num);
     };
 
     // Helper to format percentage
     const formatPercent = (val) => {
         if (val === undefined || val === null) return '0.00%';
-        const isPos = val >= 0;
-        return `${isPos ? '+' : ''}${val?.toFixed(2)}%`;
+        const num = typeof val === 'string' ? parseFloat(val) : val;
+        const isPos = num >= 0;
+        return `${isPos ? '+' : ''}${num?.toFixed(2)}%`;
     };
 
     return (
@@ -90,7 +114,8 @@ export default function PortfolioPage() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Current Value */}
                 <StatCard
                     title="Current Value"
                     value={isLoadingSummary ? "Loading..." : formatCurrency(summary?.totalCurrentValue)}
@@ -98,6 +123,7 @@ export default function PortfolioPage() {
                     isPositive={summary?.totalDayGain >= 0}
                     icon={PieChart}
                 />
+                {/* Invested */}
                 <StatCard
                     title="Total Invested"
                     value={isLoadingSummary ? "Loading..." : formatCurrency(summary?.totalInvestedValue)}
@@ -105,6 +131,7 @@ export default function PortfolioPage() {
                     isPositive={true}
                     icon={Briefcase}
                 />
+                {/* P&L */}
                 <StatCard
                     title="Total P&L"
                     value={isLoadingSummary ? "Loading..." : formatCurrency(summary?.totalUnrealizedPL)}
@@ -112,6 +139,26 @@ export default function PortfolioPage() {
                     isPositive={summary?.totalUnrealizedPL >= 0}
                     icon={ArrowUpRight}
                 />
+                {/* Available Funds */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Available Cash</p>
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                                {isLoadingFunds ? "Loading..." : formatCurrency(fundsData?.equity?.available || 0)}
+                            </h3>
+                        </div>
+                        <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
+                            <Briefcase className="h-6 w-6" />
+                        </div>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                        <span className="font-medium">Equity Margin:</span>
+                        <span className="text-gray-900 dark:text-white ml-2">
+                            {isLoadingFunds ? "..." : formatCurrency(fundsData?.equity?.net || 0)}
+                        </span>
+                    </div>
+                </div>
             </div>
 
             {/* Main Content Area */}
@@ -120,12 +167,12 @@ export default function PortfolioPage() {
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                         {/* Tabs */}
-                        <div className="flex border-b border-gray-100 dark:border-gray-700">
+                        <div className="flex border-b border-gray-100 dark:border-gray-700 overflow-x-auto">
                             {['holdings', 'positions', 'orders', 'mutual_funds'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-6 py-4 text-sm font-medium transition-colors ${activeTab === tab
+                                    className={`px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab
                                         ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
                                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                         }`}
@@ -191,15 +238,14 @@ export default function PortfolioPage() {
                                                 <th className="pb-4">Instrument</th>
                                                 <th className="pb-4 text-right">Qty</th>
                                                 <th className="pb-4 text-right">Buy Avg</th>
-                                                <th className="pb-4 text-right">Sell Avg</th>
                                                 <th className="pb-4 text-right">P&L</th>
                                             </tr>
                                         </thead>
                                         <tbody className="space-y-4">
                                             {isLoadingPositions ? (
-                                                <tr><td colSpan="5" className="text-center py-4">Loading positions...</td></tr>
+                                                <tr><td colSpan="4" className="text-center py-4">Loading positions...</td></tr>
                                             ) : positions.length === 0 ? (
-                                                <tr><td colSpan="5" className="text-center py-4 text-gray-500">No active positions.</td></tr>
+                                                <tr><td colSpan="4" className="text-center py-4 text-gray-500">No active positions.</td></tr>
                                             ) : (
                                                 positions.map((item, idx) => {
                                                     const isPos = item.pnl >= 0;
@@ -213,7 +259,6 @@ export default function PortfolioPage() {
                                                             </td>
                                                             <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.quantity}</td>
                                                             <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averagePrice)}</td>
-                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">--</td> {/* Sell avg might not be in basic DTO yet */}
                                                             <td className={`py-4 text-right font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                 {formatCurrency(item.pnl)}
                                                             </td>
@@ -226,25 +271,98 @@ export default function PortfolioPage() {
                                 </div>
                             )}
 
-                            {/* ORDERS TAB (Stub) */}
+                            {/* ORDERS TAB */}
                             {activeTab === 'orders' && (
-                                <div className="text-center py-12">
-                                    <div className="inline-block p-4 rounded-full bg-gray-50 dark:bg-gray-700/50 mb-4">
-                                        <Briefcase className="h-8 w-8 text-gray-400" />
-                                    </div>
-                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">No Orders Found</h3>
-                                    <p className="text-gray-500 dark:text-gray-400 mt-1">Order history integration coming soon.</p>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                <th className="pb-4">Time</th>
+                                                <th className="pb-4">Instrument</th>
+                                                <th className="pb-4 text-center">Type</th>
+                                                <th className="pb-4 text-right">Qty</th>
+                                                <th className="pb-4 text-right">Price</th>
+                                                <th className="pb-4 text-right">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="space-y-4">
+                                            {isLoadingOrders ? (
+                                                <tr><td colSpan="6" className="text-center py-4">Loading orders...</td></tr>
+                                            ) : orders.length === 0 ? (
+                                                <tr><td colSpan="6" className="text-center py-4 text-gray-500">No orders found for today.</td></tr>
+                                            ) : (
+                                                orders.map((order, idx) => (
+                                                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                                                        <td className="py-4 text-xs text-gray-500">{order.orderTimestamp?.split(' ')[1] || order.orderTimestamp}</td>
+                                                        <td className="py-4 font-medium text-gray-900 dark:text-white">
+                                                            {order.tradingsymbol}
+                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
+                                                                {order.transactionType}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-4 text-center text-xs text-gray-500">{order.product} / {order.orderType}</td>
+                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">
+                                                            {order.filledQuantity}/{order.quantity}
+                                                        </td>
+                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(order.averagePrice || order.price)}</td>
+                                                        <td className="py-4 text-right">
+                                                            <span className={`text-xs px-2 py-1 rounded-full ${order.status === 'COMPLETE' ? 'bg-green-100 text-green-700' :
+                                                                    order.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                                        'bg-yellow-100 text-yellow-700'
+                                                                }`}>
+                                                                {order.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
 
-                            {/* MUTUAL FUNDS TAB (Stub) */}
+                            {/* MUTUAL FUNDS TAB */}
                             {activeTab === 'mutual_funds' && (
-                                <div className="text-center py-12">
-                                    <div className="inline-block p-4 rounded-full bg-gray-50 dark:bg-gray-700/50 mb-4">
-                                        <PieChart className="h-8 w-8 text-gray-400" />
-                                    </div>
-                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Mutual Funds</h3>
-                                    <p className="text-gray-500 dark:text-gray-400 mt-1">Mutual fund tracking integration coming soon.</p>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                <th className="pb-4">Fund</th>
+                                                <th className="pb-4 text-right">Units</th>
+                                                <th className="pb-4 text-right">Avg. NAV</th>
+                                                <th className="pb-4 text-right">Last Price</th>
+                                                <th className="pb-4 text-right">P&L</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="space-y-4">
+                                            {isLoadingMf ? (
+                                                <tr><td colSpan="5" className="text-center py-4">Loading mutual funds...</td></tr>
+                                            ) : mfHoldings.length === 0 ? (
+                                                <tr><td colSpan="5" className="text-center py-4 text-gray-500">No mutual fund holdings found.</td></tr>
+                                            ) : (
+                                                mfHoldings.map((mf, idx) => {
+                                                    const pnl = parseFloat(mf.pnl);
+                                                    const isPos = pnl >= 0;
+                                                    return (
+                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                                                            <td className="py-4">
+                                                                <div className="font-medium text-gray-900 dark:text-white max-w-xs truncate" title={mf.fund}>
+                                                                    {mf.fund}
+                                                                </div>
+                                                                <div className="text-xs text-gray-400 mt-1">{mf.folio}</div>
+                                                            </td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{mf.quantity}</td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.averagePrice)}</td>
+                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.lastPrice)}</td>
+                                                            <td className={`py-4 text-right font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                {formatCurrency(mf.pnl)}
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
 

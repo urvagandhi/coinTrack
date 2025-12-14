@@ -157,6 +157,10 @@ export const endpoints = {
         summary: '/api/portfolio/summary',
         holdings: '/api/portfolio/holdings',
         positions: '/api/portfolio/positions',
+        orders: '/api/portfolio/orders',
+        funds: '/api/portfolio/funds',
+        mfHoldings: '/api/portfolio/mf/holdings',
+        profile: '/api/portfolio/profile',
     },
     brokers: {
         connect: (broker) => `/api/brokers/${broker}/connect`,
@@ -240,6 +244,22 @@ export const portfolioAPI = {
     getPositions: async () => {
         const { data } = await api.get(endpoints.portfolio.positions);
         return unwrapResponse(data) || [];
+    },
+    getOrders: async () => {
+        const { data } = await api.get(endpoints.portfolio.orders);
+        return unwrapResponse(data) || [];
+    },
+    getFunds: async () => {
+        const { data } = await api.get(endpoints.portfolio.funds);
+        return unwrapResponse(data);
+    },
+    getMfHoldings: async () => {
+        const { data } = await api.get(endpoints.portfolio.mfHoldings);
+        return unwrapResponse(data) || [];
+    },
+    getProfile: async () => {
+        const { data } = await api.get(endpoints.portfolio.profile);
+        return unwrapResponse(data);
     }
 };
 

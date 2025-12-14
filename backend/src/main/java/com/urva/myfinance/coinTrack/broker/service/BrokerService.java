@@ -28,4 +28,19 @@ public interface BrokerService {
     default com.urva.myfinance.coinTrack.broker.model.ExpiryReason detectExpiry(Exception e) {
         return com.urva.myfinance.coinTrack.broker.model.ExpiryReason.NONE;
     }
+
+    // New API Methods (currently tied to Kite DTOs)
+    java.util.List<com.urva.myfinance.coinTrack.portfolio.dto.kite.OrderDTO> fetchOrders(BrokerAccount account);
+
+    com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO fetchFunds(BrokerAccount account);
+
+    java.util.List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO> fetchMfHoldings(
+            BrokerAccount account);
+
+    java.util.List<com.urva.myfinance.coinTrack.portfolio.dto.kite.TradeDTO> fetchTrades(BrokerAccount account);
+
+    java.util.List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO> fetchMfOrders(
+            BrokerAccount account);
+
+    com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO fetchProfile(BrokerAccount account);
 }

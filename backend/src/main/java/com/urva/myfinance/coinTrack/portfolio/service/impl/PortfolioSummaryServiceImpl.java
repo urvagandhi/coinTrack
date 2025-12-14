@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import com.urva.myfinance.coinTrack.portfolio.dto.PortfolioSummaryResponse;
 import com.urva.myfinance.coinTrack.portfolio.dto.SummaryHoldingDTO;
+import com.urva.myfinance.coinTrack.portfolio.market.MarketDataService;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
 import com.urva.myfinance.coinTrack.portfolio.model.MarketPrice;
@@ -23,7 +24,6 @@ import com.urva.myfinance.coinTrack.portfolio.model.SyncStatus;
 import com.urva.myfinance.coinTrack.portfolio.repository.CachedHoldingRepository;
 import com.urva.myfinance.coinTrack.portfolio.repository.CachedPositionRepository;
 import com.urva.myfinance.coinTrack.portfolio.repository.SyncLogRepository;
-import com.urva.myfinance.coinTrack.portfolio.market.MarketDataService;
 import com.urva.myfinance.coinTrack.portfolio.service.PortfolioSummaryService;
 
 @Service
@@ -33,6 +33,8 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
     private final CachedPositionRepository positionRepository;
     private final SyncLogRepository syncLogRepository;
     private final MarketDataService marketDataService;
+    private final com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository brokerAccountRepository;
+    private final com.urva.myfinance.coinTrack.broker.service.impl.ZerodhaBrokerService zerodhaBrokerService;
 
     // Defined for future timezone usage if needed explicitly
 
@@ -40,11 +42,15 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
     public PortfolioSummaryServiceImpl(CachedHoldingRepository holdingRepository,
             CachedPositionRepository positionRepository,
             SyncLogRepository syncLogRepository,
-            MarketDataService marketDataService) {
+            MarketDataService marketDataService,
+            com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository brokerAccountRepository,
+            com.urva.myfinance.coinTrack.broker.service.impl.ZerodhaBrokerService zerodhaBrokerService) {
         this.holdingRepository = holdingRepository;
         this.positionRepository = positionRepository;
         this.syncLogRepository = syncLogRepository;
         this.marketDataService = marketDataService;
+        this.brokerAccountRepository = brokerAccountRepository;
+        this.zerodhaBrokerService = zerodhaBrokerService;
     }
 
     @Override
@@ -193,5 +199,162 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         Optional<SyncLog> lastLog = syncLogRepository.findFirstByUserIdAndStatusOrderByTimestampDesc(userId,
                 SyncStatus.SUCCESS);
         return lastLog.map(SyncLog::getTimestamp).orElse(null);
+    }
+
+    // ============================================================================================
+    // NEW METHODS FOR ORDERS, FUNDS, MF, PROFILE
+    // Aggregation logic: Currently we assume primary broker (Zerodha).
+    // In multi-broker future, we would merge lists.
+    // ============================================================================================
+
+    @Override
+    public com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.OrderDTO> getOrders(
+            String userId) {
+        List<com.urva.myfinance.coinTrack.broker.model.BrokerAccount> accounts = brokerAccountRepository
+                .findByUserId(userId);
+        List<com.urva.myfinance.coinTrack.portfolio.dto.kite.OrderDTO> allOrders = new ArrayList<>();
+        LocalDateTime syncTime = LocalDateTime.now(); // Using current time as sync for live fetch
+
+        for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
+            if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
+                    && account.hasValidToken()) {
+                try {
+                    allOrders.addAll(zerodhaBrokerService.fetchOrders(account));
+                } catch (Exception e) {
+                    // Log but continue
+                }
+            }
+        }
+
+        com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.OrderDTO> response = new com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<>();
+        response.setData(allOrders);
+        response.setLastSyncedAt(syncTime);
+        response.setSource("LIVE"); // Currently always fetching live
+        return response;
+    }
+
+    @Override
+    public com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.TradeDTO> getTrades(
+            String userId) {
+        List<com.urva.myfinance.coinTrack.broker.model.BrokerAccount> accounts = brokerAccountRepository
+                .findByUserId(userId);
+        List<com.urva.myfinance.coinTrack.portfolio.dto.kite.TradeDTO> allTrades = new ArrayList<>();
+        LocalDateTime syncTime = LocalDateTime.now();
+
+        for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
+            if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
+                    && account.hasValidToken()) {
+                try {
+                    allTrades.addAll(zerodhaBrokerService.fetchTrades(account));
+                } catch (Exception e) {
+                    // Log
+                }
+            }
+        }
+
+        com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.TradeDTO> response = new com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<>();
+        response.setData(allTrades);
+        response.setLastSyncedAt(syncTime);
+        response.setSource("LIVE");
+        return response;
+    }
+
+    @Override
+    public com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO getFunds(String userId) {
+        List<com.urva.myfinance.coinTrack.broker.model.BrokerAccount> accounts = brokerAccountRepository
+                .findByUserId(userId);
+
+        // Simply return the first available active Zerodha funds. Merging funds is
+        // complex.
+        for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
+            if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
+                    && account.hasValidToken()) {
+                try {
+                    com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO funds = zerodhaBrokerService
+                            .fetchFunds(account);
+                    // Add metadata manually if DTO allows or if we wrap it differently.
+                    // FundsDTO extends KiteResponseMetadata now.
+                    if (funds != null) {
+                        funds.setLastSyncedAt(LocalDateTime.now());
+                        funds.setSource("LIVE");
+                    }
+                    return funds;
+                } catch (Exception e) {
+                    // Log
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO> getMutualFunds(
+            String userId) {
+        List<com.urva.myfinance.coinTrack.broker.model.BrokerAccount> accounts = brokerAccountRepository
+                .findByUserId(userId);
+        List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO> allMf = new ArrayList<>();
+        LocalDateTime syncTime = LocalDateTime.now();
+
+        for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
+            if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
+                    && account.hasValidToken()) {
+                try {
+                    allMf.addAll(zerodhaBrokerService.fetchMfHoldings(account));
+                } catch (Exception e) {
+                    // Log
+                }
+            }
+        }
+
+        com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO> response = new com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<>();
+        response.setData(allMf);
+        response.setLastSyncedAt(syncTime);
+        response.setSource("LIVE");
+        return response;
+    }
+
+    @Override
+    public com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO> getMfOrders(
+            String userId) {
+        List<com.urva.myfinance.coinTrack.broker.model.BrokerAccount> accounts = brokerAccountRepository
+                .findByUserId(userId);
+        List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO> allOrders = new ArrayList<>();
+        LocalDateTime syncTime = LocalDateTime.now();
+
+        for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
+            if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
+                    && account.hasValidToken()) {
+                try {
+                    allOrders.addAll(zerodhaBrokerService.fetchMfOrders(account));
+                } catch (Exception e) {
+                    // Log
+                }
+            }
+        }
+
+        com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO> response = new com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<>();
+        response.setData(allOrders);
+        response.setLastSyncedAt(syncTime);
+        response.setSource("LIVE");
+        return response;
+    }
+
+    @Override
+    public com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO getProfile(String userId) {
+        List<com.urva.myfinance.coinTrack.broker.model.BrokerAccount> accounts = brokerAccountRepository
+                .findByUserId(userId);
+
+        // Return first available profile
+        for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
+            if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
+                    && account.hasValidToken()) {
+                try {
+                    return zerodhaBrokerService.fetchProfile(account);
+                } catch (Exception e) {
+                    // Log
+                }
+            }
+        }
+        return null;
     }
 }

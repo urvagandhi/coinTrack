@@ -28,6 +28,12 @@ import com.urva.myfinance.coinTrack.broker.model.ExpiryReason;
 import com.urva.myfinance.coinTrack.broker.service.BrokerService;
 import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
 import com.urva.myfinance.coinTrack.common.util.EncryptionUtil;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.OrderDTO;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.TradeDTO;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
 
@@ -322,7 +328,116 @@ public class ZerodhaBrokerService implements BrokerService {
         }
     }
 
-    private static String bytesToHex(byte[] hash) {
+    // ============================================================================================
+    // NEW KITE API METHODS (Direct pass-through / mapping)
+    // ============================================================================================
+
+    @Override
+    public List<OrderDTO> fetchOrders(BrokerAccount account) {
+        // Updated to use the new typed fetch function if complex mapping needed, but
+        // ObjectMapper should handle DTO fields if names match JSON.
+        // The DTO now has numeric fields. Jackson will auto-convert JSON
+        // strings/numbers
+        // to them.
+        return fetchListFromKite(account, "https://api.kite.trade/orders", "orders", OrderDTO.class);
+    }
+
+    @Override
+    public List<TradeDTO> fetchTrades(BrokerAccount account) {
+        return fetchListFromKite(account, "https://api.kite.trade/trades", "trades", TradeDTO.class);
+    }
+
+    @Override
+    public FundsDTO fetchFunds(BrokerAccount account) {
+        return fetchObjectFromKite(account, "https://api.kite.trade/user/margins", "margins", FundsDTO.class);
+    }
+
+    @Override
+    public List<MutualFundDTO> fetchMfHoldings(BrokerAccount account) {
+        return fetchListFromKite(account, "https://api.kite.trade/mf/holdings", "holdings", MutualFundDTO.class);
+    }
+
+    @Override
+    public List<MutualFundOrderDTO> fetchMfOrders(BrokerAccount account) {
+        return fetchListFromKite(account, "https://api.kite.trade/mf/orders", "orders", MutualFundOrderDTO.class);
+    }
+
+    @Override
+    public UserProfileDTO fetchProfile(BrokerAccount account) {
+        return fetchObjectFromKite(account, "https://api.kite.trade/user/profile", "profile", UserProfileDTO.class);
+    }
+
+    // ============================================================================================
+    // HELPER METHODS
+    // ============================================================================================
+
+    private <T> T fetchObjectFromKite(BrokerAccount account, String url, String logTag, Class<T> responseType) {
+        if (!account.hasValidToken())
+            throw new BrokerException("Invalid token", Broker.ZERODHA);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "token " + account.getZerodhaApiKey() + ":" + account.getZerodhaAccessToken());
+        headers.add("X-Kite-Version", "3");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            @SuppressWarnings("null")
+            ResponseEntity<String> response = restTemplate.exchange(url,
+                    org.springframework.http.HttpMethod.GET, entity, String.class);
+
+            // Manual parsing to handle "data" wrapper properly
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(response.getBody());
+            if (root == null || !root.has("status") || !"success".equals(root.get("status").asText())) {
+                throw new BrokerException("Failed to fetch " + logTag, Broker.ZERODHA);
+            }
+
+            return mapper.treeToValue(root.get("data"), responseType);
+
+        } catch (Exception e) {
+            logger.error("Error fetching Zerodha {}: {}", logTag, e.getMessage());
+            throw new BrokerException("Failed to fetch " + logTag, Broker.ZERODHA, e);
+        }
+    }
+
+    private <T> List<T> fetchListFromKite(BrokerAccount account, String url, String logTag, Class<T> itemType) {
+        if (!account.hasValidToken())
+            throw new BrokerException("Invalid token", Broker.ZERODHA);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "token " + account.getZerodhaApiKey() + ":" + account.getZerodhaAccessToken());
+        headers.add("X-Kite-Version", "3");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            @SuppressWarnings("null")
+            ResponseEntity<String> response = restTemplate.exchange(url,
+                    org.springframework.http.HttpMethod.GET, entity, String.class);
+
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(response.getBody());
+            if (root == null || !root.has("status") || !"success".equals(root.get("status").asText())) {
+                throw new BrokerException("Failed to fetch " + logTag, Broker.ZERODHA);
+            }
+
+            com.fasterxml.jackson.databind.JsonNode dataArray = root.get("data");
+            if (dataArray != null && dataArray.isArray()) {
+                return mapper.readValue(dataArray.traverse(),
+                        mapper.getTypeFactory().constructCollectionType(List.class, itemType));
+            }
+            return Collections.emptyList();
+
+        } catch (Exception e) {
+            logger.error("Error fetching Zerodha {}: {}", logTag, e.getMessage());
+            throw new BrokerException("Failed to fetch " + logTag, Broker.ZERODHA, e);
+        }
+    }
+
+    public String bytesToHex(byte[] hash) {
         StringBuilder hexString = new StringBuilder(2 * hash.length);
         for (byte b : hash) {
             String hex = Integer.toHexString(0xff & b);
