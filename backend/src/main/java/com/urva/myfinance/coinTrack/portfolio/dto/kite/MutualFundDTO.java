@@ -28,8 +28,16 @@ public class MutualFundDTO {
     private BigDecimal lastPrice;
 
     @com.fasterxml.jackson.annotation.JsonProperty("current_value")
-    private BigDecimal currentValue; // Calculated or present in response
+    private BigDecimal currentValue; // Present in response
 
     @com.fasterxml.jackson.annotation.JsonProperty("pnl")
     private BigDecimal pnl;
+
+    public BigDecimal getPnl() {
+        if ((this.pnl == null || this.pnl.compareTo(BigDecimal.ZERO) == 0)
+                && this.currentValue != null && this.averagePrice != null && this.quantity != null) {
+            return this.currentValue.subtract(this.averagePrice.multiply(this.quantity));
+        }
+        return this.pnl;
+    }
 }

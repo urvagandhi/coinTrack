@@ -410,14 +410,15 @@ export default function PortfolioPage() {
                                                 <th className="pb-4 text-right">Units</th>
                                                 <th className="pb-4 text-right">Avg. NAV</th>
                                                 <th className="pb-4 text-right">Last Price</th>
+                                                <th className="pb-4 text-right">Current Value</th>
                                                 <th className="pb-4 text-right pr-2">P&L</th>
                                             </tr>
                                         </thead>
                                         <tbody className="space-y-4">
                                             {isLoadingMf ? (
-                                                <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                <tr><td colSpan="6" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
                                             ) : mfHoldings.length === 0 ? (
-                                                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No mutual fund holdings found.</td></tr>
+                                                <tr><td colSpan="6" className="text-center py-8 text-gray-500">No mutual fund holdings found.</td></tr>
                                             ) : (
                                                 mfHoldings.map((mf, idx) => {
                                                     const pnl = parseFloat(mf.pnl);
@@ -433,6 +434,7 @@ export default function PortfolioPage() {
                                                             <td className="py-4 text-right text-gray-600 dark:text-gray-300">{mf.quantity}</td>
                                                             <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.average_price)}</td>
                                                             <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.last_price)}</td>
+                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.current_value)}</td>
                                                             <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                 {formatCurrency(mf.pnl)}
                                                             </td>
