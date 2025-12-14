@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, Eye, EyeOff, Loader, Lock, Mail, Phone, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function RegisterPage() {
@@ -28,7 +29,7 @@ export default function RegisterPage() {
     const [isResending, setIsResending] = useState(false);
     const { register, verifyOtp, resendOtp } = useAuth();
     // useRouter is needed for redirection
-    const router = require('next/navigation').useRouter();
+    const router = useRouter();
 
     useEffect(() => {
         let interval;
@@ -164,7 +165,7 @@ export default function RegisterPage() {
                 setError(paramError || 'Registration failed');
             }
         } catch (err) {
-            console.error("Registration Error payload:", err);
+            // logger.error("Registration Error payload:", err);
             setError(err.userMessage || 'An unexpected error occurred');
         } finally {
             setIsLoading(false);

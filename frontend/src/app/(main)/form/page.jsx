@@ -2,16 +2,14 @@
 
 import PageTransition from '@/components/ui/PageTransition';
 import { motion } from 'framer-motion';
-import {
-    Banknote,
-    Bitcoin,
-    Calendar,
-    FileText,
-    Gem,
-    Hash,
-    Save,
-    TrendingUp
-} from 'lucide-react';
+import Banknote from 'lucide-react/dist/esm/icons/banknote';
+import Bitcoin from 'lucide-react/dist/esm/icons/bitcoin';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Gem from 'lucide-react/dist/esm/icons/gem';
+import Hash from 'lucide-react/dist/esm/icons/hash';
+import Save from 'lucide-react/dist/esm/icons/save';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
 import { useState } from 'react';
 
 // Form Components

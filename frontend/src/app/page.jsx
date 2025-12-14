@@ -2,7 +2,15 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Check, Globe, Moon, Shield, Sun, TrendingUp, X, Zap } from 'lucide-react';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Check from 'lucide-react/dist/esm/icons/check';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Moon from 'lucide-react/dist/esm/icons/moon';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import Sun from 'lucide-react/dist/esm/icons/sun';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import X from 'lucide-react/dist/esm/icons/x';
+import Zap from 'lucide-react/dist/esm/icons/zap';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';

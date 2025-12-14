@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { zerodhaService } from '@/lib/zerodhaService';
+import { brokerAPI, BROKERS } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
 
@@ -20,10 +20,23 @@ export default function ZerodhaPage() {
         zerodhaApiSecret: ''
     });
 
+    const checkStatus = async () => {
+        setCheckingCredentials(true);
+        try {
+            const status = await brokerAPI.getStatus(BROKERS.ZERODHA);
+            setAccountStatus(status.connected ? 'Connected' : null);
+            setHasCredentials(status.hasCredentials);
+        } catch (err) {
+            setAccountStatus(null);
+            setHasCredentials(false);
+        } finally {
+            setCheckingCredentials(false);
+        }
+    };
+
     useEffect(() => {
         if (user) {
-            checkAccountStatus();
-            checkCredentialsStatus();
+            checkStatus();
         }
 
         // Check for URL parameters from backend redirect
@@ -40,33 +53,14 @@ export default function ZerodhaPage() {
             setSuccess('Zerodha account connected successfully!');
             // Refresh account status
             if (user) {
-                checkAccountStatus();
+                checkStatus();
             }
             // Clean up URL
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     }, [user]);
 
-    const checkAccountStatus = async () => {
-        try {
-            const status = await zerodhaService.getAccountStatus(user.id);
-            setAccountStatus(status);
-        } catch (err) {
-            setAccountStatus(null);
-        }
-    };
 
-    const checkCredentialsStatus = async () => {
-        setCheckingCredentials(true);
-        try {
-            const credentialsStatus = await zerodhaService.checkCredentials(user.id);
-            setHasCredentials(credentialsStatus.hasCredentials);
-        } catch (err) {
-            setHasCredentials(false);
-        } finally {
-            setCheckingCredentials(false);
-        }
-    };
 
     const handleCredentialsSubmit = async (e) => {
         e.preventDefault();
@@ -74,14 +68,13 @@ export default function ZerodhaPage() {
         setError('');
         setSuccess('');
         try {
-            await zerodhaService.setCredentials({
-                appUserId: user.id,
-                zerodhaApiKey: credentials.zerodhaApiKey,
-                zerodhaApiSecret: credentials.zerodhaApiSecret
+            await brokerAPI.saveZerodhaCredentials({
+                apiKey: credentials.zerodhaApiKey,
+                apiSecret: credentials.zerodhaApiSecret
             });
             setSuccess('Zerodha credentials saved successfully!');
             setCredentials({ zerodhaApiKey: '', zerodhaApiSecret: '' });
-            await checkCredentialsStatus();
+            await checkStatus();
         } catch (err) {
             setError(err.message);
         } finally {
@@ -93,8 +86,12 @@ export default function ZerodhaPage() {
         setLoading(true);
         setError('');
         try {
-            const loginUrl = await zerodhaService.getLoginUrl(user.id);
-            window.location.href = loginUrl;
+            const response = await brokerAPI.getConnectUrl(BROKERS.ZERODHA);
+            if (response.loginUrl) {
+                window.location.href = response.loginUrl;
+            } else {
+                throw new Error('No login URL received');
+            }
         } catch (err) {
             setError(err.message);
             setLoading(false);

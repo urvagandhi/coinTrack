@@ -1,91 +1,53 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useBrokerConnection } from '@/hooks/useBrokerConnection';
+import { useZerodhaDashboard } from '@/hooks/useZerodhaDashboard';
 import { formatFundName, getShortCompanyName } from '@/lib/stockNameMapping';
-import { zerodhaService } from '@/lib/zerodhaService';
+
 import { useEffect, useState } from 'react';
 
 export default function ZerodhaDashboard() {
     const { user } = useAuth();
-    const [loading, setLoading] = useState(false);
+    // Using the new hook
+    const {
+        holdings,
+        mfHoldings,
+        sips,
+        profile,
+        isLoading: loading,
+        error: hookError,
+        refreshAll
+    } = useZerodhaDashboard();
+
+    // Mapping new hook data to component expected state names if strict match needed,
+    // or just using them directly. The hook returns 'holdings', 'mfHoldings', 'sips', 'profile'
+    // which matches local state names.
+
+    const { data: brokerStatuses } = useBrokerConnection();
+    const accountStatus = brokerStatuses?.find(b => b.broker === 'ZERODHA')?.connected ? 'CONNECTED' : 'NOT_LINKED';
+
+    // const [accountStatus, setAccountStatus] = useState(null); // Removed local state
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const [holdings, setHoldings] = useState(null);
-    const [mfHoldings, setMfHoldings] = useState(null);
-    const [sips, setSips] = useState(null);
-    const [profile, setProfile] = useState(null);
-    const [accountStatus, setAccountStatus] = useState(null);
 
     useEffect(() => {
-        if (user) {
-            loadZerodhaData();
+        if (hookError) {
+            setError(hookError?.message || 'Failed to load dashboard data');
         }
-    }, [user]);
+    }, [hookError]);
+
+
 
     const loadZerodhaData = async () => {
-        setLoading(true);
-        setError('');
         setSuccessMessage('');
-
+        setError('');
         try {
-            // Check account status first
-            const status = await zerodhaService.getAccountStatus(user.id);
-            setAccountStatus(status);
-
-            // Load all data in parallel
-            const [holdingsData, mfHoldingsData, sipsData, profileData] = await Promise.allSettled([
-                zerodhaService.getHoldings(user.id),
-                zerodhaService.getMFHoldings(user.id),
-                zerodhaService.getSIPs(user.id),
-                zerodhaService.getProfile(user.id)
-            ]);
-
-            let loadedCount = 0;
-            let totalCount = 4;
-
-            if (holdingsData.status === 'fulfilled') {
-                console.log('Holdings data received:', holdingsData.value);
-                setHoldings(holdingsData.value);
-                loadedCount++;
-            } else {
-                console.error('Failed to load holdings:', holdingsData.reason);
-            }
-
-            if (mfHoldingsData.status === 'fulfilled') {
-                console.log('MF Holdings data received:', mfHoldingsData.value);
-                setMfHoldings(mfHoldingsData.value);
-                loadedCount++;
-            } else {
-                console.error('Failed to load MF holdings:', mfHoldingsData.reason);
-            }
-
-            if (sipsData.status === 'fulfilled') {
-                console.log('SIPs data received:', sipsData.value);
-                setSips(sipsData.value);
-                loadedCount++;
-            } else {
-                console.error('Failed to load SIPs:', sipsData.reason);
-            }
-
-            if (profileData.status === 'fulfilled') {
-                console.log('Profile data received:', profileData.value);
-                setProfile(profileData.value);
-                loadedCount++;
-            } else {
-                console.error('Failed to load profile:', profileData.reason);
-            }
-
-            // Show success message
-            if (loadedCount > 0) {
-                setSuccessMessage(`Successfully refreshed ${loadedCount}/${totalCount} data sections`);
-                setTimeout(() => setSuccessMessage(''), 3000); // Clear after 3 seconds
-            }
-
+            await refreshAll();
+            setSuccessMessage('Dashboard refreshed successfully');
+            setTimeout(() => setSuccessMessage(''), 3000);
         } catch (err) {
-            console.error('Error loading Zerodha data:', err);
-            setError(err.message);
-        } finally {
-            setLoading(false);
+            setError('Failed to refresh data');
         }
     };
 

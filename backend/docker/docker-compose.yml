@@ -1,13 +1,50 @@
 version: '3.8'
 
+# ==========================================
+# CoinTrack - Local Development Environment
+# WARNING: DO NOT USE FOR PRODUCTION
+# ==========================================
+
 services:
+  # MongoDB Service
+  mongodb:
+    image: mongo:6.0
+    container_name: cointrack-mongo-local
+    restart: always
+    ports:
+      - "27017:27017" # Exposes DB to host (useful for Compass/tools)
+    environment:
+      - MONGO_INITDB_DATABASE=cointrack
+    volumes:
+      - mongo_data:/data/db # Persist data between restarts
+    networks:
+      - cointrack-network
+
+  # Backend Service
   backend:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    image: cointrack-backend:latest
+      context: ../ # Build context is backend root
+      dockerfile: docker/Dockerfile # Point to Dockerfile location
+    container_name: cointrack-backend-local
+    restart: on-failure
+    depends_on:
+      - mongodb
     ports:
       - "8080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-    restart: unless-stopped
+      # Application Config
+      - SPRING_PROFILES_ACTIVE=dev
+      # Database Connection
+      - MONGO_URI=mongodb://mongodb:27017/cointrack
+      # Security (Inject real values via .env locally)
+      - JWT_SECRET=${JWT_SECRET:-default_insecure_secret_for_local_only_change_me}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-default_insecure_key_1234567890123456} # Must be 32 chars in prod
+    networks:
+      - cointrack-network
+
+volumes:
+  mongo_data:
+
+networks:
+  cointrack-network:
+    driver: bridge

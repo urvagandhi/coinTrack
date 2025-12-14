@@ -3,10 +3,49 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ChevronRight, Moon, Sun } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Header({ onMenuClick }) {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const pathname = usePathname();
+
+    const generateBreadcrumbs = () => {
+        // Remove trailing slash and split
+        const asPathWithoutQuery = pathname.split('?')[0];
+        const asPathNestedRoutes = asPathWithoutQuery.split('/').filter(v => v.length > 0);
+
+        // Don't show breadcrumbs on dashboard home if we consider it root
+        // But user asked for "Home / My Workspace", so let's keep it consistent.
+
+        return asPathNestedRoutes.map((subpath, idx) => {
+            // Build the url for this segment
+            const href = '/' + asPathNestedRoutes.slice(0, idx + 1).join('/');
+
+            // Format the text: replace hyphens with spaces and capitalize
+            const text = subpath
+                .replace(/-/g, ' ')
+                .replace(/\b\w/g, char => char.toUpperCase());
+
+            const isLast = idx === asPathNestedRoutes.length - 1;
+
+            return (
+                <div key={href} className="flex items-center">
+                    <ChevronRight className="w-4 h-4 mx-1" />
+                    {isLast ? (
+                        <span className="text-gray-900 dark:text-white font-semibold">
+                            {text}
+                        </span>
+                    ) : (
+                        <Link href={href} className="hover:text-gray-900 dark:hover:text-white transition-colors">
+                            {text}
+                        </Link>
+                    )}
+                </div>
+            );
+        });
+    };
 
     return (
         <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-30
@@ -20,11 +59,12 @@ export default function Header({ onMenuClick }) {
                 >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
-                <div className="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400">
-                    <span className="hover:text-gray-900 dark:hover:text-white cursor-pointer transition-colors">Home</span>
-                    <ChevronRight className="w-4 h-4 mx-1" />
-                    <span className="text-gray-900 dark:text-white font-semibold">My Workspace</span>
-                </div>
+                <nav className="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <Link href="/dashboard" className="hover:text-gray-900 dark:hover:text-white transition-colors">
+                        Home
+                    </Link>
+                    {generateBreadcrumbs()}
+                </nav>
             </div>
 
             {/* Right: Actions */}

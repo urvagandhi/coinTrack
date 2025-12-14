@@ -1,10 +1,36 @@
-target/
-*.log
-.idea/
-.vscode/
-*.iml
-node_modules/
-frontend/node_modules/
-frontend/.next/
-.DS_Store
-.git
+# ==========================================
+# CoinTrack - Docker Ignore Rules
+# Purpose: Prevent sensitive/huge files from entering build context
+# ==========================================
+
+# 1. Build Artifacts
+**/target/
+**/build/
+**/*.class
+
+# 2. IDE & Git Metadata
+**/.git/
+**/.idea/
+**/.vscode/
+**/*.iml
+.classpath
+.project
+.settings
+
+# 3. Logs & Temp Files
+**/logs/
+**/*.log
+**/*.tmp
+
+# 4. Sensitive Files
+**/.env
+**/.env.*
+**/secrets/
+
+# 5. OS Metadata
+**/.DS_Store
+**/Thumbs.db
+
+# 6. Docker itself (avoid recursion)
+**/docker/
+!docker/Dockerfile

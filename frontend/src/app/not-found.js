@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Home } from 'lucide-react';
+import Home from 'lucide-react/dist/esm/icons/home';
 import { Space_Mono } from 'next/font/google';
 import Link from 'next/link';
 
