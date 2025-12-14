@@ -42,6 +42,7 @@ function StatCard({ title, value, subValue, isPositive, icon: Icon }) {
 
 export default function PortfolioPage() {
     const [activeTab, setActiveTab] = useState('holdings');
+    const [positionView, setPositionView] = useState('EQUITY');
 
     // 1. Fetch Summary
     const { data: summary, isLoading: isLoadingSummary } = useQuery({
@@ -266,44 +267,92 @@ export default function PortfolioPage() {
                             )}
 
                             {/* POSITIONS TAB */}
+                            {/* POSITIONS TAB */}
                             {activeTab === 'positions' && (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4 pl-2">Instrument</th>
-                                                <th className="pb-4 text-right">Qty</th>
-                                                <th className="pb-4 text-right">Buy Avg</th>
-                                                <th className="pb-4 text-right pr-2">P&L</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="space-y-4">
-                                            {isLoadingPositions ? (
-                                                <tr><td colSpan="4" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
-                                            ) : positions.length === 0 ? (
-                                                <tr><td colSpan="4" className="text-center py-8 text-gray-500">No active positions.</td></tr>
-                                            ) : (
-                                                positions.map((item, idx) => {
-                                                    const isPos = item.unrealizedPL >= 0;
-                                                    return (
-                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                            <td className="py-4 pl-2">
-                                                                <div className="font-medium text-gray-900 dark:text-white">{item.symbol}</div>
-                                                                <div className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 inline-block px-1.5 py-0.5 rounded mt-1">
-                                                                    {item.isDerivative ? item.instrumentType : 'EQUITY'}
-                                                                </div>
-                                                            </td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.totalQuantity}</td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
-                                                            <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                                {formatCurrency(item.unrealizedPL)}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })
-                                            )}
-                                        </tbody>
-                                    </table>
+                                <div>
+                                    {/* Sub-tabs for Positions */}
+                                    <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700/50 p-1 rounded-lg mb-4 w-fit">
+                                        {['EQUITY', 'DERIVATIVES'].map((view) => (
+                                            <button
+                                                key={view}
+                                                onClick={() => setPositionView(view)}
+                                                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${positionView === view
+                                                    ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                                                    }`}
+                                            >
+                                                {view}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                    <th className="pb-4 pl-2">Instrument</th>
+                                                    {positionView === 'DERIVATIVES' && (
+                                                        <>
+                                                            <th className="pb-4">Type</th>
+                                                            <th className="pb-4 text-right">Strike</th>
+                                                            <th className="pb-4 text-center">Opt</th>
+                                                            <th className="pb-4 text-right">Expiry</th>
+                                                        </>
+                                                    )}
+                                                    <th className="pb-4 text-right">Qty</th>
+                                                    <th className="pb-4 text-right">Buy Avg</th>
+                                                    <th className="pb-4 text-right">LTP</th>
+                                                    <th className="pb-4 text-right pr-2">
+                                                        {positionView === 'DERIVATIVES' ? 'MTM' : 'P&L'}
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="space-y-4">
+                                                {isLoadingPositions ? (
+                                                    <tr><td colSpan={positionView === 'DERIVATIVES' ? 9 : 5} className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                ) : positions.filter(p => positionView === 'DERIVATIVES' ? p.isDerivative : !p.isDerivative).length === 0 ? (
+                                                    <tr><td colSpan={positionView === 'DERIVATIVES' ? 9 : 5} className="text-center py-8 text-gray-500">No {positionView.toLowerCase()} positions found.</td></tr>
+                                                ) : (
+                                                    positions.filter(p => positionView === 'DERIVATIVES' ? p.isDerivative : !p.isDerivative).map((item, idx) => {
+                                                        const pnl = positionView === 'DERIVATIVES' ? (item.mtmPL || item.unrealizedPL) : item.unrealizedPL;
+                                                        const isPos = pnl >= 0;
+                                                        return (
+                                                            <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                                <td className="py-4 pl-2 font-medium text-gray-900 dark:text-white">
+                                                                    {item.symbol}
+                                                                </td>
+                                                                {positionView === 'DERIVATIVES' && (
+                                                                    <>
+                                                                        <td className="py-4 text-xs text-gray-500">{item.instrumentType}</td>
+                                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.strikePrice ? formatCurrency(item.strikePrice) : '-'}</td>
+                                                                        <td className="py-4 text-center">
+                                                                            {item.optionType ? (
+                                                                                <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.optionType === 'CE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                                                    {item.optionType}
+                                                                                </span>
+                                                                            ) : '-'}
+                                                                        </td>
+                                                                        <td className="py-4 text-right text-xs text-gray-500">
+                                                                            {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : '-'}
+                                                                        </td>
+                                                                    </>
+                                                                )}
+                                                                <td className="py-4 text-right text-gray-600 dark:text-gray-300">
+                                                                    {positionView === 'DERIVATIVES' ? item.netLots || item.totalQuantity : item.totalQuantity}
+                                                                    {positionView === 'DERIVATIVES' && item.netLots && <span className="text-xs text-gray-400 ml-1">lots</span>}
+                                                                </td>
+                                                                <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
+                                                                <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.currentPrice)}</td>
+                                                                <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                    {formatCurrency(pnl)}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
 
