@@ -39,5 +39,8 @@ public class NetPositionDTO {
     private BigDecimal fnoDayGain;
     private BigDecimal fnoDayGainPercent;
 
+    // Raw Broker Payload (Pass-Through)
+    private Map<String, Object> raw;
+
     private String positionType;
 }

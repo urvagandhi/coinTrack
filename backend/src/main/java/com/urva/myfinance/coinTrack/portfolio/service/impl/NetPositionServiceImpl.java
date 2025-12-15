@@ -63,6 +63,9 @@ public class NetPositionServiceImpl implements NetPositionService {
             BigDecimal accumulatedMtm = BigDecimal.ZERO;
             boolean hasPositions = false;
 
+            // Raw Data
+            Map<String, Object> rawData;
+
             Aggregator(String symbol) {
                 this.symbol = symbol;
             }
@@ -102,6 +105,31 @@ public class NetPositionServiceImpl implements NetPositionService {
 
             Aggregator agg = aggregatorMap.computeIfAbsent(p.getSymbol(), Aggregator::new);
             agg.hasPositions = true;
+
+            // Pass-Through Raw Data (Prioritize Zerodha)
+            if (p.getRawData() != null && !p.getRawData().isEmpty()) {
+                agg.rawData = p.getRawData();
+            } else if (agg.rawData == null) {
+                // Fallback: Construct raw map from stored typed fields if rawData isn't cached
+                // yet
+                Map<String, Object> fallbackRaw = new HashMap<>();
+                fallbackRaw.put("product", p.getPositionType());
+                if (p.getMtm() != null)
+                    fallbackRaw.put("m2m", p.getMtm());
+                if (p.getPnl() != null)
+                    fallbackRaw.put("pnl", p.getPnl());
+                if (p.getValue() != null)
+                    fallbackRaw.put("value", p.getValue());
+                if (p.getBuyQuantity() != null)
+                    fallbackRaw.put("buy_quantity", p.getBuyQuantity());
+                if (p.getSellQuantity() != null)
+                    fallbackRaw.put("sell_quantity", p.getSellQuantity());
+                if (p.getNetQuantity() != null)
+                    fallbackRaw.put("net_quantity", p.getNetQuantity());
+                if (p.getInstrumentType() != null)
+                    fallbackRaw.put("instrument_type", p.getInstrumentType());
+                agg.rawData = fallbackRaw;
+            }
 
             BigDecimal storedPnl = p.getPnl() != null ? p.getPnl() : BigDecimal.ZERO;
             BigDecimal storedMtm = p.getMtm() != null ? p.getMtm() : BigDecimal.ZERO;
@@ -257,6 +285,7 @@ public class NetPositionServiceImpl implements NetPositionService {
                     .fnoDayGain(fnoDayGain)
                     .fnoDayGainPercent(fnoDayGainPercent)
                     .positionType("NET")
+                    .raw(agg.rawData) // PASS-THROUGH RAW DATA
                     .build());
         }
 
