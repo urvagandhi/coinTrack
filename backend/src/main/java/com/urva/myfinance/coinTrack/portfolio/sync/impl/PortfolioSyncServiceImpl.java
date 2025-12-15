@@ -341,7 +341,9 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
         for (CachedPosition fetched : fetchedList) {
             // Re-calculate checksum including MTM/PnL to ensure updates persist
             String checksum = HashUtil.sha256(fetched.getSymbol() + fetched.getQuantity() + fetched.getBuyPrice()
-                    + fetched.getPositionType() + fetched.getMtm() + fetched.getPnl());
+                    + fetched.getPositionType() + fetched.getMtm() + fetched.getPnl() + fetched.getValue()
+                    + fetched.getBuyQuantity() + fetched.getSellQuantity() + fetched.getNetQuantity()
+                    + fetched.getOvernightQuantity());
             fetched.setChecksumHash(checksum);
             fetched.setUserId(userId);
             fetched.setBroker(broker);

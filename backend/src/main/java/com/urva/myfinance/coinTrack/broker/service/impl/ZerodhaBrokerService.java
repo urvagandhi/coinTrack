@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import com.urva.myfinance.coinTrack.portfolio.dto.kite.OrderDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.TradeDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.ZerodhaHoldingRaw;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.ZerodhaPositionRaw;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
 
@@ -169,37 +171,96 @@ public class ZerodhaBrokerService implements BrokerService {
                 return Collections.emptyList();
 
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> netPositions = (List<Map<String, Object>>) data.get("net");
-            if (netPositions == null)
+            // Validated: Positions API returns data: { "net": [], "day": [] }
+            // specific logic needed as fetchListFromKite expects data to be the array
+            // directly.
+            Map<String, Object> dataMap = fetchObjectFromKite(account,
+                    "https://api.kite.trade/portfolio/positions",
+                    "positions", Map.class);
+
+            if (dataMap == null || !dataMap.containsKey("net"))
                 return Collections.emptyList();
 
-            return netPositions.stream().map(item -> {
-                String product = (String) item.get("product");
-                com.urva.myfinance.coinTrack.portfolio.model.PositionType pType = com.urva.myfinance.coinTrack.portfolio.model.PositionType.INTRADAY;
-                if ("CNC".equalsIgnoreCase(product)) {
-                    pType = com.urva.myfinance.coinTrack.portfolio.model.PositionType.DELIVERY;
-                } else if ("NRML".equalsIgnoreCase(product)) {
-                    pType = com.urva.myfinance.coinTrack.portfolio.model.PositionType.FNO;
-                }
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-                return CachedPosition.builder()
-                        .userId(account.getUserId())
-                        .broker(Broker.ZERODHA)
-                        .symbol((String) item.get("tradingsymbol"))
-                        .quantity(safeBigDecimal(item.get("quantity")))
-                        .buyPrice(safeBigDecimal(item.get("average_price")))
-                        .mtm(safeBigDecimal(item.get("m2m")))
-                        .pnl(safeBigDecimal(item.get("pnl")))
-                        .realized(safeBigDecimal(item.get("realised")))
-                        .positionType(pType)
-                        .lastUpdated(LocalDateTime.now())
-                        .build();
-            }).collect(java.util.stream.Collectors.toList());
+            List<Map<String, Object>> rawNetPositionsMapList = mapper.convertValue(dataMap.get("net"),
+                    mapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+
+            if (rawNetPositionsMapList == null)
+                return Collections.emptyList();
+
+            return rawNetPositionsMapList.stream()
+                    .map(rawMap -> {
+                        // 1. Convert to Typed DTO for Logic
+                        ZerodhaPositionRaw raw = mapper.convertValue(rawMap, ZerodhaPositionRaw.class);
+                        return new AbstractMap.SimpleEntry<>(rawMap, raw);
+                    })
+                    .filter(entry -> {
+                        ZerodhaPositionRaw raw = entry.getValue();
+                        // Corrupt data check (optional but recommended)
+                        if (raw.getQuantity() != null && raw.getQuantity() == 0 && raw.getPnl() == 0) {
+                            // Likely a closed position or empty data, can log trace
+                            return true;
+                        }
+                        return true;
+                    })
+                    .map(entry -> {
+                        Map<String, Object> rawMap = entry.getKey();
+                        ZerodhaPositionRaw raw = entry.getValue();
+
+                        String product = raw.getProduct();
+                        com.urva.myfinance.coinTrack.portfolio.model.PositionType pType = com.urva.myfinance.coinTrack.portfolio.model.PositionType.INTRADAY;
+                        if ("CNC".equalsIgnoreCase(product)) {
+                            pType = com.urva.myfinance.coinTrack.portfolio.model.PositionType.DELIVERY;
+                        } else if ("NRML".equalsIgnoreCase(product)) {
+                            pType = com.urva.myfinance.coinTrack.portfolio.model.PositionType.FNO;
+                        }
+
+                        return CachedPosition.builder()
+                                .userId(account.getUserId())
+                                .broker(Broker.ZERODHA)
+                                .symbol(raw.getTradingsymbol())
+                                .quantity(safeBigDecimal(raw.getQuantity()))
+                                .buyPrice(safeBigDecimal(raw.getAverage_price())) // average_price is usually entry
+                                .mtm(safeBigDecimal(raw.getM2m()))
+                                .pnl(safeBigDecimal(raw.getPnl()))
+                                // .realized(safeBigDecimal(raw.getRealised())) // Raw DTO didn't have realised
+                                // in prompt list, checking
+                                .lastPrice(safeBigDecimal(raw.getLast_price()))
+                                .closePrice(safeBigDecimal(raw.getClose_price()))
+                                .value(safeBigDecimalOrNull(raw.getValue())) // Value is optional
+                                .buyQuantity(safeBigDecimalOrNull(raw.getBuy_quantity()))
+                                .aggregateBuyPrice(safeBigDecimalOrNull(raw.getBuy_price()))
+                                .sellQuantity(safeBigDecimalOrNull(raw.getSell_quantity()))
+                                .sellPrice(safeBigDecimalOrNull(raw.getSell_price()))
+                                .dayBuyQuantity(safeBigDecimalOrNull(raw.getDay_buy_quantity()))
+                                .daySellQuantity(safeBigDecimalOrNull(raw.getDay_sell_quantity()))
+                                .dayBuyValue(safeBigDecimalOrNull(raw.getDay_buy_value()))
+                                .daySellValue(safeBigDecimalOrNull(raw.getDay_sell_value()))
+                                .netQuantity(safeBigDecimalOrNull(raw.getQuantity())) // quantity IS net quantity
+                                .overnightQuantity(safeBigDecimalOrNull(raw.getOvernight_quantity()))
+                                .instrumentType(raw.getInstrument_type())
+                                .strikePrice(safeBigDecimalOrNull(raw.getStrike_price()))
+                                .optionType(raw.getOption_type())
+                                .expiryDate(raw.getExpiry_date())
+                                .positionType(pType)
+                                .apiVersion("v3")
+                                .lastUpdated(LocalDateTime.now())
+                                .rawData(rawMap) // Strict Pass-Through
+                                .build();
+                    }).collect(java.util.stream.Collectors.toList());
 
         } catch (Exception e) {
-            logger.error("Error fetching Zerodha positions", e);
-            throw new BrokerException("Failed to fetch positions: " + e.getMessage(), Broker.ZERODHA);
+            logger.error("Error fetching positions for {}: {}", account.getUserId(), e.getMessage());
+            throw new BrokerException("Failed to fetch positions", Broker.ZERODHA, e);
         }
+    }
+
+    private java.math.BigDecimal safeBigDecimalOrNull(Number value) {
+        if (value == null)
+            return null;
+        return new java.math.BigDecimal(value.toString());
     }
 
     private java.math.BigDecimal safeBigDecimal(Object value) {

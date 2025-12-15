@@ -30,6 +30,7 @@ public class PortfolioSummaryResponse {
 
     // Detailed List
     private List<SummaryHoldingDTO> holdingsList;
+    private List<SummaryPositionDTO> positionsList;
 
     // Metadata
     private String type;

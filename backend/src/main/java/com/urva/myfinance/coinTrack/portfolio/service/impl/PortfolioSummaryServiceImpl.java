@@ -73,6 +73,8 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
 
         // 4. Process List & Totals
         List<SummaryHoldingDTO> detailedList = new ArrayList<>();
+        List<com.urva.myfinance.coinTrack.portfolio.dto.SummaryPositionDTO> positionsList = new ArrayList<>();
+
         BigDecimal totalCurrentValue = BigDecimal.ZERO;
         BigDecimal totalInvestedValue = BigDecimal.ZERO;
         BigDecimal totalDayGain = BigDecimal.ZERO;
@@ -95,34 +97,39 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 containsDerivatives = true;
             }
 
-            SummaryHoldingDTO dto = convertPosition(p); // No price map needed for strict mode
-            detailedList.add(dto);
+            com.urva.myfinance.coinTrack.portfolio.dto.SummaryPositionDTO dto = convertPosition(p);
+            positionsList.add(dto);
             totalCurrentValue = totalCurrentValue.add(dto.getCurrentValue());
             totalInvestedValue = totalInvestedValue.add(dto.getInvestedValue());
             totalDayGain = totalDayGain.add(dto.getDayGain());
         }
 
         // 5. Final Aggregations
+        // 5. Final Aggregations
         BigDecimal totalUnrealizedPL = totalCurrentValue.subtract(totalInvestedValue);
         BigDecimal totalDayGainPercent = null;
-        boolean dayGainPercentApplicable = !containsDerivatives;
 
-        // Guardrail: Disable Day Gain % if F&O exists
-        if (dayGainPercentApplicable) {
-            BigDecimal totalPrevValue = totalCurrentValue.subtract(totalDayGain);
-            if (totalPrevValue.compareTo(BigDecimal.ZERO) != 0) {
-                totalDayGainPercent = totalDayGain.divide(totalPrevValue, 4, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
-            } else {
-                totalDayGainPercent = BigDecimal.ZERO;
-            }
+        // Revised Logic: Always compute if sensible (invested value basis exists)
+        // Guardrail: Ensure mathematical safety (non-zero divisor)
+        BigDecimal totalPrevValue = totalCurrentValue.subtract(totalDayGain);
+        if (totalPrevValue.compareTo(BigDecimal.ZERO) != 0) {
+            totalDayGainPercent = totalDayGain.divide(totalPrevValue, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
+        } else {
+            // If basis is 0 (e.g. pure F&O margin play with no underlying value or just
+            // closed),
+            // 0% is the safest representation of "no return on invalid base"
+            totalDayGainPercent = BigDecimal.ZERO;
         }
+
+        boolean dayGainPercentApplicable = true; // Always applicable now if verified safe
 
         // 6. Sync Timestamps (Use SUCCESS logs only)
         LocalDateTime latestSync = getLatestSyncTime(userId);
 
         // 7. Sorting: Current Value DESC
         detailedList.sort((a, b) -> b.getCurrentValue().compareTo(a.getCurrentValue()));
+        positionsList.sort((a, b) -> b.getCurrentValue().compareTo(a.getCurrentValue()));
 
         return PortfolioSummaryResponse.builder()
                 .totalCurrentValue(totalCurrentValue.setScale(2, RoundingMode.HALF_UP))
@@ -134,6 +141,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .lastPositionsSync(latestSync)
                 .lastAnySync(latestSync)
                 .holdingsList(detailedList)
+                .positionsList(positionsList)
                 .type("CUSTOM_AGGREGATE")
                 .source(java.util.Collections.singletonList("ZERODHA"))
                 // Metadata Flags
@@ -224,37 +232,114 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .build();
     }
 
-    private SummaryHoldingDTO convertPosition(CachedPosition p) {
+    private com.urva.myfinance.coinTrack.portfolio.dto.SummaryPositionDTO convertPosition(CachedPosition p) {
         BigDecimal qty = p.getQuantity(); // Already BigDecimal
         BigDecimal buyPrice = p.getBuyPrice(); // Already BigDecimal
 
         // GUARDRAIL: Use stored Zerodha fields (pnl, mtm) directly
-        // Do NOT recompute from market price
+        // Do NOT recompute from market price if available
         BigDecimal mtm = p.getMtm() != null ? p.getMtm() : BigDecimal.ZERO; // Day Gain
         BigDecimal pnl = p.getPnl() != null ? p.getPnl() : BigDecimal.ZERO; // Unrealized
+
+        // Derive Current Price safely
+        // Priority: Raw value/qty > Raw last price > 0
+        BigDecimal currentPrice = BigDecimal.ZERO;
+        if (p.getValue() != null && qty.compareTo(BigDecimal.ZERO) != 0) {
+            currentPrice = p.getValue().divide(qty, 2, RoundingMode.HALF_UP).abs();
+        } else if (p.getLastPrice() != null) {
+            currentPrice = p.getLastPrice();
+        }
+
+        // Fallback Logic for P&L if missing (Section 4 of prompt)
+        if (p.getPnl() == null) {
+            if (currentPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                pnl = BigDecimal.ZERO;
+            } else {
+                pnl = (currentPrice.subtract(buyPrice)).multiply(qty);
+            }
+        }
 
         // Invested Value = Quantity * BuyPrice
         BigDecimal investedValue = qty.multiply(buyPrice);
 
-        // Current Value = Invested + PnL (Total Unrealized)
-        // Guardrail: Never use qty * lastPrice for F&O
-        BigDecimal currentValue = investedValue.add(pnl);
+        // Current Value
+        // Use Zerodha provided value strictly if available
+        BigDecimal currentValue = p.getValue();
+        if (currentValue == null) {
+            // Fallback: quantity * last_price (or derived currentPrice)
+            currentValue = qty.multiply(currentPrice);
+        }
 
-        return SummaryHoldingDTO.builder()
+        // Derivatives Check
+        // Rule 4: derived strictly from instrument_type presence
+        boolean isDerivative = p.getInstrumentType() != null;
+
+        // Calculate percentages safely
+        // Improved Logic: (MTM / Invested Value) * 100
+        BigDecimal dayGainPercent = BigDecimal.ZERO;
+        // Rule 3: Only default to zero if investedValue <= 0
+        if (investedValue.compareTo(BigDecimal.ZERO) > 0) {
+            dayGainPercent = mtm.divide(investedValue, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
+        }
+
+        // Populate Raw Map
+        // Policy: Strict Pass-Through of original broker response
+        // If rawData is stored, use it directly. Otherwise (fallback), construct
+        // strictly from known fields.
+        Map<String, Object> rawMap;
+        if (p.getRawData() != null) {
+            rawMap = new java.util.HashMap<>(p.getRawData());
+        } else {
+            // Fallback for positions synced before this update
+            rawMap = new java.util.HashMap<>();
+            rawMap.put("product", p.getPositionType().name());
+            if (p.getMtm() != null)
+                rawMap.put("m2m", p.getMtm());
+            if (p.getPnl() != null)
+                rawMap.put("pnl", p.getPnl());
+            if (p.getValue() != null)
+                rawMap.put("value", p.getValue());
+            if (p.getBuyQuantity() != null)
+                rawMap.put("buy_quantity", p.getBuyQuantity());
+            if (p.getSellQuantity() != null)
+                rawMap.put("sell_quantity", p.getSellQuantity());
+            if (p.getDayBuyQuantity() != null)
+                rawMap.put("day_buy_quantity", p.getDayBuyQuantity());
+            if (p.getDaySellQuantity() != null)
+                rawMap.put("day_sell_quantity", p.getDaySellQuantity());
+            if (p.getNetQuantity() != null)
+                rawMap.put("net_quantity", p.getNetQuantity());
+            if (p.getOvernightQuantity() != null)
+                rawMap.put("overnight_quantity", p.getOvernightQuantity());
+            if (p.getInstrumentType() != null)
+                rawMap.put("instrument_type", p.getInstrumentType());
+            // ... other fields derived as needed for legacy support, but new code uses
+            // rawData
+        }
+
+        return com.urva.myfinance.coinTrack.portfolio.dto.SummaryPositionDTO.builder()
                 .symbol(p.getSymbol())
-                .broker(p.getBroker() != null ? p.getBroker().name() : "UNKNOWN")
-                .type("POSITION")
-                .quantity(qty)
+                .brokerQuantityMap(java.util.Collections.singletonMap(
+                        p.getBroker() != null ? p.getBroker().name() : "UNKNOWN",
+                        qty))
+                .totalQuantity(qty) // Map total_quantity as well
                 .averageBuyPrice(buyPrice.setScale(2, RoundingMode.HALF_UP))
-                .currentPrice(BigDecimal.ZERO) // Explicitly ZERO/Null as per "Don't compute" if not needed, or better
-                                               // left empty
-                .previousClose(BigDecimal.ZERO)
+                .currentPrice(currentPrice.setScale(2, RoundingMode.HALF_UP))
+                .previousClose(p.getClosePrice() != null ? p.getClosePrice().setScale(2, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO)
                 .currentValue(currentValue.setScale(2, RoundingMode.HALF_UP))
                 .investedValue(investedValue.setScale(2, RoundingMode.HALF_UP))
-                .unrealizedPL(pnl.setScale(2, RoundingMode.HALF_UP))
+                .unrealizedPl(pnl.setScale(2, RoundingMode.HALF_UP))
                 .dayGain(mtm.setScale(2, RoundingMode.HALF_UP))
-                .dayGainPercent(BigDecimal.ZERO) // MTM % could be computed from m2m/invested but usually not reliable
-                                                 // for F&O
+                .dayGainPercent(dayGainPercent)
+                .positionType("NET") // Defaulting strictly to NET as per prompt
+                .derivative(isDerivative)
+                .instrumentType(p.getInstrumentType())
+                .strikePrice(p.getStrikePrice())
+                .optionType(p.getOptionType())
+                .expiryDate(p.getExpiryDate())
+                .raw(rawMap)
                 .build();
     }
 

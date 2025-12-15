@@ -65,4 +65,17 @@ public class ZerodhaPositionRaw {
 
     @JsonProperty("day_sell_value")
     private Double day_sell_value;
+
+    // F&O Fields
+    @JsonProperty("instrument_type")
+    private String instrument_type;
+
+    @JsonProperty("strike_price")
+    private Double strike_price;
+
+    @JsonProperty("option_type")
+    private String option_type;
+
+    @JsonProperty("expiry_date")
+    private String expiry_date;
 }
