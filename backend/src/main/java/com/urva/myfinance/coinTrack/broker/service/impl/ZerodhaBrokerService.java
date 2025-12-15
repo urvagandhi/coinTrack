@@ -34,6 +34,7 @@ import com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.OrderDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.TradeDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.ZerodhaHoldingRaw;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
 
@@ -89,51 +90,49 @@ public class ZerodhaBrokerService implements BrokerService {
 
     @Override
     public List<CachedHolding> fetchHoldings(BrokerAccount account) {
-        if (!account.hasValidToken()) {
-            logger.warn("Attempted to fetch holdings with invalid token for account {}", account.getId());
-            return Collections.emptyList();
-        }
+        List<ZerodhaHoldingRaw> rawHoldings = fetchListFromKite(account, "https://api.kite.trade/portfolio/holdings",
+                "holdings", ZerodhaHoldingRaw.class);
 
-        try {
-            String url = "https://api.kite.trade/portfolio/holdings";
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Authorization", "token " + account.getZerodhaApiKey() + ":" + account.getZerodhaAccessToken());
-            headers.add("X-Kite-Version", "3");
-
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-
-            org.springframework.core.ParameterizedTypeReference<Map<String, Object>> responseType = new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {
-            };
-
-            @SuppressWarnings("null")
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(url,
-                    org.springframework.http.HttpMethod.GET, entity, responseType);
-
-            Map<String, Object> body = response.getBody();
-            if (body == null || !"success".equals(body.get("status"))) {
-                logger.error("Failed to fetch Zerodha holdings: {}", body);
-                return Collections.emptyList();
-            }
-
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> data = (List<Map<String, Object>>) body.get("data");
-            if (data == null)
-                return Collections.emptyList();
-
-            return data.stream().map(item -> CachedHolding.builder()
-                    .userId(account.getUserId())
-                    .broker(Broker.ZERODHA)
-                    .symbol((String) item.get("tradingsymbol"))
-                    .exchange((String) item.get("exchange"))
-                    .quantity(safeBigDecimal(item.get("quantity")))
-                    .averageBuyPrice(safeBigDecimal(item.get("average_price")))
-                    .lastUpdated(LocalDateTime.now())
-                    .build()).collect(java.util.stream.Collectors.toList());
-
-        } catch (Exception e) {
-            logger.error("Error fetching Zerodha holdings", e);
-            throw new BrokerException("Failed to fetch holdings: " + e.getMessage(), Broker.ZERODHA);
-        }
+        return rawHoldings.stream()
+                .filter(raw -> {
+                    if (raw.getQuantity() != null && raw.getQuantity() < 0) {
+                        logger.error("Skipping corrupted holding for {}: Negative Quantity {}", raw.getTradingsymbol(),
+                                raw.getQuantity());
+                        return false;
+                    }
+                    if (raw.getAverage_price() != null && raw.getAverage_price() < 0) {
+                        logger.error("Skipping corrupted holding for {}: Negative Avg Price {}", raw.getTradingsymbol(),
+                                raw.getAverage_price());
+                        return false;
+                    }
+                    return true;
+                })
+                .map(raw -> CachedHolding.builder()
+                        .userId(account.getUserId())
+                        .broker(Broker.ZERODHA)
+                        .symbol(raw.getTradingsymbol())
+                        .exchange(raw.getExchange())
+                        .quantity(safeBigDecimal(raw.getQuantity()))
+                        .averageBuyPrice(safeBigDecimal(raw.getAverage_price()))
+                        .instrumentToken(raw.getInstrument_token())
+                        .product(raw.getProduct())
+                        .lastPrice(safeBigDecimal(raw.getLast_price() != null ? raw.getLast_price() : raw.getPrice()))
+                        .closePrice(safeBigDecimal(raw.getClose_price()))
+                        .pnl(safeBigDecimal(raw.getPnl()))
+                        .dayChange(safeBigDecimal(raw.getDay_change()))
+                        .dayChangePercentage(safeBigDecimal(raw.getDay_change_percentage()))
+                        .usedQuantity(safeBigDecimal(raw.getUsed_quantity()))
+                        .t1Quantity(safeBigDecimal(raw.getT1_quantity()))
+                        .realisedQuantity(safeBigDecimal(raw.getRealised_quantity()))
+                        .openingQuantity(safeBigDecimal(raw.getOpening_quantity()))
+                        .shortQuantity(safeBigDecimal(raw.getShort_quantity()))
+                        .collateralQuantity(safeBigDecimal(raw.getCollateral_quantity()))
+                        .authorisedQuantity(safeBigDecimal(raw.getAuthorised_quantity()))
+                        .authorisedDate(raw.getAuthorised_date())
+                        .apiVersion("v3")
+                        .lastUpdated(LocalDateTime.now())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Override

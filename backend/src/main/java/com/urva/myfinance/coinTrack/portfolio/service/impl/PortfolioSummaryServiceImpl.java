@@ -146,21 +146,54 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         BigDecimal qty = h.getQuantity(); // Already BigDecimal
         BigDecimal avgPrice = h.getAverageBuyPrice(); // Already BigDecimal
 
-        BigDecimal cmp = (price != null && price.getCurrentPrice() != null) ? price.getCurrentPrice() : BigDecimal.ZERO;
-        BigDecimal prevClose = (price != null && price.getPreviousClose() != null) ? price.getPreviousClose()
-                : BigDecimal.ZERO;
+        // 1. Try to use Zerodha values FIRST if available
+        BigDecimal lastPrice = h.getLastPrice();
+        BigDecimal closePrice = h.getClosePrice();
+        BigDecimal pnl = h.getPnl();
+        BigDecimal dayChange = h.getDayChange();
+        BigDecimal dayChangePercent = h.getDayChangePercentage();
 
-        BigDecimal currentValue = qty.multiply(cmp);
+        // 2. Fallback to MarketPrice if Zerodha values are missing
+        if (lastPrice == null) {
+            lastPrice = (price != null && price.getCurrentPrice() != null) ? price.getCurrentPrice() : BigDecimal.ZERO;
+        }
+
+        if (closePrice == null) {
+            closePrice = (price != null && price.getPreviousClose() != null) ? price.getPreviousClose()
+                    : BigDecimal.ZERO;
+        }
+
+        // Computed safe fields as per requirement
+        BigDecimal currentValue = qty.multiply(lastPrice);
         BigDecimal investedValue = qty.multiply(avgPrice);
-        BigDecimal unrealizedPL = currentValue.subtract(investedValue);
 
-        BigDecimal dayGain = BigDecimal.ZERO;
-        BigDecimal dayGainPercent = BigDecimal.ZERO;
+        // Fill missing P&L if needed (fallback logic)
+        // We do NOT store this fallback in DB, only return in response.
+        if (pnl == null) {
+            if (lastPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                // New listing or missing data -> Treat as no P&L yet (avoid showing -100% loss)
+                pnl = BigDecimal.ZERO;
+            } else {
+                // Fallback: (last_price - average_price) * quantity
+                pnl = currentValue.subtract(investedValue);
+            }
+        }
 
-        if (price != null && prevClose.compareTo(BigDecimal.ZERO) != 0) {
-            dayGain = (cmp.subtract(prevClose)).multiply(qty);
-            dayGainPercent = (cmp.subtract(prevClose)).divide(prevClose, 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100));
+        if (dayChange == null) {
+            if (lastPrice.compareTo(BigDecimal.ZERO) > 0 && closePrice.compareTo(BigDecimal.ZERO) != 0) {
+                dayChange = (lastPrice.subtract(closePrice)).multiply(qty);
+            } else {
+                dayChange = BigDecimal.ZERO;
+            }
+        }
+
+        if (dayChangePercent == null) {
+            if (lastPrice.compareTo(BigDecimal.ZERO) > 0 && closePrice.compareTo(BigDecimal.ZERO) != 0) {
+                dayChangePercent = (lastPrice.subtract(closePrice)).divide(closePrice, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100));
+            } else {
+                dayChangePercent = BigDecimal.ZERO;
+            }
         }
 
         return SummaryHoldingDTO.builder()
@@ -168,15 +201,26 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .exchange(h.getExchange())
                 .broker(h.getBroker() != null ? h.getBroker().name() : "UNKNOWN")
                 .type("HOLDING")
-                .quantity(qty.intValue()) // Cast to int for DTO
+                .quantity(qty) // BigDecimal
                 .averageBuyPrice(avgPrice.setScale(2, RoundingMode.HALF_UP))
-                .currentPrice(cmp.setScale(2, RoundingMode.HALF_UP))
-                .previousClose(prevClose.setScale(2, RoundingMode.HALF_UP))
+                .currentPrice(lastPrice.setScale(2, RoundingMode.HALF_UP))
+                .previousClose(closePrice.setScale(2, RoundingMode.HALF_UP))
                 .currentValue(currentValue.setScale(2, RoundingMode.HALF_UP))
                 .investedValue(investedValue.setScale(2, RoundingMode.HALF_UP))
-                .unrealizedPL(unrealizedPL.setScale(2, RoundingMode.HALF_UP))
-                .dayGain(dayGain.setScale(2, RoundingMode.HALF_UP))
-                .dayGainPercent(dayGainPercent.setScale(2, RoundingMode.HALF_UP))
+                .unrealizedPL(pnl.setScale(2, RoundingMode.HALF_UP))
+                .dayGain(dayChange.setScale(2, RoundingMode.HALF_UP))
+                .dayGainPercent(dayChangePercent.setScale(2, RoundingMode.HALF_UP))
+                .raw(Map.of(
+                        "instrument_token", h.getInstrumentToken() != null ? h.getInstrumentToken() : 0,
+                        "product", h.getProduct() != null ? h.getProduct() : "",
+                        "used_quantity", h.getUsedQuantity() != null ? h.getUsedQuantity() : BigDecimal.ZERO,
+                        "t1_quantity", h.getT1Quantity() != null ? h.getT1Quantity() : BigDecimal.ZERO,
+                        "realised_quantity",
+                        h.getRealisedQuantity() != null ? h.getRealisedQuantity() : BigDecimal.ZERO,
+                        "authorised_quantity",
+                        h.getAuthorisedQuantity() != null ? h.getAuthorisedQuantity() : BigDecimal.ZERO,
+                        "authorised_date", h.getAuthorisedDate() != null ? h.getAuthorisedDate() : "",
+                        "close_price", h.getClosePrice() != null ? h.getClosePrice() : BigDecimal.ZERO))
                 .build();
     }
 
@@ -200,7 +244,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .symbol(p.getSymbol())
                 .broker(p.getBroker() != null ? p.getBroker().name() : "UNKNOWN")
                 .type("POSITION")
-                .quantity(qty.intValue())
+                .quantity(qty)
                 .averageBuyPrice(buyPrice.setScale(2, RoundingMode.HALF_UP))
                 .currentPrice(BigDecimal.ZERO) // Explicitly ZERO/Null as per "Don't compute" if not needed, or better
                                                // left empty

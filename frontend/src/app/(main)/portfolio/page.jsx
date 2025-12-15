@@ -281,6 +281,7 @@ export default function PortfolioPage() {
                                                         >
                                                             P&L {holdingsSort.key === 'unrealizedPL' && (holdingsSort.direction === 'asc' ? '↑' : '↓')}
                                                         </th>
+                                                        <th className="pb-4 text-right pr-2">Day Change</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="space-y-4">
@@ -302,9 +303,21 @@ export default function PortfolioPage() {
                                                                     </td>
                                                                     <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.quantity}</td>
                                                                     <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
-                                                                    <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.currentPrice)}</td>
+                                                                    <td className="py-4 text-right font-medium text-gray-900 dark:text-white">
+                                                                        {item.currentPrice && item.currentPrice > 0 ? formatCurrency(item.currentPrice) : '—'}
+                                                                    </td>
                                                                     <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                         {formatCurrency(pnl)}
+                                                                    </td>
+                                                                    <td className="py-4 text-right font-medium pr-2">
+                                                                        <div className="flex flex-col items-end">
+                                                                            <span className={`text-xs font-semibold ${item.dayGain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                                {formatPercent(item.dayGainPercent)}
+                                                                            </span>
+                                                                            <span className={`text-[10px] mt-0.5 text-gray-500`}>
+                                                                                {formatCurrency(item.dayGain)}
+                                                                            </span>
+                                                                        </div>
                                                                     </td>
                                                                 </tr>
                                                             );
@@ -388,7 +401,7 @@ export default function PortfolioPage() {
                                                     <tr><td colSpan={positionView === 'DERIVATIVES' ? 9 : 5} className="text-center py-8 text-gray-500">No {positionView.toLowerCase()} positions found.</td></tr>
                                                 ) : (
                                                     positions.filter(p => positionView === 'DERIVATIVES' ? p.isDerivative : !p.isDerivative).map((item, idx) => {
-                                                        const pnl = positionView === 'DERIVATIVES' ? (item.mtmPL || item.unrealizedPL) : item.unrealizedPL;
+                                                        const pnl = positionView === 'DERIVATIVES' ? (item.dayGain || item.unrealizedPL) : item.unrealizedPL;
                                                         const isPos = pnl >= 0;
                                                         return (
                                                             <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -416,7 +429,9 @@ export default function PortfolioPage() {
                                                                     {positionView === 'DERIVATIVES' && item.netLots && <span className="text-xs text-gray-400 ml-1">lots</span>}
                                                                 </td>
                                                                 <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
-                                                                <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.currentPrice)}</td>
+                                                                <td className="py-4 text-right font-medium text-gray-900 dark:text-white">
+                                                                    {item.currentPrice && item.currentPrice > 0 ? formatCurrency(item.currentPrice) : '—'}
+                                                                </td>
                                                                 <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                     {formatCurrency(pnl)}
                                                                 </td>

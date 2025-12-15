@@ -76,7 +76,9 @@ export default function HoldingsTable() {
                                         <span className="text-muted-foreground">{formatCurrency(pos.averageBuyPrice)}</span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <span className="text-foreground font-medium">{formatCurrency(pos.currentPrice)}</span>
+                                        <span className="text-foreground font-medium">
+                                            {pos.currentPrice && pos.currentPrice > 0 ? formatCurrency(pos.currentPrice) : '—'}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <span className="text-foreground font-semibold">{formatCurrency(pos.currentValue)}</span>

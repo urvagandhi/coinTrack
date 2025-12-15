@@ -299,9 +299,10 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
 
         // Update or Insert
         for (CachedHolding fetched : fetchedList) {
-            // Re-calculate checksum
-            String checksum = HashUtil
-                    .sha256(fetched.getSymbol() + fetched.getQuantity() + fetched.getAverageBuyPrice());
+            // Re-calculate checksum including P&L and Price fields to ensure updates
+            // persist
+            String checksum = HashUtil.sha256(fetched.getSymbol() + fetched.getQuantity() + fetched.getAverageBuyPrice()
+                    + fetched.getLastPrice() + fetched.getPnl() + fetched.getDayChange());
             fetched.setChecksumHash(checksum);
             fetched.setUserId(userId); // Ensure userId is set
             fetched.setBroker(broker);
@@ -338,8 +339,9 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
                 .collect(Collectors.toSet());
 
         for (CachedPosition fetched : fetchedList) {
-            String checksum = HashUtil.sha256(
-                    fetched.getSymbol() + fetched.getQuantity() + fetched.getBuyPrice() + fetched.getPositionType());
+            // Re-calculate checksum including MTM/PnL to ensure updates persist
+            String checksum = HashUtil.sha256(fetched.getSymbol() + fetched.getQuantity() + fetched.getBuyPrice()
+                    + fetched.getPositionType() + fetched.getMtm() + fetched.getPnl());
             fetched.setChecksumHash(checksum);
             fetched.setUserId(userId);
             fetched.setBroker(broker);

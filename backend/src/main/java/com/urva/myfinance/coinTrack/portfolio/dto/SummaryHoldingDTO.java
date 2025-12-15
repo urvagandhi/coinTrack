@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.portfolio.dto;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +18,7 @@ public class SummaryHoldingDTO {
     private String broker; // Zerodha, Upstox, etc.
     private String type; // HOLDING or POSITION
 
-    private int quantity;
+    private BigDecimal quantity;
 
     // Average Buy Price (Cached)
     private BigDecimal averageBuyPrice;
@@ -33,4 +34,7 @@ public class SummaryHoldingDTO {
 
     private BigDecimal dayGain;
     private BigDecimal dayGainPercent;
+
+    // Raw/Broker specific metadata
+    private Map<String, Object> raw;
 }
