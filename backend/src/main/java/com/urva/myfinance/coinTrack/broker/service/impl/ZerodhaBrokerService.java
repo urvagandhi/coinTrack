@@ -550,9 +550,21 @@ public class ZerodhaBrokerService implements BrokerService {
         return results;
     }
 
-    @Override
     public UserProfileDTO fetchProfile(BrokerAccount account) {
-        return fetchObjectFromKite(account, "https://api.kite.trade/user/profile", "profile", UserProfileDTO.class);
+        // Fetch as Map to get raw data
+        @SuppressWarnings("unchecked")
+        Map<String, Object> rawMap = fetchObjectFromKite(account, "https://api.kite.trade/user/profile", "profile",
+                Map.class);
+
+        // Convert to DTO
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        UserProfileDTO dto = mapper.convertValue(rawMap, UserProfileDTO.class);
+        if (dto != null) {
+            dto.setRaw(rawMap);
+        }
+        return dto;
     }
 
     @Override

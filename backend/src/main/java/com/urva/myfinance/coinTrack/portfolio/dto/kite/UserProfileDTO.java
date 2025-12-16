@@ -31,4 +31,10 @@ public class UserProfileDTO {
 
     @com.fasterxml.jackson.annotation.JsonProperty("avatar_url")
     private String avatarUrl;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("last_synced")
+    private java.time.LocalDateTime lastSynced;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("raw")
+    private java.util.Map<String, Object> raw;
 }

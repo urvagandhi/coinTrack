@@ -16,6 +16,27 @@ import MfTimeline from '@/components/portfolio/MfTimeline';
 
 
 
+
+// Helper for Relative Time
+const formatRelativeTime = (dateString) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) {
+        return 'Just now';
+    } else if (diffInSeconds < 3600) {
+        const mins = Math.floor(diffInSeconds / 60);
+        return `${mins} min${mins > 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 86400) {
+        const hours = Math.floor(diffInSeconds / 3600);
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else {
+        return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+};
+
 function StatCard({ title, value, subValue, isPositive, icon: Icon }) {
     return (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -809,7 +830,7 @@ export default function PortfolioPage() {
                                                 </div>
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-sm text-gray-500 dark:text-gray-400">Last Synced</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Just now</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{formatRelativeTime(profile.last_synced)}</span>
                                                 </div>
                                             </div>
                                         </div>

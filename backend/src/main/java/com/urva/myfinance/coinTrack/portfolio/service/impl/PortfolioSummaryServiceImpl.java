@@ -576,7 +576,12 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    return zerodhaBrokerService.fetchProfile(account);
+                    com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO profile = zerodhaBrokerService
+                            .fetchProfile(account);
+                    if (profile != null) {
+                        profile.setLastSynced(java.time.LocalDateTime.now());
+                    }
+                    return profile;
                 } catch (Exception e) {
                     // Log
                 }
