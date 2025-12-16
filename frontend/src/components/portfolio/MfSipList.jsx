@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, ChevronRight, History } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // Helper to format currency consistently
 const formatCurrency = (val) => {
@@ -14,8 +14,19 @@ const formatCurrency = (val) => {
     }).format(num);
 };
 
-export default function MfSipList({ sips, unlinkedOrders, isLoading }) {
+export default function MfSipList({ sips, unlinkedOrders, isLoading, onNavigate, initialContext }) {
     const [expandedSipId, setExpandedSipId] = useState(null);
+
+    // Auto-expand SIP if specified in initialContext
+    useEffect(() => {
+        if (initialContext?.expandSipId && sips) {
+            const sipExists = sips.find(s => s.sipId === initialContext.expandSipId);
+            if (sipExists) {
+                setExpandedSipId(initialContext.expandSipId);
+            }
+        }
+    }, [initialContext, sips]);
+
 
     const toggleExpand = (sipId) => {
         setExpandedSipId(expandedSipId === sipId ? null : sipId);
@@ -151,7 +162,7 @@ export default function MfSipList({ sips, unlinkedOrders, isLoading }) {
                                                                         <th className="px-4 py-2 text-right">Order Ref</th>
                                                                     </tr>
                                                                 </thead>
-                                                                <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50 text-xs">
+                                                                <tbody className="divide-y divide-gray-5 dark:divide-gray-800/50 text-xs">
                                                                     {sip.executions.map((exec, eIdx) => (
                                                                         <tr key={exec.orderId || eIdx} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                                                             <td className="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium">
@@ -176,6 +187,20 @@ export default function MfSipList({ sips, unlinkedOrders, isLoading }) {
                                                                     ))}
                                                                 </tbody>
                                                             </table>
+                                                        </div>
+                                                    )}
+
+                                                    {onNavigate && (
+                                                        <div className="mt-3 flex justify-end">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    onNavigate('timeline', { sipId: sip.sipId, highlightSipId: sip.sipId });
+                                                                }}
+                                                                className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium flex items-center transition-colors"
+                                                            >
+                                                                View SIP history in Timeline <ChevronRight size={12} className="ml-1" />
+                                                            </button>
                                                         </div>
                                                     )}
                                                 </div>

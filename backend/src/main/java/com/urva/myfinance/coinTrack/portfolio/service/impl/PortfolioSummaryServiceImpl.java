@@ -703,226 +703,259 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
     @Override
     public com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent> getMfTimeline(
             String userId) {
+        // 1. Fetch RAW Data (Single Source of Truth)
         List<com.urva.myfinance.coinTrack.broker.model.BrokerAccount> accounts = brokerAccountRepository
                 .findByUserId(userId);
-        List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent> events = new ArrayList<>();
-        LocalDateTime syncTime = LocalDateTime.now();
-
-        // 1. Fetch ALL Data
-        List<MfSipDTO> allSips = new ArrayList<>();
         List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO> allOrders = new ArrayList<>();
+        List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfSipDTO> allSips = new ArrayList<>();
         List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO> allHoldings = new ArrayList<>();
+        LocalDateTime syncTime = LocalDateTime.now();
 
         for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    allSips.addAll(zerodhaBrokerService.fetchMfSips(account));
                     allOrders.addAll(zerodhaBrokerService.fetchMfOrders(account));
+                    allSips.addAll(zerodhaBrokerService.fetchMfSips(account));
                     allHoldings.addAll(zerodhaBrokerService.fetchMfHoldings(account));
                 } catch (Exception e) {
-                    // Log
+                    // Log error but continue
+                    System.err.println("Error fetching timeline data: " + e.getMessage());
                 }
             }
         }
 
-        // 2. Process ORDERS -> Events
+        List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent> events = new ArrayList<>();
+
+        // Prep: Map SIPs for Linking
+        Map<String, com.urva.myfinance.coinTrack.portfolio.dto.kite.MfSipDTO> sipMap = allSips.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        com.urva.myfinance.coinTrack.portfolio.dto.kite.MfSipDTO::getSipId, s -> s, (s1, s2) -> s1));
+
+        // 2. PROCESS ORDERS (Confirmed Events)
+        // Group orders by tradingSymbol for Inference Step later
+        Map<String, java.math.BigDecimal> netOrderQtyMap = new java.util.HashMap<>(); // Net Qty per fund
+        Map<String, java.math.BigDecimal> totalBuyQtyMap = new java.util.HashMap<>(); // Total Buy Qty per fund
+
         for (com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO order : allOrders) {
-            com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType type;
-            if ("BUY".equalsIgnoreCase(order.getTransactionType())) {
-                type = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.BUY_EXECUTED;
-            } else if ("SELL".equalsIgnoreCase(order.getTransactionType())
-                    || "REDEEM".equalsIgnoreCase(order.getTransactionType())) {
-                type = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.SELL_EXECUTED;
-            } else {
-                continue; // Skip unknown
-            }
+            String ts = order.getTradingSymbol(); // Canonical Identity
+            java.math.BigDecimal qty = order.getExecutedQuantity() != null ? order.getExecutedQuantity()
+                    : java.math.BigDecimal.ZERO;
 
-            // Determine strict linking
-            String sipId = null;
-            if (order.getIsSip() && order.getRaw() != null && order.getRaw().get("instruction_id") != null) {
-                sipId = order.getRaw().get("instruction_id").toString();
-            }
+            if (qty.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                // Determine Transaction Type
+                boolean isBuy = "BUY".equalsIgnoreCase(order.getTransactionType())
+                        || "PURCHASE".equalsIgnoreCase(order.getTransactionType());
+                boolean isSell = "SELL".equalsIgnoreCase(order.getTransactionType())
+                        || "REDEEM".equalsIgnoreCase(order.getTransactionType());
 
-            // Date priority: exchange_timestamp (executionDate) > order_timestamp
-            String date = order.getExecutionDate();
-            String timestamp = order.getExecutionDate(); // Start with execution date
-            if (date == null) {
-                date = order.getOrderTimestamp();
-                timestamp = order.getOrderTimestamp();
-            }
-            if (date != null && date.contains(" ")) {
-                date = date.split(" ")[0]; // Extract YYYY-MM-DD
-            }
+                // Update Aggregates for Inference
+                if (isBuy) {
+                    netOrderQtyMap.merge(ts, qty, java.math.BigDecimal::add);
+                    totalBuyQtyMap.merge(ts, qty, java.math.BigDecimal::add);
+                } else if (isSell) {
+                    netOrderQtyMap.merge(ts, qty.negate(), java.math.BigDecimal::add);
+                }
 
-            events.add(com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent.builder()
-                    .eventId(order.getOrderId() != null ? order.getOrderId() : java.util.UUID.randomUUID().toString())
-                    .eventType(type)
-                    .eventDate(date)
-                    .eventTimestamp(timestamp)
-                    .fund(order.getFund())
-                    .tradingSymbol(order.getTradingSymbol())
-                    .quantity(order.getExecutedQuantity())
-                    .amount(order.getAmount())
-                    .nav(order.getExecutedNav())
-                    .orderId(order.getOrderId())
-                    .sipId(sipId)
-                    .settlementId(order.getSettlementId())
-                    .source("ORDER")
-                    .confidence("CONFIRMED")
-                    .raw(order.getRaw())
-                    .build());
+                // Determine Event Type
+                com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType eventType = null;
+                if (isBuy && "COMPLETE".equalsIgnoreCase(order.getStatus())) {
+                    eventType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.BUY_EXECUTED;
+                } else if (isSell && "COMPLETE".equalsIgnoreCase(order.getStatus())) {
+                    eventType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.SELL_EXECUTED;
+                }
+
+                if (eventType != null) {
+                    // Determine Date Priority: exchange_timestamp (execution) > order_timestamp
+                    // (placement)
+                    String eventDate = null;
+                    if (order.getRaw() != null && order.getRaw().get("exchange_timestamp") != null) {
+                        eventDate = order.getRaw().get("exchange_timestamp").toString();
+                    } else if (order.getOrderTimestamp() != null) {
+                        eventDate = order.getOrderTimestamp();
+                    }
+
+                    // Normalize to YYYY-MM-DD for sorting/display grouping
+                    String sortDate = eventDate;
+                    if (sortDate != null && sortDate.contains("T"))
+                        sortDate = sortDate.split("T")[0];
+                    if (sortDate != null && sortDate.contains(" "))
+                        sortDate = sortDate.split(" ")[0];
+
+                    // Determine SIP Linkage
+                    String linkedSipId = null;
+                    if (order.getRaw() != null) {
+                        // Priority 1: instruction_id (Canonical SIP ID)
+                        if (order.getRaw().get("instruction_id") != null) {
+                            linkedSipId = order.getRaw().get("instruction_id").toString();
+                        }
+                        // Priority 2: tag (Legacy/User-defined) - Only if it matches a known SIP
+                        else if (order.getRaw().get("tag") != null) {
+                            String tag = order.getRaw().get("tag").toString();
+                            if (sipMap.containsKey(tag)) {
+                                linkedSipId = tag;
+                            }
+                        }
+                    }
+
+                    events.add(com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent.builder()
+                            .eventId("ord-" + order.getOrderId())
+                            .eventType(eventType)
+                            .eventDate(sortDate)
+                            .eventTimestamp(eventDate)
+                            .fund(order.getFund()) // Display Name
+                            .tradingSymbol(ts) // Canonical Identity
+                            .quantity(qty)
+                            .amount(order.getAmount())
+                            .nav(order.getExecutedNav())
+                            .orderId(order.getOrderId())
+                            .sipId(linkedSipId)
+                            .source("ORDER")
+                            .confidence("CONFIRMED")
+                            .raw(order.getRaw())
+                            .build());
+                }
+            }
         }
 
-        // 3. Process SIPS -> Events
-        for (MfSipDTO sip : allSips) {
-            // SIP_CREATED (from startDate)
-            if (sip.getStartDate() != null) {
-                String createdDate = sip.getStartDate();
-                if (createdDate.contains(" "))
-                    createdDate = createdDate.split(" ")[0];
+        // 3. PROCESS SIPs (Snapshots)
+        for (com.urva.myfinance.coinTrack.portfolio.dto.kite.MfSipDTO sip : allSips) {
+            String ts = sip.getTradingSymbol();
+
+            // Event 1: SIP_CREATED (Merged with Status)
+            if (sip.getCreated() != null) {
+                String date = sip.getCreated();
+                String dateIso = (date != null && date.contains(" ")) ? date.split(" ")[0] : date;
+
+                String status = sip.getStatus() != null ? sip.getStatus().toUpperCase() : "ACTIVE";
+                String context = "Frequency: " + sip.getFrequency();
+                if ("ACTIVE".equals(status)) {
+                    context += " • Status: ACTIVE";
+                }
 
                 events.add(com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent.builder()
-                        .eventId("sip-created-" + sip.getSipId())
+                        .eventId("sip-create-" + sip.getSipId())
                         .eventType(com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.SIP_CREATED)
-                        .eventDate(createdDate)
-                        .eventTimestamp(sip.getStartDate())
+                        .eventDate(dateIso)
+                        .eventTimestamp(sip.getCreated())
                         .fund(sip.getFund())
-                        .tradingSymbol(sip.getTradingSymbol())
+                        .tradingSymbol(ts)
                         .amount(sip.getInstalmentAmount() != null
                                 ? java.math.BigDecimal.valueOf(sip.getInstalmentAmount())
                                 : null)
                         .sipId(sip.getSipId())
-                        .source("SIP")
+                        .source("SIP_SETUP")
                         .confidence("CONFIRMED")
+                        .context(context)
                         .raw(sip.getRaw())
                         .build());
+
+                // Event 2: State Deviation (PAUSED / CANCELLED)
+                // Only emit if status is NOT active.
+                if (!"ACTIVE".equals(status)) {
+                    com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType stateType = null;
+                    if ("PAUSED".equals(status)) {
+                        stateType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.SIP_STATUS_PAUSED;
+                    } else if ("CANCELLED".equals(status)) {
+                        stateType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.SIP_STATUS_CANCELLED;
+                    }
+
+                    if (stateType != null) {
+                        events.add(com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent.builder()
+                                .eventId("sip-state-" + sip.getSipId())
+                                .eventType(stateType)
+                                .eventDate(dateIso)
+                                .fund(sip.getFund())
+                                .tradingSymbol(ts)
+                                .sipId(sip.getSipId())
+                                .source("SIP_STATE")
+                                .confidence("CONFIRMED")
+                                .context("Current Status: " + status)
+                                .raw(sip.getRaw())
+                                .build());
+                    }
+                }
             }
 
-            // SIP_STATUS_* Events (Snapshot using Created Date)
-            // Rule: Emit specific status event based on current status
-            String status = sip.getStatus() != null ? sip.getStatus().toUpperCase() : "ACTIVE";
-            com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType stateType;
-            if ("PAUSED".equals(status)) {
-                stateType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.SIP_STATUS_PAUSED;
-            } else if ("CANCELLED".equals(status)) {
-                stateType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.SIP_STATUS_CANCELLED;
-            } else {
-                stateType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.SIP_STATUS_ACTIVE;
-            }
-
-            // Anchor to created date if available, else now (should have started date)
-            String stateDate = sip.getCreated() != null ? sip.getCreated() : java.time.LocalDate.now().toString();
-            if (stateDate.contains(" "))
-                stateDate = stateDate.split(" ")[0];
-
-            events.add(com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent.builder()
-                    .eventId("sip-state-" + sip.getSipId())
-                    .eventType(stateType)
-                    .eventDate(stateDate) // Using Created Date as snapshot anchor
-                    .eventTimestamp(sip.getCreated())
-                    .fund(sip.getFund())
-                    .tradingSymbol(sip.getTradingSymbol())
-                    .sipId(sip.getSipId())
-                    .source("SIP_STATE")
-                    .confidence("CONFIRMED")
-                    .context("Current State: " + status)
-                    .raw(sip.getRaw())
-                    .build());
-
-            // SIP_EXECUTION_SCHEDULED (Only if future)
-            if (sip.getNextInstalmentDate() != null) {
+            // Event 2: SIP_EXECUTION_SCHEDULED (Future Only)
+            String nextDateRaw = sip.getNextInstalmentDate();
+            if (nextDateRaw != null) {
                 try {
-                    java.time.LocalDate next = java.time.LocalDate.parse(sip.getNextInstalmentDate().split(" ")[0]);
+                    String nextIso = nextDateRaw.contains(" ") ? nextDateRaw.split(" ")[0] : nextDateRaw;
+                    java.time.LocalDate next = java.time.LocalDate.parse(nextIso);
                     if (next.isAfter(java.time.LocalDate.now())) {
                         events.add(com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent.builder()
-                                .eventId("sip-next-" + sip.getSipId())
+                                .eventId("sip-sched-" + sip.getSipId())
                                 .eventType(
                                         com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.SIP_EXECUTION_SCHEDULED)
-                                .eventDate(sip.getNextInstalmentDate().split(" ")[0])
-                                .eventTimestamp(sip.getNextInstalmentDate())
+                                .eventDate(nextIso)
                                 .fund(sip.getFund())
-                                .tradingSymbol(sip.getTradingSymbol())
+                                .tradingSymbol(ts)
+                                .sipId(sip.getSipId())
                                 .amount(sip.getInstalmentAmount() != null
                                         ? java.math.BigDecimal.valueOf(sip.getInstalmentAmount())
                                         : null)
-                                .sipId(sip.getSipId())
-                                .source("SIP_SCHEDULE")
-                                .confidence("CONFIRMED")
-                                .context("Next Instalment")
+                                .source("SIP")
+                                .confidence("CONFIRMED") // It is confirmed schedule
+                                .context("Upcoming Instalment")
                                 .raw(sip.getRaw())
                                 .build());
                     }
                 } catch (Exception e) {
-                    // Ignore parse error
                 }
             }
         }
 
-        // 4. Process HOLDINGS -> Events (Inference Logic)
-        // Group orders by tradingsymbol to calculate net quantity
-        Map<String, java.math.BigDecimal> netOrderQtyMap = new java.util.HashMap<>();
-
-        for (com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO order : allOrders) {
-            String ts = order.getTradingSymbol();
-            java.math.BigDecimal qty = order.getExecutedQuantity();
-            if (qty == null)
-                continue;
-
-            if ("BUY".equalsIgnoreCase(order.getTransactionType())
-                    || "PURCHASE".equalsIgnoreCase(order.getTransactionType())) {
-                netOrderQtyMap.merge(ts, qty, java.math.BigDecimal::add);
-            } else if ("SELL".equalsIgnoreCase(order.getTransactionType())
-                    || "REDEEM".equalsIgnoreCase(order.getTransactionType())) {
-                netOrderQtyMap.merge(ts, qty.negate(), java.math.BigDecimal::add);
-            }
-        }
-
+        // 4. PROCESS HOLDINGS (Inference Rules)
         for (com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO holding : allHoldings) {
-            java.math.BigDecimal holdingQty = holding.getQuantity();
             String ts = holding.getTradingSymbol();
+            java.math.BigDecimal holdingQty = holding.getQuantity();
             java.math.BigDecimal netOrderQty = netOrderQtyMap.getOrDefault(ts, java.math.BigDecimal.ZERO);
+            java.math.BigDecimal totalBuyQty = totalBuyQtyMap.getOrDefault(ts, java.math.BigDecimal.ZERO);
 
-            // Compare Holding Qty vs Net Order Qty using strict logic
-            // Threshold for float comparison safety
             java.math.BigDecimal diff = holdingQty.subtract(netOrderQty);
-            java.math.BigDecimal threshold = new java.math.BigDecimal("0.001");
+            java.math.BigDecimal threshold = new java.math.BigDecimal("0.001"); // Floating point tolerance
 
-            com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType type = null;
+            com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType infType = null;
             String context = null;
 
             if (diff.abs().compareTo(threshold) > 0) {
+                // Difference detected
                 if (diff.compareTo(java.math.BigDecimal.ZERO) > 0) {
                     // Holding > Net Orders
-                    if (netOrderQty.compareTo(java.math.BigDecimal.ZERO) == 0) {
-                        type = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.HOLDING_APPEARED;
-                        context = "Holding present without orders";
+                    if (totalBuyQty.compareTo(java.math.BigDecimal.ZERO) == 0) {
+                        // Case: No BUY orders at all, but holding exists
+                        infType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.HOLDING_APPEARED;
+                        context = "Holding imported or pre-existing";
                     } else {
-                        type = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.HOLDING_INCREASED;
-                        context = "Quantity increased (Bonus/Transfer/Import)";
+                        // Case: BUY orders exist, but holding is even larger
+                        infType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.HOLDING_INCREASED;
+                        context = "Unexplained quantity increase (Bonus/Divider/Reinvestment)";
                     }
                 } else {
-                    // Holding < Net Orders (e.g. external redemption or error)
-                    type = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.HOLDING_REDUCED;
-                    context = "Quantity reduced (External Redemption)";
+                    // Holding < Net Orders
+                    infType = com.urva.myfinance.coinTrack.portfolio.dto.kite.MfEventType.HOLDING_REDUCED;
+                    context = "Unexplained quantity reduction (External Sell)";
                 }
 
-                // Emit Inference Event
-                // Date: Use last_price_date or today as this is state knowledge
-                String date = holding.getLastPriceDate();
-                if (date == null)
-                    date = java.time.LocalDate.now().toString();
-                if (date.contains(" "))
-                    date = date.split(" ")[0];
+                // Date Logic: "Use authorised_date if present Else NULL"
+                String authDate = null;
+                if (holding.getRaw() != null && holding.getRaw().get("authorised_date") != null) {
+                    String d = holding.getRaw().get("authorised_date").toString();
+                    if (!d.isEmpty())
+                        authDate = d;
+                }
+                // If authDate is "null" string or empty, keep it null.
+                if (authDate != null && authDate.contains(" "))
+                    authDate = authDate.split(" ")[0];
 
                 events.add(com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent.builder()
-                        .eventId("holding-inf-" + holding.getFolio() + "-" + ts) // Unique-ish
-                        .eventType(type)
-                        .eventDate(date)
-                        .eventTimestamp(date)
+                        .eventId("inf-" + holding.getFolio() + "-" + ts)
+                        .eventType(infType)
+                        .eventDate(authDate) // Can be null
                         .fund(holding.getFund())
                         .tradingSymbol(ts)
-                        .quantity(diff.abs()) // The unexplained difference
+                        .quantity(diff.abs())
                         .source("HOLDING")
                         .confidence("INFERRED")
                         .context(context)
@@ -931,12 +964,14 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             }
         }
 
-        // 5. Sort Events (Date DESC)
+        // 5. Sort Events (Date DESC, Nulls Last)
         events.sort((e1, e2) -> {
             String d1 = e1.getEventDate();
             String d2 = e2.getEventDate();
+            if (d1 == null && d2 == null)
+                return 0;
             if (d1 == null)
-                return 1;
+                return 1; // Null last
             if (d2 == null)
                 return -1;
             return d2.compareTo(d1); // DESC
@@ -945,7 +980,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent> response = new com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<>();
         response.setData(events);
         response.setLastSyncedAt(syncTime);
-        response.setSource("LIVE");
+        response.setSource("ZERODHA");
         return response;
     }
 }

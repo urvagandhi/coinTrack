@@ -43,6 +43,14 @@ export default function PortfolioPage() {
     const [activeTab, setActiveTab] = useState('holdings');
     const [positionView, setPositionView] = useState('EQUITY');
 
+    // Navigation / Filter Context for Tabs (Cross-linking)
+    const [navigationContext, setNavigationContext] = useState(null);
+
+    const handleNavigation = (targetTab, context = null) => {
+        setNavigationContext(context);
+        setActiveTab(targetTab);
+    };
+
     // Holdings State
     const [holdingsSort, setHoldingsSort] = useState({ key: 'unrealizedPL', direction: 'desc' });
     const [holdingsPage, setHoldingsPage] = useState(1);
@@ -237,16 +245,27 @@ export default function PortfolioPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                         {/* Tabs */}
                         <div className="flex border-b border-gray-100 dark:border-gray-700 overflow-x-auto scrollbar-hide">
-                            {['holdings', 'positions', 'orders', 'trades', 'mutual_funds', 'mf_orders', 'mf_sips', 'timeline', 'mf_instruments', 'profile'].map((tab) => (
+                            {[
+                                { id: 'holdings', label: 'Holdings' },
+                                { id: 'positions', label: 'Positions' },
+                                { id: 'orders', label: 'Orders' },
+                                { id: 'trades', label: 'Trades' },
+                                { id: 'mutual_funds', label: 'Mutual Funds' },
+                                { id: 'mf_orders', label: 'MF Orders' },
+                                { id: 'mf_sips', label: 'MF SIPs' },
+                                { id: 'timeline', label: 'Fund History' },
+                                { id: 'mf_instruments', label: 'MF Instruments' },
+                                { id: 'profile', label: 'Profile' }
+                            ].map((tab) => (
                                 <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab
+                                    key={tab.id}
+                                    onClick={() => handleNavigation(tab.id)}
+                                    className={`px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
                                         ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
                                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                         }`}
                                 >
-                                    {tab.replace('_', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                    {tab.label}
                                 </button>
                             ))}
                         </div>
@@ -641,14 +660,15 @@ export default function PortfolioPage() {
                                                 <th className="pb-4 text-center">Type</th>
                                                 <th className="pb-4 text-right">Units @ NAV</th>
                                                 <th className="pb-4 text-right">Amount</th>
-                                                <th className="pb-4 text-right pr-2">Status</th>
+                                                <th className="pb-4 text-right">Status</th>
+                                                <th className="pb-4 text-right pr-2">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="space-y-4">
                                             {isLoadingMfOrders ? (
-                                                <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                <tr><td colSpan="7" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
                                             ) : mfOrders.length === 0 ? (
-                                                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No MF orders found.</td></tr>
+                                                <tr><td colSpan="7" className="text-center py-8 text-gray-500">No MF orders found.</td></tr>
                                             ) : (
                                                 mfOrders.map((order, idx) => (
                                                     <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -699,13 +719,21 @@ export default function PortfolioPage() {
                                                             </div>
                                                         </td>
                                                         <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(order.amount)}</td>
-                                                        <td className="py-4 text-right pr-2">
+                                                        <td className="py-4 text-right">
                                                             <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
                                                                 order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
                                                                     'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
                                                                 }`}>
                                                                 {order.status}
                                                             </span>
+                                                        </td>
+                                                        <td className="py-4 text-right pr-2">
+                                                            <button
+                                                                onClick={() => handleNavigation('timeline', { tradingSymbol: order.tradingSymbol, highlightOrderId: order.orderId })}
+                                                                className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium whitespace-nowrap"
+                                                            >
+                                                                View in Timeline →
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -717,12 +745,23 @@ export default function PortfolioPage() {
 
                             {/* MF SIPs TAB */}
                             {activeTab === 'mf_sips' && (
-                                <MfSipList sips={mfSips} unlinkedOrders={unlinkedSipOrders} isLoading={isLoadingMfSips} />
+                                <MfSipList
+                                    sips={mfSips}
+                                    unlinkedOrders={unlinkedSipOrders}
+                                    isLoading={isLoadingMfSips}
+                                    onNavigate={handleNavigation}
+                                    initialContext={navigationContext}
+                                />
                             )}
 
                             {/* TIMELINE TAB */}
                             {activeTab === 'timeline' && (
-                                <MfTimeline events={mfTimeline} isLoading={isLoadingMfTimeline} />
+                                <MfTimeline
+                                    events={mfTimeline}
+                                    isLoading={isLoadingMfTimeline}
+                                    onNavigate={handleNavigation}
+                                    initialContext={navigationContext}
+                                />
                             )}
 
                             {/* MF INSTRUMENTS TAB */}
