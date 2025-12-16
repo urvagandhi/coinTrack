@@ -5,7 +5,7 @@ This document details the implementation of the Zerodha Funds and Margins integr
 
 **Core Philosophies:**
 1.  **"Trust the Broker"**: We display exactly what Zerodha reports for Net, Available, and Utilised margins.
-2.  **"Raw Pass-Through"**: We rigorously preserve **ALL** fields returned by Zerodha (including optional ones like `adhoc_margin`) in a dedicated `raw` object, ensuring complete fidelity to the source of truth and enabling future-proof auditing.
+2.  **"Raw Pass-Through"**: We rigorously preserve **ALL** fields returned by Zerodha (including optional ones like `adhoc_margin`) in a dedicated `raw` object.
 
 ---
 
@@ -15,11 +15,10 @@ This document details the implementation of the Zerodha Funds and Margins integr
 **Source Endpoint**: `GET https://api.kite.trade/user/margins`
 
 We do **not** simply deserialize into a fixed schema. Instead, we:
-1.  Fetch the response as a generic `Map<String, Object>`.
-2.  Desrialize the standard fields into our typed `FundsDTO` for business logic.
-3.  **Crucially**, we extract the **entire** `equity` and `commodity` JSON nodes and inject them into `FundsDTO.equity.raw` and `FundsDTO.commodity.raw`.
+1.  Fetch the response as a strongly typed `FundsDTO`.
+2.  **Crucially**, the service layer manually extracts the **entire** `equity` and `commodity` JSON nodes and injects them explicitly into `FundsDTO.equity.raw` and `FundsDTO.commodity.raw`.
 
-This guarantees that if Zerodha adds a new field (e.g., `special_margin_benefit`) tomorrow, it is automatically captured and passed through without code changes.
+This guarantees that if Zerodha adds a new field (e.g., `special_margin_benefit`), it is automatically captured in the `raw` map and passed through.
 
 ### 2.2 Persistence (`CachedFunds`)
 To allow for auditing and historical analysis, we persist the latest fetched margin state.
@@ -41,8 +40,15 @@ When `getFunds()` is called:
 
 ## 3. Data Structure & Schema
 
-### 3.1 Normalized Fields (For UI)
-These are strongly typed fields used for standard UI display (e.g., "Available Cash").
+### 3.1 Nested Structure (`FundsDTO`)
+The DTO mirrors the Zerodha/Kite structure, partitioned by segment.
+
+`FundsDTO`
+  ├── `equity` (`SegmentFundsDTO`)
+  └── `commodity` (`SegmentFundsDTO`)
+
+### 3.2 Normalized Fields (For UI)
+These are strongly typed fields in `SegmentFundsDTO` used for standard UI display:
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -50,46 +56,15 @@ These are strongly typed fields used for standard UI display (e.g., "Available C
 | `net` | BigDecimal | Net Cash Balance |
 | `available.cash` | BigDecimal | Free cash balance |
 | `available.collateral` | BigDecimal | Margin from pledged holdings |
+| `available.live_balance`| BigDecimal | Effective available balance |
 | `utilised.debits` | BigDecimal | Total amount used/blocked |
 | `utilised.exposure` | BigDecimal | Margin blocked for exposure |
-| `utilised.m2m_realised` | BigDecimal | Realized MTM for the day |
+| `utilised.span` | BigDecimal | SPAN margin blocked |
 
-### 3.2 Raw Pass-Through (For Audit/Debug)
-The `raw` object contains the **superset** of all fields.
+### 3.3 Raw Pass-Through (For Audit/Debug)
+The `raw` object contains the **superset** of all fields for that segment.
 
-> **Policy**: The backend must forward **all fields** returned by the API. Do not drop `adhoc_margin`, `payout`, etc.
-
-**Example Raw JSON Content (stored in `raw`):**
-```json
-{
-  "enabled": true,
-  "net": 12345.65,
-  "available": {
-    "adhoc_margin": 0,
-    "cash": 12345.65,
-    "opening_balance": 12345.65,
-    "live_balance": 12345.65,
-    "collateral": 0,
-    "intraday_payin": 0
-  },
-  "utilised": {
-    "debits": 0,
-    "exposure": 0,
-    "m2m_realised": 0,
-    "m2m_unrealised": 0,
-    "option_premium": 0,
-    "payout": 0,
-    "span": 0,
-    "holding_sales": 0,
-    "turnover": 0,
-    "liquid_collateral": 0,
-    "stock_collateral": 0,
-    "delivery": 0
-  }
-}
-```
-
-> **Note on Nesting**: The backend explicitly preserves the hierarchical structure (e.g., `available.intraday_payin`) within the `raw` map. No flattening occurs.
+> **Policy**: The backend must forward **all fields** returned by the API.
 
 ---
 
@@ -107,17 +82,20 @@ The frontend receives a structure strictly partitioned by segment (`equity`, `co
       "available": {
         "cash": 245431.60,
         "collateral": 0.00,
-        "live_balance": 99725.05
+        "live_balance": 99725.05,
+        "opening_balance": 245431.60
       },
       "utilised": {
         "debits": 145706.55,
         "span": 101989.00,
-        "exposure": 38981.25
+        "exposure": 38981.25,
+        "option_premium": 0.00
       },
       "raw": {
         // ... ENTIRE Zerodha "equity" object ...
+        "net": 245431.60,
         "available": {
-             "adhoc_margin": 0,  // <--- Preserved!
+             "adhoc_margin": 0,
              "cash": 245431.60
         }
       }
@@ -140,13 +118,12 @@ The frontend receives a structure strictly partitioned by segment (`equity`, `co
 | Component | Responsibility |
 | :--- | :--- |
 | **Zerodha API** | **Source of Truth**. Provides margins, calc, and balances. |
-| **Backend** | **Transport & Audit**. Fetches verbatim, extracts normalized fields for convenience, but persists and forwards everything in `raw`. |
-| **Frontend** | **Display**. Uses normalized fields for the main card, but can use `raw` for detailed "Balance Sheet" views or debugging. |
+| **Backend** | **Transport & Audit**. Fetches typed objects, but injects original JSON into `raw`. |
+| **Frontend** | **Display**. Uses normalized fields for the main card, `raw` for detailed views. |
 
 ## 6. Verification Steps
 
 To verify the integration is working as designed:
 1.  **Call API**: Hit `/api/portfolio/funds`.
 2.  **Inspect Response**: Check for the presence of the `raw` object inside `equity`.
-3.  **Verify Content**: Ensure `raw` contains fields like `adhoc_margin` or `opening_balance` even if they aren't in the main `available` block.
-4.  **Check Database**: Query `db.cached_funds.find()` and verify the `equityRaw` map is populated with the full JSON.
+3.  **Verify Content**: Ensure `raw` contains fields like `adhoc_margin` (if present in broker response) or duplicate values of `net`, confirming full capture.

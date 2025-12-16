@@ -668,27 +668,50 @@ public class ZerodhaBrokerService implements BrokerService {
                 MfInstrumentDTO dto = new MfInstrumentDTO();
                 Map<String, Object> raw = new HashMap<>();
 
-                // Helper to safely get value
-                java.util.function.Function<String, String> getVal = (key) -> {
-                    Integer idx = headerMap.get(key);
+                // 1. Populate full raw map
+                for (Map.Entry<String, Integer> entry : headerMap.entrySet()) {
+                    Integer idx = entry.getValue();
                     if (idx != null && idx < cols.length) {
                         String val = cols[idx].trim().replaceAll("^\"|\"$", "");
-                        raw.put(key, val);
-                        return val;
+                        raw.put(entry.getKey(), val);
                     }
-                    return null;
+                }
+
+                // 2. Map to DTO properties from raw map
+                dto.setTradingSymbol((String) raw.get("tradingsymbol"));
+                dto.setName((String) raw.get("name")); // Mapped to name/fund
+                dto.setAmc((String) raw.get("amc"));
+                dto.setIsin((String) raw.get("isin"));
+                dto.setSchemeType((String) raw.get("scheme_type"));
+                dto.setPlan((String) raw.get("plan"));
+
+                // Helper to get string from raw map safely
+                java.util.function.Function<String, String> str = (key) -> {
+                    Object val = raw.get(key);
+                    return val != null ? val.toString() : null;
                 };
 
-                dto.setTradingSymbol(getVal.apply("tradingsymbol"));
-                dto.setName(getVal.apply("name")); // Mapped to name/fund
-                dto.setAmc(getVal.apply("amc"));
-                dto.setIsin(getVal.apply("isin"));
-                dto.setSchemeType(getVal.apply("scheme_type"));
-                dto.setPlan(getVal.apply("plan"));
-                dto.setSchemeCode(getVal.apply("scheme_code"));
-
                 // Extra fields
-                dto.setFundHouse(getVal.apply("amc")); // Map AMC to fundHouse too
+                dto.setFundHouse(str.apply("amc")); // Map AMC to fundHouse too
+
+                dto.setDividendType(str.apply("dividend_type"));
+                dto.setPurchaseAmountMultiplier(safeBigDecimal(str.apply("purchase_amount_multiplier")));
+                dto.setMinimumAdditionalPurchaseAmount(
+                        safeBigDecimal(str.apply("minimum_additional_purchase_amount")));
+                dto.setMinimumPurchaseAmount(safeBigDecimal(str.apply("minimum_purchase_amount")));
+
+                String redAllowed = str.apply("redemption_allowed");
+                dto.setRedemptionAllowed("1".equals(redAllowed));
+
+                dto.setMinimumRedemptionQuantity(safeBigDecimal(str.apply("minimum_redemption_quantity")));
+                dto.setRedemptionQuantityMultiplier(safeBigDecimal(str.apply("redemption_quantity_multiplier")));
+                dto.setLastPriceDate(str.apply("last_price_date"));
+
+                String purchAllowed = str.apply("purchase_allowed");
+                dto.setPurchaseAllowed("1".equals(purchAllowed));
+
+                dto.setSettlementType(str.apply("settlement_type"));
+                dto.setLastPrice(safeBigDecimal(str.apply("last_price")));
 
                 dto.setRaw(raw);
                 results.add(dto);

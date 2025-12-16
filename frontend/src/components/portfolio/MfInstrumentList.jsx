@@ -37,7 +37,7 @@ export default function MfInstrumentList({ instruments, isLoading }) {
 
     // Helper to parse Scheme Type and Plan from merged string
     const parseSchemeAndPlan = (inst) => {
-        let typeString = inst.schemeType || inst.scheme_type || inst.category || 'Unknown';
+        let typeString = inst.schemeType || inst.scheme_type || 'Unknown';
         let planField = inst.plan || 'Regular';
 
         // Heuristic for known merged types in Zerodha
@@ -95,7 +95,7 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                 </div>
                 <input
                     type="text"
-                    placeholder="Search mutual funds by name, AMC, or category..."
+                    placeholder="Search mutual funds by name or AMC..."
                     className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl leading-5 bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm transition-colors"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -114,7 +114,6 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                             <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
                                 <th className="pb-4 pl-4 pt-2">Scheme Name</th>
                                 <th className="pb-4 pt-2">AMC</th>
-                                <th className="pb-4 pt-2">Category</th>
                                 <th className="pb-4 pt-2 text-right pr-4">Action</th>
                             </tr>
                         </thead>
@@ -138,17 +137,13 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                                                 </div>
                                                 <div className="text-[10px] text-gray-400 mt-0.5 font-mono flex items-center gap-2">
                                                     <span>{symbol}</span>
+                                                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold">
+                                                        {schemeType}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td className="py-4 text-sm text-gray-600 dark:text-gray-300">
                                                 {inst.amc || inst.fund_house || '-'}
-                                            </td>
-                                            <td className="py-4 text-sm text-gray-600 dark:text-gray-300">
-                                                <div className="flex flex-col items-start gap-1">
-                                                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] px-2 py-0.5 rounded-full uppercase font-semibold">
-                                                        {schemeType}
-                                                    </span>
-                                                </div>
                                             </td>
                                             <td className="py-4 text-right pr-4">
                                                 <button
@@ -206,6 +201,10 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                                                                                 <p className="text-[10px] text-gray-400">Type</p>
                                                                                 <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{schemeType}</p>
                                                                             </div>
+                                                                            <div>
+                                                                                <p className="text-[10px] text-gray-400">Dividend</p>
+                                                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-200 capitalize">{inst.dividendType || inst.dividend_type || '—'}</p>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -221,15 +220,30 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                                                                         <div>
                                                                             <p className="text-[10px] text-gray-400">Min. Purchase Amount</p>
                                                                             <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                                                                {formatCurrency(inst.minimum_purchase_amount || inst.min_purchase_amount || inst.minimumPurchaseAmount)}
+                                                                                {formatCurrency(inst.minimumPurchaseAmount || inst.minimum_purchase_amount)}
+                                                                            </p>
+                                                                            <p className="text-[9px] text-gray-400">
+                                                                                + {formatCurrency(inst.minimumAdditionalPurchaseAmount || inst.minimum_additional_purchase_amount)} (Add'l)
+                                                                            </p>
+                                                                            <p className="text-[9px] text-gray-400">
+                                                                                Multiples of {inst.purchaseAmountMultiplier || inst.purchase_amount_multiplier || '1'}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-[10px] text-gray-400">Min. Redemption Qty</p>
+                                                                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                                {inst.minimumRedemptionQuantity || inst.minimum_redemption_quantity || '—'} Units
+                                                                            </p>
+                                                                            <p className="text-[9px] text-gray-400">
+                                                                                Multiples of {inst.redemptionQuantityMultiplier || inst.redemption_quantity_multiplier || '1'}
                                                                             </p>
                                                                         </div>
                                                                         <div className="flex gap-2 mt-2">
-                                                                            <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${(inst.purchase_allowed || inst.purchaseAllowed) ? 'bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400' : 'bg-red-50 border-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'}`}>
-                                                                                <span className="text-[10px] font-bold uppercase">{(inst.purchase_allowed || inst.purchaseAllowed) ? 'Buy' : 'No Buy'}</span>
+                                                                            <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${(inst.purchaseAllowed) ? 'bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400' : 'bg-red-50 border-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'}`}>
+                                                                                <span className="text-[10px] font-bold uppercase">{(inst.purchaseAllowed) ? 'Buy Allowed' : 'Buy Locked'}</span>
                                                                             </div>
-                                                                            <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${(inst.redemption_allowed || inst.redemptionAllowed) ? 'bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400' : 'bg-red-50 border-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'}`}>
-                                                                                <span className="text-[10px] font-bold uppercase">{(inst.redemption_allowed || inst.redemptionAllowed) ? 'Redeem' : 'Locked'}</span>
+                                                                            <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${(inst.redemptionAllowed) ? 'bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400' : 'bg-red-50 border-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'}`}>
+                                                                                <span className="text-[10px] font-bold uppercase">{(inst.redemptionAllowed) ? 'Redeem Allowed' : 'Redeem Locked'}</span>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -256,10 +270,10 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                                                                             </div>
                                                                             <div className="flex items-baseline gap-2">
                                                                                 <p className="text-lg font-bold text-gray-900 dark:text-white">
-                                                                                    {formatCurrency(inst.last_price || inst.lastPrice)}
+                                                                                    {formatCurrency(inst.lastPrice || inst.last_price)}
                                                                                 </p>
                                                                                 <span className="text-[10px] text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
-                                                                                    {inst.last_price_date ? formatDate(inst.last_price_date) : (inst.lastPriceDate ? formatDate(inst.lastPriceDate) : 'Date N/A')}
+                                                                                    {inst.lastPriceDate ? formatDate(inst.lastPriceDate) : (inst.last_price_date ? formatDate(inst.last_price_date) : 'Date N/A')}
                                                                                 </span>
                                                                             </div>
                                                                             <p className="text-[10px] text-gray-400 mt-0.5 italic flex items-center gap-1">
@@ -267,14 +281,10 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                                                                             </p>
                                                                         </div>
 
-                                                                        <div className="grid grid-cols-2 gap-4 pt-1">
+                                                                        <div className="pt-1">
                                                                             <div>
                                                                                 <p className="text-[10px] text-gray-400">Settlement Type</p>
-                                                                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{inst.settlement_type || inst.settlementType || '—'}</p>
-                                                                            </div>
-                                                                            <div>
-                                                                                <p className="text-[10px] text-gray-400">Settlement Days</p>
-                                                                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{inst.settlement_value || inst.settlementValue || '—'}</p>
+                                                                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{inst.settlementType || inst.settlement_type || '—'}</p>
                                                                             </div>
                                                                         </div>
                                                                     </div>

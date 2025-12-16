@@ -22,11 +22,29 @@ public class MfInstrumentDTO {
 
     private String plan;
 
-    private String category;
-
     private String fundHouse;
 
-    private String schemeCode;
+    private String dividendType;
+
+    private java.math.BigDecimal purchaseAmountMultiplier;
+
+    private java.math.BigDecimal minimumAdditionalPurchaseAmount;
+
+    private java.math.BigDecimal minimumPurchaseAmount;
+
+    private Boolean redemptionAllowed;
+
+    private java.math.BigDecimal minimumRedemptionQuantity;
+
+    private java.math.BigDecimal redemptionQuantityMultiplier;
+
+    private String lastPriceDate;
+
+    private Boolean purchaseAllowed;
+
+    private String settlementType;
+
+    private java.math.BigDecimal lastPrice;
 
     /**
      * Stores the complete raw JSON object received from Zerodha.

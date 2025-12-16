@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, ChevronRight, History } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 
 // Helper to format currency consistently
 const formatCurrency = (val) => {
@@ -70,9 +70,8 @@ export default function MfSipList({ sips, unlinkedOrders, isLoading, onNavigate,
                             const isActive = sip.status === 'ACTIVE';
 
                             return (
-                                <>
+                                <Fragment key={sip.sipId || idx}>
                                     <tr
-                                        key={sip.sipId || idx}
                                         className={`border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-50 dark:bg-gray-800/30' : ''}`}
                                         onClick={() => toggleExpand(sip.sipId)}
                                     >
@@ -207,7 +206,7 @@ export default function MfSipList({ sips, unlinkedOrders, isLoading, onNavigate,
                                             </td>
                                         </tr>
                                     )}
-                                </>
+                                </Fragment>
                             );
                         })}
                     </tbody>

@@ -52,7 +52,10 @@ export default function PortfolioSummary() {
                 </div>
                 <div className={`text-sm font-medium mt-1 ${isPositive ? 'text-green-500' : 'text-red-500'} flex items-center`}>
                     {isPositive ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                    {formatPercent(data.totalDayGainPercent)}
+                    {(data.totalDayGain !== 0 && Math.abs(data.totalDayGainPercent) < 0.01)
+                        ? '< 0.01%'
+                        : formatPercent(data.totalDayGainPercent)
+                    }
                 </div>
             </div>
 

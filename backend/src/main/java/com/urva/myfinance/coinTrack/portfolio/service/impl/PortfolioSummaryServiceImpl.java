@@ -84,9 +84,16 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         List<SummaryHoldingDTO> detailedList = new ArrayList<>();
         List<com.urva.myfinance.coinTrack.portfolio.dto.SummaryPositionDTO> positionsList = new ArrayList<>();
 
+        // Create explicit aggregates for consistency
+        // Aggregates start at ZERO
         BigDecimal totalCurrentValue = BigDecimal.ZERO;
+        BigDecimal previousDayTotalValue = BigDecimal.ZERO;
         BigDecimal totalInvestedValue = BigDecimal.ZERO;
-        BigDecimal totalDayGain = BigDecimal.ZERO;
+
+        // Note: totalDayGain is DERIVED from (totalCurrentValue -
+        // previousDayTotalValue)
+        // Note: totalUnrealizedPL is DERIVED from (totalCurrentValue -
+        // totalInvestedValue)
 
         boolean containsDerivatives = false;
 
@@ -94,12 +101,30 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         for (CachedHolding h : holdings) {
             SummaryHoldingDTO dto = convertHolding(h, priceMap.get(h.getSymbol()));
             detailedList.add(dto);
+
+            // ACCUMULATE HOLDINGS INTO TOTALS
             totalCurrentValue = totalCurrentValue.add(dto.getCurrentValue());
             totalInvestedValue = totalInvestedValue.add(dto.getInvestedValue());
-            totalDayGain = totalDayGain.add(dto.getDayGain());
+
+            // Compute Previous Day Value Explicitly for Holdings
+            BigDecimal closePrice = h.getClosePrice();
+            if (closePrice == null) {
+                // If close price is missing, do we treat it as zero?
+                // A missing close price usually means new listing or data error.
+                // Treating as zero implies "Day Gain" = "Current Value" (infinity return).
+                // Safest to treat as ZERO for the sum, but metrics might be skewed.
+                closePrice = BigDecimal.ZERO;
+            }
+            // previousValue = quantity * closePrice
+            BigDecimal previousValue = h.getQuantity().multiply(closePrice);
+            previousDayTotalValue = previousDayTotalValue.add(previousValue);
         }
 
         // Process Positions
+        // NOTE: Positions do NOT contribute to the "Portfolio Summary" aggregates
+        // (PrevDay, DayGain)
+        // to maintain mathematical consistency with the "Previous Day" logic which is
+        // unique to Holdings.
         for (CachedPosition p : positions) {
             // Guardrail: Detect F&O
             if (p.getPositionType() == com.urva.myfinance.coinTrack.portfolio.model.PositionType.FNO) {
@@ -108,26 +133,32 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
 
             com.urva.myfinance.coinTrack.portfolio.dto.SummaryPositionDTO dto = convertPosition(p);
             positionsList.add(dto);
-            totalCurrentValue = totalCurrentValue.add(dto.getCurrentValue());
-            totalInvestedValue = totalInvestedValue.add(dto.getInvestedValue());
-            totalDayGain = totalDayGain.add(dto.getDayGain());
+
+            // Do NOT add positions to totalCurrentValue, totalInvestedValue, or
+            // previousDayTotalValue
+            // based on strict requirement to exclude positions from previousDayTotalValue
+            // and
+            // maintain the equation: DayGain = Current - Prev.
+            // If we added PositionCurrent to TotalCurrent, but not to TotalPrev,
+            // the DayGain would be artificially inflated by the full value of the
+            // positions.
         }
 
         // 5. Final Aggregations
-        // 5. Final Aggregations
+        // Strict derivations per Core Financial Model
         BigDecimal totalUnrealizedPL = totalCurrentValue.subtract(totalInvestedValue);
-        BigDecimal totalDayGainPercent = null;
+        BigDecimal totalDayGain = totalCurrentValue.subtract(previousDayTotalValue);
+        BigDecimal totalDayGainPercent = BigDecimal.ZERO;
 
-        // Revised Logic: Always compute if sensible (invested value basis exists)
         // Guardrail: Ensure mathematical safety (non-zero divisor)
-        BigDecimal totalPrevValue = totalCurrentValue.subtract(totalDayGain);
-        if (totalPrevValue.compareTo(BigDecimal.ZERO) != 0) {
-            totalDayGainPercent = totalDayGain.divide(totalPrevValue, 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
+        // Logic: (totalDayGain / previousDayTotalValue) * 100
+        if (previousDayTotalValue.compareTo(BigDecimal.ZERO) != 0) {
+            totalDayGainPercent = totalDayGain
+                    .divide(previousDayTotalValue, 8, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(2, RoundingMode.HALF_UP);
         } else {
-            // If basis is 0 (e.g. pure F&O margin play with no underlying value or just
-            // closed),
-            // 0% is the safest representation of "no return on invalid base"
+            // Avoid Division by Zero
             totalDayGainPercent = BigDecimal.ZERO;
         }
 
@@ -145,7 +176,8 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .totalInvestedValue(totalInvestedValue.setScale(4, RoundingMode.HALF_UP))
                 .totalUnrealizedPL(totalUnrealizedPL.setScale(4, RoundingMode.HALF_UP))
                 .totalDayGain(totalDayGain.setScale(4, RoundingMode.HALF_UP))
-                .totalDayGainPercent(totalDayGainPercent) // Can be null
+                .totalDayGainPercent(totalDayGainPercent)
+                .previousDayTotalValue(previousDayTotalValue.setScale(4, RoundingMode.HALF_UP))
                 .lastHoldingsSync(latestSync)
                 .lastPositionsSync(latestSync)
                 .lastAnySync(latestSync)

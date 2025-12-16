@@ -22,6 +22,7 @@ public class PortfolioSummaryResponse {
 
     private BigDecimal totalDayGain;
     private BigDecimal totalDayGainPercent;
+    private BigDecimal previousDayTotalValue;
 
     // Sync Timestamps
     private LocalDateTime lastHoldingsSync;
