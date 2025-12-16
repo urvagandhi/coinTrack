@@ -29,6 +29,10 @@ public class FundsDTO extends KiteResponseMetadata {
 
         @com.fasterxml.jackson.annotation.JsonProperty("utilised")
         private Utilised utilised; // Nested
+
+        // Raw Pass-Through
+        @com.fasterxml.jackson.annotation.JsonProperty("raw")
+        private java.util.Map<String, Object> raw;
     }
 
     @Data

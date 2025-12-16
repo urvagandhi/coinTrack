@@ -6,38 +6,61 @@ import lombok.Data;
 
 @Data
 public class MutualFundDTO {
-    @com.fasterxml.jackson.annotation.JsonProperty("fund")
     private String fund;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("folio")
+    private String tradingSymbol;
+
     private String folio;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("amc")
-    private String amc; // From prompt
+    private String amc;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("isin")
-    private String isin; // From prompt
+    private String isin;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("quantity")
     private BigDecimal quantity;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("average_price")
     private BigDecimal averagePrice;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("last_price")
-    private BigDecimal lastPrice;
+    private BigDecimal currentPrice;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("current_value")
-    private BigDecimal currentValue; // Present in response
+    private BigDecimal currentValue;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("pnl")
-    private BigDecimal pnl;
+    private BigDecimal unrealizedPL;
 
-    public BigDecimal getPnl() {
-        if ((this.pnl == null || this.pnl.compareTo(BigDecimal.ZERO) == 0)
-                && this.currentValue != null && this.averagePrice != null && this.quantity != null) {
-            return this.currentValue.subtract(this.averagePrice.multiply(this.quantity));
+    private String lastPriceDate;
+
+    // Raw Pass-Through
+    private java.util.Map<String, Object> raw;
+
+    // --- Fallback & Computed Logic (API Layer) ---
+
+    // Computed Fields
+    public BigDecimal getInvestedValue() {
+        if (quantity != null && averagePrice != null) {
+            return quantity.multiply(averagePrice).setScale(2, java.math.RoundingMode.HALF_UP);
         }
-        return this.pnl;
+        return BigDecimal.ZERO;
+    }
+
+    public BigDecimal getCurrentValue() {
+        // Trust Broker First
+        if (this.currentValue != null && this.currentValue.compareTo(BigDecimal.ZERO) != 0) {
+            return this.currentValue;
+        }
+        // Fallback: Quantity * Current Price
+        if (quantity != null && currentPrice != null) {
+            return quantity.multiply(currentPrice).setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public BigDecimal getUnrealizedPL() {
+        // Trust Broker First
+        if (this.unrealizedPL != null && this.unrealizedPL.compareTo(BigDecimal.ZERO) != 0) {
+            return this.unrealizedPL;
+        }
+        // Fallback: Current Value - Invested Value
+        BigDecimal cv = getCurrentValue();
+        BigDecimal iv = getInvestedValue();
+        return cv.subtract(iv).setScale(2, java.math.RoundingMode.HALF_UP);
     }
 }

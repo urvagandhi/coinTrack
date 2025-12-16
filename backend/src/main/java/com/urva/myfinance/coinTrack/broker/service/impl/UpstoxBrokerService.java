@@ -150,4 +150,15 @@ public class UpstoxBrokerService implements BrokerService {
     public com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO fetchProfile(BrokerAccount account) {
         return null;
     }
+
+    @Override
+    public List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfSipDTO> fetchMfSips(BrokerAccount account) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfInstrumentDTO> fetchMfInstruments(
+            BrokerAccount account) {
+        return Collections.emptyList();
+    }
 }

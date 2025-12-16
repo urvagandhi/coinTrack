@@ -5,7 +5,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +32,8 @@ import com.urva.myfinance.coinTrack.broker.service.BrokerService;
 import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
 import com.urva.myfinance.coinTrack.common.util.EncryptionUtil;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.MfInstrumentDTO;
+import com.urva.myfinance.coinTrack.portfolio.dto.kite.MfSipDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.OrderDTO;
@@ -413,22 +417,276 @@ public class ZerodhaBrokerService implements BrokerService {
 
     @Override
     public FundsDTO fetchFunds(BrokerAccount account) {
-        return fetchObjectFromKite(account, "https://api.kite.trade/user/margins", "margins", FundsDTO.class);
+        // Validation
+        if (!account.hasValidToken())
+            throw new BrokerException("Invalid token", Broker.ZERODHA);
+
+        try {
+            String url = "https://api.kite.trade/user/margins";
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "token " + account.getZerodhaApiKey() + ":" + account.getZerodhaAccessToken());
+            headers.add("X-Kite-Version", "3");
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            @SuppressWarnings("null")
+            ResponseEntity<String> response = restTemplate.exchange(url,
+                    org.springframework.http.HttpMethod.GET, entity, String.class);
+
+            // Manual parsing
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(response.getBody());
+            if (root == null || !root.has("status") || !"success".equals(root.get("status").asText())) {
+                throw new BrokerException("Failed to fetch margins", Broker.ZERODHA);
+            }
+
+            com.fasterxml.jackson.databind.JsonNode dataNode = root.get("data");
+
+            // 1. Convert to DTO
+            FundsDTO fundsDTO = mapper.treeToValue(dataNode, FundsDTO.class);
+
+            // 2. Inject Raw Data (Pass-Through)
+            if (dataNode != null) {
+                if (fundsDTO.getEquity() != null && dataNode.has("equity")) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> equityRaw = mapper.convertValue(dataNode.get("equity"), Map.class);
+                    fundsDTO.getEquity().setRaw(equityRaw);
+                }
+                if (fundsDTO.getCommodity() != null && dataNode.has("commodity")) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> commodityRaw = mapper.convertValue(dataNode.get("commodity"), Map.class);
+                    fundsDTO.getCommodity().setRaw(commodityRaw);
+                }
+            }
+
+            return fundsDTO;
+
+        } catch (Exception e) {
+            logger.error("Error fetching funds for {}: {}", account.getUserId(), e.getMessage());
+            throw new BrokerException("Failed to fetch funds", Broker.ZERODHA, e);
+        }
     }
 
     @Override
     public List<MutualFundDTO> fetchMfHoldings(BrokerAccount account) {
-        return fetchListFromKite(account, "https://api.kite.trade/mf/holdings", "holdings", MutualFundDTO.class);
+        // Fetch raw maps first to capture full fidelity data
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        List<Map<String, Object>> rawList = (List) fetchListFromKite(account, "https://api.kite.trade/mf/holdings",
+                "MF Holdings", Map.class);
+
+        List<MutualFundDTO> results = new ArrayList<>();
+        // No ObjectMapper conversion needed for DTO fields anymore
+
+        // Log raw list size
+        // logger.info("Fetched {} MF holdings from Zerodha", rawList.size());
+
+        for (Map<String, Object> rawMap : rawList) {
+            // logger.info("Processing MF Holding Raw keys: {}", rawMap.keySet());
+            MutualFundDTO dto = new MutualFundDTO();
+
+            // Manual Mapping: Source of Truth = Zerodha Raw Map
+            dto.setFund(getString(rawMap, "fund"));
+            dto.setTradingSymbol(getString(rawMap, "tradingsymbol"));
+            dto.setFolio(getString(rawMap, "folio"));
+            dto.setAmc(getString(rawMap, "amc"));
+            dto.setIsin(getString(rawMap, "isin"));
+
+            dto.setQuantity(getBigDecimal(rawMap, "quantity"));
+            dto.setAveragePrice(getBigDecimal(rawMap, "average_price"));
+            dto.setCurrentPrice(getBigDecimal(rawMap, "last_price"));
+            dto.setCurrentValue(getBigDecimal(rawMap, "current_value")); // Can be null/zero if not provided
+            dto.setUnrealizedPL(getBigDecimal(rawMap, "pnl"));
+            dto.setLastPriceDate(getString(rawMap, "last_price_date"));
+
+            // Inject Raw Data (Strict Isolation)
+            dto.setRaw(rawMap);
+
+            results.add(dto);
+        }
+        return results;
     }
 
     @Override
     public List<MutualFundOrderDTO> fetchMfOrders(BrokerAccount account) {
-        return fetchListFromKite(account, "https://api.kite.trade/mf/orders", "orders", MutualFundOrderDTO.class);
+        // Fetch raw maps first to capture full fidelity data
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        List<Map<String, Object>> rawList = (List) fetchListFromKite(account, "https://api.kite.trade/mf/orders",
+                "MF Orders", Map.class);
+
+        List<MutualFundOrderDTO> results = new ArrayList<>();
+
+        for (Map<String, Object> rawMap : rawList) {
+            MutualFundOrderDTO dto = new MutualFundOrderDTO();
+
+            // Manual Mapping
+            dto.setOrderId(getString(rawMap, "order_id"));
+            dto.setFund(getString(rawMap, "fund"));
+            dto.setTradingSymbol(getString(rawMap, "tradingsymbol"));
+            dto.setTransactionType(getString(rawMap, "transaction_type"));
+            dto.setAmount(getBigDecimal(rawMap, "amount"));
+            dto.setStatus(getString(rawMap, "status"));
+
+            // Date Logic: exchange_timestamp (execution) vs order_timestamp (creation)
+            // Priority: exchange_timestamp > order_date (legacy) for executionDate
+            String exchangeTimestamp = getString(rawMap, "exchange_timestamp");
+            if (exchangeTimestamp == null)
+                exchangeTimestamp = getString(rawMap, "order_date");
+            dto.setExecutionDate(exchangeTimestamp);
+
+            dto.setOrderTimestamp(getString(rawMap, "order_timestamp"));
+            dto.setExecutedQuantity(getBigDecimal(rawMap, "quantity"));
+            dto.setExecutedNav(getBigDecimal(rawMap, "average_price"));
+            dto.setFolio(getString(rawMap, "folio"));
+            dto.setVariety(getString(rawMap, "variety"));
+            dto.setPurchaseType(getString(rawMap, "purchase_type"));
+            dto.setSettlementId(getString(rawMap, "settlement_id"));
+
+            // Inject Raw Data
+            dto.setRaw(rawMap);
+
+            results.add(dto);
+        }
+        return results;
     }
 
     @Override
     public UserProfileDTO fetchProfile(BrokerAccount account) {
         return fetchObjectFromKite(account, "https://api.kite.trade/user/profile", "profile", UserProfileDTO.class);
+    }
+
+    @Override
+    public List<MfSipDTO> fetchMfSips(BrokerAccount account) {
+        // Fetch raw maps first to capture full fidelity data
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        List<Map<String, Object>> rawList = (List) fetchListFromKite(account, "https://api.kite.trade/mf/sips",
+                "MF SIPs", Map.class);
+
+        List<MfSipDTO> results = new ArrayList<>();
+
+        for (Map<String, Object> rawMap : rawList) {
+            MfSipDTO dto = new MfSipDTO();
+
+            // Manual Mapping
+            dto.setSipId(getString(rawMap, "sip_id"));
+            dto.setFund(getString(rawMap, "fund"));
+            dto.setTradingSymbol(getString(rawMap, "tradingsymbol"));
+            dto.setStatus(getString(rawMap, "status"));
+
+            // Double vs BigDecimal (DTO usage check: InstalmentAmount is Double in MfSipDTO
+            // currently)
+            // Ideally should be BigDecimal but strictly following existing DTO type for now
+            // if not refactored to BigDecimal
+            // Checked DTO: InstalmentAmount is Double.
+            Number amt = (Number) rawMap.get("instalment_amount");
+            dto.setInstalmentAmount(amt != null ? amt.doubleValue() : null);
+
+            dto.setFrequency(getString(rawMap, "frequency"));
+            dto.setStartDate(getString(rawMap, "created"));
+            dto.setLastInstalmentDate(getString(rawMap, "last_instalment"));
+            dto.setNextInstalmentDate(getString(rawMap, "next_instalment"));
+
+            // Integer fields
+            dto.setInstalmentDay(getInteger(rawMap, "instalment_day"));
+            dto.setCompletedInstalments(getInteger(rawMap, "completed_instalments"));
+            dto.setPendingInstalments(getInteger(rawMap, "pending_instalments"));
+            dto.setTotalInstalments(getInteger(rawMap, "instalments"));
+
+            dto.setSipType(getString(rawMap, "sip_type"));
+            dto.setTransactionType(getString(rawMap, "transaction_type"));
+            dto.setDividendType(getString(rawMap, "dividend_type"));
+            dto.setFundSource(getString(rawMap, "fund_source"));
+            dto.setMandateType(getString(rawMap, "mandate_type"));
+            dto.setMandateId(getString(rawMap, "mandate_id"));
+
+            // Inject Raw Data
+            dto.setRaw(rawMap);
+
+            results.add(dto);
+        }
+        return results;
+    }
+
+    @Override
+    public List<MfInstrumentDTO> fetchMfInstruments(BrokerAccount account) {
+        if (!account.hasValidToken())
+            throw new BrokerException("Invalid token", Broker.ZERODHA);
+
+        String url = "https://api.kite.trade/mf/instruments";
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "token " + account.getZerodhaApiKey() + ":" + account.getZerodhaAccessToken());
+        headers.add("X-Kite-Version", "3");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            @SuppressWarnings("null")
+            ResponseEntity<String> response = restTemplate.exchange(url,
+                    org.springframework.http.HttpMethod.GET, entity, String.class);
+
+            String csvBody = response.getBody();
+            if (csvBody == null || csvBody.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<MfInstrumentDTO> results = new ArrayList<>();
+            // Split by newline
+            String[] lines = csvBody.split("\\r?\\n");
+            if (lines.length < 2) {
+                return results; // Only header or empty
+            }
+
+            // Parse Header
+            String headerLine = lines[0].trim();
+            String[] headersArr = headerLine.split(",");
+            Map<String, Integer> headerMap = new HashMap<>();
+            for (int i = 0; i < headersArr.length; i++) {
+                // Remove quotes if present
+                headerMap.put(headersArr[i].trim().replaceAll("^\"|\"$", ""), i);
+            }
+
+            // Parse Data Lines
+            for (int i = 1; i < lines.length; i++) {
+                String line = lines[i].trim();
+                if (line.isEmpty())
+                    continue;
+
+                // Split by comma, respecting quotes
+                String[] cols = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+
+                MfInstrumentDTO dto = new MfInstrumentDTO();
+                Map<String, Object> raw = new HashMap<>();
+
+                // Helper to safely get value
+                java.util.function.Function<String, String> getVal = (key) -> {
+                    Integer idx = headerMap.get(key);
+                    if (idx != null && idx < cols.length) {
+                        String val = cols[idx].trim().replaceAll("^\"|\"$", "");
+                        raw.put(key, val);
+                        return val;
+                    }
+                    return null;
+                };
+
+                dto.setTradingSymbol(getVal.apply("tradingsymbol"));
+                dto.setName(getVal.apply("name")); // Mapped to name/fund
+                dto.setAmc(getVal.apply("amc"));
+                dto.setIsin(getVal.apply("isin"));
+                dto.setSchemeType(getVal.apply("scheme_type"));
+                dto.setPlan(getVal.apply("plan"));
+                dto.setSchemeCode(getVal.apply("scheme_code"));
+
+                // Extra fields
+                dto.setFundHouse(getVal.apply("amc")); // Map AMC to fundHouse too
+
+                dto.setRaw(raw);
+                results.add(dto);
+            }
+            return results;
+
+        } catch (Exception e) {
+            logger.error("Error fetching Zerodha MF Instruments:String parse error: {}", e.getMessage());
+            throw new BrokerException("Failed to fetch MF Instruments (CSV parse)", Broker.ZERODHA, e);
+        }
     }
 
     // ============================================================================================
@@ -511,5 +769,30 @@ public class ZerodhaBrokerService implements BrokerService {
             hexString.append(hex);
         }
         return hexString.toString();
+    }
+
+    // --- Manual Mapping Helpers ---
+
+    private String getString(Map<String, Object> map, String key) {
+        Object val = map.get(key);
+        return val != null ? val.toString() : null;
+    }
+
+    private java.math.BigDecimal getBigDecimal(Map<String, Object> map, String key) {
+        Object val = map.get(key);
+        return safeBigDecimal(val);
+    }
+
+    private Integer getInteger(Map<String, Object> map, String key) {
+        Object val = map.get(key);
+        if (val == null)
+            return null;
+        if (val instanceof Number)
+            return ((Number) val).intValue();
+        try {
+            return Integer.parseInt(val.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

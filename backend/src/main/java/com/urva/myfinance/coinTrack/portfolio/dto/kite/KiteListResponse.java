@@ -9,4 +9,8 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class KiteListResponse<T> extends KiteResponseMetadata {
     private List<T> data;
+
+    // Strict Linking Requirement: Expose SIP orders that couldn't be linked to any
+    // active SIP
+    private List<MutualFundOrderDTO> unlinkedSipOrders;
 }

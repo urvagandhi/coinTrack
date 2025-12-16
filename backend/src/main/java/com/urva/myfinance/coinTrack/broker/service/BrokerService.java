@@ -43,4 +43,9 @@ public interface BrokerService {
             BrokerAccount account);
 
     com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO fetchProfile(BrokerAccount account);
+
+    java.util.List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfSipDTO> fetchMfSips(BrokerAccount account);
+
+    java.util.List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfInstrumentDTO> fetchMfInstruments(
+            BrokerAccount account);
 }

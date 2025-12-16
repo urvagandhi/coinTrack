@@ -161,6 +161,10 @@ export const endpoints = {
         funds: '/api/portfolio/funds',
         mfHoldings: '/api/portfolio/mf/holdings',
         mfOrders: '/api/portfolio/mf/orders',
+        mfSips: '/api/portfolio/mf/sips',
+        mfInstruments: '/api/portfolio/mf/instruments',
+        mfTimeline: '/api/portfolio/mf/timeline',
+        trades: '/api/portfolio/trades',
         profile: '/api/portfolio/profile',
     },
     brokers: {
@@ -263,12 +267,44 @@ export const portfolioAPI = {
         return unwrapResponse(data) || [];
     },
     getTrades: async () => {
-        const { data } = await api.get('/api/portfolio/trades');
+        const { data } = await api.get(endpoints.portfolio.trades);
         return unwrapResponse(data) || [];
     },
     getProfile: async () => {
         const { data } = await api.get(endpoints.portfolio.profile);
         return unwrapResponse(data);
+    },
+    getMfSips: async () => {
+        const { data } = await api.get(endpoints.portfolio.mfSips);
+        // Special case: MfSips response contains 'unlinkedSipOrders' sibling to 'data'
+        // If we just unwrap, we lose it.
+        // unwrapResponse checks for success=true and returns 'data'.
+        // If the backend sends { success: true, data: [...], unlinkedSipOrders: [...] }
+        // unwrapResponse will return [...].
+        // We need to preserve unlinkedSipOrders.
+        // Let's manually unwrap so we can attach unlinkedSipOrders to the result array or return an object.
+        // Returning an object { sips: [], unlinked: [] } is better structure but changes existing expectations.
+        // However, standard unwrap returns `data`.
+        // Let's modify unwrapResponse is risky for global.
+        // We will return the FULL response data directly here, bypassing unwrapResponse for this specific call,
+        // or re-shape it.
+
+        if (data && data.success) {
+            const payload = data.data || {};
+            return {
+                data: payload.data || [],
+                unlinkedSipOrders: payload.unlinkedSipOrders || []
+            };
+        }
+        return { data: [], unlinkedSipOrders: [] };
+    },
+    getMfInstruments: async () => {
+        const { data } = await api.get(endpoints.portfolio.mfInstruments);
+        return unwrapResponse(data) || [];
+    },
+    getMfTimeline: async () => {
+        const { data } = await api.get(endpoints.portfolio.mfTimeline);
+        return unwrapResponse(data) || [];
     }
 };
 

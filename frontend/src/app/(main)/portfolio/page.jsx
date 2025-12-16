@@ -2,7 +2,6 @@
 
 import { portfolioAPI } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
-import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
 // Icons
@@ -11,11 +10,11 @@ import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
 import PieChart from 'lucide-react/dist/esm/icons/pie-chart';
 
-// Dynamic Import to fix Recharts SSR issue
-const PortfolioAnalysisCharts = dynamic(() => import('@/components/dashboard/PortfolioAnalysisCharts'), {
-    ssr: false,
-    loading: () => <div className="h-[300px] w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
-});
+import MfInstrumentList from '@/components/portfolio/MfInstrumentList';
+import MfSipList from '@/components/portfolio/MfSipList';
+import MfTimeline from '@/components/portfolio/MfTimeline';
+
+
 
 function StatCard({ title, value, subValue, isPositive, icon: Icon }) {
     return (
@@ -120,12 +119,40 @@ export default function PortfolioPage() {
         refetchInterval: 60000
     });
 
-    // 9. Fetch Profile (New)
     const { data: profile, isLoading: isLoadingProfile } = useQuery({
         queryKey: ['profile'],
         queryFn: portfolioAPI.getProfile,
         refetchInterval: 300000
     });
+
+    // 10. Fetch MF SIPs (New)
+    const { data: mfSipsResponse, isLoading: isLoadingMfSips } = useQuery({
+        queryKey: ['mfSips'],
+        queryFn: portfolioAPI.getMfSips,
+        refetchInterval: 60000
+    });
+
+    // api.js now returns { data: [], unlinkedSipOrders: [] }
+    const mfSips = mfSipsResponse?.data || [];
+    const unlinkedSipOrders = mfSipsResponse?.unlinkedSipOrders || [];
+
+    // 11. Fetch MF Instruments (New)
+    const { data: mfInstrumentsData, isLoading: isLoadingMfInstruments } = useQuery({
+        queryKey: ['mfInstruments'],
+        queryFn: portfolioAPI.getMfInstruments,
+        // Instruments don't change often, cache for longer
+        staleTime: 60 * 60 * 1000,
+        refetchInterval: false
+    });
+    const mfInstruments = Array.isArray(mfInstrumentsData) ? mfInstrumentsData : (mfInstrumentsData?.data || []);
+
+    // 12. Fetch MF Timeline (New)
+    const { data: mfTimelineData, isLoading: isLoadingMfTimeline } = useQuery({
+        queryKey: ['mfTimeline'],
+        queryFn: portfolioAPI.getMfTimeline,
+        refetchInterval: 60000
+    });
+    const mfTimeline = Array.isArray(mfTimelineData) ? mfTimelineData : (mfTimelineData?.data || []);
 
     // Helper to format currency
     const formatCurrency = (val) => {
@@ -135,7 +162,7 @@ export default function PortfolioPage() {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR',
-            maximumFractionDigits: 2
+            maximumFractionDigits: 4
         }).format(num);
     };
 
@@ -204,13 +231,13 @@ export default function PortfolioPage() {
             </div>
 
             {/* Main Content Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Tables */}
-                <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 gap-8">
+                {/* Tables */}
+                <div className="space-y-6">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                         {/* Tabs */}
                         <div className="flex border-b border-gray-100 dark:border-gray-700 overflow-x-auto scrollbar-hide">
-                            {['holdings', 'positions', 'orders', 'trades', 'mutual_funds', 'mf_orders', 'profile'].map((tab) => (
+                            {['holdings', 'positions', 'orders', 'trades', 'mutual_funds', 'mf_orders', 'mf_sips', 'timeline', 'mf_instruments', 'profile'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -274,7 +301,9 @@ export default function PortfolioPage() {
                                                             Qty {holdingsSort.key === 'quantity' && (holdingsSort.direction === 'asc' ? '↑' : '↓')}
                                                         </th>
                                                         <th className="pb-4 text-right">Avg. Price</th>
-                                                        <th className="pb-4 text-right">Current</th>
+                                                        <th className="pb-4 text-right">Invested</th>
+                                                        <th className="pb-4 text-right">Current Value</th>
+                                                        <th className="pb-4 text-right">Last Price</th>
                                                         <th
                                                             className="pb-4 text-right pr-2 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none"
                                                             onClick={() => handleSort('unrealizedPL')}
@@ -303,7 +332,9 @@ export default function PortfolioPage() {
                                                                     </td>
                                                                     <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.quantity}</td>
                                                                     <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
-                                                                    <td className="py-4 text-right font-medium text-gray-900 dark:text-white">
+                                                                    <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.investedValue)}</td>
+                                                                    <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.currentValue)}</td>
+                                                                    <td className="py-4 text-right font-medium text-gray-600 dark:text-gray-300">
                                                                         {item.currentPrice && item.currentPrice > 0 ? formatCurrency(item.currentPrice) : '—'}
                                                                     </td>
                                                                     <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -548,6 +579,7 @@ export default function PortfolioPage() {
                                                 <th className="pb-4 text-right">Units</th>
                                                 <th className="pb-4 text-right">Avg. NAV</th>
                                                 <th className="pb-4 text-right">Last Price</th>
+                                                <th className="pb-4 text-right">Invested</th>
                                                 <th className="pb-4 text-right">Current Value</th>
                                                 <th className="pb-4 text-right pr-2">P&L</th>
                                             </tr>
@@ -559,7 +591,7 @@ export default function PortfolioPage() {
                                                 <tr><td colSpan="6" className="text-center py-8 text-gray-500">No mutual fund holdings found.</td></tr>
                                             ) : (
                                                 mfHoldings.map((mf, idx) => {
-                                                    const pnl = parseFloat(mf.pnl);
+                                                    const pnl = parseFloat(mf.unrealizedPL);
                                                     const isPos = pnl >= 0;
                                                     return (
                                                         <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -567,14 +599,27 @@ export default function PortfolioPage() {
                                                                 <div className="font-medium text-gray-900 dark:text-white max-w-xs truncate" title={mf.fund}>
                                                                     {mf.fund}
                                                                 </div>
-                                                                <div className="text-[10px] text-gray-400 mt-1">{mf.folio}</div>
+                                                                <div className="text-[10px] text-gray-400 mt-1">
+                                                                    {mf.folio} | {mf.tradingSymbol}
+                                                                </div>
                                                             </td>
                                                             <td className="py-4 text-right text-gray-600 dark:text-gray-300">{mf.quantity}</td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.average_price)}</td>
-                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.last_price)}</td>
-                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.current_value)}</td>
-                                                            <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                                {formatCurrency(mf.pnl)}
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.averagePrice)}</td>
+                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.currentPrice)}</td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.investedValue)}</td>
+                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.currentValue)}</td>
+                                                            <td className="py-4 text-right pr-2">
+                                                                <div className={`font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                    {formatCurrency(mf.unrealizedPL)}
+                                                                </div>
+                                                                <div className={`text-[10px] mt-0.5 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                    {(() => {
+                                                                        const invested = parseFloat(mf.investedValue);
+                                                                        if (!invested || invested === 0) return '0.00%';
+                                                                        const pct = (pnl / invested) * 100;
+                                                                        return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
+                                                                    })()}
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     )
@@ -594,6 +639,7 @@ export default function PortfolioPage() {
                                                 <th className="pb-4 pl-2">Time</th>
                                                 <th className="pb-4">Fund</th>
                                                 <th className="pb-4 text-center">Type</th>
+                                                <th className="pb-4 text-right">Units @ NAV</th>
                                                 <th className="pb-4 text-right">Amount</th>
                                                 <th className="pb-4 text-right pr-2">Status</th>
                                             </tr>
@@ -608,21 +654,49 @@ export default function PortfolioPage() {
                                                     <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                                         <td className="py-4 pl-2 text-xs text-gray-500">
                                                             <div className="flex flex-col">
-                                                                <span className="font-medium text-gray-900 dark:text-gray-300">
-                                                                    {order.order_timestamp ? new Date(order.order_timestamp).toLocaleString() : '-'}
-                                                                </span>
-                                                                <span className="text-[10px] text-gray-400 mt-0.5">
-                                                                    Order Date: {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}
-                                                                </span>
+                                                                {order.executionDate ? (
+                                                                    <>
+                                                                        <span className="font-medium text-gray-900 dark:text-gray-300">
+                                                                            {new Date(order.executionDate).toLocaleDateString()}
+                                                                        </span>
+                                                                        <span className="text-[10px] text-gray-400 mt-0.5">
+                                                                            Placed: {new Date(order.orderTimestamp).toLocaleString()}
+                                                                        </span>
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="font-medium text-gray-900 dark:text-gray-300">
+                                                                        {order.orderTimestamp ? new Date(order.orderTimestamp).toLocaleString() : '-'}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </td>
-                                                        <td className="py-4 font-medium text-gray-900 dark:text-white max-w-xs truncate" title={order.fund}>
-                                                            {order.fund}
+                                                        <td className="py-4 font-medium text-gray-900 dark:text-white max-w-xs truncate">
+                                                            <div title={order.fund} className="truncate">{order.fund}</div>
+                                                            <div className="text-[10px] text-gray-400 mt-0.5">
+                                                                {order.folio || ''} | {order.tradingSymbol || ''}
+                                                            </div>
                                                         </td>
                                                         <td className="py-4 text-center">
-                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${order.transaction_type === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
-                                                                {order.transaction_type}
-                                                            </span>
+                                                            <div className="flex flex-col items-center">
+                                                                <span className={`text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                                    {order.transactionType}
+                                                                </span>
+                                                                {order.variety && (
+                                                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wide">
+                                                                        {order.variety}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-4 text-right">
+                                                            <div className="flex flex-col items-end">
+                                                                <span className="font-medium text-gray-900 dark:text-white">
+                                                                    {order.executedQuantity || '-'}
+                                                                </span>
+                                                                <span className="text-[10px] text-gray-500">
+                                                                    {order.executedNav ? `@ ${formatCurrency(order.executedNav)}` : ''}
+                                                                </span>
+                                                            </div>
                                                         </td>
                                                         <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(order.amount)}</td>
                                                         <td className="py-4 text-right pr-2">
@@ -639,6 +713,21 @@ export default function PortfolioPage() {
                                         </tbody>
                                     </table>
                                 </div>
+                            )}
+
+                            {/* MF SIPs TAB */}
+                            {activeTab === 'mf_sips' && (
+                                <MfSipList sips={mfSips} unlinkedOrders={unlinkedSipOrders} isLoading={isLoadingMfSips} />
+                            )}
+
+                            {/* TIMELINE TAB */}
+                            {activeTab === 'timeline' && (
+                                <MfTimeline events={mfTimeline} isLoading={isLoadingMfTimeline} />
+                            )}
+
+                            {/* MF INSTRUMENTS TAB */}
+                            {activeTab === 'mf_instruments' && (
+                                <MfInstrumentList instruments={mfInstruments} isLoading={isLoadingMfInstruments} />
                             )}
 
                             {/* PROFILE TAB */}
@@ -692,19 +781,8 @@ export default function PortfolioPage() {
                     </div>
                 </div>
 
-                {/* Right Column: Charts */}
-                <div className="space-y-6">
-                    <PortfolioAnalysisCharts />
 
-                    {/* Quick Transfer / Action Card (Placeholder) */}
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
-                        <h3 className="text-lg font-bold mb-2">Add Funds</h3>
-                        <p className="text-blue-100 text-sm mb-4">Transfer funds instantly to your connected broker accounts.</p>
-                        <button className="w-full py-2 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-colors">
-                            Add Funds
-                        </button>
-                    </div>
-                </div>
+
             </div>
         </div >
     );

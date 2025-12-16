@@ -72,9 +72,9 @@ export default function ZerodhaDashboard() {
         // Calculate mutual fund portfolio
         if (mfHoldings && Array.isArray(mfHoldings)) {
             mfHoldings.forEach(mf => {
-                const currentValue = (mf.lastPrice || 0) * (mf.quantity || 0);
-                const invested = (mf.averagePrice || 0) * (mf.quantity || 0);
-                const pnl = currentValue - invested;
+                const currentValue = mf.currentValue || ((mf.currentPrice || 0) * (mf.quantity || 0));
+                const invested = mf.investedValue || ((mf.averagePrice || 0) * (mf.quantity || 0));
+                const pnl = mf.unrealizedPL || (currentValue - invested);
 
                 totalValue += currentValue;
                 totalPnL += pnl;
@@ -98,7 +98,8 @@ export default function ZerodhaDashboard() {
 
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
-            currency: 'INR'
+            currency: 'INR',
+            maximumFractionDigits: 4
         }).format(numAmount);
     };
 
@@ -343,7 +344,7 @@ export default function ZerodhaDashboard() {
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">
-                                                        {holding.tradingsymbol || 'N/A'}
+                                                        {holding.tradingSymbol || 'N/A'}
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                                                         {(holding.quantity || 0).toLocaleString('en-IN', { maximumFractionDigits: 3 })}
@@ -358,7 +359,7 @@ export default function ZerodhaDashboard() {
                                                         {formatCurrency(currentValue)}
                                                     </td>
                                                     <td className={`px-4 py-3 font-medium ${pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                        <div>{formatCurrency(pnl)}</div>
+                                                        <div>{formatCurrency(holding.unrealizedPL || pnl)}</div>
                                                         <div className="text-xs">({pnlPercentage.toFixed(2)}%)</div>
                                                     </td>
                                                 </tr>
@@ -402,14 +403,14 @@ export default function ZerodhaDashboard() {
                                                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
                                                     <div>{formatFundName(sip.fund)}</div>
                                                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                        Day: {sip.instalment_day}
+                                                        Day: {sip.instalmentDay}
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">
-                                                    {sip.tradingsymbol || 'N/A'}
+                                                    {sip.tradingSymbol || 'N/A'}
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                                                    {formatCurrency(sip.instalment_amount || 0)}
+                                                    {formatCurrency(sip.instalmentAmount || 0)}
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-700 dark:text-gray-300 capitalize">
                                                     {sip.frequency || 'N/A'}
@@ -423,17 +424,17 @@ export default function ZerodhaDashboard() {
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                                                    <div>{sip.next_instalment ? new Date(sip.next_instalment).toLocaleDateString('en-IN') : 'N/A'}</div>
-                                                    {sip.last_instalment && (
+                                                    <div>{sip.nextInstalmentDate ? new Date(sip.nextInstalmentDate).toLocaleDateString('en-IN') : 'N/A'}</div>
+                                                    {sip.lastInstalmentDate && (
                                                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                            Last: {new Date(sip.last_instalment).toLocaleDateString('en-IN')}
+                                                            Last: {new Date(sip.lastInstalmentDate).toLocaleDateString('en-IN')}
                                                         </div>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                                                    <div>{sip.completed_instalments || 0} instalments</div>
+                                                    <div>{sip.completedInstalments || 0} instalments</div>
                                                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                        Since: {sip.created ? new Date(sip.created).toLocaleDateString('en-IN') : 'N/A'}
+                                                        Since: {sip.startDate ? new Date(sip.startDate).toLocaleDateString('en-IN') : 'N/A'}
                                                     </div>
                                                 </td>
                                             </tr>
