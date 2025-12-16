@@ -19,6 +19,7 @@ public class PortfolioSummaryResponse {
     private BigDecimal totalCurrentValue;
     private BigDecimal totalInvestedValue;
     private BigDecimal totalUnrealizedPL;
+    private BigDecimal totalUnrealizedPLPercent;
 
     private BigDecimal totalDayGain;
     private BigDecimal totalDayGainPercent;

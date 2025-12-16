@@ -162,6 +162,16 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             totalDayGainPercent = BigDecimal.ZERO;
         }
 
+        // NEW: Overall Unrealized P&L Percentage
+        // Formula: (Unrealized P&L / Invested Value) * 100
+        BigDecimal totalUnrealizedPLPercent = BigDecimal.ZERO;
+        if (totalInvestedValue.compareTo(BigDecimal.ZERO) != 0) {
+            totalUnrealizedPLPercent = totalUnrealizedPL
+                    .divide(totalInvestedValue, 6, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
+
         boolean dayGainPercentApplicable = true; // Always applicable now if verified safe
 
         // 6. Sync Timestamps (Use SUCCESS logs only)
@@ -175,6 +185,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .totalCurrentValue(totalCurrentValue.setScale(4, RoundingMode.HALF_UP))
                 .totalInvestedValue(totalInvestedValue.setScale(4, RoundingMode.HALF_UP))
                 .totalUnrealizedPL(totalUnrealizedPL.setScale(4, RoundingMode.HALF_UP))
+                .totalUnrealizedPLPercent(totalUnrealizedPLPercent)
                 .totalDayGain(totalDayGain.setScale(4, RoundingMode.HALF_UP))
                 .totalDayGainPercent(totalDayGainPercent)
                 .previousDayTotalValue(previousDayTotalValue.setScale(4, RoundingMode.HALF_UP))

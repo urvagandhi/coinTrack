@@ -61,9 +61,13 @@ export default function PortfolioSummary() {
 
             {/* Unrealized P/L */}
             <div className="bg-card/40 border border-border/50 p-5 rounded-xl backdrop-blur-md shadow-sm">
-                <h3 className="text-muted-foreground text-sm font-medium">Unrealized P/L</h3>
+                <h3 className="text-muted-foreground text-sm font-medium">Total Unrealized P&L</h3>
                 <div className={`text-2xl font-bold mt-1 ${(data.totalUnrealizedPL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {(data.totalUnrealizedPL || 0) >= 0 ? '+' : ''}{formatCurrency(data.totalUnrealizedPL)}
+                </div>
+                <div className={`text-sm font-medium mt-1 ${(data.totalUnrealizedPLPercent || 0) >= 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
+                    {(data.totalUnrealizedPLPercent || 0) >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                    {formatPercent(data.totalUnrealizedPLPercent)}
                 </div>
             </div>
         </motion.div>
