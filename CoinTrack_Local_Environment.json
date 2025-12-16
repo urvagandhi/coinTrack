@@ -13,67 +13,55 @@
       "enabled": true
     },
     {
-      "key": "username",
-      "value": "testuser",
-      "enabled": true
-    },
-    {
-      "key": "password",
-      "value": "password123",
-      "enabled": true
-    },
-    {
       "key": "zerodhaApiKey",
-      "value": "your_api_key",
+      "value": "<ENTER_API_KEY>",
       "enabled": true
     },
     {
       "key": "zerodhaApiSecret",
-      "value": "your_api_secret",
+      "value": "<ENTER_API_SECRET>",
       "enabled": true
     },
     {
       "key": "zerodhaClientId",
-      "value": "your_client_id",
+      "value": "<ENTER_CLIENT_ID>",
       "enabled": true
     },
     {
       "key": "upstoxApiKey",
-      "value": "your_api_key",
+      "value": "<ENTER_API_KEY>",
       "enabled": true
     },
     {
       "key": "upstoxApiSecret",
-      "value": "your_api_secret",
+      "value": "<ENTER_API_SECRET>",
       "enabled": true
     },
     {
       "key": "upstoxClientId",
-      "value": "your_client_id",
+      "value": "<ENTER_CLIENT_ID>",
       "enabled": true
     },
     {
       "key": "angeloneApiKey",
-      "value": "your_api_key",
+      "value": "<ENTER_API_KEY>",
       "enabled": true
     },
     {
       "key": "angeloneClientId",
-      "value": "your_client_id",
+      "value": "<ENTER_CLIENT_ID>",
       "enabled": true
     },
     {
       "key": "angelonePin",
-      "value": "your_pin",
+      "value": "<ENTER_PIN>",
       "enabled": true
     },
     {
       "key": "angeloneTotp",
-      "value": "123456",
+      "value": "<ENTER_TOTP>",
       "enabled": true
     }
   ],
-  "_postman_variable_scope": "environment",
-  "_postman_exported_at": "2025-09-23T00:00:00.000Z",
-  "_postman_exported_using": "ChatGPT"
+  "_postman_variable_scope": "environment"
 }

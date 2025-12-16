@@ -1,23 +1,21 @@
 # Notes Module – CoinTrack
 
 > **Domain**: User notes and annotations
-> **Responsibility**: CRUD operations for personal notes attached to user accounts
+> **Responsibility**: Secure CRUD operations for personal notes attached to user accounts
 
 ---
 
 ## 1. Overview
 
 ### Purpose
-The Notes module provides a simple note-taking feature for users to track investment ideas, strategies, and personal reminders within the CoinTrack application.
+The Notes module provides a personal note-taking feature for users to track investment ideas, strategies, and market observations. It supports rich-text content, tagging, color-coding, and pinning.
 
 ### Business Problem Solved
-Investors need a place to document:
-- Investment strategies
-- Trade rationales
-- Market observations
-- Personal financial goals
-
-This module provides a tagging and pinning system for organization.
+Investors need a dedicated space to:
+- Document rationales for trades.
+- Save market research.
+- Set reminders for corporate actions.
+- Prioritize important info via "Pinning".
 
 ### System Position
 ```text
@@ -26,7 +24,7 @@ This module provides a tagging and pinning system for organization.
 │  (Notes UI) │     │    Module    │     │   Collection    │
 └─────────────┘     └──────────────┘     └─────────────────┘
                            │
-                           │ Uses Principal from
+                           │ depends on User ID
                            ▼
                     ┌──────────────┐
                     │   Security   │
@@ -41,60 +39,45 @@ This module provides a tagging and pinning system for organization.
 ```
 notes/
 ├── controller/
-│   └── NoteController.java       # REST endpoints for CRUD
+│   └── NoteController.java       # REST endpoints (Route Handlers)
 ├── model/
-│   └── Note.java                 # MongoDB entity
+│   └── Note.java                 # MongoDB entity (Data Shape)
 ├── repository/
-│   └── NoteRepository.java       # Spring Data repository
+│   └── NoteRepository.java       # Spring Data access (Queries)
 └── service/
-    └── NoteService.java          # Business logic
+    └── NoteService.java          # Business logic & Authorization
 ```
-
-### Why This Structure?
-| Folder | Purpose | DDD Alignment |
-|--------|---------|---------------|
-| `controller/` | HTTP layer | Application layer |
-| `service/` | Business rules | Domain layer |
-| `model/` | Data entities | Domain model |
-| `repository/` | Data access | Infrastructure layer |
 
 ---
 
 ## 3. Component Responsibilities
 
 ### NoteController
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/notes` | GET | Get all notes for user |
-| `/api/notes` | POST | Create new note |
-| `/api/notes/{id}` | PUT | Update note |
-| `/api/notes/{id}` | DELETE | Delete note |
-
-All endpoints:
-- Require authenticated user (JWT)
-- Use `Principal` to get user ID
-- Return `ApiResponse<T>` wrapper
+**Base Path**: `/api/notes`
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Fetch all notes (sorted by Pinned > Updated) |
+| POST | `/` | Create a new note |
+| PUT | `/{id}` | Update title, content, color, pin status |
+| DELETE | `/{id}` | Permanently delete a note |
 
 ### NoteService
-| Method | Responsibility |
-|--------|---------------|
-| `getNotesByUserId(userId)` | Fetch user's notes (pinned first) |
-| `createNote(note)` | Create with timestamps |
-| `updateNote(id, note, userId)` | Update if authorized |
-| `deleteNote(id, userId)` | Delete if authorized |
-| `createDefaultNotesIfNoneExist(userId)` | Seed welcome notes on registration |
+The "Brain" of the module.
+*   **Authorization**: Ensures User A cannot modify User B's notes.
+*   **Creation**: Handling timestamps (`createdAt`, `updatedAt`).
+*   **Seeding**: Creates default "Welcome" notes for new users.
 
 ### Note Model
 ```java
 @Document(collection = "notes")
 public class Note {
     @Id private String id;
-    private String userId;
+    private String userId;    // Owner (Indexed)
     private String title;
-    private String content;
+    private String content;   // Markdown supported
     private List<String> tags;
-    private String color;         // Tailwind class
-    private boolean pinned;
+    private String color;     // UI Color (e.g., "bg-yellow-100")
+    private boolean pinned;   // Sorting Priority
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
@@ -104,131 +87,53 @@ public class Note {
 
 ## 4. Execution Flow
 
-### Create Note Flow
+### Create Note
 ```
-1. POST /api/notes with body: { title, content, tags }
-   └── NoteController.createNote(note, principal)
-       └── note.setUserId(principal.getName())
-       └── noteService.createNote(note)
-           └── Set createdAt, updatedAt
-           └── noteRepository.save(note)
-       └── Return ApiResponse.success(createdNote)
-```
+1. Frontend sends POST /api/notes
+   Body: { title: "Buy Tata Motors", content: "Target 1000", pinned: true }
 
-### Authorization Check
-```java
-// In NoteService.updateNote()
-Note note = noteRepository.findById(id).orElseThrow();
-if (!note.getUserId().equals(userId)) {
-    throw new RuntimeException("Unauthorized");  // Will become AuthorizationException
-}
+2. NoteController extracts `userId` from SecurityContext (JWT)
+
+3. NoteService.createNote(note)
+   - Sets `userId` = principal.getName()
+   - Sets `createdAt` = LocalDateTime.now()
+   - Calls NoteRepository.save(note)
+
+4. Returns 200 OK with created Note object
 ```
 
----
+### Secure Update
+```
+1. Frontend sends PUT /api/notes/123
 
-## 5. Diagrams
-
-### CRUD Operations
-```text
-┌──────────────────────────────────────────────────────────┐
-│                    NoteController                        │
-├──────────────────────────────────────────────────────────┤
-│  GET /api/notes          ──> getNotesByUserId(userId)   │
-│  POST /api/notes         ──> createNote(note)           │
-│  PUT /api/notes/{id}     ──> updateNote(id, note, userId)│
-│  DELETE /api/notes/{id}  ──> deleteNote(id, userId)     │
-└───────────────────────────┬──────────────────────────────┘
-                            │
-                            ▼
-┌──────────────────────────────────────────────────────────┐
-│                     NoteService                         │
-│  - Authorization check (userId matches)                  │
-│  - Timestamp management                                  │
-│  - Sort by pinned DESC, updatedAt DESC                   │
-└───────────────────────────┬──────────────────────────────┘
-                            │
-                            ▼
-┌──────────────────────────────────────────────────────────┐
-│                   NoteRepository                         │
-│  - findByUserId(userId)                                  │
-│  - findByUserIdOrderByPinnedDescUpdatedAtDesc(userId)    │
-└──────────────────────────────────────────────────────────┘
+2. NoteService.updateNote("123", newData, "userA")
+   - Fetch existing note by ID "123"
+   - Check if existingNote.userId == "userA"
+   - IF MISMATCH -> Throw AuthorizationException ("Not owner")
+   - IF MATCH -> Update fields & `updatedAt` -> Save
 ```
 
 ---
 
-## 6. Logging Strategy
+## 5. Security Considerations
 
-### What IS Logged
-| Event | Level | Example |
-|-------|-------|---------|
-| Get notes | `DEBUG` | `Getting all notes for user: userId` |
-| Create note | `INFO` | `Creating note for user: userId` |
-| Update note | `INFO` | `Updating note {id} for user: userId` |
-| Delete note | `INFO` | `Deleting note {id} for user: userId` |
+### 1. User Isolation
+Notes are strictly personal. There is **no** concept of public notes.
+*   **Read Isolation**: `repository.findByUserId(userId)` ensures users only load their own data.
+*   **Write Isolation**: Service layer explicitly checks ownership before any Update/Delete.
 
-### What is NEVER Logged
-- Note content (privacy)
-- Full note body in production
+### 2. Input Sanitization
+While the frontend renders content, the backend accepts raw strings.
+*   **Prevention**: Frontend must use libraries that handle XSS if rendering HTML (e.g., Markdown parsers).
+*   **Backend Role**: Stores exactly what is sent.
 
 ---
 
-## 7. Security Considerations
-
-### User Isolation
-- Notes are **always** filtered by `userId`
-- User A cannot read/write User B's notes
-- Authorization checked in service layer
-
-### Principal Usage
-```java
-@GetMapping
-public ResponseEntity<?> getAllNotes(Principal principal) {
-    List<Note> notes = noteService.getNotesByUserId(principal.getName());
-    // principal.getName() = authenticated user's username
-}
-```
+## 6. Common Pitfalls
+| Pitfall | Impact | Prevention |
+|---------|--------|------------|
+| Missing `userId` check on Update | One user can overwrite another's note if they guess the ID | Always compare `existingNote.userId` vs `principal.name` |
+| Returning all notes | Performance issues if thousands of notes | (Future) Implement Pagination |
+| Logging Content | Privacy violation | Log Note IDs, never Title/Content |
 
 ---
-
-## 8. Extension Guidelines
-
-### Adding a Note Category
-1. Add `category` field to `Note.java`
-2. Update repository with query method
-3. Add filter parameter to controller
-
-### Adding Note Sharing
-1. Create `SharedNote` entity
-2. Add sharing service
-3. Respect authorization boundaries
-
----
-
-## 9. Common Pitfalls
-
-| Pitfall | Why It's Bad | Prevention |
-|---------|--------------|------------|
-| Not checking userId | Security hole | Always verify ownership |
-| Returning all notes | Performance | Paginate queries |
-| Logging note content | Privacy violation | Log only IDs |
-
----
-
-## 10. Testing & Verification
-
-### Unit Tests
-```java
-@Test
-void shouldNotAllowUpdateByOtherUser() {
-    // Create note by user A
-    // Attempt update by user B
-    // Assert exception thrown
-}
-```
-
-### Manual Verification
-- [ ] Create note → appears in list
-- [ ] Update note → content changes
-- [ ] Delete note → removed from list
-- [ ] Pinned notes appear first

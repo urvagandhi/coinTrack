@@ -155,6 +155,10 @@ This file is the **single source of truth** for all backend endpoints.
 3.  **❌ Strict Ban**: No reading `localStorage` in simple components. Use `useAuth()`.
 4.  **✅ Constraint**: All broker logic must live in `src/app/(main)/brokers/`.
 5.  **✅ Constraint**: `api.js` must handle all error normalization.
+6.  **⚠️ Data Rule**: Respect DTO casing.
+    - **Normalized DTOs** (Holdings, Positions) → `camelCase` (e.g., `averageBuyPrice`).
+    - **Raw Pass-throughs** (Trades, Orders) → `snake_case` (e.g., `order_timestamp`).
+    - *Always check the API response network tab before binding.*
 
 ---
 

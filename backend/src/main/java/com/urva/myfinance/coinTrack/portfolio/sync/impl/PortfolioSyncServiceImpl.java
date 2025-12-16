@@ -17,21 +17,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
 import com.urva.myfinance.coinTrack.broker.model.ExpiryReason;
-import com.urva.myfinance.coinTrack.portfolio.model.SyncLog;
-import com.urva.myfinance.coinTrack.portfolio.model.SyncStatus;
 import com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository;
-import com.urva.myfinance.coinTrack.portfolio.repository.CachedHoldingRepository;
-import com.urva.myfinance.coinTrack.portfolio.repository.CachedPositionRepository;
-import com.urva.myfinance.coinTrack.portfolio.repository.SyncLogRepository;
 import com.urva.myfinance.coinTrack.broker.service.BrokerService;
 import com.urva.myfinance.coinTrack.broker.service.BrokerServiceFactory;
 import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
+import com.urva.myfinance.coinTrack.common.util.HashUtil;
+import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
+import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
+import com.urva.myfinance.coinTrack.portfolio.model.SyncLog;
+import com.urva.myfinance.coinTrack.portfolio.model.SyncStatus;
+import com.urva.myfinance.coinTrack.portfolio.repository.CachedHoldingRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.CachedPositionRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.SyncLogRepository;
 import com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService;
 import com.urva.myfinance.coinTrack.portfolio.sync.SyncSafetyService;
-import com.urva.myfinance.coinTrack.common.util.HashUtil;
 
 @Service
 public class PortfolioSyncServiceImpl implements PortfolioSyncService {
@@ -167,97 +167,15 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
             java.util.concurrent.CompletableFuture.runAsync(() -> {
                 try {
                     logger.info("Starting manual sync for account {}", accountId);
-                    runFullSyncForAccount(account); // This method normally acquires lock internally?
-                    // WAIT! Job 5 implementation of runFullSyncForAccount ALSO does tryAccountLock!
-                    // If we acquire it here, runFullSyncForAccount will FAIL because of re-entrancy
-                    // check if it's not the same thread?
-                    // SyncSafetyServiceImpl uses map.putIfAbsent. It is NOT re-entrant by thread
-                    // automatically unless we built it that way.
-                    // SyncSafetyServiceImpl: return accountLocks.putIfAbsent(accountId,
-                    // Boolean.TRUE) == null;
-                    // It is NOT re-entrant.
-
-                    // PROBLEM: triggerManualRefreshForUser acquires lock.
-                    // Async thread calls runFullSyncForAccount.
-                    // runFullSyncForAccount tries to acquire lock -> it will fail because 'trigger'
-                    // already holds it?
-                    // NO. 'trigger' acquired it in the Main Thread. The Async Thread is different.
-                    // Actually, 'trigger' acquired it.
-                    // So `runFullSyncForAccount` will see it's locked.
-
-                    // FIX: We should NOT call `runFullSyncForAccount` directly if it expects to
-                    // acquire the lock itself.
-                    // OR `runFullSyncForAccount` should be refactored to allow "force/bypass lock"
-                    // or we split logic.
-                    // `executeSyncLogic` is private in `PortfolioSyncServiceImpl`.
-
-                    // Let's look at `runFullSyncForAccount` in `PortfolioSyncServiceImpl.java`
-                    // (previous viewed file).
-                    // It does: if (!syncSafetyService.tryAccountLock(account.getId())) return
-                    // FAILURE;
-
-                    // If we lock here in `trigger`, `runFullSyncForAccount` will fail.
-                    // If we DO NOT lock here in `trigger` and just fire async,
-                    // then `runFullSyncForAccount` will lock.
-                    // BUT we want to report "Skipped" to the user NOW if it's already locked.
-
-                    // So we MUST check lock here.
-                    // If we check `isLocked()` (doesn't exist in interface) or just tryLock.
-                    // If we `tryLock` and succeed, we 'reserved' the spot.
-                    // But we can't pass this reservation to the async thread easily with the
-                    // current `SyncSafetyService` (it's a simple map).
-
-                    // SOLUTION:
-                    // 1. `tryLock` in main thread. If fails -> Skip.
-                    // 2. If succeeds -> "Release" immediately? No, then race condition.
-                    // 3. Current SyncSafetyService is naive (ConcurrentHashMap). It doesn't know
-                    // "who" locked it.
-
-                    // BETTER APPROACH:
-                    // 1. In `trigger`, we check lock.
-                    // If locked -> skip.
-                    // If NOT locked -> We DO NOT lock here. We let the async thread lock.
-                    // BUT race condition: Between our check and async start, Cron might lock it.
-                    // That's acceptable. The async task will just fail/skip logged. User gets
-                    // "Triggered".
-
-                    // WAIT. User wants "Skipped" if already running.
-                    // If we just check `accountLocks.containsKey`? Interface doesn't expose it.
-                    // We only have `tryAccountLock`.
-
-                    // Workaround:
-                    // Scenario A: Locked. `tryAccountLock` returns false. We add to Skipped.
-                    // Correct.
-                    // Scenario B: Not Locked. `tryAccountLock` returns true. We now HOLD the lock.
-                    // We want to run `runFullSyncForAccount` in async.
-                    // We must RELEASE the lock so the async thread can acquire it.
-                    // But if we release, someone else can grab it.
-                    //
-                    // Is there a way to run logic without re-acquiring lock? `executeSyncLogic` is
-                    // private.
-                    //
-                    // Compromise:
-                    // - TryLock. If true -> We know it's free. We Release it immediately.
-                    // Then we submit Async task.
-                    // Async task calls `runFullSyncForAccount` which TryLocks again.
-                    // Risk: Cron steals it in those microseconds.
-                    // Result: Manual sync fails (logged as "Sync in progress"). User was told
-                    // "Triggered".
-                    // This is acceptable for a "Refresh" button. "Triggered" means "Attempt
-                    // initiated".
-
-                    // Let's do this:
-                    // if (syncSafetyService.tryAccountLock(id)) {
-                    // syncSafetyService.releaseAccountLock(id); // Release immediately
-                    // // Fire Async
-                    // CompletableFuture.runAsync(...)
-                    // triggered.add(...)
-                    // } else {
-                    // skipped.add(...)
-                    // }
-
+                    // CRITICAL FIX: Direct call to executeSyncLogic() bypassing lock check
+                    // because we already acquired it in the main thread logic above.
+                    // If we used runFullSyncForAccount(), it would fail trying to re-acquire the
+                    // lock.
+                    executeSyncLogic(account);
+                } catch (Exception e) {
+                    logger.error("Error during manual sync async execution", e);
                 } finally {
-                    // Logging or cleanup
+                    syncSafetyService.releaseAccountLock(accountId);
                 }
             });
             triggered.add(brokerName);
@@ -381,9 +299,10 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
 
         // Update or Insert
         for (CachedHolding fetched : fetchedList) {
-            // Re-calculate checksum
-            String checksum = HashUtil
-                    .sha256(fetched.getSymbol() + fetched.getQuantity() + fetched.getAverageBuyPrice());
+            // Re-calculate checksum including P&L and Price fields to ensure updates
+            // persist
+            String checksum = HashUtil.sha256(fetched.getSymbol() + fetched.getQuantity() + fetched.getAverageBuyPrice()
+                    + fetched.getLastPrice() + fetched.getPnl() + fetched.getDayChange());
             fetched.setChecksumHash(checksum);
             fetched.setUserId(userId); // Ensure userId is set
             fetched.setBroker(broker);
@@ -420,8 +339,11 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
                 .collect(Collectors.toSet());
 
         for (CachedPosition fetched : fetchedList) {
-            String checksum = HashUtil.sha256(
-                    fetched.getSymbol() + fetched.getQuantity() + fetched.getBuyPrice() + fetched.getPositionType());
+            // Re-calculate checksum including MTM/PnL to ensure updates persist
+            String checksum = HashUtil.sha256(fetched.getSymbol() + fetched.getQuantity() + fetched.getBuyPrice()
+                    + fetched.getPositionType() + fetched.getMtm() + fetched.getPnl() + fetched.getValue()
+                    + fetched.getBuyQuantity() + fetched.getSellQuantity() + fetched.getNetQuantity()
+                    + fetched.getOvernightQuantity());
             fetched.setChecksumHash(checksum);
             fetched.setUserId(userId);
             fetched.setBroker(broker);

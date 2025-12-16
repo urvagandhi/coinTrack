@@ -27,7 +27,7 @@ public class NetPositionDTO {
     private BigDecimal dayGain;
     private BigDecimal dayGainPercent;
 
-    // Derivative Fields (Job 11)
+    // Derivative Fields
     private boolean isDerivative;
     private String instrumentType; // FUTURES, OPTIONS
     private BigDecimal strikePrice;
@@ -38,4 +38,9 @@ public class NetPositionDTO {
     private Integer netLots;
     private BigDecimal fnoDayGain;
     private BigDecimal fnoDayGainPercent;
+
+    // Raw Broker Payload (Pass-Through)
+    private Map<String, Object> raw;
+
+    private String positionType;
 }

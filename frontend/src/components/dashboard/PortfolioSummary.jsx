@@ -32,7 +32,7 @@ export default function PortfolioSummary() {
                 </div>
                 <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    Updated: {formatDateTime(data.lastAnySync)} // Fallback if lastAnySync missing?
+                    Updated: {data.lastAnySync ? formatDateTime(data.lastAnySync) : 'Just now'}
                 </div>
             </div>
 
@@ -52,15 +52,22 @@ export default function PortfolioSummary() {
                 </div>
                 <div className={`text-sm font-medium mt-1 ${isPositive ? 'text-green-500' : 'text-red-500'} flex items-center`}>
                     {isPositive ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                    {formatPercent(data.totalDayGainPercent)}
+                    {(data.totalDayGain !== 0 && Math.abs(data.totalDayGainPercent) < 0.01)
+                        ? '< 0.01%'
+                        : formatPercent(data.totalDayGainPercent)
+                    }
                 </div>
             </div>
 
             {/* Unrealized P/L */}
             <div className="bg-card/40 border border-border/50 p-5 rounded-xl backdrop-blur-md shadow-sm">
-                <h3 className="text-muted-foreground text-sm font-medium">Unrealized P/L</h3>
+                <h3 className="text-muted-foreground text-sm font-medium">Total Unrealized P&L</h3>
                 <div className={`text-2xl font-bold mt-1 ${(data.totalUnrealizedPL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {(data.totalUnrealizedPL || 0) >= 0 ? '+' : ''}{formatCurrency(data.totalUnrealizedPL)}
+                </div>
+                <div className={`text-sm font-medium mt-1 ${(data.totalUnrealizedPLPercent || 0) >= 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
+                    {(data.totalUnrealizedPLPercent || 0) >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                    {formatPercent(data.totalUnrealizedPLPercent)}
                 </div>
             </div>
         </motion.div>

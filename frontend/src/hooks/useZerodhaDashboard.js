@@ -16,9 +16,20 @@ export function useZerodhaDashboard() {
 
     // Backend currently does not support specialized Profile/Funds/SIPs for specific brokers
     // Returning null/empty to prevents runtime crashes.
-    const mfHoldings = [];
-    const sips = [];
-    const profile = null;
+
+    // FETCH REAL DATA (Fix for misleading stubs)
+    const { data: mfData } = useQuery({
+        queryKey: ['mfHoldings'],
+        queryFn: portfolioAPI.getMfHoldings
+    });
+    const mfHoldings = mfData?.data || [];
+
+    const { data: profile } = useQuery({
+        queryKey: ['profile'],
+        queryFn: portfolioAPI.getProfile
+    });
+
+    const sips = []; // Backend support for SIP list pending
 
     return {
         holdings: zerodhaHoldings,

@@ -36,6 +36,38 @@ public class CachedPosition {
 
     private PositionType positionType;
 
+    // Zerodha P&L Fields
+    private BigDecimal mtm; // Day M2M
+    private BigDecimal pnl; // Unrealized P&L
+    private BigDecimal realized; // Realized P&L
+
+    // Additional Zerodha Raw Fields
+    private BigDecimal lastPrice; // LTP from Zerodha
+    private BigDecimal closePrice; // Previous Close
+    private BigDecimal value; // Current market value
+    private BigDecimal buyQuantity;
+    private BigDecimal aggregateBuyPrice; // Renamed from buyPrice to avoid collision
+    private BigDecimal sellQuantity;
+    private BigDecimal sellPrice;
+    private BigDecimal dayBuyQuantity;
+    private BigDecimal daySellQuantity;
+    private BigDecimal dayBuyValue;
+    private BigDecimal daySellValue;
+    private BigDecimal netQuantity;
+    private BigDecimal overnightQuantity;
+
+    // Metadata
+    private String apiVersion;
+
+    // Full Raw Payload (Pass-Through)
+    private java.util.Map<String, Object> rawData;
+
+    // F&O Details
+    private String instrumentType;
+    private BigDecimal strikePrice;
+    private String optionType;
+    private String expiryDate;
+
     private LocalDateTime lastUpdated;
 
     private String checksumHash;

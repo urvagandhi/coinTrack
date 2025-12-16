@@ -19,9 +19,11 @@ public class PortfolioSummaryResponse {
     private BigDecimal totalCurrentValue;
     private BigDecimal totalInvestedValue;
     private BigDecimal totalUnrealizedPL;
+    private BigDecimal totalUnrealizedPLPercent;
 
     private BigDecimal totalDayGain;
     private BigDecimal totalDayGainPercent;
+    private BigDecimal previousDayTotalValue;
 
     // Sync Timestamps
     private LocalDateTime lastHoldingsSync;
@@ -30,4 +32,13 @@ public class PortfolioSummaryResponse {
 
     // Detailed List
     private List<SummaryHoldingDTO> holdingsList;
+    private List<SummaryPositionDTO> positionsList;
+
+    // Metadata
+    private String type;
+    private List<String> source;
+
+    // Guardrail Metadata
+    private boolean containsDerivatives;
+    private Boolean dayGainPercentApplicable; // Nullable if not computed
 }

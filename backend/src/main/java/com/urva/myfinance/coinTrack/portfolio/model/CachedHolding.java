@@ -30,9 +30,30 @@ public class CachedHolding {
 
     private String symbol;
 
+    private String exchange;
+
     private BigDecimal quantity;
 
     private BigDecimal averageBuyPrice;
+
+    // Zerodha specific fields
+    private Long instrumentToken;
+    private String product;
+    private BigDecimal lastPrice;
+    private BigDecimal closePrice;
+    private BigDecimal pnl;
+    private BigDecimal dayChange;
+    private BigDecimal dayChangePercentage;
+    private BigDecimal usedQuantity;
+    private BigDecimal t1Quantity;
+    private BigDecimal realisedQuantity;
+    private BigDecimal openingQuantity;
+    private BigDecimal shortQuantity;
+    private BigDecimal collateralQuantity;
+    private BigDecimal authorisedQuantity;
+    private String authorisedDate;
+
+    private String apiVersion;
 
     private LocalDateTime lastUpdated;
 

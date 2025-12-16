@@ -1,22 +1,26 @@
 # Portfolio Module – CoinTrack
 
-> **Domain**: Holdings, positions, portfolio aggregation, and market data
-> **Responsibility**: Consolidate, calculate, and present user portfolio across all brokers
+> **Domain**: Holdings, positions, mutual funds, aggregation, and sync
+> **Responsibility**: Consolidate user assets into a unified "Source of Truth" view
 
 ---
 
 ## 1. Overview
 
 ### Purpose
-The Portfolio module is the **core value proposition** of CoinTrack. It aggregates holdings and positions from multiple brokers, calculates net positions, and provides real-time portfolio insights.
+The Portfolio module is the **core** of CoinTrack. It aggregates disparate asset classes (Equity, Mutual Funds, Derivatives) from multiple brokers into a single, cohesive dashboard.
 
 ### Business Problem Solved
-Users with multiple broker accounts need:
-- Consolidated view of all holdings
-- Net position calculation (same stock across brokers)
-- Day gain/loss tracking
-- F&O position analysis
-- Market price integration
+Investors faced fragmented views:
+*   "What is my total net worth?"
+*   "How much did my portfolio move today?"
+*   "Do I have enough margin?"
+*   "What are my upcoming SIPs?"
+
+This module solves this by:
+1.  **Aggregating**: `Holdings + Positions + Funds + MF`
+2.  **Normalizing**: Converting broker-specific formats to CoinTrack DTOs
+3.  **Persisting**: Caching data for fast retrieval (avoiding API rate limits)
 
 ### System Position
 ```text
@@ -40,287 +44,112 @@ Users with multiple broker accounts need:
 ```
 portfolio/
 ├── controller/
-│   ├── PortfolioController.java      # Summary, net positions
-│   └── ManualRefreshController.java  # Trigger sync
+│   ├── PortfolioController.java      # Summary, Holdings, Positions, MFs
+│   └── ManualRefreshController.java  # Trigger Sync
 ├── dto/
-│   ├── PortfolioSummaryResponse.java # Aggregate totals
-│   ├── NetPositionDTO.java           # Per-symbol position
-│   ├── SummaryHoldingDTO.java        # Individual holding
-│   ├── ManualRefreshResponse.java    # Sync result
-│   ├── FnoPositionDTO.java           # F&O position
-│   └── FnoDetailsDTO.java            # F&O metadata
+│   ├── PortfolioSummaryResponse.java # Aggregate Totals
+│   ├── NetPositionDTO.java           # Consolidated Positions
+│   ├── SummaryHoldingDTO.java        # Normalized Equity Holding
+│   ├── kite/
+│   │   ├── FundsDTO.java             # Margins
+│   │   ├── MfSipDTO.java             # MF SIPs
+│   │   ├── MutualFundDTO.java        # MF Holdings
+│   │   └── MutualFundOrderDTO.java   # MF Orders
 ├── model/
-│   ├── CachedHolding.java            # Broker → DB holding
-│   ├── CachedPosition.java           # Broker → DB position
-│   ├── SyncLog.java                  # Sync audit trail
-│   ├── SyncStatus.java               # Enum: SUCCESS, FAILED
-│   ├── PositionType.java             # Enum: LONG, SHORT
-│   ├── MarketPrice.java              # LTP cache
-│   └── enums/
-│       ├── FnoInstrumentType.java    # FUTURES, OPTIONS
-│       └── OptionType.java           # CE, PE
-├── repository/
-│   ├── CachedHoldingRepository.java
-│   ├── CachedPositionRepository.java
-│   ├── SyncLogRepository.java
-│   └── MarketPriceRepository.java
+│   ├── CachedHolding.java            # Broker → DB (Equity)
+│   ├── CachedPosition.java           # Broker → DB (F&O)
+│   ├── CachedMfOrder.java            # Broker → DB (MF Orders)
+│   ├── CachedFunds.java              # Broker → DB (Margins)
+│   └── SyncLog.java                  # Audit Trail
 ├── service/
-│   ├── NetPositionService.java       # Interface
-│   ├── PortfolioSummaryService.java  # Interface
+│   ├── PortfolioSummaryService.java  # Aggregation Logic
+│   ├── NetPositionService.java       # Position Consolidation
 │   └── impl/
-│       ├── NetPositionServiceImpl.java
-│       └── PortfolioSummaryServiceImpl.java
+│       └── PortfolioSummaryServiceImpl.java (KEY LOGIC HERE)
 ├── sync/
-│   ├── PortfolioSyncService.java     # Interface
-│   ├── SyncSafetyService.java        # Rate limiting
-│   └── impl/
-│       ├── PortfolioSyncServiceImpl.java
-│       └── SyncSafetyServiceImpl.java
-├── market/
-│   ├── MarketDataService.java        # Interface
-│   ├── exception/
-│   │   └── MarketDataException.java
-│   └── impl/
-│       └── MarketDataServiceImpl.java
-├── fno/
-│   ├── FnoPositionService.java       # Interface
-│   └── impl/
-│       └── FnoPositionServiceImpl.java
-└── scheduler/
-    └── PortfolioSyncScheduler.java   # Scheduled sync jobs
+│   ├── PortfolioSyncService.java     # Sync Orchestration
+│   └── SyncSafetyService.java        # Rate Limiting
+└── fno/                              # Derivatives Specialization
 ```
 
 ---
 
-## 3. Component Responsibilities
+## 3. Core Logic & Aggregation Rules
 
-### Controllers
-| Controller | Endpoints | Purpose |
-|------------|-----------|---------|
-| `PortfolioController` | `GET /summary`, `GET /net-positions` | Return aggregated data |
-| `ManualRefreshController` | `POST /refresh` | Trigger portfolio sync |
+### 3.1 Portfolio Summary (Aggregation)
+**Endpoint**: `/api/portfolio/summary`
 
-### Core Services
-| Service | Responsibility |
-|---------|---------------|
-| `NetPositionService` | Merge holdings + positions by symbol |
-| `PortfolioSummaryService` | Calculate totals, day gain |
-| `PortfolioSyncService` | Fetch from brokers, cache in DB |
-| `MarketDataService` | Get current prices |
-| `FnoPositionService` | Parse and calculate F&O metrics |
+The Summary is calculated by iterating over **Equity Holdings** only.
+*   `totalCurrentValue` = Σ (Holding `currentValue`)
+*   `totalInvestedValue` = Σ (Holding `investedValue`)
+*   `totalDayGain` = Σ (Holding `dayGain`)
 
-### Sync Engine
-```
-PortfolioSyncService
-├── For each connected broker:
-│   ├── Check token validity
-│   ├── Fetch holdings via BrokerService
-│   ├── Fetch positions via BrokerService
-│   ├── Clear old cached data
-│   └── Save new data
-└── Log sync result in SyncLog
-```
+> **CRITICAL RULE**: **Positions (F&O)** are **EXCLUDED** from these totals to maintain mathematical consistency (`DayGain = Current - Previous`). Positions do not have a stable "Previous Close" like holdings do.
 
-### Models
-| Model | Purpose |
-|-------|---------|
-| `CachedHolding` | Holdings from broker (equity) |
-| `CachedPosition` | Positions from broker (intraday/F&O) |
-| `SyncLog` | Audit: when synced, success/failure |
-| `MarketPrice` | LTP cache by symbol |
+### 3.2 Holdings (Equity)
+*   **Trust the Broker**: P&L and Day Change are taken directly from the broker response if available. We do not recompute them unless data is missing (Fallback Logic).
+*   **Fallback**: If `pnl` is null, we compute `(current - avg) * qty`.
+
+### 3.3 Mutual Funds
+*   **Smart DTOs**: The `MutualFundDTO` encapsulates logic to fallback to `qty * NAV` if the broker doesn't provide a ready-made `current_value`.
+*   **Orders**: MF Orders are sorted strictly by `executionDate DESC`, then `orderTimestamp DESC`.
 
 ---
 
-## 4. Execution Flow
+## 4. Sync Engine
 
-### Get Portfolio Summary
-```
-1. GET /api/portfolio/summary
-   └── PortfolioController.getPortfolioSummary(principal)
-       └── userRepository.findByUsername(principal.getName())
-       └── portfolioSummaryService.getPortfolioSummary(userId)
-           └── Fetch CachedHoldings from DB
-           └── Fetch current prices from MarketDataService
-           └── Calculate:
-               - totalCurrentValue
-               - totalInvestedValue
-               - totalUnrealizedPL
-               - totalDayGain
-           └── Return PortfolioSummaryResponse
-       └── Return ApiResponse.success(response)
-```
+### Purpose
+To avoid hitting broker API rate limits and provide instant page loads, we cache data in MongoDB.
 
-### Manual Refresh Flow
-```
-1. POST /api/portfolio/refresh
-   └── ManualRefreshController.triggerManualRefresh(principal)
-       └── portfolioSyncService.triggerManualRefreshForUser(userId)
-           └── For each broker:
-               └── syncSafetyService.canSync(userId, broker) // Rate limit
-               └── brokerService.fetchHoldings(account)
-               └── brokerService.fetchPositions(account)
-               └── Clear old CachedHolding for userId+broker
-               └── Save new holdings
-               └── Log SyncLog
-           └── Return ManualRefreshResponse
-       └── Return ApiResponse.success(response)
-```
+### Flows
+#### A. Manual Sync (User Triggered)
+1.  **Request**: `POST /api/portfolio/refresh`
+2.  **Rate Limit Check**: `SyncSafetyService` ensures max 1 sync per 5 mins per broker.
+3.  **Fetch & Replace**:
+    *   Fetch latest data from Broker Module (`ZerodhaBrokerService`).
+    *   **Delete** old records for that user/broker.
+    *   **Save** new records (`CachedHolding`, `CachedPosition`, `CachedMfOrder`).
+4.  **Audit**: Log result in `SyncLog`.
+
+#### B. Scheduled Sync (Background)
+*   Frequency: Every 15 minutes during market hours.
+*   Logic: Iterates over all active `BrokerAccount`s and performs the Fetch & Replace flow.
 
 ---
 
-## 5. Diagrams
-
-### Data Flow Architecture
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                      PORTFOLIO MODULE                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   Broker    │───>│    Sync     │───>│   Cached    │     │
-│  │   Module    │    │   Engine    │    │   Holding   │     │
-│  └─────────────┘    └─────────────┘    │   Position  │     │
-│                                        └──────┬──────┘     │
-│                                               │             │
-│                                               ▼             │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   Market    │───>│     Net     │───>│  Summary    │     │
-│  │   Data      │    │   Position  │    │  Response   │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Sync Sequence
-```text
-Controller      SyncService      BrokerService      MongoDB
-    │                │                 │               │
-    ├── trigger() -->│                 │               │
-    │                ├── getBrokerAccounts() --------->│
-    │                │                 │               │
-    │                ├── [LOOP: For each broker]       │
-    │                │                 │               │
-    │                ├── fetchHoldings() ─────────────>│
-    │                │<------ List<CachedHolding> -----│
-    │                │                 │               │
-    │                ├── deleteOld() ----------------->│
-    │                ├── saveNew() ------------------->│
-    │                │                 │               │
-    │                ├── save(SyncLog) --------------->│
-    │<-- Response ---│                 │               │
-```
-
----
-
-## 6. Logging Strategy
-
-### What IS Logged
-| Event | Level | Constant |
-|-------|-------|----------|
-| Sync started | `INFO` | `SYNC_STARTED` |
-| Sync completed | `INFO` | `SYNC_COMPLETED` |
-| Sync failed | `ERROR` | `SYNC_FAILED` |
-| Rate limit hit | `WARN` | Custom message |
-| Market data fetch | `DEBUG` | N/A |
-
-### What is NEVER Logged
-- Full holding details
-- User financial amounts in production
-- Access tokens
-
----
-
-## 7. Security Considerations
+## 5. Security & Isolation
 
 ### User Isolation
-- All queries filter by `userId`
-- Cannot access another user's portfolio
-- Principal verified from JWT
+*   Services **MUST** always filter by `userId`.
+*   Example: `cachedHoldingRepository.findByUserId(userId)`
+*   It is physically impossible for User A to see User B's portfolio via the API.
 
-### Sync Rate Limiting
-```java
-// SyncSafetyService
-public boolean canSync(String userId, Broker broker) {
-    // Max 1 sync per broker per 5 minutes
-}
-```
+### Raw Data Preservation
+*   Every Entity (`CachedHolding`, `CachedPosition`, etc.) has a `raw` field.
+*   This stores the **exact** JSON received from the broker.
+*   **Why?** Audit trails, debugging, and future-proofing (e.g., if we need to display a field we didn't initially map).
 
 ---
 
-## 8. Extension Guidelines
+## 6. Common Pitfalls
 
-### Adding a New Portfolio Metric
-
-1. **Add to DTO**
-   ```java
-   // PortfolioSummaryResponse.java
-   private BigDecimal newMetric;
-   ```
-
-2. **Calculate in Service**
-   ```java
-   // PortfolioSummaryServiceImpl.java
-   BigDecimal newMetric = calculateNewMetric(holdings);
-   response.setNewMetric(newMetric);
-   ```
-
-### Adding a New Asset Type
-1. Create new entity in `model/`
-2. Create repository
-3. Extend `NetPositionService` to include
-
-### Adding a New Data Source
-1. Create integration in `market/`
-2. Implement `MarketDataService`
-3. Register with Spring
+| Pitfall | Impact | Prevention |
+|---------|--------|------------|
+| Including Positions in Summary | Wrong "Total Portfolio" value | Explicitly exclude `CachedPosition` from summary loop |
+| Re-calculating Broker P&L | Mismatch with Kite | Always prefer `raw.pnl` over local math |
+| Missing Sync Rate Limit | Broker API Ban (429) | Use `SyncSafetyService` |
+| Floating Point Math | Rounding Errors | Use `BigDecimal` for everything |
 
 ---
 
-## 9. Common Pitfalls
+## 7. Extension Guidelines
 
-| Pitfall | Why It's Bad | Prevention |
-|---------|--------------|------------|
-| N+1 queries for prices | Performance kill | Batch price fetch |
-| Not clearing old data | Stale duplicates | Delete before insert |
-| Sync without rate limit | Broker API ban | Use SyncSafetyService |
-| Missing null checks | NPE on new accounts | Handle empty portfolios |
-| Not handling F&O separately | Wrong calculations | Use FnoPositionService |
+### Adding a New Asset Type (e.g., Gold Bonds)
+1.  Create `CachedGoldBond` entity.
+2.  Add fetching logic to `BrokerService`.
+3.  Update `PortfolioSyncService` to fetch and save.
+4.  Update `PortfolioSummaryService` to include in totals (if applicable).
 
----
-
-## 10. Testing & Verification
-
-### Unit Tests
-```java
-@Test
-void shouldMergeHoldingsAcrossBrokers() {
-    // Holdings: RELIANCE 10 @ Zerodha, 5 @ Angel
-    // Expect: NetPosition RELIANCE = 15
-}
-
-@Test
-void shouldCalculateDayGain() {
-    // investedValue = 100, currentValue = 110
-    // dayGain = 10, dayGainPercent = 10%
-}
-```
-
-### Integration Tests
-```java
-@Test
-void shouldSyncAndReturnSummary() {
-    mockMvc.perform(post("/api/portfolio/refresh")
-        .header("Authorization", token))
-        .andExpect(status().isOk());
-
-    mockMvc.perform(get("/api/portfolio/summary")
-        .header("Authorization", token))
-        .andExpect(jsonPath("$.data.totalCurrentValue").exists());
-}
-```
-
-### Manual Verification
-- [ ] Sync returns success
-- [ ] Summary shows correct totals
-- [ ] Net positions merge correctly
-- [ ] F&O positions show MTM profit/loss
+### Adding a New Metric
+1.  Add field to `PortfolioSummaryResponse`.
+2.  Compute in `PortfolioSummaryServiceImpl` using existing cached data.

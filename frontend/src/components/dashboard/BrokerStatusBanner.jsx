@@ -1,6 +1,7 @@
 'use client';
 
 import { useBrokerConnection } from '@/hooks/useBrokerConnection';
+import { brokerAPI } from '@/lib/api';
 import { AnimatePresence, motion } from 'framer-motion';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import X from 'lucide-react/dist/esm/icons/x'; // Assuming lucide-react is installed per package.json
@@ -16,9 +17,17 @@ export default function BrokerStatusBanner() {
         setDismissed((prev) => [...prev, brokerName]);
     };
 
-    const getReconnectUrl = (broker) => {
-        // Stub URL, backend likely provides this or it's a standard frontend route
-        return `/api/brokers/${broker}/reconnect-url`;
+    const handleReconnect = async (broker) => {
+        try {
+            const response = await brokerAPI.getConnectUrl(broker);
+            if (response && response.loginUrl) {
+                window.location.href = response.loginUrl;
+            } else {
+                console.error("No login URL returned for", broker);
+            }
+        } catch (error) {
+            console.error("Failed to get connect URL", error);
+        }
     };
 
     // Filter for compromised accounts
@@ -46,12 +55,12 @@ export default function BrokerStatusBanner() {
                             </span>
                         </div>
                         <div className="flex items-center gap-3">
-                            <a
-                                href={getReconnectUrl(alert.broker)} // This would likely be an API call to get the URL ideally
+                            <button
+                                onClick={() => handleReconnect(alert.broker)}
                                 className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white text-sm rounded-md transition-colors"
                             >
                                 Reconnect
-                            </a>
+                            </button>
                             <button
                                 onClick={() => handleDismiss(alert.broker)}
                                 className="p-1 hover:bg-red-800/50 rounded-full"

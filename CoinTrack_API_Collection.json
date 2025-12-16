@@ -1,37 +1,13 @@
 {
   "info": {
     "name": "CoinTrack API",
+    "description": "Collection for manually testing the CoinTrack API. \n\n**ZERODHA CONNECTION GUIDE:**\nTo connect manually:\n1. Update `CoinTrack_Local_Environment.json` with your API Key/Secret.\n2. Run '1. Setup Credentials'.\n3. Run '2. Get Login Link', copy URL, open in browser.\n4. Login, copy `request_token` from URL.\n5. Run '3. Finalize Connection' with the token.\n\n**LOGIN FLOW:**\n1. Run 'Login'.\n2. Run 'Verify OTP' with the OTP received.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
       "name": "Authentication & User Management",
       "item": [
-        {
-          "name": "Login (alt)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "login"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"usernameOrEmailOrMobile\": \"testuser\",\n  \"password\": \"password123\"\n}"
-            }
-          }
-        },
         {
           "name": "Login",
           "request": {
@@ -42,6 +18,7 @@
                 "value": "application/json"
               }
             ],
+            "description": "Initiates login. If successful, triggers OTP generation.",
             "url": {
               "raw": "http://localhost:8080/api/auth/login",
               "host": [
@@ -56,6 +33,34 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"usernameOrEmailOrMobile\": \"testuser\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "**INSTRUCTIONS**:\n1. Check your backend logs or SMS/Email for the OTP sent after the 'Login' step.\n2. Enter the OTP below.\n3. Send request to get the `accessToken`.\n4. **IMPORTANT**: Copy the `accessToken` into your Environment 'token' variable.",
+            "url": {
+              "raw": "http://localhost:8080/api/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"otp\": \"YOUR_OTP_HERE\"\n}"
             }
           }
         },
@@ -150,6 +155,12 @@
                 "api",
                 "users",
                 ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
               ]
             }
           }
@@ -177,6 +188,12 @@
                 "api",
                 "users",
                 ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
               ]
             },
             "body": {
@@ -204,6 +221,12 @@
                 "api",
                 "users",
                 ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
               ]
             }
           }
@@ -211,10 +234,10 @@
       ]
     },
     {
-      "name": "Zerodha",
+      "name": "Portfolio",
       "item": [
         {
-          "name": "Login URL",
+          "name": "Get Summary",
           "request": {
             "method": "GET",
             "header": [
@@ -224,46 +247,260 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/login-url",
+              "raw": "{{baseUrl}}/api/portfolio/summary",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "brokers",
-                "zerodha",
-                "login-url"
+                "portfolio",
+                "summary"
               ]
             }
           }
         },
         {
-          "name": "OAuth Callback",
+          "name": "Get Holdings",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/callback",
+              "raw": "{{baseUrl}}/api/portfolio/holdings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "brokers",
-                "zerodha",
-                "callback"
-              ],
-              "query": [
-                {
-                  "key": "request_token",
-                  "value": "sample_request_token"
-                }
+                "portfolio",
+                "holdings"
               ]
             }
           }
         },
         {
-          "name": "Store Credentials",
+          "name": "Get Positions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/positions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "positions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trades",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/trades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "trades"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Funds",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/funds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "funds"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get MF Holdings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/mf/holdings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "mf",
+                "holdings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get MF Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/mf/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "mf",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get MF SIPs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/mf/sips",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "mf",
+                "sips"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get MF Instruments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/mf/instruments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "mf",
+                "instruments"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Zerodha",
+      "description": "Follow these request in order to connect your Zerodha account.",
+      "item": [
+        {
+          "name": "1. Setup Credentials",
           "request": {
             "method": "POST",
             "header": [
@@ -276,8 +513,9 @@
                 "value": "application/json"
               }
             ],
+            "description": "**INSTRUCTIONS**:\n1. Update Environment variables `zerodhaApiKey` and `zerodhaApiSecret`.\n2. Send this request.",
             "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/credentials",
+              "raw": "{{baseUrl}}/api/brokers/zerodha/credentials",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -290,12 +528,37 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"zerodhaApiKey\": \"your_api_key\",\n  \"zerodhaApiSecret\": \"your_api_secret\",\n  \"clientId\": \"your_client_id\",\n  \"requestToken\": \"request_token_from_oauth\"\n}"
+              "raw": "{\n  \"apiKey\": \"{{zerodhaApiKey}}\",\n  \"apiSecret\": \"{{zerodhaApiSecret}}\"\n}"
             }
           }
         },
         {
-          "name": "Connect Account",
+          "name": "2. Get Login Link",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "**INSTRUCTIONS**:\n1. Send this request.\n2. Copy the `loginUrl`.\n3. Open in Browser, Login.\n4. Copy `request_token` from URL bar after redirect.",
+            "url": {
+              "raw": "{{baseUrl}}/api/brokers/zerodha/connect",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "brokers",
+                "zerodha",
+                "connect"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Finalize Connection",
           "request": {
             "method": "POST",
             "header": [
@@ -308,26 +571,26 @@
                 "value": "application/json"
               }
             ],
+            "description": "**INSTRUCTIONS**:\n1. Paste the `request_token` from browser into Body below.\n2. Send request.",
             "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/connect",
+              "raw": "{{baseUrl}}/api/brokers/callback",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "brokers",
-                "zerodha",
-                "connect"
+                "callback"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"zerodhaApiKey\": \"your_api_key\",\n  \"zerodhaApiSecret\": \"your_api_secret\",\n  \"clientId\": \"your_client_id\",\n  \"requestToken\": \"request_token_from_oauth\"\n}"
+              "raw": "{\n  \"broker\": \"zerodha\",\n  \"requestToken\": \"PASTE_TOKEN_HERE\"\n}"
             }
           }
         },
         {
-          "name": "Check Connection",
+          "name": "4. Verify Status",
           "request": {
             "method": "GET",
             "header": [
@@ -336,32 +599,9 @@
                 "value": "Bearer {{token}}"
               }
             ],
+            "description": "Confirm status is CONNECTED.",
             "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/connect",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "brokers",
-                "zerodha",
-                "connect"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Account Status",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/status",
+              "raw": "{{baseUrl}}/api/brokers/zerodha/status",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -370,152 +610,6 @@
                 "brokers",
                 "zerodha",
                 "status"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Profile",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/profile",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "brokers",
-                "zerodha",
-                "profile"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Holdings",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/holdings",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "brokers",
-                "zerodha",
-                "holdings"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Positions",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/positions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "brokers",
-                "zerodha",
-                "positions"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Orders",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/orders",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "brokers",
-                "zerodha",
-                "orders"
-              ]
-            }
-          }
-        },
-        {
-          "name": "MF Holdings",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/mf/holdings",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "brokers",
-                "zerodha",
-                "mf",
-                "holdings"
-              ]
-            }
-          }
-        },
-        {
-          "name": "MF SIPs",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/api/brokers/zerodha/mf/sips",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "brokers",
-                "zerodha",
-                "mf",
-                "sips"
               ]
             }
           }
@@ -783,22 +877,18 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"apiKey\": \"your_api_key\",\n  \"clientId\": \"your_client_id\",\n  \"pin\": \"your_pin\",\n  \"totp\": \"123456\"\n}"
+              "raw": "{\n  \"apiKey\": \"your_api_key\",\n  \"clientId\": \"your_client_id\",\n  \"pin\": \"1234\",\n  \"totpSecret\": \"your_totp_secret\"\n}"
             }
           }
         },
         {
-          "name": "Connect Account",
+          "name": "Connect",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
@@ -815,7 +905,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"apiKey\": \"your_api_key\",\n  \"clientId\": \"your_client_id\",\n  \"pin\": \"your_pin\",\n  \"totp\": \"123456\"\n}"
+              "raw": "{\n  \"totp\": \"currrent_totp_code\"\n}"
             }
           }
         },
@@ -839,30 +929,6 @@
                 "brokers",
                 "angelone",
                 "holdings"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Orders",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/api/brokers/angelone/orders",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "brokers",
-                "angelone",
-                "orders"
               ]
             }
           }
@@ -911,30 +977,6 @@
                 "brokers",
                 "angelone",
                 "status"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Refresh Token",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/api/brokers/angelone/refresh-token",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "brokers",
-                "angelone",
-                "refresh-token"
               ]
             }
           }

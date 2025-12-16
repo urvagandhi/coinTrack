@@ -11,9 +11,9 @@ import org.springframework.stereotype.Service;
 
 import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
+import com.urva.myfinance.coinTrack.broker.service.BrokerService;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
 import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
-import com.urva.myfinance.coinTrack.broker.service.BrokerService;
 
 /**
  * STUB IMPLEMENTATION - Upstox V2 API integration planned for future release.
@@ -118,5 +118,47 @@ public class UpstoxBrokerService implements BrokerService {
         // Upstox V2 does not support token refresh - daily re-auth required
         logger.debug("refreshToken called for Upstox - not supported (stub)");
         return Optional.empty();
+    }
+
+    @Override
+    public List<com.urva.myfinance.coinTrack.portfolio.dto.kite.OrderDTO> fetchOrders(BrokerAccount account) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<com.urva.myfinance.coinTrack.portfolio.dto.kite.TradeDTO> fetchTrades(BrokerAccount account) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO fetchFunds(BrokerAccount account) {
+        return null;
+    }
+
+    @Override
+    public List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO> fetchMfHoldings(BrokerAccount account) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO> fetchMfOrders(
+            BrokerAccount account) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO fetchProfile(BrokerAccount account) {
+        return null;
+    }
+
+    @Override
+    public List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfSipDTO> fetchMfSips(BrokerAccount account) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MfInstrumentDTO> fetchMfInstruments(
+            BrokerAccount account) {
+        return Collections.emptyList();
     }
 }

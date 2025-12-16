@@ -99,4 +99,82 @@ public class PortfolioController {
         List<NetPositionDTO> positions = netPositionService.mergeHoldingsAndPositions(user.getId());
         return ResponseEntity.ok(ApiResponse.success(positions));
     }
+
+    @GetMapping("/orders")
+    public ResponseEntity<?> getOrders(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null)
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        return ResponseEntity.ok(ApiResponse.success(portfolioSummaryService.getOrders(user.getId())));
+    }
+
+    @GetMapping("/funds")
+    public ResponseEntity<?> getFunds(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null)
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        return ResponseEntity.ok(ApiResponse.success(portfolioSummaryService.getFunds(user.getId())));
+    }
+
+    @GetMapping("/mf/holdings")
+    public ResponseEntity<?> getMutualFunds(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(portfolioSummaryService.getMutualFunds(user.getId())));
+    }
+
+    @GetMapping("/trades")
+    public ResponseEntity<?> getTrades(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(portfolioSummaryService.getTrades(user.getId())));
+    }
+
+    @GetMapping("/mf/orders")
+    public ResponseEntity<?> getMfOrders(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(portfolioSummaryService.getMfOrders(user.getId())));
+    }
+
+    @GetMapping("/mf/timeline")
+    public ResponseEntity<?> getMfTimeline(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(portfolioSummaryService.getMfTimeline(user.getId())));
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null)
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        return ResponseEntity.ok(ApiResponse.success(portfolioSummaryService.getProfile(user.getId())));
+    }
+
+    @GetMapping("/mf/sips")
+    public ResponseEntity<?> getMfSips(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(portfolioSummaryService.getMfSips(user.getId())));
+    }
+
+    @GetMapping("/mf/instruments")
+    public ResponseEntity<?> getMfInstruments(Principal principal) {
+        User user = userRepository.findByUsername(principal.getName());
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("User not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(portfolioSummaryService.getMfInstruments(user.getId())));
+    }
 }

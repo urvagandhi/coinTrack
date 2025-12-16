@@ -179,6 +179,7 @@ export default function HomePage() {
                 src="/coinTrack.png"
                 alt="coinTrack Logo"
                 fill
+                sizes="40px"
                 className="object-contain"
               />
             </div>
@@ -322,6 +323,7 @@ export default function HomePage() {
                         src="/coinTrack.png"
                         alt="coinTrack Logo"
                         fill
+                        sizes="64px"
                         className="object-contain"
                       />
                     </div>
@@ -488,6 +490,7 @@ export default function HomePage() {
                     src="/coinTrack.png"
                     alt="coinTrack Logo"
                     fill
+                    sizes="40px"
                     className="object-contain"
                   />
                 </div>

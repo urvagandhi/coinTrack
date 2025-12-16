@@ -62,6 +62,14 @@ public class BrokerAccount {
 
     private LocalDateTime lastSuccessfulSync;
 
+    // Granular Sync Timestamps
+    private LocalDateTime lastHoldingsSync;
+    private LocalDateTime lastPositionsSync;
+    private LocalDateTime lastOrdersSync;
+    private LocalDateTime lastMarginSync;
+    private LocalDateTime lastMfHoldingsSync;
+    private LocalDateTime lastMfOrdersSync;
+
     private LocalDateTime lastUsed;
 
     @Builder.Default

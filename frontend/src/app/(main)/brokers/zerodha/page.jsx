@@ -39,22 +39,14 @@ export default function ZerodhaPage() {
             checkStatus();
         }
 
-        // Check for URL parameters from backend redirect
+        // Check for success param from the callback page redirect
         const urlParams = new URLSearchParams(window.location.search);
-        const errorParam = urlParams.get('error');
         const successParam = urlParams.get('success');
         const connectedParam = urlParams.get('connected');
 
-        if (errorParam) {
-            setError(decodeURIComponent(errorParam));
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else if (successParam && connectedParam) {
+        if (successParam && connectedParam) {
             setSuccess('Zerodha account connected successfully!');
-            // Refresh account status
-            if (user) {
-                checkStatus();
-            }
+            checkStatus();
             // Clean up URL
             window.history.replaceState({}, document.title, window.location.pathname);
         }
