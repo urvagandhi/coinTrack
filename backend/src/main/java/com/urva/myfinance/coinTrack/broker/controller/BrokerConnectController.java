@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -75,6 +76,12 @@ public class BrokerConnectController {
         if (user == null) {
             logger.warn("Unauthorized broker connect attempt for broker: {}", brokerName);
             return ResponseEntity.status(401).build();
+        }
+
+        // 🔐 Security: Broker connection requires TOTP
+        if (!user.isTotpEnabled() || !user.isTotpVerified()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("TOTP 2FA must be enabled to connect brokers.");
         }
 
         try {

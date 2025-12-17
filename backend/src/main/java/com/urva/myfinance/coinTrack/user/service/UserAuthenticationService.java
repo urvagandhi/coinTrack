@@ -1,8 +1,6 @@
 package com.urva.myfinance.coinTrack.user.service;
 
 import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,12 +12,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
+import com.urva.myfinance.coinTrack.common.util.NotificationService;
+import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
-import com.urva.myfinance.coinTrack.security.service.JWTService;
-import com.urva.myfinance.coinTrack.common.util.NotificationService;
-import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
 
 /**
  * Service responsible for user authentication operations.
@@ -35,47 +33,50 @@ import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
 public class UserAuthenticationService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserAuthenticationService.class);
-    private static final int OTP_EXPIRY_MINUTES = 5;
-    private static final int OTP_COOLDOWN_SECONDS = 30;
+
+    // ══════════════════════════════════════════════════════════════════════
+    // LEGACY SMS OTP CONFIG (DISABLED – replaced by TOTP)
+    // DO NOT DELETE – preserved for audit & rollback safety
+    // ══════════════════════════════════════════════════════════════════════
+    // private static final int OTP_EXPIRY_MINUTES = 5;
+    // private static final int OTP_COOLDOWN_SECONDS = 30;
+    // private final Map<String, OtpData> otpStorage = new ConcurrentHashMap<>();
+    // private static class OtpData {
+    // String otp;
+    // long expiryTime;
+    // long creationTime;
+    //
+    // OtpData(String otp, long expiryTime) {
+    // this.otp = otp;
+    // this.expiryTime = expiryTime;
+    // this.creationTime = System.currentTimeMillis();
+    // }
+    // }
+    // ══════════════════════════════════════════════════════════════════════
 
     private final UserRepository userRepository;
     private final AuthenticationManager authManager;
     private final JWTService jwtService;
     private final NotificationService notificationService;
-
-    // In-memory OTP storage for login: username -> OtpData
-    private final Map<String, OtpData> otpStorage = new ConcurrentHashMap<>();
-
-    private static class OtpData {
-        String otp;
-        long expiryTime;
-        long creationTime;
-
-        OtpData(String otp, long expiryTime) {
-            this.otp = otp;
-            this.expiryTime = expiryTime;
-            this.creationTime = System.currentTimeMillis();
-        }
-    }
+    private final TotpService totpService;
 
     public UserAuthenticationService(
             UserRepository userRepository,
             AuthenticationManager authManager,
             JWTService jwtService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            TotpService totpService) {
         this.userRepository = userRepository;
         this.authManager = authManager;
         this.jwtService = jwtService;
         this.notificationService = notificationService;
+        this.totpService = totpService;
     }
 
     /**
-     * Authenticate user with username, email, or mobile number.
-     * If credentials are valid, sends OTP and returns partial response.
-     *
-     * @param usernameOrEmailOrMobile username, email, or mobile number
-     * @param password                user password
-     * @return LoginResponse with requiresOtp=true, or null if authentication fails
+     * Authenticate user.
+     * Enforces MANDATORY TOTP flow.
+     * Returns temp token if TOTP/Setup required.
      */
     @Transactional(readOnly = true)
     public LoginResponse authenticate(String usernameOrEmailOrMobile, String password) {
@@ -92,25 +93,38 @@ public class UserAuthenticationService {
                     new UsernamePasswordAuthenticationToken(foundUser.getUsername(), password));
 
             if (authentication.isAuthenticated()) {
-                String otp = generateOtp();
-                long expiryTime = System.currentTimeMillis() + (OTP_EXPIRY_MINUTES * 60 * 1000);
-                otpStorage.put(foundUser.getUsername(), new OtpData(otp, expiryTime));
+                // ══════════════════════════════════════════════════════════════════════
+                // MANDATORY TOTP FLOW
+                // ══════════════════════════════════════════════════════════════════════
 
-                String contact = foundUser.getEmail() != null ? foundUser.getEmail() : foundUser.getPhoneNumber();
-                notificationService.sendOtp(contact, otp);
-                logger.info(LoggingConstants.AUTH_OTP_SENT, foundUser.getUsername(), "email/mobile");
+                // Case 1: User has TOTP already set up → Case 1 Flow
+                if (foundUser.isTotpEnabled() && foundUser.isTotpVerified()) {
+                    String tempToken = jwtService.generateTempToken(foundUser, "TOTP_LOGIN", 10);
+
+                    LoginResponse response = new LoginResponse();
+                    response.setRequiresOtp(true); // Flag for frontend to show TOTP input
+                    response.setRequireTotpSetup(false);
+                    response.setTempToken(tempToken);
+                    response.setUserId(foundUser.getId());
+                    response.setUsername(foundUser.getUsername());
+                    response.setMessage("Please verify TOTP to complete login.");
+                    return response;
+                }
+
+                // Case 2: User has NOT set up TOTP → Case 2 Flow (Mandatory Setup)
+                // Issue temp token that allows ONLY setup endpoints
+                String setupToken = jwtService.generateTempToken(foundUser, "TOTP_SETUP", 30);
 
                 LoginResponse response = new LoginResponse();
-                response.setRequiresOtp(true);
+                response.setRequiresOtp(false); // No TOTP input yet
+                response.setRequireTotpSetup(true); // Flag for frontend to redirect to setup
+                response.setTempToken(setupToken);
                 response.setUserId(foundUser.getId());
                 response.setUsername(foundUser.getUsername());
-                response.setEmail(foundUser.getEmail());
-                response.setMobile(foundUser.getPhoneNumber());
-                response.setMessage("OTP sent to your registered contact.");
+                response.setMessage("TOTP Setup is mandatory. Redirecting to setup...");
                 return response;
             }
 
-            logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, usernameOrEmailOrMobile, "authentication failed");
             return null;
 
         } catch (AuthenticationException e) {
@@ -120,90 +134,94 @@ public class UserAuthenticationService {
     }
 
     /**
-     * Verify OTP and issue JWT token for login.
-     *
-     * @param usernameOrEmailOrMobile username, email, or mobile number
-     * @param otp                     the OTP to verify
-     * @return LoginResponse with token, or throws exception if invalid
+     * Completes login by verifying TOTP code.
      */
-    @Transactional(readOnly = true)
-    public LoginResponse verifyLoginOtp(String usernameOrEmailOrMobile, String otp) {
-        User user = findUserByUsernameEmailOrMobile(usernameOrEmailOrMobile);
+    @Transactional
+    public LoginResponse completeTotpLogin(String tempToken, String totpCode) {
+        // Validate Temp Token Purpose
+        if (!jwtService.isValidTempToken(tempToken, "TOTP_LOGIN")) {
+            throw new RuntimeException("Invalid or expired session. Please login again.");
+        }
+
+        User user = getUserByToken(tempToken);
         if (user == null) {
-            throw new RuntimeException("User not found");
+            throw new RuntimeException("User not found.");
         }
 
-        String username = user.getUsername();
-        OtpData otpData = otpStorage.get(username);
+        // Verify TOTP via TotpService (handles encryption, lockout, etc.)
+        boolean verified = totpService.verifyLogin(user, totpCode);
 
-        if (otpData == null) {
-            logger.warn(LoggingConstants.AUTH_OTP_FAILED, username);
-            throw new RuntimeException("OTP not found or expired");
+        if (!verified) {
+            throw new RuntimeException("Invalid Authenticator code.");
         }
 
-        if (System.currentTimeMillis() > otpData.expiryTime) {
-            otpStorage.remove(username);
-            throw new RuntimeException("OTP expired");
+        // Prepare Final Access Token
+        return generateFinalLoginResponse(user);
+    }
+
+    /**
+     * Completes login by verifying Backup Code.
+     */
+    @Transactional
+    public LoginResponse completeRecoveryLogin(String tempToken, String backupCode) {
+        if (!jwtService.isValidTempToken(tempToken, "TOTP_LOGIN")) {
+            throw new RuntimeException("Invalid or expired session. Please login again.");
         }
 
-        if (!otpData.otp.equals(otp)) {
-            logger.warn(LoggingConstants.AUTH_OTP_FAILED, username);
-            throw new RuntimeException("Invalid OTP");
+        User user = getUserByToken(tempToken);
+        if (user == null) {
+            throw new RuntimeException("User not found.");
         }
 
-        otpStorage.remove(username);
-        logger.info(LoggingConstants.AUTH_OTP_VERIFIED, username);
+        // Verify Backup Code
+        boolean verified = totpService.verifyBackupCode(user, backupCode);
 
+        if (!verified) {
+            throw new RuntimeException("Invalid or used backup code.");
+        }
+
+        return generateFinalLoginResponse(user);
+    }
+
+    private LoginResponse generateFinalLoginResponse(User user) {
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 user.getUsername(), null, Collections.emptyList());
-        String token = jwtService.generateToken(authentication);
+        String accessToken = jwtService.generateToken(authentication);
 
-        logger.info(LoggingConstants.AUTH_LOGIN_SUCCESS, username);
+        logger.info(LoggingConstants.AUTH_LOGIN_SUCCESS, user.getUsername());
 
         LoginResponse response = new LoginResponse();
-        response.setToken(token);
+        response.setToken(accessToken);
         response.setUserId(user.getId());
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setMobile(user.getPhoneNumber());
         response.setFirstName(user.getName());
         response.setRequiresOtp(false);
+        response.setRequireTotpSetup(false);
         return response;
     }
 
-    /**
-     * Resend login OTP with rate limiting.
+    // ══════════════════════════════════════════════════════════════════════
+    // LEGACY SMS METHODS (COMMENTED OUT)
+    // ══════════════════════════════════════════════════════════════════════
+    /*
+     * public LoginResponse verifyLoginOtp(String usernameOrEmailOrMobile, String
+     * otp) {
+     * // Legacy code - preserved for reference
+     * throw new RuntimeException("SMS OTP is disabled.");
+     * }
+     *
+     * public LoginResponse resendLoginOtp(String usernameOrEmailOrMobile) {
+     * // Legacy code - preserved for reference
+     * throw new RuntimeException("SMS OTP is disabled.");
+     * }
+     *
+     * private String generateOtp() {
+     * return "";
+     * }
      */
-    public LoginResponse resendLoginOtp(String usernameOrEmailOrMobile) {
-        User user = findUserByUsernameEmailOrMobile(usernameOrEmailOrMobile);
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
-
-        String username = user.getUsername();
-        OtpData existingOtp = otpStorage.get(username);
-
-        if (existingOtp != null) {
-            long timeSinceCreation = System.currentTimeMillis() - existingOtp.creationTime;
-            if (timeSinceCreation < OTP_COOLDOWN_SECONDS * 1000) {
-                long remaining = OTP_COOLDOWN_SECONDS - (timeSinceCreation / 1000);
-                throw new RuntimeException("Please wait " + remaining + " seconds.");
-            }
-        }
-
-        String otp = generateOtp();
-        long expiryTime = System.currentTimeMillis() + (OTP_EXPIRY_MINUTES * 60 * 1000);
-        otpStorage.put(username, new OtpData(otp, expiryTime));
-
-        String contact = user.getEmail() != null ? user.getEmail() : user.getPhoneNumber();
-        notificationService.sendOtp(contact, otp);
-        logger.info(LoggingConstants.AUTH_OTP_SENT, username, "resend");
-
-        LoginResponse response = new LoginResponse();
-        response.setMessage("OTP sent successfully");
-        response.setRequiresOtp(true);
-        return response;
-    }
+    // ══════════════════════════════════════════════════════════════════════
 
     /**
      * Get user from JWT token.
@@ -270,7 +288,14 @@ public class UserAuthenticationService {
         return cleaned;
     }
 
-    private String generateOtp() {
-        return String.format("%06d", new java.util.Random().nextInt(999999));
+    /**
+     * Get User entity by username.
+     */
+    public User getUserEntityByUsername(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+        return user;
     }
 }

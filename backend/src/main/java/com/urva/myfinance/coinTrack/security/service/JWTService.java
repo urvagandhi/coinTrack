@@ -110,4 +110,53 @@ public class JWTService {
             throw new RuntimeException("Failed to extract expiration date from JWT token", e);
         }
     }
+
+    // -------------------------------------------------------------------------
+    // TEMP TOKEN LOGIC (TOTP)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Generates a temporary token with a specific purpose.
+     * Purposes: TOTP_LOGIN, TOTP_SETUP, TOTP_RESET
+     */
+    public String generateTempToken(com.urva.myfinance.coinTrack.user.model.User user, String purpose,
+            int expiryMinutes) {
+        try {
+            Map<String, Object> claims = new HashMap<>();
+            claims.put("purpose", purpose);
+            claims.put("userId", user.getId());
+
+            return Jwts.builder()
+                    .claims(claims)
+                    .subject(user.getUsername())
+                    .issuedAt(new Date(System.currentTimeMillis()))
+                    .expiration(new Date(System.currentTimeMillis() + expiryMinutes * 60 * 1000L))
+                    .signWith(getKey())
+                    .compact();
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException("Failed to generate temp token", e);
+        }
+    }
+
+    public String extractPurpose(String token) {
+        try {
+            return extractClaim(token, claims -> claims.get("purpose", String.class));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Validates a temp token for a specific purpose.
+     */
+    public boolean isValidTempToken(String token, String expectedPurpose) {
+        try {
+            final String purpose = extractPurpose(token);
+            final String username = extractUsername(token);
+            return (purpose != null && purpose.equals(expectedPurpose) &&
+                    username != null && !isTokenExpired(token));
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

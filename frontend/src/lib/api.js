@@ -148,6 +148,16 @@ export const endpoints = {
         verifyOtp: '/api/auth/verify-otp',
         resendOtp: '/api/auth/resend-otp',
         logout: '/api/auth/logout',
+        // TOTP related endpoints
+        totp: {
+            setup: '/api/auth/2fa/setup',
+            verify: '/api/auth/2fa/verify',
+            loginTotp: '/api/auth/login/totp',
+            loginRecovery: '/api/auth/login/recovery',
+            initiateReset: '/api/auth/2fa/reset',
+            verifyReset: '/api/auth/2fa/reset/verify',
+            getStatus: '/api/auth/2fa/status',
+        }
     },
     users: {
         me: '/api/users/me',
@@ -349,4 +359,73 @@ export const notesAPI = {
     }
 };
 
+// ============================================================================
+// TOTP 2FA API
+// ============================================================================
+export const totpAPI = {
+    /**
+     * Initiate TOTP setup - returns QR code and secret.
+     * Requires: Access Token OR Temp Token (TOTP_SETUP purpose)
+     */
+    setup: async () => {
+        const { data } = await api.post(endpoints.auth.totp.setup);
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Verify TOTP code during setup - enables 2FA and returns backup codes.
+     * Requires: Access Token OR Temp Token (TOTP_SETUP purpose)
+     */
+    verify: async (code) => {
+        const { data } = await api.post(endpoints.auth.totp.verify, { code });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Complete login with TOTP code.
+     * Requires: Temp Token (TOTP_LOGIN purpose)
+     */
+    loginTotp: async (tempToken, code) => {
+        const { data } = await api.post(endpoints.auth.totp.loginTotp, { tempToken, code });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Complete login with backup/recovery code.
+     * Requires: Temp Token (TOTP_LOGIN purpose)
+     */
+    loginRecovery: async (tempToken, code) => {
+        const { data } = await api.post(endpoints.auth.totp.loginRecovery, { tempToken, code });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Initiate TOTP reset - generates new secret.
+     * Requires: Access Token + current TOTP code for verification
+     */
+    initiateReset: async (currentCode) => {
+        const { data } = await api.post(endpoints.auth.totp.initiateReset, { code: currentCode });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Verify new TOTP code after reset - returns new backup codes.
+     * Requires: Access Token
+     */
+    verifyReset: async (code) => {
+        const { data } = await api.post(endpoints.auth.totp.verifyReset, { code });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Get current 2FA status.
+     * Requires: Access Token
+     */
+    getStatus: async () => {
+        const { data } = await api.get(endpoints.auth.totp.getStatus);
+        return unwrapResponse(data);
+    },
+};
+
 export default api;
+

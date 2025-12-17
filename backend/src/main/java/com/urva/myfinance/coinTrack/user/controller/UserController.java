@@ -26,6 +26,7 @@ import com.urva.myfinance.coinTrack.user.dto.LoginRequest;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.dto.VerifyOtpRequest;
 import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.service.UserAuthenticationService;
 import com.urva.myfinance.coinTrack.user.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,9 +44,11 @@ public class UserController {
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
+    private final UserAuthenticationService userAuthenticationService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserAuthenticationService userAuthenticationService) {
         this.userService = userService;
+        this.userAuthenticationService = userAuthenticationService;
     }
 
     /**
@@ -59,7 +62,8 @@ public class UserController {
         try {
             logger.info(LoggingConstants.AUTH_LOGIN_STARTED, loginRequest.getUsernameOrEmailOrMobile());
 
-            LoginResponse response = userService.authenticate(
+            // Use UserAuthenticationService for TOTP-aware login
+            LoginResponse response = userAuthenticationService.authenticate(
                     loginRequest.getUsernameOrEmailOrMobile(),
                     loginRequest.getPassword());
 
@@ -289,7 +293,8 @@ public class UserController {
             }
 
             if (newPassword.equals(oldPassword)) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("New password cannot be the same as the current password"));
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("New password cannot be the same as the current password"));
             }
 
             userService.changePassword(id, oldPassword, newPassword);

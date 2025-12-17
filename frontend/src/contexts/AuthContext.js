@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useReducer } from 'react';
-import { authAPI, tokenManager, userAPI } from '../lib/api';
+import { authAPI, tokenManager, totpAPI, userAPI } from '../lib/api';
 import { logger } from '../lib/logger';
 
 // Auth context
@@ -125,13 +125,29 @@ export function AuthProvider({ children }) {
                 response = response.data;
             }
 
-            // CASE 1: OTP Required
+            // CASE 1: TOTP Required (user has TOTP set up)
             if (response.requiresOtp) {
-                logger.info('Login requires OTP', { username: response.username });
+                logger.info('Login requires TOTP verification', { username: response.username });
                 dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
                 return {
                     success: true,
-                    requiresOtp: true,
+                    requiresTotp: true,
+                    tempToken: response.tempToken,
+                    userId: response.userId,
+                    username: response.username,
+                    message: response.message
+                };
+            }
+
+            // CASE 2: TOTP Setup Required (user has NOT set up TOTP yet)
+            if (response.requireTotpSetup) {
+                logger.info('Login requires TOTP setup', { username: response.username });
+                dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+                return {
+                    success: true,
+                    requireTotpSetup: true,
+                    tempToken: response.tempToken,
+                    userId: response.userId,
                     username: response.username,
                     message: response.message
                 };
@@ -153,7 +169,7 @@ export function AuthProvider({ children }) {
                     location: userData.location,
                 };
 
-                tokenManager.setToken(token, remember);
+                tokenManager.setToken(token, true);
                 logger.info('Login successful', { userId: user.id });
                 dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
                 return { success: true, user };
@@ -243,6 +259,105 @@ export function AuthProvider({ children }) {
         }
     };
 
+    // --------------------------------------------------------------------------
+    // Helper Functions for TOTP Login Completion
+    // --------------------------------------------------------------------------
+
+    const fetchUserProfile = async () => {
+        try {
+            const userData = await userAPI.getProfile();
+            dispatch({ type: AUTH_ACTIONS.SET_USER, payload: userData });
+            return userData;
+        } catch (error) {
+            logger.error('Failed to fetch user profile', { error: error.message });
+            throw error;
+        }
+    };
+
+    const handleTotpLoginSuccess = (token, userData) => {
+        logger.info('TOTP login successful', { userId: userData.userId });
+        tokenManager.setToken(token, true);
+        const user = {
+            id: userData.userId,
+            username: userData.username,
+            email: userData.email,
+            name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username)?.trim() || userData.username,
+            phoneNumber: userData.mobile,
+            bio: userData.bio,
+            location: userData.location,
+        };
+        dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
+    };
+
+    // --------------------------------------------------------------------------
+    // TOTP 2FA Methods
+    // --------------------------------------------------------------------------
+
+    const setupTotp = async () => {
+        try {
+            const data = await totpAPI.setup();
+            return { success: true, data };
+        } catch (error) {
+            logger.error('TOTP Setup Error:', { error: error.message });
+            return { success: false, error: error.message || 'Setup failed' };
+        }
+    };
+
+    const verifyTotpSetup = async (code) => {
+        try {
+            const data = await totpAPI.verify(code);
+            await fetchUserProfile(); // Refresh profile to update TOTP status
+            return { success: true, backupCodes: data.backupCodes };
+        } catch (error) {
+            return { success: false, error: error.message || 'Verification failed' };
+        }
+    };
+
+    const verifyTotpLogin = async (tempToken, code) => {
+        try {
+            const data = await totpAPI.loginTotp(tempToken, code);
+            if (data.token) {
+                handleTotpLoginSuccess(data.token, data);
+                return { success: true };
+            }
+            return { success: false, error: 'Invalid response from server' };
+        } catch (error) {
+            return { success: false, error: error.message || 'Invalid code' };
+        }
+    };
+
+    const verifyRecoveryLogin = async (tempToken, code) => {
+        try {
+            const data = await totpAPI.loginRecovery(tempToken, code);
+            if (data.token) {
+                handleTotpLoginSuccess(data.token, data);
+                return { success: true };
+            }
+            return { success: false, error: 'Invalid response from server' };
+        } catch (error) {
+            return { success: false, error: error.message || 'Invalid recovery code' };
+        }
+    };
+
+    const resetTotp = async (currentCode) => {
+        try {
+            const data = await totpAPI.initiateReset(currentCode);
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: error.message || 'Reset initiation failed' };
+        }
+    };
+
+    const verifyResetTotp = async (code) => {
+        try {
+            const data = await totpAPI.verifyReset(code);
+            await fetchUserProfile();
+            return { success: true, backupCodes: data.backupCodes };
+        } catch (error) {
+            return { success: false, error: error.message || 'Reset verification failed' };
+        }
+    };
+
     const contextValue = {
         ...state,
         login,
@@ -250,6 +365,12 @@ export function AuthProvider({ children }) {
         resendOtp,
         logout,
         register: authAPI.register, // Pass-through
+        setupTotp,
+        verifyTotpSetup,
+        verifyTotpLogin,
+        verifyRecoveryLogin,
+        resetTotp,
+        verifyResetTotp,
         // Utilities
         isLoggedIn: state.isAuthenticated,
         userId: state.user?.id,

@@ -75,11 +75,32 @@
 			<version>3.5.1</version>
 		</dependency>
 
+
 		<!-- TOTP (Time-based One-Time Password) Library -->
+		<!-- Replaced java-otp with totp-spring-boot-starter for better features -->
 		<dependency>
-			<groupId>com.eatthepath</groupId>
-			<artifactId>java-otp</artifactId>
-			<version>0.4.0</version>
+			<groupId>dev.samstevens.totp</groupId>
+			<artifactId>totp-spring-boot-starter</artifactId>
+			<version>1.7.1</version>
+		</dependency>
+
+		<!-- QR Code Generation -->
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>3.5.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>javase</artifactId>
+			<version>3.5.3</version>
+		</dependency>
+
+		<!-- Encryption -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.78</version>
 		</dependency>
 
 		<dependency>

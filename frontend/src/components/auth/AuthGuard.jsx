@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 const publicRoutes = ['/login', '/register', '/forgot-password', '/', '/calculator'];
 

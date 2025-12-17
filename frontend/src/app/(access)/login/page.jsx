@@ -15,18 +15,42 @@ function LoginForm() {
         usernameOrEmail: '',
         password: ''
     });
-    const [otp, setOtp] = useState('');
-    const [showOtpInput, setShowOtpInput] = useState(false);
-    const [timer, setTimer] = useState(30);
-    const [canResend, setCanResend] = useState(false);
-    const [tempUsername, setTempUsername] = useState('');
+    // TOTP State
+    const [totpCode, setTotpCode] = useState('');
+    const [showTotpInput, setShowTotpInput] = useState(false);
+    const [isRecoveryMode, setIsRecoveryMode] = useState(false); // Toggle between TOTP and Backup Code
+    const [tempToken, setTempToken] = useState('');
+
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
-    const { login, verifyOtp, resendOtp } = useAuth();
+
+    // Auth Context
+    const { login, verifyTotpLogin, verifyRecoveryLogin } = useAuth();
 
     const redirectPath = searchParams.get('redirect') || '/dashboard';
+
+    // Load remembered username on mount
+    useEffect(() => {
+        const rememberedUser = localStorage.getItem('cointrack_remembered_user');
+        const wasRemembered = localStorage.getItem('cointrack_remember_me') === 'true';
+        if (rememberedUser && wasRemembered) {
+            setFormData(prev => ({ ...prev, usernameOrEmail: rememberedUser }));
+            setRememberMe(true);
+        }
+    }, []);
+
+    // Save/clear remembered username when Remember Me changes or on successful login
+    const saveRememberMe = (username) => {
+        if (rememberMe && username) {
+            localStorage.setItem('cointrack_remembered_user', username);
+            localStorage.setItem('cointrack_remember_me', 'true');
+        } else {
+            localStorage.removeItem('cointrack_remembered_user');
+            localStorage.removeItem('cointrack_remember_me');
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -49,26 +73,33 @@ function LoginForm() {
         }
 
         try {
-            // Sanitize input if it looks like a phone number
-            const credentials = { ...formData };
+            // Sanitize input
+            let credentials = { ...formData };
+            // (Phone sanitization logic preserved)
             if (/^\d{10}$/.test(credentials.usernameOrEmail)) {
-                // Exactly 10 digits -> Assume India +91
                 credentials.usernameOrEmail = '+91' + credentials.usernameOrEmail;
             } else if (/^[\d\s\-\+\(\)]+$/.test(credentials.usernameOrEmail) && /\d/.test(credentials.usernameOrEmail)) {
-                // It contains digits and likely phone symbols, strip non-phone chars (keep +)
                 credentials.usernameOrEmail = credentials.usernameOrEmail.replace(/[^0-9+]/g, '');
             }
 
             const result = await login(credentials, rememberMe);
 
-            if (result.requiresOtp) {
-                setTempUsername(result.username);
-                setShowOtpInput(true);
+            if (result.requireTotpSetup) {
+                // Mandatory Setup Case - save remember me here since password was valid
+                saveRememberMe(formData.usernameOrEmail);
+                sessionStorage.setItem('tempToken', result.tempToken);
+                router.push('/setup-2fa');
+            } else if (result.requiresTotp) {
+                // TOTP Verification Case - save remember me here since password was valid
+                saveRememberMe(formData.usernameOrEmail);
+                setTempToken(result.tempToken);
+                setShowTotpInput(true);
                 setError('');
             } else if (result.success) {
+                saveRememberMe(formData.usernameOrEmail);
                 router.push(redirectPath);
             } else {
-                setError(result.error || 'Invalid credentials. Please try again.');
+                setError(result.error || 'Invalid credentials.');
             }
         } catch (err) {
             setError('An unexpected error occurred. Please try again.');
@@ -77,58 +108,49 @@ function LoginForm() {
         }
     };
 
-    const handleOtpSubmit = async (e) => {
-        e.preventDefault();
+    const handleTotpSubmit = async (e) => {
+        if (e) e.preventDefault();
+        if (isLoading) return; // Prevent double-submit
         setError('');
         setIsLoading(true);
 
         try {
-            const result = await verifyOtp(tempUsername, otp, rememberMe);
+            let result;
+            if (isRecoveryMode) {
+                result = await verifyRecoveryLogin(tempToken, totpCode);
+            } else {
+                result = await verifyTotpLogin(tempToken, totpCode);
+            }
+
             if (result.success) {
                 router.push(redirectPath);
             } else {
-                setError(result.error || 'Invalid OTP. Please try again.');
+                setError(result.error || 'Invalid code. Please try again.');
+                setTotpCode(''); // Clear on error for retry
             }
         } catch (err) {
-            setError('OTP Verification failed. Please try again.');
+            setError('Verification failed. Please try again.');
+            setTotpCode(''); // Clear on error for retry
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Auto-submit when correct code length is entered
+    useEffect(() => {
+        const expectedLength = isRecoveryMode ? 8 : 6;
+        if (totpCode.length === expectedLength && showTotpInput && !isLoading) {
+            handleTotpSubmit();
+        }
+    }, [totpCode, isRecoveryMode, showTotpInput]);
+
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
 
-    // Timer logic for OTP resend
-    useEffect(() => {
-        let interval;
-        if (showOtpInput && timer > 0) {
-            interval = setInterval(() => {
-                setTimer((prev) => prev - 1);
-            }, 1000);
-        } else if (timer === 0) {
-            setCanResend(true);
-        }
-        return () => clearInterval(interval);
-    }, [showOtpInput, timer]);
-
-    const handleResendOtp = async () => {
-        setCanResend(false);
-        setTimer(30);
-        setError('');
-
-        const result = await resendOtp(tempUsername);
-        if (!result.success) {
-            setError(result.error);
-            setCanResend(true); // Allow retry if failed (optional, or keep timer)
-            setTimer(0);
-        }
-    };
-
     const getInputIcon = () => {
         const value = formData.usernameOrEmail;
-        if (!value) return <Mail className="h-5 w-5" />; // Default
+        if (!value) return <Mail className="h-5 w-5" />;
         if (value.includes('@')) return <Mail className="h-5 w-5" />;
         if (/^\d+$/.test(value) || /^\+?\d+$/.test(value)) return <Phone className="h-5 w-5" />;
         return <User className="h-5 w-5" />;
@@ -164,16 +186,18 @@ function LoginForm() {
                             </div>
                         </Link>
                         <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 mb-2">
-                            Welcome Back
+                            {showTotpInput ? 'Security Check' : 'Welcome Back'}
                         </h2>
                         <p className="text-gray-500 dark:text-gray-400">
-                            Enter your credentials to access your account
+                            {showTotpInput
+                                ? (isRecoveryMode ? 'Enter one of your backup codes' : 'Enter the code from your Authenticator app')
+                                : 'Enter your credentials to access your account'}
                         </p>
                     </div>
 
-                    {/* OTP Form */}
-                    {showOtpInput ? (
-                        <form className="space-y-6" onSubmit={handleOtpSubmit}>
+                    {/* TOTP Form */}
+                    {showTotpInput ? (
+                        <form className="space-y-6" onSubmit={handleTotpSubmit}>
                             {error && (
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.95 }}
@@ -189,7 +213,7 @@ function LoginForm() {
 
                             <div>
                                 <label className="block text-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                                    Enter the 6-digit code sent to your email/mobile
+                                    {isRecoveryMode ? 'Backup Code' : 'Authentication Code'}
                                 </label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-purple-600 transition-colors">
@@ -198,18 +222,21 @@ function LoginForm() {
                                     <input
                                         type="text"
                                         required
-                                        maxLength={6}
-                                        value={otp}
-                                        onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                                        maxLength={isRecoveryMode ? 8 : 6}
+                                        value={totpCode}
+                                        onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
                                         className="block w-full pl-12 pr-4 py-3.5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-all text-center tracking-[0.5em] text-lg font-bold"
-                                        placeholder="000000"
+                                        placeholder={isRecoveryMode ? "00000000" : "000000"}
                                     />
+                                </div>
+                                <div className="mt-2 text-center text-xs text-yellow-600 dark:text-yellow-500">
+                                    {!isRecoveryMode && '🕒 Make sure your device time is synced.'}
                                 </div>
                             </div>
 
                             <button
                                 type="submit"
-                                disabled={isLoading || otp.length !== 6}
+                                disabled={isLoading || (isRecoveryMode ? totpCode.length !== 8 : totpCode.length !== 6)}
                                 className="w-full relative py-3.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-purple-600/25 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
@@ -219,37 +246,35 @@ function LoginForm() {
                                     </>
                                 ) : (
                                     <>
-                                        Verify OTP
+                                        Verify {isRecoveryMode ? 'Backup Code' : 'TOTP'}
                                         <ArrowRight className="w-5 h-5" />
                                     </>
                                 )}
                             </button>
 
-                            <div className="text-center mt-4 mb-2">
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    Didn't receive the code?{' '}
-                                    <button
-                                        type="button"
-                                        onClick={handleResendOtp}
-                                        disabled={!canResend}
-                                        className={`font-semibold ${canResend
-                                            ? 'text-purple-600 hover:text-purple-500 cursor-pointer'
-                                            : 'text-gray-400 cursor-not-allowed'
-                                            }`}
-                                    >
-                                        {canResend ? 'Resend OTP' : `Resend in ${timer}s`}
-                                    </button>
-                                </p>
+                            <div className="text-center mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsRecoveryMode(!isRecoveryMode);
+                                        setTotpCode('');
+                                        setError('');
+                                    }}
+                                    className="text-sm font-medium text-purple-600 hover:text-purple-500 dark:text-purple-400 transition-colors"
+                                >
+                                    {isRecoveryMode ? 'Use Authenticator App' : 'Use Backup Code'}
+                                </button>
                             </div>
 
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setShowOtpInput(false);
-                                    setOtp('');
+                                    setShowTotpInput(false);
+                                    setTotpCode('');
+                                    setTempToken('');
                                     setFormData(prev => ({ ...prev, password: '' }));
                                 }}
-                                className="w-full text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                className="w-full text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mt-2"
                             >
                                 Back to Login
                             </button>
@@ -349,11 +374,11 @@ function LoginForm() {
                                 {isLoading ? (
                                     <>
                                         <Loader className="w-5 h-5 animate-spin" />
-                                        Sending OTP...
+                                        Signing In...
                                     </>
                                 ) : (
                                     <>
-                                        Sign In & Verify
+                                        Sign In
                                         <ArrowRight className="w-5 h-5" />
                                     </>
                                 )}
