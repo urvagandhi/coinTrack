@@ -1,63 +1,97 @@
 'use client';
 
 import TotpSetup from '@/components/TotpSetup';
-import { useAuth } from '@/contexts/AuthContext';
-import { tokenManager } from '@/lib/api';
+import { tokenManager, totpAPI } from '@/lib/api';
 import { Loader } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 function Setup2FAPageContent() {
     const router = useRouter();
-    const { user, loading } = useAuth();
-    const [isMandatory, setIsMandatory] = useState(false);
+    const [isRegistration, setIsRegistration] = useState(false);
+    const [tempToken, setTempToken] = useState(null);
+    const [authToken, setAuthToken] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check if we have a mandatory setup token in sessionStorage
-        const tempToken = sessionStorage.getItem('tempToken');
-        if (tempToken) {
-            // Logic to support mandatory setup using this token.
-            // Since AuthContext APIs usually use the token from TokenManager/State,
-            // we might need to swap the token temporarily or explicit logic.
-            // But for simplicity, we rely on the interceptor catching this if we set it,
-            // OR we must ensure TotpSetup passes it to the API.
-            // Ideally Api.js uses tokenManager.getToken().
-            // So we set it here.
-            tokenManager.setToken(tempToken);
-            setIsMandatory(true);
+        // Check if this is a REGISTRATION flow (new user - not in DB yet)
+        const registrationToken = sessionStorage.getItem('totpSetupToken');
+
+        // Check if this is an EXISTING user flow (TOTP_SETUP purpose)
+        const existingUserToken = sessionStorage.getItem('tempToken');
+
+        if (registrationToken) {
+            // REGISTRATION flow - user is new, not in DB yet
+            setTempToken(registrationToken);
+            setIsRegistration(true);
+            setLoading(false);
+        } else if (existingUserToken) {
+            // EXISTING user mandatory TOTP setup (logged in but hasn't set up 2FA yet)
+            tokenManager.setToken(existingUserToken);
+            setIsRegistration(false);
+            setLoading(false);
+        } else {
+            // No token - shouldn't be here, redirect to login
+            router.push('/login');
         }
-    }, []);
+    }, [router]);
+
+    // Registration-specific setup action
+    const registrationSetup = async () => {
+        try {
+            const data = await totpAPI.registerSetup(tempToken);
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: error.message || 'Setup failed' };
+        }
+    };
+
+    // Registration-specific verify action
+    const registrationVerify = async (code) => {
+        try {
+            const data = await totpAPI.registerVerify(tempToken, code);
+            // On success, data contains JWT token and backup codes
+            if (data.token) {
+                setAuthToken(data.token);
+                tokenManager.setToken(data.token);
+            }
+            return { success: true, backupCodes: data.backupCodes || [] };
+        } catch (error) {
+            return { success: false, error: error.message || 'Verification failed' };
+        }
+    };
 
     const handleComplete = () => {
-        if (isMandatory) {
-            // Clear temp token, but effectively since setup is done,
-            // we probably need to Re-Login to get full access token (as pending secret promotion happened,
-            // but the original token was TOTP_SETUP purpose).
-            // A promoted secret doesn't automatically upgrade the token purpose.
-            // User needs to login again to get TOTP_LOGIN -> Verify -> Access Token.
+        if (isRegistration) {
+            // Clear registration tokens
+            sessionStorage.removeItem('totpSetupToken');
+            sessionStorage.removeItem('totpSetupUsername');
+            // JWT token is already set by registrationVerify
+            router.push('/dashboard');
+        } else {
+            // Existing user mandatory setup - session token was temp, needs re-login
             sessionStorage.removeItem('tempToken');
             tokenManager.removeToken();
             router.push('/login?message=Setup%20Complete%20Please%20Login');
-        } else {
-            router.push('/settings');
         }
     };
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center"><Loader className="animate-spin" /></div>;
-    }
-
-    // Protection: If not mandatory and not logged in, redirect
-    if (!isMandatory && !user) {
-        // router.push('/login'); // Commented out to prevent flash if user loading is slow, waiting for effect
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
+                <Loader className="animate-spin w-8 h-8 text-purple-600" />
+            </div>
+        );
     }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-black p-6 flex items-center justify-center">
             <TotpSetup
-                isMandatory={isMandatory}
+                isMandatory={true}
                 onComplete={handleComplete}
-                onCancel={() => router.back()}
+                onCancel={() => router.push('/login')}
+                setupAction={isRegistration ? registrationSetup : undefined}
+                verifyAction={isRegistration ? registrationVerify : undefined}
             />
         </div>
     );

@@ -149,16 +149,33 @@ public class TotpController {
         // Let's assume the user just verified their password/TOTP to enter settings.
 
         // BETTER: Verify current code passed in body to allow reset initiation
+        // Supports both TOTP codes (6 digits) and backup codes (8 digits)
         String currentCode = body.get("code");
         if (currentCode != null) {
-            try {
-                if (!totpService.verifyLogin(user, currentCode)) {
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                            .body(ApiResponse.error("Invalid current TOTP code"));
+            boolean verified = false;
+
+            // Try TOTP verification first (6 digit code)
+            if (currentCode.length() == 6) {
+                try {
+                    verified = totpService.verifyLogin(user, currentCode);
+                } catch (Exception e) {
+                    // Continue to check if it might be a backup code
                 }
-            } catch (Exception e) {
+            }
+
+            // If TOTP failed or code is 8 digits, try backup code
+            if (!verified && currentCode.length() == 8) {
+                try {
+                    verified = totpService.verifyBackupCode(user, currentCode);
+                } catch (Exception e) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(ApiResponse.error("Invalid backup code or account locked"));
+                }
+            }
+
+            if (!verified) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Invalid current TOTP code"));
+                        .body(ApiResponse.error("Invalid code. Please try again."));
             }
         }
         // If code is missing, we might decide to allow if they are authenticated,
@@ -208,6 +225,68 @@ public class TotpController {
                 "lastUsedAt", user.getTotpLastUsedAt() != null ? user.getTotpLastUsedAt() : "");
 
         return ResponseEntity.ok(ApiResponse.success(status, "TOTP Status"));
+    }
+
+    /**
+     * 8. Registration TOTP Setup
+     * Requires: Temp Token (Purpose: TOTP_REGISTRATION) in body
+     * For NEW users who are completing registration - not yet in DB
+     */
+    @PostMapping("/2fa/register/setup")
+    public ResponseEntity<?> setupRegistrationTotp(@RequestBody Map<String, String> body) {
+        String tempToken = body.get("tempToken");
+        if (tempToken == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken"));
+        }
+
+        // Validate temp token
+        if (!jwtService.isValidTempToken(tempToken, "TOTP_REGISTRATION")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Invalid or expired registration token"));
+        }
+
+        // Get username from token
+        String username = jwtService.extractUsername(tempToken);
+
+        // Get pending user from UserService (not DB)
+        User pendingUser = userAuthService.getPendingUser(username);
+        if (pendingUser == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Registration expired. Please register again."));
+        }
+
+        // Generate TOTP setup for this pending user
+        TotpSetupResponse response = totpService.generateSetupForPendingUser(pendingUser);
+        return ResponseEntity.ok(ApiResponse.success(response, "TOTP Setup Initiated"));
+    }
+
+    /**
+     * 9. Registration TOTP Verify & Complete Registration
+     * Requires: Temp Token (Purpose: TOTP_REGISTRATION) in body
+     * On success: Save user to DB, return JWT token and backup codes
+     */
+    @PostMapping("/2fa/register/verify")
+    public ResponseEntity<?> verifyRegistrationTotp(@RequestBody Map<String, String> body) {
+        String tempToken = body.get("tempToken");
+        String code = body.get("code");
+
+        if (tempToken == null || code == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken or code"));
+        }
+
+        // Validate temp token
+        if (!jwtService.isValidTempToken(tempToken, "TOTP_REGISTRATION")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Invalid or expired registration token"));
+        }
+
+        try {
+            // Complete registration - verifies TOTP, saves user to DB, returns JWT
+            LoginResponse response = userAuthService.completeRegistrationWithTotp(tempToken, code);
+            return ResponseEntity.ok(ApiResponse.success(response, "Registration Complete"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     // --- Helpers ---

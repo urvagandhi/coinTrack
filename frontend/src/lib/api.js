@@ -157,6 +157,9 @@ export const endpoints = {
             initiateReset: '/api/auth/2fa/reset',
             verifyReset: '/api/auth/2fa/reset/verify',
             getStatus: '/api/auth/2fa/status',
+            // Registration TOTP flow (for new users not yet in DB)
+            registerSetup: '/api/auth/2fa/register/setup',
+            registerVerify: '/api/auth/2fa/register/verify',
         }
     },
     users: {
@@ -423,6 +426,24 @@ export const totpAPI = {
      */
     getStatus: async () => {
         const { data } = await api.get(endpoints.auth.totp.getStatus);
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Initiate TOTP setup for REGISTRATION (new user not yet in DB).
+     * Requires: Temp Token (TOTP_REGISTRATION purpose) in request body
+     */
+    registerSetup: async (tempToken) => {
+        const { data } = await api.post(endpoints.auth.totp.registerSetup, { tempToken });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Verify TOTP code during REGISTRATION - saves user to DB, returns JWT + backup codes.
+     * Requires: Temp Token (TOTP_REGISTRATION purpose) in request body
+     */
+    registerVerify: async (tempToken, code) => {
+        const { data } = await api.post(endpoints.auth.totp.registerVerify, { tempToken, code });
         return unwrapResponse(data);
     },
 };

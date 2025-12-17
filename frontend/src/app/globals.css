@@ -74,3 +74,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide browser's built-in password reveal button to prevent duplicate eye icons */
+/* Edge and Chrome */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/* Safari */
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  position: absolute;
+  right: 0;
+}
+
+/* Chrome autofill clear button */
+input::-webkit-clear-button {
+  display: none;
+}

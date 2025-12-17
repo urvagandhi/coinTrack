@@ -138,6 +138,28 @@ public class JWTService {
         }
     }
 
+    /**
+     * Generates a temporary token for PENDING users (not yet in DB).
+     * Used during registration TOTP setup.
+     */
+    public String generateTempToken(String username, String purpose) {
+        try {
+            Map<String, Object> claims = new HashMap<>();
+            claims.put("purpose", purpose);
+            // No userId for pending users
+
+            return Jwts.builder()
+                    .claims(claims)
+                    .subject(username)
+                    .issuedAt(new Date(System.currentTimeMillis()))
+                    .expiration(new Date(System.currentTimeMillis() + 15 * 60 * 1000L)) // 15 mins for registration
+                    .signWith(getKey())
+                    .compact();
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException("Failed to generate temp token", e);
+        }
+    }
+
     public String extractPurpose(String token) {
         try {
             return extractClaim(token, claims -> claims.get("purpose", String.class));

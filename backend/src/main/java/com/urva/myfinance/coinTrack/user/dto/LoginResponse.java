@@ -88,6 +88,11 @@ public class LoginResponse {
     private String location;
 
     /**
+     * Backup codes for 2FA recovery (only included after TOTP setup/reset).
+     */
+    private List<String> backupCodes;
+
+    /**
      * Default constructor for JSON deserialization.
      */
     public LoginResponse() {
@@ -234,6 +239,14 @@ public class LoginResponse {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public List<String> getBackupCodes() {
+        return backupCodes;
+    }
+
+    public void setBackupCodes(List<String> backupCodes) {
+        this.backupCodes = backupCodes;
     }
 
     @Override

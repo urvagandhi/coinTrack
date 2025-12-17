@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.urva.myfinance.coinTrack.common.util.NotificationService;
 import com.urva.myfinance.coinTrack.notes.service.NoteService;
@@ -160,8 +161,9 @@ public class UserService {
 
     /**
      * Initiates user registration.
-     * Validates input, checks uniqueness, and sends OTP.
-     * DOES NOT save to DB yet.
+     * Validates input, checks uniqueness, and stores in PENDING storage.
+     * User is NOT saved to DB until TOTP setup is verified.
+     * Flow: Register → Setup TOTP → Verify TOTP → Save to DB
      */
     public LoginResponse registerUser(User user) {
         try {
@@ -190,26 +192,26 @@ public class UserService {
             user.setPhoneNumber(normalizedPhone);
             user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-            // Generate OTP
-            String otp = String.format("%06d", new java.util.Random().nextInt(999999));
-            long expiryTime = System.currentTimeMillis() + (5 * 60 * 1000); // 5 mins
+            // TOTP is NOT set up yet
+            user.setTotpEnabled(false);
+            user.setTotpVerified(false);
+            user.setTotpSecretVersion(0);
 
-            // Store in Pending Registrations
-            pendingRegistrations.put(user.getUsername(), new PendingRegistration(user, otp, expiryTime));
-            logger.info("Stored pending registration for {}. OTP: {}", user.getUsername(), otp);
+            // Store in PENDING registrations - NOT saved to DB yet
+            // User will be saved to DB only after TOTP verification is complete
+            long expiryTime = System.currentTimeMillis() + (15 * 60 * 1000); // 15 mins to complete TOTP setup
+            pendingRegistrations.put(user.getUsername(), new PendingRegistration(user, null, expiryTime));
+            logger.info("Stored pending registration for TOTP setup: {}", user.getUsername());
 
-            // Send OTP
-            String contact = user.getEmail() != null ? user.getEmail() : user.getPhoneNumber();
-            try {
-                notificationService.sendOtp(contact, otp);
-            } catch (Exception e) {
-                logger.error("Failed to send OTP to {}: {}", contact, e.getMessage());
-                // Proceed anyway so user can try resend or use dev OTP
-            }
+            // Generate tempToken for TOTP setup (purpose = TOTP_REGISTRATION)
+            String tempToken = jwtService.generateTempToken(user.getUsername(), "TOTP_REGISTRATION");
+            logger.info("Generated TOTP_REGISTRATION tempToken for: {}", user.getUsername());
 
+            // Return response indicating TOTP setup is required
             LoginResponse response = new LoginResponse();
-            response.setMessage("OTP sent to " + contact + ". Please verify to complete registration.");
-            response.setRequiresOtp(true);
+            response.setMessage("Please set up 2-Factor Authentication to complete registration.");
+            response.setRequireTotpSetup(true);
+            response.setTempToken(tempToken);
             response.setUsername(user.getUsername());
 
             return response;
@@ -217,7 +219,7 @@ public class UserService {
         } catch (RuntimeException e) {
             throw new RuntimeException(e.getMessage());
         } catch (Exception e) {
-            throw new RuntimeException("Error initiating registration: " + e.getMessage(), e);
+            throw new RuntimeException("Error during registration: " + e.getMessage(), e);
         }
     }
 
@@ -227,6 +229,51 @@ public class UserService {
         } catch (Exception e) {
             throw new RuntimeException("Error checking username availability: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Get pending user from registration storage (NOT from DB).
+     * Used during registration TOTP setup flow.
+     */
+    public User getPendingRegistrationUser(String username) {
+        PendingRegistration pending = pendingRegistrations.get(username);
+        if (pending == null) {
+            return null;
+        }
+        // Check if expired
+        if (pending.expiryTime < System.currentTimeMillis()) {
+            pendingRegistrations.remove(username);
+            return null;
+        }
+        return pending.user;
+    }
+
+    /**
+     * Complete pending registration by saving user to DB.
+     * Called after TOTP verification is successful.
+     */
+    @Transactional
+    public User completePendingRegistration(String username) {
+        PendingRegistration pending = pendingRegistrations.get(username);
+        if (pending == null) {
+            throw new RuntimeException("Registration expired. Please register again.");
+        }
+
+        User user = pending.user;
+
+        // Save user to DB
+        @SuppressWarnings("null")
+        User savedUser = userRepository.save(user);
+        logger.info("User saved to DB after TOTP verification: {}", savedUser.getUsername());
+
+        // Remove from pending
+        pendingRegistrations.remove(username);
+
+        // TODO: Seed default notes for new user (implement when noteService is
+        // available)
+        // seedDefaultNotesForUser(savedUser);
+
+        return savedUser;
     }
 
     /**

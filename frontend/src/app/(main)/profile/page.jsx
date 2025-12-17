@@ -1,15 +1,15 @@
 'use client';
 
 import PageTransition from '@/components/ui/PageTransition';
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 import { userAPI } from '@/lib/api';
-import { useToast } from "@/components/ui/use-toast";
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, Camera, DollarSign, Edit, Eye, EyeOff, Save, Shield, TrendingUp, User, X } from 'lucide-react';
+import { Bell, Camera, DollarSign, Edit, Eye, EyeOff, Key, Save, Shield, TrendingUp, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
-    const { user, login } = useAuth(); // getting login to update context if needed
+    const { user, login, resetTotp, verifyResetTotp } = useAuth(); // getting login to update context if needed
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
@@ -23,6 +23,14 @@ export default function ProfilePage() {
 
     const [isEditing, setIsEditing] = useState(false);
     const [showPasswordFields, setShowPasswordFields] = useState(false);
+    const [show2FAResetFlow, setShow2FAResetFlow] = useState(false);
+    const [twoFAStep, setTwoFAStep] = useState('verify'); // 'verify', 'newcode', 'backup'
+    const [currentTotpCode, setCurrentTotpCode] = useState('');
+    const [useBackupForReset, setUseBackupForReset] = useState(false); // Toggle between TOTP and backup code
+    const [newTotpCode, setNewTotpCode] = useState('');
+    const [newBackupCodes, setNewBackupCodes] = useState([]);
+    const [resetSetupData, setResetSetupData] = useState(null);
+    const [is2FALoading, setIs2FALoading] = useState(false);
 
     // Form state - initialized from apiUser
     const [profileData, setProfileData] = useState({
@@ -182,6 +190,115 @@ export default function ProfilePage() {
             newPassword: passwords.newPassword,
             currentPassword: passwords.currentPassword
         });
+    };
+
+    // 2FA Reset Flow
+    const handleInitiate2FAReset = async () => {
+        const codeLength = useBackupForReset ? 8 : 6;
+        if (!currentTotpCode || currentTotpCode.length !== codeLength) {
+            toast({ title: "Validation Error", description: `Please enter your ${useBackupForReset ? '8-digit backup' : '6-digit authenticator'} code`, variant: "destructive" });
+            return;
+        }
+        setIs2FALoading(true);
+        try {
+            // Use the same resetTotp function - backend should accept both TOTP and backup codes
+            const result = await resetTotp(currentTotpCode);
+            if (result.success) {
+                setResetSetupData(result.data);
+                setTwoFAStep('newcode');
+                setCurrentTotpCode('');
+            } else {
+                toast({ title: "Reset Failed", description: result.error || "Invalid code", variant: "destructive" });
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to initiate 2FA reset", variant: "destructive" });
+        } finally {
+            setIs2FALoading(false);
+        }
+    };
+
+    const handleVerifyNew2FA = async () => {
+        if (!newTotpCode || newTotpCode.length !== 6) {
+            toast({ title: "Validation Error", description: "Please enter the new 6-digit code", variant: "destructive" });
+            return;
+        }
+        setIs2FALoading(true);
+        try {
+            const result = await verifyResetTotp(newTotpCode);
+            if (result.success) {
+                setNewBackupCodes(result.backupCodes || []);
+                setTwoFAStep('backup');
+                setNewTotpCode('');
+                toast({ title: "2FA Reset Complete", description: "Your authenticator has been reset. Save your new backup codes!", variant: "success" });
+            } else {
+                toast({ title: "Verification Failed", description: result.error || "Invalid code", variant: "destructive" });
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to verify new 2FA code", variant: "destructive" });
+        } finally {
+            setIs2FALoading(false);
+        }
+    };
+
+    const downloadNewBackupCodes = () => {
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const content = `
++-----------------------------------------------------------------------+
+|                                                                       |
+|                     COINTRACK BACKUP CODES                            |
+|                                                                       |
++-----------------------------------------------------------------------+
+
+  [!] IMPORTANT: STORE THESE CODES SECURELY
+
+      * Each code can only be used ONCE
+      * Keep these codes in a safe place (password manager, safe)
+      * Do NOT share these codes with anyone
+      * If codes are compromised, reset your 2FA immediately
+
+=======================================================================
+                         YOUR BACKUP CODES
+=======================================================================
+
+${newBackupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]    ${code}`).join('\n')}
+
+=======================================================================
+
+    Generated: ${formattedDate}
+    Total Codes: ${newBackupCodes.length}
+
+=======================================================================
+                      HOW TO USE BACKUP CODES
+=======================================================================
+
+    1. Go to the CoinTrack login page
+    2. Enter your username and password
+    3. When prompted for 2FA code, click "Use Backup Code"
+    4. Enter one of your backup codes from this list
+    5. Cross off the used code - it cannot be used again!
+
++-----------------------------------------------------------------------+
+|                 CoinTrack - Your Portfolio, Secured                   |
++-----------------------------------------------------------------------+
+`.trim();
+        const element = document.createElement("a");
+        const file = new Blob([content], { type: 'text/plain' });
+        element.href = URL.createObjectURL(file);
+        element.download = `cointrack-backup-codes-${now.toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    };
+
+    const close2FAFlow = () => {
+        setShow2FAResetFlow(false);
+        setTwoFAStep('verify');
+        setCurrentTotpCode('');
+        setNewTotpCode('');
+        setNewBackupCodes([]);
+        setResetSetupData(null);
+        setUseBackupForReset(false);
     };
 
     const stats = [
@@ -374,13 +491,22 @@ export default function ProfilePage() {
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                                     Security Settings
                                 </h3>
-                                <button
-                                    onClick={() => setShowPasswordFields(!showPasswordFields)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-sm font-semibold hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
-                                >
-                                    <Shield className="w-4 h-4" />
-                                    <span>Change Password</span>
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setShowPasswordFields(!showPasswordFields)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-sm font-semibold hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                                    >
+                                        <Shield className="w-4 h-4" />
+                                        <span>Change Password</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setShow2FAResetFlow(!show2FAResetFlow)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg text-sm font-semibold hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
+                                    >
+                                        <Key className="w-4 h-4" />
+                                        <span>Reset 2FA</span>
+                                    </button>
+                                </div>
                             </div>
 
                             {showPasswordFields && (
@@ -427,6 +553,104 @@ export default function ProfilePage() {
                                             {changePasswordMutation.isPending ? 'Updating...' : 'Update Password'}
                                         </button>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* 2FA Reset Flow */}
+                            {show2FAResetFlow && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300 border-t border-gray-100 dark:border-gray-800 pt-6 mt-4">
+                                    {twoFAStep === 'verify' && (
+                                        <>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                {useBackupForReset
+                                                    ? "Enter one of your backup codes to verify your identity and reset 2FA."
+                                                    : "To reset your 2FA, first verify your identity with your current authenticator code."}
+                                            </p>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                                    {useBackupForReset ? 'Backup Code' : 'Current 2FA Code'}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    maxLength={useBackupForReset ? 8 : 6}
+                                                    value={currentTotpCode}
+                                                    onChange={(e) => setCurrentTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                                    className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 text-gray-900 dark:text-white transition-all text-center text-lg tracking-widest font-mono"
+                                                    placeholder={useBackupForReset ? "00000000" : "000000"}
+                                                />
+                                            </div>
+                                            <div className="text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setUseBackupForReset(!useBackupForReset);
+                                                        setCurrentTotpCode('');
+                                                    }}
+                                                    className="text-sm font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 transition-colors"
+                                                >
+                                                    {useBackupForReset ? '← Use Authenticator Code' : 'Lost your device? Use Backup Code →'}
+                                                </button>
+                                            </div>
+                                            <div className="flex justify-end gap-4 pt-2">
+                                                <button onClick={close2FAFlow} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+                                                <button onClick={handleInitiate2FAReset} disabled={is2FALoading || currentTotpCode.length !== (useBackupForReset ? 8 : 6)} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50">
+                                                    {is2FALoading ? 'Verifying...' : 'Continue'}
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {twoFAStep === 'newcode' && resetSetupData && (
+                                        <>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">Scan this QR code with your authenticator app, then enter the new code.</p>
+                                            {resetSetupData.qrCodeBase64 && (
+                                                <div className="flex justify-center bg-white p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                                    <img src={resetSetupData.qrCodeBase64} alt="QR Code" className="w-40 h-40" />
+                                                </div>
+                                            )}
+                                            {resetSetupData.secret && (
+                                                <div className="text-center">
+                                                    <p className="text-xs text-gray-500 mb-1">Or enter manually:</p>
+                                                    <code className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded text-sm font-mono">{resetSetupData.secret}</code>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">New 2FA Code</label>
+                                                <input
+                                                    type="text"
+                                                    maxLength={6}
+                                                    value={newTotpCode}
+                                                    onChange={(e) => setNewTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                                    className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 text-gray-900 dark:text-white transition-all text-center text-lg tracking-widest font-mono"
+                                                    placeholder="000000"
+                                                />
+                                            </div>
+                                            <div className="flex justify-end gap-4 pt-2">
+                                                <button onClick={close2FAFlow} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+                                                <button onClick={handleVerifyNew2FA} disabled={is2FALoading || newTotpCode.length !== 6} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50">
+                                                    {is2FALoading ? 'Verifying...' : 'Verify & Complete'}
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {twoFAStep === 'backup' && (
+                                        <>
+                                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                                                <p className="text-green-800 dark:text-green-300 font-semibold">✓ 2FA Reset Complete!</p>
+                                                <p className="text-green-700 dark:text-green-400 text-sm mt-1">Save your new backup codes below. You won&apos;t see them again!</p>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {newBackupCodes.map((code, i) => (
+                                                    <div key={i} className="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg text-center font-mono text-sm">{code}</div>
+                                                ))}
+                                            </div>
+                                            <div className="flex justify-end gap-4 pt-2">
+                                                <button onClick={downloadNewBackupCodes} className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold shadow-lg hover:shadow-xl transition-all">Download Codes</button>
+                                                <button onClick={close2FAFlow} className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all">Done</button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>

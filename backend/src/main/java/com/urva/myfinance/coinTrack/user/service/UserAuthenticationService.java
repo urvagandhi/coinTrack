@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.user.service;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,18 +60,21 @@ public class UserAuthenticationService {
     private final JWTService jwtService;
     private final NotificationService notificationService;
     private final TotpService totpService;
+    private final UserService userService;
 
     public UserAuthenticationService(
             UserRepository userRepository,
             AuthenticationManager authManager,
             JWTService jwtService,
             NotificationService notificationService,
-            TotpService totpService) {
+            TotpService totpService,
+            UserService userService) {
         this.userRepository = userRepository;
         this.authManager = authManager;
         this.jwtService = jwtService;
         this.notificationService = notificationService;
         this.totpService = totpService;
+        this.userService = userService;
     }
 
     /**
@@ -297,5 +301,51 @@ public class UserAuthenticationService {
             throw new RuntimeException("User not found");
         }
         return user;
+    }
+
+    /**
+     * Get pending user from registration storage (not from DB).
+     * Used during registration TOTP setup flow.
+     */
+    public User getPendingUser(String username) {
+        return userService.getPendingRegistrationUser(username);
+    }
+
+    /**
+     * Complete registration by verifying TOTP and saving user to DB.
+     * Flow: Register → Setup TOTP → Verify TOTP → THIS METHOD → Dashboard
+     */
+    @Transactional
+    public LoginResponse completeRegistrationWithTotp(String tempToken, String totpCode) {
+        // Extract username from temp token
+        String username = jwtService.extractUsername(tempToken);
+
+        // Get pending user
+        User pendingUser = userService.getPendingRegistrationUser(username);
+        if (pendingUser == null) {
+            throw new RuntimeException("Registration expired. Please register again.");
+        }
+
+        // Verify TOTP code against pending secret
+        List<String> backupCodes = totpService.verifySetupForPendingUser(pendingUser, totpCode);
+
+        // TOTP verified! Now save user to DB
+        User savedUser = userService.completePendingRegistration(username);
+
+        // Generate JWT access token using Authentication object
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                savedUser.getUsername(), null, Collections.emptyList());
+        String accessToken = jwtService.generateToken(authentication);
+
+        // Build response
+        LoginResponse response = new LoginResponse();
+        response.setToken(accessToken);
+        response.setUserId(savedUser.getId());
+        response.setUsername(savedUser.getUsername());
+        response.setBackupCodes(backupCodes);
+        response.setMessage("Registration complete! Welcome to CoinTrack.");
+
+        logger.info("Registration completed with TOTP for user: {}", savedUser.getUsername());
+        return response;
     }
 }

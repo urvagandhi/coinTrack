@@ -150,9 +150,27 @@ export default function RegisterPage() {
             };
 
             const result = await register(payload);
+
+            // Handle ApiResponse wrapper
+            const data = result.data || result;
+
+            // NEW: Check for mandatory TOTP setup (new registration flow)
+            if (data.requireTotpSetup && data.tempToken) {
+                // Store tempToken in sessionStorage for TOTP setup page
+                sessionStorage.setItem('totpSetupToken', data.tempToken);
+                sessionStorage.setItem('totpSetupUsername', data.username);
+                setSuccessMessage('Registration successful! Redirecting to 2FA setup...');
+                // Redirect to TOTP setup page
+                setTimeout(() => {
+                    router.push('/setup-2fa');
+                }, 500);
+                return;
+            }
+
+            // Legacy: if backend still returns requiresOtp (shouldn't happen with new backend)
             if (result.success || result.requiresOtp) {
                 setShowOtp(true);
-                setResendTimer(30); // Start timer explicitly
+                setResendTimer(30);
                 setSuccessMessage(`OTP sent to ${formData.email} / ${formData.phoneNumber}`);
             } else {
                 // Determine error message
@@ -165,8 +183,7 @@ export default function RegisterPage() {
                 setError(paramError || 'Registration failed');
             }
         } catch (err) {
-            // logger.error("Registration Error payload:", err);
-            setError(err.userMessage || 'An unexpected error occurred');
+            setError(err.message || err.userMessage || 'An unexpected error occurred');
         } finally {
             setIsLoading(false);
         }

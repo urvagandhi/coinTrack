@@ -54,8 +54,12 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/auth/login", "/api/auth/register",
                                                                 "/api/auth/verify-token",
                                                                 "/api/auth/check-username/*",
-                                                                "/api/auth/login/totp", // NEW: TOTP Login completion
-                                                                "/api/auth/login/recovery") // NEW: TOTP Recovery
+                                                                "/api/auth/login/totp", // TOTP Login completion
+                                                                "/api/auth/login/recovery", // TOTP Recovery
+                                                                "/api/auth/2fa/register/setup", // Registration TOTP
+                                                                                                // Setup
+                                                                "/api/auth/2fa/register/verify") // Registration TOTP
+                                                                                                 // Verify
                                                 .permitAll()
 
                                                 // 🔓 Broker callbacks (public)
