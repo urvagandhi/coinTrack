@@ -20,7 +20,7 @@ public class CorsConfig implements WebMvcConfigurer {
 
     /**
      * Configure CORS mappings for all endpoints.
-     * 
+     *
      * @param registry CORS registry to configure
      */
     @Override
@@ -28,7 +28,7 @@ public class CorsConfig implements WebMvcConfigurer {
         registry.addMapping("/api/**")
                 // Allow local development origins and deployed frontend origin on Render
                 // Use allowedOriginPatterns instead of allowedOrigins when allowCredentials is true
-                .allowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000", "https://localhost:3000", "https://cointrack-15gt.onrender.com")
+                .allowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000", "https://localhost:3000", "https://cointrack-15gt.onrender.com", "https://cointrack-finance.vercel.app")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
                 .allowedHeaders("*")
                 .exposedHeaders("Authorization", "Content-Type")
@@ -38,7 +38,7 @@ public class CorsConfig implements WebMvcConfigurer {
 
     /**
      * CORS configuration source for Spring Security.
-     * 
+     *
      * @return configured CorsConfigurationSource
      */
     @Bean
@@ -51,8 +51,10 @@ public class CorsConfig implements WebMvcConfigurer {
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
                 "https://localhost:3000",
-                // Render deployment host - add your deployed frontend URL here
-                "https://cointrack-15gt.onrender.com"));
+                // Render deployment host
+                "https://cointrack-15gt.onrender.com",
+                // Vercel deployment host
+                "https://cointrack-finance.vercel.app"));
 
         // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
