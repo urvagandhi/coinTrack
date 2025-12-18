@@ -10,10 +10,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
  * metrics.
  */
 @RestController
-@RequestMapping("/api")
 public class HealthController {
 
     private static final Logger logger = LoggerFactory.getLogger(HealthController.class);
@@ -38,10 +37,10 @@ public class HealthController {
      * Comprehensive health check endpoint.
      * Returns 200 OK if all systems are healthy, 503 if any critical component is
      * down.
-     * 
+     *
      * @return detailed health status response
      */
-    @GetMapping("/health")
+    @GetMapping("/api/health")
     public ResponseEntity<Map<String, Object>> health() {
         Map<String, Object> response = new LinkedHashMap<>();
         Map<String, Object> checks = new LinkedHashMap<>();
@@ -86,10 +85,10 @@ public class HealthController {
     /**
      * Simple health check endpoint for basic monitoring.
      * Always returns 200 OK with minimal information.
-     * 
+     *
      * @return basic health status
      */
-    @GetMapping("/health/ping")
+    @GetMapping("/api/health/ping")
     public ResponseEntity<Map<String, Object>> ping() {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "UP");
@@ -202,5 +201,17 @@ public class HealthController {
         } else {
             return seconds + "s";
         }
+    }
+
+    /**
+     * Lightweight health check for Render keep-alive (root level).
+     * Prevents caching to ensure fresh status.
+     */
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> keepAlive() {
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.noStore())
+                .body(Map.of("status", "UP"));
     }
 }

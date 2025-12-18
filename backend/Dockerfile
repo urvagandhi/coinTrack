@@ -11,8 +11,7 @@ WORKDIR /app
 
 # Copy POM first to cache dependencies (layer optimization)
 COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw .
+
 
 # Download dependencies without building source
 # Use -B for batch mode (no interactive prompts)

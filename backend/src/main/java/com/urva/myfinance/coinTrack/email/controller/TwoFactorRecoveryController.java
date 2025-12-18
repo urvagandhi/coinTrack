@@ -42,7 +42,6 @@ import lombok.RequiredArgsConstructor;
 public class TwoFactorRecoveryController {
 
     private static final Logger logger = LoggerFactory.getLogger(TwoFactorRecoveryController.class);
-    private static final String TEMP_JWT_PURPOSE = "2FA_RECOVERY_TEMP";
 
     private final EmailTokenService emailTokenService;
     private final EmailService emailService;
