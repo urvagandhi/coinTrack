@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CoinTrack API",
-    "description": "Collection for manually testing the CoinTrack API. \n\n**ZERODHA CONNECTION GUIDE:**\nTo connect manually:\n1. Update `CoinTrack_Local_Environment.json` with your API Key/Secret.\n2. Run '1. Setup Credentials'.\n3. Run '2. Get Login Link', copy URL, open in browser.\n4. Login, copy `request_token` from URL.\n5. Run '3. Finalize Connection' with the token.\n\n**LOGIN FLOW:**\n1. Run 'Login'.\n2. Run 'Verify OTP' with the OTP received.",
+    "description": "Collection for manually testing the CoinTrack API. \n\n**ZERODHA CONNECTION GUIDE:**\nTo connect manually:\n1. Update `CoinTrack_Local_Environment.json` with your API Key/Secret.\n2. Run '1. Setup Credentials'.\n3. Run '2. Get Login Link', copy URL, open in browser.\n4. Login, copy `request_token` from URL.\n5. Run '3. Finalize Connection' with the token.\n\n**LOGIN FLOW (TOTP-based):**\n1. Run 'Login' - returns tempToken if TOTP is set up.\n2. Use TOTP endpoints to complete authentication.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -18,7 +18,7 @@
                 "value": "application/json"
               }
             ],
-            "description": "Initiates login. If successful, triggers OTP generation.",
+            "description": "Initiates login. Returns tempToken for TOTP verification if 2FA is enabled.",
             "url": {
               "raw": "http://localhost:8080/api/auth/login",
               "host": [
@@ -33,34 +33,6 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"usernameOrEmailOrMobile\": \"testuser\",\n  \"password\": \"password123\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Verify OTP",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "description": "**INSTRUCTIONS**:\n1. Check your backend logs or SMS/Email for the OTP sent after the 'Login' step.\n2. Enter the OTP below.\n3. Send request to get the `accessToken`.\n4. **IMPORTANT**: Copy the `accessToken` into your Environment 'token' variable.",
-            "url": {
-              "raw": "http://localhost:8080/api/auth/verify-otp",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "verify-otp"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"testuser\",\n  \"otp\": \"YOUR_OTP_HERE\"\n}"
             }
           }
         },
@@ -88,6 +60,275 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"mobile\": \"9876543210\",\n  \"password\": \"password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+            }
+          }
+        },
+        {
+          "name": "TOTP - Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Initiate TOTP setup. Returns QR code and secret for authenticator app.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/2fa/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "2fa",
+                "setup"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TOTP - Verify Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Verify TOTP code during setup. Returns backup codes.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/2fa/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "2fa",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "TOTP - Login with TOTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Complete login with TOTP code. Use tempToken from Login response.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login/totp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login",
+                "totp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tempToken\": \"TEMP_TOKEN_FROM_LOGIN\",\n  \"code\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "TOTP - Login with Recovery Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Login using backup recovery code instead of TOTP.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login/recovery",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login",
+                "recovery"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tempToken\": \"TEMP_TOKEN_FROM_LOGIN\",\n  \"code\": \"BACKUP_CODE_HERE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "TOTP - Get Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Check if TOTP is enabled for current user.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/2fa/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "2fa",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TOTP - Initiate Reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Start TOTP reset process. Requires current TOTP code.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/2fa/reset/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "2fa",
+                "reset",
+                "initiate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "TOTP - Verify Reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Verify new TOTP code after reset. Returns new backup codes.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/2fa/reset/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "2fa",
+                "reset",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "TOTP - Registration Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Initiate TOTP setup during registration. Use tempToken from Register response.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/2fa/register/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "2fa",
+                "register",
+                "setup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tempToken\": \"TEMP_TOKEN_FROM_REGISTER\"\n}"
+            }
+          }
+        },
+        {
+          "name": "TOTP - Registration Verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Verify TOTP during registration. Returns JWT and backup codes.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/2fa/register/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "2fa",
+                "register",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tempToken\": \"TEMP_TOKEN_FROM_REGISTER\",\n  \"code\": \"123456\"\n}"
             }
           }
         },

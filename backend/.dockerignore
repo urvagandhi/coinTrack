@@ -1,0 +1,58 @@
+# ==========================================
+# CoinTrack Backend - Docker Ignore Rules
+# Purpose: Prevent sensitive/huge files from entering build context
+# ==========================================
+
+# 1. Build Artifacts (speeds up build significantly)
+target/
+build/
+*.class
+*.jar
+!pom.xml
+
+# 2. IDE & Git Metadata
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# 3. Logs & Temp Files
+logs/
+*.log
+*.tmp
+*.bak
+
+# 4. Sensitive Files (CRITICAL - never include in image)
+.env
+.env.*
+secrets/
+*.pem
+*.key
+
+# 5. OS Metadata
+.DS_Store
+Thumbs.db
+*.swp
+
+# 6. Docker files in subdirectory (we use root Dockerfile)
+docker/Dockerfile
+docker/docker-compose.yml
+docker/.dockerignore
+
+# 7. Documentation (not needed in container)
+docs/
+*.md
+!README.md
+
+# 8. Test files (tests run in CI, not container)
+src/test/
+
+# 9. Maven Wrapper (we use container's Maven)
+.mvn/
+mvnw
+mvnw.cmd

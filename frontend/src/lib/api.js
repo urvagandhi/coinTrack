@@ -145,8 +145,6 @@ export const endpoints = {
     auth: {
         login: '/api/auth/login',
         register: '/api/auth/register',
-        verifyOtp: '/api/auth/verify-otp',
-        resendOtp: '/api/auth/resend-otp',
         logout: '/api/auth/logout',
         // TOTP related endpoints
         totp: {
@@ -207,15 +205,7 @@ const unwrapResponse = (data) => {
 export const authAPI = {
     login: async (credentials) => {
         const { data } = await api.post(endpoints.auth.login, credentials);
-        return unwrapResponse(data); // Expect { token, user } or { requiresOtp }
-    },
-    verifyOtp: async (payload) => {
-        const { data } = await api.post(endpoints.auth.verifyOtp, payload);
-        return unwrapResponse(data);
-    },
-    resendOtp: async (username) => {
-        const { data } = await api.post(endpoints.auth.resendOtp, { username });
-        return unwrapResponse(data);
+        return unwrapResponse(data); // Returns { token, user } or { tempToken, requireTotpSetup }
     },
     register: async (userData) => {
         const { data } = await api.post(endpoints.auth.register, userData);

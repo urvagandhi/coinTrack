@@ -237,3 +237,152 @@ Users hate seeing `0.00%` when their portfolio actually moved by ₹50.
   "totalDayGainPercent": -0.9700
 }
 ```
+
+---
+
+## 8. Timeline Events System
+
+### 8.1 Overview
+
+The Portfolio Summary service generates a **timeline of events** representing significant portfolio milestones. Events are stored and displayed chronologically to provide users with a historical view of their investment journey.
+
+### 8.2 Event Types
+
+| Event Type | Trigger | Contains |
+|------------|---------|----------|
+| `HOLDINGS_SYNC` | First successful holdings sync | Count of holdings, total value |
+| `MF_HOLDINGS_SYNC` | First MF holdings sync | Count of funds, total value |
+| `POSITION_OPENED` | New position detected | Symbol, quantity, entry price |
+| `SIP_CREATED` | New SIP registered | Fund name, amount, frequency, initial status |
+| `SIP_STATUS_CHANGE` | SIP paused/cancelled | Previous status, new status |
+| `ORDER_EXECUTED` | Trade completed | Symbol, quantity, price, side |
+| `PORTFOLIO_MILESTONE` | Value crosses milestone | Milestone amount (₹1L, ₹5L, etc.) |
+
+### 8.3 SIP Event Semantics
+
+**Design Decision**: SIP status changes are handled carefully to avoid redundancy:
+
+1. **SIP_CREATED event** includes the initial status (typically ACTIVE)
+2. **SIP_STATUS_CHANGE** is emitted **only** for deviations:
+   - `ACTIVE → PAUSED`
+   - `ACTIVE → CANCELLED`
+   - `PAUSED → ACTIVE` (reactivation)
+
+This prevents duplicate "SIP is active" events on every sync.
+
+### 8.4 Timeline Event DTO
+
+```java
+public class TimelineEventDTO {
+    private String id;
+    private String eventType;      // e.g., "SIP_CREATED"
+    private String title;          // Human-readable title
+    private String description;    // Detailed description
+    private Instant timestamp;     // When event occurred
+    private String entityId;       // e.g., SIP ID, Order ID
+    private String entityType;     // "SIP", "ORDER", "HOLDING"
+    private Map<String, Object> metadata;  // Additional event data
+}
+```
+
+---
+
+## 9. Kite List Response Wrapper
+
+### 9.1 Purpose
+
+All list endpoints (Holdings, Positions, MF data) use a standardized wrapper that includes metadata about the data freshness.
+
+### 9.2 Structure
+
+```java
+public class KiteListResponse<T> {
+    private List<T> data;           // The actual list items
+    private String source;          // "ZERODHA", "CACHE"
+    private Instant lastSyncedAt;   // When data was last fetched
+    private boolean isStale;        // True if data may be outdated
+    private String broker;          // "ZERODHA"
+}
+```
+
+### 9.3 JSON Example
+
+```json
+{
+  "data": [ /* list of holdings/positions */ ],
+  "source": "ZERODHA",
+  "lastSyncedAt": "2025-12-17T10:30:00Z",
+  "isStale": false,
+  "broker": "ZERODHA"
+}
+```
+
+---
+
+## 10. Advanced Configuration
+
+### 10.1 Precision Settings
+
+```java
+// In PortfolioSummaryServiceImpl
+private static final int INTERNAL_SCALE = 6;        // Internal calculations
+private static final int PERCENTAGE_SCALE = 4;      // Percentage values
+private static final int DISPLAY_SCALE = 2;         // UI display
+private static final RoundingMode ROUND_MODE = RoundingMode.HALF_UP;
+```
+
+### 10.2 Staleness Thresholds
+
+```yaml
+# application.yml
+portfolio:
+  staleness:
+    market-hours-minutes: 15      # Data older than 15 mins during market
+    off-hours-hours: 6            # Data older than 6 hours off-market
+```
+
+### 10.3 Aggregation Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `includePositionsInTotal` | `false` | If true, positions are included in portfolio value |
+| `useBrokerPnL` | `true` | If true, use Zerodha's P&L; if false, compute locally |
+| `computePreviousClose` | `true` | Whether to compute previous day value |
+
+---
+
+## 11. Performance Considerations
+
+### 11.1 Optimization Strategies
+
+1. **Batch Processing**: Holdings are processed in batches to avoid memory pressure
+2. **Parallel Aggregation**: Uses parallel streams for large portfolios (50+ holdings)
+3. **Lazy Loading**: Positions and MF data loaded only when requested
+
+### 11.2 Benchmarks
+
+| Portfolio Size | Holdings Only | With Positions | With MF |
+|----------------|---------------|----------------|---------|
+| 10 stocks | ~5ms | ~8ms | ~15ms |
+| 50 stocks | ~15ms | ~25ms | ~40ms |
+| 100+ stocks | ~30ms | ~50ms | ~80ms |
+
+---
+
+## 12. Related Documentation
+
+- [Zerodha Master Integration Guide](./zerodha/Zerodha_Master_Integration_Guide.md) - Complete integration reference
+- [Zerodha Holdings Architecture](./zerodha/Zerodha_Holdings_Architecture.md) - Holdings-specific details
+- [Zerodha Positions Architecture](./zerodha/Zerodha_Positions_Architecture.md) - Positions handling
+- [Zerodha CoinTrack Mapping](./zerodha/Zerodha_CoinTrack_Mapping.md) - Field mapping reference
+
+---
+
+## Appendix: Changelog
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0.2 | 2025-12-17 | Added Timeline Events, Kite Response Wrapper, Advanced Config |
+| 1.0.1 | 2025-12-15 | Added edge case handling, precision specs |
+| 1.0.0 | 2025-12-14 | Initial architecture document |
+

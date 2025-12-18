@@ -20,9 +20,10 @@ public final class LoggingConstants {
     public static final String AUTH_LOGIN_FAILED = "[Auth] Login failed for user: {} - reason: {}";
     public static final String AUTH_TOKEN_VALIDATED = "[Auth] Token validated for user: {}";
     public static final String AUTH_TOKEN_INVALID = "[Auth] Invalid token: {}";
-    public static final String AUTH_OTP_SENT = "[Auth] OTP sent to user: {} via: {}";
-    public static final String AUTH_OTP_VERIFIED = "[Auth] OTP verified for user: {}";
-    public static final String AUTH_OTP_FAILED = "[Auth] OTP verification failed for user: {}";
+    public static final String AUTH_TOTP_SETUP_STARTED = "[Auth] TOTP setup started for user: {}";
+    public static final String AUTH_TOTP_SETUP_COMPLETED = "[Auth] TOTP setup completed for user: {}";
+    public static final String AUTH_TOTP_VERIFIED = "[Auth] TOTP verified for user: {}";
+    public static final String AUTH_TOTP_FAILED = "[Auth] TOTP verification failed for user: {}";
 
     // ============ User Operations ============
     public static final String USER_CREATED = "[User] Created user: {}";

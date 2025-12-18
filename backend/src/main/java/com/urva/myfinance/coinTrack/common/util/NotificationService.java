@@ -6,13 +6,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class NotificationService {
-    private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
-
-    public void sendOtp(String contact, String otp) {
-        // In a real application, this would send an SMS or Email
-        logger.info("========================================");
-        logger.info("SENDING OTP TO: {}", contact);
-        logger.info("OTP CODE: {}", otp);
-        logger.info("========================================");
-    }
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    // TODO: Implement actual notification service
 }

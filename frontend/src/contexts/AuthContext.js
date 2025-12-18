@@ -126,7 +126,8 @@ export function AuthProvider({ children }) {
             }
 
             // CASE 1: TOTP Required (user has TOTP set up)
-            if (response.requiresOtp) {
+            // Backend now returns tempToken + requireTotpSetup:false when TOTP is needed
+            if (response.tempToken && !response.requireTotpSetup && !response.token) {
                 logger.info('Login requires TOTP verification', { username: response.username });
                 dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
                 return {
@@ -185,58 +186,6 @@ export function AuthProvider({ children }) {
                 success: false,
                 error: error.message
             };
-        }
-    };
-
-    const verifyOtp = async (username, otp, remember = true) => {
-        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-        dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-
-        try {
-            let response = await authAPI.verifyOtp({ username, otp });
-
-            // Handle ApiResponse wrapper if present
-            if (response.success && response.data) {
-                response = response.data;
-            }
-
-            const { token, ...userData } = response;
-
-            if (token) {
-                const user = {
-                    id: userData.userId,
-                    username: userData.username,
-                    email: userData.email,
-                    name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
-                    name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
-                    phoneNumber: userData.mobile,
-                    bio: userData.bio,
-                    location: userData.location,
-                };
-
-                tokenManager.setToken(token, remember);
-                logger.info('OTP Verification successful', { username });
-
-                dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
-                return { success: true, user };
-            }
-
-            throw new Error('OTP Verification failed: No token received');
-
-        } catch (error) {
-            logger.error('OTP Verification failed', { error: error.message });
-            dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: error.message });
-            return { success: false, error: error.message };
-        }
-    };
-
-    const resendOtp = async (username) => {
-        try {
-            const response = await authAPI.resendOtp(username);
-            return { success: true, message: response.message };
-        } catch (error) {
-            logger.error('Resend OTP failed', { error: error.message });
-            return { success: false, error: error.message };
         }
     };
 
@@ -361,8 +310,6 @@ export function AuthProvider({ children }) {
     const contextValue = {
         ...state,
         login,
-        verifyOtp,
-        resendOtp,
         logout,
         register: authAPI.register, // Pass-through
         setupTotp,

@@ -77,7 +77,6 @@
 
 
 		<!-- TOTP (Time-based One-Time Password) Library -->
-		<!-- Replaced java-otp with totp-spring-boot-starter for better features -->
 		<dependency>
 			<groupId>dev.samstevens.totp</groupId>
 			<artifactId>totp-spring-boot-starter</artifactId>

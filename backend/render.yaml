@@ -1,0 +1,40 @@
+# ==========================================
+# Render.com Blueprint Configuration
+# https://render.com/docs/blueprint-spec
+# ==========================================
+
+services:
+  # Backend API Service
+  - type: web
+    name: cointrack-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: oregon  # or singapore for Asia
+    plan: free      # or starter, standard, etc.
+
+    # Health check configuration
+    healthCheckPath: /actuator/health
+
+    # Environment variables (set these in Render dashboard or use envVarGroups)
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: MONGODB_URI
+        sync: false  # Set in dashboard - sensitive
+      - key: JWT_SECRET
+        sync: false  # Set in dashboard - sensitive
+      - key: ENCRYPTION_KEY
+        sync: false  # Set in dashboard - sensitive
+      - key: ENCRYPTION_SALT
+        sync: false  # Set in dashboard - sensitive
+      - key: TOTP_ENCRYPTION_KEY
+        sync: false  # Set in dashboard - sensitive
+
+    # Build settings
+    buildCommand: ""  # Dockerfile handles build
+    startCommand: ""  # Dockerfile handles start
+
+    # Auto-deploy on push to main
+    autoDeploy: true
+    branch: main

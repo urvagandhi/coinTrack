@@ -24,7 +24,6 @@ import com.urva.myfinance.coinTrack.common.response.user.RegisterUserDTO;
 import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
 import com.urva.myfinance.coinTrack.user.dto.LoginRequest;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
-import com.urva.myfinance.coinTrack.user.dto.VerifyOtpRequest;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.service.UserAuthenticationService;
 import com.urva.myfinance.coinTrack.user.service.UserService;
@@ -83,33 +82,6 @@ public class UserController {
         }
     }
 
-    @PostMapping("/auth/verify-otp")
-    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        try {
-            logger.info("OTP verification attempt for username: {}", request.getUsername());
-            LoginResponse response = userService.verifyOtp(request.getUsername(), request.getOtp());
-            logger.info(LoggingConstants.AUTH_OTP_VERIFIED, request.getUsername());
-            return ResponseEntity.ok(ApiResponse.success(response));
-        } catch (Exception e) {
-            logger.warn(LoggingConstants.AUTH_OTP_FAILED, request.getUsername());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PostMapping("/auth/resend-otp")
-    public ResponseEntity<?> resendOtp(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        try {
-            logger.info("Resend OTP request for: {}", username);
-            LoginResponse response = userService.resendOtp(username);
-            return ResponseEntity.ok(ApiResponse.success(response));
-        } catch (Exception e) {
-            logger.error("Resend OTP failed for {}: {}", username, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
     /**
      * Register a new user account.
      *
@@ -139,7 +111,7 @@ public class UserController {
 
             /*
              * Legacy code removed: direct save and auto-login is no longer used.
-             * User must now verify OTP before account is created.
+             * User must now complete TOTP setup before account is created.
              */
         } catch (Exception e) {
             logger.error("Error during registration: {}", e.getMessage());

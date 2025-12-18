@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
-import com.urva.myfinance.coinTrack.common.util.NotificationService;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.model.User;
@@ -22,7 +21,7 @@ import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
 /**
  * Service responsible for user authentication operations.
- * Handles login, OTP verification for login, and token validation.
+ * Handles login, TOTP verification for login, and token validation.
  *
  * Single Responsibility: Authentication only.
  * For registration, see {@link UserRegistrationService}.
@@ -35,30 +34,9 @@ public class UserAuthenticationService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserAuthenticationService.class);
 
-    // ══════════════════════════════════════════════════════════════════════
-    // LEGACY SMS OTP CONFIG (DISABLED – replaced by TOTP)
-    // DO NOT DELETE – preserved for audit & rollback safety
-    // ══════════════════════════════════════════════════════════════════════
-    // private static final int OTP_EXPIRY_MINUTES = 5;
-    // private static final int OTP_COOLDOWN_SECONDS = 30;
-    // private final Map<String, OtpData> otpStorage = new ConcurrentHashMap<>();
-    // private static class OtpData {
-    // String otp;
-    // long expiryTime;
-    // long creationTime;
-    //
-    // OtpData(String otp, long expiryTime) {
-    // this.otp = otp;
-    // this.expiryTime = expiryTime;
-    // this.creationTime = System.currentTimeMillis();
-    // }
-    // }
-    // ══════════════════════════════════════════════════════════════════════
-
     private final UserRepository userRepository;
     private final AuthenticationManager authManager;
     private final JWTService jwtService;
-    private final NotificationService notificationService;
     private final TotpService totpService;
     private final UserService userService;
 
@@ -66,13 +44,11 @@ public class UserAuthenticationService {
             UserRepository userRepository,
             AuthenticationManager authManager,
             JWTService jwtService,
-            NotificationService notificationService,
             TotpService totpService,
             UserService userService) {
         this.userRepository = userRepository;
         this.authManager = authManager;
         this.jwtService = jwtService;
-        this.notificationService = notificationService;
         this.totpService = totpService;
         this.userService = userService;
     }
@@ -106,7 +82,6 @@ public class UserAuthenticationService {
                     String tempToken = jwtService.generateTempToken(foundUser, "TOTP_LOGIN", 10);
 
                     LoginResponse response = new LoginResponse();
-                    response.setRequiresOtp(true); // Flag for frontend to show TOTP input
                     response.setRequireTotpSetup(false);
                     response.setTempToken(tempToken);
                     response.setUserId(foundUser.getId());
@@ -120,7 +95,6 @@ public class UserAuthenticationService {
                 String setupToken = jwtService.generateTempToken(foundUser, "TOTP_SETUP", 30);
 
                 LoginResponse response = new LoginResponse();
-                response.setRequiresOtp(false); // No TOTP input yet
                 response.setRequireTotpSetup(true); // Flag for frontend to redirect to setup
                 response.setTempToken(setupToken);
                 response.setUserId(foundUser.getId());
@@ -201,31 +175,9 @@ public class UserAuthenticationService {
         response.setEmail(user.getEmail());
         response.setMobile(user.getPhoneNumber());
         response.setFirstName(user.getName());
-        response.setRequiresOtp(false);
         response.setRequireTotpSetup(false);
         return response;
     }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // LEGACY SMS METHODS (COMMENTED OUT)
-    // ══════════════════════════════════════════════════════════════════════
-    /*
-     * public LoginResponse verifyLoginOtp(String usernameOrEmailOrMobile, String
-     * otp) {
-     * // Legacy code - preserved for reference
-     * throw new RuntimeException("SMS OTP is disabled.");
-     * }
-     *
-     * public LoginResponse resendLoginOtp(String usernameOrEmailOrMobile) {
-     * // Legacy code - preserved for reference
-     * throw new RuntimeException("SMS OTP is disabled.");
-     * }
-     *
-     * private String generateOtp() {
-     * return "";
-     * }
-     */
-    // ══════════════════════════════════════════════════════════════════════
 
     /**
      * Get user from JWT token.

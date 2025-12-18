@@ -65,11 +65,6 @@ public class LoginResponse {
     private Boolean isActive;
 
     /**
-     * Indicates if OTP verification is required to complete login.
-     */
-    private Boolean requiresOtp;
-
-    /**
      * Indicates if TOTP setup is mandatory for this user.
      */
     private Boolean requireTotpSetup;
@@ -80,7 +75,7 @@ public class LoginResponse {
     private String tempToken;
 
     /**
-     * Additional message for the client (e.g., OTP sent notification).
+     * Additional message for the client (e.g., TOTP verification status).
      */
     private String message;
 
@@ -193,14 +188,6 @@ public class LoginResponse {
         this.isActive = isActive;
     }
 
-    public Boolean getRequiresOtp() {
-        return requiresOtp;
-    }
-
-    public void setRequiresOtp(Boolean requiresOtp) {
-        this.requiresOtp = requiresOtp;
-    }
-
     public Boolean getRequireTotpSetup() {
         return requireTotpSetup;
     }
@@ -262,7 +249,6 @@ public class LoginResponse {
                 ", roles=" + roles +
                 ", tokenExpiry=" + tokenExpiry +
                 ", isActive=" + isActive +
-                ", requiresOtp=" + requiresOtp +
                 ", requireTotpSetup=" + requireTotpSetup +
                 ", message='" + message + '\'' +
                 '}';
