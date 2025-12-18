@@ -36,9 +36,9 @@ public class EmailConfigProperties {
     /**
      * Base URL for the frontend application
      * Used to construct magic links for email verification, password reset, etc.
-     * Default: http://localhost:3000
+     * Default: https://cointrack-finance.vercel.app
      */
-    private String baseUrl = "http://localhost:3000";
+    private String baseUrl = "https://cointrack-finance.vercel.app";
 
     /**
      * Magic link expiry time in minutes
@@ -56,9 +56,9 @@ public class EmailConfigProperties {
     /**
      * Backend API base URL for serving static assets like logo.
      * Used for email templates to reference the logo image.
-     * Default: http://localhost:8080
+     * Default: https://cointrack-15gt.onrender.com
      */
-    private String apiBaseUrl = "http://localhost:8080";
+    private String apiBaseUrl = "https://cointrack-15gt.onrender.com";
 
     /**
      * Get the full URL for the logo image
