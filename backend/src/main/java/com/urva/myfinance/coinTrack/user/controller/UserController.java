@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,6 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.common.response.user.RegisterUserDTO;
 import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
+import com.urva.myfinance.coinTrack.common.util.NotificationService;
+import com.urva.myfinance.coinTrack.common.util.RequestUtils;
+import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.user.dto.LoginRequest;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.model.User;
@@ -44,6 +48,20 @@ public class UserController {
 
     private final UserService userService;
     private final UserAuthenticationService userAuthenticationService;
+
+    // Notification services - optional for backward compatibility
+    private NotificationService notificationService;
+    private EmailTokenService emailTokenService;
+
+    @Autowired(required = false)
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    @Autowired(required = false)
+    public void setEmailTokenService(EmailTokenService emailTokenService) {
+        this.emailTokenService = emailTokenService;
+    }
 
     public UserController(UserService userService, UserAuthenticationService userAuthenticationService) {
         this.userService = userService;
@@ -250,7 +268,10 @@ public class UserController {
     }
 
     @PostMapping("/users/{id}/change-password")
-    public ResponseEntity<?> changePassword(@PathVariable String id, @RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> changePassword(
+            @PathVariable String id,
+            @RequestBody Map<String, String> payload,
+            HttpServletRequest httpRequest) {
         try {
             String newPassword = payload.get("password");
             String oldPassword = payload.get("oldPassword");
@@ -270,6 +291,23 @@ public class UserController {
             }
 
             userService.changePassword(id, oldPassword, newPassword);
+
+            // Get user for email
+            User user = userService.getUserById(id);
+
+            // Send security alert
+            if (notificationService != null && user != null) {
+                String ipAddress = RequestUtils.extractIpAddress(httpRequest);
+                notificationService.sendSecurityAlertWithIP(user, "Password Changed", ipAddress);
+                logger.info("Password change security alert sent to: {}", user.getEmail());
+            }
+
+            // Invalidate all email tokens
+            if (emailTokenService != null) {
+                emailTokenService.invalidateAllForUser(id);
+                logger.info("Invalidated all email tokens after password change: userId={}", id);
+            }
+
             return ResponseEntity.ok(ApiResponse.success("Password updated successfully"));
         } catch (Exception e) {
             logger.error("Error changing password for user {}: {}", id, e.getMessage());

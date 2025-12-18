@@ -62,6 +62,20 @@ public class SecurityConfig {
                                                                                                  // Verify
                                                 .permitAll()
 
+                                                // 🔓 Static resources (public)
+                                                .requestMatchers("/logo/**").permitAll()
+
+                                                // 🔓 Admin email preview (dev only)
+                                                .requestMatchers("/admin/emails/**").permitAll()
+
+                                                // 🔓 Email verification endpoints (public)
+                                                .requestMatchers("/api/auth/email/verify",
+                                                                "/api/auth/email/change/verify",
+                                                                "/api/auth/forgot-password",
+                                                                "/api/auth/forgot-password/verify",
+                                                                "/api/auth/reset-password")
+                                                .permitAll()
+
                                                 // 🔓 Broker callbacks (public)
                                                 // Note: Controller uses /api/brokers/{broker}/callback
                                                 .requestMatchers("/api/brokers/ZERODHA/callback",

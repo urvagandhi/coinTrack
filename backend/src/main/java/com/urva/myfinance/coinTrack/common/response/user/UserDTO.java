@@ -75,6 +75,16 @@ public class UserDTO {
     private Boolean isMobileVerified;
 
     /**
+     * User bio/description.
+     */
+    private String bio;
+
+    /**
+     * User location.
+     */
+    private String location;
+
+    /**
      * Default constructor for JSON deserialization.
      */
     public UserDTO() {
@@ -82,7 +92,7 @@ public class UserDTO {
 
     /**
      * Constructor with essential fields.
-     * 
+     *
      * @param id       the user ID
      * @param username the username
      * @param email    the email address
@@ -189,6 +199,22 @@ public class UserDTO {
 
     public void setIsMobileVerified(Boolean isMobileVerified) {
         this.isMobileVerified = isMobileVerified;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 
     @Override

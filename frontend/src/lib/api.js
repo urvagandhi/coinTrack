@@ -191,6 +191,17 @@ export const endpoints = {
         create: '/api/notes',
         update: (id) => `/api/notes/${id}`,
         delete: (id) => `/api/notes/${id}`,
+    },
+    email: {
+        verify: '/api/auth/email/verify',
+        resend: '/api/auth/email/resend',
+        change: '/api/auth/email/change',
+        changeVerify: '/api/auth/email/change/verify',
+    },
+    password: {
+        forgot: '/api/auth/forgot-password',
+        forgotVerify: '/api/auth/forgot-password/verify',
+        reset: '/api/auth/reset-password',
     }
 };
 
@@ -348,6 +359,77 @@ export const notesAPI = {
     },
     delete: async (id) => {
         const { data } = await api.delete(endpoints.notes.delete(id));
+        return unwrapResponse(data);
+    }
+};
+
+// ============================================================================
+// EMAIL VERIFICATION API
+// ============================================================================
+export const emailAPI = {
+    /**
+     * Verify email using magic link token.
+     * @param {string} token - Magic link token from email
+     * @param {string} [type] - "change" for email change, omit for registration
+     */
+    verify: async (token, type = null) => {
+        const { data } = await api.post(endpoints.email.verify, { token, type });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Resend verification email.
+     * Requires: Authentication (JWT token in header)
+     */
+    resend: async () => {
+        const { data } = await api.post(endpoints.email.resend);
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Request email change.
+     * Sends verification link to NEW email address.
+     * Requires: Authentication
+     */
+    change: async (newEmail) => {
+        const { data } = await api.post(endpoints.email.change, { newEmail });
+        return unwrapResponse(data);
+    }
+};
+
+// ============================================================================
+// PASSWORD RESET API
+// ============================================================================
+export const passwordAPI = {
+    /**
+     * Request password reset.
+     * Accepts email, username, or mobile number.
+     * Always returns success (no user enumeration).
+     */
+    forgot: async (identifier) => {
+        const { data } = await api.post(endpoints.password.forgot, { identifier });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Verify password reset token.
+     * Returns temporary JWT for password reset.
+     */
+    forgotVerify: async (token) => {
+        const { data } = await api.post(endpoints.password.forgotVerify, { token });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Reset password using temporary JWT.
+     * Requires: Temp JWT in Authorization header
+     */
+    reset: async (tempToken, newPassword) => {
+        const { data } = await api.post(
+            endpoints.password.reset,
+            { newPassword },
+            { headers: { Authorization: `Bearer ${tempToken}` } }
+        );
         return unwrapResponse(data);
     }
 };

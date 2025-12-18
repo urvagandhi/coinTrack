@@ -59,4 +59,16 @@ public class User {
     private int totpFailedAttempts = 0;
 
     private LocalDateTime totpLockedUntil;
+
+    // Email Verification Fields
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    private LocalDateTime emailVerifiedAt;
+
+    /**
+     * Pending email address for email change flow.
+     * Set when user requests email change, cleared after verification.
+     */
+    private String pendingEmail;
 }

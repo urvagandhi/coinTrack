@@ -9,9 +9,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
-import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
 
 /**
  * Service responsible for user profile operations.
@@ -102,6 +102,12 @@ public class UserProfileService {
         }
         if (updates.getPassword() != null) {
             existingUser.setPassword(passwordEncoder.encode(updates.getPassword()));
+        }
+        if (updates.getBio() != null) {
+            existingUser.setBio(updates.getBio());
+        }
+        if (updates.getLocation() != null) {
+            existingUser.setLocation(updates.getLocation());
         }
 
         return userRepository.save(existingUser);

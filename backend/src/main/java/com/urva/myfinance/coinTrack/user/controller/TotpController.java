@@ -3,6 +3,7 @@ package com.urva.myfinance.coinTrack.user.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.common.util.NotificationService;
+import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.dto.TotpSetupResponse;
@@ -32,6 +35,20 @@ public class TotpController {
     private final TotpService totpService;
     private final UserAuthenticationService userAuthService;
     private final JWTService jwtService;
+
+    // Notification services - optional for backward compatibility
+    private NotificationService notificationService;
+    private EmailTokenService emailTokenService;
+
+    @Autowired(required = false)
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    @Autowired(required = false)
+    public void setEmailTokenService(EmailTokenService emailTokenService) {
+        this.emailTokenService = emailTokenService;
+    }
 
     public TotpController(TotpService totpService, UserAuthenticationService userAuthService, JWTService jwtService) {
         this.totpService = totpService;
@@ -72,6 +89,12 @@ public class TotpController {
 
         try {
             List<String> backupCodes = totpService.verifySetup(user, request.getCode());
+
+            // Send security alert for 2FA setup
+            if (notificationService != null && user.getEmail() != null) {
+                notificationService.sendSecurityAlert(user, "2-Factor Authentication Enabled", null);
+            }
+
             return ResponseEntity
                     .ok(ApiResponse.success(Map.of("backupCodes", backupCodes), "TOTP Verified & Enabled"));
         } catch (RuntimeException e) {
@@ -192,6 +215,7 @@ public class TotpController {
      * 6. Verify Reset (finalize rotation)
      * Requires: Access Token
      * Logic is same as setup verification (verifies pending secret).
+     * Sends security alert and invalidates all email tokens.
      */
     @PostMapping("/2fa/reset/verify")
     public ResponseEntity<?> verifyReset(@AuthenticationPrincipal UserDetails userDetails,
@@ -202,6 +226,17 @@ public class TotpController {
 
         try {
             List<String> backupCodes = totpService.verifySetup(user, request.getCode());
+
+            // Send security alert for TOTP reset
+            if (notificationService != null && user.getEmail() != null) {
+                notificationService.sendSecurityAlert(user, "2-Factor Authentication Reset", null);
+            }
+
+            // Invalidate all email tokens on TOTP reset
+            if (emailTokenService != null && user.getId() != null) {
+                emailTokenService.invalidateAllForUser(user.getId());
+            }
+
             return ResponseEntity.ok(ApiResponse.success(Map.of("backupCodes", backupCodes), "TOTP Reset Complete"));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));

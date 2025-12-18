@@ -3,6 +3,7 @@ package com.urva.myfinance.coinTrack.user.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -11,6 +12,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
+import com.urva.myfinance.coinTrack.email.service.EmailService;
+import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.notes.service.NoteService;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
@@ -25,6 +29,26 @@ public class UserService {
     private final AuthenticationManager authManager;
     private final JWTService jwtService;
     private final NoteService noteService;
+
+    // Email services - optional for backward compatibility
+    private EmailService emailService;
+    private EmailTokenService emailTokenService;
+    private EmailConfigProperties emailConfig;
+
+    @Autowired(required = false)
+    public void setEmailService(EmailService emailService) {
+        this.emailService = emailService;
+    }
+
+    @Autowired(required = false)
+    public void setEmailTokenService(EmailTokenService emailTokenService) {
+        this.emailTokenService = emailTokenService;
+    }
+
+    @Autowired(required = false)
+    public void setEmailConfig(EmailConfigProperties emailConfig) {
+        this.emailConfig = emailConfig;
+    }
 
     // In-memory storage for Pending Registrations: username -> PendingRegistration
     // Used during TOTP registration flow - user stored here until TOTP is verified
@@ -230,6 +254,7 @@ public class UserService {
     /**
      * Complete pending registration by saving user to DB.
      * Called after TOTP verification is successful.
+     * Sends welcome email first, then verification email (separate as per UX).
      */
     @Transactional
     public User completePendingRegistration(String username) {
@@ -251,7 +276,38 @@ public class UserService {
         // Seed default notes for new user
         noteService.createDefaultNotesIfNoneExist(savedUser.getId());
 
+        // Send emails (separate as per UX requirements)
+        // 1. Welcome email first (brand & trust)
+        // 2. Verification email second (action)
+        sendRegistrationEmails(savedUser);
+
         return savedUser;
+    }
+
+    /**
+     * Send welcome and verification emails after registration.
+     * Emails sent separately for better engagement.
+     */
+    private void sendRegistrationEmails(User user) {
+        if (emailService == null || emailTokenService == null || emailConfig == null) {
+            logger.warn("Email services not configured, skipping registration emails");
+            return;
+        }
+
+        try {
+            // 1. Send welcome email first (brand & trust)
+            emailService.sendWelcomeEmail(user);
+            logger.info("Welcome email sent to: {}", user.getEmail());
+
+            // 2. Send verification email (action)
+            String token = emailTokenService.createToken(user, "EMAIL_VERIFY", null);
+            String magicLink = emailConfig.getEmailVerifyUrl(token);
+            emailService.sendEmailVerification(user, magicLink);
+            logger.info("Verification email sent to: {}", user.getEmail());
+        } catch (Exception e) {
+            // Log error but don't fail registration
+            logger.error("Failed to send registration emails: {}", e.getMessage());
+        }
     }
 
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UserService.class);

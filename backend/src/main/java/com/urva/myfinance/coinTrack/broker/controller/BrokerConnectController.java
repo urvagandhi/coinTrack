@@ -239,7 +239,6 @@ public class BrokerConnectController {
      *
      * @return User or null if not authenticated
      */
-    @SuppressWarnings("unused")
     private User getAuthenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
