@@ -113,7 +113,7 @@ export default function Sidebar({ isMobileOpen, onClose }) {
 						<div className="w-10 h-10 relative flex-shrink-0">
 							<Image
 								src="/coinTrack.png"
-								alt="coinTrack Logo"
+								alt="coinTrack logo"
 								fill
 								className="object-contain"
 							/>

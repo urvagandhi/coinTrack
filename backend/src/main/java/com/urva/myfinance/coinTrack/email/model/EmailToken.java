@@ -95,6 +95,7 @@ public class EmailToken {
     public static final String PURPOSE_EMAIL_VERIFY = "EMAIL_VERIFY";
     public static final String PURPOSE_PASSWORD_RESET = "PASSWORD_RESET";
     public static final String PURPOSE_EMAIL_CHANGE_VERIFY = "EMAIL_CHANGE_VERIFY";
+    public static final String PURPOSE_2FA_RECOVERY = "2FA_RECOVERY";
 
     /**
      * Check if token has expired

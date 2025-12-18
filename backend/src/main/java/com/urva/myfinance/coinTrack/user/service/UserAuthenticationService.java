@@ -175,6 +175,8 @@ public class UserAuthenticationService {
         response.setEmail(user.getEmail());
         response.setMobile(user.getPhoneNumber());
         response.setFirstName(user.getName());
+        response.setBio(user.getBio());
+        response.setLocation(user.getLocation());
         response.setRequireTotpSetup(false);
         return response;
     }

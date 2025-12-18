@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Reset Your 2FA - CoinTrack</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+
+    <div style="display: none; max-height: 0; overflow: hidden;">
+        Reset your 2-Factor Authentication on CoinTrack.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f5;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e4e4e7;">
+
+                    <!-- Gradient Bar -->
+                    <tr>
+                        <td style="height: 5px; background: linear-gradient(90deg, #dc2626 0%, #f97316 50%, #eab308 100%);"></td>
+                    </tr>
+
+                    <!-- Logo & Title -->
+                    <tr>
+                        <td align="center" style="padding: 40px 40px 24px;">
+                            <img th:src="${logoUrl}" alt="CoinTrack" width="64" height="64" style="width: 64px; height: 64px; border-radius: 14px; display: block;">
+                            <h1 style="margin: 18px 0 0; font-size: 24px; font-weight: 700; color: #18181b; line-height: 1.3; text-align: center;">
+                                Reset Your 2-Factor Authentication
+                            </h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 0 40px 32px;">
+                            <p style="margin: 0 0 18px; font-size: 16px; line-height: 1.65; color: #52525b;">
+                                Hey <strong style="color: #18181b;" th:text="${name}">there</strong>,
+                            </p>
+
+                            <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.65; color: #52525b;">
+                                We received a request to reset your 2-Factor Authentication. This usually happens when you've lost access to your authenticator app and backup codes.
+                            </p>
+
+                            <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.65; color: #52525b;">
+                                Click the button below to <strong>disable 2FA</strong> on your account. You can then log in with just your password and set up new 2FA.
+                            </p>
+
+                            <!-- CTA Button -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding: 8px 0 28px;">
+                                        <a th:href="${magicLink}" style="display: inline-block; padding: 16px 40px; background-color: #dc2626; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 10px;">
+                                            Disable 2FA & Recover Account
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Warning Box -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
+                                <tr>
+                                    <td style="padding: 14px 16px; background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
+                                        <p style="margin: 0; font-size: 14px; color: #b45309; line-height: 1.5;">
+                                            ⏰ This link expires in <strong th:text="${expiryMinutes}">10</strong> minutes.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Danger Box -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td style="padding: 14px 16px; background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 0 8px 8px 0;">
+                                        <p style="margin: 0; font-size: 14px; color: #b91c1c; line-height: 1.5;">
+                                            🔒 <strong>Didn't request this?</strong> Someone may be trying to access your account. Do NOT click the link and change your password immediately.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Fallback Link -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 28px;">
+                                <tr>
+                                    <td style="padding: 16px; background-color: #f4f4f5; border-radius: 8px; border: 1px solid #e4e4e7;">
+                                        <p style="margin: 0 0 8px; font-size: 12px; color: #71717a;">
+                                            Button not working? Copy this link:
+                                        </p>
+                                        <p style="margin: 0; font-size: 12px; word-break: break-all; line-height: 1.5;">
+                                            <a th:href="${magicLink}" th:text="${magicLink}" style="color: #dc2626; text-decoration: none;">https://...</a>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Divider -->
+                    <tr>
+                        <td style="padding: 0 40px;">
+                            <div style="height: 1px; background-color: #e4e4e7;"></div>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 40px; background-color: #fafafa; text-align: center;">
+                            <p style="margin: 0 0 6px; font-size: 13px; color: #71717a;">
+                                Need help? <a th:href="'mailto:' + ${supportEmail}" style="color: #dc2626; text-decoration: none; font-weight: 500;">Contact Support</a>
+                            </p>
+                            <p style="margin: 12px 0 0; font-size: 11px; color: #a1a1aa;">
+                                © <span th:text="${year}">2024</span> CoinTrack • Made with 💜
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

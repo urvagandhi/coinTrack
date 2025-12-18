@@ -87,4 +87,11 @@ public class EmailConfigProperties {
     public String getEmailChangeVerifyUrl(String token) {
         return baseUrl + "/verify-email?token=" + token + "&type=change";
     }
+
+    /**
+     * Get the full URL for 2FA recovery
+     */
+    public String get2FARecoveryUrl(String token) {
+        return baseUrl + "/reset-2fa?token=" + token;
+    }
 }

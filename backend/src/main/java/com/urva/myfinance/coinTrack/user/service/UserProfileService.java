@@ -67,10 +67,12 @@ public class UserProfileService {
     /**
      * Update user profile.
      * Only updates non-null fields.
+     * Validates that email, username, and mobile are unique across accounts.
      *
      * @param id      User ID
      * @param updates User object with fields to update
      * @return Updated user or null if not found
+     * @throws IllegalArgumentException if validation fails
      */
     @SuppressWarnings("null")
     @Transactional
@@ -84,21 +86,76 @@ public class UserProfileService {
 
         User existingUser = existingUserOpt.get();
 
-        // Update only provided fields
+        // ══════════════════════════════════════════════════════════════════════
+        // VALIDATION: Username
+        // ══════════════════════════════════════════════════════════════════════
         if (updates.getUsername() != null) {
-            existingUser.setUsername(updates.getUsername());
+            String newUsername = updates.getUsername().trim();
+
+            // Cannot be blank
+            if (newUsername.isEmpty()) {
+                throw new IllegalArgumentException("Username cannot be empty");
+            }
+
+            // Check uniqueness (exclude current user)
+            if (!newUsername.equals(existingUser.getUsername())) {
+                User existingWithUsername = userRepository.findByUsername(newUsername);
+                if (existingWithUsername != null) {
+                    throw new IllegalArgumentException("Username is already taken");
+                }
+            }
+            existingUser.setUsername(newUsername);
         }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // VALIDATION: Email
+        // ══════════════════════════════════════════════════════════════════════
+        if (updates.getEmail() != null) {
+            String newEmail = updates.getEmail().trim().toLowerCase();
+
+            // Cannot be blank
+            if (newEmail.isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be empty");
+            }
+
+            // Check uniqueness (exclude current user)
+            if (!newEmail.equals(existingUser.getEmail())) {
+                User existingWithEmail = userRepository.findByEmail(newEmail);
+                if (existingWithEmail != null) {
+                    throw new IllegalArgumentException("Email is already registered with another account");
+                }
+            }
+            existingUser.setEmail(newEmail);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // VALIDATION: Phone Number
+        // ══════════════════════════════════════════════════════════════════════
+        if (updates.getPhoneNumber() != null) {
+            String newPhone = normalizePhoneNumber(updates.getPhoneNumber());
+
+            // Can be empty (optional field) but if provided, must be unique
+            if (newPhone != null && !newPhone.isEmpty()) {
+                // Check uniqueness (exclude current user)
+                String existingPhone = existingUser.getPhoneNumber();
+                if (existingPhone == null || !newPhone.equals(existingPhone)) {
+                    User existingWithPhone = userRepository.findByPhoneNumber(newPhone);
+                    if (existingWithPhone != null) {
+                        throw new IllegalArgumentException("Mobile number is already registered with another account");
+                    }
+                }
+            }
+            existingUser.setPhoneNumber(newPhone);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // OTHER FIELDS (no uniqueness constraints)
+        // ══════════════════════════════════════════════════════════════════════
         if (updates.getName() != null) {
             existingUser.setName(updates.getName());
         }
         if (updates.getDateOfBirth() != null) {
             existingUser.setDateOfBirth(updates.getDateOfBirth());
-        }
-        if (updates.getEmail() != null) {
-            existingUser.setEmail(updates.getEmail());
-        }
-        if (updates.getPhoneNumber() != null) {
-            existingUser.setPhoneNumber(normalizePhoneNumber(updates.getPhoneNumber()));
         }
         if (updates.getPassword() != null) {
             existingUser.setPassword(passwordEncoder.encode(updates.getPassword()));

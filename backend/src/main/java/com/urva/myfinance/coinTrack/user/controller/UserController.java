@@ -260,6 +260,11 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("User not found"));
             }
+        } catch (IllegalArgumentException e) {
+            // Validation errors (blank fields, duplicate email/username/mobile)
+            logger.warn("Validation failed for user {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             logger.error("Error updating user {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

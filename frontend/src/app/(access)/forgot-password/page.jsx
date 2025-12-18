@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
                             <div className="w-16 h-16 relative mx-auto transition-transform group-hover:scale-110 duration-300">
                                 <Image
                                     src="/coinTrack.png"
-                                    alt="CoinTrack Logo"
+                                    alt="coinTrack logo"
                                     fill
                                     className="object-contain"
                                 />

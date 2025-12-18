@@ -198,6 +198,10 @@ export const endpoints = {
         change: '/api/auth/email/change',
         changeVerify: '/api/auth/email/change/verify',
     },
+    twofa: {
+        recovery: '/api/auth/2fa/recovery',
+        recoveryVerify: '/api/auth/2fa/recovery/verify',
+    },
     password: {
         forgot: '/api/auth/forgot-password',
         forgotVerify: '/api/auth/forgot-password/verify',
@@ -393,6 +397,29 @@ export const emailAPI = {
      */
     change: async (newEmail) => {
         const { data } = await api.post(endpoints.email.change, { newEmail });
+        return unwrapResponse(data);
+    }
+};
+
+// ============================================================================
+// 2FA RECOVERY API
+// ============================================================================
+export const twofaAPI = {
+    /**
+     * Request 2FA recovery.
+     * Sends magic link to user's email to disable 2FA.
+     * Used when user has lost both TOTP device and backup codes.
+     */
+    requestRecovery: async (identifier) => {
+        const { data } = await api.post(endpoints.twofa.recovery, { identifier });
+        return unwrapResponse(data);
+    },
+
+    /**
+     * Verify 2FA recovery token and disable 2FA.
+     */
+    verifyRecovery: async (token) => {
+        const { data } = await api.post(endpoints.twofa.recoveryVerify, { token });
         return unwrapResponse(data);
     }
 };

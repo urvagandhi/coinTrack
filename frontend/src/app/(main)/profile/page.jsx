@@ -3,9 +3,9 @@
 import PageTransition from '@/components/ui/PageTransition';
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
-import { userAPI } from '@/lib/api';
+import { emailAPI, portfolioAPI, twofaAPI, userAPI } from '@/lib/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, Camera, DollarSign, Edit, Eye, EyeOff, Key, Save, Shield, TrendingUp, User, X } from 'lucide-react';
+import { BadgeCheck, Bell, Camera, DollarSign, Edit, Eye, EyeOff, Key, Loader2, Save, Shield, ShieldAlert, TrendingUp, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
@@ -21,6 +21,13 @@ export default function ProfilePage() {
         staleTime: 1000 * 60 * 5, // 5 minutes stale time
     });
 
+    // Fetch portfolio summary for stats
+    const { data: portfolioSummary } = useQuery({
+        queryKey: ['portfolioSummary'],
+        queryFn: portfolioAPI.getSummary,
+        staleTime: 1000 * 60 * 5,
+    });
+
     const [isEditing, setIsEditing] = useState(false);
     const [showPasswordFields, setShowPasswordFields] = useState(false);
     const [show2FAResetFlow, setShow2FAResetFlow] = useState(false);
@@ -31,6 +38,8 @@ export default function ProfilePage() {
     const [newBackupCodes, setNewBackupCodes] = useState([]);
     const [resetSetupData, setResetSetupData] = useState(null);
     const [is2FALoading, setIs2FALoading] = useState(false);
+    const [isSendingRecovery, setIsSendingRecovery] = useState(false);
+    const [showRecoveryConfirm, setShowRecoveryConfirm] = useState(false);
 
     // Form state - initialized from apiUser
     const [profileData, setProfileData] = useState({
@@ -41,7 +50,7 @@ export default function ProfilePage() {
         location: apiUser?.location || '',
         phoneNumber: apiUser?.mobile || apiUser?.phoneNumber || '',
         // These are static for now as per original mock, backend could provide them later
-        joinDate: new Date().toLocaleDateString(),
+        joinDate: apiUser?.createdAt ? new Date(apiUser.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
         totalInvestment: 15420.50,
         totalProfit: 2840.75,
         portfolioCount: 12,
@@ -64,6 +73,7 @@ export default function ProfilePage() {
                 phoneNumber: apiUser.mobile || apiUser.phoneNumber || '',
                 bio: apiUser.bio || '',
                 location: apiUser.location || '',
+                joinDate: apiUser.createdAt ? new Date(apiUser.createdAt).toLocaleDateString() : prev.joinDate,
             }));
         }
     }, [apiUser]);
@@ -154,13 +164,72 @@ export default function ProfilePage() {
     });
 
     const handleSaveProfile = async () => {
+        // ══════════════════════════════════════════════════════════════════════
+        // VALIDATION
+        // ══════════════════════════════════════════════════════════════════════
+
+        // Email is mandatory and must be valid format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!profileData.email || profileData.email.trim() === '') {
+            toast({ title: "Validation Error", description: "Email is required", variant: "destructive" });
+            return;
+        }
+        if (!emailRegex.test(profileData.email)) {
+            toast({ title: "Validation Error", description: "Please enter a valid email address", variant: "destructive" });
+            return;
+        }
+
+        // Mobile: if provided, must be exactly 10 digits
+        // Strip +91 prefix first, then remove non-digits
+        let cleanedMobile = profileData.phoneNumber || '';
+        cleanedMobile = cleanedMobile.replace(/^\+91/, '').replace(/\D/g, '');
+
+        // Take only last 10 digits if somehow we have more
+        if (cleanedMobile.length > 10) {
+            cleanedMobile = cleanedMobile.slice(-10);
+        }
+
+        if (cleanedMobile && cleanedMobile.length !== 10) {
+            toast({ title: "Validation Error", description: "Mobile number must be exactly 10 digits", variant: "destructive" });
+            return;
+        }
+        if (cleanedMobile && !/^[6-9]\d{9}$/.test(cleanedMobile)) {
+            toast({ title: "Validation Error", description: "Please enter a valid Indian mobile number", variant: "destructive" });
+            return;
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // CHECK FOR EMAIL CHANGE
+        // ══════════════════════════════════════════════════════════════════════
+        const originalEmail = (apiUser?.email || '').toLowerCase().trim();
+        const newEmail = profileData.email.trim().toLowerCase();
+        const emailChanged = newEmail !== originalEmail;
+
+        // If email changed, use the secure email change flow
+        if (emailChanged) {
+            try {
+                await emailAPI.change(newEmail);
+                toast({
+                    title: "Verification Email Sent",
+                    description: "A verification link has been sent to your new email address. Please click it to complete the change.",
+                    variant: "success",
+                });
+            } catch (error) {
+                toast({
+                    title: "Email Change Failed",
+                    description: error.message || "Failed to initiate email change",
+                    variant: "destructive",
+                });
+                return;
+            }
+        }
+
+        // Update other profile fields (excluding email - that's handled above)
         updateProfileMutation.mutate({
             name: profileData.name,
             bio: profileData.bio,
             location: profileData.location,
-            // Email and Username usually readonly, send them if backend supports update
-            email: profileData.email,
-            phoneNumber: profileData.phoneNumber
+            phoneNumber: cleanedMobile || null // Send only digits, backend will add +91
         });
     };
 
@@ -304,21 +373,21 @@ ${newBackupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]
     const stats = [
         {
             name: 'Total Investment',
-            value: `₹${profileData.totalInvestment.toLocaleString()}`,
+            value: portfolioSummary?.totalInvestedValue ? `₹${portfolioSummary.totalInvestedValue.toLocaleString('en-IN')}` : '₹0',
             icon: DollarSign,
             color: 'text-blue-600 dark:text-blue-400',
             bgColor: 'bg-blue-100 dark:bg-blue-900/20'
         },
         {
             name: 'Total Profit/Loss',
-            value: `+₹${profileData.totalProfit.toLocaleString()}`,
+            value: portfolioSummary?.totalUnrealizedPL ? `${portfolioSummary.totalUnrealizedPL >= 0 ? '+' : ''}₹${portfolioSummary.totalUnrealizedPL.toLocaleString('en-IN')}` : '₹0',
             icon: TrendingUp,
             color: 'text-green-600 dark:text-green-400',
             bgColor: 'bg-green-100 dark:bg-green-900/20'
         },
         {
-            name: 'Active Portfolios',
-            value: profileData.portfolioCount,
+            name: 'Active Holdings',
+            value: portfolioSummary?.holdingsList?.length || 0,
             icon: Shield,
             color: 'text-purple-600 dark:text-purple-400',
             bgColor: 'bg-purple-100 dark:bg-purple-900/20'
@@ -414,33 +483,112 @@ ${newBackupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {[
-                                    { label: 'Full Name', field: 'name', type: 'text' },
-                                    { label: 'Username', field: 'username', type: 'text', readOnly: true },
-                                    { label: 'Email', field: 'email', type: 'email' },
-                                    { label: 'Mobile', field: 'phoneNumber', type: 'text' },
-                                    { label: 'Location', field: 'location', type: 'text', placeholder: 'City, Country' },
-                                ].map((item) => (
-                                    <div key={item.field}>
-                                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                            {item.label}
-                                        </label>
-                                        {isEditing && !item.readOnly ? (
-                                            <input
-                                                type={item.type}
-                                                value={profileData[item.field]}
-                                                onChange={(e) => handleInputChange(item.field, e.target.value)}
-                                                placeholder={item.placeholder}
-                                                className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
-                                            />
-                                        ) : (
-                                            <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
-                                                {profileData[item.field] || <span className="text-gray-400 italic">Not provided</span>}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                {/* Full Name */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                        Full Name
+                                    </label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={profileData.name}
+                                            onChange={(e) => handleInputChange('name', e.target.value)}
+                                            className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
+                                        />
+                                    ) : (
+                                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
+                                            {profileData.name || <span className="text-gray-400 italic">Not provided</span>}
+                                        </div>
+                                    )}
+                                </div>
 
+                                {/* Username (Read-only) */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                        Username
+                                    </label>
+                                    <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
+                                        {profileData.username || <span className="text-gray-400 italic">Not provided</span>}
+                                    </div>
+                                </div>
+
+                                {/* Email (Mandatory) */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                        Email <span className="text-red-500">*</span>
+                                        {apiUser?.isEmailVerified && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium normal-case">
+                                                <BadgeCheck className="w-3.5 h-3.5" />
+                                                Verified
+                                            </span>
+                                        )}
+                                    </label>
+                                    {isEditing ? (
+                                        <input
+                                            type="email"
+                                            value={profileData.email}
+                                            onChange={(e) => handleInputChange('email', e.target.value)}
+                                            required
+                                            className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
+                                            placeholder="name@example.com"
+                                        />
+                                    ) : (
+                                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate flex items-center gap-2">
+                                            {profileData.email || <span className="text-gray-400 italic">Not provided</span>}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Mobile with +91 prefix */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                        Mobile
+                                    </label>
+                                    {isEditing ? (
+                                        <div className="relative">
+                                            <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-500 dark:text-gray-400 text-sm font-medium">
+                                                +91
+                                            </span>
+                                            <input
+                                                type="tel"
+                                                maxLength={10}
+                                                value={profileData.phoneNumber?.replace(/^\+91/, '').replace(/\D/g, '') || ''}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, '');
+                                                    handleInputChange('phoneNumber', val);
+                                                }}
+                                                className="w-full pl-14 pr-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
+                                                placeholder="9876543210"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
+                                            {profileData.phoneNumber ? `+91 ${profileData.phoneNumber.replace(/^\+91/, '')}` : <span className="text-gray-400 italic">Not provided</span>}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Location */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                        Location
+                                    </label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={profileData.location}
+                                            onChange={(e) => handleInputChange('location', e.target.value)}
+                                            placeholder="City, Country"
+                                            className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
+                                        />
+                                    ) : (
+                                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
+                                            {profileData.location || <span className="text-gray-400 italic">Not provided</span>}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Bio - Full width */}
                                 <div className="md:col-span-2">
                                     <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                                         Bio
@@ -590,6 +738,53 @@ ${newBackupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]
                                                 >
                                                     {useBackupForReset ? '← Use Authenticator Code' : 'Lost your device? Use Backup Code →'}
                                                 </button>
+
+                                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                                    {!showRecoveryConfirm ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowRecoveryConfirm(true)}
+                                                            className="text-sm font-medium text-red-600 hover:text-red-500 dark:text-red-400 transition-colors flex items-center justify-center gap-2 mx-auto"
+                                                        >
+                                                            <ShieldAlert className="w-4 h-4" />
+                                                            Lost everything? Request Recovery Link
+                                                        </button>
+                                                    ) : (
+                                                        <div className="text-center bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30">
+                                                            <p className="text-sm text-red-800 dark:text-red-300 mb-3 font-medium">
+                                                                Send recovery link to {user.email}? <br />
+                                                                <span className="text-xs font-normal opacity-80">Existing 2FA will be disabled.</span>
+                                                            </p>
+                                                            <div className="flex justify-center gap-3">
+                                                                <button
+                                                                    onClick={() => setShowRecoveryConfirm(false)}
+                                                                    className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        setIsSendingRecovery(true);
+                                                                        try {
+                                                                            await twofaAPI.requestRecovery(user.email);
+                                                                            toast({ title: "Recovery Link Sent", description: "Check your email to disable 2FA.", variant: "success" });
+                                                                            close2FAFlow();
+                                                                            setShowRecoveryConfirm(false);
+                                                                        } catch (error) {
+                                                                            toast({ title: "Error", description: error.message || "Failed to send recovery link", variant: "destructive" });
+                                                                        } finally {
+                                                                            setIsSendingRecovery(false);
+                                                                        }
+                                                                    }}
+                                                                    disabled={isSendingRecovery}
+                                                                    className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                                                                >
+                                                                    {isSendingRecovery ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Yes, Send It'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="flex justify-end gap-4 pt-2">
                                                 <button onClick={close2FAFlow} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancel</button>
@@ -698,6 +893,6 @@ ${newBackupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]
                     </div>
                 </div>
             </div>
-        </PageTransition>
+        </PageTransition >
     );
 }

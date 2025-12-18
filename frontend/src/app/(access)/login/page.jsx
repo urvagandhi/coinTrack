@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+
 import { motion } from 'framer-motion';
 import { ArrowRight, Eye, EyeOff, Loader, Lock, Mail, Phone, User } from 'lucide-react';
 import Image from 'next/image';
@@ -20,6 +21,7 @@ function LoginForm() {
     const [showTotpInput, setShowTotpInput] = useState(false);
     const [isRecoveryMode, setIsRecoveryMode] = useState(false); // Toggle between TOTP and Backup Code
     const [tempToken, setTempToken] = useState('');
+
 
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -179,7 +181,7 @@ function LoginForm() {
                             <div className="w-16 h-16 relative mx-auto transition-transform group-hover:scale-110 duration-300">
                                 <Image
                                     src="/coinTrack.png"
-                                    alt="coinTrack Logo"
+                                    alt="coinTrack logo"
                                     fill
                                     className="object-contain"
                                 />
@@ -252,7 +254,7 @@ function LoginForm() {
                                 )}
                             </button>
 
-                            <div className="text-center mt-4">
+                            <div className="text-center mt-4 space-y-2">
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -264,7 +266,10 @@ function LoginForm() {
                                 >
                                     {isRecoveryMode ? 'Use Authenticator App' : 'Use Backup Code'}
                                 </button>
+
                             </div>
+
+
 
                             <button
                                 type="button"
@@ -273,6 +278,7 @@ function LoginForm() {
                                     setTotpCode('');
                                     setTempToken('');
                                     setFormData(prev => ({ ...prev, password: '' }));
+
                                 }}
                                 className="w-full text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mt-2"
                             >

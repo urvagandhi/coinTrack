@@ -152,6 +152,27 @@ public class EmailService {
     }
 
     /**
+     * Send 2FA recovery magic link.
+     * Used when user has lost access to their authenticator AND all backup codes.
+     */
+    @Async
+    public void send2FARecoveryLink(User user, String magicLink) {
+        Context context = new Context();
+        context.setVariable("username", user.getUsername());
+        context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
+        context.setVariable("magicLink", magicLink);
+        context.setVariable("expiryMinutes", emailConfig.getMagicLinkExpiryMinutes());
+        context.setVariable("supportEmail", emailConfig.getSupport());
+        context.setVariable("year", LocalDateTime.now().getYear());
+
+        sendEmail(
+                user.getEmail(),
+                "Reset Your 2-Factor Authentication - CoinTrack",
+                "email/2fa-recovery",
+                context);
+    }
+
+    /**
      * Send security alert email.
      *
      * Security alerts are sent for:

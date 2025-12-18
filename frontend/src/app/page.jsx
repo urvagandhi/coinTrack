@@ -177,7 +177,7 @@ export default function HomePage() {
             <div className="w-10 h-10 relative transition-transform group-hover:scale-110 duration-300">
               <Image
                 src="/coinTrack.png"
-                alt="coinTrack Logo"
+                alt="coinTrack logo"
                 fill
                 sizes="40px"
                 className="object-contain"
@@ -321,7 +321,7 @@ export default function HomePage() {
                     <div className="w-16 h-16 relative">
                       <Image
                         src="/coinTrack.png"
-                        alt="coinTrack Logo"
+                        alt="coinTrack logo"
                         fill
                         sizes="64px"
                         className="object-contain"
@@ -488,7 +488,7 @@ export default function HomePage() {
                 <div className="w-10 h-10 relative">
                   <Image
                     src="/coinTrack.png"
-                    alt="coinTrack Logo"
+                    alt="coinTrack logo"
                     fill
                     sizes="40px"
                     className="object-contain"

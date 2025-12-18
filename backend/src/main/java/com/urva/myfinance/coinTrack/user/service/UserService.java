@@ -99,21 +99,66 @@ public class UserService {
             if (existingUserOpt.isPresent()) {
                 User existingUser = existingUserOpt.get();
 
-                // Update only the fields that should be updated, preserve system fields
+                // ══════════════════════════════════════════════════════════════════════
+                // VALIDATION: Username (mandatory, unique)
+                // ══════════════════════════════════════════════════════════════════════
                 if (user.getUsername() != null) {
-                    existingUser.setUsername(user.getUsername());
+                    String newUsername = user.getUsername().trim();
+                    if (newUsername.isEmpty()) {
+                        throw new IllegalArgumentException("Username cannot be empty");
+                    }
+                    if (!newUsername.equals(existingUser.getUsername())) {
+                        User existingWithUsername = userRepository.findByUsername(newUsername);
+                        if (existingWithUsername != null) {
+                            throw new IllegalArgumentException("Username is already taken");
+                        }
+                    }
+                    existingUser.setUsername(newUsername);
                 }
+
+                // ══════════════════════════════════════════════════════════════════════
+                // VALIDATION: Email (mandatory, unique)
+                // ══════════════════════════════════════════════════════════════════════
+                if (user.getEmail() != null) {
+                    String newEmail = user.getEmail().trim().toLowerCase();
+                    if (newEmail.isEmpty()) {
+                        throw new IllegalArgumentException("Email cannot be empty");
+                    }
+                    if (!newEmail.equals(existingUser.getEmail())) {
+                        User existingWithEmail = userRepository.findByEmail(newEmail);
+                        if (existingWithEmail != null) {
+                            throw new IllegalArgumentException("Email is already registered with another account");
+                        }
+                    }
+                    existingUser.setEmail(newEmail);
+                }
+
+                // ══════════════════════════════════════════════════════════════════════
+                // VALIDATION: Phone Number (optional but unique if provided)
+                // ══════════════════════════════════════════════════════════════════════
+                if (user.getPhoneNumber() != null) {
+                    String newPhone = normalizePhoneNumber(user.getPhoneNumber());
+                    if (newPhone != null && !newPhone.isEmpty()) {
+                        String existingPhone = existingUser.getPhoneNumber();
+                        if (existingPhone == null || !newPhone.equals(existingPhone)) {
+                            User existingWithPhone = userRepository.findByPhoneNumber(newPhone);
+                            if (existingWithPhone != null) {
+                                throw new IllegalArgumentException(
+                                        "Mobile number is already registered with another account");
+                            }
+                        }
+                    }
+                    existingUser.setPhoneNumber(newPhone);
+                }
+
+                // ══════════════════════════════════════════════════════════════════════
+                // OTHER FIELDS (no uniqueness constraints)
+                // ══════════════════════════════════════════════════════════════════════
                 if (user.getName() != null) {
                     existingUser.setName(user.getName());
                 }
                 if (user.getDateOfBirth() != null) {
                     existingUser.setDateOfBirth(user.getDateOfBirth());
-                }
-                if (user.getEmail() != null) {
-                    existingUser.setEmail(user.getEmail());
-                }
-                if (user.getPhoneNumber() != null) {
-                    existingUser.setPhoneNumber(normalizePhoneNumber(user.getPhoneNumber()));
                 }
                 if (user.getBio() != null) {
                     existingUser.setBio(user.getBio());
@@ -124,6 +169,8 @@ public class UserService {
                 return userRepository.save(existingUser);
             }
             return null; // User not found
+        } catch (IllegalArgumentException e) {
+            throw e; // Re-throw validation errors as-is
         } catch (Exception e) {
             throw new RuntimeException("Error updating user with id: " + id + ". " + e.getMessage(), e);
         }

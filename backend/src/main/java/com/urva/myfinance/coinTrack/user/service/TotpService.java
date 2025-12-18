@@ -299,6 +299,31 @@ public class TotpService {
         return generateSetup(user);
     }
 
+    /**
+     * Completely disables 2FA for a user.
+     * Used for emergency recovery when user has lost both TOTP device and all
+     * backup codes.
+     * SECURITY: This should only be called after email/identity verification!
+     */
+    @Transactional
+    public void disable2FA(User user) {
+        // Clear all TOTP-related fields
+        user.setTotpEnabled(false);
+        user.setTotpVerified(false);
+        user.setTotpSecretEncrypted(null);
+        user.setTotpSecretPending(null);
+        user.setTotpSetupAt(null);
+        user.setTotpLastUsedAt(null);
+        user.setTotpFailedAttempts(0);
+        user.setTotpLockedUntil(null);
+        // Don't reset version - keep it for audit trail
+
+        userRepository.save(user);
+
+        // Invalidate all backup codes for this user
+        backupCodeRepository.deleteByUserId(user.getId());
+    }
+
     private List<String> generateBackupCodes(User user, int version) {
         // Revoke old codes by generation mismatch (implicitly done by version
         // increment)
