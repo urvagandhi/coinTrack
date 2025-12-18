@@ -95,7 +95,11 @@ public class TwoFactorRecoveryController {
                     EmailToken.PURPOSE_2FA_RECOVERY,
                     httpRequest);
             String magicLink = emailConfig.get2FARecoveryUrl(token);
-            emailService.send2FARecoveryLink(user, magicLink);
+            try {
+                emailService.send2FARecoveryLink(user, magicLink);
+            } catch (Exception emailEx) {
+                logger.warn("Failed to send 2FA recovery email: {}", emailEx.getMessage());
+            }
 
             logger.info("2FA recovery requested: userId={}", user.getId());
         } else {
@@ -140,8 +144,12 @@ public class TwoFactorRecoveryController {
             // Invalidate all email tokens
             emailTokenService.invalidateAllForUser(user.getId());
 
-            // Send security alert
-            emailService.sendSecurityAlert(user, "2-Factor Authentication Disabled via Recovery");
+            // Send security alert (non-blocking)
+            try {
+                emailService.sendSecurityAlert(user, "2-Factor Authentication Disabled via Recovery");
+            } catch (Exception emailEx) {
+                logger.warn("Failed to send security alert: {}", emailEx.getMessage());
+            }
 
             logger.info("2FA recovery successful: userId={}", user.getId());
 

@@ -300,17 +300,25 @@ public class UserController {
             // Get user for email
             User user = userService.getUserById(id);
 
-            // Send security alert
-            if (notificationService != null && user != null) {
-                String ipAddress = RequestUtils.extractIpAddress(httpRequest);
-                notificationService.sendSecurityAlertWithIP(user, "Password Changed", ipAddress);
-                logger.info("Password change security alert sent to: {}", user.getEmail());
+            // Send security alert (non-blocking)
+            try {
+                if (notificationService != null && user != null) {
+                    String ipAddress = RequestUtils.extractIpAddress(httpRequest);
+                    notificationService.sendSecurityAlertWithIP(user, "Password Changed", ipAddress);
+                    logger.info("Password change security alert sent to: {}", user.getEmail());
+                }
+            } catch (Exception emailEx) {
+                logger.warn("Failed to send password change security alert: {}", emailEx.getMessage());
             }
 
-            // Invalidate all email tokens
-            if (emailTokenService != null) {
-                emailTokenService.invalidateAllForUser(id);
-                logger.info("Invalidated all email tokens after password change: userId={}", id);
+            // Invalidate all email tokens (non-blocking)
+            try {
+                if (emailTokenService != null) {
+                    emailTokenService.invalidateAllForUser(id);
+                    logger.info("Invalidated all email tokens after password change: userId={}", id);
+                }
+            } catch (Exception tokenEx) {
+                logger.warn("Failed to invalidate email tokens: {}", tokenEx.getMessage());
             }
 
             return ResponseEntity.ok(ApiResponse.success("Password updated successfully"));

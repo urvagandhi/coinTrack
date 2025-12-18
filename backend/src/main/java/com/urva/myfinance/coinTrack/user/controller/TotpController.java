@@ -90,9 +90,14 @@ public class TotpController {
         try {
             List<String> backupCodes = totpService.verifySetup(user, request.getCode());
 
-            // Send security alert for 2FA setup
-            if (notificationService != null && user.getEmail() != null) {
-                notificationService.sendSecurityAlert(user, "2-Factor Authentication Enabled", null);
+            // Send security alert for 2FA setup (non-blocking)
+            try {
+                if (notificationService != null && user.getEmail() != null) {
+                    notificationService.sendSecurityAlert(user, "2-Factor Authentication Enabled", null);
+                }
+            } catch (Exception emailEx) {
+                // Log but don't fail the request - email is secondary
+                System.err.println("[WARN] Failed to send 2FA setup security alert: " + emailEx.getMessage());
             }
 
             return ResponseEntity
@@ -227,14 +232,23 @@ public class TotpController {
         try {
             List<String> backupCodes = totpService.verifySetup(user, request.getCode());
 
-            // Send security alert for TOTP reset
-            if (notificationService != null && user.getEmail() != null) {
-                notificationService.sendSecurityAlert(user, "2-Factor Authentication Reset", null);
+            // Send security alert for TOTP reset (non-blocking)
+            try {
+                if (notificationService != null && user.getEmail() != null) {
+                    notificationService.sendSecurityAlert(user, "2-Factor Authentication Reset", null);
+                }
+            } catch (Exception emailEx) {
+                // Log but don't fail the request - email is secondary
+                System.err.println("[WARN] Failed to send 2FA reset security alert: " + emailEx.getMessage());
             }
 
-            // Invalidate all email tokens on TOTP reset
-            if (emailTokenService != null && user.getId() != null) {
-                emailTokenService.invalidateAllForUser(user.getId());
+            // Invalidate all email tokens on TOTP reset (non-blocking)
+            try {
+                if (emailTokenService != null && user.getId() != null) {
+                    emailTokenService.invalidateAllForUser(user.getId());
+                }
+            } catch (Exception tokenEx) {
+                System.err.println("[WARN] Failed to invalidate email tokens: " + tokenEx.getMessage());
             }
 
             return ResponseEntity.ok(ApiResponse.success(Map.of("backupCodes", backupCodes), "TOTP Reset Complete"));
