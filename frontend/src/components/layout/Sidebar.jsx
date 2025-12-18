@@ -5,7 +5,7 @@ import { Briefcase, FileText, Home, Link as LinkIcon, LogOut, StickyNote, UserCo
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 const SidebarItem = ({ icon: Icon, label, href, isActive, isDanger = false, isExpanded, onClick }) => {
 	return (
@@ -61,10 +61,12 @@ export default function Sidebar({ isMobileOpen, onClose }) {
 	const isExpanded = isMobileOpen || isHovered;
 
 	// Handle Closing on route change for mobile
+	const prevPathnameRef = useRef(pathname);
 	useEffect(() => {
-		if (isMobileOpen && onClose) {
+		if (prevPathnameRef.current !== pathname && isMobileOpen && onClose) {
 			onClose();
 		}
+		prevPathnameRef.current = pathname;
 	}, [pathname, isMobileOpen, onClose]);
 
 	const navItems = [

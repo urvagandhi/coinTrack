@@ -635,24 +635,30 @@ ${newBackupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]
 
                         {/* Security Settings */}
                         <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-6 md:p-8 shadow-sm">
-                            <div className="flex items-center justify-between mb-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                                     Security Settings
                                 </h3>
-                                <div className="flex gap-2">
+                                <div className="grid grid-cols-2 sm:flex gap-2">
                                     <button
-                                        onClick={() => setShowPasswordFields(!showPasswordFields)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-sm font-semibold hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                                        onClick={() => {
+                                            setShowPasswordFields(!showPasswordFields);
+                                            if (!showPasswordFields) setShow2FAResetFlow(false);
+                                        }}
+                                        className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-xs sm:text-sm font-semibold hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
                                     >
                                         <Shield className="w-4 h-4" />
-                                        <span>Change Password</span>
+                                        <span className="whitespace-nowrap">Change Password</span>
                                     </button>
                                     <button
-                                        onClick={() => setShow2FAResetFlow(!show2FAResetFlow)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg text-sm font-semibold hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
+                                        onClick={() => {
+                                            setShow2FAResetFlow(!show2FAResetFlow);
+                                            if (!show2FAResetFlow) setShowPasswordFields(false);
+                                        }}
+                                        className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg text-xs sm:text-sm font-semibold hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
                                     >
                                         <Key className="w-4 h-4" />
-                                        <span>Reset 2FA</span>
+                                        <span className="whitespace-nowrap">Reset 2FA</span>
                                     </button>
                                 </div>
                             </div>
