@@ -202,6 +202,11 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<addResources>true</addResources>
+					<!-- Enable layered JARs for faster Docker builds -->
+					<!-- Layers: dependencies, snapshot-dependencies, application classes -->
+					<layers>
+						<enabled>true</enabled>
+					</layers>
 				</configuration>
 			</plugin>
 			<!-- Frontend Maven Plugin for React + Vite

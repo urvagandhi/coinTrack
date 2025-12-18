@@ -8,7 +8,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, Copy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function TotpSetup({ onComplete, onCancel, isMandatory = false, setupAction, verifyAction }) {
-    const { setupTotp, verifyTotpSetup } = useAuth();
+    const { setupTotp, verifyTotpSetup, user } = useAuth();
     const [step, setStep] = useState('init'); // init, scan, backup
     const [setupData, setSetupData] = useState(null);
     const [verificationCode, setVerificationCode] = useState('');
@@ -123,7 +123,7 @@ ${backupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]   
         const element = document.createElement("a");
         const file = new Blob([content], { type: 'text/plain' });
         element.href = URL.createObjectURL(file);
-        element.download = `cointrack-backup-codes-${now.toISOString().split('T')[0]}.txt`;
+        element.download = `coinTrack_backup-codes_${user?.username || 'user'}.txt`;
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);

@@ -2,27 +2,36 @@
 # CoinTrack Backend - Production Dockerfile
 # For Render.com Deployment
 # ==========================================
+# OPTIMIZATIONS APPLIED:
+# ✅ POM-first layering (dependencies cached)
+# ✅ BuildKit cache for Maven repo
+# ✅ No 'clean' during Docker builds
+# ✅ Spring Boot layered JAR support
+# ==========================================
 
 # 1. BUILD STAGE
 # Using Maven with Eclipse Temurin Java 21 on Alpine for minimal footprint
-FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
-# Copy POM first to cache dependencies (layer optimization)
+# 1️⃣ Copy only pom.xml first (layer optimization)
 COPY pom.xml .
 
+# 2️⃣ Download dependencies (cached layer)
+# BuildKit cache: Dependencies persist between builds for faster rebuilds
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline -B
 
-# Download dependencies without building source
-# Use -B for batch mode (no interactive prompts)
-RUN mvn dependency:go-offline -B
-
-# Copy source code
+# 3️⃣ Copy source code
 COPY src ./src
 
-# Build the application
-# -DskipTests: Tests should be run in CI, not during container build
-RUN mvn clean package -DskipTests -B
+# 4️⃣ Build the application
+# - No 'clean' needed (fresh Docker layer)
+# - BuildKit cache for Maven repo
+# - Skip tests (run in CI, not during container build)
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn package -DskipTests -B
 
 # 2. RUNTIME STAGE
 # Use JRE instead of JDK for smaller image size and security
@@ -31,35 +40,30 @@ FROM eclipse-temurin:21-jre-alpine
 # Security: Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Install curl for healthcheck (wget may not be available)
+# Install curl for healthcheck
 RUN apk add --no-cache curl
 
 WORKDIR /app
 
 # Copy JAR from builder stage
-# Use explicit JAR name to avoid ambiguity
 COPY --from=builder /app/target/coinTrack-0.0.1-SNAPSHOT.jar app.jar
 
-# Configuration: Set ownership to non-root user
+# Set ownership to non-root user
 RUN chown appuser:appgroup app.jar
 
 # Security: Switch to non-root user
 USER appuser
 
-# Expose port (Documentation only, does not publish port)
+# Expose port (Documentation only)
 EXPOSE 8080
 
-# Environment variables (Defaults, can be overridden)
+# Environment variables
 ENV SPRING_PROFILES_ACTIVE=prod
-# Render uses PORT environment variable
 ENV SERVER_PORT=${PORT:-8080}
 
-# Healthcheck using curl instead of wget
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
 
-# Launch application
-# -XX:+UseContainerSupport: Make JVM aware of container CPU/Memory limits
-# -XX:MaxRAMPercentage=75.0: Allow JVM to use 75% of container memory
-# -Dserver.port: Use Render's PORT environment variable
+# Launch application with container-aware JVM settings
 ENTRYPOINT ["sh", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Dserver.port=${PORT:-8080} -jar app.jar"]
