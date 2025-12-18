@@ -9,8 +9,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
@@ -21,12 +19,23 @@ import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
 import com.urva.myfinance.coinTrack.user.model.User;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+
+// ============================================================================
+// LEGACY SMTP IMPORTS (DISABLED – Gmail SMTP blocked on cloud providers)
+// Kept only for reference / local testing
+// ============================================================================
+// import org.springframework.mail.javamail.JavaMailSender;
+// import org.springframework.mail.javamail.MimeMessageHelper;
+// import jakarta.mail.MessagingException;
+// import jakarta.mail.internet.MimeMessage;
 
 /**
  * Service for sending emails using Thymeleaf templates.
+ *
+ * IMPORTANT: Now uses Brevo API instead of SMTP!
+ * Gmail SMTP is blocked on cloud providers like Render (ports 25, 587, 465).
+ * Brevo uses HTTPS (port 443) which works on all cloud platforms.
  *
  * Email Types:
  * - Welcome email (on registration)
@@ -39,6 +48,10 @@ import lombok.RequiredArgsConstructor;
  * Email Timing Rule:
  * - Welcome email and verification email are sent SEPARATELY
  * - Never combine them into one email
+ *
+ * DESIGN PRINCIPLE:
+ * - Email failures should NEVER block user flows (login, registration, etc.)
+ * - All email methods are async and fail-safe
  */
 @Service
 @RequiredArgsConstructor
@@ -46,9 +59,18 @@ public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    private final JavaMailSender mailSender;
+    // ============================================================================
+    // BREVO API (ACTIVE) - Production-safe email delivery
+    // ============================================================================
+    private final BrevoEmailService brevoEmailService;
     private final TemplateEngine templateEngine;
     private final EmailConfigProperties emailConfig;
+
+    // ============================================================================
+    // LEGACY SMTP (DISABLED – Gmail SMTP blocked on cloud providers like Render)
+    // Kept only for reference / local testing
+    // ============================================================================
+    // private final JavaMailSender mailSender;
 
     private static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a");
 
@@ -240,33 +262,58 @@ public class EmailService {
     }
 
     /**
-     * Send an email using Thymeleaf template.
-     * Automatically adds common variables: logoUrl, supportEmail, year
+     * Send an email using Thymeleaf template via Brevo API.
+     *
+     * This method:
+     * 1. Renders HTML content using Thymeleaf template
+     * 2. Sends via Brevo REST API (HTTPS, port 443)
+     * 3. Logs warning if email fails (never throws)
+     *
+     * IMPORTANT: Email failures should NEVER block user flows!
+     * Login, registration, and other operations must succeed even if email fails.
+     *
+     * @param to           Recipient email address
+     * @param subject      Email subject
+     * @param templateName Thymeleaf template name (e.g., "email/welcome")
+     * @param context      Thymeleaf context with template variables
      */
-    @SuppressWarnings("null")
     private void sendEmail(String to, String subject, String templateName, Context context) {
-        try {
-            // Add common variables to all email templates
-            context.setVariable("logoUrl", logoDataUri != null ? logoDataUri : emailConfig.getLogoUrl());
-            context.setVariable("supportEmail", emailConfig.getSupport());
-            context.setVariable("year", LocalDateTime.now().getYear());
+        // Add common variables to all email templates
+        context.setVariable("logoUrl", logoDataUri != null ? logoDataUri : emailConfig.getLogoUrl());
+        context.setVariable("supportEmail", emailConfig.getSupport());
+        context.setVariable("year", LocalDateTime.now().getYear());
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        // Render HTML using Thymeleaf
+        String htmlContent = templateEngine.process(templateName, context);
 
-            helper.setFrom(emailConfig.getFrom());
-            helper.setTo(to);
-            helper.setSubject(subject);
+        // Send via Brevo API (never throws - fail-safe)
+        boolean sent = brevoEmailService.sendEmail(to, subject, htmlContent);
 
-            String htmlContent = templateEngine.process(templateName, context);
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
-            logger.info("Email sent successfully: to={}, subject={}", to, subject);
-
-        } catch (MessagingException e) {
-            logger.error("Failed to send email: to={}, subject={}, error={}", to, subject, e.getMessage());
-            // Don't throw - email failures shouldn't break the main flow
+        if (!sent) {
+            logger.warn("Email not sent to {} - subject: {}", to, subject);
         }
+
+        // ====================================================================
+        // LEGACY SMTP CODE (DISABLED – Gmail SMTP blocked on cloud providers)
+        // Kept only for reference / local testing
+        // ====================================================================
+        // try {
+        // MimeMessage message = mailSender.createMimeMessage();
+        // MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        //
+        // helper.setFrom(emailConfig.getFrom());
+        // helper.setTo(to);
+        // helper.setSubject(subject);
+        // helper.setText(htmlContent, true);
+        //
+        // mailSender.send(message);
+        // logger.info("Email sent successfully via SMTP: to={}, subject={}", to,
+        // subject);
+        //
+        // } catch (MessagingException e) {
+        // logger.error("SMTP failed: to={}, subject={}, error={}", to, subject,
+        // e.getMessage());
+        // // Don't throw - email failures shouldn't break the main flow
+        // }
     }
 }

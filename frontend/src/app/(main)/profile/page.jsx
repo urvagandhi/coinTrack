@@ -811,8 +811,8 @@ ${newBackupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]
                                             )}
                                             {resetSetupData.secret && (
                                                 <div className="text-center">
-                                                    <p className="text-xs text-gray-500 mb-1">Or enter manually:</p>
-                                                    <code className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded text-sm font-mono">{resetSetupData.secret}</code>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Or enter manually:</p>
+                                                    <code className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded text-sm font-mono text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 inline-block">{resetSetupData.secret}</code>
                                                 </div>
                                             )}
                                             <div>

@@ -7,38 +7,46 @@ import api from '@/lib/api';
 import { ArrowRight, Link as LinkIcon, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 
-const BrokerCard = ({ name, description, color, connected = false, onConnect, disabled }) => (
-    <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-6 flex flex-col items-start transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
+const BrokerCard = ({ name, description, color, connected = false, onConnect, disabled, comingSoon = false }) => (
+    <div className={`bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-6 flex flex-col items-start transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group ${comingSoon ? 'opacity-75' : ''}`}>
         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white font-bold text-xl mb-4 shadow-lg`}>
             {name[0]}
         </div>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{name}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 min-h-[40px]">{description}</p>
 
-        <button
-            onClick={!connected ? onConnect : undefined}
-            disabled={disabled || connected}
-            className={`
-            w-full py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 transition-all
-            ${connected
-                    ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 cursor-default'
-                    : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 active:scale-95 disabled:opacity-50'
-                }
-        `}>
-            {connected ? (
-                <>
-                    <ShieldCheck className="w-4 h-4" />
-                    Connected
-                </>
-            ) : (
-                <>
-                    {disabled ? 'Loading...' : 'Connect'}
-                    {!disabled && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-                </>
-            )}
-        </button>
+        {comingSoon ? (
+            <div className="w-full py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <span className="text-lg">🚀</span>
+                Coming Soon
+            </div>
+        ) : (
+            <button
+                onClick={!connected ? onConnect : undefined}
+                disabled={disabled || connected}
+                className={`
+                w-full py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 transition-all
+                ${connected
+                        ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 cursor-default'
+                        : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 active:scale-95 disabled:opacity-50'
+                    }
+            `}>
+                {connected ? (
+                    <>
+                        <ShieldCheck className="w-4 h-4" />
+                        Connected
+                    </>
+                ) : (
+                    <>
+                        {disabled ? 'Loading...' : 'Connect'}
+                        {!disabled && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                    </>
+                )}
+            </button>
+        )}
     </div>
 );
+
 
 export default function BrokersPage() {
     const { data: brokersStatus, isLoading } = useBrokerConnection();
@@ -106,12 +114,13 @@ export default function BrokersPage() {
     };
 
     // Merge status with static descriptions
+    // Only Zerodha is available for connection, others are Coming Soon
     const brokers = [
-        { name: 'Zerodha', description: "India's largest stock broker. Offers free equity investments.", color: 'from-blue-500 to-blue-600', id: 'ZERODHA' },
-        { name: 'Upstox', description: 'Low cost trading platform with advanced charts.', color: 'from-purple-500 to-purple-600', id: 'UPSTOX' },
-        { name: 'Angel One', description: 'Full-service retail broker combining tech and advisory.', color: 'from-orange-500 to-red-500', id: 'ANGELONE' },
-        { name: 'Groww', description: 'Simple investing for stocks and mutual funds.', color: 'from-teal-400 to-emerald-500', id: 'GROWW' },
-        { name: '5Paisa', description: 'Flat fee discount brokerage for traders.', color: 'from-orange-400 to-orange-600', id: 'FYERS' },
+        { name: 'Zerodha', description: "India's largest stock broker. Offers free equity investments.", color: 'from-blue-500 to-blue-600', id: 'ZERODHA', comingSoon: false },
+        { name: 'Upstox', description: 'Low cost trading platform with advanced charts.', color: 'from-purple-500 to-purple-600', id: 'UPSTOX', comingSoon: true },
+        { name: 'Angel One', description: 'Full-service retail broker combining tech and advisory.', color: 'from-orange-500 to-red-500', id: 'ANGELONE', comingSoon: true },
+        { name: 'Groww', description: 'Simple investing for stocks and mutual funds.', color: 'from-teal-400 to-emerald-500', id: 'GROWW', comingSoon: true },
+        { name: '5Paisa', description: 'Flat fee discount brokerage for traders.', color: 'from-orange-400 to-orange-600', id: 'FYERS', comingSoon: true },
     ].map(b => {
         const status = brokersStatus?.find(s => s.broker === b.id);
         const connected = status?.connectionStatus === 'CONNECTED';
