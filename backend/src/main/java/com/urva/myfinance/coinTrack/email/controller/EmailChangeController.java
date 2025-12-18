@@ -107,7 +107,13 @@ public class EmailChangeController {
                                 newEmail,
                                 httpRequest);
                 String magicLink = emailConfig.getEmailChangeVerifyUrl(token);
-                emailService.sendEmailChangeVerification(user, newEmail, magicLink);
+
+                // Send email (non-blocking)
+                try {
+                        emailService.sendEmailChangeVerification(user, newEmail, magicLink);
+                } catch (Exception emailEx) {
+                        logger.warn("Failed to send email change verification: {}", emailEx.getMessage());
+                }
 
                 logger.info("Email change requested: userId={}, newEmail={}", user.getId(), newEmail);
 

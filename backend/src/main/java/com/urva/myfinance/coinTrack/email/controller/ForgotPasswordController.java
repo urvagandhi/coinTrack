@@ -89,7 +89,13 @@ public class ForgotPasswordController {
                     EmailToken.PURPOSE_PASSWORD_RESET,
                     httpRequest);
             String magicLink = emailConfig.getPasswordResetUrl(token);
-            emailService.sendPasswordResetLink(user, magicLink);
+
+            // Send email (non-blocking - don't fail if email fails)
+            try {
+                emailService.sendPasswordResetLink(user, magicLink);
+            } catch (Exception emailEx) {
+                logger.warn("Failed to send password reset email: {}", emailEx.getMessage());
+            }
 
             logger.info("Password reset requested: userId={}", user.getId());
         } else {
@@ -192,9 +198,13 @@ public class ForgotPasswordController {
             // Invalidate all email tokens
             emailTokenService.invalidateAllForUser(userId);
 
-            // Send security alert
-            String ipAddress = RequestUtils.extractIpAddress(httpRequest);
-            emailService.sendSecurityAlertWithIP(user, "Password Changed", ipAddress);
+            // Send security alert (non-blocking)
+            try {
+                String ipAddress = RequestUtils.extractIpAddress(httpRequest);
+                emailService.sendSecurityAlertWithIP(user, "Password Changed", ipAddress);
+            } catch (Exception emailEx) {
+                logger.warn("Failed to send password change security alert: {}", emailEx.getMessage());
+            }
 
             logger.info("Password reset successful: userId={}", userId);
 
