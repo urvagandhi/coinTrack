@@ -51,166 +51,276 @@ export default function MfSipList({ sips, unlinkedOrders, isLoading, onNavigate,
     return (
         <div className="flex flex-col space-y-8">
             {/* Active SIPs Table */}
-            <div className="overflow-x-auto min-h-[400px]">
-                <table className="w-full">
-                    <thead>
-                        <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <th className="pb-4 pl-4 w-8"></th>
-                            <th className="pb-4 pl-2">Fund</th>
-                            <th className="pb-4 text-right">Amount</th>
-                            <th className="pb-4 text-right">Schedule</th>
-                            <th className="pb-4 text-right">Progress</th>
-                            <th className="pb-4 text-right pr-4">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="space-y-4">
-                        {sips.map((sip, idx) => {
-                            const isExpanded = expandedSipId === sip.sipId;
-                            const nextDate = sip.nextInstalmentDate ? new Date(sip.nextInstalmentDate) : null;
-                            const isActive = sip.status === 'ACTIVE';
+            <div className="flex flex-col">
+                <div className="hidden md:block overflow-x-auto min-h-[400px]">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="pb-4 pl-4 w-8"></th>
+                                <th className="pb-4 pl-2">Fund</th>
+                                <th className="pb-4 text-right">Amount</th>
+                                <th className="pb-4 text-right">Schedule</th>
+                                <th className="pb-4 text-right">Progress</th>
+                                <th className="pb-4 text-right pr-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="space-y-4">
+                            {sips.map((sip, idx) => {
+                                const isExpanded = expandedSipId === sip.sipId;
+                                const nextDate = sip.nextInstalmentDate ? new Date(sip.nextInstalmentDate) : null;
+                                const isActive = sip.status === 'ACTIVE';
 
-                            return (
-                                <Fragment key={sip.sipId || idx}>
-                                    <tr
-                                        className={`border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-50 dark:bg-gray-800/30' : ''}`}
-                                        onClick={() => toggleExpand(sip.sipId)}
-                                    >
-                                        <td className="py-4 pl-4 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400">
-                                            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                                        </td>
-                                        <td className="py-4 pl-2">
-                                            <div className="font-medium text-gray-900 dark:text-white max-w-xs truncate" title={sip.fund}>
-                                                {sip.fund}
-                                            </div>
-                                            <div className="text-[10px] text-gray-400 mt-0.5">
-                                                {sip.folio || '-'} | {sip.tradingSymbol || '-'}
-                                            </div>
-                                            {/* ID Pill */}
-                                            <div className="mt-1">
-                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                                    ID: {sip.sipId}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 text-right">
-                                            <div className="font-medium text-gray-900 dark:text-white">
-                                                {formatCurrency(sip.instalmentAmount)}
-                                            </div>
-                                            <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 uppercase tracking-wide">
-                                                {sip.frequency}
-                                            </div>
-                                            {sip.stepUp && Object.keys(sip.stepUp).length > 0 && (
-                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 mt-1">
-                                                    Step Up
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">
-                                            <div className="flex flex-col items-end">
-                                                <span className={`font-medium ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>
-                                                    {nextDate ? nextDate.toLocaleDateString() : 'No Date'}
-                                                </span>
-                                                <span className="text-[10px] text-gray-400 mt-0.5">
-                                                    Day {sip.instalmentDay || '?'}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 text-right">
-                                            <div className="flex flex-col items-end">
-                                                <span className="font-medium text-gray-900 dark:text-white">
-                                                    {sip.completedInstalments} Paid
-                                                </span>
-                                                {sip.totalInstalments > 0 && (
-                                                    <span className="text-[10px] text-gray-400 mt-0.5">
-                                                        of {sip.totalInstalments} Total
+                                return (
+                                    <Fragment key={sip.sipId || idx}>
+                                        <tr
+                                            className={`border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-50 dark:bg-gray-800/30' : ''}`}
+                                            onClick={() => toggleExpand(sip.sipId)}
+                                        >
+                                            <td className="py-4 pl-4 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400">
+                                                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                            </td>
+                                            <td className="py-4 pl-2">
+                                                <div className="font-medium text-gray-900 dark:text-white max-w-xs truncate" title={sip.fund}>
+                                                    {sip.fund}
+                                                </div>
+                                                <div className="text-[10px] text-gray-400 mt-0.5">
+                                                    {sip.folio || '-'} | {sip.tradingSymbol || '-'}
+                                                </div>
+                                                {/* ID Pill */}
+                                                <div className="mt-1">
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                                        ID: {sip.sipId}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 text-right">
+                                                <div className="font-medium text-gray-900 dark:text-white">
+                                                    {formatCurrency(sip.instalmentAmount)}
+                                                </div>
+                                                <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 uppercase tracking-wide">
+                                                    {sip.frequency}
+                                                </div>
+                                                {sip.stepUp && Object.keys(sip.stepUp).length > 0 && (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 mt-1">
+                                                        Step Up
                                                     </span>
                                                 )}
-                                            </div>
-                                        </td>
-                                        <td className="py-4 text-right pr-4">
-                                            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${sip.status === 'ACTIVE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                                                sip.status === 'PAUSED' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
-                                                    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                                                }`}>
-                                                {sip.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-
-                                    {/* Expanded History */}
-                                    {isExpanded && (
-                                        <tr className="bg-gray-50/50 dark:bg-gray-800/20 shadow-inner">
-                                            <td colSpan="6" className="px-4 py-4">
-                                                <div className="ml-10 border-l-2 border-dashed border-gray-200 dark:border-gray-700 pl-6">
-                                                    <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                        <History size={14} className="text-purple-500" />
-                                                        <h3>Execution History</h3>
-                                                    </div>
-
-                                                    {!sip.executions || sip.executions.length === 0 ? (
-                                                        <div className="text-gray-500 italic text-sm py-2">No execution history available.</div>
-                                                    ) : (
-                                                        <div className="overflow-hidden rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-900">
-                                                            <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
-                                                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                                                                    <tr>
-                                                                        <th className="px-4 py-2 text-left">Date</th>
-                                                                        <th className="px-4 py-2 text-right">Amount</th>
-                                                                        <th className="px-4 py-2 text-right">NAV</th>
-                                                                        <th className="px-4 py-2 text-center">Status</th>
-                                                                        <th className="px-4 py-2 text-right">Order Ref</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y divide-gray-5 dark:divide-gray-800/50 text-xs">
-                                                                    {sip.executions.map((exec, eIdx) => (
-                                                                        <tr key={exec.orderId || eIdx} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                                                                            <td className="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium">
-                                                                                {exec.executionDate ? new Date(exec.executionDate).toLocaleDateString() :
-                                                                                    exec.orderTimestamp ? new Date(exec.orderTimestamp).toLocaleDateString() : '-'}
-                                                                            </td>
-                                                                            <td className="px-4 py-2 text-right font-medium text-gray-900 dark:text-white">
-                                                                                {formatCurrency(exec.amount)}
-                                                                            </td>
-                                                                            <td className="px-4 py-2 text-right text-gray-500">
-                                                                                {exec.executedNav ? `₹${exec.executedNav}` : '-'}
-                                                                            </td>
-                                                                            <td className="px-4 py-2 text-center">
-                                                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${exec.status === 'COMPLETE' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-600 border border-gray-100'}`}>
-                                                                                    {exec.status}
-                                                                                </span>
-                                                                            </td>
-                                                                            <td className="px-4 py-2 text-right text-gray-400 font-mono text-[10px]">
-                                                                                {exec.orderId}
-                                                                            </td>
-                                                                        </tr>
-                                                                    ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    )}
-
-                                                    {onNavigate && (
-                                                        <div className="mt-3 flex justify-end">
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    onNavigate('timeline', { sipId: sip.sipId, highlightSipId: sip.sipId });
-                                                                }}
-                                                                className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium flex items-center transition-colors"
-                                                            >
-                                                                View SIP history in Timeline <ChevronRight size={12} className="ml-1" />
-                                                            </button>
-                                                        </div>
+                                            </td>
+                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">
+                                                <div className="flex flex-col items-end">
+                                                    <span className={`font-medium ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>
+                                                        {nextDate ? nextDate.toLocaleDateString() : 'No Date'}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400 mt-0.5">
+                                                        Day {sip.instalmentDay || '?'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 text-right">
+                                                <div className="flex flex-col items-end">
+                                                    <span className="font-medium text-gray-900 dark:text-white">
+                                                        {sip.completedInstalments} Paid
+                                                    </span>
+                                                    {sip.totalInstalments > 0 && (
+                                                        <span className="text-[10px] text-gray-400 mt-0.5">
+                                                            of {sip.totalInstalments} Total
+                                                        </span>
                                                     )}
                                                 </div>
                                             </td>
+                                            <td className="py-4 text-right pr-4">
+                                                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${sip.status === 'ACTIVE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                                    sip.status === 'PAUSED' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
+                                                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                                    }`}>
+                                                    {sip.status}
+                                                </span>
+                                            </td>
                                         </tr>
-                                    )}
-                                </Fragment>
-                            );
-                        })}
-                    </tbody>
-                </table>
+
+                                        {/* Expanded History */}
+                                        {isExpanded && (
+                                            <tr className="bg-gray-50/50 dark:bg-gray-800/20 shadow-inner">
+                                                <td colSpan="6" className="px-4 py-4">
+                                                    <div className="ml-10 border-l-2 border-dashed border-gray-200 dark:border-gray-700 pl-6">
+                                                        <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                            <History size={14} className="text-purple-500" />
+                                                            <h3>Execution History</h3>
+                                                        </div>
+
+                                                        {!sip.executions || sip.executions.length === 0 ? (
+                                                            <div className="text-gray-500 italic text-sm py-2">No execution history available.</div>
+                                                        ) : (
+                                                            <div className="overflow-hidden rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-900">
+                                                                <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+                                                                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                                                                        <tr>
+                                                                            <th className="px-4 py-2 text-left">Date</th>
+                                                                            <th className="px-4 py-2 text-right">Amount</th>
+                                                                            <th className="px-4 py-2 text-right">NAV</th>
+                                                                            <th className="px-4 py-2 text-center">Status</th>
+                                                                            <th className="px-4 py-2 text-right">Order Ref</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-gray-5 dark:divide-gray-800/50 text-xs">
+                                                                        {sip.executions.map((exec, eIdx) => (
+                                                                            <tr key={exec.orderId || eIdx} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                                                                <td className="px-4 py-2 text-gray-700 dark:text-gray-300 font-medium">
+                                                                                    {exec.executionDate ? new Date(exec.executionDate).toLocaleDateString() :
+                                                                                        exec.orderTimestamp ? new Date(exec.orderTimestamp).toLocaleDateString() : '-'}
+                                                                                </td>
+                                                                                <td className="px-4 py-2 text-right font-medium text-gray-900 dark:text-white">
+                                                                                    {formatCurrency(exec.amount)}
+                                                                                </td>
+                                                                                <td className="px-4 py-2 text-right text-gray-500">
+                                                                                    {exec.executedNav ? `₹${exec.executedNav}` : '-'}
+                                                                                </td>
+                                                                                <td className="px-4 py-2 text-center">
+                                                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${exec.status === 'COMPLETE' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-600 border border-gray-100'}`}>
+                                                                                        {exec.status}
+                                                                                    </span>
+                                                                                </td>
+                                                                                <td className="px-4 py-2 text-right text-gray-400 font-mono text-[10px]">
+                                                                                    {exec.orderId}
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        )}
+
+                                                        {onNavigate && (
+                                                            <div className="mt-3 flex justify-end">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        onNavigate('timeline', { sipId: sip.sipId, highlightSipId: sip.sipId });
+                                                                    }}
+                                                                    className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium flex items-center transition-colors"
+                                                                >
+                                                                    View SIP history in Timeline <ChevronRight size={12} className="ml-1" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </Fragment>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile Card View for SIPs */}
+                <div className="md:hidden space-y-4">
+                    {sips.map((sip, idx) => {
+                        const isExpanded = expandedSipId === sip.sipId;
+                        const nextDate = sip.nextInstalmentDate ? new Date(sip.nextInstalmentDate) : null;
+                        const isActive = sip.status === 'ACTIVE';
+
+                        return (
+                            <div key={sip.sipId || idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                                <div
+                                    className="flex justify-between items-start mb-2 cursor-pointer"
+                                    onClick={() => toggleExpand(sip.sipId)}
+                                >
+                                    <div className="flex-1 mr-2">
+                                        <h3 className="font-bold text-gray-900 dark:text-white text-base leading-snug">{sip.fund}</h3>
+                                        <div className="text-[10px] text-gray-400 mt-1 break-all">
+                                            {sip.tradingSymbol} {sip.folio && `| ${sip.folio}`}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${sip.status === 'ACTIVE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                            sip.status === 'PAUSED' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
+                                                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                            }`}>
+                                            {sip.status}
+                                        </span>
+                                        {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 text-sm mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    <div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Amount</div>
+                                        <div className="font-bold text-gray-900 dark:text-white">{formatCurrency(sip.instalmentAmount)}</div>
+                                        <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 uppercase tracking-wide">{sip.frequency}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Next Due</div>
+                                        <div className={`font-medium ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>
+                                            {nextDate ? nextDate.toLocaleDateString() : '-'}
+                                        </div>
+                                        <div className="text-[10px] text-gray-400 mt-0.5">Day {sip.instalmentDay || '?'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Paid</div>
+                                        <div className="font-medium text-gray-700 dark:text-gray-300">{sip.completedInstalments}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">ID</div>
+                                        <div className="font-mono text-xs text-gray-500">{sip.sipId}</div>
+                                    </div>
+                                </div>
+
+                                {/* Mobile Expanded History */}
+                                {isExpanded && (
+                                    <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                            <History size={14} className="text-purple-500" />
+                                            <h3>Execution History</h3>
+                                        </div>
+
+                                        {!sip.executions || sip.executions.length === 0 ? (
+                                            <div className="text-gray-500 italic text-sm py-2 text-center bg-gray-100 dark:bg-gray-800/50 rounded-lg">No execution history available.</div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {sip.executions.map((exec, eIdx) => (
+                                                    <div key={exec.orderId || eIdx} className="bg-white dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800 text-sm">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div>
+                                                                <div className="font-medium text-gray-900 dark:text-white">
+                                                                    {formatCurrency(exec.amount)}
+                                                                </div>
+                                                                <div className="text-xs text-gray-500">
+                                                                    {exec.executionDate ? new Date(exec.executionDate).toLocaleDateString() :
+                                                                        exec.orderTimestamp ? new Date(exec.orderTimestamp).toLocaleDateString() : '-'}
+                                                                </div>
+                                                            </div>
+                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${exec.status === 'COMPLETE' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-600 border border-gray-100'}`}>
+                                                                {exec.status}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-xs text-gray-500 border-t border-gray-50 dark:border-gray-800 pt-2 mt-2">
+                                                            <span>NAV: {exec.executedNav ? `₹${exec.executedNav}` : '-'}</span>
+                                                            <span className="font-mono text-[10px]">#{exec.orderId}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {onNavigate && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onNavigate('timeline', { sipId: sip.sipId, highlightSipId: sip.sipId });
+                                                }}
+                                                className="w-full mt-4 py-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-lg font-medium flex items-center justify-center transition-colors"
+                                            >
+                                                View SIP history in Timeline <ChevronRight size={12} className="ml-1" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Unlinked SIP Orders Section (Orphaned) */}
@@ -225,7 +335,7 @@ export default function MfSipList({ sips, unlinkedOrders, isLoading, onNavigate,
                         </div>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border border-amber-200 dark:border-amber-900/50 shadow-sm">
+                    <div className="hidden md:block overflow-hidden rounded-xl border border-amber-200 dark:border-amber-900/50 shadow-sm">
                         <table className="w-full text-sm">
                             <thead className="bg-amber-50 dark:bg-amber-900/10 text-xs font-medium text-amber-900/70 dark:text-amber-400/80 uppercase tracking-wider">
                                 <tr>
@@ -265,6 +375,44 @@ export default function MfSipList({ sips, unlinkedOrders, isLoading, onNavigate,
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Mobile Card View for Unlinked Orders */}
+                    <div className="md:hidden space-y-3">
+                        {unlinkedOrders.map((order, idx) => (
+                            <div key={order.orderId || idx} className="bg-amber-50/30 dark:bg-amber-900/10 rounded-xl p-4 border border-amber-100 dark:border-amber-900/30">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex-1 mr-2">
+                                        <h3 className="font-bold text-gray-900 dark:text-white text-sm leading-snug">{order.fund}</h3>
+                                    </div>
+                                    <span className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800'}`}>
+                                        {order.status}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-amber-100 dark:border-amber-900/20">
+                                    <div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Amount</div>
+                                        <div className="font-bold text-gray-900 dark:text-white">{formatCurrency(order.amount)}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Date</div>
+                                        <div className="font-medium text-gray-900 dark:text-white text-xs">
+                                            {order.executionDate ? new Date(order.executionDate).toLocaleDateString() :
+                                                order.orderTimestamp ? new Date(order.orderTimestamp).toLocaleDateString() : '-'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">NAV</div>
+                                        <div className="text-gray-700 dark:text-gray-300">{order.executedNav ? `₹${order.executedNav}` : '-'}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Ref</div>
+                                        <div className="font-mono text-xs text-gray-500">{order.orderId}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}

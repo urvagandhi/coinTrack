@@ -324,7 +324,8 @@ export default function PortfolioPage() {
 
                                 return (
                                     <div className="flex flex-col">
-                                        <div className="overflow-x-auto min-h-[400px]">
+                                        {/* Desktop Table View */}
+                                        <div className="hidden md:block overflow-x-auto min-h-[400px]">
                                             <table className="w-full">
                                                 <thead>
                                                     <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -355,9 +356,9 @@ export default function PortfolioPage() {
                                                 </thead>
                                                 <tbody className="space-y-4">
                                                     {isLoadingHoldings ? (
-                                                        <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                        <tr><td colSpan="8" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
                                                     ) : sortedHoldings.length === 0 ? (
-                                                        <tr><td colSpan="5" className="text-center py-8 text-gray-500">No holdings found.</td></tr>
+                                                        <tr><td colSpan="8" className="text-center py-8 text-gray-500">No holdings found.</td></tr>
                                                     ) : (
                                                         paginatedHoldings.map((item, idx) => {
                                                             const pnl = item.unrealizedPL;
@@ -396,6 +397,66 @@ export default function PortfolioPage() {
                                                     )}
                                                 </tbody>
                                             </table>
+                                        </div>
+
+                                        {/* Mobile Card View */}
+                                        <div className="md:hidden space-y-4">
+                                            {isLoadingHoldings ? (
+                                                <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
+                                            ) : sortedHoldings.length === 0 ? (
+                                                <div className="text-center py-8 text-gray-500">No holdings found.</div>
+                                            ) : (
+                                                paginatedHoldings.map((item, idx) => {
+                                                    const pnl = item.unrealizedPL;
+                                                    const isPos = pnl >= 0;
+                                                    return (
+                                                        <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <div>
+                                                                    <h3 className="font-bold text-gray-900 dark:text-white text-base">{item.symbol || item.instrument}</h3>
+                                                                    <span className="inline-block mt-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                                                                        {item.exchange}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <div className={`text-sm font-bold ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                        {formatCurrency(pnl)}
+                                                                    </div>
+                                                                    <div className={`text-[10px] mt-0.5 ${item.dayGain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                        {formatPercent(item.dayGainPercent)} ({formatCurrency(item.dayGain)})
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                                                                <div>
+                                                                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">Qty</div>
+                                                                    <div className="font-medium text-gray-900 dark:text-white">{item.quantity}</div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">LTP</div>
+                                                                    <div className="font-medium text-gray-900 dark:text-white">
+                                                                        {item.currentPrice && item.currentPrice > 0 ? formatCurrency(item.currentPrice) : '—'}
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">Avg Price</div>
+                                                                    <div className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">Invested</div>
+                                                                    <div className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(item.investedValue)}</div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                                                <span className="text-xs font-medium text-gray-500">Current Value</span>
+                                                                <span className="text-base font-bold text-gray-900 dark:text-white">{formatCurrency(item.currentValue)}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
                                         </div>
 
                                         {/* Pagination Controls */}
@@ -444,212 +505,423 @@ export default function PortfolioPage() {
                                         ))}
                                     </div>
 
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead>
-                                                <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                    <th className="pb-4 pl-2">Instrument</th>
-                                                    {positionView === 'DERIVATIVES' && (
-                                                        <>
-                                                            <th className="pb-4">Type</th>
-                                                            <th className="pb-4 text-right">Strike</th>
-                                                            <th className="pb-4 text-center">Opt</th>
-                                                            <th className="pb-4 text-right">Expiry</th>
-                                                        </>
+                                    <div className="flex flex-col">
+                                        {/* Desktop Table */}
+                                        <div className="hidden md:block overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead>
+                                                    <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                        <th className="pb-4 pl-2">Instrument</th>
+                                                        {positionView === 'DERIVATIVES' && (
+                                                            <>
+                                                                <th className="pb-4">Type</th>
+                                                                <th className="pb-4 text-right">Strike</th>
+                                                                <th className="pb-4 text-center">Opt</th>
+                                                                <th className="pb-4 text-right">Expiry</th>
+                                                            </>
+                                                        )}
+                                                        <th className="pb-4 text-right">Qty</th>
+                                                        <th className="pb-4 text-right">Buy Avg</th>
+                                                        <th className="pb-4 text-right">LTP</th>
+                                                        <th className="pb-4 text-right pr-2">
+                                                            {positionView === 'DERIVATIVES' ? 'MTM' : 'P&L'}
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="space-y-4">
+                                                    {isLoadingPositions ? (
+                                                        <tr><td colSpan={positionView === 'DERIVATIVES' ? 9 : 5} className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                    ) : positions.filter(p => positionView === 'DERIVATIVES' ? p.isDerivative : !p.isDerivative).length === 0 ? (
+                                                        <tr><td colSpan={positionView === 'DERIVATIVES' ? 9 : 5} className="text-center py-8 text-gray-500">No {positionView.toLowerCase()} positions found.</td></tr>
+                                                    ) : (
+                                                        positions.filter(p => positionView === 'DERIVATIVES' ? p.isDerivative : !p.isDerivative).map((item, idx) => {
+                                                            const pnl = positionView === 'DERIVATIVES' ? (item.dayGain || item.unrealizedPL) : item.unrealizedPL;
+                                                            const isPos = pnl >= 0;
+                                                            return (
+                                                                <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                                    <td className="py-4 pl-2 font-medium text-gray-900 dark:text-white">
+                                                                        {item.symbol}
+                                                                    </td>
+                                                                    {positionView === 'DERIVATIVES' && (
+                                                                        <>
+                                                                            <td className="py-4 text-xs text-gray-500">{item.instrumentType}</td>
+                                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.strikePrice ? formatCurrency(item.strikePrice) : '-'}</td>
+                                                                            <td className="py-4 text-center">
+                                                                                {item.optionType ? (
+                                                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.optionType === 'CE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                                                        {item.optionType}
+                                                                                    </span>
+                                                                                ) : '-'}
+                                                                            </td>
+                                                                            <td className="py-4 text-right text-xs text-gray-500">
+                                                                                {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : '-'}
+                                                                            </td>
+                                                                        </>
+                                                                    )}
+                                                                    <td className="py-4 text-right text-gray-600 dark:text-gray-300">
+                                                                        {positionView === 'DERIVATIVES' ? item.netLots || item.totalQuantity : item.totalQuantity}
+                                                                        {positionView === 'DERIVATIVES' && item.netLots && <span className="text-xs text-gray-400 ml-1">lots</span>}
+                                                                    </td>
+                                                                    <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
+                                                                    <td className="py-4 text-right font-medium text-gray-900 dark:text-white">
+                                                                        {item.currentPrice && item.currentPrice > 0 ? formatCurrency(item.currentPrice) : '—'}
+                                                                    </td>
+                                                                    <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                        {formatCurrency(pnl)}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
                                                     )}
-                                                    <th className="pb-4 text-right">Qty</th>
-                                                    <th className="pb-4 text-right">Buy Avg</th>
-                                                    <th className="pb-4 text-right">LTP</th>
-                                                    <th className="pb-4 text-right pr-2">
-                                                        {positionView === 'DERIVATIVES' ? 'MTM' : 'P&L'}
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="space-y-4">
-                                                {isLoadingPositions ? (
-                                                    <tr><td colSpan={positionView === 'DERIVATIVES' ? 9 : 5} className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
-                                                ) : positions.filter(p => positionView === 'DERIVATIVES' ? p.isDerivative : !p.isDerivative).length === 0 ? (
-                                                    <tr><td colSpan={positionView === 'DERIVATIVES' ? 9 : 5} className="text-center py-8 text-gray-500">No {positionView.toLowerCase()} positions found.</td></tr>
-                                                ) : (
-                                                    positions.filter(p => positionView === 'DERIVATIVES' ? p.isDerivative : !p.isDerivative).map((item, idx) => {
-                                                        const pnl = positionView === 'DERIVATIVES' ? (item.dayGain || item.unrealizedPL) : item.unrealizedPL;
-                                                        const isPos = pnl >= 0;
-                                                        return (
-                                                            <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                                <td className="py-4 pl-2 font-medium text-gray-900 dark:text-white">
-                                                                    {item.symbol}
-                                                                </td>
-                                                                {positionView === 'DERIVATIVES' && (
-                                                                    <>
-                                                                        <td className="py-4 text-xs text-gray-500">{item.instrumentType}</td>
-                                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">{item.strikePrice ? formatCurrency(item.strikePrice) : '-'}</td>
-                                                                        <td className="py-4 text-center">
-                                                                            {item.optionType ? (
-                                                                                <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.optionType === 'CE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* Mobile Card View */}
+                                        <div className="md:hidden space-y-4">
+                                            {isLoadingPositions ? (
+                                                <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
+                                            ) : positions.filter(p => positionView === 'DERIVATIVES' ? p.isDerivative : !p.isDerivative).length === 0 ? (
+                                                <div className="text-center py-8 text-gray-500">No {positionView.toLowerCase()} positions found.</div>
+                                            ) : (
+                                                positions.filter(p => positionView === 'DERIVATIVES' ? p.isDerivative : !p.isDerivative).map((item, idx) => {
+                                                    const pnl = positionView === 'DERIVATIVES' ? (item.dayGain || item.unrealizedPL) : item.unrealizedPL;
+                                                    const isPos = pnl >= 0;
+                                                    return (
+                                                        <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <div className="flex flex-col">
+                                                                    <h3 className="font-bold text-gray-900 dark:text-white text-base">{item.symbol}</h3>
+                                                                    {positionView === 'DERIVATIVES' && (
+                                                                        <div className="flex items-center gap-1 mt-1">
+                                                                            <span className="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1 py-0.5 rounded">{item.instrumentType}</span>
+                                                                            {item.optionType && (
+                                                                                <span className={`text-[10px] px-1 py-0.5 rounded font-bold ${item.optionType === 'CE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                                                     {item.optionType}
                                                                                 </span>
-                                                                            ) : '-'}
-                                                                        </td>
-                                                                        <td className="py-4 text-right text-xs text-gray-500">
-                                                                            {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : '-'}
-                                                                        </td>
-                                                                    </>
-                                                                )}
-                                                                <td className="py-4 text-right text-gray-600 dark:text-gray-300">
-                                                                    {positionView === 'DERIVATIVES' ? item.netLots || item.totalQuantity : item.totalQuantity}
-                                                                    {positionView === 'DERIVATIVES' && item.netLots && <span className="text-xs text-gray-400 ml-1">lots</span>}
-                                                                </td>
-                                                                <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</td>
-                                                                <td className="py-4 text-right font-medium text-gray-900 dark:text-white">
-                                                                    {item.currentPrice && item.currentPrice > 0 ? formatCurrency(item.currentPrice) : '—'}
-                                                                </td>
-                                                                <td className={`py-4 text-right font-medium pr-2 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className={`text-base font-bold ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                     {formatCurrency(pnl)}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })
-                                                )}
-                                            </tbody>
-                                        </table>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-4 text-sm mt-2">
+                                                                {/* Row 1 */}
+                                                                <div>
+                                                                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">Qty</div>
+                                                                    <div className="font-medium text-gray-900 dark:text-white">
+                                                                        {positionView === 'DERIVATIVES' ? item.netLots || item.totalQuantity : item.totalQuantity}
+                                                                        {positionView === 'DERIVATIVES' && item.netLots && <span className="text-xs text-gray-400 ml-1">lots</span>}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">LTP</div>
+                                                                    <div className="font-medium text-gray-900 dark:text-white">
+                                                                        {item.currentPrice && item.currentPrice > 0 ? formatCurrency(item.currentPrice) : '—'}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Row 2 */}
+                                                                <div>
+                                                                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">Avg Price</div>
+                                                                    <div className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(item.averageBuyPrice)}</div>
+                                                                </div>
+                                                                {positionView === 'DERIVATIVES' ? (
+                                                                    <div className="text-right">
+                                                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Strike</div>
+                                                                        <div className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(item.strikePrice)}</div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-right">
+                                                                        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Value</div>
+                                                                        <div className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(item.currentValue || (item.totalQuantity * item.currentPrice))}</div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
                             {/* ORDERS TAB */}
                             {activeTab === 'orders' && (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4 pl-2">Time</th>
-                                                <th className="pb-4">Instrument</th>
-                                                <th className="pb-4 text-center">Type</th>
-                                                <th className="pb-4 text-right">Qty</th>
-                                                <th className="pb-4 text-right">Price</th>
-                                                <th className="pb-4 text-right pr-2">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="space-y-4">
-                                            {isLoadingOrders ? (
-                                                <tr><td colSpan="6" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
-                                            ) : orders.length === 0 ? (
-                                                <tr><td colSpan="6" className="text-center py-8 text-gray-500">No orders found for today.</td></tr>
-                                            ) : (
-                                                orders.map((order, idx) => (
-                                                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                        <td className="py-4 pl-2 text-xs text-gray-500">
-                                                            {order.order_timestamp ? new Date(order.order_timestamp).toLocaleTimeString() : '-'}
-                                                        </td>
-                                                        <td className="py-4 font-medium text-gray-900 dark:text-white">
-                                                            {order.tradingsymbol}
-                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${order.transaction_type === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
-                                                                {order.transaction_type}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-4 text-center text-xs text-gray-500">{order.product} / {order.order_type}</td>
-                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">
-                                                            {order.filled_quantity}/{order.quantity}
-                                                        </td>
-                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(order.average_price || order.price)}</td>
-                                                        <td className="py-4 text-right pr-2">
-                                                            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                                                                order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                                                                    'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                                                                }`}>
-                                                                {order.status}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
+                                <div className="flex flex-col">
+                                    {/* Desktop Table */}
+                                    <div className="hidden md:block overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                    <th className="pb-4 pl-2">Time</th>
+                                                    <th className="pb-4">Instrument</th>
+                                                    <th className="pb-4 text-center">Type</th>
+                                                    <th className="pb-4 text-right">Qty</th>
+                                                    <th className="pb-4 text-right">Price</th>
+                                                    <th className="pb-4 text-right pr-2">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="space-y-4">
+                                                {isLoadingOrders ? (
+                                                    <tr><td colSpan="6" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                ) : orders.length === 0 ? (
+                                                    <tr><td colSpan="6" className="text-center py-8 text-gray-500">No orders found for today.</td></tr>
+                                                ) : (
+                                                    orders.map((order, idx) => (
+                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                            <td className="py-4 pl-2 text-xs text-gray-500">
+                                                                {order.order_timestamp ? new Date(order.order_timestamp).toLocaleTimeString() : '-'}
+                                                            </td>
+                                                            <td className="py-4 font-medium text-gray-900 dark:text-white">
+                                                                {order.tradingsymbol}
+                                                                <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${order.transaction_type === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                                    {order.transaction_type}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-4 text-center text-xs text-gray-500">{order.product} / {order.order_type}</td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">
+                                                                {order.filled_quantity}/{order.quantity}
+                                                            </td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(order.average_price || order.price)}</td>
+                                                            <td className="py-4 text-right pr-2">
+                                                                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                                                    order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                                                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                                                                    }`}>
+                                                                    {order.status}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Mobile Card View */}
+                                    <div className="md:hidden space-y-4">
+                                        {isLoadingOrders ? (
+                                            <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
+                                        ) : orders.length === 0 ? (
+                                            <div className="text-center py-8 text-gray-500">No orders found.</div>
+                                        ) : (
+                                            orders.map((order, idx) => (
+                                                <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h3 className="font-bold text-gray-900 dark:text-white text-base">{order.tradingsymbol}</h3>
+                                                        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                                            order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                                                'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                                                            }`}>
+                                                            {order.status}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${order.transaction_type === 'BUY' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {order.transaction_type}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">{order.product} • {order.order_type}</span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
+                                                        <div>
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Time</div>
+                                                            <div className="font-medium text-gray-900 dark:text-white">
+                                                                {order.order_timestamp ? new Date(order.order_timestamp).toLocaleTimeString() : '-'}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Price</div>
+                                                            <div className="font-medium text-gray-900 dark:text-white">
+                                                                {formatCurrency(order.average_price || order.price)}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Qty</div>
+                                                            <div className="font-medium text-gray-700 dark:text-gray-300">
+                                                                {order.filled_quantity} / {order.quantity}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
                             {/* TRADES TAB */}
                             {activeTab === 'trades' && (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4 pl-2">Time</th>
-                                                <th className="pb-4">Instrument</th>
-                                                <th className="pb-4 text-center">Trade ID</th>
-                                                <th className="pb-4 text-right">Qty</th>
-                                                <th className="pb-4 text-right pr-2">Price</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="space-y-4">
-                                            {isLoadingTrades ? (
-                                                <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
-                                            ) : trades.length === 0 ? (
-                                                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No trades executed today.</td></tr>
-                                            ) : (
-                                                trades.map((trade, idx) => (
-                                                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                        <td className="py-4 pl-2 text-xs text-gray-500">
-                                                            {trade.trade_timestamp ? new Date(trade.trade_timestamp).toLocaleTimeString() : '-'}
-                                                        </td>
-                                                        <td className="py-4 font-medium text-gray-900 dark:text-white">
-                                                            {trade.tradingsymbol}
-                                                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${trade.transaction_type === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
-                                                                {trade.transaction_type}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-4 text-center text-xs text-gray-500 font-mono">{trade.trade_id}</td>
-                                                        <td className="py-4 text-right text-gray-600 dark:text-gray-300">{trade.quantity}</td>
-                                                        <td className="py-4 text-right font-medium pr-2 text-gray-900 dark:text-white">{formatCurrency(trade.average_price)}</td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
+                                <div className="flex flex-col">
+                                    {/* Desktop Table View */}
+                                    <div className="hidden md:block overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                    <th className="pb-4 pl-2">Time</th>
+                                                    <th className="pb-4">Instrument</th>
+                                                    <th className="pb-4 text-center">Trade ID</th>
+                                                    <th className="pb-4 text-right">Qty</th>
+                                                    <th className="pb-4 text-right pr-2">Price</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="space-y-4">
+                                                {isLoadingTrades ? (
+                                                    <tr><td colSpan="5" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                ) : trades.length === 0 ? (
+                                                    <tr><td colSpan="5" className="text-center py-8 text-gray-500">No trades executed today.</td></tr>
+                                                ) : (
+                                                    trades.map((trade, idx) => (
+                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                            <td className="py-4 pl-2 text-xs text-gray-500">
+                                                                {trade.trade_timestamp ? new Date(trade.trade_timestamp).toLocaleTimeString() : '-'}
+                                                            </td>
+                                                            <td className="py-4 font-medium text-gray-900 dark:text-white">
+                                                                {trade.tradingsymbol}
+                                                                <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${trade.transaction_type === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                                    {trade.transaction_type}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-4 text-center text-xs text-gray-500 font-mono">{trade.trade_id}</td>
+                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{trade.quantity}</td>
+                                                            <td className="py-4 text-right font-medium pr-2 text-gray-900 dark:text-white">{formatCurrency(trade.average_price)}</td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Mobile Card View */}
+                                    <div className="md:hidden space-y-4">
+                                        {isLoadingTrades ? (
+                                            <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
+                                        ) : trades.length === 0 ? (
+                                            <div className="text-center py-8 text-gray-500">No trades found.</div>
+                                        ) : (
+                                            trades.map((trade, idx) => (
+                                                <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h3 className="font-bold text-gray-900 dark:text-white text-base">{trade.tradingsymbol}</h3>
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${trade.transaction_type === 'BUY' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {trade.transaction_type}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mb-2 font-mono">ID: {trade.trade_id}</div>
+
+                                                    <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
+                                                        <div>
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Time</div>
+                                                            <div className="font-medium text-gray-900 dark:text-white">
+                                                                {trade.trade_timestamp ? new Date(trade.trade_timestamp).toLocaleTimeString() : '-'}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Price</div>
+                                                            <div className="font-medium text-gray-900 dark:text-white">
+                                                                {formatCurrency(trade.average_price)}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Qty</div>
+                                                            <div className="font-medium text-gray-700 dark:text-gray-300">{trade.quantity}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
                             {/* MUTUAL FUNDS TAB */}
                             {activeTab === 'mutual_funds' && (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4 pl-2">Fund</th>
-                                                <th className="pb-4 text-right">Units</th>
-                                                <th className="pb-4 text-right">Avg. NAV</th>
-                                                <th className="pb-4 text-right">Last Price</th>
-                                                <th className="pb-4 text-right">Invested</th>
-                                                <th className="pb-4 text-right">Current Value</th>
-                                                <th className="pb-4 text-right pr-2">P&L</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="space-y-4">
-                                            {isLoadingMf ? (
-                                                <tr><td colSpan="6" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
-                                            ) : mfHoldings.length === 0 ? (
-                                                <tr><td colSpan="6" className="text-center py-8 text-gray-500">No mutual fund holdings found.</td></tr>
-                                            ) : (
-                                                mfHoldings.map((mf, idx) => {
-                                                    const pnl = parseFloat(mf.unrealizedPL);
-                                                    const isPos = pnl >= 0;
-                                                    return (
-                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                            <td className="py-4 pl-2">
-                                                                <div className="font-medium text-gray-900 dark:text-white max-w-xs truncate" title={mf.fund}>
-                                                                    {mf.fund}
+                                <div className="flex flex-col">
+                                    {/* Desktop Table */}
+                                    <div className="hidden md:block overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                    <th className="pb-4 pl-2">Fund</th>
+                                                    <th className="pb-4 text-right">Units</th>
+                                                    <th className="pb-4 text-right">Avg. NAV</th>
+                                                    <th className="pb-4 text-right">Last Price</th>
+                                                    <th className="pb-4 text-right">Invested</th>
+                                                    <th className="pb-4 text-right">Current Value</th>
+                                                    <th className="pb-4 text-right pr-2">P&L</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="space-y-4">
+                                                {isLoadingMf ? (
+                                                    <tr><td colSpan="7" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                ) : mfHoldings.length === 0 ? (
+                                                    <tr><td colSpan="7" className="text-center py-8 text-gray-500">No mutual fund holdings found.</td></tr>
+                                                ) : (
+                                                    mfHoldings.map((mf, idx) => {
+                                                        const pnl = parseFloat(mf.unrealizedPL);
+                                                        const isPos = pnl >= 0;
+                                                        return (
+                                                            <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                                <td className="py-4 pl-2">
+                                                                    <div className="font-medium text-gray-900 dark:text-white max-w-xs truncate" title={mf.fund}>
+                                                                        {mf.fund}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-gray-400 mt-1">
+                                                                        {mf.folio} | {mf.tradingSymbol}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-4 text-right text-gray-600 dark:text-gray-300">{mf.quantity}</td>
+                                                                <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.averagePrice)}</td>
+                                                                <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.currentPrice)}</td>
+                                                                <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.investedValue)}</td>
+                                                                <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.currentValue)}</td>
+                                                                <td className="py-4 text-right pr-2">
+                                                                    <div className={`font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                        {formatCurrency(mf.unrealizedPL)}
+                                                                    </div>
+                                                                    <div className={`text-[10px] mt-0.5 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                        {(() => {
+                                                                            const invested = parseFloat(mf.investedValue);
+                                                                            if (!invested || invested === 0) return '0.00%';
+                                                                            const pct = (pnl / invested) * 100;
+                                                                            return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
+                                                                        })()}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        )
+                                                    })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Mobile Card View */}
+                                    <div className="md:hidden space-y-4">
+                                        {isLoadingMf ? (
+                                            <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
+                                        ) : mfHoldings.length === 0 ? (
+                                            <div className="text-center py-8 text-gray-500">No mutual fund holdings found.</div>
+                                        ) : (
+                                            mfHoldings.map((mf, idx) => {
+                                                const pnl = parseFloat(mf.unrealizedPL);
+                                                const isPos = pnl >= 0;
+                                                return (
+                                                    <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div className=" max-w-[70%]">
+                                                                <h3 className="font-bold text-gray-900 dark:text-white text-base leading-snug">{mf.fund}</h3>
+                                                                <div className="text-[10px] text-gray-400 mt-1 break-all">
+                                                                    {mf.tradingSymbol}
                                                                 </div>
-                                                                <div className="text-[10px] text-gray-400 mt-1">
-                                                                    {mf.folio} | {mf.tradingSymbol}
-                                                                </div>
-                                                            </td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{mf.quantity}</td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.averagePrice)}</td>
-                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.currentPrice)}</td>
-                                                            <td className="py-4 text-right text-gray-600 dark:text-gray-300">{formatCurrency(mf.investedValue)}</td>
-                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(mf.currentValue)}</td>
-                                                            <td className="py-4 text-right pr-2">
-                                                                <div className={`font-medium ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className={`text-base font-bold ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                     {formatCurrency(mf.unrealizedPL)}
                                                                 </div>
                                                                 <div className={`text-[10px] mt-0.5 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -660,107 +932,190 @@ export default function PortfolioPage() {
                                                                         return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
                                                                     })()}
                                                                 </div>
-                                                            </td>
-                                                        </tr>
-                                                    )
-                                                })
-                                            )}
-                                        </tbody>
-                                    </table>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4 text-sm mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                                            <div>
+                                                                <div className="text-[10px] text-gray-500 uppercase tracking-wide">Invested</div>
+                                                                <div className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(mf.investedValue)}</div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="text-[10px] text-gray-500 uppercase tracking-wide">Current Val</div>
+                                                                <div className="font-bold text-gray-900 dark:text-white">{formatCurrency(mf.currentValue)}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] text-gray-500 uppercase tracking-wide">Units</div>
+                                                                <div className="font-medium text-gray-700 dark:text-gray-300">{mf.quantity}</div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="text-[10px] text-gray-500 uppercase tracking-wide">NAV</div>
+                                                                <div className="font-medium text-gray-900 dark:text-white">{formatCurrency(mf.currentPrice)}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
                             {/* MF ORDERS TAB */}
                             {activeTab === 'mf_orders' && (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                                <th className="pb-4 pl-2">Time</th>
-                                                <th className="pb-4">Fund</th>
-                                                <th className="pb-4 text-center">Type</th>
-                                                <th className="pb-4 text-right">Units @ NAV</th>
-                                                <th className="pb-4 text-right">Amount</th>
-                                                <th className="pb-4 text-right">Status</th>
-                                                <th className="pb-4 text-right pr-2">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="space-y-4">
-                                            {isLoadingMfOrders ? (
-                                                <tr><td colSpan="7" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
-                                            ) : mfOrders.length === 0 ? (
-                                                <tr><td colSpan="7" className="text-center py-8 text-gray-500">No MF orders found.</td></tr>
-                                            ) : (
-                                                mfOrders.map((order, idx) => (
-                                                    <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                                        <td className="py-4 pl-2 text-xs text-gray-500">
-                                                            <div className="flex flex-col">
-                                                                {order.executionDate ? (
-                                                                    <>
+                                <div className="flex flex-col">
+                                    <div className="hidden md:block overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                    <th className="pb-4 pl-2">Time</th>
+                                                    <th className="pb-4">Fund</th>
+                                                    <th className="pb-4 text-center">Type</th>
+                                                    <th className="pb-4 text-right">Units @ NAV</th>
+                                                    <th className="pb-4 text-right">Amount</th>
+                                                    <th className="pb-4 text-right">Status</th>
+                                                    <th className="pb-4 text-right pr-2">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="space-y-4">
+                                                {isLoadingMfOrders ? (
+                                                    <tr><td colSpan="7" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
+                                                ) : mfOrders.length === 0 ? (
+                                                    <tr><td colSpan="7" className="text-center py-8 text-gray-500">No MF orders found.</td></tr>
+                                                ) : (
+                                                    mfOrders.map((order, idx) => (
+                                                        <tr key={idx} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                            <td className="py-4 pl-2 text-xs text-gray-500">
+                                                                <div className="flex flex-col">
+                                                                    {order.executionDate ? (
+                                                                        <>
+                                                                            <span className="font-medium text-gray-900 dark:text-gray-300">
+                                                                                {new Date(order.executionDate).toLocaleDateString()}
+                                                                            </span>
+                                                                            <span className="text-[10px] text-gray-400 mt-0.5">
+                                                                                Placed: {new Date(order.orderTimestamp).toLocaleString()}
+                                                                            </span>
+                                                                        </>
+                                                                    ) : (
                                                                         <span className="font-medium text-gray-900 dark:text-gray-300">
-                                                                            {new Date(order.executionDate).toLocaleDateString()}
+                                                                            {order.orderTimestamp ? new Date(order.orderTimestamp).toLocaleString() : '-'}
                                                                         </span>
-                                                                        <span className="text-[10px] text-gray-400 mt-0.5">
-                                                                            Placed: {new Date(order.orderTimestamp).toLocaleString()}
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 font-medium text-gray-900 dark:text-white max-w-xs truncate">
+                                                                <div title={order.fund} className="truncate">{order.fund}</div>
+                                                                <div className="text-[10px] text-gray-400 mt-0.5">
+                                                                    {order.folio || ''} | {order.tradingSymbol || ''}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 text-center">
+                                                                <div className="flex flex-col items-center">
+                                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                                        {order.transactionType}
+                                                                    </span>
+                                                                    {order.variety && (
+                                                                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wide">
+                                                                            {order.variety}
                                                                         </span>
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="font-medium text-gray-900 dark:text-gray-300">
-                                                                        {order.orderTimestamp ? new Date(order.orderTimestamp).toLocaleString() : '-'}
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 text-right">
+                                                                <div className="flex flex-col items-end">
+                                                                    <span className="font-medium text-gray-900 dark:text-white">
+                                                                        {order.executedQuantity || '-'}
                                                                     </span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-4 font-medium text-gray-900 dark:text-white max-w-xs truncate">
-                                                            <div title={order.fund} className="truncate">{order.fund}</div>
-                                                            <div className="text-[10px] text-gray-400 mt-0.5">
-                                                                {order.folio || ''} | {order.tradingSymbol || ''}
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-4 text-center">
-                                                            <div className="flex flex-col items-center">
-                                                                <span className={`text-[10px] px-1.5 py-0.5 rounded ${order.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
-                                                                    {order.transactionType}
-                                                                </span>
-                                                                {order.variety && (
-                                                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wide">
-                                                                        {order.variety}
+                                                                    <span className="text-[10px] text-gray-500">
+                                                                        {order.executedNav ? `@ ${formatCurrency(order.executedNav)}` : ''}
                                                                     </span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-4 text-right">
-                                                            <div className="flex flex-col items-end">
-                                                                <span className="font-medium text-gray-900 dark:text-white">
-                                                                    {order.executedQuantity || '-'}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(order.amount)}</td>
+                                                            <td className="py-4 text-right">
+                                                                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                                                    order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                                                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                                                                    }`}>
+                                                                    {order.status}
                                                                 </span>
-                                                                <span className="text-[10px] text-gray-500">
-                                                                    {order.executedNav ? `@ ${formatCurrency(order.executedNav)}` : ''}
-                                                                </span>
+                                                            </td>
+                                                            <td className="py-4 text-right pr-2">
+                                                                <button
+                                                                    onClick={() => handleNavigation('timeline', { tradingSymbol: order.tradingSymbol, highlightOrderId: order.orderId })}
+                                                                    className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium whitespace-nowrap"
+                                                                >
+                                                                    View in Timeline →
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Mobile Card View */}
+                                    <div className="md:hidden space-y-4">
+                                        {isLoadingMfOrders ? (
+                                            <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
+                                        ) : mfOrders.length === 0 ? (
+                                            <div className="text-center py-8 text-gray-500">No MF orders found.</div>
+                                        ) : (
+                                            mfOrders.map((order, idx) => (
+                                                <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="flex-1 mr-2">
+                                                            <h3 className="font-bold text-gray-900 dark:text-white text-sm line-clamp-2">{order.fund}</h3>
+                                                        </div>
+                                                        <span className={`flex-shrink-0 text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                                            order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                                                'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                                                            }`}>
+                                                            {order.status}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${order.transactionType === 'BUY' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'}`}>
+                                                            {order.transactionType}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">{order.variety}</span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
+                                                        <div>
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Amount</div>
+                                                            <div className="font-bold text-gray-900 dark:text-white">{formatCurrency(order.amount)}</div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Units</div>
+                                                            <div className="font-medium text-gray-700 dark:text-gray-300">
+                                                                {order.executedQuantity || '-'} <span className="text-gray-400 text-xs">{order.executedNav ? `@ ${formatCurrency(order.executedNav)}` : ''}</span>
                                                             </div>
-                                                        </td>
-                                                        <td className="py-4 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(order.amount)}</td>
-                                                        <td className="py-4 text-right">
-                                                            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${order.status === 'COMPLETE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                                                                order.status === 'REJECTED' || order.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                                                                    'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                                                                }`}>
-                                                                {order.status}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-4 text-right pr-2">
-                                                            <button
-                                                                onClick={() => handleNavigation('timeline', { tradingSymbol: order.tradingSymbol, highlightOrderId: order.orderId })}
-                                                                className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium whitespace-nowrap"
-                                                            >
-                                                                View in Timeline →
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
+                                                        </div>
+                                                        <div className="col-span-2">
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wide">Date</div>
+                                                            <div className="font-medium text-gray-900 dark:text-white text-xs">
+                                                                {order.executionDate ?
+                                                                    new Date(order.executionDate).toLocaleDateString() :
+                                                                    (order.orderTimestamp ? new Date(order.orderTimestamp).toLocaleString() : '-')}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-3 pt-2 text-right">
+                                                        <button
+                                                            onClick={() => handleNavigation('timeline', { tradingSymbol: order.tradingSymbol, highlightOrderId: order.orderId })}
+                                                            className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium flex items-center justify-end w-full"
+                                                        >
+                                                            View in Timeline →
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             )}
 

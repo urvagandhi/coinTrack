@@ -141,7 +141,7 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                 <div className={`relative ${variant === 'minimal' ? 'p-3' : 'p-4'}`}>
                     {/* Header: Type & Date */}
                     {variant !== 'minimal' && (
-                        <div className="flex justify-between items-start mb-3">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                             <div className="flex items-center gap-2">
                                 <div className={`p-1.5 rounded-lg ${theme.bg}`}>
                                     <Icon className={`h-4 w-4 ${theme.color}`} />
@@ -152,7 +152,7 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                                     </h4>
                                 </div>
                             </div>
-                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-md">
+                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-md self-start sm:self-auto ml-9 sm:ml-0">
                                 <Calendar className="h-3 w-3" />
                                 {formatDate(event.eventDate)}
                             </span>
