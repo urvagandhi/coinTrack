@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { brokerAPI, BROKERS } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
-
 import { CheckCircleIcon, ExclamationCircleIcon, LinkIcon } from '@heroicons/react/24/solid';
 
 export default function ZerodhaPage() {
@@ -19,6 +18,7 @@ export default function ZerodhaPage() {
         zerodhaApiKey: '',
         zerodhaApiSecret: ''
     });
+    const [showSetupGuide, setShowSetupGuide] = useState(true);
 
     const checkStatus = async () => {
         setCheckingCredentials(true);
@@ -95,8 +95,8 @@ export default function ZerodhaPage() {
     }
 
     return (
-        <div className="container mx-auto p-6 max-w-3xl">
-            <h1 className="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-orange-500 to-pink-500">Zerodha Integration</h1>
+        <div className="container mx-auto px-4 py-6 sm:p-6 max-w-3xl">
+            <h1 className="text-3xl sm:text-4xl font-extrabold mb-6 sm:mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-orange-500 to-pink-500">Zerodha Integration</h1>
 
             {error && (
                 <div className="flex items-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -108,6 +108,114 @@ export default function ZerodhaPage() {
                 <div className="flex items-center bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
                     <CheckCircleIcon className="h-6 w-6 mr-2 text-green-500" />
                     {success}
+                </div>
+            )}
+
+            {/* First Time Setup Guide - Collapsible */}
+            {!hasCredentials && !checkingCredentials && (
+                <div className="mb-6 rounded-xl border border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 overflow-hidden shadow-sm">
+                    <button
+                        onClick={() => setShowSetupGuide(!showSetupGuide)}
+                        className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-blue-100/30 dark:hover:bg-blue-800/20 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <InformationCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                            <div>
+                                <h3 className="font-bold text-gray-900 dark:text-white text-lg">First Time Setup Guide</h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Learn how to get your Zerodha Kite Connect API credentials</p>
+                            </div>
+                        </div>
+                        {showSetupGuide ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
+                    </button>
+
+                    {showSetupGuide && (
+                        <div className="px-5 pb-5 pt-2 border-t border-blue-100 dark:border-blue-800/50 bg-white/50 dark:bg-gray-900/30">
+                            <div className="space-y-4">
+                                {/* Step 1 */}
+                                <div className="flex gap-3">
+                                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center">1</div>
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-gray-900 dark:text-white">Create a Kite Connect App</h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            Go to the <a href="https://developers.kite.trade/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium underline inline-flex items-center">
+                                                Kite Connect Developer Portal <ArrowTopRightOnSquareIcon className="h-3 w-3 ml-0.5" />
+                                            </a> and sign in with your Zerodha account.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Step 2 */}
+                                <div className="flex gap-3">
+                                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center">2</div>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="font-semibold text-gray-900 dark:text-white">Create a New App</h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            Click on <strong>"Create new app"</strong>. Fill in the following mandatory fields:
+                                        </p>
+                                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-2">
+                                            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                                                <span className="font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">Type:</span>
+                                                <span className="flex flex-wrap items-center gap-1">
+                                                    <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded text-xs font-medium">Personal</span>
+                                                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded text-xs font-medium">Free</span>
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-500 pl-0 sm:pl-12 -mt-1">
+                                                ✓ Investing, trading, and reports APIs • ✗ No historical chart data • ✗ No live WebSockets
+                                            </p>
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                                <span className="font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">App Name:</span>
+                                                <span>Any name (e.g., <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-xs">CoinTrack</code>)</span>
+                                            </div>
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                                <span className="font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">Zerodha Client ID:</span>
+                                                <span>Your Zerodha ID (e.g., <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-xs">AB1234</code>)</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">Redirect URL:</span>
+                                                <code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-xs font-mono break-all">https://cointrack-15gt.onrender.com/api/kite/callback</code>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Step 3 */}
+                                <div className="flex gap-3">
+                                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center">3</div>
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-gray-900 dark:text-white">Copy Your Credentials</h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            Once your app is created, you'll see:
+                                        </p>
+                                        <ul className="mt-2 text-sm text-gray-600 dark:text-gray-400 list-disc list-inside space-y-1 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+                                            <li><strong>API Key:</strong> A public key for your app</li>
+                                            <li><strong>API Secret:</strong> Click "Show API secret" and copy it</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* Step 4 */}
+                                <div className="flex gap-3">
+                                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-green-600 text-white font-bold text-sm flex items-center justify-center">4</div>
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-gray-900 dark:text-white">Enter Credentials Below</h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            Paste your <strong>API Key</strong> and <strong>API Secret</strong> in the form below. Then click <strong>"Connect to Zerodha"</strong> to link your account.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Important Note */}
+                                <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
+                                    <ExclamationCircleIcon className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                                    <div className="text-sm">
+                                        <strong className="text-amber-800 dark:text-amber-300">Important:</strong>
+                                        <span className="text-amber-700 dark:text-amber-400"> Kite Connect API subscription costs ₹2000/month. Make sure you have an active subscription before proceeding.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

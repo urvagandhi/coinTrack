@@ -109,17 +109,17 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
     const Icon = theme.icon;
 
     return (
-        <div className={`relative pl-8 pb-8 group/item ${highlight ? 'z-10' : ''}`}>
-            {/* Connecting Line */}
+        <div className={`relative pl-6 md:pl-8 pb-6 md:pb-8 group/item ${highlight ? 'z-10' : ''}`}>
+            {/* Connecting Line - Hidden on mobile for cleaner look */}
             {!isLast && (
                 <div
-                    className="absolute left-[11px] top-8 bottom-0 w-[2px] bg-gray-200 dark:bg-gray-700 group-hover/item:bg-gray-300 dark:group-hover/item:bg-gray-600 transition-colors"
+                    className="hidden md:block absolute left-[11px] top-8 bottom-0 w-[2px] bg-gray-200 dark:bg-gray-700 group-hover/item:bg-gray-300 dark:group-hover/item:bg-gray-600 transition-colors"
                 ></div>
             )}
 
-            {/* Timeline Dot */}
-            <div className={`absolute left-0 top-1 h-6 w-6 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center bg-white z-10 shadow-sm ${theme.color}`}>
-                <div className={`h-2.5 w-2.5 rounded-full ${theme.bg.replace('/10', '')} ring-2 ring-current ring-opacity-20`}></div>
+            {/* Timeline Dot - Simplified on mobile */}
+            <div className={`absolute left-0 top-1 h-5 w-5 md:h-6 md:w-6 rounded-full border-2 md:border-4 border-white dark:border-gray-900 flex items-center justify-center bg-white z-10 shadow-sm ${theme.color}`}>
+                <div className={`h-2 w-2 md:h-2.5 md:w-2.5 rounded-full ${theme.bg.replace('/10', '')} ring-1 md:ring-2 ring-current ring-opacity-20`}></div>
             </div>
 
             {/* Card Content */}
@@ -138,7 +138,7 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                     </div>
                 )}
 
-                <div className={`relative ${variant === 'minimal' ? 'p-3' : 'p-4'}`}>
+                <div className={`relative ${variant === 'minimal' ? 'p-2.5 md:p-3' : 'p-3 md:p-4'}`}>
                     {/* Header: Type & Date */}
                     {variant !== 'minimal' && (
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
@@ -177,7 +177,7 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                     )}
 
                     {/* Data Grid */}
-                    <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                    <div className="grid grid-cols-2 gap-y-2 gap-x-3 md:gap-y-3 md:gap-x-4">
                         {event.amount && (
                             <div className="col-span-1">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Amount</p>
@@ -199,9 +199,9 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                             </div>
                         )}
                         {event.orderId && (
-                            <div className="col-span-1">
+                            <div className="col-span-2 md:col-span-1">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Order Ref</p>
-                                <p className="text-xs font-mono font-medium text-gray-500 dark:text-gray-400 pt-0.5">{event.orderId}</p>
+                                <p className="text-xs font-mono font-medium text-gray-500 dark:text-gray-400 pt-0.5 truncate">{event.orderId}</p>
                             </div>
                         )}
                         {/* Context Badge */}
@@ -396,22 +396,22 @@ function MfTimelineGroup({ fund, events, isExpanded, onToggle, highlightId }) {
             className={`bg-white dark:bg-gray-800 rounded-2xl border ${isExpanded ? 'border-gray-300 dark:border-gray-600 ring-1 ring-gray-200 dark:ring-gray-700' : 'border-gray-100 dark:border-gray-700'} overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300`}
         >
             <button
-                className={`w-full px-5 py-4 flex items-center justify-between transition-colors ${isExpanded ? 'bg-gray-50/50 dark:bg-gray-700/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}`}
+                className={`w-full px-4 py-3 md:px-5 md:py-4 flex items-center justify-between transition-colors ${isExpanded ? 'bg-gray-50/50 dark:bg-gray-700/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}`}
                 onClick={onToggle}
             >
-                <div className="flex items-center gap-4">
-                    <div className={`p-2.5 rounded-xl ${groupTheme.bg} border ${groupTheme.border} shadow-sm`}>
-                        <IndianRupee className={`h-5 w-5 ${groupTheme.color}`} />
+                <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                    <div className={`p-2 md:p-2.5 rounded-xl ${groupTheme.bg} border ${groupTheme.border} shadow-sm flex-shrink-0`}>
+                        <IndianRupee className={`h-4 w-4 md:h-5 md:w-5 ${groupTheme.color}`} />
                     </div>
-                    <div className="text-left">
-                        <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm md:text-base leading-tight">
+                    <div className="text-left min-w-0">
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm md:text-base leading-tight truncate">
                             {fund}
                         </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                        <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mt-1">
+                            <span className="text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
                                 {events.length} Events
                             </span>
-                            <span className="text-xs text-gray-400">
+                            <span className="text-[10px] md:text-xs text-gray-400 hidden sm:inline">
                                 {dateLabel}: {formatDate(lastEvent?.eventDate)}
                             </span>
                         </div>
@@ -439,39 +439,63 @@ function MfTimelineGroup({ fund, events, isExpanded, onToggle, highlightId }) {
                         }}
                         transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                     >
-                        <div className="px-5 pb-5 pt-2 bg-gray-50/30 dark:bg-black/20 border-t border-gray-100 dark:border-gray-700/50">
+                        <div className="px-3 pb-4 pt-2 md:px-5 md:pb-5 bg-gray-50/30 dark:bg-black/20 border-t border-gray-100 dark:border-gray-700/50">
                             {/* Scroll container if needed */}
-                            <div className="mt-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
-                                {groupedItems.map((group, idx) => {
-                                    const isLastGroup = idx === groupedItems.length - 1;
+                            <div className="mt-2 md:mt-4 max-h-[400px] md:max-h-[500px] overflow-y-auto pr-1 md:pr-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
 
-                                    // Single Item -> Normal Card
-                                    if (group.length === 1) {
-                                        const event = group[0];
+                                {/* MOBILE VIEW: Show all events as individual cards (no clustering) */}
+                                <div className="md:hidden space-y-3">
+                                    {sortedEvents.map((event, idx) => {
+                                        const isLastEvent = idx === sortedEvents.length - 1;
                                         const isHighlighted = highlightId && (
                                             (event.orderId === highlightId) ||
                                             (event.sipId === highlightId && ['SIP_CREATED', 'SIP_STATUS_ACTIVE'].includes(event.eventType))
                                         );
                                         return (
                                             <MfTimelineEventCard
-                                                key={event.eventId || `s-${idx}`}
+                                                key={event.eventId || `m-${idx}`}
                                                 event={event}
-                                                isLast={isLastGroup}
+                                                isLast={isLastEvent}
                                                 highlight={isHighlighted}
                                             />
                                         );
-                                    }
-                                    // Multiple Items -> Cluster Card
-                                    else {
-                                        return (
-                                            <MfTimelineClusterCard
-                                                key={`c-${idx}-${group[0].eventDate}`}
-                                                events={group}
-                                                highlightId={highlightId}
-                                            />
-                                        );
-                                    }
-                                })}
+                                    })}
+                                </div>
+
+                                {/* DESKTOP VIEW: Show grouped/clustered cards */}
+                                <div className="hidden md:block">
+                                    {groupedItems.map((group, idx) => {
+                                        const isLastGroup = idx === groupedItems.length - 1;
+
+                                        // Single Item -> Normal Card
+                                        if (group.length === 1) {
+                                            const event = group[0];
+                                            const isHighlighted = highlightId && (
+                                                (event.orderId === highlightId) ||
+                                                (event.sipId === highlightId && ['SIP_CREATED', 'SIP_STATUS_ACTIVE'].includes(event.eventType))
+                                            );
+                                            return (
+                                                <MfTimelineEventCard
+                                                    key={event.eventId || `s-${idx}`}
+                                                    event={event}
+                                                    isLast={isLastGroup}
+                                                    highlight={isHighlighted}
+                                                />
+                                            );
+                                        }
+                                        // Multiple Items -> Cluster Card
+                                        else {
+                                            return (
+                                                <MfTimelineClusterCard
+                                                    key={`c-${idx}-${group[0].eventDate}`}
+                                                    events={group}
+                                                    highlightId={highlightId}
+                                                />
+                                            );
+                                        }
+                                    })}
+                                </div>
+
                             </div>
                         </div>
                     </motion.div>
