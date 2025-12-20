@@ -246,6 +246,24 @@ public class EmailService {
     }
 
     /**
+     * Send contact form email to support.
+     */
+    @Async
+    public void sendContactFormEmail(String name, String email, String message) {
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("email", email);
+        context.setVariable("message", message);
+
+        // Send internally to support email
+        sendEmail(
+                emailConfig.getSupport(),
+                "New Contact Form Submission from " + name,
+                "email/contact-form",
+                context);
+    }
+
+    /**
      * Preview email template (for admin/dev use).
      * Returns rendered HTML without sending.
      */

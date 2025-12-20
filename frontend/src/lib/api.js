@@ -222,6 +222,9 @@ export const endpoints = {
         forgot: '/api/auth/forgot-password',
         forgotVerify: '/api/auth/forgot-password/verify',
         reset: '/api/auth/reset-password',
+    },
+    public: {
+        contact: '/api/public/contact',
     }
 };
 
@@ -473,6 +476,13 @@ export const passwordAPI = {
             { newPassword },
             { headers: { Authorization: `Bearer ${tempToken}` } }
         );
+        return unwrapResponse(data);
+    }
+};
+
+export const contactAPI = {
+    sendMessage: async (formData) => {
+        const { data } = await api.post(endpoints.public.contact, formData);
         return unwrapResponse(data);
     }
 };

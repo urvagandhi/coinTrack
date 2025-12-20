@@ -1,7 +1,8 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useModal } from '@/contexts/ModalContext';
+import { motion } from 'framer-motion';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Globe from 'lucide-react/dist/esm/icons/globe';
@@ -9,7 +10,6 @@ import Moon from 'lucide-react/dist/esm/icons/moon';
 import Shield from 'lucide-react/dist/esm/icons/shield';
 import Sun from 'lucide-react/dist/esm/icons/sun';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
-import X from 'lucide-react/dist/esm/icons/x';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
-  const [activeModal, setActiveModal] = useState(null);
+  const { openModal } = useModal();
   const [isDark, setIsDark] = useState(false);
 
   // Initialize theme
@@ -55,50 +55,7 @@ export default function HomePage() {
     document.cookie = `theme=${newTheme}; path=/; max-age=31536000`;
   };
 
-  const legalContent = {
-    privacy: {
-      title: "Privacy Policy",
-      content: (
-        <div className="space-y-4">
-          <p>At coinTrack, we prioritize the protection of your personal information. This Privacy Policy outlines how we collect, use, and safeguard your data.</p>
-          <h4 className="font-bold text-lg">1. Data Collection</h4>
-          <p>We collect information you provide directly to us, such as when you create an account, update your profile, or contact customer support.</p>
-          <h4 className="font-bold text-lg">2. Data Usage</h4>
-          <p>We use your information to provide, maintain, and improve our services, including processing transactions and sending related information.</p>
-          <h4 className="font-bold text-lg">3. Data Security</h4>
-          <p>We implement industry-standard security measures to protect your personal data from unauthorized access, modification, or disclosure.</p>
-        </div>
-      )
-    },
-    terms: {
-      title: "Terms of Service",
-      content: (
-        <div className="space-y-4">
-          <p>By accessing or using coinTrack, you agree to be bound by these Terms of Service.</p>
-          <h4 className="font-bold text-lg">1. Acceptance of Terms</h4>
-          <p>Please read these terms carefully before accessing or using our services. If you do not agree to all the terms and conditions, then you may not access the website.</p>
-          <h4 className="font-bold text-lg">2. User Account</h4>
-          <p>You are responsible for safeguarding the password that you use to access the service and for any activities or actions under your password.</p>
-          <h4 className="font-bold text-lg">3. Limitations</h4>
-          <p>In no event shall coinTrack be liable for any damages arising out of the use or inability to use the materials on coinTrack's website.</p>
-        </div>
-      )
-    },
-    cookies: {
-      title: "Cookie Policy",
-      content: (
-        <div className="space-y-4">
-          <p>We use cookies to enhance your experience on our website. This Cookie Policy explains what cookies are and how we use them.</p>
-          <h4 className="font-bold text-lg">1. What are Cookies?</h4>
-          <p>Cookies are small text files that are stored on your device when you visit a website. They help the website remember your actions and preferences.</p>
-          <h4 className="font-bold text-lg">2. How We Use Cookies</h4>
-          <p>We use cookies to analyze site traffic, personalize content, and provide social media features. We also share information about your use of our site with our analytics partners.</p>
-          <h4 className="font-bold text-lg">3. Managing Cookies</h4>
-          <p>You can control and/or delete cookies as you wish. You can delete all cookies that are already on your computer and you can set most browsers to prevent them from being placed.</p>
-        </div>
-      )
-    }
-  };
+
 
   const features = [
     {
@@ -532,16 +489,16 @@ export default function HomePage() {
                 <li><a href="#about" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">About Us</a></li>
                 <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Careers</a></li>
                 <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Contact</a></li>
+                <li><button onClick={() => openModal('contact')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Contact</button></li>
               </ul>
             </div>
 
             <div className="md:col-span-2">
               <h4 className="font-bold text-gray-900 dark:text-white mb-6">Legal</h4>
               <ul className="space-y-4 text-sm text-gray-500 dark:text-gray-400">
-                <li><button onClick={() => setActiveModal('privacy')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Privacy Policy</button></li>
-                <li><button onClick={() => setActiveModal('terms')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Terms of Service</button></li>
-                <li><button onClick={() => setActiveModal('cookies')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Cookie Policy</button></li>
+                <li><button onClick={() => openModal('privacy')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Privacy Policy</button></li>
+                <li><button onClick={() => openModal('terms')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Terms of Service</button></li>
+                <li><button onClick={() => openModal('cookies')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Cookie Policy</button></li>
               </ul>
             </div>
           </div>
@@ -555,60 +512,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-
-      {/* Legal Modal */}
-      <AnimatePresence>
-        {activeModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center px-4"
-          >
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setActiveModal(null)}
-            />
-
-            {/* Modal Content */}
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-2xl bg-white/80 dark:bg-gray-900/90 backdrop-blur-2xl border border-white/20 dark:border-gray-700 rounded-3xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {legalContent[activeModal].title}
-                </h3>
-                <button
-                  onClick={() => setActiveModal(null)}
-                  className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Body */}
-              <div className="p-8 overflow-y-auto text-gray-600 dark:text-gray-300 leading-relaxed">
-                {legalContent[activeModal].content}
-              </div>
-
-              {/* Footer */}
-              <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-black/20 text-center">
-                <button
-                  onClick={() => setActiveModal(null)}
-                  className="px-8 py-3 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors shadow-lg hover:shadow-purple-500/25"
-                >
-                  Understood
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

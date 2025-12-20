@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { Briefcase, FileText, Home, Link as LinkIcon, LogOut, StickyNote, UserCog, X } from 'lucide-react';
+import { Briefcase, Calculator, FileText, Home, Link as LinkIcon, LogOut, StickyNote, UserCog, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

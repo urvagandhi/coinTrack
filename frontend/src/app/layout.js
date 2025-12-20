@@ -1,5 +1,7 @@
+import ModalManager from "@/components/modals/ModalManager";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ModalProvider } from "@/contexts/ModalContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import QueryProvider from "@/providers/QueryProvider";
 import { Analytics } from "@vercel/analytics/next";
@@ -34,8 +36,11 @@ export default function RootLayout({ children }) {
         <QueryProvider>
           <AuthProvider>
             <ThemeProvider>
-              {children}
-              <Toaster />
+              <ModalProvider>
+                {children}
+                <ModalManager />
+                <Toaster />
+              </ModalProvider>
             </ThemeProvider>
           </AuthProvider>
         </QueryProvider>

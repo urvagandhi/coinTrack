@@ -1,5 +1,6 @@
 'use client';
 
+import { useModal } from '@/contexts/ModalContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Calculator, ChevronLeft, Moon, Sun } from 'lucide-react';
 import Image from 'next/image';
@@ -12,6 +13,7 @@ import { usePathname } from 'next/navigation';
 export default function CalculatorsLayout({ children }) {
 
     const themeContext = useTheme();
+    const { openModal } = useModal();
     const theme = themeContext?.theme || 'light';
     const toggleTheme = themeContext?.toggleTheme || (() => { });
     const pathname = usePathname();
@@ -127,16 +129,17 @@ export default function CalculatorsLayout({ children }) {
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Company</h3>
                             <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
                                 <li><Link href="/" className="hover:text-purple-600 dark:hover:text-purple-400">Home</Link></li>
-                                <li><Link href="/about" className="hover:text-purple-600 dark:hover:text-purple-400">About Us</Link></li>
-                                <li><Link href="/contact" className="hover:text-purple-600 dark:hover:text-purple-400">Contact</Link></li>
+                                <li><Link href="/#about" className="hover:text-purple-600 dark:hover:text-purple-400">About Us</Link></li>
+                                <li><button onClick={() => openModal('contact')} className="hover:text-purple-600 dark:hover:text-purple-400 text-left">Contact</button></li>
                             </ul>
                         </div>
 
                         <div>
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Legal</h3>
                             <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-                                <li><Link href="/privacy" className="hover:text-purple-600 dark:hover:text-purple-400">Privacy Policy</Link></li>
-                                <li><Link href="/terms" className="hover:text-purple-600 dark:hover:text-purple-400">Terms of Service</Link></li>
+                                <li><button onClick={() => openModal('privacy')} className="hover:text-purple-600 dark:hover:text-purple-400 text-left">Privacy Policy</button></li>
+                                <li><button onClick={() => openModal('terms')} className="hover:text-purple-600 dark:hover:text-purple-400 text-left">Terms of Service</button></li>
+                                <li><button onClick={() => openModal('cookies')} className="hover:text-purple-600 dark:hover:text-purple-400 text-left">Cookie Policy</button></li>
                             </ul>
                         </div>
                     </div>
