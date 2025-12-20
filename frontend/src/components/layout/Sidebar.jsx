@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { Briefcase, Calculator, FileText, Home, Link as LinkIcon, LogOut, StickyNote, UserCog, X } from 'lucide-react';
+import { Briefcase, Calculator, Home, Link as LinkIcon, LogOut, StickyNote, UserCog, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -75,7 +75,7 @@ export default function Sidebar({ isMobileOpen, onClose }) {
 		{ icon: Calculator, label: 'Calculators', href: '/calculators' },
 		{ icon: LinkIcon, label: 'Broker Integration', href: '/brokers' },
 		{ icon: StickyNote, label: 'Notes', href: '/notes' },
-		{ icon: FileText, label: 'Form', href: '/form' },
+
 	];
 
 	const bottomItems = [

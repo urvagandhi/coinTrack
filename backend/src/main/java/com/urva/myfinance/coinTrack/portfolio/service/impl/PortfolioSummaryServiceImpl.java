@@ -622,7 +622,9 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                     com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO profile = zerodhaBrokerService
                             .fetchProfile(account);
                     if (profile != null) {
-                        profile.setLastSynced(java.time.LocalDateTime.now());
+                        profile.setLastSynced(java.time.LocalDateTime.now().toString());
+                        System.out.println("DEBUG: Profile fetched for user " + userId + ", lastSynced set to: "
+                                + profile.getLastSynced());
                     }
                     return profile;
                 } catch (Exception e) {

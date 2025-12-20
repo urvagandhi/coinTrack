@@ -115,7 +115,7 @@ public class SecurityConfig {
 
                                                 // Publicly allow root, static and favicon to avoid 403 on deployed root
                                                 .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**",
-                                                                "/public/**")
+                                                                "/public/**", "/api/public/**")
                                                 .permitAll()
 
                                                 // 🔓 Zerodha Redirect Bridge (for localhost dev)

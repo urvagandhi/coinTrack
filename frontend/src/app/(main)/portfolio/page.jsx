@@ -2,6 +2,7 @@
 
 import { portfolioAPI } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useState } from 'react';
 
 // Icons
@@ -300,7 +301,22 @@ export default function PortfolioPage() {
                                     {isLoadingProfile ? (
                                         <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
                                     ) : !profile ? (
-                                        <div className="text-center py-12 text-gray-500">No profile data available. Connect a broker.</div>
+                                        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                                            <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full">
+                                                <Briefcase className="w-8 h-8 text-gray-400" />
+                                            </div>
+                                            <div className="text-center">
+                                                <h3 className="text-lg font-medium text-gray-900 dark:text-white">No Profile Detected</h3>
+                                                <p className="text-gray-500 max-w-sm mt-1">Connect your brokerage account to view your portfolio profile and stats.</p>
+                                            </div>
+                                            <Link
+                                                href="/brokers"
+                                                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                                            >
+                                                Connect Broker
+                                                <ArrowUpRight className="w-4 h-4" />
+                                            </Link>
+                                        </div>
                                     ) : (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-4">
@@ -446,7 +462,19 @@ export default function PortfolioPage() {
                                                     {isLoadingHoldings ? (
                                                         <tr><td colSpan="8" className="text-center py-8"><div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div></td></tr>
                                                     ) : sortedHoldings.length === 0 ? (
-                                                        <tr><td colSpan="8" className="text-center py-8 text-gray-500">No holdings found.</td></tr>
+                                                        <tr>
+                                                            <td colSpan="8" className="text-center py-12">
+                                                                <div className="flex flex-col items-center justify-center space-y-3">
+                                                                    <p className="text-gray-500">No holdings found.</p>
+                                                                    <Link
+                                                                        href="/brokers"
+                                                                        className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+                                                                    >
+                                                                        Connect Broker <ArrowUpRight className="w-3 h-3" />
+                                                                    </Link>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
                                                     ) : (
                                                         paginatedHoldings.map((item, idx) => {
                                                             const pnl = item.unrealizedPL;
