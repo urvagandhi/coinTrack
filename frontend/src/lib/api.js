@@ -2,19 +2,19 @@ import axios from 'axios';
 import { logger } from './logger';
 
 // Base URLs from environment variables
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE || (typeof window === 'undefined' ? 'http://localhost:8080' : '');
 
 // Create axios instance
 // Create axios instance
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 30000,
+    timeout: 60000, // Increased for cold starts
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
-    // Explicitly disable retries (handle in React Query)
-    retry: false,
+    // Enable 1 retry by default to handle cold starts
+    retry: 1,
     transitional: { silentJSONParsing: true }
 });
 
@@ -93,7 +93,23 @@ api.interceptors.response.use(
         }
         return response;
     },
-    (error) => {
+    async (error) => {
+        const config = error.config;
+
+        // Auto-retry Logic for Cold Starts/Network Glitches
+        if (config && config.retry && !config.__isRetry) {
+            const isNetworkError = !error.response;
+            const isServerGlitch = error.response && error.response.status >= 500;
+            const isTimeout = error.code === 'ECONNABORTED';
+
+            if (isNetworkError || isServerGlitch || isTimeout) {
+                config.__isRetry = true;
+                // Wait 1 second before retrying
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return api(config);
+            }
+        }
+
         const errorDetails = {
             status: error.response ? error.response.status : 'Network/CORS',
             url: error.config ? error.config.url : 'Unknown',

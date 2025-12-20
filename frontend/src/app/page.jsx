@@ -189,6 +189,12 @@ export default function HomePage() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-1 p-1 rounded-full bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md">
+            <Link
+              href="/calculators"
+              className="px-5 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full transition-all duration-300 flex items-center gap-1"
+            >
+              Calculators
+            </Link>
             {['Features', 'Pricing', 'About'].map((item) => (
               <a
                 key={item}
@@ -513,10 +519,10 @@ export default function HomePage() {
             <div className="md:col-span-2 md:col-start-7">
               <h4 className="font-bold text-gray-900 dark:text-white mb-6">Product</h4>
               <ul className="space-y-4 text-sm text-gray-500 dark:text-gray-400">
+                <li><Link href="/calculators" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Calculators</Link></li>
                 <li><a href="#features" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Features</a></li>
                 <li><a href="#pricing" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Pricing</a></li>
                 <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Integrations</a></li>
-                <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Changelog</a></li>
               </ul>
             </div>
 

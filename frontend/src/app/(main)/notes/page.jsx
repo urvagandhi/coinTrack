@@ -52,7 +52,14 @@ const NoteCard = ({ note, onDelete, onEdit }) => (
             </div>
             <div className="flex items-center text-xs text-gray-400 gap-1.5">
                 <Clock className="w-3 h-3" />
-                {note.updatedAt ? formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true }) : 'Just now'}
+                {note.updatedAt ? (() => {
+                    const updatedDate = new Date(note.updatedAt);
+                    const now = new Date();
+                    const diffMs = now.getTime() - updatedDate.getTime();
+                    // If within 1 minute, show "Just now"
+                    if (diffMs < 60000) return 'Just now';
+                    return formatDistanceToNow(updatedDate, { addSuffix: true });
+                })() : 'Just now'}
             </div>
         </div>
     </motion.div>

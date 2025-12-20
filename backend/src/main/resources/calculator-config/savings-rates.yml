@@ -1,0 +1,130 @@
+# Savings Scheme Interest Rates Configuration
+# Last updated: Q3 FY 2024-25
+# These rates are updated quarterly by the government
+
+lastUpdated: "2024-10-01"
+quarter: "Q3 FY2024-25"
+
+schemes:
+  PPF:
+    name: "Public Provident Fund"
+    rate: 7.1
+    compounding: YEARLY
+    lockIn: 15
+    minDeposit: 500
+    maxDeposit: 150000
+    taxBenefit: true
+
+  EPF:
+    name: "Employee Provident Fund"
+    rate: 8.25
+    compounding: YEARLY
+    lockIn: null  # Till retirement
+    employeeContribution: 12
+    employerContribution: 12
+    taxBenefit: true
+
+  SSY:
+    name: "Sukanya Samriddhi Yojana"
+    rate: 8.2
+    compounding: YEARLY
+    lockIn: 21
+    minDeposit: 250
+    maxDeposit: 150000
+    eligibility: "Girl child under 10 years"
+    taxBenefit: true
+
+  NSC:
+    name: "National Savings Certificate"
+    rate: 7.7
+    compounding: YEARLY
+    lockIn: 5
+    minDeposit: 1000
+    maxDeposit: null  # No limit
+    taxBenefit: true
+
+  SCSS:
+    name: "Senior Citizens Savings Scheme"
+    rate: 8.2
+    compounding: QUARTERLY
+    lockIn: 5
+    minDeposit: 1000
+    maxDeposit: 3000000
+    eligibility: "Age 60+ years"
+    taxBenefit: true
+
+  POST_OFFICE_MIS:
+    name: "Post Office Monthly Income Scheme"
+    rate: 7.4
+    compounding: MONTHLY
+    lockIn: 5
+    minDeposit: 1000
+    maxDeposit: 900000
+    jointMaxDeposit: 1500000
+    payoutFrequency: MONTHLY
+    taxBenefit: false
+
+  KVP:
+    name: "Kisan Vikas Patra"
+    rate: 7.5
+    compounding: YEARLY
+    lockIn: 2.5
+    maturityPeriod: 115  # months (approx 9 years 7 months to double)
+    minDeposit: 1000
+    taxBenefit: false
+
+  NPS:
+    name: "National Pension System"
+    equityReturn: 10       # Assumed return for equity portion
+    debtReturn: 8          # Assumed return for debt portion
+    governmentSecReturn: 7
+    annuityRate: 6
+    minAnnuityPercent: 40
+    taxBenefitLimit: 200000  # 80CCD(1B) additional
+    lockIn: null  # Till 60 years
+
+  APY:
+    name: "Atal Pension Yojana"
+    pensionOptions:
+      - pension: 1000
+        eligibility: "18-40 years"
+      - pension: 2000
+        eligibility: "18-40 years"
+      - pension: 3000
+        eligibility: "18-40 years"
+      - pension: 4000
+        eligibility: "18-40 years"
+      - pension: 5000
+        eligibility: "18-40 years"
+    vestingAge: 60
+
+# Default FD rates (bank-specific rates may vary)
+fdRates:
+  publicSector:
+    - tenure: 7     # days
+      maxTenure: 14
+      rate: 3.0
+    - tenure: 15
+      maxTenure: 45
+      rate: 3.5
+    - tenure: 46
+      maxTenure: 90
+      rate: 4.5
+    - tenure: 91
+      maxTenure: 180
+      rate: 5.5
+    - tenure: 181
+      maxTenure: 365
+      rate: 6.0
+    - tenure: 366
+      maxTenure: 730
+      rate: 6.5
+    - tenure: 731
+      maxTenure: 1825
+      rate: 6.25
+
+# Default RD rates
+rdRates:
+  defaultRate: 6.5
+  seniorCitizenBonus: 0.5
+  compounding: QUARTERLY

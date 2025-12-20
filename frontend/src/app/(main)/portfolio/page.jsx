@@ -267,6 +267,7 @@ export default function PortfolioPage() {
                         {/* Tabs */}
                         <div className="flex border-b border-gray-100 dark:border-gray-700 overflow-x-auto scrollbar-hide">
                             {[
+                                { id: 'profile', label: 'Profile' },
                                 { id: 'holdings', label: 'Holdings' },
                                 { id: 'positions', label: 'Positions' },
                                 { id: 'orders', label: 'Orders' },
@@ -275,8 +276,7 @@ export default function PortfolioPage() {
                                 { id: 'mf_orders', label: 'MF Orders' },
                                 { id: 'mf_sips', label: 'MF SIPs' },
                                 { id: 'timeline', label: 'Fund History' },
-                                { id: 'mf_instruments', label: 'MF Instruments' },
-                                { id: 'profile', label: 'Profile' }
+                                { id: 'mf_instruments', label: 'MF Instruments' }
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
@@ -293,7 +293,95 @@ export default function PortfolioPage() {
 
                         {/* Tab Content */}
                         <div className="p-6">
-                            {/* HOLDINGS TAB */}
+
+                            {/* PROFILE TAB */}
+                            {activeTab === 'profile' && (
+                                <div className="space-y-6">
+                                    {isLoadingProfile ? (
+                                        <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
+                                    ) : !profile ? (
+                                        <div className="text-center py-12 text-gray-500">No profile data available. Connect a broker.</div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-4">
+                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Account Details</h3>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Name</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.user_name}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Short Name</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.user_shortname}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Email</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.email}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Broker</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.broker}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">User ID</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">{profile.user_id}</span>
+                                                </div>
+                                            </div>
+                                            <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-4">
+                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Broker Status</h3>
+                                                {(() => {
+                                                    // Check if session is still valid (Zerodha resets at 6 AM daily)
+                                                    const isSessionValid = () => {
+                                                        if (!profile.last_synced) return false;
+
+                                                        const lastSyncDate = new Date(profile.last_synced);
+                                                        const now = new Date();
+
+                                                        // Get today's 6 AM cutoff
+                                                        const todayCutoff = new Date(now);
+                                                        todayCutoff.setHours(6, 0, 0, 0);
+
+                                                        // If current time is before 6 AM, use yesterday's 6 AM as cutoff
+                                                        if (now.getHours() < 6) {
+                                                            todayCutoff.setDate(todayCutoff.getDate() - 1);
+                                                        }
+
+                                                        return lastSyncDate >= todayCutoff;
+                                                    };
+
+                                                    const sessionValid = isSessionValid();
+
+                                                    return (
+                                                        <>
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-sm text-gray-500 dark:text-gray-400">Connection Status</span>
+                                                                {sessionValid ? (
+                                                                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded-full font-medium">Connected</span>
+                                                                ) : profile.last_synced ? (
+                                                                    <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs rounded-full font-medium">Session Expired</span>
+                                                                ) : (
+                                                                    <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full font-medium">Disconnected</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-sm text-gray-500 dark:text-gray-400">Last Synced</span>
+                                                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                    {profile.last_synced ? formatRelativeTime(profile.last_synced) : 'Never'}
+                                                                </span>
+                                                            </div>
+                                                            {!sessionValid && profile.last_synced && (
+                                                                <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-700 dark:text-amber-300">
+                                                                    ⚠️ Zerodha sessions expire daily at 6 AM. Please reconnect your broker.
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* HOLDINGS TAB */}
                             {activeTab === 'holdings' && (() => {
                                 // Process Data
@@ -485,7 +573,6 @@ export default function PortfolioPage() {
                                 );
                             })()}
 
-                            {/* POSITIONS TAB */}
                             {/* POSITIONS TAB */}
                             {activeTab === 'positions' && (
                                 <div>
@@ -1144,60 +1231,9 @@ export default function PortfolioPage() {
                             {activeTab === 'mf_instruments' && (
                                 <MfInstrumentList instruments={mfInstruments} isLoading={isLoadingMfInstruments} />
                             )}
-
-                            {/* PROFILE TAB */}
-                            {activeTab === 'profile' && (
-                                <div className="space-y-6">
-                                    {isLoadingProfile ? (
-                                        <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div></div>
-                                    ) : !profile ? (
-                                        <div className="text-center py-12 text-gray-500">No profile data available. Connect a broker.</div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-4">
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Account Details</h3>
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Name</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.user_name}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Short Name</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.user_shortname}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Email</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.email}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Broker</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.broker}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-500 dark:text-gray-400">User ID</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">{profile.user_id}</span>
-                                                </div>
-                                            </div>
-                                            <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-xl space-y-4">
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Broker Status</h3>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Connection Status</span>
-                                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Connected</span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-gray-500 dark:text-gray-400">Last Synced</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{formatRelativeTime(profile.last_synced)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
-
-
-
             </div>
         </div >
     );

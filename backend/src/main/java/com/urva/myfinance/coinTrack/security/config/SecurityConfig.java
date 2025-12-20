@@ -121,6 +121,9 @@ public class SecurityConfig {
                                                 // 🔓 Zerodha Redirect Bridge (for localhost dev)
                                                 .requestMatchers("/zerodha/callback").permitAll()
 
+                                                // 🔓 Calculator endpoints (public with rate limiting)
+                                                .requestMatchers("/api/calculators/**").permitAll()
+
                                                 // 🔒 Everything else requires authentication
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form.disable())

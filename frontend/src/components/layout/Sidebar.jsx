@@ -5,7 +5,7 @@ import { Briefcase, FileText, Home, Link as LinkIcon, LogOut, StickyNote, UserCo
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const SidebarItem = ({ icon: Icon, label, href, isActive, isDanger = false, isExpanded, onClick }) => {
 	return (
@@ -72,6 +72,7 @@ export default function Sidebar({ isMobileOpen, onClose }) {
 	const navItems = [
 		{ icon: Home, label: 'Home', href: '/dashboard' },
 		{ icon: Briefcase, label: 'Portfolio', href: '/portfolio' },
+		{ icon: Calculator, label: 'Calculators', href: '/calculators' },
 		{ icon: LinkIcon, label: 'Broker Integration', href: '/brokers' },
 		{ icon: StickyNote, label: 'Notes', href: '/notes' },
 		{ icon: FileText, label: 'Form', href: '/form' },

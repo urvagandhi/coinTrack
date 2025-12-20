@@ -4,7 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { brokerAPI, BROKERS } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
-import { CheckCircleIcon, ExclamationCircleIcon, LinkIcon } from '@heroicons/react/24/solid';
+import { ArrowTopRightOnSquareIcon, CheckCircleIcon, ExclamationCircleIcon, InformationCircleIcon, LinkIcon } from '@heroicons/react/24/solid';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function ZerodhaPage() {
     const { user } = useAuth();

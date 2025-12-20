@@ -220,7 +220,7 @@ export default function NoteDialog({ isOpen, onClose, onSave, initialData }) {
                                                 exit={{ opacity: 0, height: 0 }}
                                                 className="overflow-hidden"
                                             >
-                                                <div className="grid grid-cols-5 gap-2 p-3 bg-white/70 dark:bg-black/30 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
+                                                <div className="grid grid-cols-5 gap-3 p-4 bg-white/70 dark:bg-black/30 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
                                                     {COLORS.map((c) => (
                                                         <button
                                                             key={c.name}
@@ -230,17 +230,17 @@ export default function NoteDialog({ isOpen, onClose, onSave, initialData }) {
                                                                 setShowColorPicker(false);
                                                             }}
                                                             className={`
-                                                                relative aspect-square rounded-xl border-2 transition-all
+                                                                relative w-full min-h-[48px] md:min-h-[56px] rounded-xl border-2 transition-all shadow-sm
                                                                 ${c.bg}
                                                                 ${selectedColor.name === c.name
-                                                                    ? `${c.ring} ring-2 ring-offset-2 scale-95`
-                                                                    : 'border-transparent hover:scale-105'
+                                                                    ? `${c.ring} ring-2 ring-offset-2 scale-95 shadow-md`
+                                                                    : 'border-gray-200 dark:border-gray-600 hover:scale-105 hover:shadow-md'
                                                                 }
                                                             `}
                                                         >
                                                             {selectedColor.name === c.name && (
                                                                 <div className="absolute inset-0 flex items-center justify-center">
-                                                                    <Check className={`w-5 h-5 ${c.accent ? 'text-gray-700' : 'text-gray-500'}`} />
+                                                                    <Check className={`w-6 h-6 ${c.accent ? 'text-gray-700' : 'text-gray-500'}`} />
                                                                 </div>
                                                             )}
                                                         </button>

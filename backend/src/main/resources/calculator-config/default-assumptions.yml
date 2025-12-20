@@ -1,0 +1,106 @@
+# Default Assumptions Configuration
+# These are fallback values used when user doesn't provide specific inputs
+
+lastUpdated: "2024-10-01"
+
+# Retirement Planning
+retirement:
+  defaultLifeExpectancy: 85
+  defaultRetirementAge: 60
+  defaultInflation: 6.0
+  defaultPreRetirementReturn: 12.0
+  defaultPostRetirementReturn: 8.0
+  longevityBuffer: 10  # Extra % added for safety
+
+# Investment Defaults
+investment:
+  defaultExpectedReturn: 12.0
+  conservativeReturn: 8.0
+  moderateReturn: 12.0
+  aggressiveReturn: 15.0
+  inflationRate: 6.0
+
+# Loan Defaults
+loan:
+  defaultHomeLoanTenure: 20    # years
+  defaultCarLoanTenure: 7
+  defaultPersonalLoanTenure: 5
+  defaultHomeLoanRate: 8.5
+  defaultCarLoanRate: 9.0
+  defaultPersonalLoanRate: 12.0
+
+# Brokerage Charges (as of 2024)
+brokerage:
+  zerodha:
+    equityDelivery: 0           # Free
+    equityIntraday: 0.03        # 0.03% or Rs 20 per order
+    intradayMaxPerOrder: 20
+    futuresAndOptions: 20       # Flat Rs 20 per order
+    currency: 20
+    commodity: 20
+
+  charges:
+    stt:
+      delivery: 0.1             # 0.1% on buy and sell
+      intraday: 0.025           # 0.025% on sell side
+      futuresSell: 0.0125
+      optionsSell: 0.0625
+    transactionCharges:
+      nse: 0.00297              # NSE
+      bse: 0.00375              # BSE
+    gst: 18                     # 18% on brokerage + transaction charges
+    sebiCharges: 0.0001         # Rs 10 per crore
+    stampDuty:
+      delivery: 0.015           # 0.015% on buy side
+      intraday: 0.003
+      futures: 0.002
+      options: 0.003
+
+# Margin Calculation
+margin:
+  defaultLeverage:
+    equityDelivery: 1
+    equityIntraday: 5
+    futures: 5
+    options: 2
+
+  varMargin: 12.5               # Typical VAR margin %
+  elmMargin: 5.0                # Extreme Loss Margin %
+  additionalMargin: 0           # Exchange-specific
+
+# GST Rates
+gst:
+  rates:
+    - rate: 0
+      description: "Essential goods"
+    - rate: 5
+      description: "Basic necessities"
+    - rate: 12
+      description: "Standard goods"
+    - rate: 18
+      description: "Most services and goods"
+    - rate: 28
+      description: "Luxury goods"
+  defaultRate: 18
+
+# TDS Rates
+tds:
+  salary: 0                     # As per slab
+  interestOnSecurities: 10
+  dividends: 10
+  interestOther: 10
+  professionalFees: 10
+  commission: 5
+  rent:
+    land: 10
+    equipment: 2
+  contractorIndividual: 1
+  contractorOther: 2
+
+# Calculator Limits
+limits:
+  maxInvestmentAmount: 1000000000    # 100 crore
+  maxYears: 50
+  maxMonthlyInvestment: 10000000     # 1 crore
+  minInvestment: 100
+  maxRateOfReturn: 50

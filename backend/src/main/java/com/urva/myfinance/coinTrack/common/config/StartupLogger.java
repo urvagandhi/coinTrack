@@ -33,53 +33,70 @@ public class StartupLogger {
     @Value("${spring.data.mongodb.database:Finance}")
     private String dbName;
 
+    @Value("${RENDER_EXTERNAL_URL:}")
+    private String renderExternalUrl;
+
+    @Value("${RENDER:false}")
+    private boolean isRender;
+
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
         printStartupBanner();
     }
 
     private void printStartupBanner() {
-        String line = "=".repeat(60);
-        String thinLine = "-".repeat(60);
+        String line = "=".repeat(64);
+        String thinLine = "-".repeat(64);
+
+        // Detect environment
+        boolean isProduction = isRender || (renderExternalUrl != null && !renderExternalUrl.isBlank());
+        String envType = isProduction ? "PRODUCTION (Render)" : "LOCAL";
+        String serverUrl = isProduction && renderExternalUrl != null && !renderExternalUrl.isBlank()
+                ? renderExternalUrl
+                : "http://localhost:" + serverPort;
 
         StringBuilder banner = new StringBuilder();
         banner.append("\n");
         banner.append("+").append(line).append("+\n");
-        banner.append("|").append(center(">>> " + appName.toUpperCase() + " SERVER STARTED <<<", 60)).append("|\n");
+        banner.append("|").append(center(">>> " + appName.toUpperCase() + " SERVER STARTED <<<", 64)).append("|\n");
         banner.append("+").append(line).append("+\n");
 
-        // Server Info
-        banner.append("|").append(center("", 60)).append("|\n");
-        banner.append("|  ").append(padRight("[SERVER]", 18)).append(padRight("Running on port " + serverPort, 38))
+        // Environment Info
+        banner.append("|").append(center("", 64)).append("|\n");
+        String envColor = isProduction ? "[PROD]" : "[DEV]";
+        banner.append("|  ").append(padRight("[ENVIRONMENT]", 18)).append(padRight(envColor + " " + envType, 42))
                 .append("  |\n");
-        banner.append("|  ").append(padRight("[URL]", 18)).append(padRight("http://localhost:" + serverPort, 38))
+        banner.append("|  ").append(padRight("[SERVER]", 18)).append(padRight("Running on port " + serverPort, 42))
+                .append("  |\n");
+        banner.append("|  ").append(padRight("[URL]", 18)).append(padRight(serverUrl, 42))
                 .append("  |\n");
 
         // Database Info
         banner.append("|").append(thinLine).append("|\n");
         String dbStatus = checkDatabaseConnection();
-        banner.append("|  ").append(padRight("[DATABASE]", 18)).append(padRight(dbStatus, 38)).append("  |\n");
-        banner.append("|  ").append(padRight("[DB NAME]", 18)).append(padRight(dbName, 38)).append("  |\n");
+        banner.append("|  ").append(padRight("[DATABASE]", 18)).append(padRight(dbStatus, 42)).append("  |\n");
+        banner.append("|  ").append(padRight("[DB NAME]", 18)).append(padRight(dbName, 42)).append("  |\n");
 
         // Health Check
         banner.append("|").append(thinLine).append("|\n");
-        banner.append("|  ").append(padRight("[HEALTH]", 18)).append(padRight("GET /api/health", 38)).append("  |\n");
-        banner.append("|  ").append(padRight("[ACTUATOR]", 18)).append(padRight("GET /actuator", 38)).append("  |\n");
+        banner.append("|  ").append(padRight("[HEALTH]", 18)).append(padRight("GET /api/health", 42)).append("  |\n");
+        banner.append("|  ").append(padRight("[ACTUATOR]", 18)).append(padRight("GET /actuator", 42)).append("  |\n");
 
         // Profile Info
         String[] activeProfiles = environment.getActiveProfiles();
         String profileStr = activeProfiles.length > 0 ? String.join(", ", activeProfiles) : "default";
         banner.append("|").append(thinLine).append("|\n");
-        banner.append("|  ").append(padRight("[PROFILE]", 18)).append(padRight(profileStr, 38)).append("  |\n");
+        banner.append("|  ").append(padRight("[PROFILE]", 18)).append(padRight(profileStr, 42)).append("  |\n");
 
         // Email Service Status
         boolean emailConfigured = isEmailConfigured();
         String emailStatus = emailConfigured ? "[OK] Configured" : "[!] Not Configured";
-        banner.append("|  ").append(padRight("[EMAIL]", 18)).append(padRight(emailStatus, 38)).append("  |\n");
+        banner.append("|  ").append(padRight("[EMAIL]", 18)).append(padRight(emailStatus, 42)).append("  |\n");
 
-        banner.append("|").append(center("", 60)).append("|\n");
+        banner.append("|").append(center("", 64)).append("|\n");
         banner.append("+").append(line).append("+\n");
-        banner.append("|").append(center("Ready to accept connections!", 60)).append("|\n");
+        String readyMsg = isProduction ? "Production server ready!" : "Development server ready!";
+        banner.append("|").append(center(readyMsg, 64)).append("|\n");
         banner.append("+").append(line).append("+\n");
 
         log.info(banner.toString());

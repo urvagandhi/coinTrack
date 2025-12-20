@@ -1,0 +1,78 @@
+# Income Tax Slabs for India FY 2024-25 (AY 2025-26)
+# Reference: Union Budget 2024 (as of July 2024 updates)
+
+assessmentYear: "2025-26"
+financialYear: "2024-25"
+
+regimes:
+  NEW:
+    slabs:
+      - limit: 300000
+        rate: 0
+      - limit: 700000
+        rate: 5
+      - limit: 1000000
+        rate: 10
+      - limit: 1200000
+        rate: 15
+      - limit: 1500000
+        rate: 20
+      - limit: null # Above 15L
+        rate: 30
+    standardDeduction: 75000
+    rebateLimit: 700000
+    standardRebate: 25000
+
+  OLD:
+    individual:
+      slabs:
+        - limit: 250000
+          rate: 0
+        - limit: 500000
+          rate: 5
+        - limit: 1000000
+          rate: 20
+        - limit: null # Above 10L
+          rate: 30
+    senior_citizen: # 60-80 years
+      slabs:
+        - limit: 300000
+          rate: 0
+        - limit: 500000
+          rate: 5
+        - limit: 1000000
+          rate: 20
+        - limit: null
+          rate: 30
+    super_senior_citizen: # 80+ years
+      slabs:
+        - limit: 500000
+          rate: 0
+        - limit: 1000000
+          rate: 20
+        - limit: null
+          rate: 30
+    standardDeduction: 50000
+    rebateLimit: 500000
+    standardRebate: 12500
+
+# Other taxes
+surcharge:
+  - limit: 5000000
+    rate: 0
+  - limit: 10000000
+    rate: 10
+  - limit: 20000000
+    rate: 15
+  - limit: null # Above 2cr
+    rate: 25 # Reduced from 37% in New Regime
+
+cess: 4 # Health & Education Cess (4% on tax + surcharge)
+
+# HRA Exemption Rules
+hra:
+  rule1: "Actual HRA received"
+  rule2_metro: 50 # 50% of Basic Pay
+  rule3_non_metro: 40 # 40% of Basic Pay
+  rule4: "Rent paid minus 10% of Basic Pay"
+  metroCities: ["Mumbai", "Delhi", "Kolkata", "Chennai"]
