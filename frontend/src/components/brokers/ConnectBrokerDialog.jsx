@@ -2,9 +2,12 @@
 import X from 'lucide-react/dist/esm/icons/x';
 import { useState } from 'react';
 
+import { CircleHelp } from 'lucide-react';
+
 export default function ConnectBrokerDialog({ isOpen, onClose, onSubmit, isConnecting }) {
     const [apiKey, setApiKey] = useState('');
     const [apiSecret, setApiSecret] = useState('');
+    const [showTooltip, setShowTooltip] = useState(false);
 
     if (!isOpen) return null;
 
@@ -23,10 +26,59 @@ export default function ConnectBrokerDialog({ isOpen, onClose, onSubmit, isConne
                     <X className="w-5 h-5" />
                 </button>
 
-                <div className="mb-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Connect Zerodha</h2>
+                <div className="mb-6 relative">
+                    <div className="flex items-center gap-2 mb-2">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Connect Zerodha</h2>
+                        <div
+                            className="relative"
+                            onMouseEnter={() => setShowTooltip(true)}
+                            onMouseLeave={() => setShowTooltip(false)}
+                            onClick={() => setShowTooltip(!showTooltip)}
+                        >
+                            <CircleHelp className="w-5 h-5 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors" />
+
+                            {/* Tooltip */}
+                            {showTooltip && (
+                                <div className="absolute left-0 bottom-full mb-2 w-80 sm:w-96 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 text-left text-sm">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">How to connect Zerodha?</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex gap-2">
+                                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">1</span>
+                                            <div>
+                                                <p className="text-gray-600 dark:text-gray-300">
+                                                    Go to <a href="https://developers.kite.trade/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Kite Connect Developer Portal</a>
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">2</span>
+                                            <div>
+                                                <p className="text-gray-600 dark:text-gray-300 mb-1">Create a new App:</p>
+                                                <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded text-xs space-y-1 border border-gray-100 dark:border-gray-800">
+                                                    <p><span className="font-medium">Type:</span> Personal</p>
+                                                    <p><span className="font-medium">Redirect URL:</span></p>
+                                                    <code className="block bg-gray-100 dark:bg-gray-800 p-1 rounded break-all select-all">
+                                                        https://cointrack-15gt.onrender.com/api/kite/callback
+                                                    </code>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">3</span>
+                                            <p className="text-gray-600 dark:text-gray-300">
+                                                Copy your <strong>API Key</strong> and <strong>API Secret</strong> and paste them below.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="absolute bottom-[-6px] left-2 w-3 h-3 bg-white dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700 transform rotate-45"></div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Enter your Kite Connect API credentials. You can find these in your Zerodha Developer Console.
+                        Enter your Kite Connect API credentials.
                     </p>
                 </div>
 
