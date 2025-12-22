@@ -65,12 +65,10 @@ export default function ZerodhaPage() {
                 apiKey: credentials.zerodhaApiKey,
                 apiSecret: credentials.zerodhaApiSecret
             });
-            setSuccess('Zerodha credentials saved successfully!');
-            setCredentials({ zerodhaApiKey: '', zerodhaApiSecret: '' });
-            await checkStatus();
+            // Auto connect after saving
+            await handleConnectZerodha();
         } catch (err) {
             setError(err.message);
-        } finally {
             setLoading(false);
         }
     };
@@ -201,7 +199,7 @@ export default function ZerodhaPage() {
                                     <div className="flex-1">
                                         <h4 className="font-semibold text-gray-900 dark:text-white">Enter Credentials Below</h4>
                                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                            Paste your <strong>API Key</strong> and <strong>API Secret</strong> in the form below. Then click <strong>"Connect to Zerodha"</strong> to link your account.
+                                            Paste your <strong>API Key</strong> and <strong>API Secret</strong> in the form below. Then click <strong>"Save & Connect"</strong> to link your account.
                                         </p>
                                     </div>
                                 </div>
@@ -280,7 +278,7 @@ export default function ZerodhaPage() {
                                 disabled={loading}
                                 className="bg-gradient-to-r from-blue-600 to-orange-500 text-white px-4 py-2 rounded-md font-semibold hover:from-blue-700 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed w-full"
                             >
-                                {loading ? 'Saving...' : 'Save Credentials'}
+                                {loading ? 'Processing...' : 'Save & Connect'}
                             </button>
                         </form>
                     ) : (
