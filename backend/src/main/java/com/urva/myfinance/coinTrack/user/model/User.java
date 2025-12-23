@@ -1,5 +1,6 @@
 package com.urva.myfinance.coinTrack.user.model;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -14,6 +15,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * User entity stored in MongoDB.
+ * Changed: Added passwordFailedAttempts + passwordLockedUntil for login rate limiting.
+ */
 @Document(collection = "users")
 @Data
 @Builder
@@ -38,7 +43,13 @@ public class User {
     @LastModifiedDate
     private LocalDate updatedAt;
 
-    // TOTP 2FA Fields
+    // ── Password rate limiting ──────────────────────────────────────
+    @Builder.Default
+    private int passwordFailedAttempts = 0;
+
+    private Instant passwordLockedUntil;
+
+    // ── TOTP 2FA Fields ─────────────────────────────────────────────
     @Builder.Default
     private boolean totpEnabled = false;
 
@@ -47,10 +58,10 @@ public class User {
 
     private String totpSecretEncrypted;
 
-    private String totpSecretPending; // Staged secret waiting for verification
+    private String totpSecretPending;
 
     @Builder.Default
-    private int totpSecretVersion = 1; // Default version 1
+    private int totpSecretVersion = 1;
 
     private LocalDateTime totpSetupAt;
     private LocalDateTime totpLastUsedAt;
@@ -60,15 +71,11 @@ public class User {
 
     private LocalDateTime totpLockedUntil;
 
-    // Email Verification Fields
+    // ── Email Verification ──────────────────────────────────────────
     @Builder.Default
     private boolean emailVerified = false;
 
     private LocalDateTime emailVerifiedAt;
 
-    /**
-     * Pending email address for email change flow.
-     * Set when user requests email change, cleared after verification.
-     */
     private String pendingEmail;
 }

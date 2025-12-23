@@ -65,7 +65,6 @@ public class BrevoEmailService {
      * @param htmlContent HTML content of the email body
      * @return true if email was sent successfully, false otherwise
      */
-    @SuppressWarnings("null")
     public boolean sendEmail(String to, String subject, String htmlContent) {
 
         // Check if Brevo is configured
@@ -114,7 +113,6 @@ public class BrevoEmailService {
      * @param htmlContent HTML content of the email body
      * @return true if email was sent successfully, false otherwise
      */
-    @SuppressWarnings("null")
     public boolean sendEmail(String to, String toName, String subject, String htmlContent) {
 
         if (config.getApiKey() == null || config.getApiKey().isBlank()) {

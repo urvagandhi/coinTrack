@@ -50,10 +50,13 @@ function Setup2FAPageContent() {
     const registrationVerify = async (code) => {
         try {
             const data = await totpAPI.registerVerify(tempToken, code);
-            // On success, data contains JWT token and backup codes
+            // On success, data contains JWT + refresh token + backup codes
             if (data.token) {
                 setAuthToken(data.token);
                 tokenManager.setToken(data.token);
+                if (data.refreshToken) {
+                    tokenManager.setRefreshToken(data.refreshToken);
+                }
             }
             return { success: true, backupCodes: data.backupCodes || [] };
         } catch (error) {

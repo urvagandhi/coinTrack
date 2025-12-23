@@ -83,6 +83,12 @@ public class LoginResponse {
     private String location;
 
     /**
+     * Refresh token for session continuity (30-day expiry, one-time use).
+     * Frontend should store securely and use POST /api/auth/refresh when access token expires.
+     */
+    private String refreshToken;
+
+    /**
      * Backup codes for 2FA recovery (only included after TOTP setup/reset).
      */
     private List<String> backupCodes;
@@ -226,6 +232,14 @@ public class LoginResponse {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 
     public List<String> getBackupCodes() {

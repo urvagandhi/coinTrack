@@ -47,3 +47,8 @@ build/
 ### OS ###
 .DS_Store
 Thumbs.db
+
+# Sensitive files - NEVER commit
+Backup Codes/
+*.bak
+

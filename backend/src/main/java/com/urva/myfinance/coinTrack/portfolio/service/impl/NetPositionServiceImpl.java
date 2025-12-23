@@ -11,27 +11,27 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalHolding;
+import com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalPosition;
+import com.urva.myfinance.coinTrack.broker.core.canonical.InstrumentType;
 import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.portfolio.dto.NetPositionDTO;
 import com.urva.myfinance.coinTrack.portfolio.market.MarketDataService;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
 import com.urva.myfinance.coinTrack.portfolio.model.MarketPrice;
-import com.urva.myfinance.coinTrack.portfolio.model.PositionType;
-import com.urva.myfinance.coinTrack.portfolio.repository.CachedHoldingRepository;
-import com.urva.myfinance.coinTrack.portfolio.repository.CachedPositionRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.CanonicalHoldingRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.CanonicalPositionRepository;
 import com.urva.myfinance.coinTrack.portfolio.service.NetPositionService;
 
 @Service
 public class NetPositionServiceImpl implements NetPositionService {
 
-    private final CachedHoldingRepository holdingRepository;
-    private final CachedPositionRepository positionRepository;
+    private final CanonicalHoldingRepository holdingRepository;
+    private final CanonicalPositionRepository positionRepository;
     private final MarketDataService marketDataService;
 
     @Autowired
-    public NetPositionServiceImpl(CachedHoldingRepository holdingRepository,
-            CachedPositionRepository positionRepository,
+    public NetPositionServiceImpl(CanonicalHoldingRepository holdingRepository,
+            CanonicalPositionRepository positionRepository,
             MarketDataService marketDataService) {
         this.holdingRepository = holdingRepository;
         this.positionRepository = positionRepository;
@@ -42,8 +42,8 @@ public class NetPositionServiceImpl implements NetPositionService {
     @Override
     public List<NetPositionDTO> mergeHoldingsAndPositions(String userId) {
         // 1. Load Data
-        List<CachedHolding> holdings = holdingRepository.findByUserId(userId);
-        List<CachedPosition> positions = positionRepository.findByUserId(userId);
+        List<CanonicalHolding> holdings = holdingRepository.findByUserId(userId);
+        List<CanonicalPosition> positions = positionRepository.findByUserId(userId);
 
         // 2. Intermediate Data Structure for Aggregation
         class Aggregator {
@@ -74,87 +74,74 @@ public class NetPositionServiceImpl implements NetPositionService {
         Map<String, Aggregator> aggregatorMap = new HashMap<>();
 
         // 3. Process Holdings
-        for (CachedHolding h : holdings) {
+        for (CanonicalHolding h : holdings) {
             Aggregator agg = aggregatorMap.computeIfAbsent(h.getSymbol(), Aggregator::new);
 
             // Add Broker Quantity
-            agg.brokerQtyMap.merge(h.getBroker(), h.getQuantity().intValue(), Integer::sum);
+            agg.brokerQtyMap.merge(h.getBrokerType(), h.getQuantity().intValue(), Integer::sum);
 
             // Add to Total Quantity
             agg.totalQty += h.getQuantity().intValue();
 
             // Add to Averages (Holdings always count)
-            agg.totalInvestedForAvg = agg.totalInvestedForAvg.add(h.getQuantity().multiply(h.getAverageBuyPrice()));
+            agg.totalInvestedForAvg = agg.totalInvestedForAvg.add(h.getQuantity().multiply(h.getAvgBuyPrice()));
             agg.totalDeliveryQtyForAvg += h.getQuantity().intValue();
-
-            // Holdings P&L is calculated via Market Price later, so no stored pnl/mtm here?
-            // Actually, Holdings API returns "day_change" which is day gain.
-            // But usually we compute holding P&L from CMP in NetPositionService for
-            // real-time updates.
-            // Rule check: "holdings.dayGain -> Prefer Zerodha day_change".
-            // Since we don't store day_change in CachedHolding? (We only verified
-            // CachedPosition).
-            // We'll proceed with standard CMP logic for HOLDINGS as per Rule 2 section.
         }
 
         // 4. Process Positions
-        for (CachedPosition p : positions) {
+        for (CanonicalPosition p : positions) {
             // Processing ALL positions including FNO
-            boolean isFno = (p.getPositionType() == PositionType.FNO);
-            boolean isDelivery = (p.getPositionType() == PositionType.DELIVERY);
+            boolean isFno = (p.getInstrumentType() == InstrumentType.FUTURES || p.getInstrumentType() == InstrumentType.OPTIONS);
+            boolean isDelivery = (p.getInstrumentType() == InstrumentType.EQUITY);
 
             Aggregator agg = aggregatorMap.computeIfAbsent(p.getSymbol(), Aggregator::new);
             agg.hasPositions = true;
 
-            // Pass-Through Raw Data (Prioritize Zerodha)
-            if (p.getRawData() != null && !p.getRawData().isEmpty()) {
-                agg.rawData = p.getRawData();
-            } else if (agg.rawData == null) {
-                // Fallback: Construct raw map from stored typed fields if rawData isn't cached
-                // yet
+            // Pass-Through Raw Data (construct from canonical fields)
+            if (agg.rawData == null) {
                 Map<String, Object> fallbackRaw = new HashMap<>();
-                fallbackRaw.put("product", p.getPositionType());
-                if (p.getMtm() != null)
-                    fallbackRaw.put("m2m", p.getMtm());
-                if (p.getPnl() != null)
-                    fallbackRaw.put("pnl", p.getPnl());
-                if (p.getValue() != null)
-                    fallbackRaw.put("value", p.getValue());
-                if (p.getBuyQuantity() != null)
-                    fallbackRaw.put("buy_quantity", p.getBuyQuantity());
-                if (p.getSellQuantity() != null)
-                    fallbackRaw.put("sell_quantity", p.getSellQuantity());
-                if (p.getNetQuantity() != null)
-                    fallbackRaw.put("net_quantity", p.getNetQuantity());
+                fallbackRaw.put("product", p.getInstrumentType());
+                if (p.getTotalPnL() != null)
+                    fallbackRaw.put("m2m", p.getTotalPnL());
+                if (p.getUnrealizedPnL() != null)
+                    fallbackRaw.put("pnl", p.getUnrealizedPnL());
+                BigDecimal computedValue = (p.getQuantity() != null && p.getLastPrice() != null)
+                        ? p.getQuantity().multiply(p.getLastPrice()) : null;
+                if (computedValue != null)
+                    fallbackRaw.put("value", computedValue);
+                if (p.getQuantity() != null)
+                    fallbackRaw.put("net_quantity", p.getQuantity());
                 if (p.getInstrumentType() != null)
                     fallbackRaw.put("instrument_type", p.getInstrumentType());
+                if (p.getOvernightQty() != null)
+                    fallbackRaw.put("overnight_quantity", p.getOvernightQty());
                 agg.rawData = fallbackRaw;
             }
 
-            BigDecimal storedPnl = p.getPnl() != null ? p.getPnl() : BigDecimal.ZERO;
-            BigDecimal storedMtm = p.getMtm() != null ? p.getMtm() : BigDecimal.ZERO;
+            BigDecimal storedPnl = p.getUnrealizedPnL() != null ? p.getUnrealizedPnL() : BigDecimal.ZERO;
+            BigDecimal storedMtm = p.getTotalPnL() != null ? p.getTotalPnL() : BigDecimal.ZERO;
 
             agg.accumulatedPnl = agg.accumulatedPnl.add(storedPnl);
             agg.accumulatedMtm = agg.accumulatedMtm.add(storedMtm);
 
             if (isFno) {
                 agg.isDerivative = true;
-                // For FNO, we track separatel
+                // For FNO, we track separately
                 int qty = p.getQuantity().intValue();
-                agg.brokerQtyMap.merge(p.getBroker(), qty, Integer::sum);
+                agg.brokerQtyMap.merge(p.getBrokerType(), qty, Integer::sum);
                 agg.totalQty += qty;
                 agg.totalFnoQty += qty;
 
-                // Invested for FNO = BuyPrice * Qty
-                BigDecimal invested = p.getBuyPrice().multiply(p.getQuantity());
+                // Invested for FNO = AvgBuyPrice * Qty
+                BigDecimal invested = p.getAvgBuyPrice().multiply(p.getQuantity());
                 agg.totalFnoInvested = agg.totalFnoInvested.add(invested);
             } else {
                 int qty = p.getQuantity().intValue();
-                agg.brokerQtyMap.merge(p.getBroker(), qty, Integer::sum);
+                agg.brokerQtyMap.merge(p.getBrokerType(), qty, Integer::sum);
                 agg.totalQty += qty;
 
                 if (isDelivery) { // Delivery Position counts towards average
-                    agg.totalInvestedForAvg = agg.totalInvestedForAvg.add(p.getQuantity().multiply(p.getBuyPrice()));
+                    agg.totalInvestedForAvg = agg.totalInvestedForAvg.add(p.getQuantity().multiply(p.getAvgBuyPrice()));
                     agg.totalDeliveryQtyForAvg += qty;
                 }
             }
@@ -205,34 +192,15 @@ public class NetPositionServiceImpl implements NetPositionService {
                             RoundingMode.HALF_UP);
                 }
 
-                // Current Value = Invested + Total PnL (Zerodha 'pnl')
+                // Current Value = Invested + Total PnL
                 unrealizedPL = agg.accumulatedPnl.setScale(2, RoundingMode.HALF_UP);
                 currentValue = investedValue.add(unrealizedPL); // Guardrail
 
-                // Day Gain % (Optional/Null for FNO as per rule for Summary, here for positions
-                // we can try or leave null)
-                // Rule: "Day gain percent shown when derivatives exist" -> Hard Fail? No, that
-                // was for Summary Aggregation.
-                // For Positions DTO, we can leave it null or 0.
-
-                // Since this is a merged view (Holdings + FNO possible?), we should handle
-                // overlap.
-                // Checks for Holdings vs Positions overlap is complex, assuming separate for
-                // now.
                 dayGain = mtmPL;
 
             } else {
                 // Equity Logic (Holdings or Equity Positions)
                 if (agg.hasPositions && !agg.isDerivative) {
-                    // Pure Equity Positions (Intraday/Delivery)
-                    // Use Stored P&L if available
-                    // But wait, if we have Holdings merged here?
-                    // Holdings don't have stored PnL in aggregator.
-
-                    // For simplicity, if we have POSITIONS, we use stored PnL?
-                    // But if we have mixed Holdings + Positions for same symbol?
-                    // Standard practice: Holdings drive the core value, Positions add Exposure.
-                    // If we have pure Positions
                     if (agg.totalDeliveryQtyForAvg != 0) {
                         avgBuyPrice = agg.totalInvestedForAvg.divide(BigDecimal.valueOf(agg.totalDeliveryQtyForAvg), 2,
                                 RoundingMode.HALF_UP);

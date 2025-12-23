@@ -13,60 +13,58 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalHolding;
+import com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalPosition;
 import com.urva.myfinance.coinTrack.portfolio.dto.PortfolioSummaryResponse;
 import com.urva.myfinance.coinTrack.portfolio.dto.SummaryHoldingDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.MfInstrumentDTO;
 import com.urva.myfinance.coinTrack.portfolio.dto.kite.MfSipDTO;
 import com.urva.myfinance.coinTrack.portfolio.market.MarketDataService;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
 import com.urva.myfinance.coinTrack.portfolio.model.MarketPrice;
 import com.urva.myfinance.coinTrack.portfolio.model.SyncLog;
 import com.urva.myfinance.coinTrack.portfolio.model.SyncStatus;
-import com.urva.myfinance.coinTrack.portfolio.repository.CachedHoldingRepository;
-import com.urva.myfinance.coinTrack.portfolio.repository.CachedPositionRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.CanonicalHoldingRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.CanonicalPositionRepository;
 import com.urva.myfinance.coinTrack.portfolio.repository.SyncLogRepository;
 import com.urva.myfinance.coinTrack.portfolio.service.PortfolioSummaryService;
 
 @Service
 public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
 
-    private final CachedHoldingRepository holdingRepository;
-    private final CachedPositionRepository positionRepository;
+    private final CanonicalHoldingRepository holdingRepository;
+    private final CanonicalPositionRepository positionRepository;
     private final SyncLogRepository syncLogRepository;
     private final MarketDataService marketDataService;
     private final com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository brokerAccountRepository;
-    private final com.urva.myfinance.coinTrack.broker.service.impl.ZerodhaBrokerService zerodhaBrokerService;
-    private final com.urva.myfinance.coinTrack.portfolio.repository.CachedFundsRepository cachedFundsRepository;
-    private final com.urva.myfinance.coinTrack.portfolio.repository.CachedMfOrderRepository cachedMfOrderRepository;
-
-    // Defined for future timezone usage if needed explicitly
+    private final com.urva.myfinance.coinTrack.broker.service.ZerodhaLiveDataService zerodhaLiveDataService;
+    private final com.urva.myfinance.coinTrack.portfolio.repository.CanonicalFundsRepository canonicalFundsRepository;
+    private final com.urva.myfinance.coinTrack.portfolio.repository.CanonicalMfOrderRepository canonicalMfOrderRepository;
 
     @Autowired
-    public PortfolioSummaryServiceImpl(CachedHoldingRepository holdingRepository,
-            CachedPositionRepository positionRepository,
+    public PortfolioSummaryServiceImpl(CanonicalHoldingRepository holdingRepository,
+            CanonicalPositionRepository positionRepository,
             SyncLogRepository syncLogRepository,
             MarketDataService marketDataService,
             com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository brokerAccountRepository,
-            com.urva.myfinance.coinTrack.broker.service.impl.ZerodhaBrokerService zerodhaBrokerService,
-            com.urva.myfinance.coinTrack.portfolio.repository.CachedFundsRepository cachedFundsRepository,
-            com.urva.myfinance.coinTrack.portfolio.repository.CachedMfOrderRepository cachedMfOrderRepository) {
+            com.urva.myfinance.coinTrack.broker.service.ZerodhaLiveDataService zerodhaLiveDataService,
+            com.urva.myfinance.coinTrack.portfolio.repository.CanonicalFundsRepository canonicalFundsRepository,
+            com.urva.myfinance.coinTrack.portfolio.repository.CanonicalMfOrderRepository canonicalMfOrderRepository) {
         this.holdingRepository = holdingRepository;
         this.positionRepository = positionRepository;
         this.syncLogRepository = syncLogRepository;
         this.marketDataService = marketDataService;
         this.brokerAccountRepository = brokerAccountRepository;
-        this.zerodhaBrokerService = zerodhaBrokerService;
-        this.cachedFundsRepository = cachedFundsRepository;
-        this.cachedMfOrderRepository = cachedMfOrderRepository;
+        this.zerodhaLiveDataService = zerodhaLiveDataService;
+        this.canonicalFundsRepository = canonicalFundsRepository;
+        this.canonicalMfOrderRepository = canonicalMfOrderRepository;
     }
 
     @Override
     public PortfolioSummaryResponse getPortfolioSummary(String userId) {
-        // 1. Fetch ALL Holdings & Positions (Multi-Broker)
-        List<CachedHolding> holdings = holdingRepository.findByUserId(userId);
-        List<CachedPosition> positions = positionRepository.findByUserId(userId);
+        // 1. Fetch ALL Holdings & Positions (Multi-Broker) from canonical repositories
+        List<CanonicalHolding> holdings = holdingRepository.findByUserId(userId);
+        List<CanonicalPosition> positions = positionRepository.findByUserId(userId);
 
         // 2. Identify Unique Symbols for Batch Fetch (Only for holdings now, positions
         // use stored fields)
@@ -98,7 +96,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         boolean containsDerivatives = false;
 
         // Process Holdings
-        for (CachedHolding h : holdings) {
+        for (CanonicalHolding h : holdings) {
             SummaryHoldingDTO dto = convertHolding(h, priceMap.get(h.getSymbol()));
             detailedList.add(dto);
 
@@ -106,16 +104,12 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             totalCurrentValue = totalCurrentValue.add(dto.getCurrentValue());
             totalInvestedValue = totalInvestedValue.add(dto.getInvestedValue());
 
-            // Compute Previous Day Value Explicitly for Holdings
-            BigDecimal closePrice = h.getClosePrice();
-            if (closePrice == null) {
-                // If close price is missing, do we treat it as zero?
-                // A missing close price usually means new listing or data error.
-                // Treating as zero implies "Day Gain" = "Current Value" (infinity return).
-                // Safest to treat as ZERO for the sum, but metrics might be skewed.
-                closePrice = BigDecimal.ZERO;
+            // Compute Previous Day Value from market data
+            BigDecimal closePrice = BigDecimal.ZERO;
+            MarketPrice mp = priceMap.get(h.getSymbol());
+            if (mp != null && mp.getPreviousClose() != null) {
+                closePrice = mp.getPreviousClose();
             }
-            // previousValue = quantity * closePrice
             BigDecimal previousValue = h.getQuantity().multiply(closePrice);
             previousDayTotalValue = previousDayTotalValue.add(previousValue);
         }
@@ -125,9 +119,10 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         // (PrevDay, DayGain)
         // to maintain mathematical consistency with the "Previous Day" logic which is
         // unique to Holdings.
-        for (CachedPosition p : positions) {
+        for (CanonicalPosition p : positions) {
             // Guardrail: Detect F&O
-            if (p.getPositionType() == com.urva.myfinance.coinTrack.portfolio.model.PositionType.FNO) {
+            if (p.getInstrumentType() == com.urva.myfinance.coinTrack.broker.core.canonical.InstrumentType.FUTURES
+                || p.getInstrumentType() == com.urva.myfinance.coinTrack.broker.core.canonical.InstrumentType.OPTIONS) {
                 containsDerivatives = true;
             }
 
@@ -202,41 +197,30 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .build();
     }
 
-    private SummaryHoldingDTO convertHolding(CachedHolding h, MarketPrice price) {
-        BigDecimal qty = h.getQuantity(); // Already BigDecimal
-        BigDecimal avgPrice = h.getAverageBuyPrice(); // Already BigDecimal
+    private SummaryHoldingDTO convertHolding(CanonicalHolding h, MarketPrice price) {
+        BigDecimal qty = h.getQuantity() != null ? h.getQuantity() : BigDecimal.ZERO;
+        BigDecimal avgPrice = h.getAvgBuyPrice() != null ? h.getAvgBuyPrice() : BigDecimal.ZERO;
 
-        // 1. Try to use Zerodha values FIRST if available
-        BigDecimal lastPrice = h.getLastPrice();
-        BigDecimal closePrice = h.getClosePrice();
-        BigDecimal pnl = h.getPnl();
+        // 1. Use canonical values first, fallback to market data
+        BigDecimal lastPrice = h.getCurrentPrice();
+        BigDecimal closePrice = BigDecimal.ZERO;
+        BigDecimal pnl = h.getUnrealizedPnL();
         BigDecimal dayChange = h.getDayChange();
-        BigDecimal dayChangePercent = h.getDayChangePercentage();
+        BigDecimal dayChangePercent = h.getDayChangePct();
 
-        // 2. Fallback to MarketPrice if Zerodha values are missing
-        if (lastPrice == null) {
+        // 2. Fallback to MarketPrice if canonical values are missing
+        if (lastPrice == null || lastPrice.compareTo(BigDecimal.ZERO) == 0) {
             lastPrice = (price != null && price.getCurrentPrice() != null) ? price.getCurrentPrice() : BigDecimal.ZERO;
         }
-
-        if (closePrice == null) {
-            closePrice = (price != null && price.getPreviousClose() != null) ? price.getPreviousClose()
-                    : BigDecimal.ZERO;
+        if (price != null && price.getPreviousClose() != null) {
+            closePrice = price.getPreviousClose();
         }
 
-        // Computed safe fields as per requirement
         BigDecimal currentValue = qty.multiply(lastPrice);
         BigDecimal investedValue = qty.multiply(avgPrice);
 
-        // Fill missing P&L if needed (fallback logic)
-        // We do NOT store this fallback in DB, only return in response.
         if (pnl == null) {
-            if (lastPrice.compareTo(BigDecimal.ZERO) <= 0) {
-                // New listing or missing data -> Treat as no P&L yet (avoid showing -100% loss)
-                pnl = BigDecimal.ZERO;
-            } else {
-                // Fallback: (last_price - average_price) * quantity
-                pnl = currentValue.subtract(investedValue);
-            }
+            pnl = lastPrice.compareTo(BigDecimal.ZERO) <= 0 ? BigDecimal.ZERO : currentValue.subtract(investedValue);
         }
 
         if (dayChange == null) {
@@ -258,10 +242,10 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
 
         return SummaryHoldingDTO.builder()
                 .symbol(h.getSymbol())
-                .exchange(h.getExchange())
-                .broker(h.getBroker() != null ? h.getBroker().name() : "UNKNOWN")
+                .exchange(h.getExchange() != null ? h.getExchange().name() : "")
+                .broker(h.getBrokerType() != null ? h.getBrokerType().name() : "UNKNOWN")
                 .type("HOLDING")
-                .quantity(qty) // BigDecimal
+                .quantity(qty)
                 .averageBuyPrice(avgPrice.setScale(4, RoundingMode.HALF_UP))
                 .currentPrice(lastPrice.setScale(4, RoundingMode.HALF_UP))
                 .previousClose(closePrice.setScale(4, RoundingMode.HALF_UP))
@@ -271,126 +255,63 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .dayGain(dayChange.setScale(4, RoundingMode.HALF_UP))
                 .dayGainPercent(dayChangePercent.setScale(2, RoundingMode.HALF_UP))
                 .raw(Map.of(
-                        "instrument_token", h.getInstrumentToken() != null ? h.getInstrumentToken() : 0,
-                        "product", h.getProduct() != null ? h.getProduct() : "",
-                        "used_quantity", h.getUsedQuantity() != null ? h.getUsedQuantity() : BigDecimal.ZERO,
+                        "isin", h.getIsin() != null ? h.getIsin() : "",
                         "t1_quantity", h.getT1Quantity() != null ? h.getT1Quantity() : BigDecimal.ZERO,
-                        "realised_quantity",
-                        h.getRealisedQuantity() != null ? h.getRealisedQuantity() : BigDecimal.ZERO,
-                        "authorised_quantity",
-                        h.getAuthorisedQuantity() != null ? h.getAuthorisedQuantity() : BigDecimal.ZERO,
-                        "authorised_date", h.getAuthorisedDate() != null ? h.getAuthorisedDate() : "",
-                        "close_price", h.getClosePrice() != null ? h.getClosePrice() : BigDecimal.ZERO))
+                        "data_confidence", h.getDataConfidence() != null ? h.getDataConfidence().name() : "HIGH",
+                        "close_price", closePrice))
                 .build();
     }
 
-    private com.urva.myfinance.coinTrack.portfolio.dto.SummaryPositionDTO convertPosition(CachedPosition p) {
-        BigDecimal qty = p.getQuantity(); // Already BigDecimal
-        BigDecimal buyPrice = p.getBuyPrice(); // Already BigDecimal
+    private com.urva.myfinance.coinTrack.portfolio.dto.SummaryPositionDTO convertPosition(CanonicalPosition p) {
+        BigDecimal qty = p.getQuantity() != null ? p.getQuantity() : BigDecimal.ZERO;
+        BigDecimal buyPrice = p.getAvgBuyPrice() != null ? p.getAvgBuyPrice() : BigDecimal.ZERO;
 
-        // GUARDRAIL: Use stored Zerodha fields (pnl, mtm) directly
-        // Do NOT recompute from market price if available
-        BigDecimal mtm = p.getMtm() != null ? p.getMtm() : BigDecimal.ZERO; // Day Gain
-        BigDecimal pnl = p.getPnl() != null ? p.getPnl() : BigDecimal.ZERO; // Unrealized
+        BigDecimal unrealizedPnL = p.getUnrealizedPnL() != null ? p.getUnrealizedPnL() : BigDecimal.ZERO;
+        BigDecimal realizedPnL = p.getRealizedPnL() != null ? p.getRealizedPnL() : BigDecimal.ZERO;
+        BigDecimal totalPnL = p.getTotalPnL() != null ? p.getTotalPnL() : unrealizedPnL.add(realizedPnL);
 
-        // Derive Current Price safely
-        // Priority: Raw value/qty > Raw last price > 0
-        BigDecimal currentPrice = BigDecimal.ZERO;
-        if (p.getValue() != null && qty.compareTo(BigDecimal.ZERO) != 0) {
-            currentPrice = p.getValue().divide(qty, 2, RoundingMode.HALF_UP).abs();
-        } else if (p.getLastPrice() != null) {
-            currentPrice = p.getLastPrice();
-        }
-
-        // Fallback Logic for P&L if missing (Section 4 of prompt)
-        if (p.getPnl() == null) {
-            if (currentPrice.compareTo(BigDecimal.ZERO) <= 0) {
-                pnl = BigDecimal.ZERO;
-            } else {
-                pnl = (currentPrice.subtract(buyPrice)).multiply(qty);
-            }
-        }
-
-        // Invested Value = Quantity * BuyPrice
+        BigDecimal currentPrice = p.getLastPrice() != null ? p.getLastPrice() : BigDecimal.ZERO;
         BigDecimal investedValue = qty.multiply(buyPrice);
+        BigDecimal currentValue = qty.multiply(currentPrice);
 
-        // Current Value
-        // Use Zerodha provided value strictly if available
-        BigDecimal currentValue = p.getValue();
-        if (currentValue == null) {
-            // Fallback: quantity * last_price (or derived currentPrice)
-            currentValue = qty.multiply(currentPrice);
-        }
+        // Derivatives check
+        boolean isDerivative = p.getInstrumentType() == com.urva.myfinance.coinTrack.broker.core.canonical.InstrumentType.FUTURES
+                || p.getInstrumentType() == com.urva.myfinance.coinTrack.broker.core.canonical.InstrumentType.OPTIONS;
 
-        // Derivatives Check
-        // Rule 4: derived strictly from instrument_type presence
-        boolean isDerivative = p.getInstrumentType() != null;
-
-        // Calculate percentages safely
-        // Improved Logic: (MTM / Invested Value) * 100
+        // Day gain from total P&L (approximation)
         BigDecimal dayGainPercent = BigDecimal.ZERO;
-        // Rule 3: Only default to zero if investedValue <= 0
         if (investedValue.compareTo(BigDecimal.ZERO) > 0) {
-            dayGainPercent = mtm.divide(investedValue, 4, RoundingMode.HALF_UP)
+            dayGainPercent = totalPnL.divide(investedValue, 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100));
         }
 
-        // Populate Raw Map
-        // Policy: Strict Pass-Through of original broker response
-        // If rawData is stored, use it directly. Otherwise (fallback), construct
-        // strictly from known fields.
-        Map<String, Object> rawMap;
-        if (p.getRawData() != null) {
-            rawMap = new java.util.HashMap<>(p.getRawData());
-        } else {
-            // Fallback for positions synced before this update
-            rawMap = new java.util.HashMap<>();
-            rawMap.put("product", p.getPositionType().name());
-            if (p.getMtm() != null)
-                rawMap.put("m2m", p.getMtm());
-            if (p.getPnl() != null)
-                rawMap.put("pnl", p.getPnl());
-            if (p.getValue() != null)
-                rawMap.put("value", p.getValue());
-            if (p.getBuyQuantity() != null)
-                rawMap.put("buy_quantity", p.getBuyQuantity());
-            if (p.getSellQuantity() != null)
-                rawMap.put("sell_quantity", p.getSellQuantity());
-            if (p.getDayBuyQuantity() != null)
-                rawMap.put("day_buy_quantity", p.getDayBuyQuantity());
-            if (p.getDaySellQuantity() != null)
-                rawMap.put("day_sell_quantity", p.getDaySellQuantity());
-            if (p.getNetQuantity() != null)
-                rawMap.put("net_quantity", p.getNetQuantity());
-            if (p.getOvernightQuantity() != null)
-                rawMap.put("overnight_quantity", p.getOvernightQuantity());
-            if (p.getInstrumentType() != null)
-                rawMap.put("instrument_type", p.getInstrumentType());
-            // ... other fields derived as needed for legacy support, but new code uses
-            // rawData
-        }
+        Map<String, Object> rawMap = new java.util.HashMap<>();
+        rawMap.put("position_type", p.getPositionType() != null ? p.getPositionType().name() : "LONG");
+        rawMap.put("instrument_type", p.getInstrumentType() != null ? p.getInstrumentType().name() : "");
+        rawMap.put("overnight_quantity", p.getOvernightQty());
+        rawMap.put("multiplier", p.getMultiplier());
 
         return com.urva.myfinance.coinTrack.portfolio.dto.SummaryPositionDTO.builder()
                 .symbol(p.getSymbol())
                 .brokerQuantityMap(java.util.Collections.singletonMap(
-                        p.getBroker() != null ? p.getBroker().name() : "UNKNOWN",
+                        p.getBrokerType() != null ? p.getBrokerType().name() : "UNKNOWN",
                         qty))
-                .totalQuantity(qty) // Map total_quantity as well
+                .totalQuantity(qty)
                 .averageBuyPrice(buyPrice.setScale(4, RoundingMode.HALF_UP))
                 .currentPrice(currentPrice.setScale(4, RoundingMode.HALF_UP))
                 .previousClose(p.getClosePrice() != null ? p.getClosePrice().setScale(4, RoundingMode.HALF_UP)
                         : BigDecimal.ZERO)
                 .currentValue(currentValue.setScale(4, RoundingMode.HALF_UP))
                 .investedValue(investedValue.setScale(4, RoundingMode.HALF_UP))
-                .unrealizedPl(pnl.setScale(4, RoundingMode.HALF_UP))
-                .dayGain(mtm.setScale(4, RoundingMode.HALF_UP))
+                .unrealizedPl(unrealizedPnL.setScale(4, RoundingMode.HALF_UP))
+                .dayGain(totalPnL.setScale(4, RoundingMode.HALF_UP))
                 .dayGainPercent(dayGainPercent)
-                .positionType("NET") // Defaulting strictly to NET as per prompt
+                .positionType("NET")
                 .derivative(isDerivative)
-                .instrumentType(p.getInstrumentType())
-                .strikePrice(p.getStrikePrice())
-                .optionType(p.getOptionType())
-                .expiryDate(p.getExpiryDate())
+                .instrumentType(p.getInstrumentType() != null ? p.getInstrumentType().name() : null)
+                .strikePrice(null) // F&O details now in separate FnoPositionService
+                .optionType(null)
+                .expiryDate(null)
                 .raw(rawMap)
                 .build();
     }
@@ -419,7 +340,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    allOrders.addAll(zerodhaBrokerService.fetchOrders(account));
+                    allOrders.addAll(zerodhaLiveDataService.fetchOrders(account));
                 } catch (Exception e) {
                     // Log but continue
                 }
@@ -445,7 +366,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    allTrades.addAll(zerodhaBrokerService.fetchTrades(account));
+                    allTrades.addAll(zerodhaLiveDataService.fetchTrades(account));
                 } catch (Exception e) {
                     // Log
                 }
@@ -470,7 +391,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO funds = zerodhaBrokerService
+                    com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO funds = zerodhaLiveDataService
                             .fetchFunds(account);
                     // Add metadata manually if DTO allows or if we wrap it differently.
                     // FundsDTO extends KiteResponseMetadata now.
@@ -478,35 +399,29 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                         funds.setLastSyncedAt(LocalDateTime.now());
                         funds.setSource("LIVE");
 
-                        // PERSIST RAW DATA
+                        // PERSIST as CanonicalFunds
                         try {
-                            com.urva.myfinance.coinTrack.portfolio.model.CachedFunds cached = com.urva.myfinance.coinTrack.portfolio.model.CachedFunds
-                                    .builder()
+                            var canonicalFunds = com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalFunds.builder()
                                     .userId(userId)
-                                    .broker(account.getBroker())
-                                    .equityRaw(funds.getEquity() != null ? funds.getEquity().getRaw() : null)
-                                    .commodityRaw(funds.getCommodity() != null ? funds.getCommodity().getRaw() : null)
-                                    .lastUpdated(LocalDateTime.now())
+                                    .brokerAccountId(account.getId())
+                                    .brokerType(account.getBroker())
+                                    .availableCash(funds.getEquity() != null && funds.getEquity().getAvailable() != null
+                                            ? funds.getEquity().getAvailable().getCash() : java.math.BigDecimal.ZERO)
+                                    .usedMargin(funds.getEquity() != null && funds.getEquity().getUtilised() != null
+                                            ? funds.getEquity().getUtilised().getDebits() : java.math.BigDecimal.ZERO)
+                                    .totalMargin(funds.getEquity() != null ? funds.getEquity().getNet() : java.math.BigDecimal.ZERO)
+                                    .collateral(funds.getEquity() != null && funds.getEquity().getAvailable() != null
+                                            ? funds.getEquity().getAvailable().getCollateral() : null)
+                                    .openingBalance(funds.getEquity() != null && funds.getEquity().getAvailable() != null
+                                            ? funds.getEquity().getAvailable().getOpeningBalance() : null)
+                                    .lastSyncedAt(java.time.Instant.now())
                                     .build();
 
-                            // Handle update logic (find existing or save new)
-                            // Since we have a unique index on userId + broker, we should find and update or
-                            // save
-                            // But for simplicity with MongoRepository.save() usually handles upsert if ID
-                            // is same.
-                            // Here ID is not set manually.
-                            // Better: findByUserIdAndBroker -> update -> save
-                            Optional<com.urva.myfinance.coinTrack.portfolio.model.CachedFunds> existing = cachedFundsRepository
-                                    .findByUserIdAndBroker(userId, account.getBroker());
-                            if (existing.isPresent()) {
-                                cached.setId(existing.get().getId());
-                            }
-                            @SuppressWarnings({ "null", "unused" })
-                            com.urva.myfinance.coinTrack.portfolio.model.CachedFunds saved = cachedFundsRepository
-                                    .save(cached);
+                            canonicalFundsRepository.findByUserIdAndBrokerType(userId, account.getBroker())
+                                    .ifPresent(existing -> canonicalFunds.setId(existing.getId()));
+                            canonicalFundsRepository.save(canonicalFunds);
                         } catch (Exception persistenceEx) {
-                            // Log warning but don't fail the request
-                            System.err.println("Failed to persist cached funds: " + persistenceEx.getMessage());
+                            System.err.println("Failed to persist canonical funds: " + persistenceEx.getMessage());
                         }
                     }
                     return funds;
@@ -530,7 +445,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    allMf.addAll(zerodhaBrokerService.fetchMfHoldings(account));
+                    allMf.addAll(zerodhaLiveDataService.fetchMfHoldings(account));
                 } catch (Exception e) {
                     // Log
                 }
@@ -559,31 +474,33 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO> orders = zerodhaBrokerService
+                    List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO> orders = zerodhaLiveDataService
                             .fetchMfOrders(account);
                     for (com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundOrderDTO order : orders) {
-                        // Persist Raw Order
+                        // Persist as CanonicalMfOrder
                         try {
-                            com.urva.myfinance.coinTrack.portfolio.model.CachedMfOrder cached = com.urva.myfinance.coinTrack.portfolio.model.CachedMfOrder
-                                    .builder()
+                            var canonicalOrder = com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalMfOrder.builder()
                                     .userId(userId)
+                                    .brokerAccountId(account.getId())
+                                    .brokerType(account.getBroker())
                                     .orderId(order.getOrderId())
-                                    .broker(account.getBroker())
-                                    .raw(order.getRaw())
-                                    .lastUpdated(java.time.LocalDateTime.now())
+                                    .fund(order.getFund())
+                                    .tradingSymbol(order.getTradingSymbol())
+                                    .transactionType(order.getTransactionType())
+                                    .amount(order.getAmount())
+                                    .status(order.getStatus())
+                                    .executedQuantity(order.getExecutedQuantity())
+                                    .executedNav(order.getExecutedNav())
+                                    .folio(order.getFolio())
+                                    .lastSyncedAt(java.time.Instant.now())
                                     .build();
 
-                            Optional<com.urva.myfinance.coinTrack.portfolio.model.CachedMfOrder> existing = cachedMfOrderRepository
-                                    .findByUserIdAndOrderIdAndBroker(userId, order.getOrderId(), account.getBroker());
-
-                            if (existing.isPresent()) {
-                                cached.setId(existing.get().getId());
-                            }
-                            @SuppressWarnings({ "null", "unused" })
-                            com.urva.myfinance.coinTrack.portfolio.model.CachedMfOrder saved = cachedMfOrderRepository
-                                    .save(cached);
+                            canonicalMfOrderRepository.findByUserIdAndBrokerAccountIdAndOrderId(
+                                    userId, account.getId(), order.getOrderId())
+                                    .ifPresent(existing -> canonicalOrder.setId(existing.getId()));
+                            canonicalMfOrderRepository.save(canonicalOrder);
                         } catch (Exception persistenceEx) {
-                            System.err.println("Failed to persist cached MF order: " + persistenceEx.getMessage());
+                            System.err.println("Failed to persist canonical MF order: " + persistenceEx.getMessage());
                         }
                         allOrders.add(order);
                     }
@@ -619,7 +536,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO profile = zerodhaBrokerService
+                    com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO profile = zerodhaLiveDataService
                             .fetchProfile(account);
                     if (profile != null) {
                         profile.setLastSynced(java.time.LocalDateTime.now().toString());
@@ -647,8 +564,8 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    allSips.addAll(zerodhaBrokerService.fetchMfSips(account));
-                    allOrders.addAll(zerodhaBrokerService.fetchMfOrders(account));
+                    allSips.addAll(zerodhaLiveDataService.fetchMfSips(account));
+                    allOrders.addAll(zerodhaLiveDataService.fetchMfOrders(account));
                 } catch (Exception e) {
                     System.err
                             .println("Failed to fetch MF data for account " + account.getId() + ": " + e.getMessage());
@@ -730,7 +647,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    allInstruments.addAll(zerodhaBrokerService.fetchMfInstruments(account));
+                    allInstruments.addAll(zerodhaLiveDataService.fetchMfInstruments(account));
                     // Break after first successful fetch to avoid duplicates if user has multiple
                     // accounts
                     // (though redundant for instruments which are global usually)
@@ -765,9 +682,9 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
                     && account.hasValidToken()) {
                 try {
-                    allOrders.addAll(zerodhaBrokerService.fetchMfOrders(account));
-                    allSips.addAll(zerodhaBrokerService.fetchMfSips(account));
-                    allHoldings.addAll(zerodhaBrokerService.fetchMfHoldings(account));
+                    allOrders.addAll(zerodhaLiveDataService.fetchMfOrders(account));
+                    allSips.addAll(zerodhaLiveDataService.fetchMfSips(account));
+                    allHoldings.addAll(zerodhaLiveDataService.fetchMfHoldings(account));
                 } catch (Exception e) {
                     // Log error but continue
                     System.err.println("Error fetching timeline data: " + e.getMessage());

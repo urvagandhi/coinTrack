@@ -1,15 +1,15 @@
 package com.urva.myfinance.coinTrack.user.service;
 
-import java.util.Collections;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,22 +20,25 @@ import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
 /**
- * Service responsible for user authentication operations.
- * Handles login, TOTP verification for login, and token validation.
+ * Authentication service with mandatory TOTP flow.
  *
- * Single Responsibility: Authentication only.
- * For registration, see {@link UserRegistrationService}.
- * For profile operations, see {@link UserProfileService}.
- *
- * @Transactional boundaries are at method level for atomic operations.
+ * Changed:
+ * - Password brute-force rate limiting (5 → 15min lock, 10 → 1hr lock)
+ * - Timing-safe: BCrypt.matches() always runs (even for missing users) to prevent enumeration
+ * - Login completion returns access + refresh token pair
+ * - Generic "Invalid credentials" on all failures — never leaks whether user exists
  */
 @Service
 public class UserAuthenticationService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserAuthenticationService.class);
 
+    /** Dummy BCrypt hash used for constant-time comparison when user is not found. */
+    private static final String DUMMY_HASH = "$2a$10$AAAAAAAAAAAAAAAAAAAAAO8kI2R6x9YpFKeMMxaq0JZm2DOiCm9eK";
+
     private final UserRepository userRepository;
     private final AuthenticationManager authManager;
+    private final PasswordEncoder passwordEncoder;
     private final JWTService jwtService;
     private final TotpService totpService;
     private final UserService userService;
@@ -43,80 +46,92 @@ public class UserAuthenticationService {
     public UserAuthenticationService(
             UserRepository userRepository,
             AuthenticationManager authManager,
+            PasswordEncoder passwordEncoder,
             JWTService jwtService,
             TotpService totpService,
             UserService userService) {
         this.userRepository = userRepository;
         this.authManager = authManager;
+        this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.totpService = totpService;
         this.userService = userService;
     }
 
     /**
-     * Authenticate user.
-     * Enforces MANDATORY TOTP flow.
-     * Returns temp token if TOTP/Setup required.
+     * Authenticate user with password rate limiting.
+     * Returns temp token for TOTP step — never returns a JWT directly.
      */
-    @Transactional(readOnly = true)
-    public LoginResponse authenticate(String usernameOrEmailOrMobile, String password) {
-        logger.info(LoggingConstants.AUTH_LOGIN_STARTED, usernameOrEmailOrMobile);
+    @Transactional
+    public LoginResponse authenticate(String identifier, String password) {
+        logger.info(LoggingConstants.AUTH_LOGIN_STARTED, identifier);
 
-        try {
-            User foundUser = findUserByUsernameEmailOrMobile(usernameOrEmailOrMobile);
-            if (foundUser == null) {
-                logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, usernameOrEmailOrMobile, "user not found");
-                return null;
-            }
+        User foundUser = findUserByUsernameEmailOrMobile(identifier);
 
-            Authentication authentication = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(foundUser.getUsername(), password));
-
-            if (authentication.isAuthenticated()) {
-                // ══════════════════════════════════════════════════════════════════════
-                // MANDATORY TOTP FLOW
-                // ══════════════════════════════════════════════════════════════════════
-
-                // Case 1: User has TOTP already set up → Case 1 Flow
-                if (foundUser.isTotpEnabled() && foundUser.isTotpVerified()) {
-                    String tempToken = jwtService.generateTempToken(foundUser, "TOTP_LOGIN", 10);
-
-                    LoginResponse response = new LoginResponse();
-                    response.setRequireTotpSetup(false);
-                    response.setTempToken(tempToken);
-                    response.setUserId(foundUser.getId());
-                    response.setUsername(foundUser.getUsername());
-                    response.setMessage("Please verify TOTP to complete login.");
-                    return response;
-                }
-
-                // Case 2: User has NOT set up TOTP → Case 2 Flow (Mandatory Setup)
-                // Issue temp token that allows ONLY setup endpoints
-                String setupToken = jwtService.generateTempToken(foundUser, "TOTP_SETUP", 30);
-
-                LoginResponse response = new LoginResponse();
-                response.setRequireTotpSetup(true); // Flag for frontend to redirect to setup
-                response.setTempToken(setupToken);
-                response.setUserId(foundUser.getId());
-                response.setUsername(foundUser.getUsername());
-                response.setMessage("TOTP Setup is mandatory. Redirecting to setup...");
-                return response;
-            }
-
-            return null;
-
-        } catch (AuthenticationException e) {
-            logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, usernameOrEmailOrMobile, "invalid credentials");
+        // Timing-safe: always run BCrypt even if user not found
+        if (foundUser == null) {
+            passwordEncoder.matches(password, DUMMY_HASH);
+            logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, identifier, "invalid credentials");
             return null;
         }
+
+        // Check password lockout
+        if (isPasswordLocked(foundUser)) {
+            long minutesLeft = Instant.now().until(foundUser.getPasswordLockedUntil(), ChronoUnit.MINUTES) + 1;
+            throw new com.urva.myfinance.coinTrack.common.exception.AuthenticationException(
+                    "Too many failed attempts. Try again in " + minutesLeft + " minute(s).");
+        }
+
+        // Verify password
+        try {
+            authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(foundUser.getUsername(), password));
+        } catch (AuthenticationException e) {
+            handlePasswordFailure(foundUser);
+            logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, identifier, "invalid credentials");
+            return null;
+        }
+
+        // Password success — reset counters
+        if (foundUser.getPasswordFailedAttempts() > 0) {
+            foundUser.setPasswordFailedAttempts(0);
+            foundUser.setPasswordLockedUntil(null);
+            userRepository.save(foundUser);
+        }
+
+        // ── MANDATORY TOTP FLOW ────────────────────────────────────
+
+        if (foundUser.isTotpEnabled() && foundUser.isTotpVerified()) {
+            // Case 1: User has TOTP → ask for code
+            String tempToken = jwtService.generateTempToken(foundUser, "TOTP_LOGIN", 10);
+
+            LoginResponse response = new LoginResponse();
+            response.setRequireTotpSetup(false);
+            response.setTempToken(tempToken);
+            response.setUserId(foundUser.getId());
+            response.setUsername(foundUser.getUsername());
+            response.setMessage("Please verify TOTP to complete login.");
+            return response;
+        }
+
+        // Case 2: No TOTP → mandatory setup
+        String setupToken = jwtService.generateTempToken(foundUser, "TOTP_SETUP", 30);
+
+        LoginResponse response = new LoginResponse();
+        response.setRequireTotpSetup(true);
+        response.setTempToken(setupToken);
+        response.setUserId(foundUser.getId());
+        response.setUsername(foundUser.getUsername());
+        response.setMessage("TOTP Setup is mandatory. Redirecting to setup...");
+        return response;
     }
 
     /**
-     * Completes login by verifying TOTP code.
+     * Complete login with TOTP code. Returns access + refresh tokens.
      */
     @Transactional
-    public LoginResponse completeTotpLogin(String tempToken, String totpCode) {
-        // Validate Temp Token Purpose
+    public LoginResponse completeTotpLogin(String tempToken, String totpCode,
+                                            String deviceInfo, String ipAddress) {
         if (!jwtService.isValidTempToken(tempToken, "TOTP_LOGIN")) {
             throw new RuntimeException("Invalid or expired session. Please login again.");
         }
@@ -126,22 +141,20 @@ public class UserAuthenticationService {
             throw new RuntimeException("User not found.");
         }
 
-        // Verify TOTP via TotpService (handles encryption, lockout, etc.)
         boolean verified = totpService.verifyLogin(user, totpCode);
-
         if (!verified) {
             throw new RuntimeException("Invalid Authenticator code.");
         }
 
-        // Prepare Final Access Token
-        return generateFinalLoginResponse(user);
+        return generateFinalLoginResponse(user, deviceInfo, ipAddress);
     }
 
     /**
-     * Completes login by verifying Backup Code.
+     * Complete login with backup code. Returns access + refresh tokens.
      */
     @Transactional
-    public LoginResponse completeRecoveryLogin(String tempToken, String backupCode) {
+    public LoginResponse completeRecoveryLogin(String tempToken, String backupCode,
+                                                String deviceInfo, String ipAddress) {
         if (!jwtService.isValidTempToken(tempToken, "TOTP_LOGIN")) {
             throw new RuntimeException("Invalid or expired session. Please login again.");
         }
@@ -151,25 +164,57 @@ public class UserAuthenticationService {
             throw new RuntimeException("User not found.");
         }
 
-        // Verify Backup Code
         boolean verified = totpService.verifyBackupCode(user, backupCode);
-
         if (!verified) {
             throw new RuntimeException("Invalid or used backup code.");
         }
 
-        return generateFinalLoginResponse(user);
+        return generateFinalLoginResponse(user, deviceInfo, ipAddress);
     }
 
-    private LoginResponse generateFinalLoginResponse(User user) {
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                user.getUsername(), null, Collections.emptyList());
-        String accessToken = jwtService.generateToken(authentication);
+    /**
+     * Complete registration with TOTP. Returns access + refresh tokens + backup codes.
+     */
+    @Transactional
+    public LoginResponse completeRegistrationWithTotp(String tempToken, String totpCode,
+                                                       String deviceInfo, String ipAddress) {
+        String username = jwtService.extractUsername(tempToken);
+
+        User pendingUser = userService.getPendingRegistrationUser(username);
+        if (pendingUser == null) {
+            throw new RuntimeException("Registration expired. Please register again.");
+        }
+
+        List<String> backupCodes = totpService.verifySetupForPendingUser(pendingUser, totpCode);
+
+        User savedUser = userService.completePendingRegistration(username);
+
+        String accessToken = jwtService.generateToken(savedUser);
+        String refreshToken = jwtService.generateRefreshToken(savedUser.getId(), deviceInfo, ipAddress);
+
+        LoginResponse response = new LoginResponse();
+        response.setToken(accessToken);
+        response.setRefreshToken(refreshToken);
+        response.setUserId(savedUser.getId());
+        response.setUsername(savedUser.getUsername());
+        response.setBackupCodes(backupCodes);
+        response.setMessage("Registration complete! Welcome to CoinTrack.");
+
+        logger.info("Registration completed with TOTP for user: {}", savedUser.getUsername());
+        return response;
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────
+
+    private LoginResponse generateFinalLoginResponse(User user, String deviceInfo, String ipAddress) {
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user.getId(), deviceInfo, ipAddress);
 
         logger.info(LoggingConstants.AUTH_LOGIN_SUCCESS, user.getUsername());
 
         LoginResponse response = new LoginResponse();
         response.setToken(accessToken);
+        response.setRefreshToken(refreshToken);
         response.setUserId(user.getId());
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
@@ -181,54 +226,69 @@ public class UserAuthenticationService {
         return response;
     }
 
-    /**
-     * Get user from JWT token.
-     */
     @Transactional(readOnly = true)
     public User getUserByToken(String token) {
         String username = jwtService.extractUsername(token);
         return userRepository.findByUsername(username);
     }
 
-    /**
-     * Validate JWT token.
-     */
+    public User getUserEntityByUsername(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) throw new RuntimeException("User not found");
+        return user;
+    }
+
+    public User getPendingUser(String username) {
+        return userService.getPendingRegistrationUser(username);
+    }
+
     @Transactional(readOnly = true)
     public boolean isTokenValid(String token) {
         try {
             String username = jwtService.extractUsername(token);
-            User user = userRepository.findByUsername(username);
-            if (user != null) {
-                UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .authorities("USER")
-                        .build();
-                return jwtService.validateToken(token, userDetails);
-            }
-            return false;
+            return username != null && !jwtService.isTokenExpired(token);
         } catch (Exception e) {
             return false;
         }
     }
 
-    /**
-     * Find user by username, email, or mobile number.
-     */
-    private User findUserByUsernameEmailOrMobile(String identifier) {
-        if (identifier == null || identifier.trim().isEmpty()) {
-            return null;
+    // ── Password rate limiting ──────────────────────────────────────
+
+    private boolean isPasswordLocked(User user) {
+        if (user.getPasswordLockedUntil() == null) return false;
+        if (Instant.now().isBefore(user.getPasswordLockedUntil())) return true;
+
+        // Lock expired — reset
+        user.setPasswordLockedUntil(null);
+        user.setPasswordFailedAttempts(0);
+        userRepository.save(user);
+        return false;
+    }
+
+    private void handlePasswordFailure(User user) {
+        int attempts = user.getPasswordFailedAttempts() + 1;
+        user.setPasswordFailedAttempts(attempts);
+
+        if (attempts >= 10) {
+            user.setPasswordLockedUntil(Instant.now().plus(1, ChronoUnit.HOURS));
+        } else if (attempts >= 5) {
+            user.setPasswordLockedUntil(Instant.now().plus(15, ChronoUnit.MINUTES));
         }
 
+        userRepository.save(user);
+    }
+
+    // ── User lookup ─────────────────────────────────────────────────
+
+    private User findUserByUsernameEmailOrMobile(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) return null;
+
         User user = userRepository.findByUsername(identifier);
-        if (user != null)
-            return user;
+        if (user != null) return user;
 
         user = userRepository.findByEmail(identifier);
-        if (user != null)
-            return user;
+        if (user != null) return user;
 
-        // Try normalized phone number
         String normalized = normalizePhoneNumber(identifier);
         if (normalized != null) {
             user = userRepository.findByPhoneNumber(normalized);
@@ -237,69 +297,9 @@ public class UserAuthenticationService {
     }
 
     private String normalizePhoneNumber(String input) {
-        if (input == null || input.trim().isEmpty())
-            return null;
+        if (input == null || input.trim().isEmpty()) return null;
         String cleaned = input.replaceAll("[^0-9+]", "");
-        if (cleaned.matches("^\\d{10}$")) {
-            return "+91" + cleaned;
-        }
+        if (cleaned.matches("^\\d{10}$")) return "+91" + cleaned;
         return cleaned;
-    }
-
-    /**
-     * Get User entity by username.
-     */
-    public User getUserEntityByUsername(String username) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
-        return user;
-    }
-
-    /**
-     * Get pending user from registration storage (not from DB).
-     * Used during registration TOTP setup flow.
-     */
-    public User getPendingUser(String username) {
-        return userService.getPendingRegistrationUser(username);
-    }
-
-    /**
-     * Complete registration by verifying TOTP and saving user to DB.
-     * Flow: Register → Setup TOTP → Verify TOTP → THIS METHOD → Dashboard
-     */
-    @Transactional
-    public LoginResponse completeRegistrationWithTotp(String tempToken, String totpCode) {
-        // Extract username from temp token
-        String username = jwtService.extractUsername(tempToken);
-
-        // Get pending user
-        User pendingUser = userService.getPendingRegistrationUser(username);
-        if (pendingUser == null) {
-            throw new RuntimeException("Registration expired. Please register again.");
-        }
-
-        // Verify TOTP code against pending secret
-        List<String> backupCodes = totpService.verifySetupForPendingUser(pendingUser, totpCode);
-
-        // TOTP verified! Now save user to DB
-        User savedUser = userService.completePendingRegistration(username);
-
-        // Generate JWT access token using Authentication object
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                savedUser.getUsername(), null, Collections.emptyList());
-        String accessToken = jwtService.generateToken(authentication);
-
-        // Build response
-        LoginResponse response = new LoginResponse();
-        response.setToken(accessToken);
-        response.setUserId(savedUser.getId());
-        response.setUsername(savedUser.getUsername());
-        response.setBackupCodes(backupCodes);
-        response.setMessage("Registration complete! Welcome to CoinTrack.");
-
-        logger.info("Registration completed with TOTP for user: {}", savedUser.getUsername());
-        return response;
     }
 }

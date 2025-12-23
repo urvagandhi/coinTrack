@@ -1,7 +1,9 @@
 package com.urva.myfinance.coinTrack.portfolio.sync.impl;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,20 +17,22 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalFunds;
+import com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalHolding;
+import com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalMfHolding;
+import com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalPosition;
 import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
-import com.urva.myfinance.coinTrack.broker.model.ExpiryReason;
 import com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository;
-import com.urva.myfinance.coinTrack.broker.service.BrokerService;
-import com.urva.myfinance.coinTrack.broker.service.BrokerServiceFactory;
-import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
-import com.urva.myfinance.coinTrack.common.util.HashUtil;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedHolding;
-import com.urva.myfinance.coinTrack.portfolio.model.CachedPosition;
+import com.urva.myfinance.coinTrack.portfolio.aggregation.AggregatedPortfolio;
+import com.urva.myfinance.coinTrack.portfolio.aggregation.PortfolioAggregationService;
+import com.urva.myfinance.coinTrack.portfolio.dto.ManualRefreshResponse;
 import com.urva.myfinance.coinTrack.portfolio.model.SyncLog;
 import com.urva.myfinance.coinTrack.portfolio.model.SyncStatus;
-import com.urva.myfinance.coinTrack.portfolio.repository.CachedHoldingRepository;
-import com.urva.myfinance.coinTrack.portfolio.repository.CachedPositionRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.CanonicalFundsRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.CanonicalHoldingRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.CanonicalMfHoldingRepository;
+import com.urva.myfinance.coinTrack.portfolio.repository.CanonicalPositionRepository;
 import com.urva.myfinance.coinTrack.portfolio.repository.SyncLogRepository;
 import com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService;
 import com.urva.myfinance.coinTrack.portfolio.sync.SyncSafetyService;
@@ -40,24 +44,30 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
     private static final ZoneId INDIA_ZONE = ZoneId.of("Asia/Kolkata");
 
     private final BrokerAccountRepository brokerAccountRepository;
-    private final CachedHoldingRepository holdingRepository;
-    private final CachedPositionRepository positionRepository;
+    private final CanonicalHoldingRepository holdingRepository;
+    private final CanonicalPositionRepository positionRepository;
+    private final CanonicalFundsRepository fundsRepository;
+    private final CanonicalMfHoldingRepository mfHoldingRepository;
     private final SyncLogRepository syncLogRepository;
-    private final BrokerServiceFactory brokerServiceFactory;
+    private final PortfolioAggregationService aggregationService;
     private final SyncSafetyService syncSafetyService;
 
     @Autowired
     public PortfolioSyncServiceImpl(BrokerAccountRepository brokerAccountRepository,
-            CachedHoldingRepository holdingRepository,
-            CachedPositionRepository positionRepository,
+            CanonicalHoldingRepository holdingRepository,
+            CanonicalPositionRepository positionRepository,
+            CanonicalFundsRepository fundsRepository,
+            CanonicalMfHoldingRepository mfHoldingRepository,
             SyncLogRepository syncLogRepository,
-            BrokerServiceFactory brokerServiceFactory,
+            PortfolioAggregationService aggregationService,
             SyncSafetyService syncSafetyService) {
         this.brokerAccountRepository = brokerAccountRepository;
         this.holdingRepository = holdingRepository;
         this.positionRepository = positionRepository;
+        this.fundsRepository = fundsRepository;
+        this.mfHoldingRepository = mfHoldingRepository;
         this.syncLogRepository = syncLogRepository;
-        this.brokerServiceFactory = brokerServiceFactory;
+        this.aggregationService = aggregationService;
         this.syncSafetyService = syncSafetyService;
     }
 
@@ -65,9 +75,30 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
     @Transactional
     public void syncUser(String userId) {
         List<BrokerAccount> accounts = brokerAccountRepository.findByUserId(userId);
+        if (accounts.isEmpty()) return;
+
+        // Delegate to aggregation service for parallel multi-broker fetch
+        AggregatedPortfolio result = aggregationService.aggregateForUser(userId);
+
+        // Persist canonical models
+        persistAggregatedData(userId, result);
+
+        // Update sync timestamps on accounts
+        LocalDateTime now = LocalDateTime.now(INDIA_ZONE);
         for (BrokerAccount account : accounts) {
-            runFullSyncForAccount(account);
+            if (Boolean.TRUE.equals(account.getIsActive()) && !result.staleBrokers().contains(account.getBroker())) {
+                account.setLastSuccessfulSync(now);
+                brokerAccountRepository.save(account);
+            }
         }
+
+        // Create sync log
+        SyncStatus status = result.syncErrors().isEmpty() ? SyncStatus.SUCCESS : SyncStatus.PARTIAL_FAILURE;
+        String message = result.syncErrors().isEmpty() ? "Sync complete"
+                : "Sync completed with errors: " + result.syncErrors().stream()
+                    .map(e -> e.brokerType() + ": " + e.humanMessage())
+                    .collect(Collectors.joining("; "));
+        createLog(userId, null, status, message, 0L);
     }
 
     @Override
@@ -78,31 +109,33 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
 
     @Override
     public void syncAllActiveAccounts() {
-        // 1. Global Lock
         if (!syncSafetyService.tryGlobalSyncLock()) {
             logger.warn("Global sync already running. Skipping execution.");
             return;
         }
 
         try {
-            // 2. Market Hours Validation (CRON ONLY)
             if (!syncSafetyService.isMarketOpen()) {
                 logger.info("Market is closed. Skipping global sync.");
                 return;
             }
 
+            // Collect unique user IDs from active accounts and sync per-user
             int page = 0;
             int size = 100;
+            Set<String> syncedUsers = new java.util.HashSet<>();
             Page<BrokerAccount> accountPage;
 
             do {
                 accountPage = brokerAccountRepository.findByIsActiveTrue(PageRequest.of(page, size));
                 for (BrokerAccount account : accountPage.getContent()) {
-                    try {
-                        // Running sync in transaction for each account individually to isolate failures
-                        runFullSyncForAccount(account);
-                    } catch (Exception e) {
-                        logger.error("Critical error syncing account {}: {}", account.getId(), e.getMessage());
+                    String userId = account.getUserId();
+                    if (syncedUsers.add(userId)) {
+                        try {
+                            syncUser(userId);
+                        } catch (Exception e) {
+                            logger.error("Critical error syncing user {}: {}", userId, e.getMessage());
+                        }
                     }
                 }
                 page++;
@@ -116,7 +149,6 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
     @Override
     @Transactional
     public SyncLog runFullSyncForAccount(BrokerAccount account) {
-        // 3. Account Lock
         if (!syncSafetyService.tryAccountLock(account.getId())) {
             logger.warn("Sync already running for account {}. Skipping.", account.getId());
             return createLog(account.getUserId(), account.getBroker(), SyncStatus.FAILURE,
@@ -131,57 +163,35 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
     }
 
     @Override
-    public com.urva.myfinance.coinTrack.portfolio.dto.ManualRefreshResponse triggerManualRefreshForUser(String userId) {
+    public ManualRefreshResponse triggerManualRefreshForUser(String userId) {
         List<BrokerAccount> accounts = brokerAccountRepository.findByUserId(userId);
-        List<String> triggered = new java.util.ArrayList<>();
-        List<String> skipped = new java.util.ArrayList<>();
+        List<String> triggered = new ArrayList<>();
+        List<String> skipped = new ArrayList<>();
 
+        boolean hasValidAccount = false;
         for (BrokerAccount account : accounts) {
             String brokerName = account.getBroker() != null ? account.getBroker().name() : "UNKNOWN";
-            String accountId = account.getId();
 
-            // 1. Check Account Lock (Non-blocking check)
-            if (!syncSafetyService.tryAccountLock(accountId)) {
-                skipped.add(brokerName + " (Already running)");
+            if (!account.hasCredentials() || account.isTokenExpired()) {
+                skipped.add(brokerName + " (Invalid Token/Credentials)");
                 continue;
             }
-
-            // 2. Validate Credentials/Token
-            // Note: We do this AFTER acquiring lock to ensure consistent state check,
-            // OR checks before lock are fine too but we must release lock if we acquired
-            // it.
-            // Let's do validation. If invalid, release lock immediately.
-            try {
-                if (!account.hasCredentials() || account.isTokenExpired()) {
-                    skipped.add(brokerName + " (Invalid Token/Credentials)");
-                    syncSafetyService.releaseAccountLock(accountId);
-                    continue;
-                }
-            } catch (Exception e) {
-                skipped.add(brokerName + " (Error: " + e.getMessage() + ")");
-                syncSafetyService.releaseAccountLock(accountId);
-                continue;
-            }
-
-            // 3. Async Execution
-            java.util.concurrent.CompletableFuture.runAsync(() -> {
-                try {
-                    logger.info("Starting manual sync for account {}", accountId);
-                    // CRITICAL FIX: Direct call to executeSyncLogic() bypassing lock check
-                    // because we already acquired it in the main thread logic above.
-                    // If we used runFullSyncForAccount(), it would fail trying to re-acquire the
-                    // lock.
-                    executeSyncLogic(account);
-                } catch (Exception e) {
-                    logger.error("Error during manual sync async execution", e);
-                } finally {
-                    syncSafetyService.releaseAccountLock(accountId);
-                }
-            });
+            hasValidAccount = true;
             triggered.add(brokerName);
         }
 
-        return com.urva.myfinance.coinTrack.portfolio.dto.ManualRefreshResponse.builder()
+        if (hasValidAccount) {
+            // Use aggregation service for parallel fetch
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    syncUser(userId);
+                } catch (Exception e) {
+                    logger.error("Error during manual sync for user {}", userId, e);
+                }
+            });
+        }
+
+        return ManualRefreshResponse.builder()
                 .accepted(!triggered.isEmpty())
                 .message(triggered.isEmpty() ? "No accounts synced." : "Refresh initiated.")
                 .triggeredBrokers(triggered)
@@ -192,179 +202,87 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
     private SyncLog executeSyncLogic(BrokerAccount account) {
         LocalDateTime startTime = LocalDateTime.now(INDIA_ZONE);
         Broker broker = account.getBroker();
-        String appUserId = account.getUserId(); // Internal App User ID
+        String userId = account.getUserId();
 
-        // 1. Validation
         if (!Boolean.TRUE.equals(account.getIsActive())) {
-            return createLog(appUserId, broker, SyncStatus.FAILURE, "Account is inactive", 0L);
+            return createLog(userId, broker, SyncStatus.FAILURE, "Account is inactive", 0L);
         }
         if (!account.hasCredentials()) {
-            return createLog(appUserId, broker, SyncStatus.FAILURE, "No credentials available", 0L);
+            return createLog(userId, broker, SyncStatus.FAILURE, "No credentials available", 0L);
         }
         if (Boolean.TRUE.equals(account.isTokenExpired())) {
-            return createLog(appUserId, broker, SyncStatus.FAILURE, "Token expired", 0L);
+            return createLog(userId, broker, SyncStatus.FAILURE, "Token expired", 0L);
         }
 
-        BrokerService service;
         try {
-            service = brokerServiceFactory.getService(broker);
+            // Delegate to aggregation service
+            AggregatedPortfolio result = aggregationService.aggregateForUser(userId);
+
+            // Persist
+            persistAggregatedData(userId, result);
+
+            // Determine status
+            boolean hasErrors = !result.syncErrors().isEmpty();
+            SyncStatus status = hasErrors ? SyncStatus.PARTIAL_FAILURE : SyncStatus.SUCCESS;
+
+            if (!hasErrors) {
+                account.setLastSuccessfulSync(startTime);
+                brokerAccountRepository.save(account);
+            }
+
+            long duration = Duration.between(startTime, LocalDateTime.now(INDIA_ZONE)).toMillis();
+            String message = hasErrors
+                ? "Partial: " + result.syncErrors().stream()
+                    .map(e -> e.brokerType() + ": " + e.humanMessage())
+                    .collect(Collectors.joining("; "))
+                : "Sync complete";
+
+            return createLog(userId, broker, status, message, duration);
+
         } catch (Exception e) {
-            return createLog(appUserId, broker, SyncStatus.FAILURE, "Broker service unsupported: " + e.getMessage(),
-                    0L);
-        }
-
-        boolean holdingsSuccess = false;
-        boolean positionsSuccess = false;
-        String message = "Sync complete";
-        StringBuilder errorDetails = new StringBuilder();
-
-        try {
-            // 2. Fetch & Update Holdings
-            try {
-                List<CachedHolding> fetchedHoldings = service.fetchHoldings(account);
-                if (fetchedHoldings != null) {
-                    updateHoldings(appUserId, broker, fetchedHoldings);
-                    holdingsSuccess = true;
-                } else {
-                    errorDetails.append("Holdings fetch returned null. ");
-                }
-            } catch (BrokerException be) {
-                handleBrokerException(account, be);
-                throw be; // Re-throw to stop sync
-            } catch (Exception e) {
-                ExpiryReason reason = service.detectExpiry(e);
-                if (reason != ExpiryReason.NONE) {
-                    handleExpiry(account, reason, e.getMessage());
-                    throw new BrokerException("Detected expiry in Holdings", broker, e, reason);
-                }
-                errorDetails.append("Holdings failed: ").append(e.getMessage()).append(". ");
-                logger.error("Holdings fetch failed for user {} broker {}: {}", appUserId, broker, e.getMessage());
-            }
-
-            // 3. Fetch & Update Positions
-            try {
-                List<CachedPosition> fetchedPositions = service.fetchPositions(account);
-                if (fetchedPositions != null) {
-                    updatePositions(appUserId, broker, fetchedPositions);
-                    positionsSuccess = true;
-                } else {
-                    errorDetails.append("Positions fetch returned null. ");
-                }
-            } catch (BrokerException be) {
-                handleBrokerException(account, be);
-                throw be;
-            } catch (Exception e) {
-                ExpiryReason reason = service.detectExpiry(e);
-                if (reason != ExpiryReason.NONE) {
-                    handleExpiry(account, reason, e.getMessage());
-                    throw new BrokerException("Detected expiry in Positions", broker, e, reason);
-                }
-                errorDetails.append("Positions failed: ").append(e.getMessage()).append(". ");
-                logger.error("Positions fetch failed for user {} broker {}: {}", appUserId, broker, e.getMessage());
-            }
-
-        } catch (BrokerException be) {
-            // Log failure correctly
-            return createLog(appUserId, broker, SyncStatus.FAILURE, "Sync failed: " + be.getMessage(),
-                    java.time.Duration.between(startTime, LocalDateTime.now(INDIA_ZONE)).toMillis());
-        }
-
-        // 4. Determine Final Status
-        SyncStatus status;
-        if (holdingsSuccess && positionsSuccess) {
-            status = SyncStatus.SUCCESS;
-            account.setLastSuccessfulSync(startTime);
-            brokerAccountRepository.save(account);
-        } else if (!holdingsSuccess && !positionsSuccess) {
-            status = SyncStatus.FAILURE;
-            message = errorDetails.length() > 0 ? errorDetails.toString() : "Unknown failure";
-        } else {
-            status = SyncStatus.PARTIAL_FAILURE;
-            message = "Partial Success. " + errorDetails.toString();
-        }
-
-        long duration = java.time.Duration.between(startTime, LocalDateTime.now(INDIA_ZONE)).toMillis();
-        return createLog(appUserId, broker, status, message, duration);
-    }
-
-    private void updateHoldings(String userId, Broker broker, List<CachedHolding> fetchedList) {
-        // Fetch existing from DB
-        List<CachedHolding> existingList = holdingRepository.findByUserIdAndBroker(userId, broker);
-        Map<String, CachedHolding> existingMap = existingList.stream()
-                .collect(Collectors.toMap(CachedHolding::getSymbol, h -> h));
-
-        Set<String> fetchedSymbols = fetchedList.stream()
-                .map(CachedHolding::getSymbol)
-                .collect(Collectors.toSet());
-
-        // Update or Insert
-        for (CachedHolding fetched : fetchedList) {
-            // Re-calculate checksum including P&L and Price fields to ensure updates
-            // persist
-            String checksum = HashUtil.sha256(fetched.getSymbol() + fetched.getQuantity() + fetched.getAverageBuyPrice()
-                    + fetched.getLastPrice() + fetched.getPnl() + fetched.getDayChange());
-            fetched.setChecksumHash(checksum);
-            fetched.setUserId(userId); // Ensure userId is set
-            fetched.setBroker(broker);
-            fetched.setLastUpdated(LocalDateTime.now(INDIA_ZONE));
-
-            if (existingMap.containsKey(fetched.getSymbol())) {
-                CachedHolding existing = existingMap.get(fetched.getSymbol());
-                if (checksum.equals(existing.getChecksumHash())) {
-                    continue; // Skip update if unchanged
-                }
-                fetched.setId(existing.getId()); // Update in place
-            }
-            holdingRepository.save(fetched);
-        }
-
-        // Delete Stale entries (Optimized removal)
-        // Only delete entries that existed in DB but are NOT in the fetched list
-        List<CachedHolding> toDelete = existingList.stream()
-                .filter(h -> !fetchedSymbols.contains(h.getSymbol()))
-                .collect(Collectors.toList());
-
-        if (!toDelete.isEmpty()) {
-            holdingRepository.deleteAll(toDelete);
+            logger.error("Sync failed for user {} broker {}: {}", userId, broker, e.getMessage());
+            long duration = Duration.between(startTime, LocalDateTime.now(INDIA_ZONE)).toMillis();
+            return createLog(userId, broker, SyncStatus.FAILURE, "Sync failed: " + e.getMessage(), duration);
         }
     }
 
-    private void updatePositions(String userId, Broker broker, List<CachedPosition> fetchedList) {
-        List<CachedPosition> existingList = positionRepository.findByUserIdAndBroker(userId, broker);
-        Map<String, CachedPosition> existingMap = existingList.stream()
-                .collect(Collectors.toMap(CachedPosition::getSymbol, p -> p));
-
-        Set<String> fetchedSymbols = fetchedList.stream()
-                .map(CachedPosition::getSymbol)
-                .collect(Collectors.toSet());
-
-        for (CachedPosition fetched : fetchedList) {
-            // Re-calculate checksum including MTM/PnL to ensure updates persist
-            String checksum = HashUtil.sha256(fetched.getSymbol() + fetched.getQuantity() + fetched.getBuyPrice()
-                    + fetched.getPositionType() + fetched.getMtm() + fetched.getPnl() + fetched.getValue()
-                    + fetched.getBuyQuantity() + fetched.getSellQuantity() + fetched.getNetQuantity()
-                    + fetched.getOvernightQuantity());
-            fetched.setChecksumHash(checksum);
-            fetched.setUserId(userId);
-            fetched.setBroker(broker);
-            fetched.setLastUpdated(LocalDateTime.now(INDIA_ZONE));
-
-            if (existingMap.containsKey(fetched.getSymbol())) {
-                CachedPosition existing = existingMap.get(fetched.getSymbol());
-                if (checksum.equals(existing.getChecksumHash())) {
-                    continue;
-                }
-                fetched.setId(existing.getId());
-            }
-            positionRepository.save(fetched);
+    /**
+     * Persists aggregated canonical data to MongoDB.
+     * Upserts by compound unique keys as defined in canonical model indexes.
+     */
+    private void persistAggregatedData(String userId, AggregatedPortfolio result) {
+        // Persist holdings — upsert by (userId, brokerAccountId, isin)
+        for (CanonicalHolding h : result.holdings()) {
+            h.setUserId(userId);
+            holdingRepository.findByUserIdAndBrokerAccountIdAndIsin(userId, h.getBrokerAccountId(), h.getIsin())
+                .ifPresent(existing -> h.setId(existing.getId()));
+            holdingRepository.save(h);
         }
 
-        List<CachedPosition> toDelete = existingList.stream()
-                .filter(p -> !fetchedSymbols.contains(p.getSymbol()))
-                .collect(Collectors.toList());
+        // Persist positions — upsert by (userId, brokerAccountId, symbol, instrumentType)
+        for (CanonicalPosition p : result.positions()) {
+            p.setUserId(userId);
+            positionRepository.findByUserIdAndBrokerAccountIdAndSymbolAndInstrumentType(
+                userId, p.getBrokerAccountId(), p.getSymbol(), p.getInstrumentType())
+                .ifPresent(existing -> p.setId(existing.getId()));
+            positionRepository.save(p);
+        }
 
-        if (!toDelete.isEmpty()) {
-            positionRepository.deleteAll(toDelete);
+        // Persist funds — upsert by (userId, brokerAccountId)
+        for (Map.Entry<Broker, CanonicalFunds> entry : result.funds().entrySet()) {
+            CanonicalFunds f = entry.getValue();
+            f.setUserId(userId);
+            fundsRepository.findByUserIdAndBrokerAccountId(userId, f.getBrokerAccountId())
+                .ifPresent(existing -> f.setId(existing.getId()));
+            fundsRepository.save(f);
+        }
+
+        // Persist MF holdings — upsert by (userId, brokerAccountId, isin)
+        for (CanonicalMfHolding mf : result.mfHoldings()) {
+            mf.setUserId(userId);
+            mfHoldingRepository.findByUserIdAndBrokerAccountIdAndIsin(userId, mf.getBrokerAccountId(), mf.getIsin())
+                .ifPresent(existing -> mf.setId(existing.getId()));
+            mfHoldingRepository.save(mf);
         }
     }
 
@@ -379,18 +297,5 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
                 .timestamp(LocalDateTime.now(INDIA_ZONE))
                 .build();
         return syncLogRepository.save(log);
-    }
-
-    private void handleBrokerException(BrokerAccount account, BrokerException e) {
-        if (e.isTokenExpired() || (e.getExpiryReason() != null && e.getExpiryReason() != ExpiryReason.NONE)) {
-            handleExpiry(account, e.getExpiryReason(), e.getMessage());
-        }
-    }
-
-    private void handleExpiry(BrokerAccount account, ExpiryReason reason, String message) {
-        logger.warn("Expiry detected for account {}: {}", account.getId(), reason);
-        account.setIsActive(false);
-        account.setExpiryReason(reason);
-        brokerAccountRepository.save(account);
     }
 }

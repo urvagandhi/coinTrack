@@ -5,19 +5,17 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.urva.myfinance.coinTrack.common.util.HashUtil;
 import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
+import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
+import com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 
 import jakarta.servlet.FilterChain;
@@ -26,20 +24,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * JWT authentication filter that validates Bearer tokens on each request.
+ * JWT authentication filter.
  *
- * SECURITY DESIGN:
- * - Extracts JWT token from Authorization header
- * - Validates token and sets up Spring Security context
- * - Does NOT skip any paths - SecurityConfig handles permitAll() logic
- * - If no Authorization header, simply continues filter chain (SecurityConfig
- * decides access)
- *
- * NOTE: The shouldNotFilter() method was REMOVED because:
- * 1. SecurityConfig.authorizeHttpRequests() already defines permitted paths
- * 2. Duplicating that logic here caused maintenance issues
- * 3. This filter gracefully handles missing tokens (just doesn't set auth
- * context)
+ * Changed:
+ * - No longer calls CustomerUserDetailService (DB lookup) per request.
+ *   Builds UserPrincipal from JWT claims (userId, username, email) directly.
+ * - Checks InvalidatedTokenRepository for logout blacklist.
  */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -47,70 +37,67 @@ public class JwtFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
 
     private final JWTService jwtService;
-    private final ApplicationContext applicationContext;
+    private final InvalidatedTokenRepository invalidatedTokenRepository;
 
-    public JwtFilter(JWTService jwtService, ApplicationContext applicationContext) {
+    public JwtFilter(JWTService jwtService, InvalidatedTokenRepository invalidatedTokenRepository) {
         this.jwtService = jwtService;
-        this.applicationContext = applicationContext;
+        this.invalidatedTokenRepository = invalidatedTokenRepository;
     }
 
-    /**
-     * Filters incoming requests to validate JWT tokens and set up authentication
-     * context.
-     *
-     * @param request     HTTP request
-     * @param response    HTTP response
-     * @param filterChain filter chain to continue processing
-     * @throws ServletException if servlet error occurs
-     * @throws IOException      if I/O error occurs
-     */
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
-        String token = null;
-        String username = null;
-
-        logger.debug("Processing request: {} {}", request.getMethod(), request.getRequestURI());
 
         try {
-            // Extract JWT token from Authorization header
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                token = authHeader.substring(7);
-                logger.debug("Extracted JWT token from Authorization header");
+                String token = authHeader.substring(7);
 
-                try {
-                    username = jwtService.extractUsername(token);
-                    logger.debug(LoggingConstants.AUTH_TOKEN_VALIDATED, username);
-
-                    // Add userId to MDC for request-scoped logging
-                    MDC.put(LoggingConstants.MDC_USER_ID, username);
-                } catch (Exception e) {
-                    logger.warn(LoggingConstants.AUTH_TOKEN_INVALID, e.getMessage());
+                String username = jwtService.extractUsername(token);
+                if (username == null) {
+                    filterChain.doFilter(request, response);
+                    return;
                 }
-            }
 
-            // Validate token and set up authentication context
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                try {
-                    UserDetailsService userDetailsService = applicationContext.getBean(UserDetailsService.class);
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                logger.debug(LoggingConstants.AUTH_TOKEN_VALIDATED, username);
 
-                    if (jwtService.validateToken(token, userDetails)) {
-                        logger.debug("JWT token validated successfully for user: {}", username);
+                // Skip temp tokens (they have a "purpose" claim — not access tokens)
+                String purpose = jwtService.extractPurpose(token);
+                if (purpose != null) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
 
-                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
-                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
-                    } else {
-                        logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, username, "invalid token");
+                if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                    // Validate signature + expiry
+                    if (!jwtService.validateToken(token, username)) {
+                        logger.warn(LoggingConstants.AUTH_TOKEN_INVALID, "expired or invalid signature");
                         SecurityContextHolder.clearContext();
+                        filterChain.doFilter(request, response);
+                        return;
                     }
-                } catch (BeansException | UsernameNotFoundException e) {
-                    logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, username, e.getMessage());
-                    SecurityContextHolder.clearContext();
+
+                    // Check blacklist (logout invalidation)
+                    String tokenHash = HashUtil.sha256(token);
+                    if (invalidatedTokenRepository.existsByTokenHash(tokenHash)) {
+                        logger.warn("Rejected invalidated token for user: {}", username);
+                        SecurityContextHolder.clearContext();
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
+                    // Build principal from token claims — no DB call
+                    String userId = jwtService.extractUserId(token);
+                    String email = jwtService.extractEmail(token);
+                    UserPrincipal principal = new UserPrincipal(userId, username, email);
+
+                    MDC.put(LoggingConstants.MDC_USER_ID, userId != null ? userId : username);
+
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
         } catch (Exception e) {
@@ -120,8 +107,4 @@ public class JwtFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
-
-    // NOTE: shouldNotFilter() method REMOVED intentionally
-    // SecurityConfig.authorizeHttpRequests() handles all path-based access control
-    // This avoids duplication and maintenance issues
 }

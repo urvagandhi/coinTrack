@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
-import com.urva.myfinance.coinTrack.common.util.NotificationService;
+import com.urva.myfinance.coinTrack.common.service.NotificationService;
+import com.urva.myfinance.coinTrack.common.util.RequestUtils;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
@@ -26,6 +27,7 @@ import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.service.TotpService;
 import com.urva.myfinance.coinTrack.user.service.UserAuthenticationService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -112,7 +114,8 @@ public class TotpController {
      * Requires: Temp Token (Purpose: TOTP_LOGIN) in Body
      */
     @PostMapping("/login/totp")
-    public ResponseEntity<?> completeLoginTotp(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> completeLoginTotp(@RequestBody Map<String, String> body,
+                                                HttpServletRequest request) {
         String tempToken = body.get("tempToken");
         String code = body.get("code");
 
@@ -121,7 +124,8 @@ public class TotpController {
         }
 
         try {
-            LoginResponse response = userAuthService.completeTotpLogin(tempToken, code);
+            LoginResponse response = userAuthService.completeTotpLogin(tempToken, code,
+                    RequestUtils.extractUserAgent(request), RequestUtils.extractIpAddress(request));
             return ResponseEntity.ok(ApiResponse.success(response, "Login Successful"));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
@@ -133,16 +137,18 @@ public class TotpController {
      * Requires: Temp Token (Purpose: TOTP_LOGIN) in Body
      */
     @PostMapping("/login/recovery")
-    public ResponseEntity<?> completeLoginRecovery(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> completeLoginRecovery(@RequestBody Map<String, String> body,
+                                                    HttpServletRequest request) {
         String tempToken = body.get("tempToken");
-        String code = body.get("code"); // "code" here is the backup code
+        String code = body.get("code");
 
         if (tempToken == null || code == null) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken or backup code"));
         }
 
         try {
-            LoginResponse response = userAuthService.completeRecoveryLogin(tempToken, code);
+            LoginResponse response = userAuthService.completeRecoveryLogin(tempToken, code,
+                    RequestUtils.extractUserAgent(request), RequestUtils.extractIpAddress(request));
             return ResponseEntity.ok(ApiResponse.success(response, "Login Successful"));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
@@ -315,7 +321,8 @@ public class TotpController {
      * On success: Save user to DB, return JWT token and backup codes
      */
     @PostMapping("/2fa/register/verify")
-    public ResponseEntity<?> verifyRegistrationTotp(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> verifyRegistrationTotp(@RequestBody Map<String, String> body,
+                                                     HttpServletRequest request) {
         String tempToken = body.get("tempToken");
         String code = body.get("code");
 
@@ -323,15 +330,14 @@ public class TotpController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken or code"));
         }
 
-        // Validate temp token
         if (!jwtService.isValidTempToken(tempToken, "TOTP_REGISTRATION")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Invalid or expired registration token"));
         }
 
         try {
-            // Complete registration - verifies TOTP, saves user to DB, returns JWT
-            LoginResponse response = userAuthService.completeRegistrationWithTotp(tempToken, code);
+            LoginResponse response = userAuthService.completeRegistrationWithTotp(tempToken, code,
+                    RequestUtils.extractUserAgent(request), RequestUtils.extractIpAddress(request));
             return ResponseEntity.ok(ApiResponse.success(response, "Registration Complete"));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));

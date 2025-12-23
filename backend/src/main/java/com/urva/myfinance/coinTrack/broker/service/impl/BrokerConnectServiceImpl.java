@@ -11,30 +11,31 @@ import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
 import com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository;
 import com.urva.myfinance.coinTrack.broker.service.BrokerConnectService;
-import com.urva.myfinance.coinTrack.broker.service.BrokerService;
-import com.urva.myfinance.coinTrack.broker.service.BrokerServiceFactory;
+import com.urva.myfinance.coinTrack.broker.service.ZerodhaLiveDataService;
 import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
 
 @Service
 public class BrokerConnectServiceImpl implements BrokerConnectService {
 
-    private final BrokerServiceFactory brokerFactory;
+    private final ZerodhaLiveDataService zerodhaLiveDataService;
     private final BrokerAccountRepository accountRepository;
     private final com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService portfolioSyncService;
 
     @Autowired
-    public BrokerConnectServiceImpl(BrokerServiceFactory brokerFactory, BrokerAccountRepository accountRepository,
+    public BrokerConnectServiceImpl(ZerodhaLiveDataService zerodhaLiveDataService,
+            BrokerAccountRepository accountRepository,
             com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService portfolioSyncService) {
-        this.brokerFactory = brokerFactory;
+        this.zerodhaLiveDataService = zerodhaLiveDataService;
         this.accountRepository = accountRepository;
         this.portfolioSyncService = portfolioSyncService;
     }
 
     @Override
     public String getLoginUrl(Broker broker) {
-        BrokerService service = brokerFactory.getService(broker);
-        return service.getLoginUrl()
-                .orElseThrow(() -> new BrokerException("Broker does not support login URL generation", broker));
+        if (broker == Broker.ZERODHA) {
+            throw new BrokerException("Use /zerodha/connect endpoint directly", broker);
+        }
+        throw new BrokerException("Broker not yet supported", broker);
     }
 
     @Override
@@ -60,9 +61,7 @@ public class BrokerConnectServiceImpl implements BrokerConnectService {
         }
 
         // 3. Exchange Token
-        // 3. Exchange Token
-        BrokerService service = brokerFactory.getService(broker);
-        if (broker == Broker.ZERODHA && service instanceof ZerodhaBrokerService) {
+        if (broker == Broker.ZERODHA) {
             String apiKey = account.getZerodhaApiKey();
             String encryptedSecret = account.getEncryptedZerodhaApiSecret();
 
@@ -70,18 +69,13 @@ public class BrokerConnectServiceImpl implements BrokerConnectService {
                 throw new BrokerException("Missing Zerodha API credentials. Please disconnect and reconnect.", broker);
             }
 
-            ZerodhaBrokerService zerodhaService = (ZerodhaBrokerService) service;
-            java.util.Map<String, Object> tokenData = zerodhaService.exchangeToken(requestToken, apiKey,
+            java.util.Map<String, Object> tokenData = zerodhaLiveDataService.exchangeToken(requestToken, apiKey,
                     encryptedSecret);
 
             account.setZerodhaAccessToken((String) tokenData.get("access_token"));
             account.setZerodhaPublicToken((String) tokenData.get("public_token"));
             account.setZerodhaTokenCreatedAt(LocalDateTime.now());
-            account.setZerodhaTokenExpiresAt(zerodhaService.extractTokenExpiry(account));
-
-            // Also set generic access token for backward compatibility if needed,
-            // but relying on specific fields is cleaner as per user request.
-            // account.setAccessToken((String) tokenData.get("access_token"));
+            account.setZerodhaTokenExpiresAt(zerodhaLiveDataService.extractTokenExpiry(account));
         } else {
             // Fallback for simulation or other brokers
             account.setAccessToken("simulated_access_token_" + requestToken);

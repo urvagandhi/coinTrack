@@ -24,9 +24,8 @@ import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
 import com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository;
 import com.urva.myfinance.coinTrack.broker.service.BrokerConnectService;
-import com.urva.myfinance.coinTrack.broker.service.BrokerServiceFactory;
+import com.urva.myfinance.coinTrack.broker.service.ZerodhaLiveDataService;
 import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
-import com.urva.myfinance.coinTrack.broker.service.impl.ZerodhaBrokerService;
 import com.urva.myfinance.coinTrack.common.util.EncryptionUtil;
 import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
 import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
@@ -49,19 +48,19 @@ public class BrokerConnectController {
     private final UserService userService;
     private final BrokerAccountRepository accountRepository;
     private final EncryptionUtil encryptionUtil;
-    private final BrokerServiceFactory brokerFactory;
+    private final ZerodhaLiveDataService zerodhaLiveDataService;
     private final String frontendUrl;
 
     @Autowired
     public BrokerConnectController(BrokerConnectService brokerConnectService, UserService userService,
             BrokerAccountRepository accountRepository, EncryptionUtil encryptionUtil,
-            BrokerServiceFactory brokerFactory,
+            ZerodhaLiveDataService zerodhaLiveDataService,
             @Value("${frontend.url:http://localhost:3000}") String frontendUrl) {
         this.brokerConnectService = brokerConnectService;
         this.userService = userService;
         this.accountRepository = accountRepository;
         this.encryptionUtil = encryptionUtil;
-        this.brokerFactory = brokerFactory;
+        this.zerodhaLiveDataService = zerodhaLiveDataService;
         this.frontendUrl = frontendUrl;
     }
 
@@ -93,8 +92,8 @@ public class BrokerConnectController {
 
             if (broker == Broker.ZERODHA) {
                 if (account != null && account.getZerodhaApiKey() != null) {
-                    ZerodhaBrokerService service = (ZerodhaBrokerService) brokerFactory.getService(Broker.ZERODHA);
-                    return ResponseEntity.ok(Map.of("loginUrl", service.getLoginUrl(account.getZerodhaApiKey())));
+                    return ResponseEntity.ok(Map.of("loginUrl",
+                            zerodhaLiveDataService.getLoginUrl(account.getZerodhaApiKey())));
                 } else {
                     return ResponseEntity.badRequest()
                             .body("Zerodha credentials not found. Please provide API Key and Secret.");
@@ -102,8 +101,12 @@ public class BrokerConnectController {
             }
 
             // Fallback for other brokers
-            String url = brokerConnectService.getLoginUrl(broker);
-            return ResponseEntity.ok(Map.of("loginUrl", url));
+            try {
+                String url = brokerConnectService.getLoginUrl(broker);
+                return ResponseEntity.ok(Map.of("loginUrl", url));
+            } catch (BrokerException e) {
+                return ResponseEntity.badRequest().body(e.getMessage());
+            }
 
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid broker name: {}", brokerName);

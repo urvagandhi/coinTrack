@@ -82,9 +82,32 @@ export function AuthProvider({ children }) {
         const token = tokenManager.getToken();
 
         if (!token || tokenManager.isTokenExpired(token)) {
-            logger.info('No valid token found during init, starting as guest');
-            dispatch({ type: AUTH_ACTIONS.LOGOUT });
-            return;
+            // Try refresh token before giving up
+            const refreshToken = tokenManager.getRefreshToken();
+            if (refreshToken) {
+                try {
+                    const result = await authAPI.refresh(refreshToken);
+                    if (result?.token) {
+                        tokenManager.setToken(result.token);
+                        if (result.refreshToken) {
+                            tokenManager.setRefreshToken(result.refreshToken);
+                        }
+                        // Continue with the new token — fall through to profile fetch below
+                    } else {
+                        tokenManager.removeAll();
+                        dispatch({ type: AUTH_ACTIONS.LOGOUT });
+                        return;
+                    }
+                } catch {
+                    tokenManager.removeAll();
+                    dispatch({ type: AUTH_ACTIONS.LOGOUT });
+                    return;
+                }
+            } else {
+                logger.info('No valid token found during init, starting as guest');
+                dispatch({ type: AUTH_ACTIONS.LOGOUT });
+                return;
+            }
         }
 
         // If we have a token, start loading but don't clear user yet
@@ -104,7 +127,7 @@ export function AuthProvider({ children }) {
             // Network errors or 500s should NOT log the user out
             if (error.status === 401) {
                 logger.error('Token invalid (401), logging out');
-                tokenManager.removeToken();
+                tokenManager.removeAll();
                 dispatch({ type: AUTH_ACTIONS.LOGOUT });
             } else {
                 // For other errors, keep the error state but don't destroy session
@@ -154,9 +177,8 @@ export function AuthProvider({ children }) {
                 };
             }
 
-            // CASE 2: Direct Success (Token + User)
-            // LoginResponse is flat, so we verify token and construct user object
-            const { token, ...userData } = response;
+            // CASE 3: Direct Success (Token + User — legacy path or future change)
+            const { token, refreshToken: loginRefreshToken, ...userData } = response;
 
             if (token) {
                 const user = {
@@ -164,13 +186,15 @@ export function AuthProvider({ children }) {
                     username: userData.username,
                     email: userData.email,
                     name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
-                    name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
                     phoneNumber: userData.mobile,
                     bio: userData.bio,
                     location: userData.location,
                 };
 
                 tokenManager.setToken(token, true);
+                if (loginRefreshToken) {
+                    tokenManager.setRefreshToken(loginRefreshToken);
+                }
                 logger.info('Login successful', { userId: user.id });
                 dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
                 return { success: true, user };
@@ -199,7 +223,7 @@ export function AuthProvider({ children }) {
             // Ignore server-side logout errors, proceed to client cleanup
             logger.warn('Server logout failed (non-critical)', { error: error.message });
         } finally {
-            tokenManager.removeToken();
+            tokenManager.removeAll();
             dispatch({ type: AUTH_ACTIONS.LOGOUT });
 
             if (typeof window !== 'undefined') {
@@ -226,6 +250,9 @@ export function AuthProvider({ children }) {
     const handleTotpLoginSuccess = (token, userData) => {
         logger.info('TOTP login successful', { userId: userData.userId });
         tokenManager.setToken(token, true);
+        if (userData.refreshToken) {
+            tokenManager.setRefreshToken(userData.refreshToken);
+        }
         const user = {
             id: userData.userId,
             username: userData.username,

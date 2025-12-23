@@ -46,6 +46,31 @@ export const tokenManager = {
         sessionStorage.removeItem('ct_jwt');
     },
 
+    // Refresh token — always in localStorage (survives tab close)
+    getRefreshToken: () => {
+        if (typeof window === 'undefined') return null;
+        return localStorage.getItem('ct_refresh');
+    },
+
+    setRefreshToken: (token) => {
+        if (typeof window === 'undefined') return;
+        if (token) {
+            localStorage.setItem('ct_refresh', token);
+        }
+    },
+
+    removeRefreshToken: () => {
+        if (typeof window === 'undefined') return;
+        localStorage.removeItem('ct_refresh');
+    },
+
+    removeAll: () => {
+        if (typeof window === 'undefined') return;
+        localStorage.removeItem('ct_jwt');
+        sessionStorage.removeItem('ct_jwt');
+        localStorage.removeItem('ct_refresh');
+    },
+
     isTokenExpired: (token) => {
         if (!token) return true;
         try {
@@ -122,12 +147,33 @@ api.interceptors.response.use(
             logger.error('[API] Response Error', errorDetails);
         }
 
-        // Handle Token Expiry (401)
-        if (error.response?.status === 401) {
-            tokenManager.removeToken();
-            if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-                // Optionally force redirect, but usually AuthContext handles this state change
+        // Handle Token Expiry (401) — try refresh before giving up
+        if (error.response?.status === 401 && config && !config.__isRefreshRetry) {
+            const refreshToken = tokenManager.getRefreshToken();
+            if (refreshToken && !config.url?.includes('/api/auth/refresh')) {
+                try {
+                    config.__isRefreshRetry = true;
+                    const { data: refreshData } = await axios.post(
+                        `${API_BASE_URL}/api/auth/refresh`,
+                        { refreshToken },
+                        { headers: { 'Content-Type': 'application/json' } }
+                    );
+                    const newTokens = refreshData?.data || refreshData;
+                    if (newTokens?.token) {
+                        tokenManager.setToken(newTokens.token);
+                        if (newTokens.refreshToken) {
+                            tokenManager.setRefreshToken(newTokens.refreshToken);
+                        }
+                        // Retry original request with new token
+                        config.headers.Authorization = `Bearer ${newTokens.token}`;
+                        return api(config);
+                    }
+                } catch (refreshError) {
+                    logger.warn('[API] Refresh token failed, logging out');
+                }
             }
+            // Refresh failed or no refresh token — clear everything
+            tokenManager.removeAll();
         }
 
         /**
@@ -178,7 +224,8 @@ export const endpoints = {
     },
     users: {
         me: '/api/users/me',
-        update: (id) => `/api/users/${id}`,
+        update: '/api/users/me',
+        changePassword: '/api/users/me/password',
     },
     portfolio: {
         summary: '/api/portfolio/summary',
@@ -239,7 +286,7 @@ const unwrapResponse = (data) => {
 export const authAPI = {
     login: async (credentials) => {
         const { data } = await api.post(endpoints.auth.login, credentials);
-        return unwrapResponse(data); // Returns { token, user } or { tempToken, requireTotpSetup }
+        return unwrapResponse(data);
     },
     register: async (userData) => {
         const { data } = await api.post(endpoints.auth.register, userData);
@@ -249,10 +296,14 @@ export const authAPI = {
         try {
             await api.post(endpoints.auth.logout);
         } catch (e) {
-            // Ignore logout errors
+            // Ignore logout errors — server-side invalidation is best-effort
         } finally {
-            tokenManager.removeToken();
+            tokenManager.removeAll();
         }
+    },
+    refresh: async (refreshToken) => {
+        const { data } = await api.post('/api/auth/refresh', { refreshToken });
+        return unwrapResponse(data);
     }
 };
 
@@ -262,11 +313,13 @@ export const userAPI = {
         return unwrapResponse(data);
     },
     updateProfile: async (id, payload) => {
-        const { data } = await api.put(endpoints.users.update(id), payload);
+        // id param kept for backward compat but endpoint is now /api/users/me
+        const { data } = await api.put(endpoints.users.update, payload);
         return unwrapResponse(data);
     },
     changePassword: async (id, newPassword, oldPassword) => {
-        const { data } = await api.post(`/api/users/${id}/change-password`, {
+        // id param kept for backward compat but endpoint is now /api/users/me/password
+        const { data } = await api.put(endpoints.users.changePassword, {
             password: newPassword,
             oldPassword: oldPassword
         });

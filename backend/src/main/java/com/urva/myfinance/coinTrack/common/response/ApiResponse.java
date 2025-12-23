@@ -8,14 +8,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * Standard API response wrapper for all endpoints.
- * Provides consistent structure for both success and error responses.
  *
  * Frontend can always expect:
- * - success: boolean indicating operation result
- * - data: payload (null on error)
- * - message: human-readable message
- * - timestamp: when response was generated
- * - requestId: correlation ID for debugging/support
+ * <ul>
+ *   <li>{@code success} — boolean indicating operation result</li>
+ *   <li>{@code data} — payload (null on error or void endpoints)</li>
+ *   <li>{@code message} — human-readable message</li>
+ *   <li>{@code timestamp} — ISO 8601 instant when response was generated</li>
+ *   <li>{@code requestId} — correlation ID for debugging/support</li>
+ * </ul>
  *
  * @param <T> Type of the data payload
  */
@@ -34,17 +35,18 @@ public class ApiResponse<T> {
     }
 
     /**
-     * Creates a successful response with data.
+     * Success with data (message defaults to "Success").
      */
     public static <T> ApiResponse<T> success(T data) {
         ApiResponse<T> response = new ApiResponse<>();
         response.success = true;
         response.data = data;
+        response.message = "Success";
         return response;
     }
 
     /**
-     * Creates a successful response with data and message.
+     * Success with data and a custom message.
      */
     public static <T> ApiResponse<T> success(T data, String message) {
         ApiResponse<T> response = new ApiResponse<>();
@@ -55,17 +57,17 @@ public class ApiResponse<T> {
     }
 
     /**
-     * Creates a successful response with message only.
+     * Success with message only — for void endpoints (logout, delete, etc.).
      */
-    public static <T> ApiResponse<T> success(String message) {
-        ApiResponse<T> response = new ApiResponse<>();
+    public static ApiResponse<Void> success(String message) {
+        ApiResponse<Void> response = new ApiResponse<>();
         response.success = true;
         response.message = message;
         return response;
     }
 
     /**
-     * Creates an error response with message.
+     * Error with message.
      */
     public static <T> ApiResponse<T> error(String message) {
         ApiResponse<T> response = new ApiResponse<>();

@@ -187,7 +187,6 @@ public class ForgotPasswordController {
             String userId = claims.getSubject();
 
             // Get user
-            @SuppressWarnings("null")
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
 

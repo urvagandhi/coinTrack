@@ -1,7 +1,5 @@
 package com.urva.myfinance.coinTrack.user.controller;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -10,46 +8,36 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
-import com.urva.myfinance.coinTrack.common.response.user.RegisterUserDTO;
-import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
-import com.urva.myfinance.coinTrack.common.util.NotificationService;
+import com.urva.myfinance.coinTrack.common.service.NotificationService;
 import com.urva.myfinance.coinTrack.common.util.RequestUtils;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
-import com.urva.myfinance.coinTrack.user.dto.LoginRequest;
-import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
+import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 import com.urva.myfinance.coinTrack.user.model.User;
-import com.urva.myfinance.coinTrack.user.service.UserAuthenticationService;
 import com.urva.myfinance.coinTrack.user.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 /**
- * REST controller for user management operations.
- * Handles authentication, registration, and CRUD operations for users.
+ * Profile management controller — /api/users/me endpoints only.
+ * Auth endpoints moved to AuthController.
  */
 @RestController
-@RequestMapping("/api")
-@Validated
+@RequestMapping("/api/users")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
-    private final UserAuthenticationService userAuthenticationService;
 
-    // Notification services - optional for backward compatibility
     private NotificationService notificationService;
     private EmailTokenService emailTokenService;
 
@@ -63,288 +51,26 @@ public class UserController {
         this.emailTokenService = emailTokenService;
     }
 
-    public UserController(UserService userService, UserAuthenticationService userAuthenticationService) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.userAuthenticationService = userAuthenticationService;
     }
 
-    /**
-     * Authenticate user with username, email, or mobile number.
-     *
-     * @param loginRequest login credentials
-     * @return JWT token and user information
-     */
-    @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
-        try {
-            logger.info(LoggingConstants.AUTH_LOGIN_STARTED, loginRequest.getUsernameOrEmailOrMobile());
-
-            // Use UserAuthenticationService for TOTP-aware login
-            LoginResponse response = userAuthenticationService.authenticate(
-                    loginRequest.getUsernameOrEmailOrMobile(),
-                    loginRequest.getPassword());
-
-            if (response != null) {
-                logger.info(LoggingConstants.AUTH_LOGIN_SUCCESS, loginRequest.getUsernameOrEmailOrMobile());
-                return ResponseEntity.ok(ApiResponse.success(response));
-            } else {
-                logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, loginRequest.getUsernameOrEmailOrMobile(),
-                        "invalid credentials");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Invalid credentials"));
-            }
-        } catch (Exception e) {
-            logger.error(LoggingConstants.AUTH_LOGIN_FAILED, loginRequest.getUsernameOrEmailOrMobile(), e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Authentication failed"));
-        }
-    }
-
-    /**
-     * Register a new user account.
-     *
-     * @param user user registration data
-     * @return created user information
-     */
-    @PostMapping("/auth/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterUserDTO dto) {
-        try {
-            logger.info("Registration attempt for username: {}", dto.getUsername());
-
-            // Map DTO to domain User
-            User user = new User();
-            user.setUsername(dto.getUsername());
-            String fullName = dto.getFirstName() != null ? dto.getFirstName() : "";
-            if (dto.getLastName() != null && !dto.getLastName().isEmpty()) {
-                fullName = fullName.isEmpty() ? dto.getLastName() : fullName + " " + dto.getLastName();
-            }
-            user.setName(fullName.isEmpty() ? null : fullName);
-            user.setEmail(dto.getEmail());
-            user.setPhoneNumber(dto.getMobile());
-            user.setPassword(dto.getPassword());
-
-            LoginResponse response = userService.registerUser(user);
-            logger.info("Registration initiated for: {}", user.getUsername());
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
-            /*
-             * Legacy code removed: direct save and auto-login is no longer used.
-             * User must now complete TOTP setup before account is created.
-             */
-        } catch (Exception e) {
-            logger.error("Error during registration: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("Registration failed: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Verify JWT token validity.
-     *
-     * @param request HTTP request containing Authorization header
-     * @return user information if token is valid
-     */
-    @GetMapping("/auth/verify-token")
-    public ResponseEntity<?> verifyToken(HttpServletRequest request) {
-        try {
-            String authHeader = request.getHeader("Authorization");
-
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Missing or invalid Authorization header"));
-            }
-
-            String token = authHeader.substring(7);
-            boolean isValid = userService.isTokenValid(token);
-
-            if (!isValid) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Invalid or expired token"));
-            }
-
-            User user = userService.getUserByToken(token);
-            if (user != null) {
-                user.setPassword(null); // Never return password
-                return ResponseEntity.ok(user);
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("User not found"));
-            }
-        } catch (Exception e) {
-            logger.error("Error verifying token: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Token verification failed"));
-        }
-    }
-
-    /**
-     * Check if username is available.
-     *
-     * @param username username to check
-     * @return availability status
-     */
-    @GetMapping("/auth/check-username/{username}")
-    public ResponseEntity<?> checkUsernameAvailability(@PathVariable String username) {
-        try {
-            boolean isAvailable = userService.isUsernameAvailable(username);
-            Map<String, Object> response = new HashMap<>();
-            response.put("username", username);
-            response.put("available", isAvailable);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            logger.error("Error checking username availability: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to check username availability"));
-        }
-    }
-
-    /**
-     * Get all users (admin operation).
-     *
-     * @return list of all users
-     */
-    @GetMapping("/users")
-    public ResponseEntity<?> getUsers() {
-        try {
-            List<User> users = userService.getAllUsers();
-            // Remove passwords from all users
-            users.forEach(user -> user.setPassword(null));
-            return ResponseEntity.ok(users);
-        } catch (Exception e) {
-            logger.error("Error fetching users: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to fetch users"));
-        }
-    }
-
-    /**
-     * Get user by ID.
-     *
-     * @param id user ID
-     * @return user information
-     */
-    @GetMapping("/users/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable String id) {
-        try {
-            User user = userService.getUserById(id);
-            if (user != null) {
-                user.setPassword(null); // Never return password
-                return ResponseEntity.ok(user);
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("User not found"));
-            }
-        } catch (Exception e) {
-            logger.error("Error fetching user {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to fetch user"));
-        }
-    }
-
-    /**
-     * Update user information.
-     *
-     * @param id   user ID
-     * @param user updated user data
-     * @return updated user information
-     */
-    @PutMapping("/users/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable String id, @Valid @RequestBody User user) {
-        try {
-            User updatedUser = userService.updateUser(id, user);
-            if (updatedUser != null) {
-                updatedUser.setPassword(null); // Never return password
-                logger.info("User updated successfully: {}", id);
-                return ResponseEntity.ok(updatedUser);
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("User not found"));
-            }
-        } catch (IllegalArgumentException e) {
-            // Validation errors (blank fields, duplicate email/username/mobile)
-            logger.warn("Validation failed for user {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Error updating user {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("Failed to update user"));
-        }
-    }
-
-    @PostMapping("/users/{id}/change-password")
-    public ResponseEntity<?> changePassword(
-            @PathVariable String id,
-            @RequestBody Map<String, String> payload,
-            HttpServletRequest httpRequest) {
-        try {
-            String newPassword = payload.get("password");
-            String oldPassword = payload.get("oldPassword");
-
-            if (oldPassword == null || oldPassword.isEmpty()) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Current password is required"));
-            }
-
-            if (newPassword == null || newPassword.length() < 8) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("New Password must be at least 8 characters"));
-            }
-
-            if (newPassword.equals(oldPassword)) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("New password cannot be the same as the current password"));
-            }
-
-            userService.changePassword(id, oldPassword, newPassword);
-
-            // Get user for email
-            User user = userService.getUserById(id);
-
-            // Send security alert (non-blocking)
-            try {
-                if (notificationService != null && user != null) {
-                    String ipAddress = RequestUtils.extractIpAddress(httpRequest);
-                    notificationService.sendSecurityAlertWithIP(user, "Password Changed", ipAddress);
-                    logger.info("Password change security alert sent to: {}", user.getEmail());
-                }
-            } catch (Exception emailEx) {
-                logger.warn("Failed to send password change security alert: {}", emailEx.getMessage());
-            }
-
-            // Invalidate all email tokens (non-blocking)
-            try {
-                if (emailTokenService != null) {
-                    emailTokenService.invalidateAllForUser(id);
-                    logger.info("Invalidated all email tokens after password change: userId={}", id);
-                }
-            } catch (Exception tokenEx) {
-                logger.warn("Failed to invalidate email tokens: {}", tokenEx.getMessage());
-            }
-
-            return ResponseEntity.ok(ApiResponse.success("Password updated successfully"));
-        } catch (Exception e) {
-            logger.error("Error changing password for user {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @GetMapping("/users/me")
+    @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Not authenticated"));
             }
 
+            // Get userId from JWT claims (no DB call for lookup)
             String username = authentication.getName();
             User user = userService.findUserByUsername(username);
 
             if (user != null) {
                 user.setPassword(null);
                 return ResponseEntity.ok(ApiResponse.success(user));
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
             }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
         } catch (Exception e) {
             logger.error("Error fetching current user: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -352,29 +78,90 @@ public class UserController {
         }
     }
 
-    /**
-     * Delete user account.
-     *
-     * @param id user ID
-     * @return success message
-     */
-    @DeleteMapping("/users/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable String id) {
+    @PutMapping("/me")
+    public ResponseEntity<?> updateCurrentUser(Authentication authentication,
+                                                @Valid @RequestBody User updates) {
         try {
-            boolean deleted = userService.deleteUser(id);
-            if (deleted) {
-                logger.info("User deleted successfully: {}", id);
-                Map<String, String> response = new HashMap<>();
-                response.put("message", "User deleted successfully");
-                return ResponseEntity.ok(response);
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("User not found"));
+            UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+            String userId = principal.getUserId();
+
+            User updated = userService.updateUser(userId, updates);
+            if (updated != null) {
+                updated.setPassword(null);
+                return ResponseEntity.ok(ApiResponse.success(updated));
             }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            logger.error("Error deleting user {}: {}", id, e.getMessage());
+            logger.error("Error updating user: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("Failed to update user"));
+        }
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<?> changePassword(Authentication authentication,
+                                             @RequestBody Map<String, String> payload,
+                                             HttpServletRequest httpRequest) {
+        try {
+            UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+            String userId = principal.getUserId();
+
+            String oldPassword = payload.get("oldPassword");
+            String newPassword = payload.get("password");
+
+            if (oldPassword == null || oldPassword.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Current password is required"));
+            }
+            if (newPassword == null || newPassword.length() < 8) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("New password must be at least 8 characters"));
+            }
+            if (newPassword.equals(oldPassword)) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("New password cannot be the same as the current password"));
+            }
+
+            userService.changePassword(userId, oldPassword, newPassword);
+
+            // Security alert
+            User user = userService.getUserById(userId);
+            try {
+                if (notificationService != null && user != null) {
+                    String ip = RequestUtils.extractIpAddress(httpRequest);
+                    notificationService.sendSecurityAlertWithIP(user, "Password Changed", ip);
+                }
+            } catch (Exception ex) {
+                logger.warn("Failed to send password change alert: {}", ex.getMessage());
+            }
+
+            // Invalidate email tokens
+            try {
+                if (emailTokenService != null) {
+                    emailTokenService.invalidateAllForUser(userId);
+                }
+            } catch (Exception ex) {
+                logger.warn("Failed to invalidate email tokens: {}", ex.getMessage());
+            }
+
+            return ResponseEntity.ok(ApiResponse.success("Password updated successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteCurrentUser(Authentication authentication) {
+        try {
+            UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+            boolean deleted = userService.deleteUser(principal.getUserId());
+            if (deleted) {
+                return ResponseEntity.ok(ApiResponse.success("Account deleted successfully"));
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
+        } catch (Exception e) {
+            logger.error("Error deleting user: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to delete user"));
+                    .body(ApiResponse.error("Failed to delete account"));
         }
     }
 }
