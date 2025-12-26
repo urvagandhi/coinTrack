@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -33,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/admin/emails")
 @RequiredArgsConstructor
+@Tag(name = "Admin Email Preview", description = "Preview email templates (dev only)")
 // Note: Endpoint is secured by SecurityConfig, accessible for development
 public class AdminEmailPreviewController {
 
@@ -41,6 +44,7 @@ public class AdminEmailPreviewController {
     /**
      * Preview an email template with sample data.
      */
+    @Operation(summary = "Preview an email template with sample data")
     @GetMapping(value = "/preview", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> previewTemplate(
             @RequestParam String template,
@@ -91,6 +95,7 @@ public class AdminEmailPreviewController {
     /**
      * List available templates.
      */
+    @Operation(summary = "List available email templates")
     @GetMapping("/templates")
     public ResponseEntity<?> listTemplates() {
         return ResponseEntity.ok(Map.of(

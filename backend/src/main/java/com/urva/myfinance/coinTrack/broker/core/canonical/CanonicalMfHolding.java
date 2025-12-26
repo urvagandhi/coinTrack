@@ -22,7 +22,8 @@ import java.time.Instant;
  */
 @Document(collection = "canonical_mf_holdings")
 @CompoundIndexes({
-    @CompoundIndex(name = "idx_mf_holding_unique", def = "{'userId': 1, 'brokerAccountId': 1, 'isin': 1}", unique = true)
+    @CompoundIndex(name = "idx_mf_holding_unique", def = "{'userId': 1, 'brokerAccountId': 1, 'isin': 1}", unique = true),
+    @CompoundIndex(name = "idx_mfholding_user", def = "{'userId': 1}")
 })
 @Builder
 @Getter

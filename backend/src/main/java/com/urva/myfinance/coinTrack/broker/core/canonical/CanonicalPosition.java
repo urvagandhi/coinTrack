@@ -25,7 +25,8 @@ import java.time.Instant;
  */
 @Document(collection = "canonical_positions")
 @CompoundIndexes({
-    @CompoundIndex(name = "idx_position_unique", def = "{'userId': 1, 'brokerAccountId': 1, 'symbol': 1, 'instrumentType': 1}", unique = true)
+    @CompoundIndex(name = "idx_position_unique", def = "{'userId': 1, 'brokerAccountId': 1, 'symbol': 1, 'instrumentType': 1}", unique = true),
+    @CompoundIndex(name = "idx_position_user", def = "{'userId': 1}")
 })
 @Builder
 @Getter

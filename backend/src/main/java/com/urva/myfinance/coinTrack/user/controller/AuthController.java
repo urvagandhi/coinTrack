@@ -33,6 +33,8 @@ import com.urva.myfinance.coinTrack.user.repository.RefreshTokenRepository;
 import com.urva.myfinance.coinTrack.user.service.UserAuthenticationService;
 import com.urva.myfinance.coinTrack.user.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
@@ -43,6 +45,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/auth")
 @Validated
+@Tag(name = "Authentication", description = "Login, registration, token refresh, and logout")
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
@@ -65,6 +68,7 @@ public class AuthController {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
+    @Operation(summary = "Authenticate user with credentials")
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
@@ -90,6 +94,7 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "Register a new user account")
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterUserDTO dto) {
         try {
@@ -115,6 +120,7 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "Verify JWT access token validity")
     @GetMapping("/verify-token")
     public ResponseEntity<?> verifyToken(HttpServletRequest request) {
         try {
@@ -142,6 +148,7 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "Check if a username is available")
     @GetMapping("/check-username/{username}")
     public ResponseEntity<?> checkUsernameAvailability(@PathVariable String username) {
         try {
@@ -160,6 +167,7 @@ public class AuthController {
      * Refresh access token using a refresh token.
      * Public endpoint — the refresh token IS the credential, no JWT needed.
      */
+    @Operation(summary = "Refresh access token using a refresh token")
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(@RequestBody Map<String, String> body, HttpServletRequest request) {
         String rawRefreshToken = body.get("refreshToken");
@@ -203,6 +211,7 @@ public class AuthController {
      * Logout — invalidates the current JWT and revokes refresh tokens.
      * Requires authentication (JWT needed to know what to invalidate).
      */
+    @Operation(summary = "Logout and invalidate tokens")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(Authentication authentication, HttpServletRequest request) {
         try {

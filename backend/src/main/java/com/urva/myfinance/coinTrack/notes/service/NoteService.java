@@ -4,9 +4,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.urva.myfinance.coinTrack.common.exception.AuthorizationException;
 import com.urva.myfinance.coinTrack.notes.model.Note;
 import com.urva.myfinance.coinTrack.notes.repository.NoteRepository;
 
@@ -16,8 +21,28 @@ public class NoteService {
     @Autowired
     private NoteRepository noteRepository;
 
+    /**
+     * Get all notes for a user (unpaginated — backward compatibility).
+     */
     public List<Note> getNotesByUserId(String userId) {
         return noteRepository.findByUserIdOrderByPinnedDescUpdatedAtDesc(userId);
+    }
+
+    /**
+     * Get paginated notes with optional search/tag filter.
+     */
+    public Page<Note> getNotesPaginated(String userId, int page, int size, String search, String tag) {
+        int safeSize = Math.min(Math.max(size, 1), 50);
+        Pageable pageable = PageRequest.of(page, safeSize,
+                Sort.by(Sort.Direction.DESC, "pinned").and(Sort.by(Sort.Direction.DESC, "updatedAt")));
+
+        if (search != null && !search.isBlank()) {
+            return noteRepository.searchByUserIdAndText(userId, search.trim(), pageable);
+        }
+        if (tag != null && !tag.isBlank()) {
+            return noteRepository.findByUserIdAndTagsContaining(userId, tag.trim(), pageable);
+        }
+        return noteRepository.findByUserId(userId, pageable);
     }
 
     public Note createNote(Note note) {
@@ -34,7 +59,7 @@ public class NoteService {
                 .orElseThrow(() -> new RuntimeException("Note not found"));
 
         if (!note.getUserId().equals(userId)) {
-            throw new RuntimeException("Unauthorized");
+            throw new AuthorizationException("You do not have permission to modify this note");
         }
 
         note.setTitle(noteDetails.getTitle());
@@ -53,7 +78,7 @@ public class NoteService {
                 .orElseThrow(() -> new RuntimeException("Note not found"));
 
         if (!note.getUserId().equals(userId)) {
-            throw new RuntimeException("Unauthorized");
+            throw new AuthorizationException("You do not have permission to delete this note");
         }
 
         noteRepository.delete(note);

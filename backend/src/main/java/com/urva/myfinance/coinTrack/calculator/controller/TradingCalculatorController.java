@@ -1,5 +1,7 @@
 package com.urva.myfinance.coinTrack.calculator.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +18,7 @@ import com.urva.myfinance.coinTrack.calculator.dto.request.MarginRequest;
 import com.urva.myfinance.coinTrack.calculator.dto.response.BrokerageResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.CalculatorResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.MarginResponse;
-import com.urva.myfinance.coinTrack.calculator.service.impl.TradingCalculatorServiceImpl;
+import com.urva.myfinance.coinTrack.calculator.service.TradingCalculatorService;
 
 import jakarta.validation.Valid;
 
@@ -27,14 +29,15 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/calculators/trading")
 @Validated
+@Tag(name = "Calculators — Trading", description = "Brokerage charges and margin requirements")
 public class TradingCalculatorController {
 
     private static final Logger logger = LoggerFactory.getLogger(TradingCalculatorController.class);
 
-    private final TradingCalculatorServiceImpl tradingService;
+    private final TradingCalculatorService tradingService;
 
     @Autowired
-    public TradingCalculatorController(TradingCalculatorServiceImpl tradingService) {
+    public TradingCalculatorController(TradingCalculatorService tradingService) {
         this.tradingService = tradingService;
     }
 
@@ -42,6 +45,7 @@ public class TradingCalculatorController {
      * Calculate brokerage and all charges.
      * POST /api/calculators/trading/brokerage
      */
+    @Operation(summary = "Calculate brokerage and transaction charges")
     @PostMapping("/brokerage")
     public ResponseEntity<CalculatorResponse<BrokerageResponse>> calculateBrokerage(
             @Valid @RequestBody BrokerageRequest request,
@@ -56,6 +60,7 @@ public class TradingCalculatorController {
      * Calculate Margin requirements.
      * POST /api/calculators/trading/margin
      */
+    @Operation(summary = "Calculate margin requirements")
     @PostMapping("/margin")
     public ResponseEntity<CalculatorResponse<MarginResponse>> calculateMargin(
             @Valid @RequestBody MarginRequest request,

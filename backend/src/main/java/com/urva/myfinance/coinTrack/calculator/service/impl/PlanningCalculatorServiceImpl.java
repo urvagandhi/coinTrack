@@ -21,7 +21,7 @@ import com.urva.myfinance.coinTrack.calculator.util.FinancialMath;
  * Service implementation for Financial Planning Calculators.
  */
 @Service
-public class PlanningCalculatorServiceImpl {
+public class PlanningCalculatorServiceImpl implements com.urva.myfinance.coinTrack.calculator.service.PlanningCalculatorService {
 
     private static final String CATEGORY = "planning";
     private static final BigDecimal HUNDRED = new BigDecimal("100");

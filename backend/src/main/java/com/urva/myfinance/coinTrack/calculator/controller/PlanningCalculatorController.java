@@ -1,5 +1,7 @@
 package com.urva.myfinance.coinTrack.calculator.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.urva.myfinance.coinTrack.calculator.dto.request.RetirementRequest;
 import com.urva.myfinance.coinTrack.calculator.dto.response.CalculatorResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.RetirementResponse;
-import com.urva.myfinance.coinTrack.calculator.service.impl.PlanningCalculatorServiceImpl;
+import com.urva.myfinance.coinTrack.calculator.service.PlanningCalculatorService;
 
 import jakarta.validation.Valid;
 
@@ -25,14 +27,15 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/calculators/planning")
 @Validated
+@Tag(name = "Calculators — Planning", description = "Retirement planning")
 public class PlanningCalculatorController {
 
     private static final Logger logger = LoggerFactory.getLogger(PlanningCalculatorController.class);
 
-    private final PlanningCalculatorServiceImpl planningService;
+    private final PlanningCalculatorService planningService;
 
     @Autowired
-    public PlanningCalculatorController(PlanningCalculatorServiceImpl planningService) {
+    public PlanningCalculatorController(PlanningCalculatorService planningService) {
         this.planningService = planningService;
     }
 
@@ -40,6 +43,7 @@ public class PlanningCalculatorController {
      * Calculate retirement planning.
      * POST /api/calculators/planning/retirement
      */
+    @Operation(summary = "Calculate retirement planning corpus and SIP")
     @PostMapping("/retirement")
     public ResponseEntity<CalculatorResponse<RetirementResponse>> calculateRetirement(
             @Valid @RequestBody RetirementRequest request,

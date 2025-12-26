@@ -15,4 +15,11 @@ public interface SyncLogRepository extends MongoRepository<SyncLog, String> {
 
     java.util.Optional<SyncLog> findFirstByUserIdAndStatusOrderByTimestampDesc(String userId,
             com.urva.myfinance.coinTrack.portfolio.model.SyncStatus status);
+
+    java.util.Optional<SyncLog> findFirstByUserIdAndBrokerOrderByTimestampDesc(String userId,
+            com.urva.myfinance.coinTrack.broker.model.Broker broker);
+
+    java.util.Optional<SyncLog> findFirstByUserIdAndBrokerAndStatusOrderByTimestampDesc(String userId,
+            com.urva.myfinance.coinTrack.broker.model.Broker broker,
+            com.urva.myfinance.coinTrack.portfolio.model.SyncStatus status);
 }

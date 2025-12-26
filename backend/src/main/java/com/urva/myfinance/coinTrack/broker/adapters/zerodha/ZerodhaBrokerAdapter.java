@@ -253,16 +253,14 @@ public class ZerodhaBrokerAdapter implements BrokerAdapter {
                 .map(rawMap -> {
                     ZerodhaMfHoldingRaw dto = new ZerodhaMfHoldingRaw();
                     dto.setFund(getString(rawMap, "fund"));
-                    dto.setTradingSymbol(getString(rawMap, "tradingsymbol"));
+                    dto.setTradingsymbol(getString(rawMap, "tradingsymbol"));
                     dto.setFolio(getString(rawMap, "folio"));
-                    dto.setAmc(getString(rawMap, "amc"));
-                    dto.setIsin(getString(rawMap, "isin"));
-                    dto.setQuantity(safeBigDecimal(rawMap.get("quantity")));
-                    dto.setAveragePrice(safeBigDecimal(rawMap.get("average_price")));
-                    dto.setCurrentPrice(safeBigDecimal(rawMap.get("last_price")));
-                    dto.setCurrentValue(safeBigDecimal(rawMap.get("current_value")));
-                    dto.setUnrealizedPL(safeBigDecimal(rawMap.get("pnl")));
+                    dto.setQuantity(safeDouble(rawMap.get("quantity")));
+                    dto.setAveragePrice(safeDouble(rawMap.get("average_price")));
+                    dto.setLastPrice(safeDouble(rawMap.get("last_price")));
+                    dto.setPnl(safeDouble(rawMap.get("pnl")));
                     dto.setLastPriceDate(getString(rawMap, "last_price_date"));
+                    dto.setPledgedQuantity(safeInteger(rawMap.get("pledged_quantity")));
                     dto.setRaw(rawMap);
                     return dto;
                 })
@@ -412,6 +410,24 @@ public class ZerodhaBrokerAdapter implements BrokerAdapter {
             return new BigDecimal(value.toString());
         } catch (NumberFormatException e) {
             return BigDecimal.ZERO;
+        }
+    }
+
+    private Double safeDouble(Object value) {
+        if (value == null) return 0.0;
+        try {
+            return Double.parseDouble(value.toString());
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
+    private Integer safeInteger(Object value) {
+        if (value == null) return 0;
+        try {
+            return Integer.parseInt(value.toString().split("\\.")[0]);
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 }

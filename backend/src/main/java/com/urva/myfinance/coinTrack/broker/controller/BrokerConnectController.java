@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
 import com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository;
@@ -40,6 +43,7 @@ import com.urva.myfinance.coinTrack.user.service.UserService;
  */
 @RestController
 @RequestMapping("/api/brokers")
+@Tag(name = "Broker Connect", description = "Connect and authenticate with brokers")
 public class BrokerConnectController {
 
     private static final Logger logger = LoggerFactory.getLogger(BrokerConnectController.class);
@@ -67,6 +71,7 @@ public class BrokerConnectController {
     /**
      * Returns login URL for a broker if credentials already exist.
      */
+    @Operation(summary = "Get broker login URL")
     @GetMapping("/{broker}/connect")
     public ResponseEntity<?> getConnectUrl(
             @PathVariable("broker") String brokerName) {
@@ -120,6 +125,7 @@ public class BrokerConnectController {
      * Saves Zerodha API credentials for the authenticated user.
      * IDEMPOTENT: Updates existing account if present, creates new if not.
      */
+    @Operation(summary = "Save Zerodha API credentials")
     @PostMapping("/zerodha/credentials")
     public ResponseEntity<?> saveZerodhaCredentials(
             @RequestBody Map<String, String> credentials) {
@@ -166,6 +172,7 @@ public class BrokerConnectController {
      * Handles OAuth callback from broker.
      * Exchanges request_token for access_token.
      */
+    @Operation(summary = "Handle broker OAuth callback")
     @PostMapping("/callback")
     public ResponseEntity<?> handleBrokerCallback(
             @RequestBody Map<String, String> payload) {
@@ -213,6 +220,7 @@ public class BrokerConnectController {
      * Handles browser redirect from Zerodha.
      * Redirects to Frontend Callback Page with request_token.
      */
+    @Operation(summary = "Handle Zerodha browser redirect callback")
     @GetMapping("/zerodha/callback")
     public ResponseEntity<Void> handleBrowserCallback(
             @RequestParam("request_token") String requestToken,

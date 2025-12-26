@@ -1,5 +1,7 @@
 package com.urva.myfinance.coinTrack.calculator.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +34,7 @@ import com.urva.myfinance.coinTrack.calculator.dto.response.PpfResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.RdResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.ScssResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.SsyResponse;
-import com.urva.myfinance.coinTrack.calculator.service.impl.SavingsCalculatorServiceImpl;
+import com.urva.myfinance.coinTrack.calculator.service.SavingsCalculatorService;
 
 import jakarta.validation.Valid;
 
@@ -43,14 +45,15 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/calculators/savings")
 @Validated
+@Tag(name = "Calculators — Savings", description = "PPF, EPF, FD, RD, SSY, NPS, NSC, SCSS, MIS, APY")
 public class SavingsCalculatorController {
 
     private static final Logger logger = LoggerFactory.getLogger(SavingsCalculatorController.class);
 
-    private final SavingsCalculatorServiceImpl savingsService;
+    private final SavingsCalculatorService savingsService;
 
     @Autowired
-    public SavingsCalculatorController(SavingsCalculatorServiceImpl savingsService) {
+    public SavingsCalculatorController(SavingsCalculatorService savingsService) {
         this.savingsService = savingsService;
     }
 
@@ -58,6 +61,7 @@ public class SavingsCalculatorController {
      * Calculate PPF maturity.
      * POST /api/calculators/savings/ppf
      */
+    @Operation(summary = "Calculate PPF maturity amount")
     @PostMapping("/ppf")
     public ResponseEntity<CalculatorResponse<PpfResponse>> calculatePpf(
             @Valid @RequestBody PpfRequest request,
@@ -71,6 +75,7 @@ public class SavingsCalculatorController {
      * Calculate EPF maturity.
      * POST /api/calculators/savings/epf
      */
+    @Operation(summary = "Calculate EPF maturity amount")
     @PostMapping("/epf")
     public ResponseEntity<CalculatorResponse<EpfResponse>> calculateEpf(
             @Valid @RequestBody EpfRequest request,
@@ -84,6 +89,7 @@ public class SavingsCalculatorController {
      * Calculate FD maturity.
      * POST /api/calculators/savings/fd
      */
+    @Operation(summary = "Calculate Fixed Deposit maturity amount")
     @PostMapping("/fd")
     public ResponseEntity<CalculatorResponse<FdResponse>> calculateFd(
             @Valid @RequestBody FdRequest request,
@@ -98,6 +104,7 @@ public class SavingsCalculatorController {
      * Calculate RD maturity.
      * POST /api/calculators/savings/rd
      */
+    @Operation(summary = "Calculate Recurring Deposit maturity amount")
     @PostMapping("/rd")
     public ResponseEntity<CalculatorResponse<RdResponse>> calculateRd(
             @Valid @RequestBody RdRequest request,
@@ -112,6 +119,7 @@ public class SavingsCalculatorController {
      * Calculate SSY maturity.
      * POST /api/calculators/savings/ssy
      */
+    @Operation(summary = "Calculate Sukanya Samriddhi Yojana maturity amount")
     @PostMapping("/ssy")
     public ResponseEntity<CalculatorResponse<SsyResponse>> calculateSsy(
             @Valid @RequestBody SsyRequest request,
@@ -125,6 +133,7 @@ public class SavingsCalculatorController {
      * Calculate NPS corpus and pension.
      * POST /api/calculators/savings/nps
      */
+    @Operation(summary = "Calculate NPS corpus and pension")
     @PostMapping("/nps")
     public ResponseEntity<CalculatorResponse<NpsResponse>> calculateNps(
             @Valid @RequestBody NpsRequest request,
@@ -139,6 +148,7 @@ public class SavingsCalculatorController {
      * Calculate NSC maturity.
      * POST /api/calculators/savings/nsc
      */
+    @Operation(summary = "Calculate National Savings Certificate maturity")
     @PostMapping("/nsc")
     public ResponseEntity<CalculatorResponse<NscResponse>> calculateNsc(
             @Valid @RequestBody NscRequest request,
@@ -152,6 +162,7 @@ public class SavingsCalculatorController {
      * Calculate SCSS maturity.
      * POST /api/calculators/savings/scss
      */
+    @Operation(summary = "Calculate Senior Citizen Savings Scheme maturity")
     @PostMapping("/scss")
     public ResponseEntity<CalculatorResponse<ScssResponse>> calculateScss(
             @Valid @RequestBody ScssRequest request,
@@ -165,6 +176,7 @@ public class SavingsCalculatorController {
      * Calculate PO MIS.
      * POST /api/calculators/savings/mis
      */
+    @Operation(summary = "Calculate Post Office Monthly Income Scheme returns")
     @PostMapping("/mis")
     public ResponseEntity<CalculatorResponse<MisResponse>> calculateMis(
             @Valid @RequestBody MisRequest request,
@@ -178,6 +190,7 @@ public class SavingsCalculatorController {
      * Calculate APY pension.
      * POST /api/calculators/savings/apy
      */
+    @Operation(summary = "Calculate Atal Pension Yojana contributions")
     @PostMapping("/apy")
     public ResponseEntity<CalculatorResponse<ApyResponse>> calculateApy(
             @Valid @RequestBody ApyRequest request,

@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
 import com.urva.myfinance.coinTrack.portfolio.dto.ManualRefreshResponse;
@@ -23,6 +26,7 @@ import com.urva.myfinance.coinTrack.user.repository.UserRepository;
  */
 @RestController
 @RequestMapping("/api/portfolio")
+@Tag(name = "Portfolio Sync", description = "Portfolio sync status and health")
 public class ManualRefreshController {
 
     private static final Logger logger = LoggerFactory.getLogger(ManualRefreshController.class);
@@ -36,6 +40,7 @@ public class ManualRefreshController {
         this.userRepository = userRepository;
     }
 
+    @Operation(summary = "Trigger manual portfolio sync across all connected brokers")
     @PostMapping("/refresh")
     public ResponseEntity<?> triggerManualRefresh(Principal principal) {
         logger.info(LoggingConstants.SYNC_STARTED, principal.getName());

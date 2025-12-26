@@ -34,7 +34,7 @@ import com.urva.myfinance.coinTrack.calculator.dto.response.TdsResponse;
  * Uses externalized tax slabs from YAML configuration.
  */
 @Service
-public class TaxCalculatorServiceImpl {
+public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.calculator.service.TaxCalculatorService {
 
     private static final Logger logger = LoggerFactory.getLogger(TaxCalculatorServiceImpl.class);
     private static final String CATEGORY = "tax";

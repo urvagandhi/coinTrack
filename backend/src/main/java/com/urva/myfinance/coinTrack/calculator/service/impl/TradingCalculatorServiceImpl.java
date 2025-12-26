@@ -20,7 +20,7 @@ import com.urva.myfinance.coinTrack.calculator.dto.response.MarginResponse;
  * Service implementation for Trading Calculators.
  */
 @Service
-public class TradingCalculatorServiceImpl {
+public class TradingCalculatorServiceImpl implements com.urva.myfinance.coinTrack.calculator.service.TradingCalculatorService {
 
         private static final String CATEGORY = "trading";
         private static final BigDecimal HUNDRED = new BigDecimal("100");

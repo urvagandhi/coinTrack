@@ -29,6 +29,8 @@ import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -49,6 +51,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Password Reset", description = "Forgot password and reset flows")
 public class ForgotPasswordController {
 
     private static final Logger logger = LoggerFactory.getLogger(ForgotPasswordController.class);
@@ -65,6 +68,7 @@ public class ForgotPasswordController {
      * Accepts email, username, or mobile number.
      * Always returns success message (no user enumeration).
      */
+    @Operation(summary = "Request a password reset link")
     @PostMapping("/forgot-password")
     public ResponseEntity<?> requestPasswordReset(
             @RequestBody Map<String, String> request,
@@ -112,6 +116,7 @@ public class ForgotPasswordController {
      * Verify password reset token and return temporary JWT.
      * The temp JWT is used to authorize the actual password reset.
      */
+    @Operation(summary = "Verify password reset token")
     @PostMapping("/forgot-password/verify")
     public ResponseEntity<?> verifyResetToken(@RequestBody Map<String, String> request) {
         String token = request.get("token");
@@ -153,6 +158,7 @@ public class ForgotPasswordController {
     /**
      * Reset password using temporary JWT.
      */
+    @Operation(summary = "Reset password using temporary token")
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(
             @RequestHeader(name = "Authorization", required = false) String authHeader,

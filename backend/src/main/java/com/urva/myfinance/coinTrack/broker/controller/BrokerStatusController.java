@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.urva.myfinance.coinTrack.broker.dto.BrokerStatusResponse;
 import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.user.model.User;
@@ -24,6 +27,7 @@ import com.urva.myfinance.coinTrack.common.response.ApiResponse;
  */
 @RestController
 @RequestMapping("/api/brokers")
+@Tag(name = "Broker Status", description = "Broker connection and token status")
 public class BrokerStatusController {
 
     private static final Logger logger = LoggerFactory.getLogger(BrokerStatusController.class);
@@ -37,6 +41,7 @@ public class BrokerStatusController {
         this.userRepository = userRepository;
     }
 
+    @Operation(summary = "Get connection status for a specific broker")
     @GetMapping("/{broker}/status")
     public ResponseEntity<?> getBrokerStatus(
             Principal principal,

@@ -1,29 +1,35 @@
-# Income Tax Slabs for India FY 2024-25 (AY 2025-26)
-# Reference: Union Budget 2024 (as of July 2024 updates)
+# Income Tax Slabs for India
+# Includes both FY 2024-25 and FY 2025-26 (Union Budget 2025)
+# Reference: Finance Act 2025
 
-assessmentYear: "2025-26"
-financialYear: "2024-25"
+assessmentYear: "2026-27"
+financialYear: "2025-26"
 
 regimes:
   NEW:
+    # FY 2025-26 New Regime slabs (Union Budget Feb 2025)
     slabs:
-      - limit: 300000
+      - limit: 400000
         rate: 0
-      - limit: 700000
+      - limit: 800000
         rate: 5
-      - limit: 1000000
-        rate: 10
       - limit: 1200000
+        rate: 10
+      - limit: 1600000
         rate: 15
-      - limit: 1500000
+      - limit: 2000000
         rate: 20
-      - limit: null # Above 15L
+      - limit: 2400000
+        rate: 25
+      - limit: null # Above 24L
         rate: 30
     standardDeduction: 75000
-    rebateLimit: 700000
-    standardRebate: 25000
+    # Rebate u/s 87A: if taxable income <= 12L under new regime, tax = 0
+    rebateLimit: 1200000
+    standardRebate: 60000
 
   OLD:
+    # Old regime slabs remain unchanged
     individual:
       slabs:
         - limit: 250000

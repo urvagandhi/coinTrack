@@ -81,6 +81,11 @@ public class SecurityConfig {
                         // Contact form (public)
                         .requestMatchers("/api/contact").permitAll()
 
+                        // OpenAPI / Swagger UI (public)
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**",
+                                "/v3/api-docs", "/v3/api-docs/**")
+                        .permitAll()
+
                         // Static resources
                         .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**",
                                 "/public/**", "/api/public/**", "/logo/**")

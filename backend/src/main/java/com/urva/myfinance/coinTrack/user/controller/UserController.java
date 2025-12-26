@@ -23,6 +23,8 @@ import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
@@ -32,6 +34,7 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "User Profile", description = "View and update user profile, change password")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -55,6 +58,7 @@ public class UserController {
         this.userService = userService;
     }
 
+    @Operation(summary = "Get current user profile")
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         try {
@@ -78,6 +82,7 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "Update current user profile")
     @PutMapping("/me")
     public ResponseEntity<?> updateCurrentUser(Authentication authentication,
                                                 @Valid @RequestBody User updates) {
@@ -99,6 +104,7 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "Change current user password")
     @PutMapping("/me/password")
     public ResponseEntity<?> changePassword(Authentication authentication,
                                              @RequestBody Map<String, String> payload,
@@ -149,6 +155,7 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "Delete current user account")
     @DeleteMapping("/me")
     public ResponseEntity<?> deleteCurrentUser(Authentication authentication) {
         try {

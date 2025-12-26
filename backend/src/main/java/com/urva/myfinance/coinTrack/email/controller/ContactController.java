@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -17,10 +19,12 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/public")
 @RequiredArgsConstructor
+@Tag(name = "Contact", description = "Public contact form")
 public class ContactController {
 
     private final EmailService emailService;
 
+    @Operation(summary = "Submit a public contact form message")
     @PostMapping("/contact")
     public ResponseEntity<String> sendContactMessage(@Valid @RequestBody ContactFormRequest request) {
         emailService.sendContactFormEmail(request.getName(), request.getEmail(), request.getMessage());
