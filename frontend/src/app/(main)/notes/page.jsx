@@ -1,327 +1,301 @@
+// src/app/(main)/notes/page.jsx — Notes with design tokens, pagination, Framer Motion
 'use client';
 
 import NoteDialog from '@/components/notes/NoteDialog';
-import PageTransition from '@/components/ui/PageTransition';
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/components/ui/use-toast";
+import { Skeleton } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import { notesAPI } from '@/lib/api';
+import { containerVariants, itemVariants, pageVariants, useMotionVariants } from '@/lib/motion';
+import { cn } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { formatDistanceToNow } from 'date-fns';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Clock, Edit2, Plus, Search, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Pin, Plus, Search, StickyNote, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
-const NoteCard = ({ note, onDelete, onEdit }) => (
-    <motion.div
-        layout
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        whileHover={{ y: -5, shadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)" }}
-        className={`relative p-6 rounded-2xl border backdrop-blur-md ${note.color} ${note.color?.includes('dark:') ? '' : 'dark:bg-gray-800/50'} border-transparent cursor-pointer group transition-all duration-300`}
-        onClick={() => onEdit(note)}
-    >
-        {/* Hover Actions */}
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-            <button
-                onClick={(e) => { e.stopPropagation(); onEdit(note); }}
-                className="p-1.5 bg-white/50 dark:bg-black/20 rounded-full hover:bg-white dark:hover:bg-black/40 text-gray-600 dark:text-gray-300"
-            >
-                <Edit2 className="w-3.5 h-3.5" />
-            </button>
-            <button
-                onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
-                className="p-1.5 bg-white/50 dark:bg-black/20 rounded-full hover:bg-red-500 hover:text-white text-gray-600 dark:text-gray-300 transition-colors"
-            >
-                <Trash2 className="w-3.5 h-3.5" />
-            </button>
-        </div>
+const PAGE_SIZE = 20;
 
-        <div className="mb-4">
-            <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 mb-2.5 leading-tight">{note.title}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">{note.content}</p>
-        </div>
+const NOTE_COLORS = {
+    default: { bg: 'bg-card', border: 'border-border', dot: 'bg-gray-400' },
+    rose: { bg: 'bg-rose-50 dark:bg-rose-950/20', border: 'border-rose-200 dark:border-rose-800/30', dot: 'bg-rose-400' },
+    orange: { bg: 'bg-orange-50 dark:bg-orange-950/20', border: 'border-orange-200 dark:border-orange-800/30', dot: 'bg-orange-400' },
+    amber: { bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800/30', dot: 'bg-amber-400' },
+    lime: { bg: 'bg-lime-50 dark:bg-lime-950/20', border: 'border-lime-200 dark:border-lime-800/30', dot: 'bg-lime-500' },
+    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-800/30', dot: 'bg-emerald-400' },
+    cyan: { bg: 'bg-cyan-50 dark:bg-cyan-950/20', border: 'border-cyan-200 dark:border-cyan-800/30', dot: 'bg-cyan-400' },
+    blue: { bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-200 dark:border-blue-800/30', dot: 'bg-blue-400' },
+    violet: { bg: 'bg-violet-50 dark:bg-violet-950/20', border: 'border-violet-200 dark:border-violet-800/30', dot: 'bg-violet-400' },
+    fuchsia: { bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/20', border: 'border-fuchsia-200 dark:border-fuchsia-800/30', dot: 'bg-fuchsia-400' },
+};
 
-        <div className="flex items-center justify-between pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
-            <div className="flex gap-2 flex-wrap">
-                {note.tags && note.tags.map(tag => (
-                    <span key={tag} className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-white/50 dark:bg-black/20 text-gray-600 dark:text-gray-400">
-                        {tag}
-                    </span>
-                ))}
+function getColorKey(colorStr) {
+    if (!colorStr) return 'default';
+    for (const key of Object.keys(NOTE_COLORS)) {
+        if (colorStr.includes(key)) return key;
+    }
+    return 'default';
+}
+
+function relativeTime(dateStr) {
+    if (!dateStr) return '';
+    const d = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(d / 60000);
+    if (m < 1) return 'Just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+}
+
+function NoteCard({ note, onEdit, onDelete, onPin }) {
+    const item = useMotionVariants(itemVariants);
+    const colors = NOTE_COLORS[getColorKey(note.color)] || NOTE_COLORS.default;
+
+    return (
+        <motion.div
+            variants={item}
+            className={cn('rounded-xl border p-4 cursor-pointer hover:shadow-sm transition-shadow duration-150 relative group', colors.bg, colors.border)}
+            onClick={() => onEdit(note)}
+            whileHover={{ y: -1 }}
+            transition={{ duration: 0.15 }}
+        >
+            {note.pinned && <Pin size={12} className="absolute top-3 right-3 text-muted-foreground" />}
+            <h3 className="text-sm font-semibold text-foreground mb-2 pr-5 line-clamp-1">{note.title || 'Untitled'}</h3>
+            {note.content && <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 mb-3">{note.content}</p>}
+            {note.tags?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                    {note.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-background/60 text-muted-foreground border border-current/10">#{tag}</span>
+                    ))}
+                    {note.tags.length > 3 && <span className="text-[10px] text-gray-400">+{note.tags.length - 3}</span>}
+                </div>
+            )}
+            <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-400">{relativeTime(note.updatedAt)}</span>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={(e) => { e.stopPropagation(); onPin(note); }}
+                        className="w-6 h-6 rounded flex items-center justify-center hover:bg-background/60 transition-colors">
+                        <Pin size={11} className={cn(note.pinned ? 'text-blue-600' : 'text-muted-foreground')} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
+                        className="w-6 h-6 rounded flex items-center justify-center hover:bg-background/60 transition-colors">
+                        <Trash2 size={11} className="text-muted-foreground hover:text-red-600" />
+                    </button>
+                </div>
             </div>
-            <div className="flex items-center text-xs text-gray-400 gap-1.5">
-                <Clock className="w-3 h-3" />
-                {note.updatedAt ? (() => {
-                    const updatedDate = new Date(note.updatedAt);
-                    const now = new Date();
-                    const diffMs = now.getTime() - updatedDate.getTime();
-                    // If within 1 minute, show "Just now"
-                    if (diffMs < 60000) return 'Just now';
-                    return formatDistanceToNow(updatedDate, { addSuffix: true });
-                })() : 'Just now'}
-            </div>
+        </motion.div>
+    );
+}
+
+function NoteCardSkeleton() {
+    return (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-5/6" />
+            <Skeleton className="h-3 w-2/3" />
         </div>
-    </motion.div>
-);
+    );
+}
 
 export default function NotesPage() {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedTag, setSelectedTag] = useState('All');
+    const [search, setSearch] = useState('');
+    const [activeTag, setActiveTag] = useState('all');
+    const [page, setPage] = useState(0);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingNote, setEditingNote] = useState(null);
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const pageV = useMotionVariants(pageVariants);
+    const container = useMotionVariants(containerVariants);
 
-    // Fetch Notes
-    const { data: notes = [], isLoading } = useQuery({
-        queryKey: ['notes'],
-        queryFn: notesAPI.getAll,
+    const { data, isLoading } = useQuery({
+        queryKey: ['notes', { page, search, tag: activeTag }],
+        queryFn: () => notesAPI.getAll({
+            page, size: PAGE_SIZE,
+            search: search || undefined,
+            tag: activeTag !== 'all' ? activeTag : undefined,
+        }),
+        staleTime: 30 * 1000,
+        keepPreviousData: true,
     });
 
-    // Optimistic Update Helpers
+    // Support both paginated and non-paginated responses
+    const notes = Array.isArray(data) ? data : (data?.content ?? []);
+    const totalPages = data?.totalPages ?? (Array.isArray(data) ? 1 : 0);
+    const totalElements = data?.totalElements ?? notes.length;
+
+    const allTags = ['all', ...new Set(notes.flatMap((n) => n.tags || []))].slice(0, 9);
+    const pinnedNotes = notes.filter((n) => n.pinned);
+    const unpinnedNotes = notes.filter((n) => !n.pinned);
+
+    // Optimistic update helpers
+    const invalidateNotes = () => queryClient.invalidateQueries({ queryKey: ['notes'] });
     const onMutateOptimistic = async (updateFn) => {
-        await queryClient.cancelQueries(['notes']);
-        const previousNotes = queryClient.getQueryData(['notes']) || [];
-        queryClient.setQueryData(['notes'], updateFn(previousNotes));
-        return { previousNotes };
+        await queryClient.cancelQueries({ queryKey: ['notes'] });
+        const prev = queryClient.getQueryData(['notes', { page, search, tag: activeTag }]);
+        const oldNotes = Array.isArray(prev) ? prev : (prev?.content ?? []);
+        const updated = updateFn(oldNotes);
+        queryClient.setQueryData(['notes', { page, search, tag: activeTag }], Array.isArray(prev) ? updated : { ...prev, content: updated });
+        return { prev };
+    };
+    const onErrorOptimistic = (err, _, ctx) => {
+        queryClient.setQueryData(['notes', { page, search, tag: activeTag }], ctx.prev);
+        toast({ title: 'Operation Failed', description: err?.message || 'Please try again.', variant: 'destructive' });
     };
 
-    const onErrorOptimistic = (err, newUser, context) => {
-        queryClient.setQueryData(['notes'], context.previousNotes);
-        toast({
-            title: "Operation Failed",
-            description: err.userMessage || "Failed to save note. Please try again.",
-            variant: "destructive",
-        });
-    };
-
-    // Create Mutation
     const createMutation = useMutation({
         mutationFn: notesAPI.create,
-        onMutate: (newNote) => onMutateOptimistic((old) => [
-            { ...newNote, id: 'temp-' + Date.now(), updatedAt: new Date().toISOString() },
-            ...old
-        ]),
-        onSuccess: () => {
-            toast({
-                title: "Note Created",
-                description: "Your new note has been saved successfully.",
-                variant: "success",
-            });
-        },
+        onMutate: (n) => onMutateOptimistic((old) => [{ ...n, id: 'temp-' + Date.now(), updatedAt: new Date().toISOString() }, ...old]),
+        onSuccess: () => toast({ title: 'Note Created', variant: 'success' }),
         onError: onErrorOptimistic,
-        onSettled: () => queryClient.invalidateQueries(['notes']),
+        onSettled: invalidateNotes,
     });
 
-    // Update Mutation
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }) => notesAPI.update(id, data),
-        onMutate: ({ id, data }) => onMutateOptimistic((old) =>
-            old.map(n => n.id === id ? { ...n, ...data, updatedAt: new Date().toISOString() } : n)
-        ),
-        onSuccess: () => {
-            toast({
-                title: "Note Updated",
-                description: "Your note has been updated successfully.",
-                variant: "success",
-            });
-        },
+        mutationFn: ({ id, data: d }) => notesAPI.update(id, d),
+        onMutate: ({ id, data: d }) => onMutateOptimistic((old) => old.map((n) => (n.id === id ? { ...n, ...d, updatedAt: new Date().toISOString() } : n))),
+        onSuccess: () => toast({ title: 'Note Updated', variant: 'success' }),
         onError: onErrorOptimistic,
-        onSettled: () => queryClient.invalidateQueries(['notes']),
+        onSettled: invalidateNotes,
     });
 
-    // Delete Mutation
     const deleteMutation = useMutation({
         mutationFn: notesAPI.delete,
-        onMutate: (id) => onMutateOptimistic((old) => old.filter(n => n.id !== id)),
-        onSuccess: () => {
-            toast({
-                title: "Note Deleted",
-                description: "The note has been permanently removed.",
-                variant: "success", // Using success variant for positive confirmation
-            });
-        },
+        onMutate: (id) => onMutateOptimistic((old) => old.filter((n) => n.id !== id)),
+        onSuccess: () => toast({ title: 'Note Deleted', variant: 'success' }),
         onError: onErrorOptimistic,
-        onSettled: () => queryClient.invalidateQueries(['notes']),
+        onSettled: invalidateNotes,
     });
 
     const handleSave = (noteData) => {
-        if (editingNote) {
-            updateMutation.mutate({ id: editingNote.id, data: noteData });
-        } else {
-            createMutation.mutate(noteData);
-        }
+        if (editingNote) updateMutation.mutate({ id: editingNote.id, data: noteData });
+        else createMutation.mutate(noteData);
     };
 
     const handleDelete = (id) => {
         toast({
-            title: "Delete this note?",
-            description: "This action cannot be undone.",
-            variant: "destructive",
-            action: (
-                <ToastAction
-                    altText="Confirm Delete"
-                    onClick={() => deleteMutation.mutate(id)}
-                    className="border-red-500 hover:bg-red-500 hover:text-white dark:border-red-500 dark:hover:bg-red-500 dark:hover:text-white"
-                >
-                    Delete
-                </ToastAction>
-            ),
+            title: 'Delete this note?',
+            description: 'This action cannot be undone.',
+            variant: 'warning',
+            action: <button onClick={() => deleteMutation.mutate(id)} className="text-xs font-medium text-red-600 hover:text-red-600/80">Delete</button>,
         });
     };
 
-    const handleEdit = (note) => {
-        setEditingNote(note);
-        setIsDialogOpen(true);
+    const handlePin = (note) => {
+        updateMutation.mutate({ id: note.id, data: { ...note, pinned: !note.pinned } });
     };
 
-    const handleCreate = () => {
-        setEditingNote(null);
-        setIsDialogOpen(true);
-    };
+    const openCreate = () => { setEditingNote(null); setIsDialogOpen(true); };
+    const openEdit = (note) => { setEditingNote(note); setIsDialogOpen(true); };
 
-    // Filter Logic
-    const filteredNotes = notes.filter(note => {
-        const matchesSearch = (note.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-            (note.content?.toLowerCase() || '').includes(searchQuery.toLowerCase());
-        const matchesTag = selectedTag === 'All' || (note.tags && note.tags.includes(selectedTag));
-        return matchesSearch && matchesTag;
-    });
-
-    const allTags = ['All', ...new Set(notes.flatMap(note => note.tags || []))];
-
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center min-h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-            </div>
-        );
-    }
+    const gridClass = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3';
 
     return (
-        <PageTransition>
-            <div className="max-w-7xl mx-auto space-y-8">
-                {/* Header Area */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            My Notes
-                            <span className="text-sm font-normal text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                                {notes.length}
-                            </span>
-                        </h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Capture your investment ideas and strategies</p>
-                    </div>
-
-                    <button
-                        onClick={handleCreate}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>Create Note</span>
-                    </button>
+        <motion.div variants={pageV} initial="initial" animate="animate" className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-lg font-semibold text-foreground">Notes</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">{totalElements} note{totalElements !== 1 ? 's' : ''}</p>
                 </div>
-
-                {/* Search and Filters */}
-                <div className="sticky top-20 z-10 -mx-4 px-4 pb-4 bg-white/0 backdrop-blur-sm sm:static sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
-                    <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 p-2 rounded-2xl shadow-sm flex flex-col md:flex-row gap-2">
-                        {/* Search Field */}
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search notes..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none"
-                            />
-                        </div>
-
-                        {/* Tags Filter */}
-                        <div className="flex items-center gap-1 overflow-x-auto pb-2 md:pb-0 px-2 scrollbar-hide">
-                            {allTags.map(tag => (
-                                <button
-                                    key={tag}
-                                    onClick={() => setSelectedTag(tag)}
-                                    className={`
-                                    text-xs font-medium px-4 py-2 rounded-xl whitespace-nowrap transition-all
-                                    ${selectedTag === tag
-                                            ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                        }
-                                `}
-                                >
-                                    {tag}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Notes Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-max">
-                    <AnimatePresence mode="popLayout">
-                        {filteredNotes.length > 0 ? (
-                            filteredNotes.map(note => (
-                                <NoteCard key={note.id} note={note} onDelete={handleDelete} onEdit={handleEdit} />
-                            ))
-                        ) : (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="col-span-full py-12 text-center text-gray-400 space-y-3"
-                            >
-                                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Search className="w-8 h-8 text-gray-300" />
-                                </div>
-                                <p>No notes found matching your search.</p>
-                                {notes.length === 0 ? (
-                                    <div className="space-y-4">
-                                        <p className="text-gray-500">📝 No notes yet. Start tracking ideas!</p>
-                                        <button
-                                            onClick={handleCreate}
-                                            className="text-orange-500 font-medium hover:underline"
-                                        >
-                                            + Create your first note
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => { setSearchQuery(''); setSelectedTag('All'); }}
-                                        className="text-orange-500 text-sm font-medium hover:underline"
-                                    >
-                                        Clear filters
-                                    </button>
-                                )}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* Visual Add Button in Grid (Only show if not searching/filtering or if we want it always accessible) */}
-                    {!searchQuery && selectedTag === 'All' && (
-                        <motion.button
-                            onClick={handleCreate}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="group flex flex-col items-center justify-center min-h-[200px] rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-400 hover:border-orange-400 hover:text-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-900/10 transition-all cursor-pointer"
-                        >
-                            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 flex items-center justify-center mb-3 transition-colors">
-                                <Plus className="w-6 h-6" />
-                            </div>
-                            <span className="text-sm font-medium">Add new note</span>
-                        </motion.button>
-                    )}
-                </div>
-
-                {/* Dialog */}
-                <NoteDialog
-                    isOpen={isDialogOpen}
-                    onClose={() => setIsDialogOpen(false)}
-                    onSave={handleSave}
-                    initialData={editingNote}
-                />
+                <button onClick={openCreate} className="flex items-center gap-1.5 h-9 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                    <Plus size={15} /> New note
+                </button>
             </div>
-        </PageTransition>
+
+            {/* Search + Tags */}
+            <div className="flex items-center gap-3 flex-wrap">
+                <div className="relative flex-1 min-w-[200px] max-w-xs">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input type="text" placeholder="Search notes..." value={search}
+                        onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                        className="pl-8 pr-3 h-8 w-full text-sm bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
+                </div>
+                {allTags.map((tag) => (
+                    <button key={tag} onClick={() => { setActiveTag(tag); setPage(0); }}
+                        className={cn('h-7 px-2.5 rounded-lg text-xs font-medium transition-colors',
+                            activeTag === tag ? 'bg-blue-600 text-white' : 'border border-border text-muted-foreground hover:text-foreground')}>
+                        {tag === 'all' ? 'All' : `#${tag}`}
+                    </button>
+                ))}
+            </div>
+
+            {/* Loading */}
+            {isLoading ? (
+                <div className={gridClass}>{Array.from({ length: 8 }).map((_, i) => <NoteCardSkeleton key={i} />)}</div>
+            ) : notes.length === 0 ? (
+                /* Empty state */
+                <motion.div variants={useMotionVariants(itemVariants)} initial="hidden" animate="visible"
+                    className="flex flex-col items-center justify-center py-16 text-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center">
+                        <StickyNote size={20} className="text-muted-foreground" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-foreground">{search ? 'No notes found' : 'No notes yet'}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{search ? `No notes match "${search}"` : 'Create your first note to get started'}</p>
+                    </div>
+                    {!search && (
+                        <button onClick={openCreate} className="h-8 px-4 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700">Create note</button>
+                    )}
+                </motion.div>
+            ) : (
+                <>
+                    {/* Pinned */}
+                    {pinnedNotes.length > 0 && (
+                        <div className="mb-4">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Pin size={12} className="text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pinned</span>
+                            </div>
+                            <motion.div variants={container} initial="hidden" animate="visible" className={gridClass}>
+                                {pinnedNotes.map((note) => <NoteCard key={note.id} note={note} onEdit={openEdit} onDelete={handleDelete} onPin={handlePin} />)}
+                            </motion.div>
+                        </div>
+                    )}
+
+                    {/* Unpinned */}
+                    <motion.div variants={container} initial="hidden" animate="visible" className={gridClass}>
+                        {unpinnedNotes.map((note) => <NoteCard key={note.id} note={note} onEdit={openEdit} onDelete={handleDelete} onPin={handlePin} />)}
+                    </motion.div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-6">
+                            <p className="text-xs text-muted-foreground">Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalElements)} of {totalElements}</p>
+                            <div className="flex items-center gap-1">
+                                <button onClick={() => setPage((p) => p - 1)} disabled={page === 0}
+                                    className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed">
+                                    <ChevronLeft size={14} />
+                                </button>
+                                {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                                    const p = page < 3 ? i : page - 2 + i;
+                                    if (p >= totalPages) return null;
+                                    return (
+                                        <button key={p} onClick={() => setPage(p)}
+                                            className={cn('w-8 h-8 rounded-lg text-xs font-medium transition-colors',
+                                                p === page ? 'bg-blue-600 text-white' : 'border border-border text-muted-foreground hover:bg-accent')}>
+                                            {p + 1}
+                                        </button>
+                                    );
+                                })}
+                                <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}
+                                    className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed">
+                                    <ChevronRight size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* Dialog */}
+            <NoteDialog
+                isOpen={isDialogOpen}
+                onClose={() => { setIsDialogOpen(false); setEditingNote(null); }}
+                onSave={handleSave}
+                onDelete={editingNote ? () => { handleDelete(editingNote.id); setIsDialogOpen(false); } : undefined}
+                initialData={editingNote}
+            />
+        </motion.div>
     );
 }

@@ -20,13 +20,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
 import com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository;
 import com.urva.myfinance.coinTrack.broker.service.BrokerConnectService;
-import com.urva.myfinance.coinTrack.broker.service.BrokerServiceFactory;
+import com.urva.myfinance.coinTrack.broker.service.ZerodhaLiveDataService;
 import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
-import com.urva.myfinance.coinTrack.broker.service.impl.ZerodhaBrokerService;
 import com.urva.myfinance.coinTrack.common.util.EncryptionUtil;
 import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
 import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
@@ -41,6 +43,7 @@ import com.urva.myfinance.coinTrack.user.service.UserService;
  */
 @RestController
 @RequestMapping("/api/brokers")
+@Tag(name = "Broker Connect", description = "Connect and authenticate with brokers")
 public class BrokerConnectController {
 
     private static final Logger logger = LoggerFactory.getLogger(BrokerConnectController.class);
@@ -49,25 +52,26 @@ public class BrokerConnectController {
     private final UserService userService;
     private final BrokerAccountRepository accountRepository;
     private final EncryptionUtil encryptionUtil;
-    private final BrokerServiceFactory brokerFactory;
+    private final ZerodhaLiveDataService zerodhaLiveDataService;
     private final String frontendUrl;
 
     @Autowired
     public BrokerConnectController(BrokerConnectService brokerConnectService, UserService userService,
             BrokerAccountRepository accountRepository, EncryptionUtil encryptionUtil,
-            BrokerServiceFactory brokerFactory,
+            ZerodhaLiveDataService zerodhaLiveDataService,
             @Value("${frontend.url:http://localhost:3000}") String frontendUrl) {
         this.brokerConnectService = brokerConnectService;
         this.userService = userService;
         this.accountRepository = accountRepository;
         this.encryptionUtil = encryptionUtil;
-        this.brokerFactory = brokerFactory;
+        this.zerodhaLiveDataService = zerodhaLiveDataService;
         this.frontendUrl = frontendUrl;
     }
 
     /**
      * Returns login URL for a broker if credentials already exist.
      */
+    @Operation(summary = "Get broker login URL")
     @GetMapping("/{broker}/connect")
     public ResponseEntity<?> getConnectUrl(
             @PathVariable("broker") String brokerName) {
@@ -93,8 +97,8 @@ public class BrokerConnectController {
 
             if (broker == Broker.ZERODHA) {
                 if (account != null && account.getZerodhaApiKey() != null) {
-                    ZerodhaBrokerService service = (ZerodhaBrokerService) brokerFactory.getService(Broker.ZERODHA);
-                    return ResponseEntity.ok(Map.of("loginUrl", service.getLoginUrl(account.getZerodhaApiKey())));
+                    return ResponseEntity.ok(Map.of("loginUrl",
+                            zerodhaLiveDataService.getLoginUrl(account.getZerodhaApiKey())));
                 } else {
                     return ResponseEntity.badRequest()
                             .body("Zerodha credentials not found. Please provide API Key and Secret.");
@@ -102,8 +106,12 @@ public class BrokerConnectController {
             }
 
             // Fallback for other brokers
-            String url = brokerConnectService.getLoginUrl(broker);
-            return ResponseEntity.ok(Map.of("loginUrl", url));
+            try {
+                String url = brokerConnectService.getLoginUrl(broker);
+                return ResponseEntity.ok(Map.of("loginUrl", url));
+            } catch (BrokerException e) {
+                return ResponseEntity.badRequest().body(e.getMessage());
+            }
 
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid broker name: {}", brokerName);
@@ -117,6 +125,7 @@ public class BrokerConnectController {
      * Saves Zerodha API credentials for the authenticated user.
      * IDEMPOTENT: Updates existing account if present, creates new if not.
      */
+    @Operation(summary = "Save Zerodha API credentials")
     @PostMapping("/zerodha/credentials")
     public ResponseEntity<?> saveZerodhaCredentials(
             @RequestBody Map<String, String> credentials) {
@@ -163,6 +172,7 @@ public class BrokerConnectController {
      * Handles OAuth callback from broker.
      * Exchanges request_token for access_token.
      */
+    @Operation(summary = "Handle broker OAuth callback")
     @PostMapping("/callback")
     public ResponseEntity<?> handleBrokerCallback(
             @RequestBody Map<String, String> payload) {
@@ -210,6 +220,7 @@ public class BrokerConnectController {
      * Handles browser redirect from Zerodha.
      * Redirects to Frontend Callback Page with request_token.
      */
+    @Operation(summary = "Handle Zerodha browser redirect callback")
     @GetMapping("/zerodha/callback")
     public ResponseEntity<Void> handleBrowserCallback(
             @RequestParam("request_token") String requestToken,

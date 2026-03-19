@@ -20,6 +20,8 @@ import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/auth/email")
 @RequiredArgsConstructor
+@Tag(name = "Email Change", description = "Request email address change")
 public class EmailChangeController {
 
         private static final Logger logger = LoggerFactory.getLogger(EmailChangeController.class);
@@ -50,6 +53,7 @@ public class EmailChangeController {
          * Request email change.
          * Sends verification link to the NEW email address.
          */
+        @Operation(summary = "Request email address change with verification")
         @PostMapping("/change")
         public ResponseEntity<?> requestEmailChange(
                         @AuthenticationPrincipal UserDetails userDetails,

@@ -1,5 +1,7 @@
 package com.urva.myfinance.coinTrack.calculator.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +31,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/calculators/loans")
 @Validated
+@Tag(name = "Calculators — Loans", description = "EMI, simple interest, compound interest, flat vs reducing")
 public class LoanCalculatorController {
 
         private static final Logger logger = LoggerFactory.getLogger(LoanCalculatorController.class);
@@ -43,6 +46,7 @@ public class LoanCalculatorController {
          * Calculate EMI (Generic).
          * POST /api/calculators/loans/emi
          */
+        @Operation(summary = "Calculate generic loan EMI")
         @PostMapping("/emi")
         public ResponseEntity<CalculatorResponse<EmiResponse>> calculateEmi(
                         @Valid @RequestBody EmiRequest request,
@@ -58,6 +62,7 @@ public class LoanCalculatorController {
          * Calculate Home Loan EMI.
          * POST /api/calculators/loans/home-loan-emi
          */
+        @Operation(summary = "Calculate home loan EMI")
         @PostMapping("/home-loan-emi")
         public ResponseEntity<CalculatorResponse<EmiResponse>> calculateHomeLoanEmi(
                         @Valid @RequestBody EmiRequest request,
@@ -73,6 +78,7 @@ public class LoanCalculatorController {
          * Calculate Car Loan EMI.
          * POST /api/calculators/loans/car-loan-emi
          */
+        @Operation(summary = "Calculate car loan EMI")
         @PostMapping("/car-loan-emi")
         public ResponseEntity<CalculatorResponse<EmiResponse>> calculateCarLoanEmi(
                         @Valid @RequestBody EmiRequest request,
@@ -88,6 +94,7 @@ public class LoanCalculatorController {
          * Calculate Simple Interest.
          * POST /api/calculators/loans/simple-interest
          */
+        @Operation(summary = "Calculate simple interest")
         @PostMapping("/simple-interest")
         public ResponseEntity<CalculatorResponse<SimpleInterestResponse>> calculateSimpleInterest(
                         @Valid @RequestBody SimpleInterestRequest request,
@@ -103,6 +110,7 @@ public class LoanCalculatorController {
          * Calculate Compound Interest.
          * POST /api/calculators/loans/compound-interest
          */
+        @Operation(summary = "Calculate compound interest")
         @PostMapping("/compound-interest")
         public ResponseEntity<CalculatorResponse<CompoundInterestResponse>> calculateCompoundInterest(
                         @Valid @RequestBody CompoundInterestRequest request,
@@ -119,6 +127,7 @@ public class LoanCalculatorController {
          * Compare Flat Rate vs Reducing Rate.
          * POST /api/calculators/loans/flat-vs-reducing
          */
+        @Operation(summary = "Compare flat rate vs reducing rate EMI")
         @PostMapping("/flat-vs-reducing")
         public ResponseEntity<CalculatorResponse<FlatVsReducingResponse>> compareFlatVsReducing(
                         @Valid @RequestBody EmiRequest request,

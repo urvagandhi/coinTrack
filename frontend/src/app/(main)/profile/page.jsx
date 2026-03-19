@@ -123,7 +123,7 @@ export default function ProfilePage() {
 
     // Profile Update Mutation
     const updateProfileMutation = useMutation({
-        mutationFn: (data) => userAPI.updateProfile(user.userId || user.id, data),
+        mutationFn: (data) => userAPI.updateProfile(data),
         onSuccess: (updatedUser) => {
             queryClient.setQueryData(['profile'], updatedUser);
             toast({
@@ -144,7 +144,7 @@ export default function ProfilePage() {
 
     // Password Change Mutation
     const changePasswordMutation = useMutation({
-        mutationFn: (data) => userAPI.changePassword(user.userId || user.id, data.newPassword, data.currentPassword),
+        mutationFn: (data) => userAPI.changePassword(data.newPassword, data.currentPassword),
         onSuccess: () => {
             toast({
                 title: "Password Changed",

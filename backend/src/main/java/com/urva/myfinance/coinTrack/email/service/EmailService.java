@@ -60,9 +60,9 @@ public class EmailService {
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     // ============================================================================
-    // BREVO API (ACTIVE) - Production-safe email delivery
+    // Email sender — BrevoEmailService (prod) or DevNoOpEmailService (dev)
     // ============================================================================
-    private final BrevoEmailService brevoEmailService;
+    private final EmailSender brevoEmailService;
     private final TemplateEngine templateEngine;
     private final EmailConfigProperties emailConfig;
 
@@ -104,7 +104,7 @@ public class EmailService {
 
         sendEmail(
                 user.getEmail(),
-                "Welcome to CoinTrack! 🎉",
+                "Welcome to CoinTrack",
                 "email/welcome",
                 context);
     }

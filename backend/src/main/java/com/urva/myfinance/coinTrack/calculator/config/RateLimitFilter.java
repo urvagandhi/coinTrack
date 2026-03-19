@@ -11,8 +11,11 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
+import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.Refill;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,6 +25,9 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Rate limiting filter for calculator endpoints.
  * Limits: 60 requests per minute per IP address.
+ *
+ * Note: In-memory buckets — single-instance only (Render free tier).
+ * For multi-instance: migrate to Redis-backed Bucket4j.
  */
 @Component
 @Order(1)
@@ -29,6 +35,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(RateLimitFilter.class);
     private static final int REQUESTS_PER_MINUTE = 60;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
@@ -52,13 +59,24 @@ public class RateLimitFilter extends OncePerRequestFilter {
             String clientIp = getClientIp(request);
             Bucket bucket = buckets.computeIfAbsent(clientIp, k -> createBucket());
 
-            if (!bucket.tryConsume(1)) {
-                logger.warn("Rate limit exceeded for IP: {}", clientIp);
+            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+
+            if (!probe.isConsumed()) {
+                long waitSeconds = Math.max(1, probe.getNanosToWaitForRefill() / 1_000_000_000);
+
+                logger.warn("Rate limit exceeded for IP: {} — retry in {}s", clientIp, waitSeconds);
+
                 response.setStatus(429);
                 response.setContentType("application/json");
-                response.getWriter().write(
-                        "{\"success\":false,\"error\":{\"code\":\"RATE_LIMIT_EXCEEDED\"," +
-                                "\"message\":\"Too many requests. Please try again later.\"}}");
+                response.setHeader("Retry-After", String.valueOf(waitSeconds));
+
+                Map<String, Object> errorBody = Map.of(
+                        "success", false,
+                        "error", Map.of(
+                                "code", "RATE_LIMIT_EXCEEDED",
+                                "message", "Too many requests. Please wait " + waitSeconds + " seconds."));
+
+                response.getWriter().write(objectMapper.writeValueAsString(errorBody));
                 return;
             }
         }
@@ -66,6 +84,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * Extract real client IP, handling reverse proxies (Render LB).
+     * X-Forwarded-For: client, proxy1, proxy2 — take first (client).
+     */
     private String getClientIp(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
@@ -75,11 +97,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Cleanup old buckets periodically (called via scheduled task if needed).
+     * Cleanup old buckets periodically to prevent memory leak.
      */
     public void cleanupExpiredBuckets() {
-        // Simple cleanup - remove buckets that haven't been used
-        // In production, use a proper cache with TTL
         if (buckets.size() > 10000) {
             logger.info("Clearing rate limit buckets. Size: {}", buckets.size());
             buckets.clear();

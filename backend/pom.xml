@@ -67,14 +67,7 @@
 			<version>4.0.0</version>
 		</dependency>
 
-		<!-- Kite Connect API -->
-		<!-- https://central.sonatype.com/artifact/com.zerodhatech.kiteconnect/kiteconnect -->
-		<dependency>
-			<groupId>com.zerodhatech.kiteconnect</groupId>
-			<artifactId>kiteconnect</artifactId>
-			<version>3.5.1</version>
-		</dependency>
-
+		<!-- Kite Connect SDK removed — using WebClient directly for all Zerodha API calls -->
 
 		<!-- TOTP (Time-based One-Time Password) Library -->
 		<dependency>
@@ -106,11 +99,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
-		<!-- Email -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
+		<!-- spring-boot-starter-mail removed — using Brevo REST API, not SMTP -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
@@ -118,6 +107,12 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<!-- WebClient for non-blocking outbound HTTP calls (broker APIs) -->
+		<!-- Does NOT replace the servlet container — Spring Boot auto-detects starter-web takes precedence -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.thymeleaf.extras</groupId>
@@ -168,6 +163,19 @@
 			<version>8.7.0</version>
 		</dependency>
 
+		<!-- Caffeine cache (JWT blacklist in-memory first-pass check) -->
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+		</dependency>
+
+		<!-- OpenAPI / Swagger UI -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.8.6</version>
+		</dependency>
+
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -179,11 +187,11 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!-- Embedded MongoDB for testing -->
+		<!-- Embedded MongoDB for integration tests (Spring Boot 3.x compatible) -->
 		<dependency>
 			<groupId>de.flapdoodle.embed</groupId>
-			<artifactId>de.flapdoodle.embed.mongo</artifactId>
-			<version>3.5.4</version>
+			<artifactId>de.flapdoodle.embed.mongo.spring3x</artifactId>
+			<version>4.20.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

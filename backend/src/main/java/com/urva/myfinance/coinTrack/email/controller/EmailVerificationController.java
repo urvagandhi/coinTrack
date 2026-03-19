@@ -22,6 +22,8 @@ import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmail
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/auth/email")
 @RequiredArgsConstructor
+@Tag(name = "Email Verification", description = "Verify and resend email verification")
 public class EmailVerificationController {
 
         private static final Logger logger = LoggerFactory.getLogger(EmailVerificationController.class);
@@ -50,6 +53,7 @@ public class EmailVerificationController {
          * Handles both registration verification and email change verification.
          * Returns success even if already verified (graceful handling).
          */
+        @Operation(summary = "Verify email address using magic link token")
         @PostMapping("/verify")
         public ResponseEntity<?> verifyEmail(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
                 String token = request.get("token");
@@ -149,6 +153,7 @@ public class EmailVerificationController {
          * Resend verification email.
          * Requires authentication.
          */
+        @Operation(summary = "Resend email verification link")
         @PostMapping("/resend")
         public ResponseEntity<?> resendVerification(
                         @AuthenticationPrincipal UserDetails userDetails,

@@ -47,4 +47,10 @@ public interface EmailTokenRepository extends MongoRepository<EmailToken, String
      * Useful for checking if a verification is already pending.
      */
     List<EmailToken> findAllByUserIdAndPurposeAndUsedFalse(String userId, String purpose);
+
+    /**
+     * Delete all tokens for a user with a specific purpose.
+     * Used on password reset success to invalidate remaining reset tokens.
+     */
+    void deleteAllByUserIdAndPurpose(String userId, String purpose);
 }

@@ -66,4 +66,14 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
 
 # Launch application with container-aware JVM settings
-ENTRYPOINT ["sh", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Dserver.port=${PORT:-8080} -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java \
+  -XX:+UseContainerSupport \
+  -XX:MaxRAMPercentage=75.0 \
+  -XX:+ExitOnOutOfMemoryError \
+  -XX:+UseG1GC \
+  -XX:MaxGCPauseMillis=200 \
+  -Djava.security.egd=file:/dev/./urandom \
+  -Dfile.encoding=UTF-8 \
+  -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod} \
+  -Dserver.port=${PORT:-8080} \
+  -jar app.jar"]

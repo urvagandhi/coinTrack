@@ -1,36 +1,45 @@
 package com.urva.myfinance.coinTrack.user.service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.urva.myfinance.coinTrack.common.exception.AuthenticationException;
 import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.notes.service.NoteService;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
+import com.urva.myfinance.coinTrack.user.model.PendingRegistration;
 import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.PendingRegistrationRepository;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
+/**
+ * User registration and management service.
+ *
+ * Changed: Replaced in-memory HashMap with MongoDB PendingRegistrationRepository.
+ * Pending registrations now survive server restarts and work across multiple instances.
+ */
 @Service
 public class UserService {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
+    private final PendingRegistrationRepository pendingRegistrationRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authManager;
     private final JWTService jwtService;
     private final NoteService noteService;
 
-    // Email services - optional for backward compatibility
     private EmailService emailService;
     private EmailTokenService emailTokenService;
     private EmailConfigProperties emailConfig;
@@ -50,422 +59,262 @@ public class UserService {
         this.emailConfig = emailConfig;
     }
 
-    // In-memory storage for Pending Registrations: username -> PendingRegistration
-    // Used during TOTP registration flow - user stored here until TOTP is verified
-    private final java.util.Map<String, PendingRegistration> pendingRegistrations = new java.util.concurrent.ConcurrentHashMap<>();
-
-    private static class PendingRegistration {
-        User user;
-        long expiryTime;
-
-        PendingRegistration(User user, long expiryTime) {
-            this.user = user;
-            this.expiryTime = expiryTime;
-        }
-    }
-
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-            AuthenticationManager authManager, JWTService jwtService,
-            NoteService noteService) {
+    public UserService(UserRepository userRepository,
+                       PendingRegistrationRepository pendingRegistrationRepository,
+                       PasswordEncoder passwordEncoder,
+                       JWTService jwtService,
+                       NoteService noteService) {
         this.userRepository = userRepository;
+        this.pendingRegistrationRepository = pendingRegistrationRepository;
         this.passwordEncoder = passwordEncoder;
-        this.authManager = authManager;
         this.jwtService = jwtService;
         this.noteService = noteService;
     }
 
-    public List<User> getAllUsers() {
-        try {
-            return userRepository.findAll();
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching all users: " + e.getMessage(), e);
-        }
-    }
-
-    public User getUserById(String id) {
-        try {
-            @SuppressWarnings("null")
-            Optional<User> user = userRepository.findById(id);
-            return user.orElse(null);
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching user by id: " + id + ". " + e.getMessage(), e);
-        }
-    }
-
-    @SuppressWarnings("null")
-    public User updateUser(String id, User user) {
-        try {
-            Optional<User> existingUserOpt = userRepository.findById(id);
-            if (existingUserOpt.isPresent()) {
-                User existingUser = existingUserOpt.get();
-
-                // ══════════════════════════════════════════════════════════════════════
-                // VALIDATION: Username (mandatory, unique)
-                // ══════════════════════════════════════════════════════════════════════
-                if (user.getUsername() != null) {
-                    String newUsername = user.getUsername().trim();
-                    if (newUsername.isEmpty()) {
-                        throw new IllegalArgumentException("Username cannot be empty");
-                    }
-                    if (!newUsername.equals(existingUser.getUsername())) {
-                        User existingWithUsername = userRepository.findByUsername(newUsername);
-                        if (existingWithUsername != null) {
-                            throw new IllegalArgumentException("Username is already taken");
-                        }
-                    }
-                    existingUser.setUsername(newUsername);
-                }
-
-                // ══════════════════════════════════════════════════════════════════════
-                // VALIDATION: Email (mandatory, unique)
-                // ══════════════════════════════════════════════════════════════════════
-                if (user.getEmail() != null) {
-                    String newEmail = user.getEmail().trim().toLowerCase();
-                    if (newEmail.isEmpty()) {
-                        throw new IllegalArgumentException("Email cannot be empty");
-                    }
-                    if (!newEmail.equals(existingUser.getEmail())) {
-                        User existingWithEmail = userRepository.findByEmail(newEmail);
-                        if (existingWithEmail != null) {
-                            throw new IllegalArgumentException("Email is already registered with another account");
-                        }
-                    }
-                    existingUser.setEmail(newEmail);
-                }
-
-                // ══════════════════════════════════════════════════════════════════════
-                // VALIDATION: Phone Number (optional but unique if provided)
-                // ══════════════════════════════════════════════════════════════════════
-                if (user.getPhoneNumber() != null) {
-                    String newPhone = normalizePhoneNumber(user.getPhoneNumber());
-                    if (newPhone != null && !newPhone.isEmpty()) {
-                        String existingPhone = existingUser.getPhoneNumber();
-                        if (existingPhone == null || !newPhone.equals(existingPhone)) {
-                            User existingWithPhone = userRepository.findByPhoneNumber(newPhone);
-                            if (existingWithPhone != null) {
-                                throw new IllegalArgumentException(
-                                        "Mobile number is already registered with another account");
-                            }
-                        }
-                    }
-                    existingUser.setPhoneNumber(newPhone);
-                }
-
-                // ══════════════════════════════════════════════════════════════════════
-                // OTHER FIELDS (no uniqueness constraints)
-                // ══════════════════════════════════════════════════════════════════════
-                if (user.getName() != null) {
-                    existingUser.setName(user.getName());
-                }
-                if (user.getDateOfBirth() != null) {
-                    existingUser.setDateOfBirth(user.getDateOfBirth());
-                }
-                if (user.getBio() != null) {
-                    existingUser.setBio(user.getBio());
-                }
-                if (user.getLocation() != null) {
-                    existingUser.setLocation(user.getLocation());
-                }
-                return userRepository.save(existingUser);
-            }
-            return null; // User not found
-        } catch (IllegalArgumentException e) {
-            throw e; // Re-throw validation errors as-is
-        } catch (Exception e) {
-            throw new RuntimeException("Error updating user with id: " + id + ". " + e.getMessage(), e);
-        }
-    }
-
-    @SuppressWarnings("null")
-    public void changePassword(String userId, String oldPassword, String newPassword) {
-        try {
-            Optional<User> userOpt = userRepository.findById(userId);
-            if (userOpt.isPresent()) {
-                User user = userOpt.get();
-                if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-                    throw new RuntimeException("Current password is incorrect");
-                }
-                user.setPassword(passwordEncoder.encode(newPassword));
-                userRepository.save(user);
-            } else {
-                throw new RuntimeException("User not found");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
-    @SuppressWarnings("null")
-    public boolean deleteUser(String id) {
-        try {
-            if (userRepository.existsById(id)) {
-                userRepository.deleteById(id);
-                return true;
-            } else {
-                return false; // User not found
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error deleting user with id: " + id + ". " + e.getMessage(), e);
-        }
-    }
+    // ── Registration ────────────────────────────────────────────────
 
     /**
      * Initiates user registration.
-     * Validates input, checks uniqueness, and stores in PENDING storage.
-     * User is NOT saved to DB until TOTP setup is verified.
-     * Flow: Register → Setup TOTP → Verify TOTP → Save to DB
+     * Validates input, checks uniqueness, stores in MongoDB pending_registrations.
+     * User is NOT saved to users collection until TOTP setup is verified.
      */
     public LoginResponse registerUser(User user) {
-        try {
-            if (user.getUsername() == null || user.getPassword() == null) {
-                throw new RuntimeException("Username and Password are required");
-            }
-
-            // Check if username already exists
-            User existingUser = userRepository.findByUsername(user.getUsername());
-            if (existingUser != null) {
-                throw new RuntimeException(
-                        "Username already exists: " + user.getUsername() + ". Please choose a different username.");
-            }
-
-            if (userRepository.existsByEmail(user.getEmail())) {
-                throw new RuntimeException(
-                        "Email already exists: " + user.getEmail() + ". Please use a different email.");
-            }
-
-            String normalizedPhone = normalizePhoneNumber(user.getPhoneNumber());
-            if (userRepository.existsByPhoneNumber(normalizedPhone)) {
-                throw new RuntimeException(
-                        "Phone number already exists: " + user.getPhoneNumber() + ". Please use a different number.");
-            }
-
-            user.setPhoneNumber(normalizedPhone);
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-            // TOTP is NOT set up yet
-            user.setTotpEnabled(false);
-            user.setTotpVerified(false);
-            user.setTotpSecretVersion(0);
-
-            // Store in PENDING registrations - NOT saved to DB yet
-            // User will be saved to DB only after TOTP verification is complete
-            long expiryTime = System.currentTimeMillis() + (15 * 60 * 1000); // 15 mins to complete TOTP setup
-            pendingRegistrations.put(user.getUsername(), new PendingRegistration(user, expiryTime));
-            logger.info("Stored pending registration for TOTP setup: {}", user.getUsername());
-
-            // Generate tempToken for TOTP setup (purpose = TOTP_REGISTRATION)
-            String tempToken = jwtService.generateTempToken(user.getUsername(), "TOTP_REGISTRATION");
-            logger.info("Generated TOTP_REGISTRATION tempToken for: {}", user.getUsername());
-
-            // Return response indicating TOTP setup is required
-            LoginResponse response = new LoginResponse();
-            response.setMessage("Please set up 2-Factor Authentication to complete registration.");
-            response.setRequireTotpSetup(true);
-            response.setTempToken(tempToken);
-            response.setUsername(user.getUsername());
-
-            return response;
-
-        } catch (RuntimeException e) {
-            throw new RuntimeException(e.getMessage());
-        } catch (Exception e) {
-            throw new RuntimeException("Error during registration: " + e.getMessage(), e);
+        if (user.getUsername() == null || user.getPassword() == null) {
+            throw new RuntimeException("Username and Password are required");
         }
-    }
 
-    public boolean isUsernameAvailable(String username) {
-        try {
-            return !userRepository.existsByUsername(username);
-        } catch (Exception e) {
-            throw new RuntimeException("Error checking username availability: " + e.getMessage(), e);
+        if (userRepository.existsByUsername(user.getUsername())
+                || pendingRegistrationRepository.existsByUsername(user.getUsername())) {
+            throw new RuntimeException("Username already exists. Please choose a different username.");
         }
+
+        if (userRepository.existsByEmail(user.getEmail())
+                || pendingRegistrationRepository.existsByEmail(user.getEmail())) {
+            throw new RuntimeException("Email already exists. Please use a different email.");
+        }
+
+        String normalizedPhone = normalizePhoneNumber(user.getPhoneNumber());
+        if (normalizedPhone != null && userRepository.existsByPhoneNumber(normalizedPhone)) {
+            throw new RuntimeException("Phone number already exists. Please use a different number.");
+        }
+
+        // Generate temp token for TOTP setup
+        String tempToken = jwtService.generateTempToken(user.getUsername(), "TOTP_REGISTRATION");
+
+        // Store pending registration in MongoDB (15-minute TTL)
+        PendingRegistration pending = PendingRegistration.builder()
+                .tempToken(tempToken)
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .phoneNumber(normalizedPhone)
+                .name(user.getName())
+                .passwordHash(passwordEncoder.encode(user.getPassword()))
+                .expiresAt(Instant.now().plusSeconds(15 * 60))
+                .build();
+
+        pendingRegistrationRepository.save(pending);
+        logger.info("Stored pending registration in MongoDB for: {}", user.getUsername());
+
+        LoginResponse response = new LoginResponse();
+        response.setMessage("Please set up 2-Factor Authentication to complete registration.");
+        response.setRequireTotpSetup(true);
+        response.setTempToken(tempToken);
+        response.setUsername(user.getUsername());
+        return response;
     }
 
     /**
-     * Get pending user from registration storage (NOT from DB).
-     * Used during registration TOTP setup flow.
+     * Get pending user as a User object (for TOTP setup).
+     * Builds a transient User from the PendingRegistration document.
      */
     public User getPendingRegistrationUser(String username) {
-        PendingRegistration pending = pendingRegistrations.get(username);
-        if (pending == null) {
-            return null;
-        }
-        // Check if expired
-        if (pending.expiryTime < System.currentTimeMillis()) {
-            pendingRegistrations.remove(username);
-            return null;
-        }
-        return pending.user;
+        return pendingRegistrationRepository.findByUsername(username)
+                .map(this::toTransientUser)
+                .orElse(null);
     }
 
     /**
      * Complete pending registration by saving user to DB.
      * Called after TOTP verification is successful.
-     * Sends welcome email first, then verification email (separate as per UX).
      */
     @Transactional
     public User completePendingRegistration(String username) {
-        PendingRegistration pending = pendingRegistrations.get(username);
-        if (pending == null) {
-            throw new RuntimeException("Registration expired. Please register again.");
-        }
+        PendingRegistration pending = pendingRegistrationRepository.findByUsername(username)
+                .orElseThrow(() -> new AuthenticationException("Registration expired. Please register again."));
 
-        User user = pending.user;
+        User user = toTransientUser(pending);
 
-        // Save user to DB
         @SuppressWarnings("null")
         User savedUser = userRepository.save(user);
         logger.info("User saved to DB after TOTP verification: {}", savedUser.getUsername());
 
-        // Remove from pending
-        pendingRegistrations.remove(username);
+        // Remove pending registration
+        pendingRegistrationRepository.deleteByUsername(username);
 
-        // Seed default notes for new user
+        // Seed default notes
         noteService.createDefaultNotesIfNoneExist(savedUser.getId());
 
-        // Send emails (separate as per UX requirements)
-        // 1. Welcome email first (brand & trust)
-        // 2. Verification email second (action)
+        // Send emails
         sendRegistrationEmails(savedUser);
 
         return savedUser;
     }
 
     /**
-     * Send welcome and verification emails after registration.
-     * Emails sent separately for better engagement.
+     * Update the TOTP pending secret on a PendingRegistration in MongoDB.
+     * Called during registration TOTP setup to persist the encrypted secret.
      */
-    private void sendRegistrationEmails(User user) {
-        if (emailService == null || emailTokenService == null || emailConfig == null) {
-            logger.warn("Email services not configured, skipping registration emails");
-            return;
-        }
-
-        try {
-            // 1. Send welcome email first (brand & trust)
-            emailService.sendWelcomeEmail(user);
-            logger.info("Welcome email sent to: {}", user.getEmail());
-
-            // 2. Send verification email (action)
-            String token = emailTokenService.createToken(user, "EMAIL_VERIFY", null);
-            String magicLink = emailConfig.getEmailVerifyUrl(token);
-            emailService.sendEmailVerification(user, magicLink);
-            logger.info("Verification email sent to: {}", user.getEmail());
-        } catch (Exception e) {
-            // Log error but don't fail registration
-            logger.error("Failed to send registration emails: {}", e.getMessage());
-        }
+    public void updatePendingTotpSecret(String username, String encryptedSecret) {
+        pendingRegistrationRepository.findByUsername(username).ifPresent(pending -> {
+            pending.setTotpSecretEncrypted(encryptedSecret);
+            pendingRegistrationRepository.save(pending);
+        });
     }
 
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UserService.class);
+    // ── User queries ────────────────────────────────────────────────
 
-    // ==========================================================================
-    // LEGACY OTP METHODS REMOVED
-    // ==========================================================================
-    // authenticate(), verifyOtp(), resendOtp() - replaced by TOTP-based auth
-    // Login: UserAuthenticationService.authenticate()
-    // 2FA: TotpController (/2fa/login/totp, /2fa/register/*)
-    // ==========================================================================
-
-    public LoginResponse verifyUser(User user) {
-        try {
-            // Find user by username or email
-            User foundUser = userRepository.findByUsername(user.getUsername());
-            if (foundUser == null) {
-                foundUser = userRepository.findByEmail(user.getUsername()); // username field might contain email
-            }
-
-            if (foundUser == null) {
-                throw new RuntimeException("Invalid username or password");
-            }
-
-            // Use the actual username for authentication
-            Authentication authentication = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(foundUser.getUsername(), user.getPassword()));
-            if (authentication.isAuthenticated()) {
-                String token = jwtService.generateToken(authentication);
-                // Create LoginResponse with individual fields
-                LoginResponse loginResponse = new LoginResponse();
-                loginResponse.setToken(token);
-                loginResponse.setUserId(foundUser.getId());
-                loginResponse.setUsername(foundUser.getUsername());
-                loginResponse.setEmail(foundUser.getEmail());
-                loginResponse.setMobile(foundUser.getPhoneNumber());
-                loginResponse.setFirstName(foundUser.getName()); // Assuming name contains first name
-                loginResponse.setBio(foundUser.getBio());
-                loginResponse.setLocation(foundUser.getLocation());
-                return loginResponse;
-            } else {
-                throw new RuntimeException("Invalid username or password");
-            }
-        } catch (AuthenticationException e) {
-            throw new RuntimeException("Invalid username or password");
-        }
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
+
+    public User getUserById(String id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    public User findUserByUsername(String username) {
+        if (username == null || username.trim().isEmpty()) return null;
+        return userRepository.findByUsername(username);
+    }
+
+    public boolean isUsernameAvailable(String username) {
+        return !userRepository.existsByUsername(username);
+    }
+
+    // ── Profile updates ─────────────────────────────────────────────
+
+    @SuppressWarnings("null")
+    public User updateUser(String id, User user) {
+        Optional<User> existingUserOpt = userRepository.findById(id);
+        if (existingUserOpt.isEmpty()) return null;
+
+        User existing = existingUserOpt.get();
+
+        if (user.getUsername() != null) {
+            String newUsername = user.getUsername().trim();
+            if (newUsername.isEmpty()) throw new IllegalArgumentException("Username cannot be empty");
+            if (!newUsername.equals(existing.getUsername())) {
+                if (userRepository.findByUsername(newUsername) != null) {
+                    throw new IllegalArgumentException("Username is already taken");
+                }
+            }
+            existing.setUsername(newUsername);
+        }
+
+        if (user.getEmail() != null) {
+            String newEmail = user.getEmail().trim().toLowerCase();
+            if (newEmail.isEmpty()) throw new IllegalArgumentException("Email cannot be empty");
+            if (!newEmail.equals(existing.getEmail())) {
+                if (userRepository.findByEmail(newEmail) != null) {
+                    throw new IllegalArgumentException("Email is already registered with another account");
+                }
+            }
+            existing.setEmail(newEmail);
+        }
+
+        if (user.getPhoneNumber() != null) {
+            String newPhone = normalizePhoneNumber(user.getPhoneNumber());
+            if (newPhone != null && !newPhone.isEmpty()) {
+                if (existing.getPhoneNumber() == null || !newPhone.equals(existing.getPhoneNumber())) {
+                    if (userRepository.findByPhoneNumber(newPhone) != null) {
+                        throw new IllegalArgumentException("Mobile number is already registered with another account");
+                    }
+                }
+            }
+            existing.setPhoneNumber(newPhone);
+        }
+
+        if (user.getName() != null) existing.setName(user.getName());
+        if (user.getDateOfBirth() != null) existing.setDateOfBirth(user.getDateOfBirth());
+        if (user.getBio() != null) existing.setBio(user.getBio());
+        if (user.getLocation() != null) existing.setLocation(user.getLocation());
+
+        return userRepository.save(existing);
+    }
+
+    @SuppressWarnings("null")
+    public void changePassword(String userId, String oldPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    @SuppressWarnings("null")
+    public boolean deleteUser(String id) {
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    // ── Token helpers (kept for backward compat) ────────────────────
 
     public User getUserByToken(String token) {
-        try {
-            String username = jwtService.extractUsername(token);
-            return userRepository.findByUsername(username);
-        } catch (Exception e) {
-            throw new RuntimeException("Error extracting user from token: " + e.getMessage(), e);
-        }
+        String username = jwtService.extractUsername(token);
+        return userRepository.findByUsername(username);
     }
 
     public boolean isTokenValid(String token) {
         try {
             String username = jwtService.extractUsername(token);
-            User user = userRepository.findByUsername(username);
-            if (user != null) {
-                // Create UserDetails-like object for validation
-                org.springframework.security.core.userdetails.UserDetails userDetails = org.springframework.security.core.userdetails.User
-                        .builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .authorities("USER")
-                        .build();
-                return jwtService.validateToken(token, userDetails);
-            }
-            return false;
+            return username != null && !jwtService.isTokenExpired(token);
         } catch (Exception e) {
             return false;
         }
     }
 
-    /**
-     * Find user by username.
-     *
-     * @param username the username to search for
-     * @return User object if found, null otherwise
-     */
-    /**
-     * Normalize phone number to E.164 format (e.g., +918866241204).
-     * Removes spaces, hyphens, and parentheses.
-     * Default to +91 if only 10 digits are provided.
-     */
-    private String normalizePhoneNumber(String input) {
-        if (input == null || input.trim().isEmpty()) {
-            return null;
-        }
-        // Remove all non-numeric characters except '+'
-        String cleaned = input.replaceAll("[^0-9+]", "");
+    // ── Internal helpers ────────────────────────────────────────────
 
-        // If it's exactly 10 digits, assume Indian number and prepend +91
-        if (cleaned.matches("^\\d{10}$")) {
-            return "+91" + cleaned;
-        }
-
-        return cleaned;
+    private User toTransientUser(PendingRegistration pending) {
+        return User.builder()
+                .username(pending.getUsername())
+                .email(pending.getEmail())
+                .phoneNumber(pending.getPhoneNumber())
+                .name(pending.getName())
+                .password(pending.getPasswordHash())
+                .totpSecretEncrypted(pending.getTotpSecretEncrypted())
+                .totpEnabled(false)
+                .totpVerified(false)
+                .totpSecretVersion(0)
+                .build();
     }
 
-    public User findUserByUsername(String username) {
+    private void sendRegistrationEmails(User user) {
+        if (emailService == null || emailTokenService == null || emailConfig == null) {
+            logger.warn("Email services not configured, skipping registration emails");
+            return;
+        }
         try {
-            if (username == null || username.trim().isEmpty()) {
-                return null;
-            }
-            return userRepository.findByUsername(username);
+            emailService.sendWelcomeEmail(user);
+            logger.info("Welcome email sent to: {}", user.getEmail());
+
+            String token = emailTokenService.createToken(user, "EMAIL_VERIFY", null);
+            String magicLink = emailConfig.getEmailVerifyUrl(token);
+            emailService.sendEmailVerification(user, magicLink);
+            logger.info("Verification email sent to: {}", user.getEmail());
         } catch (Exception e) {
-            throw new RuntimeException("Error finding user by username: " + username + ". " + e.getMessage(), e);
+            logger.error("Failed to send registration emails: {}", e.getMessage());
         }
+    }
+
+    private String normalizePhoneNumber(String input) {
+        if (input == null || input.trim().isEmpty()) return null;
+        String cleaned = input.replaceAll("[^0-9+]", "");
+        if (cleaned.matches("^\\d{10}$")) return "+91" + cleaned;
+        return cleaned;
     }
 }

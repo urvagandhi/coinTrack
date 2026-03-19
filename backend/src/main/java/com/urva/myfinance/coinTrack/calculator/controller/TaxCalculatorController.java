@@ -1,5 +1,7 @@
 package com.urva.myfinance.coinTrack.calculator.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,7 @@ import com.urva.myfinance.coinTrack.calculator.dto.response.HraResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.IncomeTaxResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.SalaryResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.TdsResponse;
-import com.urva.myfinance.coinTrack.calculator.service.impl.TaxCalculatorServiceImpl;
+import com.urva.myfinance.coinTrack.calculator.service.TaxCalculatorService;
 
 import jakarta.validation.Valid;
 
@@ -35,14 +37,15 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/calculators/tax")
 @Validated
+@Tag(name = "Calculators — Tax", description = "Income tax, HRA, salary, gratuity, GST, TDS")
 public class TaxCalculatorController {
 
     private static final Logger logger = LoggerFactory.getLogger(TaxCalculatorController.class);
 
-    private final TaxCalculatorServiceImpl taxService;
+    private final TaxCalculatorService taxService;
 
     @Autowired
-    public TaxCalculatorController(TaxCalculatorServiceImpl taxService) {
+    public TaxCalculatorController(TaxCalculatorService taxService) {
         this.taxService = taxService;
     }
 
@@ -50,6 +53,7 @@ public class TaxCalculatorController {
      * Calculate Income Tax for Old and New Regime.
      * POST /api/calculators/tax/income-tax
      */
+    @Operation(summary = "Calculate income tax for old and new regime")
     @PostMapping("/income-tax")
     public ResponseEntity<CalculatorResponse<IncomeTaxResponse>> calculateIncomeTax(
             @Valid @RequestBody IncomeTaxRequest request,
@@ -65,6 +69,7 @@ public class TaxCalculatorController {
      * Calculate HRA Exemption.
      * POST /api/calculators/tax/hra
      */
+    @Operation(summary = "Calculate HRA exemption")
     @PostMapping("/hra")
     public ResponseEntity<CalculatorResponse<HraResponse>> calculateHra(
             @Valid @RequestBody HraRequest request,
@@ -81,6 +86,7 @@ public class TaxCalculatorController {
      * Calculate Net Take-Home Salary.
      * POST /api/calculators/tax/salary
      */
+    @Operation(summary = "Calculate net take-home salary")
     @PostMapping("/salary")
     public ResponseEntity<CalculatorResponse<SalaryResponse>> calculateSalary(
             @Valid @RequestBody SalaryRequest request,
@@ -96,6 +102,7 @@ public class TaxCalculatorController {
      * Calculate Gratuity.
      * POST /api/calculators/tax/gratuity
      */
+    @Operation(summary = "Calculate gratuity amount")
     @PostMapping("/gratuity")
     public ResponseEntity<CalculatorResponse<GratuityResponse>> calculateGratuity(
             @Valid @RequestBody GratuityRequest request,
@@ -112,6 +119,7 @@ public class TaxCalculatorController {
      * Calculate GST.
      * POST /api/calculators/tax/gst
      */
+    @Operation(summary = "Calculate GST breakdown")
     @PostMapping("/gst")
     public ResponseEntity<CalculatorResponse<GstResponse>> calculateGst(
             @Valid @RequestBody GstRequest request,
@@ -127,6 +135,7 @@ public class TaxCalculatorController {
      * Calculate TDS.
      * POST /api/calculators/tax/tds
      */
+    @Operation(summary = "Calculate TDS deduction")
     @PostMapping("/tds")
     public ResponseEntity<CalculatorResponse<TdsResponse>> calculateTds(
             @Valid @RequestBody TdsRequest request,

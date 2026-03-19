@@ -41,7 +41,7 @@ import com.urva.myfinance.coinTrack.calculator.util.FinancialMath;
  * Service implementation for Savings Scheme Calculators.
  */
 @Service
-public class SavingsCalculatorServiceImpl {
+public class SavingsCalculatorServiceImpl implements com.urva.myfinance.coinTrack.calculator.service.SavingsCalculatorService {
 
         private static final Logger logger = LoggerFactory.getLogger(SavingsCalculatorServiceImpl.class);
         private static final String CATEGORY = "savings";

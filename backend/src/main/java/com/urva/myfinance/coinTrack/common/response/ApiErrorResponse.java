@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.common.response;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.slf4j.MDC;
 
@@ -8,7 +9,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * Standardized error response for API errors.
- * Used by GlobalExceptionHandler for consistent error formatting.
+ * Used by {@link com.urva.myfinance.coinTrack.common.exception.GlobalExceptionHandler}
+ * for consistent error formatting across all endpoints.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiErrorResponse {
@@ -19,6 +21,7 @@ public class ApiErrorResponse {
     private String message;
     private String path;
     private String requestId;
+    private List<FieldError> fieldErrors;
 
     public ApiErrorResponse() {
         this.timestamp = Instant.now();
@@ -36,6 +39,11 @@ public class ApiErrorResponse {
         this(status, errorCode, message);
         this.path = path;
     }
+
+    /**
+     * Represents a single field-level validation error.
+     */
+    public record FieldError(String field, String message) {}
 
     // Getters and setters
     public Instant getTimestamp() {
@@ -84,5 +92,13 @@ public class ApiErrorResponse {
 
     public void setRequestId(String requestId) {
         this.requestId = requestId;
+    }
+
+    public List<FieldError> getFieldErrors() {
+        return fieldErrors;
+    }
+
+    public void setFieldErrors(List<FieldError> fieldErrors) {
+        this.fieldErrors = fieldErrors;
     }
 }

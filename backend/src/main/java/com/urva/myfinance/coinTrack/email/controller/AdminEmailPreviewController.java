@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -33,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/admin/emails")
 @RequiredArgsConstructor
+@Tag(name = "Admin Email Preview", description = "Preview email templates (dev only)")
 // Note: Endpoint is secured by SecurityConfig, accessible for development
 public class AdminEmailPreviewController {
 
@@ -41,6 +44,7 @@ public class AdminEmailPreviewController {
     /**
      * Preview an email template with sample data.
      */
+    @Operation(summary = "Preview an email template with sample data")
     @GetMapping(value = "/preview", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> previewTemplate(
             @RequestParam String template,
@@ -70,17 +74,25 @@ public class AdminEmailPreviewController {
                 variables.put("oldEmail", oldEmail != null ? oldEmail : "old@example.com");
                 variables.put("newEmail", newEmail != null ? newEmail : "new@example.com");
                 break;
+            case "2fa-recovery":
+                variables.put("magicLink",
+                        magicLink != null ? magicLink : "https://app.cointrack.app/reset-2fa?token=sample-token-123");
+                break;
             case "security-alert":
                 variables.put("event", event != null ? event : "Password Changed");
-                variables.put("timestamp", "December 18, 2025 at 09:30 AM");
+                variables.put("timestamp", "March 18, 2026 at 09:30 AM");
                 Map<String, String> metadata = new HashMap<>();
                 metadata.put("IP Address", "192.168.1.1");
-                metadata.put("Location", "Mumbai, India");
+                metadata.put("Device", "Chrome 122 / Windows 11");
                 variables.put("metadata", metadata);
+                break;
+            case "contact-form":
+                variables.put("name", name != null ? name : "Rahul Sharma");
+                variables.put("email", "rahul@example.com");
+                variables.put("message", "Hi, I'm having trouble connecting my Zerodha account.\nThe callback page shows a blank screen after login.\n\nCan you help?");
                 break;
             case "welcome":
             default:
-                // Welcome doesn't need extra variables
                 break;
         }
 
@@ -91,6 +103,7 @@ public class AdminEmailPreviewController {
     /**
      * List available templates.
      */
+    @Operation(summary = "List available email templates")
     @GetMapping("/templates")
     public ResponseEntity<?> listTemplates() {
         return ResponseEntity.ok(Map.of(

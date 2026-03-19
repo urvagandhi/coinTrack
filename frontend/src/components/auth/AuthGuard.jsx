@@ -1,55 +1,63 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { motion } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-const publicRoutes = ['/login', '/register', '/forgot-password', '/', '/calculator'];
+const PUBLIC_ROUTES = [
+    '/',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+    '/setup-2fa',
+    '/reset-2fa',
+];
+
+const AUTH_ONLY_ROUTES = ['/login', '/register'];
+const CALCULATOR_PREFIX = '/calculators';
 
 export default function AuthGuard({ children }) {
-    const { user, isLoading, isAuthenticated } = useAuth();
+    const { isAuthenticated, isInitializing } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
 
+    const isPublic =
+        PUBLIC_ROUTES.includes(pathname) ||
+        pathname.startsWith(CALCULATOR_PREFIX);
+
     useEffect(() => {
-        // Skip auth check while loading
-        if (isLoading) return;
+        if (isInitializing) return;
 
-        const isPublicRoute = publicRoutes.some(route =>
-            pathname === route || pathname.startsWith(route + '/')
-        );
-
-        // If user is not authenticated and trying to access protected route
-        if (!isAuthenticated && !isPublicRoute) {
-            router.push('/login');
+        if (!isAuthenticated && !isPublic) {
+            // Preserve full URL including query params (critical for OAuth callbacks like Zerodha)
+            const qs = typeof window !== 'undefined' ? window.location.search : '';
+            const fullPath = qs ? `${pathname}${qs}` : pathname;
+            router.replace(`/login?redirect=${encodeURIComponent(fullPath)}`);
             return;
         }
 
-        // If user is authenticated and trying to access auth pages, redirect to dashboard
-        if (isAuthenticated && (pathname === '/login' || pathname === '/register' || pathname === '/forgot-password')) {
-            router.push('/dashboard');
-            return;
+        if (isAuthenticated && AUTH_ONLY_ROUTES.includes(pathname)) {
+            router.replace('/dashboard');
         }
-    }, [isAuthenticated, isLoading, pathname, router]);
+    }, [isAuthenticated, isInitializing, isPublic, pathname, router]);
 
-    // Show loading spinner while checking authentication
-    if (isLoading) {
+    if (isInitializing) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cointrack-primary/10 to-cointrack-secondary/10">
-                <div className="flex flex-col items-center space-y-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cointrack-primary"></div>
-                    <p className="text-cointrack-dark/60 dark:text-cointrack-light/60">Loading...</p>
-                </div>
+            <div className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-3">
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="w-10 h-10 rounded-full border-2 border-blue-200 border-t-blue-600"
+                />
+                <span className="text-sm text-muted-foreground">Loading...</span>
             </div>
         );
     }
 
-    const isPublicRoute = publicRoutes.some(route =>
-        pathname === route || pathname.startsWith(route + '/')
-    );
-
-    // If trying to access protected route without authentication, don't render children
-    if (!isAuthenticated && !isPublicRoute) {
+    if (!isAuthenticated && !isPublic) {
         return null;
     }
 

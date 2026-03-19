@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  * metrics.
  */
 @RestController
+@Tag(name = "Health", description = "Health checks and system status")
 public class HealthController {
 
     private static final Logger logger = LoggerFactory.getLogger(HealthController.class);
@@ -40,6 +44,7 @@ public class HealthController {
      *
      * @return detailed health status response
      */
+    @Operation(summary = "Comprehensive health check")
     @GetMapping("/api/health")
     public ResponseEntity<Map<String, Object>> health() {
         Map<String, Object> response = new LinkedHashMap<>();
@@ -88,6 +93,7 @@ public class HealthController {
      *
      * @return basic health status
      */
+    @Operation(summary = "Lightweight ping")
     @GetMapping("/api/health/ping")
     public ResponseEntity<Map<String, Object>> ping() {
         Map<String, Object> response = new HashMap<>();
@@ -207,6 +213,7 @@ public class HealthController {
      * Lightweight health check for Render keep-alive (root level).
      * Prevents caching to ensure fresh status.
      */
+    @Operation(summary = "Render keep-alive")
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> keepAlive() {
         return ResponseEntity

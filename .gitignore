@@ -47,3 +47,12 @@ build/
 ### OS ###
 .DS_Store
 Thumbs.db
+
+# Sensitive files - NEVER commit
+Backup Codes/
+*.bak
+
+# Claude Code (AI assistant cache — may contain secrets)
+.claude/
+.fuse_hidden*
+

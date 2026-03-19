@@ -21,6 +21,8 @@ import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 import com.urva.myfinance.coinTrack.user.service.TotpService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "2FA Recovery", description = "Recover 2FA via email magic link")
 public class TwoFactorRecoveryController {
 
     private static final Logger logger = LoggerFactory.getLogger(TwoFactorRecoveryController.class);
@@ -54,6 +57,7 @@ public class TwoFactorRecoveryController {
      * Sends magic link to the user's verified email.
      * Only works if user has 2FA enabled and email is verified.
      */
+    @Operation(summary = "Request 2FA recovery via email")
     @PostMapping("/2fa/recovery")
     public ResponseEntity<?> request2FARecovery(
             @RequestBody Map<String, String> request,
@@ -117,6 +121,7 @@ public class TwoFactorRecoveryController {
      * Verify 2FA recovery token and disable 2FA.
      * Returns a temporary JWT to allow completing the reset.
      */
+    @Operation(summary = "Verify 2FA recovery token and disable 2FA")
     @PostMapping("/2fa/recovery/verify")
     public ResponseEntity<?> verify2FARecovery(@RequestBody Map<String, String> request) {
         String token = request.get("token");

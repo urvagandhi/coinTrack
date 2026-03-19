@@ -1,5 +1,7 @@
 package com.urva.myfinance.coinTrack.calculator.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/calculators/investment")
 @Validated
+@Tag(name = "Calculators — Investment", description = "SIP, lumpsum, CAGR, XIRR, stock average, inflation")
 public class InvestmentCalculatorController {
 
         private static final Logger logger = LoggerFactory.getLogger(InvestmentCalculatorController.class);
@@ -51,6 +54,7 @@ public class InvestmentCalculatorController {
          * Calculate SIP returns.
          * POST /api/calculators/investment/sip
          */
+        @Operation(summary = "Calculate SIP returns")
         @PostMapping("/sip")
         public ResponseEntity<CalculatorResponse<SipResponse>> calculateSip(
                         @Valid @RequestBody SipRequest request,
@@ -67,6 +71,7 @@ public class InvestmentCalculatorController {
          * Calculate Step-Up SIP returns (SIP with annual increment).
          * POST /api/calculators/investment/step-up-sip
          */
+        @Operation(summary = "Calculate Step-Up SIP returns with annual increment")
         @PostMapping("/step-up-sip")
         public ResponseEntity<CalculatorResponse<SipResponse>> calculateStepUpSip(
                         @Valid @RequestBody StepUpSipRequest request,
@@ -84,6 +89,7 @@ public class InvestmentCalculatorController {
          * Calculate Lumpsum investment returns.
          * POST /api/calculators/investment/lumpsum
          */
+        @Operation(summary = "Calculate lumpsum investment returns")
         @PostMapping("/lumpsum")
         public ResponseEntity<CalculatorResponse<LumpsumResponse>> calculateLumpsum(
                         @Valid @RequestBody LumpsumRequest request,
@@ -100,6 +106,7 @@ public class InvestmentCalculatorController {
          * Calculate Compound Annual Growth Rate (CAGR).
          * POST /api/calculators/investment/cagr
          */
+        @Operation(summary = "Calculate Compound Annual Growth Rate")
         @PostMapping("/cagr")
         public ResponseEntity<CalculatorResponse<CagrResponse>> calculateCagr(
                         @Valid @RequestBody CagrRequest request,
@@ -116,6 +123,7 @@ public class InvestmentCalculatorController {
          * Calculate Mutual Fund Returns (supports both SIP and Lumpsum).
          * POST /api/calculators/investment/mutual-fund-returns
          */
+        @Operation(summary = "Calculate mutual fund returns (SIP or lumpsum)")
         @PostMapping("/mutual-fund-returns")
         public ResponseEntity<CalculatorResponse<SipResponse>> calculateMutualFundReturns(
                         @Valid @RequestBody SipRequest request,
@@ -133,6 +141,7 @@ public class InvestmentCalculatorController {
          * Uses Newton-Raphson method with bisection fallback.
          * POST /api/calculators/investment/xirr
          */
+        @Operation(summary = "Calculate XIRR (Extended Internal Rate of Return)")
         @PostMapping("/xirr")
         public ResponseEntity<CalculatorResponse<XirrResponse>> calculateXirr(
                         @Valid @RequestBody XirrRequest request,
@@ -148,6 +157,7 @@ public class InvestmentCalculatorController {
          * Calculate Stock Average Price (Weighted Average).
          * POST /api/calculators/investment/stock-average
          */
+        @Operation(summary = "Calculate weighted average stock price")
         @PostMapping("/stock-average")
         public ResponseEntity<CalculatorResponse<StockAverageResponse>> calculateStockAverage(
                         @Valid @RequestBody StockAverageRequest request,
@@ -166,6 +176,7 @@ public class InvestmentCalculatorController {
          * Calculate Inflation-adjusted values.
          * POST /api/calculators/investment/inflation
          */
+        @Operation(summary = "Calculate inflation-adjusted values")
         @PostMapping("/inflation")
         public ResponseEntity<CalculatorResponse<InflationResponse>> calculateInflation(
                         @Valid @RequestBody InflationRequest request,

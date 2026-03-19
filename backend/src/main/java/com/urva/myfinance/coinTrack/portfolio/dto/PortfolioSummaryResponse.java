@@ -40,5 +40,8 @@ public class PortfolioSummaryResponse {
 
     // Guardrail Metadata
     private boolean containsDerivatives;
-    private Boolean dayGainPercentApplicable; // Nullable if not computed
+    private Boolean dayGainPercentApplicable;
+
+    /** True if any price in the response is stale (not live from broker API). */
+    private boolean hasStalePrices;
 }

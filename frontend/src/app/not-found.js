@@ -1,78 +1,49 @@
+// src/app/not-found.js
 'use client';
 
 import { motion } from 'framer-motion';
-import Home from 'lucide-react/dist/esm/icons/home';
-import { Space_Mono } from 'next/font/google';
 import Link from 'next/link';
-
-const spaceMono = Space_Mono({
-    weight: ['400', '700'],
-    subsets: ['latin'],
-});
 
 export default function NotFound() {
     return (
-        <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-black transition-colors duration-300 font-sans">
-            {/* Background Orbs */}
-            <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-blob" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-2000" />
-            </div>
+        <div className="min-h-screen flex flex-col items-center justify-center bg-muted dark:bg-background p-4 text-center">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
+                <p className="text-8xl font-bold text-blue-600/20 select-none mb-2">404</p>
+            </motion.div>
 
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="w-full max-w-3xl relative z-10 px-6 text-center"
+                transition={{ delay: 0.1, duration: 0.3 }}
+                className="space-y-2 mb-8"
             >
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                    className="mb-8"
-                >
-                    <h1 className={`${spaceMono.className} text-9xl font-black text-black dark:text-white drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] select-none`}>
-                        404
-                    </h1>
-                    <h2 className="text-4xl font-bold text-gray-900 dark:text-white mt-4 tracking-tight">
-                        Look like you're lost
-                    </h2>
-                </motion.div>
-
-                {/* Preserved GIF Section - Floating Style with simple shadow */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
-                    className="relative w-full h-64 sm:h-80 mb-10 mx-auto max-w-lg rounded-3xl overflow-hidden shadow-2xl"
-                >
-                    <div
-                        className="absolute inset-0 bg-center bg-no-repeat bg-cover transform hover:scale-105 transition-transform duration-700"
-                        style={{
-                            backgroundImage: "url('https://cdn.dribbble.com/users/285475/screenshots/2083086/dribbble_1.gif')"
-                        }}
-                    />
-                </motion.div>
-
-                {/* Content & Action */}
-                <div className="relative z-20">
-                    <p className={`${spaceMono.className} text-gray-600 dark:text-gray-300 text-lg mb-10 max-w-md mx-auto font-medium leading-relaxed`}>
-                        The page you are looking for is not available or under maintenance!
-                    </p>
-
-                    <Link
-                        href="/"
-                        className={`${spaceMono.className} inline-flex items-center gap-2 py-4 px-8 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full shadow-lg hover:shadow-purple-600/30 transition-all transform hover:-translate-y-1 active:translate-y-0`}
-                    >
-                        <Home className="w-5 h-5" />
-                        Go to Home
-                    </Link>
-                </div>
-
-                <p className="mt-16 text-xs font-medium text-gray-400 dark:text-gray-600 uppercase tracking-widest">
-                    &copy; {new Date().getFullYear()} coinTrack
+                <h1 className="text-xl font-semibold text-foreground">Page not found</h1>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                    The page you&apos;re looking for doesn&apos;t exist or has been moved.
                 </p>
+            </motion.div>
+
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="flex gap-3"
+            >
+                <Link href="/dashboard">
+                    <button className="h-9 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                        Go to dashboard
+                    </button>
+                </Link>
+                <button
+                    onClick={() => window.history.back()}
+                    className="h-9 px-4 border border-border text-foreground rounded-lg text-sm hover:bg-accent transition-colors"
+                >
+                    Go back
+                </button>
             </motion.div>
         </div>
     );
