@@ -20,7 +20,7 @@
             ],
             "description": "Initiates login. Returns tempToken for TOTP verification if 2FA is enabled.",
             "url": {
-              "raw": "http://localhost:8080/api/auth/login",
+              "raw": "{{baseUrl}}/api/auth/login",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -47,7 +47,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/auth/register",
+              "raw": "{{baseUrl}}/api/auth/register",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -343,7 +343,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/auth/verify-token",
+              "raw": "{{baseUrl}}/api/auth/verify-token",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -366,7 +366,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/users",
+              "raw": "{{baseUrl}}/api/users",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -388,7 +388,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/users/:id",
+              "raw": "{{baseUrl}}/api/users/:id",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -421,7 +421,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/users/:id",
+              "raw": "{{baseUrl}}/api/users/:id",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -454,7 +454,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/users/:id",
+              "raw": "{{baseUrl}}/api/users/:id",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -469,6 +469,195 @@
                   "value": ""
                 }
               ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Invalidate current token.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Refresh JWT using refresh token.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"xxx\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Send password reset email.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"xxx\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Reset password with email token.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"xxx\",\n  \"newPassword\": \"xxx\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Verify email address.",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify?token=xxx",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "xxx"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Get current user profile.",
+            "url": {
+              "raw": "{{baseUrl}}/api/user/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Update user profile.",
+            "url": {
+              "raw": "{{baseUrl}}/api/user/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"x\",\n  \"lastName\": \"x\"\n}"
             }
           }
         }
@@ -733,6 +922,30 @@
               ]
             }
           }
+        },
+        {
+          "name": "Refresh Portfolio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Trigger manual portfolio sync.",
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "portfolio",
+                "refresh"
+              ]
+            }
+          }
         }
       ]
     },
@@ -871,7 +1084,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/upstox/login-url",
+              "raw": "{{baseUrl}}/api/brokers/upstox/login-url",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -890,7 +1103,7 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/upstox/callback",
+              "raw": "{{baseUrl}}/api/brokers/upstox/callback?code=sample_auth_code",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -924,7 +1137,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/upstox/credentials",
+              "raw": "{{baseUrl}}/api/brokers/upstox/credentials",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -952,7 +1165,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/upstox/holdings",
+              "raw": "{{baseUrl}}/api/brokers/upstox/holdings",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -976,7 +1189,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/upstox/orders",
+              "raw": "{{baseUrl}}/api/brokers/upstox/orders",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1000,7 +1213,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/upstox/positions",
+              "raw": "{{baseUrl}}/api/brokers/upstox/positions",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1024,7 +1237,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/upstox/status",
+              "raw": "{{baseUrl}}/api/brokers/upstox/status",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1048,7 +1261,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/upstox/disconnect",
+              "raw": "{{baseUrl}}/api/brokers/upstox/disconnect",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1077,7 +1290,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/angelone/login-url",
+              "raw": "{{baseUrl}}/api/brokers/angelone/login-url",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1105,7 +1318,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/angelone/credentials",
+              "raw": "{{baseUrl}}/api/brokers/angelone/credentials",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1133,7 +1346,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/angelone/connect",
+              "raw": "{{baseUrl}}/api/brokers/angelone/connect",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1161,7 +1374,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/angelone/holdings",
+              "raw": "{{baseUrl}}/api/brokers/angelone/holdings",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1185,7 +1398,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/angelone/positions",
+              "raw": "{{baseUrl}}/api/brokers/angelone/positions",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1209,7 +1422,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/angelone/status",
+              "raw": "{{baseUrl}}/api/brokers/angelone/status",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1233,7 +1446,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/api/brokers/angelone/disconnect",
+              "raw": "{{baseUrl}}/api/brokers/angelone/disconnect",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1242,6 +1455,133 @@
                 "brokers",
                 "angelone",
                 "disconnect"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notes",
+      "item": [
+        {
+          "name": "List All Notes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "List all notes.",
+            "url": {
+              "raw": "{{baseUrl}}/api/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Note",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Create note.",
+            "url": {
+              "raw": "{{baseUrl}}/api/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My Note\",\n  \"content\": \"Note content here\",\n  \"tags\": [\"finance\", \"reminder\"],\n  \"color\": \"#FFFFFF\",\n  \"pinned\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Note",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Update note.",
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Note\",\n  \"content\": \"Updated content\",\n  \"tags\": [\"finance\"],\n  \"color\": \"#FFFFFF\",\n  \"pinned\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Note",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Delete note.",
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
               ]
             }
           }

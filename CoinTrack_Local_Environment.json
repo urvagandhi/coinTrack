@@ -13,6 +13,11 @@
       "enabled": true
     },
     {
+      "key": "refreshToken",
+      "value": "",
+      "enabled": true
+    },
+    {
       "key": "zerodhaApiKey",
       "value": "<ENTER_API_KEY>",
       "enabled": true
