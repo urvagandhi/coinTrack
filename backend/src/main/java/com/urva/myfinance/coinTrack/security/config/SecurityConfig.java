@@ -64,6 +64,8 @@ public class SecurityConfig {
                                 "/api/auth/check-username/*",
                                 "/api/auth/login/totp",
                                 "/api/auth/login/recovery",
+                                "/api/auth/2fa/setup",
+                                "/api/auth/2fa/verify",
                                 "/api/auth/2fa/register/setup",
                                 "/api/auth/2fa/register/verify",
                                 "/api/auth/refresh")

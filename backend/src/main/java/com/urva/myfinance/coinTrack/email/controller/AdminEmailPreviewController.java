@@ -74,17 +74,25 @@ public class AdminEmailPreviewController {
                 variables.put("oldEmail", oldEmail != null ? oldEmail : "old@example.com");
                 variables.put("newEmail", newEmail != null ? newEmail : "new@example.com");
                 break;
+            case "2fa-recovery":
+                variables.put("magicLink",
+                        magicLink != null ? magicLink : "https://app.cointrack.app/reset-2fa?token=sample-token-123");
+                break;
             case "security-alert":
                 variables.put("event", event != null ? event : "Password Changed");
-                variables.put("timestamp", "December 18, 2025 at 09:30 AM");
+                variables.put("timestamp", "March 18, 2026 at 09:30 AM");
                 Map<String, String> metadata = new HashMap<>();
                 metadata.put("IP Address", "192.168.1.1");
-                metadata.put("Location", "Mumbai, India");
+                metadata.put("Device", "Chrome 122 / Windows 11");
                 variables.put("metadata", metadata);
+                break;
+            case "contact-form":
+                variables.put("name", name != null ? name : "Rahul Sharma");
+                variables.put("email", "rahul@example.com");
+                variables.put("message", "Hi, I'm having trouble connecting my Zerodha account.\nThe callback page shows a blank screen after login.\n\nCan you help?");
                 break;
             case "welcome":
             default:
-                // Welcome doesn't need extra variables
                 break;
         }
 

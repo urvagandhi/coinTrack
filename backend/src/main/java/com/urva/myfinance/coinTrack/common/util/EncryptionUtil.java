@@ -68,8 +68,7 @@ public class EncryptionUtil {
      * @return Base64-encoded string: [IV][ciphertext][auth-tag]
      */
     public static String encrypt(String plaintext, String keyOverride) {
-        validateKeyOverride(keyOverride);
-        SecretKey key = new SecretKeySpec(keyOverride.getBytes(StandardCharsets.UTF_8), "AES");
+        SecretKey key = deriveKeyFromOverride(keyOverride);
         return doEncryptStatic(plaintext, key);
     }
 
@@ -91,9 +90,27 @@ public class EncryptionUtil {
      * @return the original plaintext
      */
     public static String decrypt(String encryptedData, String keyOverride) {
-        validateKeyOverride(keyOverride);
-        SecretKey key = new SecretKeySpec(keyOverride.getBytes(StandardCharsets.UTF_8), "AES");
+        SecretKey key = deriveKeyFromOverride(keyOverride);
         return doDecryptStatic(encryptedData, key);
+    }
+
+    /**
+     * Decrypt if encrypted, otherwise return the plain text as-is.
+     * Useful for backward compatibility when migrating from plain-text to encrypted storage.
+     */
+    public String decryptSafe(String data) {
+        if (data == null || data.isEmpty()) {
+            return data;
+        }
+        if (!isEncrypted(data)) {
+            return data;
+        }
+        try {
+            return doDecrypt(data, this.secretKey);
+        } catch (Exception e) {
+            // If decryption fails, assume it's plain text
+            return data;
+        }
     }
 
     /**
@@ -213,9 +230,32 @@ public class EncryptionUtil {
         }
     }
 
-    private static void validateKeyOverride(String keyOverride) {
-        if (keyOverride == null || keyOverride.length() != 32) {
-            throw new IllegalArgumentException("Key override must be exactly 32 characters (256 bits)");
+    /**
+     * Derive a 32-byte AES key from a key override string.
+     * Accepts either:
+     * - 32-character raw key (used as UTF-8 bytes directly)
+     * - 64-character hex string (decoded to 32 bytes)
+     */
+    private static SecretKey deriveKeyFromOverride(String keyOverride) {
+        if (keyOverride == null || keyOverride.isBlank()) {
+            throw new IllegalArgumentException("Key override must not be null or empty");
         }
+        if (keyOverride.length() == 32) {
+            return new SecretKeySpec(keyOverride.getBytes(StandardCharsets.UTF_8), "AES");
+        }
+        if (keyOverride.length() == 64 && keyOverride.matches("[0-9a-fA-F]+")) {
+            byte[] keyBytes = hexToBytes(keyOverride);
+            return new SecretKeySpec(keyBytes, "AES");
+        }
+        throw new IllegalArgumentException(
+                "Key override must be exactly 32 characters or 64 hex characters (256 bits)");
+    }
+
+    private static byte[] hexToBytes(String hex) {
+        byte[] bytes = new byte[hex.length() / 2];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+        }
+        return bytes;
     }
 }

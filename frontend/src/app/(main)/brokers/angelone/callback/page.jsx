@@ -1,12 +1,12 @@
-// Angel One OAuth callback page
+// src/app/(main)/brokers/angelone/callback/page.jsx
+// Angel One uses direct auth (no OAuth redirect), so redirect to setup page
 'use client';
-import React from 'react';
 
-export default function AngelOneCallbackPage() {
-    return (
-        <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Angel One Callback</h1>
-            <p className="text-gray-600">Processing your Angel One authentication...</p>
-        </div>
-    );
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+export default function AngelOneCallbackRedirect() {
+    const router = useRouter();
+    useEffect(() => { router.replace('/brokers/angelone'); }, [router]);
+    return null;
 }

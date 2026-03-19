@@ -1,32 +1,27 @@
+// src/components/calculators/framework/CalculatorComponents.jsx
+// Framework components imported by all 32 calculator pages. Design tokens only.
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+import { Calculator, Info, Loader2 } from 'lucide-react';
 
 /**
- * Calculator Layout - Main wrapper for all calculators
- * Provides consistent structure and styling
+ * CalculatorLayout - Main wrapper for all calculators
+ * Props: title, description, category, children
  */
-export function CalculatorLayout({
-    title,
-    description,
-    category,
-    children
-}) {
+export function CalculatorLayout({ title, description, category, children }) {
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Header */}
+        <div className="space-y-6">
             <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 uppercase tracking-wider">
-                        {category}
-                    </span>
-                </div>
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{title}</h1>
-                <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl">{description}</p>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-600 uppercase tracking-wider">
+                    {category}
+                </span>
+                <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+                <p className="text-sm text-muted-foreground max-w-2xl">{description}</p>
             </div>
-
-            {/* Content */}
-            <div className="grid gap-8 lg:grid-cols-2">
+            <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
                 {children}
             </div>
         </div>
@@ -34,129 +29,127 @@ export function CalculatorLayout({
 }
 
 /**
- * Input Card - Container for calculator inputs
+ * InputCard - Container for calculator inputs
+ * Props: title, children, onCalculate, isLoading
  */
 export function InputCard({ title = 'Enter Details', children, onCalculate, isLoading }) {
     return (
-        <Card className="rounded-2xl shadow-sm border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-            <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 pb-4">
-                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span className="w-1 h-6 bg-purple-500 rounded-full inline-block"></span>
-                    {title}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="border-b border-border px-6 py-4 border-l-4 border-l-blue-600">
+                <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+            </div>
+            <div className="px-6 py-5 space-y-5">
                 {children}
                 {onCalculate && (
                     <button
                         onClick={onCalculate}
                         disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-500/20 h-11 px-6 py-2 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+                        className="w-full h-10 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {isLoading ? (
-                            <div className="flex items-center justify-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                <span>Calculating...</span>
-                            </div>
+                            <>
+                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}>
+                                    <Loader2 size={14} />
+                                </motion.div>
+                                Calculating...
+                            </>
                         ) : 'Calculate'}
                     </button>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }
 
 /**
- * Result Card - Display calculation results
+ * ResultCard - Display calculation results
+ * Props: title, children, isEmpty
  */
 export function ResultCard({ title = 'Results', children, isEmpty }) {
     if (isEmpty) {
         return (
-            <Card className="flex items-center justify-center min-h-[200px]">
-                <CardContent className="text-center text-muted-foreground">
-                    <p>Enter values and click Calculate to see results</p>
-                </CardContent>
-            </Card>
+            <div className="bg-card border border-border rounded-xl h-fit">
+                <div className="py-12 text-center">
+                    <Calculator size={28} className="text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">Fill in the values and click Calculate</p>
+                </div>
+            </div>
         );
     }
 
     return (
-        <Card className="rounded-2xl shadow-sm border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden h-fit">
-            <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 pb-4">
-                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span className="w-1 h-6 bg-green-500 rounded-full inline-block"></span>
-                    {title}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+        <div className="bg-card border border-border rounded-xl overflow-hidden h-fit">
+            <div className="border-b border-border px-6 py-4 border-l-4 border-l-success">
+                <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+            </div>
+            <div className="px-6 py-5 space-y-4">
                 {children}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }
 
 /**
- * Result Metric - Individual result display
+ * ResultMetric - Individual result display
+ * Props: label, value, subValue, variant (default|success|warning|error)
  */
 export function ResultMetric({ label, value, subValue, variant = 'default' }) {
-    const valueClassName = variant === 'success'
-        ? 'text-green-600 dark:text-green-400'
-        : variant === 'warning'
-            ? 'text-amber-600 dark:text-amber-400'
-            : variant === 'error'
-                ? 'text-red-600 dark:text-red-400'
-                : 'text-gray-900 dark:text-white';
+    const valueClass = {
+        success: 'text-green-600',
+        warning: 'text-amber-700',
+        error: 'text-red-600',
+        default: 'text-foreground',
+    }[variant];
 
-    const bgClassName = variant === 'success'
-        ? 'bg-green-50 dark:bg-green-900/10'
-        : variant === 'warning'
-            ? 'bg-amber-50 dark:bg-amber-900/10'
-            : variant === 'error'
-                ? 'bg-red-50 dark:bg-red-900/10'
-                : 'bg-gray-50 dark:bg-gray-800/50';
+    const bgClass = {
+        success: 'bg-green-50',
+        warning: 'bg-amber-50',
+        error: 'bg-red-50',
+        default: 'bg-accent',
+    }[variant];
 
     return (
-        <div className={`p-4 rounded-xl space-y-1 border border-transparent transition-colors hover:border-gray-200 dark:hover:border-gray-800 ${bgClassName}`}>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
-            <p className={`text-2xl font-bold tracking-tight ${valueClassName}`}>{value}</p>
+        <div className={cn('p-4 rounded-xl space-y-1 border border-transparent hover:border-border transition-colors', bgClass)}>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+            <motion.p
+                key={value}
+                initial={{ opacity: 0.5, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className={cn('text-2xl font-semibold tracking-tight', valueClass)}
+            >
+                {value}
+            </motion.p>
             {subValue && (
-                <p className="text-xs font-medium text-gray-400 dark:text-gray-500">{subValue}</p>
+                <p className="text-[11px] text-muted-foreground">{subValue}</p>
             )}
         </div>
     );
 }
 
 /**
- * Form Field - Input with label and validation
+ * FormField - Input with label and validation
+ * Props: label, name, value, onChange, type, placeholder, prefix, suffix, min, max, step, error, tooltip
  */
 export function FormField({
-    label,
-    name,
-    value,
-    onChange,
-    type = 'number',
-    placeholder,
-    prefix,
-    suffix,
-    min,
-    max,
-    step,
-    error,
-    tooltip
+    label, name, value, onChange, type = 'number',
+    placeholder, prefix, suffix, min, max, step, error, tooltip
 }) {
     return (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-                <label htmlFor={name} className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label htmlFor={name} className="text-sm font-medium text-foreground">
                     {label}
                 </label>
                 {tooltip && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{tooltip}</span>
+                    <span className="text-[10px] text-muted-foreground bg-accent px-2 py-0.5 rounded-full" title={tooltip}>
+                        {tooltip}
+                    </span>
                 )}
             </div>
-            <div className="relative group">
+            <div className="relative">
                 {prefix && (
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium select-none pointer-events-none group-focus-within:text-purple-500 transition-colors">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">
                         {prefix}
                     </span>
                 )}
@@ -170,23 +163,26 @@ export function FormField({
                     min={min}
                     max={max}
                     step={step}
-                    className={`flex h-11 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 text-sm ring-offset-background
-            placeholder:text-gray-400 text-gray-900 dark:text-white transition-all
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20 focus-visible:border-purple-500
-            hover:border-gray-300 dark:hover:border-gray-600
-            disabled:cursor-not-allowed disabled:opacity-50
-            ${prefix ? 'pl-9' : ''} ${suffix ? 'pr-14' : ''}
-            ${error ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : ''}`}
+                    className={cn(
+                        'flex h-10 w-full rounded-lg border bg-background px-3 text-sm text-foreground transition-colors',
+                        'placeholder:text-muted-foreground',
+                        'focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500/20',
+                        'hover:border-gray-300',
+                        'disabled:cursor-not-allowed disabled:opacity-50',
+                        prefix && 'pl-7',
+                        suffix && 'pr-14',
+                        error ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-danger/20' : 'border-border'
+                    )}
                 />
                 {suffix && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-medium uppercase tracking-wide select-none pointer-events-none group-focus-within:text-purple-500 transition-colors bg-gray-100 dark:bg-gray-700/50 px-1.5 py-0.5 rounded">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide pointer-events-none select-none bg-accent px-1.5 py-0.5 rounded">
                         {suffix}
                     </span>
                 )}
             </div>
             {error && (
-                <p className="text-xs text-red-500 font-medium flex items-center gap-1">
-                    <span>⚠️</span> {error}
+                <p className="text-xs text-red-600 font-medium flex items-center gap-1">
+                    <Info size={11} /> {error}
                 </p>
             )}
         </div>
@@ -194,91 +190,74 @@ export function FormField({
 }
 
 /**
- * Breakdown Table - Year-by-year or detailed breakdown
+ * BreakdownTable - Year-by-year or detailed breakdown
+ * Props: headers, rows, caption
  */
 export function BreakdownTable({ headers, rows, caption }) {
     if (!rows || rows.length === 0) return null;
 
     return (
-        <Card className="rounded-2xl shadow-sm border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-            <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 pb-4">
-                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Detailed Breakdown</CardTitle>
-                {caption && <CardDescription className="text-gray-500 dark:text-gray-400">{caption}</CardDescription>}
-            </CardHeader>
-            <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
-                                {headers.map((header, i) => (
-                                    <th key={i} className="py-3 px-6 text-left font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider text-xs">
-                                        {header}
-                                    </th>
+        <div className="bg-card border border-border rounded-xl overflow-hidden mt-4">
+            <div className="border-b border-border px-6 py-4">
+                <h3 className="text-sm font-semibold text-foreground">Detailed Breakdown</h3>
+                {caption && <p className="text-xs text-muted-foreground mt-0.5">{caption}</p>}
+            </div>
+            <div className="overflow-x-auto max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-muted [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
+                <table className="w-full text-sm">
+                    <thead className="sticky top-0 z-10">
+                        <tr className="border-b border-border bg-muted">
+                            {headers.map((header, i) => (
+                                <th key={i} className="py-3 px-6 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                                    {header}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-card-border">
+                        {rows.map((row, i) => (
+                            <tr key={i} className="hover:bg-accent transition-colors even:bg-muted/50">
+                                {row.map((cell, j) => (
+                                    <td key={j} className="py-3 px-6 text-muted-foreground">
+                                        {cell}
+                                    </td>
                                 ))}
                             </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {rows.map((row, i) => (
-                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                    {row.map((cell, j) => (
-                                        <td key={j} className="py-3 px-6 text-gray-700 dark:text-gray-300">
-                                            {cell}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
-/**
- * Disclaimer Banner - For tax and legal disclaimers
- */
-export function DisclaimerBanner({ title = 'Disclaimer', message, variant = 'warning' }) {
-    const bgClassName = variant === 'warning'
-        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-        : variant === 'info'
-            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-            : 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800';
-
-    const textClassName = variant === 'warning'
-        ? 'text-yellow-800 dark:text-yellow-200'
-        : variant === 'info'
-            ? 'text-blue-800 dark:text-blue-200'
-            : 'text-gray-800 dark:text-gray-200';
-
-    return (
-        <div className={`rounded-md border p-4 ${bgClassName}`}>
-            <p className={`text-sm font-medium ${textClassName}`}>{title}</p>
-            <p className={`mt-1 text-sm ${textClassName} opacity-80`}>{message}</p>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
 
 /**
- * Loading Skeleton for results
+ * DisclaimerBanner - For tax and legal disclaimers
+ * Props: title, message, variant (warning|info|default)
+ */
+export function DisclaimerBanner({ title = 'Disclaimer', message, variant = 'warning' }) {
+    return (
+        <div className="flex items-start gap-2.5 p-3 bg-accent border border-border rounded-lg text-xs text-muted-foreground leading-relaxed mt-4">
+            <Info size={13} className="text-gray-400 flex-shrink-0 mt-0.5" />
+            <div>
+                <p className="font-medium text-muted-foreground">{title}</p>
+                <p className="mt-0.5">{message}</p>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * ResultSkeleton - Loading placeholder
  */
 export function ResultSkeleton() {
     return (
-        <Card>
-            <CardContent className="pt-6 space-y-4">
-                <div className="space-y-2">
-                    <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-                    <div className="h-8 w-32 bg-muted animate-pulse rounded" />
-                </div>
-                <div className="space-y-2">
-                    <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-                    <div className="h-8 w-32 bg-muted animate-pulse rounded" />
-                </div>
-                <div className="space-y-2">
-                    <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-                    <div className="h-8 w-32 bg-muted animate-pulse rounded" />
-                </div>
-            </CardContent>
-        </Card>
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-32" />
+        </div>
     );
 }

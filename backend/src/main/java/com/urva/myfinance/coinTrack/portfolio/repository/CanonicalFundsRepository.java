@@ -15,5 +15,5 @@ public interface CanonicalFundsRepository extends MongoRepository<CanonicalFunds
 
     List<CanonicalFunds> findByUserId(String userId);
 
-    Optional<CanonicalFunds> findByUserIdAndBrokerType(String userId, Broker brokerType);
+    Optional<CanonicalFunds> findFirstByUserIdAndBrokerType(String userId, Broker brokerType);
 }

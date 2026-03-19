@@ -15,6 +15,7 @@ import com.urva.myfinance.coinTrack.broker.model.Broker;
 import com.urva.myfinance.coinTrack.broker.model.BrokerAccount;
 import com.urva.myfinance.coinTrack.broker.registry.BrokerAdapterRegistry;
 import com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository;
+import com.urva.myfinance.coinTrack.common.util.EncryptionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -55,13 +56,16 @@ public class PortfolioAggregationService {
     private final BrokerAdapterRegistry adapterRegistry;
     private final BrokerCapabilityChecker capabilityChecker;
     private final BrokerAccountRepository brokerAccountRepository;
+    private final EncryptionUtil encryptionUtil;
 
     public PortfolioAggregationService(BrokerAdapterRegistry adapterRegistry,
                                        BrokerCapabilityChecker capabilityChecker,
-                                       BrokerAccountRepository brokerAccountRepository) {
+                                       BrokerAccountRepository brokerAccountRepository,
+                                       EncryptionUtil encryptionUtil) {
         this.adapterRegistry = adapterRegistry;
         this.capabilityChecker = capabilityChecker;
         this.brokerAccountRepository = brokerAccountRepository;
+        this.encryptionUtil = encryptionUtil;
     }
 
     /**
@@ -189,7 +193,7 @@ public class PortfolioAggregationService {
             switch (broker) {
                 case ZERODHA -> {
                     String apiKey = account.getZerodhaApiKey();
-                    accessToken = apiKey + ":" + account.getZerodhaAccessToken();
+                    accessToken = apiKey + ":" + encryptionUtil.decryptSafe(account.getZerodhaAccessToken());
                     expiresAt = account.getZerodhaTokenExpiresAt() != null
                         ? account.getZerodhaTokenExpiresAt().atZone(java.time.ZoneId.of("Asia/Kolkata")).toInstant()
                         : Instant.now().plusSeconds(3600);

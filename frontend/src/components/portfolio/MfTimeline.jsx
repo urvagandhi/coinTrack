@@ -24,64 +24,64 @@ import { useEffect, useMemo, useState } from 'react';
 // --- Helper Functions ---
 
 const getEventTheme = (type) => {
-    if (!type) return { color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800', border: 'border-gray-200 dark:border-gray-700', icon: CircleDollarSign };
+    if (!type) return { color: 'text-muted-foreground', bg: 'bg-accent', border: 'border-border', icon: CircleDollarSign };
 
     // Buy / Active
     if (type.includes('BUY') || type === 'SIP_STATUS_ACTIVE') {
         return {
-            color: 'text-emerald-600 dark:text-emerald-400',
-            bg: 'bg-emerald-50 dark:bg-emerald-900/10',
-            border: 'border-emerald-100 dark:border-emerald-800',
+            color: 'text-green-600',
+            bg: 'bg-green-50',
+            border: 'border-green-200',
             icon: TrendingUp,
-            gradient: 'from-emerald-500/20 to-emerald-500/5'
+            gradient: 'from-success/20 to-success/5'
         };
     }
 
     // Sell / Redeem / Cancelled
     if (type.includes('SELL') || type === 'REDEMPTION_COMPLETED' || type === 'SIP_STATUS_CANCELLED') {
         return {
-            color: 'text-rose-600 dark:text-rose-400',
-            bg: 'bg-rose-50 dark:bg-rose-900/10',
-            border: 'border-rose-100 dark:border-rose-800',
+            color: 'text-red-600',
+            bg: 'bg-red-50',
+            border: 'border-red-200',
             icon: type === 'SIP_STATUS_CANCELLED' ? XCircle : TrendingDown,
-            gradient: 'from-rose-500/20 to-rose-500/5'
+            gradient: 'from-danger/20 to-danger/5'
         };
     }
 
     // SIP Created / Scheduled
     if (type === 'SIP_CREATED' || type === 'SIP_EXECUTION_SCHEDULED') {
         return {
-            color: 'text-blue-600 dark:text-blue-400',
-            bg: 'bg-blue-50 dark:bg-blue-900/10',
-            border: 'border-blue-100 dark:border-blue-800',
+            color: 'text-blue-600',
+            bg: 'bg-blue-50',
+            border: 'border-blue-200',
             icon: type === 'SIP_EXECUTION_SCHEDULED' ? Clock : PlayCircle,
-            gradient: 'from-blue-500/20 to-blue-500/5'
+            gradient: 'from-blue-100 to-blue-50'
         };
     }
 
     // SIP Paused
     if (type === 'SIP_STATUS_PAUSED') {
         return {
-            color: 'text-amber-600 dark:text-amber-400',
-            bg: 'bg-amber-50 dark:bg-amber-900/10',
-            border: 'border-amber-100 dark:border-amber-800',
+            color: 'text-amber-600',
+            bg: 'bg-amber-50',
+            border: 'border-amber-200',
             icon: PauseCircle,
-            gradient: 'from-amber-500/20 to-amber-500/5'
+            gradient: 'from-warning/20 to-warning/5'
         };
     }
 
     // Holding Updates
     if (type.includes('HOLDING')) {
         return {
-            color: 'text-violet-600 dark:text-violet-400',
-            bg: 'bg-violet-50 dark:bg-violet-900/10',
-            border: 'border-violet-100 dark:border-violet-800',
+            color: 'text-blue-500',
+            bg: 'bg-blue-50',
+            border: 'border-blue-200',
             icon: type === 'HOLDING_INCREASED' ? ArrowUpRight : (type === 'HOLDING_REDUCED' ? ArrowDownRight : AlertCircle),
-            gradient: 'from-violet-500/20 to-violet-500/5'
+            gradient: 'from-info/20 to-info/5'
         };
     }
 
-    return { color: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-100', icon: CircleDollarSign, gradient: 'from-gray-500/20 to-gray-500/5' };
+    return { color: 'text-muted-foreground', bg: 'bg-accent', border: 'border-border', icon: CircleDollarSign, gradient: 'from-foreground/10 to-foreground/5' };
 };
 
 const formatCurrency = (val) => {
@@ -113,12 +113,12 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
             {/* Connecting Line - Hidden on mobile for cleaner look */}
             {!isLast && (
                 <div
-                    className="hidden md:block absolute left-[11px] top-8 bottom-0 w-[2px] bg-gray-200 dark:bg-gray-700 group-hover/item:bg-gray-300 dark:group-hover/item:bg-gray-600 transition-colors"
+                    className="hidden md:block absolute left-[11px] top-8 bottom-0 w-[2px] bg-border group-hover/item:bg-gray-300 transition-colors"
                 ></div>
             )}
 
             {/* Timeline Dot - Simplified on mobile */}
-            <div className={`absolute left-0 top-1 h-5 w-5 md:h-6 md:w-6 rounded-full border-2 md:border-4 border-white dark:border-gray-900 flex items-center justify-center bg-white z-10 shadow-sm ${theme.color}`}>
+            <div className={`absolute left-0 top-1 h-5 w-5 md:h-6 md:w-6 rounded-full border-2 md:border-4 border-background flex items-center justify-center bg-card z-10 shadow-sm ${theme.color}`}>
                 <div className={`h-2 w-2 md:h-2.5 md:w-2.5 rounded-full ${theme.bg.replace('/10', '')} ring-1 md:ring-2 ring-current ring-opacity-20`}></div>
             </div>
 
@@ -127,13 +127,13 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className={`relative overflow-hidden rounded-xl border ${highlight ? 'border-purple-400 dark:border-purple-500 ring-2 ring-purple-200 dark:ring-purple-900/50 shadow-md transform scale-[1.01]' : (variant === 'minimal' ? 'border-gray-100 dark:border-gray-700/50 bg-white dark:bg-gray-800' : theme.border + ' bg-white dark:bg-gray-800')} hover:shadow-md transition-all duration-300`}
+                className={`relative overflow-hidden rounded-xl border ${highlight ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md transform scale-[1.01]' : (variant === 'minimal' ? 'border-border/50 bg-card' : theme.border + ' bg-card')} hover:shadow-md transition-all duration-300`}
             >
                 {/* Subtle Gradient Background */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient} opacity-0 group-hover/item:opacity-100 transition-opacity duration-500 pointer-events-none`}></div>
 
                 {highlight && (
-                    <div className="absolute top-0 right-0 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-[9px] font-bold uppercase rounded-bl-lg">
+                    <div className="absolute top-0 right-0 px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-bold uppercase rounded-bl-lg">
                         Selected Event
                     </div>
                 )}
@@ -147,12 +147,12 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                                     <Icon className={`h-4 w-4 ${theme.color}`} />
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                                    <h4 className="font-semibold text-sm text-foreground">
                                         {event.eventType.replace(/_/g, ' ')}
                                     </h4>
                                 </div>
                             </div>
-                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-md self-start sm:self-auto ml-9 sm:ml-0">
+                            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 bg-accent px-2 py-1 rounded-md self-start sm:self-auto ml-9 sm:ml-0">
                                 <Calendar className="h-3 w-3" />
                                 {formatDate(event.eventDate)}
                             </span>
@@ -163,7 +163,7 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                     {variant === 'minimal' && (
                         <div className="flex justify-between items-center mb-2">
                             <div className="flex items-center gap-2">
-                                <span className={`text-xs font-bold ${theme.color} bg-white dark:bg-gray-800 border ${theme.border} px-1.5 py-0.5 rounded`}>
+                                <span className={`text-xs font-bold ${theme.color} bg-card border ${theme.border} px-1.5 py-0.5 rounded`}>
                                     {event.eventType.replace(/_/g, ' ')}
                                 </span>
                                 {event.orderId && (
@@ -181,7 +181,7 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                         {event.amount && (
                             <div className="col-span-1">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Amount</p>
-                                <p className="text-sm font-bold text-gray-900 dark:text-white flex items-center">
+                                <p className="text-sm font-bold text-foreground flex items-center">
                                     {formatCurrency(event.amount)}
                                 </p>
                             </div>
@@ -189,19 +189,19 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
                         {event.nav && (
                             <div className="col-span-1">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-0.5">NAV</p>
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">₹{event.nav}</p>
+                                <p className="text-sm font-medium text-muted-foreground">₹{event.nav}</p>
                             </div>
                         )}
                         {event.quantity && (
                             <div className="col-span-1">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Units</p>
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{event.quantity}</p>
+                                <p className="text-sm font-medium text-muted-foreground">{event.quantity}</p>
                             </div>
                         )}
                         {event.orderId && (
                             <div className="col-span-2 md:col-span-1">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Order Ref</p>
-                                <p className="text-xs font-mono font-medium text-gray-500 dark:text-gray-400 pt-0.5 truncate">{event.orderId}</p>
+                                <p className="text-xs font-mono font-medium text-muted-foreground pt-0.5 truncate">{event.orderId}</p>
                             </div>
                         )}
                         {/* Context Badge */}
@@ -216,7 +216,7 @@ function MfTimelineEventCard({ event, isLast, highlight, variant = 'default' }) 
 
                     {/* Footer Info (Context/Note) */}
                     {(event.context) && (
-                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50 flex flex-wrap gap-2 text-xs text-gray-500">
+                        <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap gap-2 text-xs text-muted-foreground">
                             {event.context && (
                                 <span className="flex items-center gap-1.5 opacity-80">
                                     <Info className="h-3 w-3" />
@@ -253,13 +253,13 @@ function MfTimelineClusterCard({ events, highlightId }) {
     return (
         <div className="relative pl-8 pb-8 group/cluster">
             {/* Note: Connecting line is handled by the parent loop logic or simplified here. */}
-            <div className="absolute left-[11px] top-6 bottom-0 w-[2px] bg-gray-200 dark:bg-gray-700 group-hover/cluster:bg-gray-300 dark:group-hover/cluster:bg-gray-600 transition-colors"></div>
+            <div className="absolute left-[11px] top-6 bottom-0 w-[2px] bg-border group-hover/cluster:bg-gray-300 transition-colors"></div>
 
             {/* Cluster Dot - Stacked Effect Ring */}
-            <div className={`absolute left-0 top-1 h-6 w-6 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center bg-white z-10 shadow-sm ${theme.color}`}>
+            <div className={`absolute left-0 top-1 h-6 w-6 rounded-full border-4 border-background flex items-center justify-center bg-card z-10 shadow-sm ${theme.color}`}>
                 <div className={`h-2.5 w-2.5 rounded-full ${theme.bg.replace('/10', '')} ring-2 ring-current ring-opacity-20`}></div>
                 {/* Badge for count */}
-                <div className="absolute -top-2 -right-2 h-4 w-4 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm border border-white dark:border-gray-800">
+                <div className="absolute -top-2 -right-2 h-4 w-4 bg-foreground text-background text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm border border-card">
                     {events.length}
                 </div>
             </div>
@@ -269,12 +269,12 @@ function MfTimelineClusterCard({ events, highlightId }) {
                 className={`relative group-card transition-all duration-300`}
             >
                 {/* Visual Stack Effect (Background Card) */}
-                <div className={`absolute top-1.5 left-1.5 right-[-6px] bottom-[-6px] rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 -z-10 transition-all duration-300 ${isExpanded ? 'opacity-0 translate-y-0' : 'opacity-100'}`}></div>
+                <div className={`absolute top-1.5 left-1.5 right-[-6px] bottom-[-6px] rounded-xl border border-border bg-accent -z-10 transition-all duration-300 ${isExpanded ? 'opacity-0 translate-y-0' : 'opacity-100'}`}></div>
 
-                <div className={`relative overflow-hidden rounded-xl border ${hasHighlight ? 'border-purple-400 dark:border-purple-500 ring-2' : theme.border} bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-300`}>
+                <div className={`relative overflow-hidden rounded-xl border ${hasHighlight ? 'border-blue-500 ring-2 ring-blue-500/20' : theme.border} bg-card shadow-sm hover:shadow-md transition-all duration-300`}>
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="w-full text-left p-4 flex flex-col gap-2 relative z-10 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors"
+                        className="w-full text-left p-4 flex flex-col gap-2 relative z-10 hover:bg-accent transition-colors"
                     >
                         <div className="flex justify-between items-start w-full">
                             <div className="flex items-center gap-3">
@@ -282,17 +282,17 @@ function MfTimelineClusterCard({ events, highlightId }) {
                                     <Icon className={`h-4 w-4 ${theme.color}`} />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                    <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
                                         {isSell ? 'Aggregated Sell Order' : `${firstEvent.eventType.replace(/_/g, ' ')} Group`}
-                                        {hasHighlight && <span className="h-2 w-2 rounded-full bg-purple-500 animate-pulse"></span>}
+                                        {hasHighlight && <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>}
                                     </h4>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                    <span className="text-xs text-muted-foreground font-medium">
                                         {formatDate(firstEvent.eventDate)} • {events.length} Transactions
                                     </span>
                                 </div>
                             </div>
 
-                            <div className={`p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 ml-2`}>
+                            <div className={`p-1 rounded-full hover:bg-accent transition-colors duration-200 ml-2`}>
                                 <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                             </div>
                         </div>
@@ -301,12 +301,12 @@ function MfTimelineClusterCard({ events, highlightId }) {
                         {(totalAmount > 0 || totalQuantity > 0) && (
                             <div className="mt-2 pl-[42px] flex flex-wrap gap-2">
                                 {totalAmount > 0 && (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent border border-border text-xs font-semibold text-muted-foreground">
                                         Total: {formatCurrency(totalAmount)}
                                     </span>
                                 )}
                                 {totalQuantity > 0 && (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-400">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent border border-border text-xs font-medium text-muted-foreground">
                                         Qty: {totalQuantity.toFixed(3)} units
                                     </span>
                                 )}
@@ -322,15 +322,15 @@ function MfTimelineClusterCard({ events, highlightId }) {
                                 animate={{ height: 'auto', opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
                                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                                className="bg-gray-50/30 dark:bg-black/20 border-t border-gray-100 dark:border-gray-700/50"
+                                className="bg-muted/50 border-t border-border/50"
                             >
                                 <div className="p-3 space-y-4">
                                     {events.map((event, idx) => (
                                         <div key={event.eventId || idx} className="relative pl-6">
                                             {/* Sub-line */}
-                                            <div className="absolute left-[8px] top-0 bottom-0 w-[1px] bg-gray-200 dark:bg-gray-700"></div>
+                                            <div className="absolute left-[8px] top-0 bottom-0 w-[1px] bg-border"></div>
                                             {/* Sub-dot */}
-                                            <div className="absolute left-[5px] top-3 h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600 ring-2 ring-gray-50 dark:ring-gray-900"></div>
+                                            <div className="absolute left-[5px] top-3 h-1.5 w-1.5 rounded-full bg-gray-300 ring-2 ring-background"></div>
 
                                             <MfTimelineEventCard
                                                 event={event}
@@ -393,10 +393,10 @@ function MfTimelineGroup({ fund, events, isExpanded, onToggle, highlightId }) {
     return (
         <motion.div
             initial={false}
-            className={`bg-white dark:bg-gray-800 rounded-2xl border ${isExpanded ? 'border-gray-300 dark:border-gray-600 ring-1 ring-gray-200 dark:ring-gray-700' : 'border-gray-100 dark:border-gray-700'} overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300`}
+            className={`bg-card rounded-2xl border ${isExpanded ? 'border-gray-300 ring-1 ring-border' : 'border-border'} overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300`}
         >
             <button
-                className={`w-full px-4 py-3 md:px-5 md:py-4 flex items-center justify-between transition-colors ${isExpanded ? 'bg-gray-50/50 dark:bg-gray-700/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}`}
+                className={`w-full px-4 py-3 md:px-5 md:py-4 flex items-center justify-between transition-colors ${isExpanded ? 'bg-accent' : 'hover:bg-accent'}`}
                 onClick={onToggle}
             >
                 <div className="flex items-center gap-3 md:gap-4 min-w-0">
@@ -404,11 +404,11 @@ function MfTimelineGroup({ fund, events, isExpanded, onToggle, highlightId }) {
                         <IndianRupee className={`h-4 w-4 md:h-5 md:w-5 ${groupTheme.color}`} />
                     </div>
                     <div className="text-left min-w-0">
-                        <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm md:text-base leading-tight truncate">
+                        <h3 className="font-bold text-foreground text-sm md:text-base leading-tight truncate">
                             {fund}
                         </h3>
                         <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mt-1">
-                            <span className="text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                            <span className="text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 rounded-md bg-accent text-muted-foreground">
                                 {events.length} Events
                             </span>
                             <span className="text-[10px] md:text-xs text-gray-400 hidden sm:inline">
@@ -439,9 +439,9 @@ function MfTimelineGroup({ fund, events, isExpanded, onToggle, highlightId }) {
                         }}
                         transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                     >
-                        <div className="px-3 pb-4 pt-2 md:px-5 md:pb-5 bg-gray-50/30 dark:bg-black/20 border-t border-gray-100 dark:border-gray-700/50">
+                        <div className="px-3 pb-4 pt-2 md:px-5 md:pb-5 bg-muted/50 border-t border-border/50">
                             {/* Scroll container if needed */}
-                            <div className="mt-2 md:mt-4 max-h-[400px] md:max-h-[500px] overflow-y-auto pr-1 md:pr-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+                            <div className="mt-2 md:mt-4 max-h-[400px] md:max-h-[500px] overflow-y-auto pr-1 md:pr-2 scrollbar-thin">
 
                                 {/* MOBILE VIEW: Show all events as individual cards (no clustering) */}
                                 <div className="md:hidden space-y-3">
@@ -630,20 +630,20 @@ export default function MfTimeline({ events, isLoading, onNavigate, initialConte
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center p-16 space-y-4">
-                <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                <p className="text-sm text-gray-500 font-medium">Loading timeline...</p>
+                <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <p className="text-sm text-muted-foreground font-medium">Loading timeline...</p>
             </div>
         );
     }
 
     if (!events || events.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 px-4 bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 text-center">
-                <div className="h-16 w-16 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mb-4">
-                    <Wallet className="h-8 w-8 text-gray-300 dark:text-gray-600" />
+            <div className="flex flex-col items-center justify-center py-20 px-4 bg-card rounded-3xl border border-dashed border-border text-center">
+                <div className="h-16 w-16 bg-accent rounded-full flex items-center justify-center mb-4">
+                    <Wallet className="h-8 w-8 text-gray-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Timeline Events</h3>
-                <p className="text-gray-500 dark:text-gray-400 max-w-sm">
+                <h3 className="text-xl font-bold text-foreground mb-2">No Timeline Events</h3>
+                <p className="text-muted-foreground max-w-sm">
                     Events related to your Mutual Fund portfolio, such as SIPs, Orders, and Trades, will appear here.
                 </p>
             </div>
@@ -658,7 +658,7 @@ export default function MfTimeline({ events, isLoading, onNavigate, initialConte
 
             {/* --- Filter Bar (Always visible to allow manual override/search) --- */}
             {!scopeSipId && !scopeTradingSymbol && (
-                <div className="bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row gap-2 mb-4">
+                <div className="bg-card p-2 rounded-xl border border-border shadow-sm flex flex-col md:flex-row gap-2 mb-4">
                     {/* Search Input */}
                     <div className="relative flex-1">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -667,7 +667,7 @@ export default function MfTimeline({ events, isLoading, onNavigate, initialConte
                         <input
                             type="text"
                             placeholder="Search funds in timeline..."
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg leading-5 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm transition-colors"
+                            className="block w-full pl-10 pr-3 py-2 border border-border rounded-lg leading-5 bg-background text-foreground placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-colors"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -679,27 +679,27 @@ export default function MfTimeline({ events, isLoading, onNavigate, initialConte
             <AnimatePresence>
                 {(scopeSipId || scopeTradingSymbol) && (
                     <motion.div
-                        className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-100 dark:border-purple-800/50 rounded-xl mb-4 shadow-sm"
+                        className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-blue-600/5 border border-blue-200 rounded-xl mb-4 shadow-sm"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.2 }}
                     >
                         <div className="flex items-start md:items-center gap-3">
-                            <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                                <Filter className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                            <div className="p-2 bg-card rounded-lg shadow-sm">
+                                <Filter className="h-4 w-4 text-blue-600" />
                             </div>
                             <div>
-                                <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide block mb-0.5">
+                                <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide block mb-0.5">
                                     Active Filter Scope
                                 </span>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-sm text-gray-900 dark:text-white font-bold">
+                                    <span className="text-sm text-foreground font-bold">
                                         {activeFilterName || 'Loading...'}
                                     </span>
                                     {/* Secondary Context Badges */}
                                     {scopeSipId ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-medium rounded-full">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-[10px] font-medium rounded-full">
                                             SIP Linked
                                         </span>
                                     ) : (
@@ -712,7 +712,7 @@ export default function MfTimeline({ events, isLoading, onNavigate, initialConte
                         </div>
                         <button
                             onClick={handleClearFilter}
-                            className="mt-3 md:mt-0 flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 transition-all shadow-sm"
+                            className="mt-3 md:mt-0 flex items-center gap-1.5 px-3 py-1.5 bg-card hover:bg-red-50 text-muted-foreground hover:text-red-600 text-xs font-medium rounded-lg border border-border hover:border-red-500/30 transition-all shadow-sm"
                         >
                             <X size={14} /> Clear Scope
                         </button>
@@ -729,18 +729,18 @@ export default function MfTimeline({ events, isLoading, onNavigate, initialConte
                 {/* Confidence Legend (Only show when not filtered) */}
                 {!scopeSipId && !scopeTradingSymbol && searchTerm === '' && (
                     <motion.div
-                        className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800 rounded-xl"
+                        className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl"
                         variants={{
                             hidden: { opacity: 0, y: -5 },
                             show: { opacity: 1, y: 0 }
                         }}
                     >
-                        <Info className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
+                        <Info className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
                         <div className="text-sm">
-                            <span className="font-semibold text-amber-900 dark:text-amber-200 block mb-0.5">
+                            <span className="font-semibold text-amber-700 block mb-0.5">
                                 Note on Data Accuracy
                             </span>
-                            <span className="text-amber-700 dark:text-amber-400">
+                            <span className="text-amber-700">
                                 Some events are inferred from holdings. These are not broker-confirmed.
                             </span>
                         </div>
@@ -748,8 +748,8 @@ export default function MfTimeline({ events, isLoading, onNavigate, initialConte
                 )}
 
                 {displayedGroups.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">
-                        No broker-reported events for this fund in the selected period. <button onClick={handleClearFilter} className="text-purple-600 hover:underline">Clear all</button>
+                    <div className="text-center py-10 text-muted-foreground">
+                        No broker-reported events for this fund in the selected period. <button onClick={handleClearFilter} className="text-blue-600 hover:underline">Clear all</button>
                     </div>
                 ) : (
                     displayedGroups.map(group => (

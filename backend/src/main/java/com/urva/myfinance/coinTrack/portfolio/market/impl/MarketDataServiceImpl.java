@@ -169,13 +169,7 @@ public class MarketDataServiceImpl implements MarketDataService {
             return result;
         }
 
-        String accessToken;
-        try {
-            accessToken = encryptionUtil.decrypt(active.getZerodhaAccessToken());
-        } catch (Exception e) {
-            log.warn("Failed to decrypt Zerodha access token: {}", e.getMessage());
-            return result;
-        }
+        String accessToken = encryptionUtil.decryptSafe(active.getZerodhaAccessToken());
 
         String apiKey = active.getZerodhaApiKey();
 

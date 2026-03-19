@@ -107,8 +107,10 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         List<SummaryPositionDTO> enrichedPositions = positionEnricher.enrich(positions);
         boolean containsDerivatives = positionEnricher.containsDerivatives(positions);
 
-        // 7. Sort by value DESC
+        // 7. Sort by value DESC (wrap in mutable list since enrich() may return unmodifiable lists)
+        enrichedHoldings = new java.util.ArrayList<>(enrichedHoldings);
         enrichedHoldings.sort((a, b) -> b.getCurrentValue().compareTo(a.getCurrentValue()));
+        enrichedPositions = new java.util.ArrayList<>(enrichedPositions);
         enrichedPositions.sort((a, b) -> b.getCurrentValue().compareTo(a.getCurrentValue()));
 
         // 8. Sync timestamp
@@ -231,7 +233,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                                     .lastSyncedAt(java.time.Instant.now())
                                     .build();
 
-                            canonicalFundsRepository.findByUserIdAndBrokerType(userId, account.getBroker())
+                            canonicalFundsRepository.findFirstByUserIdAndBrokerType(userId, account.getBroker())
                                     .ifPresent(existing -> canonicalFunds.setId(existing.getId()));
                             canonicalFundsRepository.save(canonicalFunds);
                         } catch (Exception persistenceEx) {

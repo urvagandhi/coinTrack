@@ -1,11 +1,13 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+// src/components/TotpSetup.jsx
+'use client';
+
+import { AuthAlert } from '@/components/auth/AuthAlert';
+import { AuthSubmitButton } from '@/components/auth/AuthSubmitButton';
 import { useAuth } from '@/contexts/AuthContext';
-import { AlertTriangle, ArrowRight, CheckCircle2, Copy } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { itemVariants, useMotionVariants } from '@/lib/motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, Check, CheckCircle2, Copy, Download, ShieldCheck } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export default function TotpSetup({ onComplete, onCancel, isMandatory = false, setupAction, verifyAction }) {
     const { setupTotp, verifyTotpSetup, user } = useAuth();
@@ -15,6 +17,9 @@ export default function TotpSetup({ onComplete, onCancel, isMandatory = false, s
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [backupCodes, setBackupCodes] = useState([]);
+    const [copied, setCopied] = useState(false);
+    const inputRefs = useRef([]);
+    const item = useMotionVariants(itemVariants);
 
     const performSetup = setupAction || setupTotp;
     const performVerify = verifyAction || verifyTotpSetup;
@@ -33,12 +38,12 @@ export default function TotpSetup({ onComplete, onCancel, isMandatory = false, s
         }
     };
 
-    const verifyCode = async () => {
+    const verifyCode = useCallback(async () => {
         if (verificationCode.length !== 6) {
             setError('Code must be 6 digits');
             return;
         }
-        if (loading) return; // Prevent double-submit
+        if (loading) return;
         setLoading(true);
         setError('');
         const result = await performVerify(verificationCode);
@@ -49,16 +54,15 @@ export default function TotpSetup({ onComplete, onCancel, isMandatory = false, s
             setStep('backup');
         } else {
             setError(result.error);
-            setVerificationCode(''); // Clear on error for retry
+            setVerificationCode('');
         }
-    };
+    }, [verificationCode, loading, performVerify]);
 
-    // Auto-submit when 6 digits are entered
     useEffect(() => {
         if (verificationCode.length === 6 && !loading && step === 'scan') {
             verifyCode();
         }
-    }, [verificationCode]);
+    }, [verificationCode, loading, step, verifyCode]);
 
     const finishSetup = () => {
         if (onComplete) onComplete();
@@ -66,61 +70,30 @@ export default function TotpSetup({ onComplete, onCancel, isMandatory = false, s
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
-        // Could show a toast here
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const downloadBackupCodes = () => {
         const now = new Date();
         const formattedDate = now.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit',
         });
+        const content = `COINTRACK BACKUP CODES
+Generated: ${formattedDate}
+Total: ${backupCodes.length} codes (each can only be used once)
 
-        // Create a beautifully formatted backup codes document
-        const content = `
-+-----------------------------------------------------------------------+
-|                                                                       |
-|                     COINTRACK BACKUP CODES                            |
-|                                                                       |
-+-----------------------------------------------------------------------+
+${backupCodes.map((code, i) => `  ${String(i + 1).padStart(2, '0')}. ${code}`).join('\n')}
 
-  [!] IMPORTANT: STORE THESE CODES SECURELY
+IMPORTANT:
+- Keep these codes in a safe place (password manager, safe)
+- Do NOT share these codes with anyone
+- If codes are compromised, reset your 2FA immediately
 
-      * Each code can only be used ONCE
-      * Keep these codes in a safe place (password manager, safe)
-      * Do NOT share these codes with anyone
-      * If codes are compromised, reset your 2FA immediately
+CoinTrack - Your Portfolio, Secured`;
 
-=======================================================================
-                         YOUR BACKUP CODES
-=======================================================================
-
-${backupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]    ${code}`).join('\n')}
-
-=======================================================================
-
-    Generated: ${formattedDate}
-    Total Codes: ${backupCodes.length}
-
-=======================================================================
-                      HOW TO USE BACKUP CODES
-=======================================================================
-
-    1. Go to the CoinTrack login page
-    2. Enter your username and password
-    3. When prompted for 2FA code, click "Use Backup Code"
-    4. Enter one of your backup codes from this list
-    5. Cross off the used code - it cannot be used again!
-
-+-----------------------------------------------------------------------+
-|                 CoinTrack - Your Portfolio, Secured                   |
-+-----------------------------------------------------------------------+
-`.trim();
-
-        const element = document.createElement("a");
+        const element = document.createElement('a');
         const file = new Blob([content], { type: 'text/plain' });
         element.href = URL.createObjectURL(file);
         element.download = `coinTrack_backup-codes_${user?.username || 'user'}.txt`;
@@ -129,126 +102,255 @@ ${backupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]   
         document.body.removeChild(element);
     };
 
-    if (step === 'init') {
-        return (
-            <Card className="w-full max-w-md mx-auto">
-                <CardHeader>
-                    <CardTitle>Enable 2-Factor Authentication</CardTitle>
-                    <CardDescription>
-                        Protect your account with an extra layer of security.
-                        {isMandatory && <span className="text-red-500 block mt-1 font-semibold">Setup is required to continue.</span>}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex justify-center py-4">
-                        <div className="bg-blue-100 p-4 rounded-full">
-                            <span className="text-4xl">🛡️</span>
-                        </div>
-                    </div>
-                    <p className="text-center text-gray-500 text-sm">
-                        You will need an authenticator app like Google Authenticator or Authy.
-                    </p>
-                    {error && <Alert variant="destructive" className="mt-4"><AlertDescription>{error}</AlertDescription></Alert>}
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                    {!isMandatory && <Button variant="ghost" onClick={onCancel}>Cancel</Button>}
-                    <Button onClick={startSetup} disabled={loading} className={isMandatory ? 'w-full' : ''}>
-                        {loading ? 'Initializing...' : 'Start Setup'}
-                    </Button>
-                </CardFooter>
-            </Card>
-        );
-    }
+    // Handle individual OTP box input
+    const handleOtpChange = (index, value) => {
+        if (!/^\d*$/.test(value)) return;
+        const char = value.slice(-1);
+        const newCode = verificationCode.split('');
+        newCode[index] = char;
+        const joined = newCode.join('').slice(0, 6);
+        setVerificationCode(joined);
+        if (char && index < 5) {
+            inputRefs.current[index + 1]?.focus();
+        }
+    };
 
-    if (step === 'scan') {
-        return (
-            <Card className="w-full max-w-md mx-auto">
-                <CardHeader>
-                    <CardTitle>Scan QR Code</CardTitle>
-                    <CardDescription>Scan this with your authenticator app.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {setupData?.qrCodeBase64 && (
-                        <div className="flex justify-center bg-white p-4 rounded border">
-                            <img src={setupData.qrCodeBase64} alt="QR Code" className="w-48 h-48" />
-                        </div>
-                    )}
+    const handleOtpKeyDown = (index, e) => {
+        if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
+            inputRefs.current[index - 1]?.focus();
+        }
+    };
 
-                    <div className="space-y-2">
-                        <Label>Or enter code manually</Label>
-                        <div className="flex items-center space-x-2">
-                            <code className="flex-1 bg-gray-100 dark:bg-gray-800 p-2 rounded text-sm font-mono break-all border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                                {setupData?.secret}
-                            </code>
-                            <Button size="icon" variant="outline" onClick={() => copyToClipboard(setupData?.secret)}>
-                                <Copy className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
+    const handleOtpPaste = (e) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        setVerificationCode(pasted);
+        const focusIdx = Math.min(pasted.length, 5);
+        inputRefs.current[focusIdx]?.focus();
+    };
 
-                    <div className="pt-4 space-y-2">
-                        <Label>Verify Code</Label>
-                        <div className="flex space-x-2">
-                            <Input
-                                placeholder="000000"
-                                maxLength={6}
-                                value={verificationCode}
-                                onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                className="text-center text-lg tracking-widest"
-                            />
-                            <Button onClick={verifyCode} disabled={loading || verificationCode.length !== 6}>
-                                {loading ? 'Verifying...' : 'Verify'}
-                            </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Enter the 6-digit code from your app to confirm.
-                        </p>
-                    </div>
+    // ── Step indicator ──
+    const steps = ['Setup', 'Verify', 'Backup codes'];
+    const stepIndex = step === 'init' ? 0 : step === 'scan' ? 1 : 2;
 
-                    {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
-                </CardContent>
-            </Card>
-        );
-    }
-
-    if (step === 'backup') {
-        return (
-            <Card className="w-full max-w-md mx-auto border-green-200 shadow-green-100">
-                <CardHeader>
-                    <div className="flex items-center space-x-2 text-green-600 mb-2">
-                        <CheckCircle2 className="h-6 w-6" />
-                        <span className="font-bold text-lg">Setup Complete!</span>
-                    </div>
-                    <CardTitle>Save Backup Codes</CardTitle>
-                    <CardDescription>
-                        Use these codes if you lose access to your authenticator app.
-                        <span className="block text-red-500 font-semibold mt-1">Keep them safe. They will only be shown once.</span>
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4 grid grid-cols-2 gap-2 text-sm font-mono">
-                        {backupCodes.map((code, i) => (
-                            <div key={i} className="bg-white dark:bg-gray-900 p-1.5 px-2 border border-gray-200 dark:border-gray-700 rounded text-center text-gray-800 dark:text-gray-200">
-                                {code}
+    return (
+        <div className="w-full space-y-6">
+            {/* Step indicator */}
+            <div className="flex items-center justify-between mb-2">
+                {steps.map((label, i) => (
+                    <div key={label} className="flex items-center">
+                        {i > 0 && (
+                            <div className={`flex-1 h-px w-8 sm:w-12 mx-1.5 ${i <= stepIndex ? 'bg-blue-600' : 'bg-border'}`} />
+                        )}
+                        <div className="flex items-center gap-1.5">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${i < stepIndex
+                                    ? 'bg-green-600 text-white'
+                                    : i === stepIndex
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-accent text-muted-foreground'
+                                }`}>
+                                {i < stepIndex ? <Check size={12} /> : i + 1}
                             </div>
-                        ))}
+                            <span className={`text-xs hidden sm:inline ${i === stepIndex ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                                {label}
+                            </span>
+                        </div>
                     </div>
-                </CardContent>
-                <CardFooter className="flex flex-col space-y-2">
-                    <Button variant="outline" className="w-full" onClick={downloadBackupCodes}>
-                        <Copy className="mr-2 h-4 w-4" /> Download Codes
-                    </Button>
-                    <Button className="w-full" onClick={finishSetup}>
-                        Continue <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                </CardFooter>
-            </Card>
-        );
-    }
+                ))}
+            </div>
 
-    return null;
-}
+            <AnimatePresence mode="wait">
+                {/* ── STEP: Init ── */}
+                {step === 'init' && (
+                    <motion.div
+                        key="init"
+                        variants={item}
+                        initial="hidden"
+                        animate="visible"
+                        exit={{ opacity: 0, y: -8 }}
+                        className="space-y-5"
+                    >
+                        <div className="flex justify-center">
+                            <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center">
+                                <ShieldCheck size={28} className="text-blue-600" />
+                            </div>
+                        </div>
+                        <div className="text-center space-y-1">
+                            <p className="text-sm text-foreground">
+                                You&apos;ll need an authenticator app like Google Authenticator or Authy.
+                            </p>
+                            {isMandatory && (
+                                <p className="text-xs text-amber-600 font-medium">
+                                    Two-factor authentication is required to continue.
+                                </p>
+                            )}
+                        </div>
+                        <AuthAlert type="error" message={error} />
+                        <div className="flex gap-2">
+                            {!isMandatory && (
+                                <AuthSubmitButton
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={onCancel}
+                                    isLoading={false}
+                                >
+                                    Cancel
+                                </AuthSubmitButton>
+                            )}
+                            <AuthSubmitButton
+                                type="button"
+                                isLoading={loading}
+                                onClick={startSetup}
+                            >
+                                {loading ? 'Initializing...' : 'Start setup'}
+                            </AuthSubmitButton>
+                        </div>
+                    </motion.div>
+                )}
 
-function AlertCircle({ className }) {
-    return <AlertTriangle className={className} />;
+                {/* ── STEP: Scan QR ── */}
+                {step === 'scan' && (
+                    <motion.div
+                        key="scan"
+                        variants={item}
+                        initial="hidden"
+                        animate="visible"
+                        exit={{ opacity: 0, y: -8 }}
+                        className="space-y-5"
+                    >
+                        {/* QR Code */}
+                        {setupData?.qrCodeBase64 && (
+                            <div className="flex justify-center">
+                                <div className="bg-white p-3 rounded-xl border border-border">
+                                    <img src={setupData.qrCodeBase64} alt="QR Code" className="w-44 h-44" />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Manual secret */}
+                        <div className="space-y-1.5">
+                            <p className="text-xs text-muted-foreground">Or enter this code manually:</p>
+                            <div className="flex items-center gap-2">
+                                <code className="flex-1 font-mono text-sm bg-accent rounded-lg px-3 py-2 tracking-widest text-foreground break-all">
+                                    {setupData?.secret}
+                                </code>
+                                <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(setupData?.secret)}
+                                    className="p-2 rounded-lg text-muted-foreground hover:text-blue-600 hover:bg-accent transition-colors"
+                                >
+                                    {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* OTP input */}
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-foreground">
+                                Enter the 6-digit code from your app
+                            </p>
+                            <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <input
+                                        key={i}
+                                        ref={(el) => { inputRefs.current[i] = el; }}
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={1}
+                                        value={verificationCode[i] || ''}
+                                        onChange={(e) => handleOtpChange(i, e.target.value)}
+                                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                        className="w-10 h-12 text-center text-lg font-mono border border-border rounded-lg
+                                                   bg-background text-foreground
+                                                   focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600
+                                                   transition-colors"
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        <AuthAlert type="error" message={error} />
+
+                        <AuthSubmitButton
+                            type="button"
+                            isLoading={loading}
+                            disabled={verificationCode.length !== 6}
+                            onClick={verifyCode}
+                        >
+                            {loading ? 'Verifying...' : 'Verify code'}
+                        </AuthSubmitButton>
+                    </motion.div>
+                )}
+
+                {/* ── STEP: Backup codes ── */}
+                {step === 'backup' && (
+                    <motion.div
+                        key="backup"
+                        variants={item}
+                        initial="hidden"
+                        animate="visible"
+                        exit={{ opacity: 0, y: -8 }}
+                        className="space-y-5"
+                    >
+                        <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle2 size={20} />
+                            <span className="text-sm font-semibold">Setup complete</span>
+                        </div>
+
+                        <div className="space-y-1">
+                            <p className="text-sm text-foreground">Save your backup codes</p>
+                            <p className="text-xs text-muted-foreground">
+                                Use these if you lose access to your authenticator app. Each code works once.
+                            </p>
+                        </div>
+
+                        <div className="border-l-4 border-amber-500 bg-amber-50 p-3 rounded-r-lg">
+                            <p className="text-xs text-amber-700 font-medium">
+                                These codes will only be shown once. Save them now.
+                            </p>
+                        </div>
+
+                        {/* Backup codes grid */}
+                        <div className="bg-accent rounded-lg p-4 grid grid-cols-2 gap-2">
+                            {backupCodes.map((code, i) => (
+                                <div
+                                    key={i}
+                                    className="font-mono text-sm bg-card rounded px-2 py-1.5 text-center text-foreground border border-border"
+                                >
+                                    {code}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => copyToClipboard(backupCodes.join('\n'))}
+                                className="flex-1 h-9 flex items-center justify-center gap-1.5 text-sm border border-border
+                                           rounded-lg text-foreground hover:bg-accent transition-colors"
+                            >
+                                <Copy size={14} />
+                                Copy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={downloadBackupCodes}
+                                className="flex-1 h-9 flex items-center justify-center gap-1.5 text-sm border border-border
+                                           rounded-lg text-foreground hover:bg-accent transition-colors"
+                            >
+                                <Download size={14} />
+                                Download
+                            </button>
+                        </div>
+
+                        <AuthSubmitButton type="button" isLoading={false} onClick={finishSetup}>
+                            Continue
+                            <ArrowRight size={14} />
+                        </AuthSubmitButton>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 }

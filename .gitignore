@@ -52,3 +52,7 @@ Thumbs.db
 Backup Codes/
 *.bak
 
+# Claude Code (AI assistant cache — may contain secrets)
+.claude/
+.fuse_hidden*
+

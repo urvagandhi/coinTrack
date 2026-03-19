@@ -13,6 +13,7 @@ import com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository;
 import com.urva.myfinance.coinTrack.broker.service.BrokerConnectService;
 import com.urva.myfinance.coinTrack.broker.service.ZerodhaLiveDataService;
 import com.urva.myfinance.coinTrack.broker.service.exception.BrokerException;
+import com.urva.myfinance.coinTrack.common.util.EncryptionUtil;
 
 @Service
 public class BrokerConnectServiceImpl implements BrokerConnectService {
@@ -20,14 +21,17 @@ public class BrokerConnectServiceImpl implements BrokerConnectService {
     private final ZerodhaLiveDataService zerodhaLiveDataService;
     private final BrokerAccountRepository accountRepository;
     private final com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService portfolioSyncService;
+    private final EncryptionUtil encryptionUtil;
 
     @Autowired
     public BrokerConnectServiceImpl(ZerodhaLiveDataService zerodhaLiveDataService,
             BrokerAccountRepository accountRepository,
-            com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService portfolioSyncService) {
+            com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService portfolioSyncService,
+            EncryptionUtil encryptionUtil) {
         this.zerodhaLiveDataService = zerodhaLiveDataService;
         this.accountRepository = accountRepository;
         this.portfolioSyncService = portfolioSyncService;
+        this.encryptionUtil = encryptionUtil;
     }
 
     @Override
@@ -72,7 +76,7 @@ public class BrokerConnectServiceImpl implements BrokerConnectService {
             java.util.Map<String, Object> tokenData = zerodhaLiveDataService.exchangeToken(requestToken, apiKey,
                     encryptedSecret);
 
-            account.setZerodhaAccessToken((String) tokenData.get("access_token"));
+            account.setZerodhaAccessToken(encryptionUtil.encrypt((String) tokenData.get("access_token")));
             account.setZerodhaPublicToken((String) tokenData.get("public_token"));
             account.setZerodhaTokenCreatedAt(LocalDateTime.now());
             account.setZerodhaTokenExpiresAt(zerodhaLiveDataService.extractTokenExpiry(account));

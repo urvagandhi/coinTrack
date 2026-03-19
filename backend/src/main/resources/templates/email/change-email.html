@@ -1,144 +1,106 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Confirm Email Change - CoinTrack</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Email Address Change Request</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<body style="margin:0; padding:0; background:#F8FAFC; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
 
-    <div style="display: none; max-height: 0; overflow: hidden;">
-        Confirm your new email address for CoinTrack.
-    </div>
+  <div style="display:none; max-height:0; overflow:hidden; color:#F8FAFC;">
+    Confirm your email address change for your CoinTrack account.
+  </div>
 
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f5;">
-        <tr>
-            <td align="center" style="padding: 40px 20px;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8FAFC; padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%;">
 
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e4e4e7;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#1e1b4b 0%,#7c3aed 100%); padding:24px 40px; border-radius:8px 8px 0 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td>
+                <img th:src="${logoUrl}" width="32" height="32" alt="CoinTrack" style="vertical-align:middle; border-radius:6px;"/>
+                <span style="color:#FFFFFF; font-size:18px; font-weight:700; vertical-align:middle; margin-left:10px; letter-spacing:-0.3px;">CoinTrack</span>
+              </td></tr></table>
+            </td>
+          </tr>
 
-                    <!-- Gradient Bar -->
-                    <tr>
-                        <td style="height: 5px; background: linear-gradient(90deg, #7c3aed 0%, #a855f7 50%, #d946ef 100%);"></td>
-                    </tr>
+          <tr>
+            <td style="background:#FFFFFF; padding:48px 40px 40px 40px; border-left:1px solid #E2E8F0; border-right:1px solid #E2E8F0;">
 
-                    <!-- Logo & Title -->
-                    <tr>
-                        <td align="center" style="padding: 40px 40px 24px;">
-                            <img th:src="${logoUrl}" alt="CoinTrack" width="64" height="64" style="width: 64px; height: 64px; border-radius: 14px; display: block;">
-                            <h1 style="margin: 18px 0 0; font-size: 24px; font-weight: 700; color: #18181b; line-height: 1.3; text-align: center;">
-                                Confirm Email Change
-                            </h1>
-                        </td>
-                    </tr>
+              <h1 style="margin:0 0 24px 0; font-size:28px; font-weight:700; color:#0F172A; line-height:1.3;">Email Address Change Request</h1>
 
-                    <!-- Content -->
-                    <tr>
-                        <td style="padding: 0 40px 32px;">
-                            <p style="margin: 0 0 18px; font-size: 16px; line-height: 1.65; color: #52525b;">
-                                Hey <strong style="color: #18181b;" th:text="${name}">there</strong>,
-                            </p>
+              <p style="margin:0 0 8px 0; font-size:15px; color:#475569; line-height:1.7;">Hi <span th:text="${name}">User</span>,</p>
+              <p style="margin:0 0 24px 0; font-size:15px; color:#475569; line-height:1.7;">
+                A request was made to change the email address associated with your CoinTrack account.
+              </p>
 
-                            <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.65; color: #52525b;">
-                                You requested to change your email address. Please review and confirm:
-                            </p>
+              <!-- Change details -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #F1F5F9;">
+                    <span style="font-size:13px; color:#94A3B8;">Current</span>
+                  </td>
+                  <td style="padding:10px 0; border-bottom:1px solid #F1F5F9; text-align:right;">
+                    <span th:text="${oldEmail}" style="font-size:13px; color:#0F172A; font-weight:500;">old@example.com</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;">
+                    <span style="font-size:13px; color:#94A3B8;">New Address</span>
+                  </td>
+                  <td style="padding:10px 0; text-align:right;">
+                    <span th:text="${newEmail}" style="font-size:13px; color:#0F172A; font-weight:500;">new@example.com</span>
+                  </td>
+                </tr>
+              </table>
 
-                            <!-- Email Change Info Box -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 28px;">
-                                <tr>
-                                    <td style="padding: 20px; background-color: #faf5ff; border-radius: 12px; border: 1px solid #e9d5ff;">
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                                            <tr>
-                                                <td style="padding-bottom: 12px;">
-                                                    <p style="margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; font-weight: 600;">Current Email</p>
-                                                    <p style="margin: 0; font-size: 15px; color: #52525b; font-family: 'Courier New', monospace;" th:text="${oldEmail}">old@email.com</p>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding: 12px 0; border-top: 1px solid #e9d5ff;">
-                                                    <p style="margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #7c3aed; font-weight: 600;">New Email</p>
-                                                    <p style="margin: 0; font-size: 15px; color: #18181b; font-weight: 600; font-family: 'Courier New', monospace;" th:text="${newEmail}">new@email.com</p>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 32px 0;">
+                <tr>
+                  <td style="border-left:4px solid #D97706; background:#FFFBEB; padding:16px 20px; border-radius:0 8px 8px 0;">
+                    <p style="margin:0; font-size:14px; color:#92400E; line-height:1.6;">
+                      This link expires in <span th:text="${expiryMinutes}">10</span> minutes.
+                    </p>
+                  </td>
+                </tr>
+              </table>
 
-                            <!-- CTA Button -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                                <tr>
-                                    <td align="center" style="padding: 0 0 28px;">
-                                        <a th:href="${magicLink}" style="display: inline-block; padding: 16px 40px; background-color: #7c3aed; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 10px;">
-                                            Confirm Change
-                                        </a>
-                                    </td>
-                                </tr>
-                            </table>
+              <table cellpadding="0" cellspacing="0" border="0" style="width:100%; margin:0 0 16px 0;">
+                <tr>
+                  <td style="background:#9333ea; border-radius:8px; text-align:center;">
+                    <a th:href="${magicLink}" style="display:block; padding:14px 32px; color:#FFFFFF; font-size:15px; font-weight:600; text-decoration:none; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">Confirm Email Change</a>
+                  </td>
+                </tr>
+              </table>
 
-                            <!-- Warning Box -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
-                                <tr>
-                                    <td style="padding: 14px 16px; background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
-                                        <p style="margin: 0; font-size: 14px; color: #b45309; line-height: 1.5;">
-                                            ⏰ This link expires in <strong th:text="${expiryMinutes}">10</strong> minutes.
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
+              <p style="margin:0 0 32px 0; font-size:12px; color:#94A3B8; line-height:1.5;">
+                If the button doesn't work, copy and paste this link:<br/>
+                <span th:text="${magicLink}" style="font-size:12px; color:#94A3B8; word-break:break-all; font-family:monospace;">https://...</span>
+              </p>
 
-                            <!-- Danger Box -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                                <tr>
-                                    <td style="padding: 14px 16px; background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 0 8px 8px 0;">
-                                        <p style="margin: 0; font-size: 14px; color: #b91c1c; line-height: 1.5;">
-                                            🔒 Didn't request this? <strong>Do not click the button</strong> — your email stays unchanged.
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- Fallback Link -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 28px;">
-                                <tr>
-                                    <td style="padding: 16px; background-color: #f4f4f5; border-radius: 8px; border: 1px solid #e4e4e7;">
-                                        <p style="margin: 0 0 8px; font-size: 12px; color: #71717a;">
-                                            Button not working? Copy this link:
-                                        </p>
-                                        <p style="margin: 0; font-size: 12px; word-break: break-all; line-height: 1.5;">
-                                            <a th:href="${magicLink}" th:text="${magicLink}" style="color: #7c3aed; text-decoration: none;">https://...</a>
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-
-                    <!-- Divider -->
-                    <tr>
-                        <td style="padding: 0 40px;">
-                            <div style="height: 1px; background-color: #e4e4e7;"></div>
-                        </td>
-                    </tr>
-
-                    <!-- Footer -->
-                    <tr>
-                        <td style="padding: 24px 40px; background-color: #fafafa; text-align: center;">
-                            <p style="margin: 0 0 6px; font-size: 13px; color: #71717a;">
-                                Need help? <a th:href="'mailto:' + ${supportEmail}" style="color: #7c3aed; text-decoration: none; font-weight: 500;">Contact Support</a>
-                            </p>
-                            <p style="margin: 12px 0 0; font-size: 11px; color: #a1a1aa;">
-                                © <span th:text="${year}">2024</span> CoinTrack • Made with 💜
-                            </p>
-                        </td>
-                    </tr>
-
-                </table>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="border-left:4px solid #991B1B; background:#FEF2F2; padding:16px 20px; border-radius:0 8px 8px 0;">
+                    <p style="margin:0; font-size:14px; color:#991B1B; line-height:1.6;">
+                      If you did not request this change, contact support immediately. Your current email address will remain active until the new address is confirmed.
+                    </p>
+                  </td>
+                </tr>
+              </table>
 
             </td>
-        </tr>
-    </table>
+          </tr>
 
+          <tr>
+            <td style="background:#F1F5F9; padding:24px 40px; border:1px solid #E2E8F0; border-top:none; border-radius:0 0 8px 8px;">
+              <p style="margin:0; font-size:12px; color:#94A3B8; line-height:1.6;">&copy; <span th:text="${year}">2026</span> CoinTrack. All rights reserved.<br/>Questions? Contact us at <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" style="color:#7c3aed; text-decoration:none;">support@cointrack.app</a></p>
+              <p style="margin:8px 0 0; font-size:11px; color:#CBD5E1;">If you did not request this email, you can safely ignore it.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>

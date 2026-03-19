@@ -1,113 +1,123 @@
+// src/components/dashboard/HoldingsTable.jsx
 'use client';
 
 import { portfolioAPI } from '@/lib/api';
 import { formatCurrency, formatPercent } from '@/lib/format';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { ArrowDownRight, ArrowUpRight, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 
-export default function HoldingsTable() {
+function Skeleton({ className = '' }) {
+    return <div className={`animate-pulse rounded-lg bg-muted/60 ${className}`} />;
+}
+
+export function HoldingsTable() {
     const { data: holdingsData, isLoading } = useQuery({
         queryKey: ['holdings'],
         queryFn: portfolioAPI.getHoldings,
-        refetchInterval: 60000
+        refetchInterval: 60000,
     });
 
     const holdings = Array.isArray(holdingsData) ? holdingsData : (holdingsData?.data || []);
-    const displayHoldings = holdings.slice(0, 5); // Limit to top 5
+    const displayHoldings = holdings.slice(0, 10);
 
     if (isLoading) {
-        return <div className="space-y-4">
-            {[1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-800/50 rounded-lg animate-pulse" />)}
-        </div>;
+        return (
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+                <Skeleton className="h-5 w-24 mb-4" />
+                <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-14" />)}
+                </div>
+            </div>
+        );
     }
 
     if (!holdings || holdings.length === 0) {
         return (
-            <div className="text-center py-10 text-gray-500 bg-gray-900/30 rounded-xl border border-dashed border-gray-800">
-                No holdings found.
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-10 text-center">
+                <Briefcase size={32} className="mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">No holdings found. Connect a broker to start syncing.</p>
             </div>
         );
     }
 
     return (
-        <div className="overflow-hidden rounded-xl border border-border bg-card/50 backdrop-blur-sm shadow-sm transition-all duration-300 hover:shadow-md">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+                <h3 className="text-sm font-semibold text-foreground">Holdings</h3>
+                {holdings.length > 10 && (
+                    <Link href="/portfolio" className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                        View all ({holdings.length})
+                    </Link>
+                )}
+            </div>
+
+            {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-muted/50 text-muted-foreground uppercase text-[11px] font-semibold tracking-wider">
-                        <tr>
-                            <th className="px-6 py-4 rounded-tl-xl">Instrument</th>
-                            <th className="px-6 py-4 text-right">Qty</th>
-                            <th className="px-6 py-4 text-right">Avg. Price</th>
-                            <th className="px-6 py-4 text-right">LTP</th>
-                            <th className="px-6 py-4 text-right">Cur. Value</th>
-                            <th className="px-6 py-4 text-right">P/L</th>
-                            <th className="px-6 py-4 text-right rounded-tr-xl">Day Change</th>
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-800/50 text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                            <th className="text-left px-6 py-3">Stock</th>
+                            <th className="text-left px-4 py-3">Broker</th>
+                            <th className="text-right px-4 py-3">Qty</th>
+                            <th className="text-right px-4 py-3">Avg Price</th>
+                            <th className="text-right px-4 py-3">Current</th>
+                            <th className="text-right px-4 py-3">Value</th>
+                            <th className="text-right px-4 py-3">P&L</th>
+                            <th className="text-right px-6 py-3">Day</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                         {displayHoldings.map((pos) => {
-                            const isAhPositive = (pos.unrealizedPL || 0) >= 0;
-                            const isDayPositive = (pos.dayGain || 0) >= 0;
-                            const pnlColor = isAhPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-                            const dayColor = isDayPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+                            const pnl = pos.unrealizedPL ?? pos.unrealizedPnL ?? 0;
+                            const pnlPct = pos.unrealizedPLPercent ?? 0;
+                            const dayGain = pos.dayGain ?? 0;
+                            const dayPct = pos.dayGainPercent ?? 0;
+                            const pnlUp = pnl >= 0;
+                            const dayUp = dayGain >= 0;
 
                             return (
-                                <motion.tr
-                                    key={`${pos.symbol}-${pos.broker}`} // unique key
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="group hover:bg-muted/30 transition-colors"
-                                >
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-foreground group-hover:text-primary transition-colors">
-                                                {pos.symbol}
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-0.5">
-                                                {pos.broker}
-                                            </span>
-                                        </div>
+                                <tr key={`${pos.symbol}-${pos.broker}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                    <td className="px-6 py-3.5">
+                                        <span className="font-semibold text-foreground">{pos.symbol}</span>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <span className="text-foreground font-medium">{pos.quantity}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <span className="text-muted-foreground">{formatCurrency(pos.averageBuyPrice)}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <span className="text-foreground font-medium">
-                                            {pos.currentPrice && pos.currentPrice > 0 ? formatCurrency(pos.currentPrice) : '—'}
+                                    <td className="px-4 py-3.5">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                                            {pos.broker}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <span className="text-foreground font-semibold">{formatCurrency(pos.currentValue)}</span>
+                                    <td className="px-4 py-3.5 text-right font-medium text-foreground">{pos.quantity}</td>
+                                    <td className="px-4 py-3.5 text-right text-muted-foreground">{formatCurrency(pos.averageBuyPrice)}</td>
+                                    <td className="px-4 py-3.5 text-right font-medium text-foreground">
+                                        {pos.currentPrice && pos.currentPrice > 0 ? formatCurrency(pos.currentPrice) : '\u2014'}
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className={`font-semibold ${pnlColor}`}>
-                                            {formatCurrency(pos.unrealizedPL)}
+                                    <td className="px-4 py-3.5 text-right font-semibold text-foreground">{formatCurrency(pos.currentValue)}</td>
+                                    <td className="px-4 py-3.5 text-right">
+                                        <span className={`font-semibold ${pnlUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                            {pnlUp ? '+' : ''}{formatCurrency(pnl)}
+                                        </span>
+                                        <div className={`text-[10px] ${pnlUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                            {formatPercent(pnlPct)}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex flex-col items-end">
-                                            <span className={`text-xs font-semibold ${dayColor}`}>
-                                                {formatPercent(pos.dayGainPercent)}
-                                            </span>
-                                            <span className={`text-[10px] mt-0.5 ${dayColor} opacity-90`}>
-                                                {formatCurrency(pos.dayGain)}
-                                            </span>
-                                        </div>
+                                    <td className="px-6 py-3.5 text-right">
+                                        <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${dayUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                            {dayUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                            {formatPercent(dayPct)}
+                                        </span>
                                     </td>
-                                </motion.tr>
+                                </tr>
                             );
                         })}
                     </tbody>
                 </table>
             </div>
-            {holdings.length > 5 && (
-                <div className="bg-muted/30 p-3 text-center border-t border-border">
-                    <Link href="/portfolio" className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
-                        View All Holdings →
+
+            {holdings.length > 10 && (
+                <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-800 text-center">
+                    <Link href="/portfolio" className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                        View all {holdings.length} holdings &rarr;
                     </Link>
                 </div>
             )}

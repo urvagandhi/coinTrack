@@ -81,7 +81,7 @@ export default function MfInstrumentList({ instruments, isLoading }) {
     if (isLoading) {
         return (
             <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>
         );
     }
@@ -96,7 +96,7 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                 <input
                     type="text"
                     placeholder="Search mutual funds by name or AMC..."
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl leading-5 bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm transition-colors"
+                    className="block w-full pl-10 pr-3 py-2 border border-border rounded-xl leading-5 bg-muted text-foreground placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-colors"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -104,7 +104,7 @@ export default function MfInstrumentList({ instruments, isLoading }) {
 
             {/* List */}
             {!instruments || instruments.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-muted-foreground">
                     No mutual fund instruments found.
                 </div>
             ) : (
@@ -113,13 +113,13 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                     <div className="hidden md:block overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>
-                                <tr className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
+                                <tr className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border">
                                     <th className="pb-4 pl-4 pt-2">Scheme Name</th>
                                     <th className="pb-4 pt-2">AMC</th>
                                     <th className="pb-4 pt-2 text-right pr-4">Action</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                            <tbody className="divide-y divide-card-border">
                                 {filteredInstruments.map((inst, idx) => {
                                     const symbol = inst.tradingSymbol || inst.tradingsymbol;
                                     const isExpanded = expandedId === symbol;
@@ -129,27 +129,27 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                                         <React.Fragment key={symbol || idx}>
                                             {/* Main Row */}
                                             <tr
-                                                className={`group transition-colors cursor-pointer ${isExpanded ? 'bg-purple-50/50 dark:bg-purple-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}
+                                                className={`group transition-colors cursor-pointer ${isExpanded ? 'bg-blue-600/5' : 'hover:bg-accent'}`}
                                                 onClick={() => toggleExpand(symbol)}
                                             >
                                                 <td className="py-4 pl-4">
-                                                    <div className="font-medium text-gray-900 dark:text-white max-w-md truncate" title={inst.name}>
+                                                    <div className="font-medium text-foreground max-w-md truncate" title={inst.name}>
                                                         {inst.name}
                                                     </div>
                                                     <div className="text-[10px] text-gray-400 mt-0.5 font-mono flex items-center gap-2">
                                                         <span>{symbol}</span>
-                                                        <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold">
+                                                        <span className="bg-accent text-muted-foreground text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold">
                                                             {schemeType}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="py-4 text-sm text-gray-600 dark:text-gray-300">
+                                                <td className="py-4 text-sm text-muted-foreground">
                                                     {inst.amc || inst.fund_house || '-'}
                                                 </td>
                                                 <td className="py-4 text-right pr-4">
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); toggleExpand(symbol); }}
-                                                        className={`p-1.5 rounded-full transition-colors ${isExpanded ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300' : 'text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                                                        className={`p-1.5 rounded-full transition-colors ${isExpanded ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-blue-600 hover:bg-accent'}`}
                                                     >
                                                         {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                                     </button>
@@ -166,7 +166,7 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                                                                 animate={{ height: "auto", opacity: 1 }}
                                                                 exit={{ height: 0, opacity: 0 }}
                                                                 transition={{ duration: 0.2, ease: "easeOut" }}
-                                                                className="bg-gray-50/50 dark:bg-gray-800/30 border-b border-gray-100 dark:border-gray-800 overflow-hidden"
+                                                                className="bg-accent border-b border-border overflow-hidden"
                                                             >
                                                                 <MfInstrumentDetails inst={inst} symbol={symbol} plan={plan} schemeType={schemeType} formatCurrency={formatCurrency} formatDate={formatDate} />
                                                             </motion.div>
@@ -189,23 +189,23 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                             const { schemeType, plan } = parseSchemeAndPlan(inst);
 
                             return (
-                                <div key={symbol || idx} className={`rounded-xl border transition-all duration-200 ${isExpanded ? 'border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-900/10 shadow-sm' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'}`}>
+                                <div key={symbol || idx} className={`rounded-xl border transition-all duration-200 ${isExpanded ? 'border-blue-200 bg-blue-600/5 shadow-sm' : 'border-border bg-accent'}`}>
                                     <div
                                         className="p-4 flex justify-between items-start cursor-pointer"
                                         onClick={() => toggleExpand(symbol)}
                                     >
                                         <div className="flex-1 mr-4">
-                                            <h3 className="font-bold text-gray-900 dark:text-white text-base leading-snug">{inst.name}</h3>
+                                            <h3 className="font-bold text-foreground text-base leading-snug">{inst.name}</h3>
                                             <div className="mt-1 flex flex-wrap items-center gap-2">
                                                 <span className="text-[10px] font-mono text-gray-400">{symbol}</span>
-                                                <span className="bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold">
+                                                <span className="bg-card border border-border text-muted-foreground text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold">
                                                     {schemeType}
                                                 </span>
                                             </div>
-                                            <div className="text-xs text-gray-500 mt-2">{inst.amc || inst.fund_house || '-'}</div>
+                                            <div className="text-xs text-muted-foreground mt-2">{inst.amc || inst.fund_house || '-'}</div>
                                         </div>
                                         <button
-                                            className={`p-1.5 rounded-full transition-colors flex-shrink-0 ${isExpanded ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300' : 'text-gray-400 bg-white dark:bg-gray-700'}`}
+                                            className={`p-1.5 rounded-full transition-colors flex-shrink-0 ${isExpanded ? 'bg-blue-50 text-blue-600' : 'text-gray-400 bg-card'}`}
                                         >
                                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                         </button>
@@ -218,7 +218,7 @@ export default function MfInstrumentList({ instruments, isLoading }) {
                                                 animate={{ height: "auto", opacity: 1 }}
                                                 exit={{ height: 0, opacity: 0 }}
                                                 transition={{ duration: 0.2, ease: "easeOut" }}
-                                                className="border-t border-purple-100 dark:border-purple-800/50 overflow-hidden"
+                                                className="border-t border-blue-200 overflow-hidden"
                                             >
                                                 <MfInstrumentDetails inst={inst} symbol={symbol} plan={plan} schemeType={schemeType} formatCurrency={formatCurrency} formatDate={formatDate} />
                                             </motion.div>
@@ -245,20 +245,20 @@ function MfInstrumentDetails({ inst, symbol, plan, schemeType, formatCurrency, f
             {/* SECTION 1: Scheme Identity */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2 mb-2">
-                    <ShieldCheck className="h-4 w-4 text-purple-500" />
-                    <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Scheme Identity</h4>
+                    <ShieldCheck className="h-4 w-4 text-blue-600" />
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Scheme Identity</h4>
                 </div>
                 <div className="space-y-2">
                     <div>
                         <p className="text-[10px] text-gray-400">Trading Symbol</p>
-                        <p className="text-sm font-mono font-medium text-gray-700 dark:text-gray-200">{symbol}</p>
+                        <p className="text-sm font-mono font-medium text-muted-foreground">{symbol}</p>
                     </div>
                     <div>
                         <p className="text-[10px] text-gray-400">ISIN</p>
                         {inst.isin ? (
-                            <p className="text-sm font-mono text-gray-700 dark:text-gray-200">{inst.isin}</p>
+                            <p className="text-sm font-mono text-muted-foreground">{inst.isin}</p>
                         ) : (
-                            <div className="inline-flex items-center gap-1 px-2 py-0.5 mt-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-[10px] font-medium border border-amber-100 dark:border-amber-800">
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 mt-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-200">
                                 <AlertCircle size={10} />
                                 ISIN: Not available (Zerodha)
                             </div>
@@ -267,15 +267,15 @@ function MfInstrumentDetails({ inst, symbol, plan, schemeType, formatCurrency, f
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <p className="text-[10px] text-gray-400">Plan</p>
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{plan}</p>
+                            <p className="text-sm font-medium text-muted-foreground">{plan}</p>
                         </div>
                         <div>
                             <p className="text-[10px] text-gray-400">Type</p>
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{schemeType}</p>
+                            <p className="text-sm font-medium text-muted-foreground">{schemeType}</p>
                         </div>
                         <div>
                             <p className="text-[10px] text-gray-400">Dividend</p>
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200 capitalize">{inst.dividendType || inst.dividend_type || '—'}</p>
+                            <p className="text-sm font-medium text-muted-foreground capitalize">{inst.dividendType || inst.dividend_type || '—'}</p>
                         </div>
                     </div>
                 </div>
@@ -284,13 +284,13 @@ function MfInstrumentDetails({ inst, symbol, plan, schemeType, formatCurrency, f
             {/* SECTION 2: Investment Rules */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2 mb-2">
-                    <Banknote className="h-4 w-4 text-green-500" />
-                    <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Investment Rules</h4>
+                    <Banknote className="h-4 w-4 text-green-600" />
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Investment Rules</h4>
                 </div>
                 <div className="space-y-2">
                     <div>
                         <p className="text-[10px] text-gray-400">Min. Purchase Amount</p>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">
+                        <p className="text-sm font-bold text-foreground">
                             {formatCurrency(inst.minimumPurchaseAmount || inst.minimum_purchase_amount)}
                         </p>
                         <p className="text-[9px] text-gray-400">
@@ -302,7 +302,7 @@ function MfInstrumentDetails({ inst, symbol, plan, schemeType, formatCurrency, f
                     </div>
                     <div>
                         <p className="text-[10px] text-gray-400">Min. Redemption Qty</p>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <p className="text-sm font-medium text-muted-foreground">
                             {inst.minimumRedemptionQuantity || inst.minimum_redemption_quantity || '—'} Units
                         </p>
                         <p className="text-[9px] text-gray-400">
@@ -310,10 +310,10 @@ function MfInstrumentDetails({ inst, symbol, plan, schemeType, formatCurrency, f
                         </p>
                     </div>
                     <div className="flex gap-2 mt-2">
-                        <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${(inst.purchaseAllowed) ? 'bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400' : 'bg-red-50 border-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'}`}>
+                        <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${(inst.purchaseAllowed) ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
                             <span className="text-[10px] font-bold uppercase">{(inst.purchaseAllowed) ? 'Buy Allowed' : 'Buy Locked'}</span>
                         </div>
-                        <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${(inst.redemptionAllowed) ? 'bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400' : 'bg-red-50 border-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'}`}>
+                        <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${(inst.redemptionAllowed) ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
                             <span className="text-[10px] font-bold uppercase">{(inst.redemptionAllowed) ? 'Redeem Allowed' : 'Redeem Locked'}</span>
                         </div>
                     </div>
@@ -324,7 +324,7 @@ function MfInstrumentDetails({ inst, symbol, plan, schemeType, formatCurrency, f
             <div className="space-y-3">
                 <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="h-4 w-4 text-blue-500" />
-                    <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pricing & Settlement</h4>
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pricing & Settlement</h4>
                 </div>
                 <div className="space-y-2">
                     <div>
@@ -332,16 +332,16 @@ function MfInstrumentDetails({ inst, symbol, plan, schemeType, formatCurrency, f
                             <p className="text-[10px] text-gray-400 font-bold uppercase">Latest NAV</p>
                             <div className="group relative">
                                 <Info size={10} className="text-gray-400 cursor-help" />
-                                <div className="hidden group-hover:block absolute left-0 bottom-full mb-1 w-48 bg-gray-900 text-white text-[10px] p-2 rounded shadow-lg z-20">
+                                <div className="hidden group-hover:block absolute left-0 bottom-full mb-1 w-48 bg-foreground text-background text-[10px] p-2 rounded shadow-lg z-20">
                                     Provided by broker (may be delayed)
                                 </div>
                             </div>
                         </div>
                         <div className="flex items-baseline gap-2">
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">
+                            <p className="text-lg font-bold text-foreground">
                                 {formatCurrency(inst.lastPrice || inst.last_price)}
                             </p>
-                            <span className="text-[10px] text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] text-muted-foreground bg-accent px-1.5 py-0.5 rounded">
                                 {inst.lastPriceDate ? formatDate(inst.lastPriceDate) : (inst.last_price_date ? formatDate(inst.last_price_date) : 'Date N/A')}
                             </span>
                         </div>
@@ -352,7 +352,7 @@ function MfInstrumentDetails({ inst, symbol, plan, schemeType, formatCurrency, f
                     <div className="pt-1">
                         <div>
                             <p className="text-[10px] text-gray-400">Settlement Type</p>
-                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{inst.settlementType || inst.settlement_type || '—'}</p>
+                            <p className="text-xs font-semibold text-muted-foreground">{inst.settlementType || inst.settlement_type || '—'}</p>
                         </div>
                     </div>
                 </div>
@@ -362,17 +362,17 @@ function MfInstrumentDetails({ inst, symbol, plan, schemeType, formatCurrency, f
             <div className="space-y-3 flex flex-col justify-end">
                 <div className="space-y-2">
                     {(inst.purchase_allowed || inst.purchaseAllowed) && (
-                        <button className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
+                        <button className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
                             Invest Now
                         </button>
                     )}
                     {(inst.sip_allowed || inst.sipAllowed) && (
-                        <button className="w-full py-2 bg-white dark:bg-transparent border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <button className="w-full py-2 bg-white dark:bg-transparent border border-blue-200 text-blue-600 hover:bg-blue-50 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
                             <Clock size={16} /> Start SIP
                         </button>
                     )}
                     {!(inst.purchase_allowed || inst.purchaseAllowed) && !(inst.sip_allowed || inst.sipAllowed) && (
-                        <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+                        <div className="text-center p-3 bg-accent rounded-lg border border-dashed border-border">
                             <p className="text-xs text-gray-400">Trading currently paused for this scheme.</p>
                         </div>
                     )}

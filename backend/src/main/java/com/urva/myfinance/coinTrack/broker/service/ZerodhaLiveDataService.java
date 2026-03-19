@@ -597,7 +597,8 @@ public class ZerodhaLiveDataService {
      * @param account the broker account containing API key and access token
      */
     private void buildKiteHeaders(org.springframework.http.HttpHeaders headers, BrokerAccount account) {
-        headers.set("Authorization", "token " + account.getZerodhaApiKey() + ":" + account.getZerodhaAccessToken());
+        String accessToken = encryptionUtil.decryptSafe(account.getZerodhaAccessToken());
+        headers.set("Authorization", "token " + account.getZerodhaApiKey() + ":" + accessToken);
         headers.set("X-Kite-Version", "3");
     }
 
