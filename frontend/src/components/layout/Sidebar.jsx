@@ -12,6 +12,7 @@ import {
     TrendingUp,
     User,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback } from 'react';
@@ -114,13 +115,24 @@ export default function Sidebar({ onNavigate }) {
             <Link
                 href="/dashboard"
                 onClick={onNavigate}
-                className="relative flex items-baseline gap-2 px-5 pt-6 pb-5 border-b border-sidebar-border group"
+                className="relative flex items-center gap-2.5 px-5 pt-6 pb-5 border-b border-sidebar-border group"
             >
-                <span className="font-serif text-[28px] leading-none tracking-tight text-sidebar-foreground">
-                    coin
+                <span className="relative h-8 w-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
+                    <Image
+                        src="/coinTrack.png"
+                        alt="coinTrack"
+                        fill
+                        priority
+                        className="object-contain"
+                    />
                 </span>
-                <span className="display-serif italic text-[28px] leading-none text-[hsl(var(--accent))]">
-                    Track
+                <span className="flex items-baseline gap-0.5">
+                    <span className="font-serif text-[28px] leading-none tracking-tight text-sidebar-foreground">
+                        coin
+                    </span>
+                    <span className="display-serif italic text-[28px] leading-none text-[hsl(var(--accent))]">
+                        Track
+                    </span>
                 </span>
                 <span className="ml-auto text-[9px] tracking-[0.2em] uppercase text-sidebar-foreground/40 self-end pb-0.5">
                     VOL.04

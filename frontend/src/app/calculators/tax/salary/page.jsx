@@ -107,8 +107,8 @@ export default function SalaryCalculatorPage() {
                     </div>
                 </div>
 
-                <div className="p-3 bg-red-50 dark:bg-red-900/10 rounded-md">
-                    <p className="text-sm font-medium mb-3">Deductions (Monthly)</p>
+                <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.04)] px-3 py-3">
+                    <p className="eyebrow-strong mb-3">Deductions · monthly</p>
                     <div className="grid grid-cols-2 gap-3">
                         <FormField
                             label="PF (Employee)"
@@ -133,8 +133,8 @@ export default function SalaryCalculatorPage() {
                 </div>
 
                 {error && (
-                    <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                        {error}
+                    <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-2.5">
+                        <p className="font-mono text-[12px] text-[hsl(var(--loss))] leading-snug">{error}</p>
                     </div>
                 )}
             </InputCard>

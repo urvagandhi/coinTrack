@@ -119,8 +119,8 @@ export default function CompoundInterestCalculatorPage() {
                 </div>
 
                 {error && (
-                    <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                        {error}
+                    <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-2.5">
+                        <p className="font-mono text-[12px] text-[hsl(var(--loss))] leading-snug">{error}</p>
                     </div>
                 )}
             </InputCard>

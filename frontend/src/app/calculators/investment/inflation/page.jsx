@@ -94,8 +94,8 @@ export default function InflationCalculatorPage() {
                 />
 
                 {error && (
-                    <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                        {error}
+                    <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-2.5">
+                        <p className="font-mono text-[12px] text-[hsl(var(--loss))] leading-snug">{error}</p>
                     </div>
                 )}
             </InputCard>
@@ -103,13 +103,13 @@ export default function InflationCalculatorPage() {
             <ResultCard title="Inflation Impact" isEmpty={!result}>
                 {result && (
                     <div className="space-y-6">
-                        <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                            <p className="text-sm text-muted-foreground mb-1">Future Value</p>
-                            <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+                        <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-4 py-3.5">
+                            <p className="eyebrow">Future value</p>
+                            <p className="font-serif text-[clamp(28px,3.6vw,36px)] leading-[1.05] tracking-tight tabular-nums text-[hsl(var(--loss))] mt-1">
                                 {formatCurrency(result.futureValue)}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                After {inputs.years} years
+                            <p className="font-mono text-[11px] text-muted-foreground mt-1">
+                                After {inputs.years} years of erosion
                             </p>
                         </div>
 

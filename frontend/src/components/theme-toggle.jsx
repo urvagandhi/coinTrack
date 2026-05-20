@@ -1,32 +1,39 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 
-const ORDER = ['light', 'dark', 'system'];
-
 export function ThemeToggle() {
-    const { theme, setTheme } = useTheme();
+    const { resolvedTheme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => setMounted(true), []);
 
-    const current = mounted ? (theme ?? 'system') : 'system';
-    const Icon = current === 'dark' ? Moon : current === 'system' ? Monitor : Sun;
+    if (!mounted) {
+        return (
+            <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Theme toggle"
+                className="text-muted-foreground hover:text-foreground"
+            >
+                <Sun className="h-[1.15rem] w-[1.15rem]" />
+            </Button>
+        );
+    }
 
-    const cycle = () => {
-        const idx = ORDER.indexOf(current);
-        setTheme(ORDER[(idx + 1) % ORDER.length]);
-    };
+    const isDark = resolvedTheme === 'dark';
+    const Icon = isDark ? Moon : Sun;
+    const next = isDark ? 'light' : 'dark';
 
     return (
         <Button
             variant="ghost"
             size="icon"
-            onClick={cycle}
-            aria-label={`Theme: ${current}. Click to switch.`}
+            onClick={() => setTheme(next)}
+            aria-label={`Switch to ${next} theme`}
             className="text-muted-foreground hover:text-foreground"
         >
             <Icon className="h-[1.15rem] w-[1.15rem]" />

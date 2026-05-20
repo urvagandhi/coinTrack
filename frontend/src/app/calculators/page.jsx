@@ -1,155 +1,251 @@
-// src/app/calculators/page.jsx — Calculator landing hub, neutral card design
+// src/app/calculators/page.jsx — Editorial calculator index
 'use client';
 
-import { BarChart2, CreditCard, FileText, PiggyBank, Search, Target, TrendingUp } from 'lucide-react';
+import { ArrowRight, BarChart2, CreditCard, FileText, PiggyBank, Search, Target, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-const calculatorCategories = [
+const CATEGORIES = [
     {
-        id: 'investment', name: 'Investment', icon: TrendingUp,
+        id: 'investment', name: 'Investment', icon: TrendingUp, index: '§I',
+        kicker: 'Compounding & Markets',
         calculators: [
-            { id: 'sip', name: 'SIP Calculator', description: 'Calculate returns on your monthly investments' },
-            { id: 'step-up-sip', name: 'Step-Up SIP', description: 'Plan for increasing investments over time' },
-            { id: 'lumpsum', name: 'Lumpsum', description: 'One-time investment future value' },
-            { id: 'cagr', name: 'CAGR', description: 'Calculate Compound Annual Growth Rate' },
-            { id: 'xirr', name: 'XIRR', description: 'Extended Internal Rate of Return analysis' },
-            { id: 'stock-average', name: 'Stock Average', description: 'Calculate average price of your stock holdings' },
-            { id: 'inflation', name: 'Inflation', description: 'See how inflation affects your money' },
+            { id: 'sip', name: 'SIP Calculator', description: 'Returns on systematic monthly investments' },
+            { id: 'step-up-sip', name: 'Step-Up SIP', description: 'Increasing instalments over time' },
+            { id: 'lumpsum', name: 'Lumpsum', description: 'Future value of a one-time investment' },
+            { id: 'cagr', name: 'CAGR', description: 'Compound annual growth rate' },
+            { id: 'xirr', name: 'XIRR', description: 'Extended internal rate of return' },
+            { id: 'stock-average', name: 'Stock Average', description: 'Average price across purchases' },
+            { id: 'inflation', name: 'Inflation', description: 'Purchasing power, over time' },
         ],
     },
     {
-        id: 'savings', name: 'Savings Schemes', icon: PiggyBank,
+        id: 'savings', name: 'Savings Schemes', icon: PiggyBank, index: '§II',
+        kicker: 'Small Saver Instruments',
         calculators: [
-            { id: 'ppf', name: 'PPF', description: 'Public Provident Fund corpus calculator' },
-            { id: 'epf', name: 'EPF', description: 'Employee Provident Fund estimation' },
-            { id: 'fd', name: 'Fixed Deposit', description: 'Returns on your fixed deposits' },
-            { id: 'rd', name: 'Recurring Deposit', description: 'Monthly deposit maturity value' },
-            { id: 'ssy', name: 'SSY', description: 'Sukanya Samriddhi Yojana for girl child' },
-            { id: 'nps', name: 'NPS', description: 'National Pension System retirement corpus' },
-            { id: 'nsc', name: 'NSC', description: 'National Savings Certificate returns' },
+            { id: 'ppf', name: 'PPF', description: 'Public Provident Fund corpus' },
+            { id: 'epf', name: 'EPF', description: 'Employee Provident Fund estimate' },
+            { id: 'fd', name: 'Fixed Deposit', description: 'Bank FD maturity & interest' },
+            { id: 'rd', name: 'Recurring Deposit', description: 'Monthly deposit maturity' },
+            { id: 'ssy', name: 'SSY', description: 'Sukanya Samriddhi Yojana' },
+            { id: 'nps', name: 'NPS', description: 'National Pension System corpus' },
+            { id: 'nsc', name: 'NSC', description: 'National Savings Certificate' },
             { id: 'scss', name: 'SCSS', description: 'Senior Citizens Savings Scheme' },
             { id: 'mis', name: 'PO MIS', description: 'Post Office Monthly Income Scheme' },
-            { id: 'apy', name: 'APY', description: 'Atal Pension Yojana pension calculator' },
+            { id: 'apy', name: 'APY', description: 'Atal Pension Yojana' },
         ],
     },
     {
-        id: 'loans', name: 'Loans & EMI', icon: CreditCard,
+        id: 'loans', name: 'Loans & EMI', icon: CreditCard, index: '§III',
+        kicker: 'Borrowing & Repayment',
         calculators: [
-            { id: 'emi', name: 'EMI Calculator', description: 'Standard loan EMI calculator' },
-            { id: 'home-loan-emi', name: 'Home Loan', description: 'Plan your dream home purchase' },
-            { id: 'car-loan-emi', name: 'Car Loan', description: 'Calculate car loan payments' },
-            { id: 'simple-interest', name: 'Simple Interest', description: 'Basic interest calculation' },
-            { id: 'compound-interest', name: 'Compound Interest', description: 'Power of compounding' },
-            { id: 'flat-vs-reducing', name: 'Flat vs Reducing', description: 'Compare interest rate methods' },
+            { id: 'emi', name: 'EMI Calculator', description: 'Standard loan instalment' },
+            { id: 'home-loan-emi', name: 'Home Loan', description: 'Residential loan instalment' },
+            { id: 'car-loan-emi', name: 'Car Loan', description: 'Auto loan instalment' },
+            { id: 'simple-interest', name: 'Simple Interest', description: 'Linear interest accrual' },
+            { id: 'compound-interest', name: 'Compound Interest', description: 'Interest on interest' },
+            { id: 'flat-vs-reducing', name: 'Flat vs Reducing', description: 'Two methods, side by side' },
         ],
     },
     {
-        id: 'tax', name: 'Tax & Salary', icon: FileText,
+        id: 'tax', name: 'Tax & Salary', icon: FileText, index: '§IV',
+        kicker: 'Statutory & Salary',
         calculators: [
-            { id: 'income-tax', name: 'Income Tax', description: 'Compare Old vs New Tax Regime' },
-            { id: 'hra', name: 'HRA Exemption', description: 'Calculate House Rent Allowance' },
-            { id: 'salary', name: 'Salary Calculator', description: 'In-hand salary breakdown' },
-            { id: 'gratuity', name: 'Gratuity', description: 'Estimate your gratuity details' },
-            { id: 'gst', name: 'GST Calculator', description: 'Inclusive and Exclusive GST' },
-            { id: 'tds', name: 'TDS Calculator', description: 'Tax Deducted at Source' },
+            { id: 'income-tax', name: 'Income Tax', description: 'Old vs New regime comparison' },
+            { id: 'hra', name: 'HRA Exemption', description: 'House Rent Allowance relief' },
+            { id: 'salary', name: 'Salary Calculator', description: 'CTC to in-hand breakdown' },
+            { id: 'gratuity', name: 'Gratuity', description: 'End-of-service entitlement' },
+            { id: 'gst', name: 'GST Calculator', description: 'Inclusive and exclusive GST' },
+            { id: 'tds', name: 'TDS Calculator', description: 'Tax deducted at source' },
         ],
     },
     {
-        id: 'trading', name: 'Trading', icon: BarChart2,
+        id: 'trading', name: 'Trading', icon: BarChart2, index: '§V',
+        kicker: 'Execution & Cost',
         calculators: [
-            { id: 'brokerage', name: 'Brokerage', description: 'Calculate exact brokerage duties' },
-            { id: 'margin', name: 'Margin', description: 'Required margin for trades' },
+            { id: 'brokerage', name: 'Brokerage', description: 'All-in cost of a trade' },
+            { id: 'margin', name: 'Margin', description: 'Margin required to trade' },
         ],
     },
     {
-        id: 'planning', name: 'Financial Planning', icon: Target,
+        id: 'planning', name: 'Financial Planning', icon: Target, index: '§VI',
+        kicker: 'The Long View',
         calculators: [
-            { id: 'retirement', name: 'Retirement', description: 'Plan your golden years' },
+            { id: 'retirement', name: 'Retirement', description: 'Corpus for your later years' },
         ],
     },
 ];
 
+const TOTAL = CATEGORIES.reduce((n, c) => n + c.calculators.length, 0);
+
+function useNow() {
+    const [now, setNow] = useState(null);
+    useEffect(() => { setNow(new Date()); }, []);
+    return now;
+}
+
 export default function CalculatorsPage() {
     const [search, setSearch] = useState('');
+    const now = useNow();
 
-    const filtered = calculatorCategories
-        .map((cat) => ({
-            ...cat,
-            calculators: cat.calculators.filter(
-                (c) =>
-                    c.name.toLowerCase().includes(search.toLowerCase()) ||
-                    c.description.toLowerCase().includes(search.toLowerCase())
-            ),
-        }))
-        .filter((cat) => cat.calculators.length > 0);
+    const filtered = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return CATEGORIES;
+        return CATEGORIES
+            .map((cat) => ({
+                ...cat,
+                calculators: cat.calculators.filter(
+                    (c) => c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)
+                ),
+            }))
+            .filter((cat) => cat.calculators.length > 0);
+    }, [search]);
+
+    const matchCount = filtered.reduce((n, c) => n + c.calculators.length, 0);
+
+    const dateString = now ? now.toLocaleDateString('en-IN', {
+        day: 'numeric', month: 'long', year: 'numeric',
+    }) : '';
 
     return (
-        <div className="space-y-8">
-            {/* Header */}
-            <div className="text-center mb-10">
-                <h1 className="text-2xl font-semibold text-foreground mb-2">Financial Calculators</h1>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    Free tools to plan your investments, savings, taxes, and loans.
-                </p>
-            </div>
+        <article className="space-y-12">
+            {/* Masthead */}
+            <header>
+                <div className="flex items-baseline gap-3 mb-4">
+                    <span className="index-num tnum text-[11px]">[ §000 ]</span>
+                    <span className="eyebrow">The Reference · A complete index</span>
+                </div>
+
+                <div className="grid lg:grid-cols-[1fr_auto] gap-6 lg:gap-10 items-end">
+                    <div>
+                        <h1 className="font-serif text-[clamp(40px,7vw,72px)] leading-[0.95] tracking-tight text-foreground">
+                            The Financial<br />
+                            <span className="italic text-[hsl(var(--accent))]">Calculators.</span>
+                        </h1>
+                        <p className="mt-4 font-serif italic text-[18px] text-muted-foreground leading-snug max-w-xl">
+                            A working set of {TOTAL} instruments — for the patient saver, the careful borrower, and the disciplined investor.
+                        </p>
+                    </div>
+
+                    <div className="text-left lg:text-right space-y-1 lg:pl-8 lg:border-l border-hairline">
+                        <p className="eyebrow">Edition</p>
+                        <p className="font-serif italic text-[15px] text-foreground" suppressHydrationWarning>
+                            {dateString || '—'}
+                        </p>
+                        <div className="pt-2 flex lg:justify-end items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                            <span className="live-dot" />
+                            <span>{TOTAL} entries · {CATEGORIES.length} sections</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-8 rule-strong-h" />
+            </header>
 
             {/* Search */}
-            <div className="relative max-w-sm mx-auto mb-10">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                    type="text"
-                    placeholder="Search calculators..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9 pr-3 h-10 w-full bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-colors"
-                />
-            </div>
+            <section>
+                <div className="grid lg:grid-cols-[1fr_minmax(0,420px)] gap-4 items-baseline">
+                    <p className="font-serif italic text-[15px] text-muted-foreground">
+                        Search the index by name or by what it computes — for instance, <span className="not-italic font-mono text-foreground">retirement</span>, <span className="not-italic font-mono text-foreground">EMI</span>, <span className="not-italic font-mono text-foreground">GST</span>.
+                    </p>
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            type="text"
+                            placeholder="Search calculators…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-9 pr-3 h-11 w-full bg-background border border-hairline font-mono text-[13px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-foreground focus:ring-1 focus:ring-foreground transition-colors"
+                        />
+                    </div>
+                </div>
+                {search && (
+                    <p className="mt-3 text-[11px] font-mono text-muted-foreground">
+                        {matchCount} {matchCount === 1 ? 'entry' : 'entries'} matching “{search}”
+                    </p>
+                )}
+            </section>
 
             {/* Categories */}
             {filtered.length > 0 ? (
-                filtered.map((category) => (
-                    <div key={category.id} className="mb-8">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
-                                <category.icon size={14} className="text-blue-600" />
+                filtered.map((category) => {
+                    const Icon = category.icon;
+                    return (
+                        <section key={category.id} className="space-y-5">
+                            <div className="flex items-baseline justify-between gap-4 border-b border-hairline pb-3">
+                                <div className="flex items-baseline gap-3 min-w-0">
+                                    <span className="display-num text-[12px] text-[hsl(var(--accent))] flex-shrink-0">
+                                        {category.index}
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="eyebrow">{category.kicker}</p>
+                                        <h2 className="font-serif text-[26px] sm:text-[30px] leading-none tracking-tight text-foreground flex items-baseline gap-2.5 mt-1">
+                                            <Icon size={16} className="text-muted-foreground translate-y-0.5" aria-hidden="true" />
+                                            <span>{category.name}</span>
+                                        </h2>
+                                    </div>
+                                </div>
+                                <p className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                                    {category.calculators.length} {category.calculators.length === 1 ? 'entry' : 'entries'}
+                                </p>
                             </div>
-                            <h2 className="text-sm font-semibold text-foreground">{category.name}</h2>
-                            <span className="text-xs text-muted-foreground">({category.calculators.length})</span>
-                        </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-                            {category.calculators.map((calc) => (
-                                <Link
-                                    key={calc.id}
-                                    href={`/calculators/${category.id}/${calc.id}`}
-                                    className="flex flex-col gap-1.5 p-3 bg-card border border-border rounded-xl hover:border-blue-500/40 hover:bg-accent transition-colors group"
-                                >
-                                    <span className="text-sm font-medium text-foreground group-hover:text-blue-600 transition-colors line-clamp-1">
-                                        {calc.name}
-                                    </span>
-                                    <span className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                        {calc.description}
-                                    </span>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                ))
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-hairline border border-hairline">
+                                {category.calculators.map((calc, i) => (
+                                    <li key={calc.id} className="bg-background">
+                                        <Link
+                                            href={`/calculators/${category.id}/${calc.id}`}
+                                            className="group block h-full px-5 py-4 hover:bg-muted/40 transition-colors"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="display-num text-[10px] text-muted-foreground mb-1.5 group-hover:text-[hsl(var(--accent))] transition-colors">
+                                                        {category.index}.{String(i + 1).padStart(2, '0')}
+                                                    </p>
+                                                    <h3 className="font-serif text-[18px] leading-snug text-foreground truncate">
+                                                        {calc.name}
+                                                    </h3>
+                                                    <p className="mt-1 text-[12px] text-muted-foreground leading-relaxed line-clamp-2">
+                                                        {calc.description}
+                                                    </p>
+                                                </div>
+                                                <ArrowRight
+                                                    size={14}
+                                                    className="text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-1"
+                                                />
+                                            </div>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    );
+                })
             ) : (
-                <div className="text-center py-16">
-                    <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center mx-auto mb-3">
-                        <Search size={20} className="text-muted-foreground" />
-                    </div>
-                    <p className="text-sm font-medium text-foreground">No calculators found</p>
-                    <p className="text-xs text-muted-foreground mt-1">Try adjusting your search query</p>
+                <div className="border border-hairline px-6 py-16 text-center">
+                    <Search size={28} className="text-muted-foreground/50 mx-auto mb-4" aria-hidden="true" />
+                    <h2 className="font-serif text-[22px] text-foreground">No matching entries</h2>
+                    <p className="mt-2 font-serif italic text-[15px] text-muted-foreground">
+                        We could not find anything for <span className="not-italic font-mono text-foreground">“{search}”</span>. Try a different word.
+                    </p>
+                    <button
+                        onClick={() => setSearch('')}
+                        className="ed-btn ed-btn-ghost h-10 px-5 mt-5"
+                    >
+                        Clear search
+                    </button>
                 </div>
             )}
 
             {/* Disclaimer */}
-            <div className="border-t border-border pt-8 text-center text-xs text-gray-400">
-                All calculations are for informational purposes only. Consult a qualified financial advisor before making investment decisions.
-            </div>
-        </div>
+            <section className="border-t border-hairline pt-8">
+                <div className="border-l-2 border-foreground/70 pl-5 max-w-3xl mx-auto">
+                    <p className="eyebrow-strong mb-1">Editor’s note</p>
+                    <p className="font-serif italic text-[15px] text-muted-foreground leading-snug">
+                        All figures are produced for reference only. Tax brackets, scheme rates, and market assumptions change; verify with a qualified adviser before acting on any number you find here.
+                    </p>
+                </div>
+            </section>
+        </article>
     );
 }

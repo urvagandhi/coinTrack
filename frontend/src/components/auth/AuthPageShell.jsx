@@ -1,7 +1,9 @@
 // src/components/auth/AuthPageShell.jsx
 'use client';
 
+import { useModal } from '@/contexts/ModalContext';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -26,6 +28,7 @@ export function AuthPageShell({
     children,
 }) {
     const now = useNow();
+    const { openModal } = useModal();
     const widthClass = maxWidth === 'md' ? 'max-w-md' : maxWidth === 'lg' ? 'max-w-lg' : 'max-w-sm';
 
     const dateString = now ? now.toLocaleDateString('en-IN', {
@@ -38,9 +41,12 @@ export function AuthPageShell({
             {/* Masthead */}
             <header className="border-b border-hairline">
                 <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
-                    <Link href="/" className="flex items-baseline gap-3 group">
+                    <Link href="/" className="flex items-center gap-2.5 group">
+                        <span className="relative h-8 w-8 block transition-transform duration-300 group-hover:scale-110">
+                            <Image src="/coinTrack.png" alt="coinTrack" fill priority className="object-contain" />
+                        </span>
                         <span className="font-serif italic text-[24px] leading-none tracking-tight">coinTrack</span>
-                        <span className="hidden sm:inline display-num text-[10px] text-muted-foreground">VOL.04</span>
+                        <span className="hidden sm:inline display-num text-[10px] text-muted-foreground ml-1">VOL.04</span>
                     </Link>
 
                     <div className="hidden md:flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
@@ -137,13 +143,37 @@ export function AuthPageShell({
                     <p className="eyebrow">&copy; {new Date().getFullYear()} CoinTrack — Printed in Browser</p>
                     {showFooterLinks && (
                         <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-                            <Link href="/privacy" className="hover:text-foreground transition-colors uppercase tracking-[0.2em]">
+                            <button
+                                type="button"
+                                onClick={() => openModal('privacy')}
+                                className="hover:text-foreground transition-colors uppercase tracking-[0.2em]"
+                            >
                                 Privacy
-                            </Link>
+                            </button>
                             <span className="text-muted-foreground/40">·</span>
-                            <Link href="/terms" className="hover:text-foreground transition-colors uppercase tracking-[0.2em]">
+                            <button
+                                type="button"
+                                onClick={() => openModal('terms')}
+                                className="hover:text-foreground transition-colors uppercase tracking-[0.2em]"
+                            >
                                 Terms
-                            </Link>
+                            </button>
+                            <span className="text-muted-foreground/40">·</span>
+                            <button
+                                type="button"
+                                onClick={() => openModal('cookies')}
+                                className="hover:text-foreground transition-colors uppercase tracking-[0.2em]"
+                            >
+                                Cookies
+                            </button>
+                            <span className="text-muted-foreground/40">·</span>
+                            <button
+                                type="button"
+                                onClick={() => openModal('contact')}
+                                className="hover:text-foreground transition-colors uppercase tracking-[0.2em]"
+                            >
+                                Contact
+                            </button>
                         </div>
                     )}
                 </div>

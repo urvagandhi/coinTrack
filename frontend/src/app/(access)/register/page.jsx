@@ -6,6 +6,7 @@ import { AuthFormField } from '@/components/auth/AuthFormField';
 import { AuthPageShell } from '@/components/auth/AuthPageShell';
 import { AuthSubmitButton } from '@/components/auth/AuthSubmitButton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useModal } from '@/contexts/ModalContext';
 import { Calendar, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -53,6 +54,7 @@ export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { register } = useAuth();
+    const { openModal } = useModal();
     const router = useRouter();
 
     const handleChange = (e) => {
@@ -246,7 +248,22 @@ export default function RegisterPage() {
                         {isLoading ? 'Creating account…' : 'Create Account'}
                     </AuthSubmitButton>
                     <p className="mt-3 text-[11px] text-muted-foreground font-mono text-center">
-                        By registering you agree to our <Link href="/terms" className="text-foreground underline">Terms</Link> and <Link href="/privacy" className="text-foreground underline">Privacy Policy</Link>.
+                        By registering you agree to our{' '}
+                        <button
+                            type="button"
+                            onClick={() => openModal('terms')}
+                            className="text-foreground underline hover:text-[hsl(var(--accent))] transition-colors"
+                        >
+                            Terms
+                        </button>{' '}
+                        and{' '}
+                        <button
+                            type="button"
+                            onClick={() => openModal('privacy')}
+                            className="text-foreground underline hover:text-[hsl(var(--accent))] transition-colors"
+                        >
+                            Privacy Policy
+                        </button>.
                     </p>
                 </div>
             </form>

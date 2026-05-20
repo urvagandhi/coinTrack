@@ -117,14 +117,6 @@ const nextConfig = {
   */
 
   /**
-   * Standalone output mode:
-   * - Produces a minimal server build
-   * - Only includes files required to run the app
-   * - Perfect for Docker & server deployments
-   */
-  output: "standalone",
-
-  /**
    * Compiler-level optimizations.
    * Removes console.log statements in production builds to reduce logs & bundle size.
    */

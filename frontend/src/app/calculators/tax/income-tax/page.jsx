@@ -7,9 +7,46 @@ import {
     InputCard,
     ResultCard
 } from '@/components/calculators/framework/CalculatorComponents';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { AlertCircle } from 'lucide-react';
 import { calculatorService, formatCurrency } from '@/lib/calculator.service';
 import { useState } from 'react';
+
+function RegimePanel({ title, items, total, recommended }) {
+    return (
+        <div
+            className={cn(
+                'bg-background border px-4 py-4 space-y-3',
+                recommended ? 'border-[hsl(var(--gain))] border-l-[3px]' : 'border-hairline'
+            )}
+        >
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-hairline">
+                <p className="eyebrow-strong">{title}</p>
+                {recommended && (
+                    <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[hsl(var(--gain))]">
+                        Recommended
+                    </span>
+                )}
+            </div>
+            <div className="space-y-2">
+                {items.map((it) => (
+                    <div key={it.label}>
+                        <p className="font-mono uppercase tracking-[0.16em] text-[10px] text-muted-foreground">
+                            {it.label}
+                        </p>
+                        <p className="font-mono tabular-nums text-[13px] text-foreground mt-0.5">{it.value}</p>
+                    </div>
+                ))}
+            </div>
+            <div className="pt-2.5 border-t border-hairline">
+                <p className="eyebrow">Total tax</p>
+                <p className="font-serif text-[24px] leading-[1.05] tracking-tight tabular-nums text-foreground mt-0.5">
+                    {total}
+                </p>
+            </div>
+        </div>
+    );
+}
 
 export default function IncomeTaxCalculatorPage() {
     const [inputs, setInputs] = useState({
@@ -110,90 +147,66 @@ export default function IncomeTaxCalculatorPage() {
                 />
 
                 {error && (
-                    <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                        {error}
+                    <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-2.5 flex items-start gap-2">
+                        <AlertCircle size={13} className="text-[hsl(var(--loss))] flex-shrink-0 mt-0.5" />
+                        <p className="font-mono text-[12px] text-[hsl(var(--loss))] leading-snug">{error}</p>
                     </div>
                 )}
             </InputCard>
 
             {/* Results Section */}
             <div className="space-y-4">
-                <ResultCard title="Tax Comparison" isEmpty={!result}>
+                <ResultCard title="Old vs New · The Comparison" isEmpty={!result}>
                     {result && (
-                        <div className="space-y-4">
-                            {/* Recommendation */}
-                            <div className={`p-4 rounded-lg text-center ${result.recommendedRegime === 'NEW_REGIME'
-                                    ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-                                    : result.recommendedRegime === 'OLD_REGIME'
-                                        ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
-                                        : 'bg-gray-50 dark:bg-gray-900/20'
-                                }`}>
-                                <p className="text-sm font-medium">Recommended</p>
-                                <p className="text-lg font-bold">
-                                    {result.recommendedRegime === 'NEW_REGIME' ? 'New Regime'
-                                        : result.recommendedRegime === 'OLD_REGIME' ? 'Old Regime'
+                        <div className="space-y-5">
+                            {/* Verdict */}
+                            <div
+                                className={cn(
+                                    'border-l-2 px-4 py-3.5',
+                                    result.recommendedRegime === 'NEW_REGIME'
+                                        ? 'border-[hsl(var(--gain))] bg-[hsl(var(--gain)/0.05)]'
+                                        : result.recommendedRegime === 'OLD_REGIME'
+                                            ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.05)]'
+                                            : 'border-foreground/70 bg-muted/30'
+                                )}
+                            >
+                                <p className="eyebrow">The verdict</p>
+                                <p className="font-serif text-[28px] leading-[1.05] tracking-tight text-foreground mt-0.5">
+                                    {result.recommendedRegime === 'NEW_REGIME'
+                                        ? 'New Regime'
+                                        : result.recommendedRegime === 'OLD_REGIME'
+                                            ? 'Old Regime'
                                             : 'Either Regime'}
                                 </p>
                                 {result.taxSavings > 0 && (
-                                    <p className="text-sm text-green-600 dark:text-green-400">
-                                        Save {formatCurrency(result.taxSavings)}
+                                    <p className="mt-1 font-mono text-[12px] text-[hsl(var(--gain))] tabular-nums">
+                                        Saves {formatCurrency(result.taxSavings)} a year
                                     </p>
                                 )}
                             </div>
 
                             {/* Side by side comparison */}
-                            <div className="grid grid-cols-2 gap-4">
-                                {/* Old Regime */}
-                                <Card className={result.recommendedRegime === 'OLD_REGIME' ? 'border-blue-500' : ''}>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm">Old Regime</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Taxable Income</p>
-                                            <p className="font-medium">{formatCurrency(result.taxableIncomeOldRegime)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Tax</p>
-                                            <p className="font-medium">{formatCurrency(result.taxOldRegime)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Cess (4%)</p>
-                                            <p className="font-medium">{formatCurrency(result.cessOldRegime)}</p>
-                                        </div>
-                                        <hr />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Total Tax</p>
-                                            <p className="text-lg font-bold">{formatCurrency(result.totalTaxOldRegime)}</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* New Regime */}
-                                <Card className={result.recommendedRegime === 'NEW_REGIME' ? 'border-green-500' : ''}>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm">New Regime</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Taxable Income</p>
-                                            <p className="font-medium">{formatCurrency(result.taxableIncomeNewRegime)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Tax</p>
-                                            <p className="font-medium">{formatCurrency(result.taxNewRegime)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Cess (4%)</p>
-                                            <p className="font-medium">{formatCurrency(result.cessNewRegime)}</p>
-                                        </div>
-                                        <hr />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Total Tax</p>
-                                            <p className="text-lg font-bold">{formatCurrency(result.totalTaxNewRegime)}</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                            <div className="grid grid-cols-2 gap-3">
+                                <RegimePanel
+                                    title="Old Regime"
+                                    recommended={result.recommendedRegime === 'OLD_REGIME'}
+                                    items={[
+                                        { label: 'Taxable Income', value: formatCurrency(result.taxableIncomeOldRegime) },
+                                        { label: 'Tax', value: formatCurrency(result.taxOldRegime) },
+                                        { label: 'Cess (4%)', value: formatCurrency(result.cessOldRegime) },
+                                    ]}
+                                    total={formatCurrency(result.totalTaxOldRegime)}
+                                />
+                                <RegimePanel
+                                    title="New Regime"
+                                    recommended={result.recommendedRegime === 'NEW_REGIME'}
+                                    items={[
+                                        { label: 'Taxable Income', value: formatCurrency(result.taxableIncomeNewRegime) },
+                                        { label: 'Tax', value: formatCurrency(result.taxNewRegime) },
+                                        { label: 'Cess (4%)', value: formatCurrency(result.cessNewRegime) },
+                                    ]}
+                                    total={formatCurrency(result.totalTaxNewRegime)}
+                                />
                             </div>
                         </div>
                     )}

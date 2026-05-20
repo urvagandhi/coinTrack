@@ -1,155 +1,193 @@
 // src/components/calculators/framework/CalculatorComponents.jsx
-// Framework components imported by all 32 calculator pages. Design tokens only.
+// Editorial framework imported by all 32 calculator pages.
+// Public API preserved: CalculatorLayout, InputCard, ResultCard, ResultMetric,
+// FormField, BreakdownTable, DisclaimerBanner, ResultSkeleton.
 'use client';
 
 import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Calculator, Info, Loader2 } from 'lucide-react';
+import { AlertCircle, Calculator, Info, Loader2 } from 'lucide-react';
 
-/**
- * CalculatorLayout - Main wrapper for all calculators
- * Props: title, description, category, children
- */
+/* -------------------------------------------------------------------------- */
+/*  Layout                                                                    */
+/* -------------------------------------------------------------------------- */
+
 export function CalculatorLayout({ title, description, category, children }) {
     return (
-        <div className="space-y-6">
-            <div className="space-y-2">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-600 uppercase tracking-wider">
-                    {category}
-                </span>
-                <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-                <p className="text-sm text-muted-foreground max-w-2xl">{description}</p>
-            </div>
-            <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
+        <article className="space-y-8">
+            {/* Editorial masthead */}
+            <header>
+                <div className="flex items-baseline gap-3 mb-3">
+                    <span className="index-num tnum text-[11px]">[ §FN ]</span>
+                    <span className="eyebrow">{category}</span>
+                </div>
+                <h1 className="font-serif text-[36px] sm:text-[44px] leading-[1.05] tracking-tight text-foreground">
+                    {title}
+                </h1>
+                {description && (
+                    <p className="mt-3 font-serif italic text-[16px] text-muted-foreground leading-snug max-w-2xl">
+                        {description}
+                    </p>
+                )}
+                <div className="mt-6 rule-strong-h" />
+            </header>
+
+            {/* Two-column grid: inputs | results. Children may use lg:col-span-2 for full-width rows. */}
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
                 {children}
             </div>
-        </div>
+        </article>
     );
 }
 
-/**
- * InputCard - Container for calculator inputs
- * Props: title, children, onCalculate, isLoading
- */
-export function InputCard({ title = 'Enter Details', children, onCalculate, isLoading }) {
+/* -------------------------------------------------------------------------- */
+/*  Input panel                                                               */
+/* -------------------------------------------------------------------------- */
+
+export function InputCard({ title = 'Inputs', children, onCalculate, isLoading }) {
     return (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <div className="border-b border-border px-6 py-4 border-l-4 border-l-blue-600">
-                <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        <section className="bg-background border border-hairline">
+            <div className="border-b border-hairline px-5 py-3.5 flex items-baseline gap-3">
+                <span className="display-num text-[10px] text-[hsl(var(--accent))]">§A</span>
+                <h2 className="eyebrow-strong">{title}</h2>
             </div>
-            <div className="px-6 py-5 space-y-5">
+            <div className="px-5 py-5 space-y-5">
                 {children}
                 {onCalculate && (
                     <button
                         onClick={onCalculate}
                         disabled={isLoading}
-                        className="w-full h-10 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="ed-btn ed-btn-primary w-full h-11 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         {isLoading ? (
                             <>
-                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}>
-                                    <Loader2 size={14} />
-                                </motion.div>
-                                Calculating...
+                                <Loader2 size={14} className="animate-spin" />
+                                Calculating…
                             </>
-                        ) : 'Calculate'}
+                        ) : (
+                            <>
+                                <Calculator size={14} />
+                                Calculate
+                            </>
+                        )}
                     </button>
                 )}
             </div>
-        </div>
+        </section>
     );
 }
 
-/**
- * ResultCard - Display calculation results
- * Props: title, children, isEmpty
- */
-export function ResultCard({ title = 'Results', children, isEmpty }) {
+/* -------------------------------------------------------------------------- */
+/*  Result panel                                                              */
+/* -------------------------------------------------------------------------- */
+
+export function ResultCard({ title = 'The Result', children, isEmpty }) {
     if (isEmpty) {
         return (
-            <div className="bg-card border border-border rounded-xl h-fit">
-                <div className="py-12 text-center">
-                    <Calculator size={28} className="text-gray-400 mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">Fill in the values and click Calculate</p>
+            <section className="bg-background border border-hairline h-fit">
+                <div className="border-b border-hairline px-5 py-3.5 flex items-baseline gap-3">
+                    <span className="display-num text-[10px] text-muted-foreground">§B</span>
+                    <h2 className="eyebrow-strong text-muted-foreground">Awaiting figures</h2>
                 </div>
-            </div>
+                <div className="py-14 px-6 text-center">
+                    <Calculator size={28} className="text-muted-foreground/50 mx-auto mb-4" aria-hidden="true" />
+                    <p className="font-serif italic text-[16px] text-muted-foreground leading-snug">
+                        Set the values opposite and press <span className="not-italic font-mono text-foreground">Calculate</span>.
+                    </p>
+                    <p className="mt-2 eyebrow">No figures filed</p>
+                </div>
+            </section>
         );
     }
 
     return (
-        <div className="bg-card border border-border rounded-xl overflow-hidden h-fit">
-            <div className="border-b border-border px-6 py-4 border-l-4 border-l-success">
-                <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        <section className="bg-background border border-hairline h-fit">
+            <div className="border-b border-hairline px-5 py-3.5 flex items-baseline gap-3">
+                <span className="display-num text-[10px] text-[hsl(var(--gain))]">§B</span>
+                <h2 className="eyebrow-strong">{title}</h2>
+                <span className="live-dot ml-auto" aria-hidden="true" />
             </div>
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-5 py-5 space-y-5">
                 {children}
             </div>
-        </div>
+        </section>
     );
 }
 
-/**
- * ResultMetric - Individual result display
- * Props: label, value, subValue, variant (default|success|warning|error)
- */
+/* -------------------------------------------------------------------------- */
+/*  Metric tile                                                               */
+/* -------------------------------------------------------------------------- */
+
+const METRIC_VARIANT = {
+    default: {
+        wrap: 'border-l-2 border-foreground/40 bg-muted/30',
+        value: 'text-foreground',
+    },
+    success: {
+        wrap: 'border-l-2 border-[hsl(var(--gain))] bg-[hsl(var(--gain)/0.05)]',
+        value: 'text-[hsl(var(--gain))]',
+    },
+    warning: {
+        wrap: 'border-l-2 border-[hsl(var(--chart-4))] bg-[hsl(var(--chart-4)/0.06)]',
+        value: 'text-[hsl(var(--chart-4))]',
+    },
+    error: {
+        wrap: 'border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)]',
+        value: 'text-[hsl(var(--loss))]',
+    },
+};
+
 export function ResultMetric({ label, value, subValue, variant = 'default' }) {
-    const valueClass = {
-        success: 'text-green-600',
-        warning: 'text-amber-700',
-        error: 'text-red-600',
-        default: 'text-foreground',
-    }[variant];
-
-    const bgClass = {
-        success: 'bg-green-50',
-        warning: 'bg-amber-50',
-        error: 'bg-red-50',
-        default: 'bg-accent',
-    }[variant];
-
+    const v = METRIC_VARIANT[variant] || METRIC_VARIANT.default;
     return (
-        <div className={cn('p-4 rounded-xl space-y-1 border border-transparent hover:border-border transition-colors', bgClass)}>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+        <div className={cn('px-4 py-3.5 space-y-1', v.wrap)}>
+            <p className="eyebrow">{label}</p>
             <motion.p
                 key={value}
-                initial={{ opacity: 0.5, y: 4 }}
+                initial={{ opacity: 0.4, y: 3 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className={cn('text-2xl font-semibold tracking-tight', valueClass)}
+                transition={{ duration: 0.25 }}
+                className={cn(
+                    'font-serif text-[clamp(26px,3.4vw,32px)] leading-[1.05] tracking-tight tabular-nums',
+                    v.value
+                )}
             >
                 {value}
             </motion.p>
             {subValue && (
-                <p className="text-[11px] text-muted-foreground">{subValue}</p>
+                <p className="font-mono text-[11px] text-muted-foreground">{subValue}</p>
             )}
         </div>
     );
 }
 
-/**
- * FormField - Input with label and validation
- * Props: label, name, value, onChange, type, placeholder, prefix, suffix, min, max, step, error, tooltip
- */
+/* -------------------------------------------------------------------------- */
+/*  Form field                                                                */
+/* -------------------------------------------------------------------------- */
+
 export function FormField({
     label, name, value, onChange, type = 'number',
-    placeholder, prefix, suffix, min, max, step, error, tooltip
+    placeholder, prefix, suffix, min, max, step, error, tooltip,
 }) {
     return (
         <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-                <label htmlFor={name} className="text-sm font-medium text-foreground">
+            <div className="flex items-baseline justify-between gap-2">
+                <label htmlFor={name} className="eyebrow-strong">
                     {label}
                 </label>
                 {tooltip && (
-                    <span className="text-[10px] text-muted-foreground bg-accent px-2 py-0.5 rounded-full" title={tooltip}>
+                    <span
+                        className="font-mono text-[10px] text-muted-foreground border border-hairline px-1.5 py-0.5"
+                        title={tooltip}
+                    >
                         {tooltip}
                     </span>
                 )}
             </div>
             <div className="relative">
                 {prefix && (
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[13px] text-muted-foreground pointer-events-none select-none">
                         {prefix}
                     </span>
                 )}
@@ -164,60 +202,81 @@ export function FormField({
                     max={max}
                     step={step}
                     className={cn(
-                        'flex h-10 w-full rounded-lg border bg-background px-3 text-sm text-foreground transition-colors',
-                        'placeholder:text-muted-foreground',
-                        'focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500/20',
-                        'hover:border-gray-300',
-                        'disabled:cursor-not-allowed disabled:opacity-50',
-                        prefix && 'pl-7',
-                        suffix && 'pr-14',
-                        error ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-danger/20' : 'border-border'
+                        'w-full h-11 bg-background border font-mono text-[14px] text-foreground',
+                        'placeholder:text-muted-foreground/60',
+                        'focus:outline-none focus:ring-1 transition-colors',
+                        prefix ? 'pl-7' : 'pl-3',
+                        suffix ? 'pr-16' : 'pr-3',
+                        error
+                            ? 'border-[hsl(var(--loss))] focus:border-[hsl(var(--loss))] focus:ring-[hsl(var(--loss))]'
+                            : 'border-hairline focus:border-foreground focus:ring-foreground'
                     )}
                 />
                 {suffix && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide pointer-events-none select-none bg-accent px-1.5 py-0.5 rounded">
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground pointer-events-none select-none bg-muted/60 px-1.5 py-0.5">
                         {suffix}
                     </span>
                 )}
             </div>
             {error && (
-                <p className="text-xs text-red-600 font-medium flex items-center gap-1">
-                    <Info size={11} /> {error}
+                <p className="flex items-center gap-1.5 text-[11px] font-mono text-[hsl(var(--loss))]">
+                    <AlertCircle size={11} /> {error}
                 </p>
             )}
         </div>
     );
 }
 
-/**
- * BreakdownTable - Year-by-year or detailed breakdown
- * Props: headers, rows, caption
- */
+/* -------------------------------------------------------------------------- */
+/*  Breakdown table                                                           */
+/* -------------------------------------------------------------------------- */
+
 export function BreakdownTable({ headers, rows, caption }) {
     if (!rows || rows.length === 0) return null;
 
     return (
-        <div className="bg-card border border-border rounded-xl overflow-hidden mt-4">
-            <div className="border-b border-border px-6 py-4">
-                <h3 className="text-sm font-semibold text-foreground">Detailed Breakdown</h3>
-                {caption && <p className="text-xs text-muted-foreground mt-0.5">{caption}</p>}
+        <section className="bg-background border border-hairline">
+            <div className="border-b border-hairline px-5 py-3.5 flex items-baseline gap-3">
+                <span className="display-num text-[10px] text-muted-foreground">§D</span>
+                <div>
+                    <h3 className="eyebrow-strong">Detailed Breakdown</h3>
+                    {caption && (
+                        <p className="font-serif italic text-[13px] text-muted-foreground leading-snug mt-0.5">
+                            {caption}
+                        </p>
+                    )}
+                </div>
             </div>
-            <div className="overflow-x-auto max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-muted [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
-                <table className="w-full text-sm">
-                    <thead className="sticky top-0 z-10">
-                        <tr className="border-b border-border bg-muted">
+            <div className="overflow-x-auto max-h-80 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-muted/50 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full">
+                <table className="w-full text-[13px]">
+                    <thead className="sticky top-0 z-10 bg-background">
+                        <tr className="border-b-2 border-foreground/80">
                             {headers.map((header, i) => (
-                                <th key={i} className="py-3 px-6 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                                <th
+                                    key={i}
+                                    className="py-2.5 px-5 text-left eyebrow"
+                                >
                                     {header}
                                 </th>
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-card-border">
+                    <tbody className="divide-y divide-hairline">
                         {rows.map((row, i) => (
-                            <tr key={i} className="hover:bg-accent transition-colors even:bg-muted/50">
+                            <tr
+                                key={i}
+                                className="hover:bg-muted/40 transition-colors"
+                            >
                                 {row.map((cell, j) => (
-                                    <td key={j} className="py-3 px-6 text-muted-foreground">
+                                    <td
+                                        key={j}
+                                        className={cn(
+                                            'py-2.5 px-5 tabular-nums',
+                                            j === 0
+                                                ? 'font-serif italic text-foreground'
+                                                : 'font-mono text-foreground/85'
+                                        )}
+                                    >
                                         {cell}
                                     </td>
                                 ))}
@@ -226,38 +285,48 @@ export function BreakdownTable({ headers, rows, caption }) {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
     );
 }
 
-/**
- * DisclaimerBanner - For tax and legal disclaimers
- * Props: title, message, variant (warning|info|default)
- */
-export function DisclaimerBanner({ title = 'Disclaimer', message, variant = 'warning' }) {
+/* -------------------------------------------------------------------------- */
+/*  Disclaimer                                                                */
+/* -------------------------------------------------------------------------- */
+
+const DISCLAIMER_VARIANT = {
+    warning: { border: 'border-[hsl(var(--chart-4))]', tint: 'bg-[hsl(var(--chart-4)/0.05)]', icon: 'text-[hsl(var(--chart-4))]' },
+    info:    { border: 'border-[hsl(var(--accent))]',  tint: 'bg-[hsl(var(--accent)/0.05)]',  icon: 'text-[hsl(var(--accent))]' },
+    default: { border: 'border-foreground/70',         tint: 'bg-muted/30',                   icon: 'text-muted-foreground' },
+};
+
+export function DisclaimerBanner({ title = 'Editor’s note', message, variant = 'warning' }) {
+    const v = DISCLAIMER_VARIANT[variant] || DISCLAIMER_VARIANT.default;
     return (
-        <div className="flex items-start gap-2.5 p-3 bg-accent border border-border rounded-lg text-xs text-muted-foreground leading-relaxed mt-4">
-            <Info size={13} className="text-gray-400 flex-shrink-0 mt-0.5" />
+        <div className={cn('mt-4 border-l-2 px-4 py-3 flex items-start gap-3', v.border, v.tint)}>
+            <Info size={13} className={cn('flex-shrink-0 mt-1', v.icon)} aria-hidden="true" />
             <div>
-                <p className="font-medium text-muted-foreground">{title}</p>
-                <p className="mt-0.5">{message}</p>
+                <p className="eyebrow-strong">{title}</p>
+                <p className="mt-1 font-serif italic text-[14px] text-muted-foreground leading-snug">
+                    {message}
+                </p>
             </div>
         </div>
     );
 }
 
-/**
- * ResultSkeleton - Loading placeholder
- */
+/* -------------------------------------------------------------------------- */
+/*  Skeleton                                                                  */
+/* -------------------------------------------------------------------------- */
+
 export function ResultSkeleton() {
     return (
-        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-32" />
-        </div>
+        <section className="bg-background border border-hairline p-5 space-y-4">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-9 w-40" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-9 w-40" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-9 w-40" />
+        </section>
     );
 }

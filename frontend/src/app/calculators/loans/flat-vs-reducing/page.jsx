@@ -6,9 +6,38 @@ import {
     InputCard,
     ResultCard
 } from '@/components/calculators/framework/CalculatorComponents';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { AlertCircle } from 'lucide-react';
 import { calculatorService, formatCurrency, formatPercentage } from '@/lib/calculator.service';
 import { useState } from 'react';
+
+function ComparisonPanel({ title, items, highlighted }) {
+    return (
+        <div
+            className={cn(
+                'bg-background border px-4 py-4 space-y-2.5',
+                highlighted ? 'border-[hsl(var(--gain))] border-l-[3px]' : 'border-hairline'
+            )}
+        >
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-hairline">
+                <p className="eyebrow-strong">{title}</p>
+                {highlighted && (
+                    <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[hsl(var(--gain))]">
+                        Better
+                    </span>
+                )}
+            </div>
+            {items.map((it) => (
+                <div key={it.label} className="flex items-baseline justify-between gap-3 text-[12px]">
+                    <span className="font-mono uppercase tracking-[0.16em] text-[10px] text-muted-foreground">
+                        {it.label}
+                    </span>
+                    <span className="font-mono tabular-nums text-foreground">{it.value}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
 
 export default function FlatVsReducingCalculatorPage() {
     const [inputs, setInputs] = useState({
@@ -96,77 +125,59 @@ export default function FlatVsReducingCalculatorPage() {
                 />
 
                 {error && (
-                    <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                        {error}
+                    <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-2.5 flex items-start gap-2">
+                        <AlertCircle size={13} className="text-[hsl(var(--loss))] flex-shrink-0 mt-0.5" />
+                        <p className="font-mono text-[12px] text-[hsl(var(--loss))] leading-snug">{error}</p>
                     </div>
                 )}
             </InputCard>
 
             <div className="space-y-4">
-                <ResultCard title="Comparison" isEmpty={!result}>
+                <ResultCard title="The Comparison" isEmpty={!result}>
                     {result && (
-                        <div className="space-y-4">
-                            {/* Recommendation */}
-                            <div className={`p-4 rounded-lg text-center ${result.reducingIsBetter
-                                    ? 'bg-green-50 dark:bg-green-900/20 border border-green-200'
-                                    : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200'
-                                }`}>
-                                <p className="text-sm font-medium">Better Option</p>
-                                <p className="text-lg font-bold">
+                        <div className="space-y-5">
+                            {/* Verdict */}
+                            <div className="border-l-2 border-[hsl(var(--gain))] bg-[hsl(var(--gain)/0.05)] px-4 py-3.5">
+                                <p className="eyebrow">The verdict</p>
+                                <p className="font-serif text-[28px] leading-[1.05] tracking-tight text-foreground mt-0.5">
                                     {result.reducingIsBetter ? 'Reducing Balance' : 'Flat Rate'}
                                 </p>
-                                <p className="text-sm text-green-600 dark:text-green-400">
-                                    Save {formatCurrency(result.savings)}
+                                <p className="mt-1 font-mono text-[12px] text-[hsl(var(--gain))] tabular-nums">
+                                    Saves {formatCurrency(result.savings)} over the tenure
                                 </p>
                             </div>
 
                             {/* Side by side */}
                             <div className="grid grid-cols-2 gap-3">
-                                <Card className={!result.reducingIsBetter ? 'border-green-500' : ''}>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm">Flat Rate</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span>EMI</span>
-                                            <span className="font-medium">{formatCurrency(result.flatEmi)}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Interest</span>
-                                            <span className="font-medium">{formatCurrency(result.flatTotalInterest)}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Total</span>
-                                            <span className="font-medium">{formatCurrency(result.flatTotalPayment)}</span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className={result.reducingIsBetter ? 'border-green-500' : ''}>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm">Reducing Balance</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span>EMI</span>
-                                            <span className="font-medium">{formatCurrency(result.reducingEmi)}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Interest</span>
-                                            <span className="font-medium">{formatCurrency(result.reducingTotalInterest)}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Total</span>
-                                            <span className="font-medium">{formatCurrency(result.reducingTotalPayment)}</span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                <ComparisonPanel
+                                    title="Flat Rate"
+                                    highlighted={!result.reducingIsBetter}
+                                    items={[
+                                        { label: 'EMI', value: formatCurrency(result.flatEmi) },
+                                        { label: 'Interest', value: formatCurrency(result.flatTotalInterest) },
+                                        { label: 'Total', value: formatCurrency(result.flatTotalPayment) },
+                                    ]}
+                                />
+                                <ComparisonPanel
+                                    title="Reducing Balance"
+                                    highlighted={result.reducingIsBetter}
+                                    items={[
+                                        { label: 'EMI', value: formatCurrency(result.reducingEmi) },
+                                        { label: 'Interest', value: formatCurrency(result.reducingTotalInterest) },
+                                        { label: 'Total', value: formatCurrency(result.reducingTotalPayment) },
+                                    ]}
+                                />
                             </div>
 
-                            <div className="p-3 bg-muted/50 rounded-md text-sm">
-                                <p className="font-medium">Effective Interest Rate:</p>
-                                <p className="text-muted-foreground mt-1">
-                                    A {inputs.annualRate}% flat rate ≈ {formatPercentage(result.effectiveReducingRate)} reducing balance rate
+                            <div className="border-l-2 border-foreground/70 pl-4 py-1">
+                                <p className="eyebrow-strong mb-1">Effective rate</p>
+                                <p className="font-serif italic text-[14px] text-muted-foreground leading-snug">
+                                    A <span className="not-italic font-mono text-foreground tabular-nums">{inputs.annualRate}%</span> flat
+                                    rate is equivalent to about{' '}
+                                    <span className="not-italic font-mono text-foreground tabular-nums">
+                                        {formatPercentage(result.effectiveReducingRate)}
+                                    </span>{' '}
+                                    on a reducing balance basis.
                                 </p>
                             </div>
                         </div>

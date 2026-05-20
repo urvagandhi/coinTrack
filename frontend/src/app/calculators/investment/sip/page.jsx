@@ -8,7 +8,7 @@ import {
     ResultCard,
     ResultMetric
 } from '@/components/calculators/framework/CalculatorComponents';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertCircle } from 'lucide-react';
 import { calculatorService, formatCurrency, formatPercentage } from '@/lib/calculator.service';
 import { useState } from 'react';
 import {
@@ -25,7 +25,10 @@ import {
     YAxis
 } from 'recharts';
 
-const COLORS = ['#3b82f6', '#22c55e'];
+// Editorial chart palette: invested = foreground, returns = gain
+const INVESTED_COLOR = 'hsl(var(--foreground))';
+const RETURNS_COLOR = 'hsl(var(--gain))';
+const COLORS = [INVESTED_COLOR, RETURNS_COLOR];
 
 export default function SipCalculatorPage() {
     const [inputs, setInputs] = useState({
@@ -139,8 +142,9 @@ export default function SipCalculatorPage() {
                 />
 
                 {error && (
-                    <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                        {error}
+                    <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-2.5 flex items-start gap-2">
+                        <AlertCircle size={13} className="text-[hsl(var(--loss))] flex-shrink-0 mt-0.5" />
+                        <p className="font-mono text-[12px] text-[hsl(var(--loss))] leading-snug">{error}</p>
                     </div>
                 )}
             </InputCard>
@@ -178,17 +182,40 @@ export default function SipCalculatorPage() {
                                         data={pieData}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={90}
+                                        innerRadius={62}
+                                        outerRadius={92}
                                         paddingAngle={2}
                                         dataKey="value"
+                                        stroke="hsl(var(--background))"
+                                        strokeWidth={2}
                                     >
                                         {pieData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip formatter={(value) => formatCurrency(value)} />
-                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                    <Tooltip
+                                        formatter={(value) => formatCurrency(value)}
+                                        contentStyle={{
+                                            background: 'hsl(var(--background))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: 0,
+                                            fontSize: 12,
+                                            fontFamily: 'var(--font-mono)',
+                                        }}
+                                        labelStyle={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.18em', fontSize: 10 }}
+                                    />
+                                    <Legend
+                                        verticalAlign="bottom"
+                                        height={36}
+                                        iconType="square"
+                                        wrapperStyle={{
+                                            fontSize: 11,
+                                            fontFamily: 'var(--font-mono)',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.18em',
+                                            color: 'hsl(var(--muted-foreground))',
+                                        }}
+                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -198,52 +225,81 @@ export default function SipCalculatorPage() {
 
             {/* Growth Chart */}
             {chartData.length > 0 && (
-                <div className="lg:col-span-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Investment Growth Over Time</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="h-72">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="colorInv" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
-                                            </linearGradient>
-                                            <linearGradient id="colorRet" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-                                                <stop offset="95%" stopColor="#22c55e" stopOpacity={0.1} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                        <XAxis dataKey="year" className="text-xs" />
-                                        <YAxis tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`} className="text-xs" />
-                                        <Tooltip formatter={(value) => formatCurrency(value)} />
-                                        <Legend />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="investment"
-                                            stackId="1"
-                                            name="Investment"
-                                            stroke="#3b82f6"
-                                            fill="url(#colorInv)"
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="returns"
-                                            stackId="1"
-                                            name="Returns"
-                                            stroke="#22c55e"
-                                            fill="url(#colorRet)"
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <section className="lg:col-span-2 bg-background border border-hairline">
+                    <div className="border-b border-hairline px-5 py-3.5 flex items-baseline gap-3">
+                        <span className="display-num text-[10px] text-[hsl(var(--accent))]">§C</span>
+                        <h3 className="eyebrow-strong">Investment Growth Over Time</h3>
+                    </div>
+                    <div className="px-5 py-5">
+                        <div className="h-72">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="colorInv" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={INVESTED_COLOR} stopOpacity={0.45} />
+                                            <stop offset="95%" stopColor={INVESTED_COLOR} stopOpacity={0.05} />
+                                        </linearGradient>
+                                        <linearGradient id="colorRet" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={RETURNS_COLOR} stopOpacity={0.45} />
+                                            <stop offset="95%" stopColor={RETURNS_COLOR} stopOpacity={0.05} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
+                                    <XAxis
+                                        dataKey="year"
+                                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontFamily: 'var(--font-mono)' }}
+                                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                                        tickLine={false}
+                                    />
+                                    <YAxis
+                                        tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`}
+                                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontFamily: 'var(--font-mono)' }}
+                                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                                        tickLine={false}
+                                    />
+                                    <Tooltip
+                                        formatter={(value) => formatCurrency(value)}
+                                        contentStyle={{
+                                            background: 'hsl(var(--background))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: 0,
+                                            fontSize: 12,
+                                            fontFamily: 'var(--font-mono)',
+                                        }}
+                                        labelStyle={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.18em', fontSize: 10 }}
+                                    />
+                                    <Legend
+                                        wrapperStyle={{
+                                            fontSize: 11,
+                                            fontFamily: 'var(--font-mono)',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.18em',
+                                            color: 'hsl(var(--muted-foreground))',
+                                        }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="investment"
+                                        stackId="1"
+                                        name="Invested"
+                                        stroke={INVESTED_COLOR}
+                                        strokeWidth={1.5}
+                                        fill="url(#colorInv)"
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="returns"
+                                        stackId="1"
+                                        name="Returns"
+                                        stroke={RETURNS_COLOR}
+                                        strokeWidth={1.5}
+                                        fill="url(#colorRet)"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </section>
             )}
 
             {/* Breakdown Table */}

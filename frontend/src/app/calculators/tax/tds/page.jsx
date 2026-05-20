@@ -115,8 +115,8 @@ export default function TdsCalculatorPage() {
                 )}
 
                 {error && (
-                    <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                        {error}
+                    <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-2.5">
+                        <p className="font-mono text-[12px] text-[hsl(var(--loss))] leading-snug">{error}</p>
                     </div>
                 )}
             </InputCard>
@@ -125,15 +125,15 @@ export default function TdsCalculatorPage() {
                 {result && (
                     <div className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                                <p className="text-xs text-muted-foreground">TDS Deducted</p>
-                                <p className="text-xl font-bold text-red-600">
+                            <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-3">
+                                <p className="eyebrow">TDS Deducted</p>
+                                <p className="font-serif text-[22px] leading-[1.05] tracking-tight tabular-nums text-[hsl(var(--loss))] mt-0.5">
                                     {formatCurrency(result.tdsAmount)}
                                 </p>
                             </div>
-                            <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                                <p className="text-xs text-muted-foreground">Net Payment</p>
-                                <p className="text-xl font-bold text-green-600">
+                            <div className="border-l-2 border-[hsl(var(--gain))] bg-[hsl(var(--gain)/0.05)] px-3 py-3">
+                                <p className="eyebrow">Net Payment</p>
+                                <p className="font-serif text-[22px] leading-[1.05] tracking-tight tabular-nums text-[hsl(var(--gain))] mt-0.5">
                                     {formatCurrency(result.netPayment)}
                                 </p>
                             </div>

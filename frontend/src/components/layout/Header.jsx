@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { LogOut, Menu, UserCircle } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -78,6 +79,17 @@ export default function Header({ onMenuClick }) {
                 >
                     <Menu className="h-5 w-5" />
                 </button>
+
+                {/* Logo (mobile only — desktop has it in sidebar) */}
+                <Link
+                    href="/dashboard"
+                    className="md:hidden flex items-center justify-center px-3 border-r border-border"
+                    aria-label="coinTrack home"
+                >
+                    <span className="relative h-7 w-7 block">
+                        <Image src="/coinTrack.png" alt="coinTrack" fill className="object-contain" />
+                    </span>
+                </Link>
 
                 {/* Section identifier */}
                 <div className="flex items-center gap-4 px-4 md:px-8 py-3 flex-1 min-w-0">

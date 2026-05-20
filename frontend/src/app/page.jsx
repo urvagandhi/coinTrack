@@ -1,517 +1,564 @@
+// src/app/page.jsx
 'use client';
 
+import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useModal } from '@/contexts/ModalContext';
-import { motion } from 'framer-motion';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import Check from 'lucide-react/dist/esm/icons/check';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import Moon from 'lucide-react/dist/esm/icons/moon';
-import Shield from 'lucide-react/dist/esm/icons/shield';
-import Sun from 'lucide-react/dist/esm/icons/sun';
-import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
-import Zap from 'lucide-react/dist/esm/icons/zap';
+import {
+    ArrowRight,
+    ArrowUpRight,
+    BarChart3,
+    Check,
+    Layers,
+    Lock,
+    ShieldCheck,
+    Sparkles,
+    TrendingUp,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+function useNow() {
+    const [now, setNow] = useState(() => new Date());
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+        setNow(new Date());
+        const t = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(t);
+    }, []);
+    return { now, mounted };
+}
+
+const FEATURES = [
+    {
+        idx: 'I',
+        icon: TrendingUp,
+        kicker: 'Coverage',
+        title: 'Real-time tracking',
+        body: 'Live market data across every connected broker, refreshed on the tick — without polling rituals or stale snapshots.',
+    },
+    {
+        idx: 'II',
+        icon: ShieldCheck,
+        kicker: 'Trust',
+        title: 'Mandatory 2FA',
+        body: 'TOTP-only authentication, encrypted credentials, and short-lived session tokens. Security is not an afterthought.',
+    },
+    {
+        idx: 'III',
+        icon: BarChart3,
+        kicker: 'Insight',
+        title: 'Editorial analytics',
+        body: 'Holdings, P&L, MF timelines, and broker funds rendered with the clarity of a printed quarterly — no chart-junk, no noise.',
+    },
+];
+
+const PRICING = [
+    {
+        title: 'Starter',
+        index: 'I',
+        price: 'Free',
+        unit: 'forever',
+        features: ['Real-time tracking', 'Basic analytics', 'Up to 3 portfolios', 'Email support'],
+        recommended: false,
+        cta: 'Open Account',
+    },
+    {
+        title: 'Pro',
+        index: 'II',
+        price: '$12',
+        unit: 'per month',
+        features: ['Unlimited portfolios', 'Advanced AI insights', 'Priority support', 'Tax reports', 'API access'],
+        recommended: true,
+        cta: 'Subscribe',
+    },
+    {
+        title: 'Enterprise',
+        index: 'III',
+        price: 'Custom',
+        unit: 'on request',
+        features: ['Dedicated account manager', 'Custom integrations', 'White-label reports', 'SLA support'],
+        recommended: false,
+        cta: 'Contact Sales',
+    },
+];
+
+const BROKERS = ['Zerodha', 'Upstox', 'Angel One'];
+
 export default function HomePage() {
-  const { user, loading } = useAuth();
-  const { openModal } = useModal();
-  const [isDark, setIsDark] = useState(false);
+    const { user, loading } = useAuth();
+    const { openModal } = useModal();
+    const { now, mounted } = useNow();
 
-  // Initialize theme
-  useEffect(() => {
-    // Helper to get cookie
-    const getCookie = (name) => {
-      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-      return match ? match[2] : null;
-    };
+    const dateString = now.toLocaleDateString('en-IN', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+    const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const year = now.getFullYear();
 
-    const themeCookie = getCookie('theme');
+    const primaryHref = user ? '/dashboard' : '/register';
+    const primaryLabel = user ? 'Open Dashboard' : 'Open Account — Free';
 
-    // Check cookie first, then system preference
-    if (themeCookie === 'dark' || (!themeCookie && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-      setIsDark(true);
-    } else {
-      document.documentElement.classList.remove('dark');
-      setIsDark(false);
-    }
-  }, []);
+    return (
+        <div className="min-h-screen bg-background text-foreground flex flex-col">
+            {/* Masthead */}
+            <header className="border-b border-hairline sticky top-0 z-30 bg-background/92 backdrop-blur-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+                    <Link href="/" className="flex items-center gap-2.5 group">
+                        <span className="relative h-9 w-9 block transition-transform duration-300 group-hover:scale-110">
+                            <Image src="/coinTrack.png" alt="coinTrack" fill priority className="object-contain" />
+                        </span>
+                        <span className="flex items-baseline gap-0.5">
+                            <span className="font-serif text-[28px] leading-none tracking-tight">coin</span>
+                            <span className="display-serif italic text-[28px] leading-none text-[hsl(var(--accent))]">Track</span>
+                        </span>
+                        <span className="hidden sm:inline display-num text-[10px] text-muted-foreground ml-2 self-end pb-1">VOL.04</span>
+                    </Link>
 
-  const toggleTheme = () => {
-    const newTheme = isDark ? 'light' : 'dark';
+                    {/* Nav */}
+                    <nav className="hidden md:flex items-center gap-1">
+                        {[
+                            { label: 'Features', href: '#features' },
+                            { label: 'Pricing', href: '#pricing' },
+                            { label: 'Brokers', href: '#brokers' },
+                            { label: 'Calculators', href: '/calculators' },
+                        ].map((item) => (
+                            <Link
+                                key={item.label}
+                                href={item.href}
+                                className="px-3 py-1.5 text-[12px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
+                    </nav>
 
-    if (newTheme === 'light') {
-      document.documentElement.classList.remove('dark');
-      setIsDark(false);
-    } else {
-      document.documentElement.classList.add('dark');
-      setIsDark(true);
-    }
-
-    // Set cookie for 1 year
-    document.cookie = `theme=${newTheme}; path=/; max-age=31536000`;
-  };
-
-
-
-  const features = [
-    {
-      icon: <TrendingUp className="w-6 h-6 text-purple-600" />,
-      title: "Real-time Tracking",
-      description: "Monitor your portfolio performance in real-time with live market data updates."
-    },
-    {
-      icon: <Shield className="w-6 h-6 text-purple-600" />,
-      title: "Bank-Grade Security",
-      description: "Your data is encrypted using advanced security protocols. We prioritize your privacy and safety."
-    },
-    {
-      icon: <Zap className="w-6 h-6 text-purple-600" />,
-      title: "Smart Analytics",
-      description: "Get deep insights into your investing habits and discover new opportunities for growth."
-    }
-  ];
-
-  const pricing = [
-    {
-      title: "Starter",
-      price: "Free",
-      features: ["Real-time tracking", "Basic analytics", "Up to 3 portfolios", "Email support"],
-      recommended: false
-    },
-    {
-      title: "Pro",
-      price: "$12/mo",
-      features: ["Unlimited portfolios", "Advanced AI insights", "Priority support", "Tax reports", "API Access"],
-      recommended: true
-    },
-    {
-      title: "Enterprise",
-      price: "Custom",
-      features: ["Dedicated account manager", "Custom integration", "White-label reports", "SLA support"],
-      recommended: false
-    }
-  ];
-
-  // Animation Variants
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-        ease: [0.22, 1, 0.36, 1] // Smooth custom bezier
-      }
-    }
-  };
-
-  const stagger = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0 } }
-  };
-
-  const fadeIn = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.8 } }
-  };
-
-  return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
-
-      {/* Header */}
-      <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="fixed top-0 w-full z-50 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-gray-100/50 dark:border-gray-800/50"
-      >
-        <div className="w-full py-4 px-4 sm:px-8 flex justify-between items-center max-w-7xl mx-auto">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 relative transition-transform group-hover:scale-110 duration-300">
-              <Image
-                src="/coinTrack.png"
-                alt="coinTrack logo"
-                fill
-                sizes="40px"
-                className="object-contain"
-              />
-            </div>
-            <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
-              coinTrack
-            </span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-1 p-1 rounded-full bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md">
-            <Link
-              href="/calculators"
-              className="px-5 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full transition-all duration-300 flex items-center gap-1"
-            >
-              Calculators
-            </Link>
-            {['Features', 'Pricing', 'About'].map((item) => (
-              <a
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="px-5 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-white dark:hover:bg-gray-800 rounded-full transition-all duration-300"
-              >
-                {item}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={toggleTheme}
-              className="p-2.5 rounded-full bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-            {loading ? (
-              <div className="w-24 h-10 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
-            ) : user ? (
-              <Link
-                href="/dashboard"
-                className="px-6 py-2.5 rounded-full bg-purple-600 text-white font-medium hover:bg-purple-700 transition-all flex items-center gap-2 shadow-lg hover:shadow-purple-600/25 ring-2 ring-purple-600 ring-offset-2 ring-offset-white dark:ring-offset-gray-900"
-              >
-                Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="px-6 py-2.5 rounded-full text-gray-600 dark:text-gray-300 font-medium hover:text-purple-600 dark:hover:text-white hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/register"
-                  className="hidden sm:flex px-6 py-2.5 rounded-full bg-purple-600 text-white font-medium hover:bg-purple-700 transition-all shadow-lg hover:shadow-purple-600/25 active:scale-95"
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </motion.header>
-
-      {/* Hero Section */}
-      <main className="flex-grow pt-24">
-        <section className="relative px-4 sm:px-8 py-20 lg:py-32 overflow-hidden">
-          {/* Background Gradients */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[100px] -z-10 translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[100px] -z-10 -translate-x-1/2 translate-y-1/2"></div>
-
-          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8 text-center lg:text-left">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="text-5xl sm:text-7xl font-extrabold tracking-tight leading-[1.1]"
-              >
-                Track your <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500">
-                  Portfolio  wealth
-                </span>
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-xl text-gray-600 dark:text-gray-400 max-w-lg mx-auto lg:mx-0 leading-relaxed"
-              >
-                The most advanced portfolio tracker. Real-time updates, deep analytics, and secure data encryption.
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
-              >
-                <Link
-                  href={user ? "/dashboard" : "/register"}
-                  className="px-8 py-4 rounded-full bg-purple-600 text-white text-lg font-bold hover:bg-purple-700 transition-all shadow-xl hover:shadow-purple-600/30 flex items-center justify-center gap-2"
-                >
-                  Get Started Free
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-                <a
-                  href="#demo"
-                  className="px-8 py-4 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white text-lg font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex justify-center"
-                >
-                  Watch Demo
-                </a>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="pt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-8 text-sm text-gray-500 font-medium"
-              >
-                <div className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-green-500" />
-                  <span>Bank-grade Security</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-purple-500" />
-                  <span>Global Coverage</span>
-                </div>
-              </motion.div>
-            </div>
-
-            <div className="relative hidden lg:block">
-              {/* Abstract UI Mockup */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.7 }}
-                className="bg-gray-900/5 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-2xl relative z-20"
-              >
-                <div className="flex justify-between items-center mb-8">
-                  <div>
-                    <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded-full mb-2"></div>
-                    <div className="h-2 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                  </div>
-                  <div className="h-14 w-14 rounded-xl flex items-center justify-center">
-                    <div className="w-16 h-16 relative">
-                      <Image
-                        src="/coinTrack.png"
-                        alt="coinTrack logo"
-                        fill
-                        sizes="64px"
-                        className="object-contain"
-                      />
+                    <div className="flex items-center gap-2">
+                        <ThemeToggle />
+                        {loading ? (
+                            <div className="w-24 h-9 bg-muted animate-pulse" />
+                        ) : user ? (
+                            <Link href="/dashboard">
+                                <button className="ed-btn ed-btn-primary h-9 px-4">
+                                    Dashboard
+                                    <ArrowRight size={13} />
+                                </button>
+                            </Link>
+                        ) : (
+                            <>
+                                <Link href="/login" className="hidden sm:block">
+                                    <button className="ed-btn ed-btn-ghost h-9 px-4">Sign In</button>
+                                </Link>
+                                <Link href="/register">
+                                    <button className="ed-btn ed-btn-primary h-9 px-4">Sign Up</button>
+                                </Link>
+                            </>
+                        )}
                     </div>
-                  </div>
                 </div>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <motion.div
-                      key={i}
-                      whileHover={{ scale: 1.02, x: 5 }}
-                      className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm cursor-default border border-transparent hover:border-purple-200 dark:hover:border-purple-900 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-full ${i === 1 ? 'bg-orange-100 text-orange-600' : i === 2 ? 'bg-purple-100 text-purple-600' : 'bg-pink-100 text-pink-600'} flex items-center justify-center font-bold`}>
-                          {i === 1 ? 'B' : i === 2 ? 'E' : 'S'}
+
+                {/* Dateline strip */}
+                <div className="border-t border-hairline bg-muted/30">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-1.5 flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                        <span>The Daily Ledger · A Personal Finance Quarterly</span>
+                        <div className="hidden sm:flex items-center gap-2">
+                            <span className="live-dot" />
+                            <span className="display-num tabular-nums text-foreground" suppressHydrationWarning>{timeString}</span>
+                            <span>IST</span>
+                            <span className="text-muted-foreground/40">/</span>
+                            <span className="font-serif italic normal-case tracking-normal text-[12px] text-foreground" suppressHydrationWarning>
+                                {mounted ? dateString : ''}
+                            </span>
                         </div>
-                        <div>
-                          <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded-full mb-1"></div>
-                          <div className="h-2 w-12 bg-gray-100 dark:bg-gray-800 rounded-full"></div>
+                    </div>
+                </div>
+            </header>
+
+            <main className="flex-grow">
+
+                {/* HERO — newspaper cover */}
+                <section className="border-b border-hairline">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-12 lg:py-20">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+                            <div className="lg:col-span-7">
+                                <div className="flex items-baseline gap-3 mb-6">
+                                    <span className="index-num tnum text-[11px]">[ 001 ]</span>
+                                    <span className="eyebrow">Cover Story · Edition {year}</span>
+                                </div>
+
+                                <h1 className="font-serif text-[clamp(48px,8vw,96px)] leading-[0.95] tracking-tight text-foreground">
+                                    Your portfolio,
+                                    <br />
+                                    <span className="italic text-muted-foreground">set in clear</span>
+                                    <span className="italic"> type.</span>
+                                </h1>
+
+                                <p className="mt-7 font-serif italic text-[18px] sm:text-[20px] leading-snug text-muted-foreground max-w-2xl">
+                                    coinTrack is the personal finance quarterly written for the modern Indian investor —
+                                    live broker integration, encrypted by design, and rendered with the patience of a printed page.
+                                </p>
+
+                                <div className="mt-8 flex flex-wrap gap-3">
+                                    <Link href={primaryHref}>
+                                        <button className="ed-btn ed-btn-primary h-12 px-6 text-[13px]">
+                                            {primaryLabel}
+                                            <ArrowRight size={14} />
+                                        </button>
+                                    </Link>
+                                    <a href="#features">
+                                        <button className="ed-btn ed-btn-ghost h-12 px-6 text-[13px]">
+                                            Read the Edition
+                                        </button>
+                                    </a>
+                                </div>
+
+                                {/* Trust strip */}
+                                <div className="mt-10 pt-6 border-t border-hairline grid grid-cols-2 sm:grid-cols-3 gap-6 max-w-2xl">
+                                    <div>
+                                        <p className="eyebrow mb-1">Subscribers</p>
+                                        <p className="display-num text-[24px] text-foreground">10,000<span className="text-muted-foreground">+</span></p>
+                                    </div>
+                                    <div>
+                                        <p className="eyebrow mb-1">Vendors</p>
+                                        <p className="display-num text-[24px] text-foreground">{BROKERS.length}</p>
+                                    </div>
+                                    <div className="col-span-2 sm:col-span-1">
+                                        <p className="eyebrow mb-1">Security</p>
+                                        <p className="font-serif italic text-[18px] text-foreground">Mandatory 2FA</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right column — mock dashboard card */}
+                            <aside className="lg:col-span-5 hidden lg:block">
+                                <div className="border border-hairline bg-card p-5 sticky top-32">
+                                    <div className="flex items-baseline justify-between mb-4">
+                                        <span className="eyebrow">Today&apos;s Print · §002</span>
+                                        <span className="display-num text-[10px] text-muted-foreground">FOLIO A1</span>
+                                    </div>
+                                    <p className="font-serif italic text-[14px] text-muted-foreground mb-1">Total Net Worth</p>
+                                    <p className="font-serif text-[56px] leading-none tracking-tight text-foreground tabular-nums">
+                                        ₹14,82,300
+                                    </p>
+                                    <div className="mt-2 flex items-baseline gap-3">
+                                        <span className="font-mono text-[13px] text-[hsl(var(--gain))]">+₹38,420</span>
+                                        <span className="ed-pill ed-pill-gain text-[10px]">+2.66%</span>
+                                        <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">today</span>
+                                    </div>
+
+                                    <div className="mt-5 pt-4 border-t border-hairline">
+                                        <p className="eyebrow mb-3">Holdings · top 3</p>
+                                        <ul className="space-y-2.5">
+                                            {[
+                                                { sym: 'RELIANCE', q: 50, val: '₹1,42,500', pct: '+1.2%', gain: true },
+                                                { sym: 'INFY', q: 120, val: '₹2,28,000', pct: '+3.8%', gain: true },
+                                                { sym: 'HDFCBANK', q: 80, val: '₹1,28,000', pct: '−0.4%', gain: false },
+                                            ].map((row) => (
+                                                <li key={row.sym} className="flex items-center justify-between text-[12px] font-mono">
+                                                    <span className="text-foreground">{row.sym}</span>
+                                                    <div className="flex items-baseline gap-3">
+                                                        <span className="text-muted-foreground tabular-nums">{row.val}</span>
+                                                        <span className={`tabular-nums ${row.gain ? 'text-[hsl(var(--gain))]' : 'text-[hsl(var(--loss))]'}`}>
+                                                            {row.pct}
+                                                        </span>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    <div className="mt-5 pt-3 border-t border-hairline flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                                        <span className="live-dot" />
+                                        <span>Live · NSE · BSE</span>
+                                    </div>
+                                </div>
+                            </aside>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded-full mb-1 ml-auto"></div>
-                        <div className="h-2 w-10 bg-green-100 text-green-600 rounded-full ml-auto"></div>
-                      </div>
-                    </motion.div>
-                  ))}
+                    </div>
+                </section>
+
+                {/* BROKERS */}
+                <section id="brokers" className="border-b border-hairline bg-muted/30">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-12">
+                        <div className="flex flex-col md:flex-row md:items-baseline md:justify-between gap-4 mb-6">
+                            <div className="flex items-baseline gap-3">
+                                <span className="index-num tnum text-[11px]">[ 002 ]</span>
+                                <p className="eyebrow">Connected Vendors · Hexagonal Architecture</p>
+                            </div>
+                            <p className="font-serif italic text-[14px] text-muted-foreground">
+                                Three brokers. One canonical interface.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 border border-hairline divide-y sm:divide-y-0 sm:divide-x divide-hairline bg-card">
+                            {BROKERS.map((b, i) => (
+                                <div key={b} className="px-6 py-6 flex items-baseline justify-between">
+                                    <div>
+                                        <p className="display-num text-[10px] text-muted-foreground mb-1">003.{i + 1}</p>
+                                        <p className="font-serif text-[24px] text-foreground">{b}</p>
+                                    </div>
+                                    <span className="ed-pill ed-pill-gain text-[10px]">
+                                        <span className="live-dot" />
+                                        Live
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* FEATURES */}
+                <section id="features" className="border-b border-hairline">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-16 lg:py-24">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mb-10">
+                            <div className="lg:col-span-5">
+                                <div className="flex items-baseline gap-3 mb-4">
+                                    <span className="index-num tnum text-[11px]">[ 003 ]</span>
+                                    <p className="eyebrow">Why coinTrack</p>
+                                </div>
+                                <h2 className="font-serif text-[40px] sm:text-[52px] leading-[1.02] tracking-tight">
+                                    Built like a quarterly,
+                                    <br />
+                                    <span className="italic text-muted-foreground">live like a ticker.</span>
+                                </h2>
+                            </div>
+                            <p className="lg:col-span-7 font-serif italic text-[17px] text-muted-foreground leading-snug lg:pt-12">
+                                Every screen is composed with the same editorial discipline you would expect from
+                                a Sunday financial paper — only it ticks in real time, signs you in with TOTP,
+                                and never misplaces a holding.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 border-t border-hairline">
+                            {FEATURES.map((f) => {
+                                const Icon = f.icon;
+                                return (
+                                    <article
+                                        key={f.idx}
+                                        className="group border-b md:border-b-0 md:border-r last:border-r-0 border-hairline p-7 hover:bg-muted/30 transition-colors"
+                                    >
+                                        <div className="flex items-start justify-between mb-5">
+                                            <span className="index-num tnum text-[11px]">[ {f.idx} ]</span>
+                                            <Icon size={18} className="text-[hsl(var(--accent))]" strokeWidth={1.5} />
+                                        </div>
+                                        <p className="eyebrow mb-2">{f.kicker}</p>
+                                        <h3 className="font-serif text-[26px] leading-tight text-foreground mb-3">
+                                            {f.title}
+                                        </h3>
+                                        <p className="text-[14px] text-muted-foreground leading-relaxed">
+                                            {f.body}
+                                        </p>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
+
+                {/* PRICING */}
+                <section id="pricing" className="border-b border-hairline bg-muted/30">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-16 lg:py-24">
+                        <div className="text-center mb-10">
+                            <div className="flex items-baseline gap-3 justify-center mb-4">
+                                <span className="index-num tnum text-[11px]">[ 004 ]</span>
+                                <p className="eyebrow">Subscription Tiers</p>
+                            </div>
+                            <h2 className="font-serif text-[40px] sm:text-[52px] leading-[1.02] tracking-tight">
+                                Simple subscription,
+                                <span className="italic text-muted-foreground"> classic terms.</span>
+                            </h2>
+                            <p className="mt-3 font-serif italic text-[15px] text-muted-foreground">
+                                Start free. Upgrade if and only if it becomes worth it.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 border border-hairline bg-card">
+                            {PRICING.map((tier, i) => (
+                                <article
+                                    key={tier.title}
+                                    className={`relative p-7 border-b lg:border-b-0 lg:border-r last:border-r-0 border-hairline flex flex-col ${
+                                        tier.recommended ? 'bg-foreground text-background' : ''
+                                    }`}
+                                >
+                                    {tier.recommended && (
+                                        <div className="absolute top-0 right-0 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] px-3 py-1 text-[9px] uppercase tracking-[0.22em] font-semibold">
+                                            Recommended
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-baseline justify-between mb-6">
+                                        <span className={`index-num tnum text-[11px] ${tier.recommended ? 'opacity-70' : ''}`}>
+                                            [ {tier.index} ]
+                                        </span>
+                                        <Layers size={16} className={tier.recommended ? 'opacity-50' : 'text-muted-foreground'} strokeWidth={1.5} />
+                                    </div>
+
+                                    <p className={`eyebrow mb-2 ${tier.recommended ? 'opacity-70' : ''}`}>{tier.title}</p>
+                                    <p className="font-serif text-[56px] leading-none tracking-tight tabular-nums">
+                                        {tier.price}
+                                    </p>
+                                    <p className={`mt-1 text-[12px] font-mono ${tier.recommended ? 'opacity-60' : 'text-muted-foreground'}`}>
+                                        {tier.unit}
+                                    </p>
+
+                                    <ul className={`mt-6 space-y-3 flex-grow border-t pt-5 ${tier.recommended ? 'border-background/20' : 'border-hairline'}`}>
+                                        {tier.features.map((feat) => (
+                                            <li key={feat} className="flex items-start gap-2.5 text-[13px]">
+                                                <Check
+                                                    size={13}
+                                                    className={`mt-1 flex-shrink-0 ${tier.recommended ? 'text-[hsl(var(--accent))]' : 'text-[hsl(var(--gain))]'}`}
+                                                />
+                                                <span className={tier.recommended ? 'opacity-90' : ''}>{feat}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <Link href={tier.title === 'Enterprise' ? '#' : (user ? '/dashboard' : '/register')} className="mt-7">
+                                        <button
+                                            onClick={tier.title === 'Enterprise' ? () => openModal('contact') : undefined}
+                                            className={`ed-btn w-full h-11 ${
+                                                tier.recommended
+                                                    ? 'bg-background text-foreground border-background hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))] hover:border-[hsl(var(--accent))]'
+                                                    : 'ed-btn-ghost'
+                                            }`}
+                                        >
+                                            {tier.cta}
+                                            <ArrowRight size={13} />
+                                        </button>
+                                    </Link>
+                                </article>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* CTA / About */}
+                <section id="about" className="border-b border-hairline">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-16 lg:py-24">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                            <div className="lg:col-span-7">
+                                <div className="flex items-baseline gap-3 mb-4">
+                                    <span className="index-num tnum text-[11px]">[ 005 ]</span>
+                                    <p className="eyebrow">Editor&apos;s Note</p>
+                                </div>
+                                <h2 className="font-serif text-[44px] sm:text-[60px] leading-[1] tracking-tight">
+                                    Ready to set
+                                    <br />
+                                    <span className="italic text-muted-foreground">your ledger in type?</span>
+                                </h2>
+                                <p className="mt-5 font-serif italic text-[17px] text-muted-foreground max-w-xl leading-snug">
+                                    Join the readers who&apos;ve traded glossy dashboards for clarity.
+                                    Two minutes to sign up — and the rest reads itself.
+                                </p>
+                                <div className="mt-7 flex flex-wrap gap-3">
+                                    <Link href={primaryHref}>
+                                        <button className="ed-btn ed-btn-primary h-12 px-6">
+                                            {user ? 'Open Dashboard' : 'Create Free Account'}
+                                            <ArrowUpRight size={14} />
+                                        </button>
+                                    </Link>
+                                    {!user && (
+                                        <Link href="/login">
+                                            <button className="ed-btn ed-btn-ghost h-12 px-6">
+                                                Sign In Instead
+                                            </button>
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Right: editorial pull-quote */}
+                            <aside className="lg:col-span-5 lg:border-l border-hairline lg:pl-10">
+                                <div className="relative">
+                                    <span
+                                        className="absolute -left-2 -top-4 font-serif italic text-[80px] leading-none text-foreground/15 select-none"
+                                        aria-hidden="true"
+                                    >
+                                        &ldquo;
+                                    </span>
+                                    <p className="pl-7 font-serif italic text-[22px] leading-snug text-foreground">
+                                        In the ledger of our days,
+                                        every entry is an act of care.
+                                    </p>
+                                    <div className="mt-4 pl-7 flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-foreground flex items-center justify-center">
+                                            <Sparkles size={14} className="text-background" />
+                                        </div>
+                                        <div>
+                                            <p className="eyebrow">The Editor</p>
+                                            <p className="font-serif italic text-[13px] text-muted-foreground">coinTrack · Volume 04</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            {/* Footer */}
+            <footer className="border-t border-hairline bg-muted/30">
+                <div className="max-w-7xl mx-auto px-4 sm:px-8 py-12">
+                    <div className="grid grid-cols-2 md:grid-cols-12 gap-8">
+                        <div className="col-span-2 md:col-span-5 space-y-3">
+                            <Link href="/" className="flex items-center gap-2.5 group">
+                                <span className="relative h-9 w-9 block">
+                                    <Image src="/coinTrack.png" alt="coinTrack" fill className="object-contain" />
+                                </span>
+                                <span className="flex items-baseline gap-0.5">
+                                    <span className="font-serif text-[26px] leading-none tracking-tight">coin</span>
+                                    <span className="display-serif italic text-[26px] leading-none text-[hsl(var(--accent))]">Track</span>
+                                </span>
+                            </Link>
+                            <p className="text-[13px] text-muted-foreground leading-relaxed max-w-sm">
+                                A personal finance quarterly — set in <span className="font-serif italic">Instrument Serif</span> &amp; Geist.
+                                Printed in browser since {year - 1}.
+                            </p>
+                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground pt-2">
+                                <Lock size={11} />
+                                <span>End-to-end encrypted · TOTP only</span>
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2 md:col-start-7">
+                            <p className="eyebrow mb-4">Product</p>
+                            <ul className="space-y-2.5 text-[13px]">
+                                <li><Link href="/calculators" className="text-muted-foreground hover:text-foreground transition-colors">Calculators</Link></li>
+                                <li><a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a></li>
+                                <li><a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a></li>
+                                <li><a href="#brokers" className="text-muted-foreground hover:text-foreground transition-colors">Brokers</a></li>
+                            </ul>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <p className="eyebrow mb-4">Company</p>
+                            <ul className="space-y-2.5 text-[13px]">
+                                <li><a href="#about" className="text-muted-foreground hover:text-foreground transition-colors">About</a></li>
+                                <li><button onClick={() => openModal('contact')} className="text-muted-foreground hover:text-foreground transition-colors text-left">Contact</button></li>
+                            </ul>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <p className="eyebrow mb-4">Legal</p>
+                            <ul className="space-y-2.5 text-[13px]">
+                                <li><button onClick={() => openModal('privacy')} className="text-muted-foreground hover:text-foreground transition-colors text-left">Privacy</button></li>
+                                <li><button onClick={() => openModal('terms')} className="text-muted-foreground hover:text-foreground transition-colors text-left">Terms</button></li>
+                                <li><button onClick={() => openModal('cookies')} className="text-muted-foreground hover:text-foreground transition-colors text-left">Cookies</button></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="mt-10 pt-5 border-t border-hairline flex flex-col sm:flex-row items-center justify-between gap-2">
+                        <p className="eyebrow" suppressHydrationWarning>&copy; {year} coinTrack Inc. · All rights reserved</p>
+                        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                            <span className="live-dot" />
+                            <span>All systems operational</span>
+                        </div>
+                    </div>
                 </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section id="features" className="py-20 bg-gray-50 dark:bg-gray-800/50 relative overflow-hidden">
-          <div className="absolute top-0 left-1/2 w-full h-full bg-gradient-to-b from-white/0 via-purple-500/5 to-white/0 dark:from-black/0 dark:via-purple-500/10 dark:to-black/0 -translate-x-1/2 pointer-events-none"></div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-            className="max-w-7xl mx-auto px-4 sm:px-8 relative z-10"
-          >
-            <motion.div variants={fadeInUp} className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Why coinTrack?</h2>
-              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Everything you need to manage your investments in one place.
-              </p>
-            </motion.div>
-            <div className="grid md:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={index}
-                  variants={fadeInUp}
-                  whileHover={{ y: -10 }}
-                  className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300"
-                >
-                  <div className="bg-purple-50 dark:bg-purple-900/20 w-12 h-12 rounded-xl flex items-center justify-center mb-6">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                    {feature.description}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </section>
-
-        {/* Pricing Section */}
-        <section id="pricing" className="py-20 bg-white dark:bg-gray-900">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-            className="max-w-7xl mx-auto px-4 sm:px-8"
-          >
-            <motion.div variants={fadeInUp} className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Simple Pricing</h2>
-              <p className="text-gray-600 dark:text-gray-400"> Start for free, upgrade as you grow.</p>
-            </motion.div>
-            <div className="grid md:grid-cols-3 gap-8">
-              {pricing.map((tier, index) => (
-                <motion.div
-                  key={index}
-                  variants={fadeInUp}
-                  whileHover={{ y: -8 }}
-                  className={`p-8 rounded-3xl border flex flex-col transition-all duration-300 ${tier.recommended
-                    ? 'border-purple-600 bg-purple-50/50 dark:bg-purple-900/10 shadow-xl scale-105 z-10'
-                    : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-purple-200 dark:hover:border-purple-800 hover:shadow-lg'
-                    }`}
-                >
-                  {tier.recommended && (
-                    <span className="self-start px-3 py-1 bg-purple-600 text-white text-xs font-bold rounded-full mb-4">
-                      Recommended
-                    </span>
-                  )}
-                  <h3 className="text-xl font-bold">{tier.title}</h3>
-                  <div className="text-4xl font-extrabold my-4 text-purple-600">{tier.price}</div>
-                  <ul className="space-y-4 mb-8 flex-grow">
-                    {tier.features.map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                        <Check className="w-5 h-5 text-green-500" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`w-full py-3 rounded-xl font-bold transition-all ${tier.recommended
-                      ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg hover:shadow-purple-500/25'
-                      : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
-                      }`}>
-                    Choose {tier.title}
-                  </motion.button>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </section>
-
-        {/* About / CTA Section */}
-        <section id="about" className="py-20 bg-gray-900 text-white overflow-hidden relative">
-          <div className="absolute inset-0">
-            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2"></div>
-            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] -translate-x-1/2 translate-y-1/2"></div>
-          </div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeInUp}
-            className="max-w-4xl mx-auto px-4 text-center relative z-10"
-          >
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to start your journey?</h2>
-            <p className="text-xl text-gray-400 mb-10">
-              Join thousands of investors who trust coinTrack for their portfolio management.
-            </p>
-            <Link
-              href="/register"
-              className="inline-flex px-8 py-4 rounded-full bg-purple-600 text-white text-lg font-bold hover:bg-purple-500 transition-all shadow-xl hover:shadow-purple-600/30 items-center gap-2"
-            >
-              Create Free Account
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
-        </section>
-
-      </main>
-
-      {/* Footer */}
-      {/* Footer */}
-      <footer className="bg-gray-50 dark:bg-black py-12 border-t border-gray-100 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="grid md:grid-cols-12 gap-8 mb-8">
-            <div className="md:col-span-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 relative">
-                  <Image
-                    src="/coinTrack.png"
-                    alt="coinTrack logo"
-                    fill
-                    sizes="40px"
-                    className="object-contain"
-                  />
-                </div>
-                <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">coinTrack</span>
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 leading-relaxed max-w-sm">
-                Empowering investors with real-time analytics, bank-grade security, and comprehensive portfolio tracking tools.
-              </p>
-              <div className="flex gap-4">
-                {/* Social placeholders */}
-                <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 hover:text-purple-600 hover:border-purple-600 transition-all cursor-pointer">
-                  <Globe className="w-5 h-5 text-purple-600" />
-                </div>
-                <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 hover:text-purple-600 hover:border-purple-600 transition-all cursor-pointer">
-                  <Shield className="w-5 h-5 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="md:col-span-2 md:col-start-7">
-              <h4 className="font-bold text-gray-900 dark:text-white mb-6">Product</h4>
-              <ul className="space-y-4 text-sm text-gray-500 dark:text-gray-400">
-                <li><Link href="/calculators" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Calculators</Link></li>
-                <li><a href="#features" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Integrations</a></li>
-              </ul>
-            </div>
-
-            <div className="md:col-span-2">
-              <h4 className="font-bold text-gray-900 dark:text-white mb-6">Company</h4>
-              <ul className="space-y-4 text-sm text-gray-500 dark:text-gray-400">
-                <li><a href="#about" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Blog</a></li>
-                <li><button onClick={() => openModal('contact')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Contact</button></li>
-              </ul>
-            </div>
-
-            <div className="md:col-span-2">
-              <h4 className="font-bold text-gray-900 dark:text-white mb-6">Legal</h4>
-              <ul className="space-y-4 text-sm text-gray-500 dark:text-gray-400">
-                <li><button onClick={() => openModal('privacy')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Privacy Policy</button></li>
-                <li><button onClick={() => openModal('terms')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Terms of Service</button></li>
-                <li><button onClick={() => openModal('cookies')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-left">Cookie Policy</button></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-400">
-            <p>&copy; {new Date().getFullYear()} coinTrack Inc. All rights reserved.</p>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              <span>All Systems Operational</span>
-            </div>
-          </div>
+            </footer>
         </div>
-      </footer>
-    </div>
-  );
+    );
 }
