@@ -129,6 +129,13 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
             do {
                 accountPage = brokerAccountRepository.findByIsActiveTrue(PageRequest.of(page, size));
                 for (BrokerAccount account : accountPage.getContent()) {
+                    // Skip accounts whose tokens are locally expired or have no credentials.
+                    // Without this, the scheduler hands off to aggregateForUser which then
+                    // logs "No active broker accounts for user X" every cycle for stale
+                    // test/orphan accounts. Filter at the source so we don't even try.
+                    if (!account.hasCredentials() || account.isTokenExpired()) {
+                        continue;
+                    }
                     String userId = account.getUserId();
                     if (syncedUsers.add(userId)) {
                         try {

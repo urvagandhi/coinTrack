@@ -1,9 +1,8 @@
 // src/components/auth/AuthSubmitButton.jsx
 'use client';
 
-import { motion } from 'framer-motion';
-import { Loader } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 export function AuthSubmitButton({
     isLoading,
@@ -14,32 +13,30 @@ export function AuthSubmitButton({
     type = 'submit',
     onClick,
 }) {
-    const colorClass =
+    const variantClass =
         variant === 'danger'
-            ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-red-600/25'
+            ? 'ed-btn ed-btn-loss'
             : variant === 'secondary'
-                ? 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                : 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-purple-600/25';
+                ? 'ed-btn ed-btn-ghost'
+                : variant === 'accent'
+                    ? 'ed-btn ed-btn-accent'
+                    : variant === 'gain'
+                        ? 'ed-btn ed-btn-gain'
+                        : 'ed-btn ed-btn-primary';
 
     return (
-        <motion.button
+        <button
             type={type}
             disabled={isLoading || disabled}
-            whileHover={!isLoading && !disabled ? { scale: 1.02 } : {}}
-            whileTap={!isLoading && !disabled ? { scale: 0.98 } : {}}
             onClick={onClick}
             className={cn(
-                'w-full py-3.5 px-4 font-bold rounded-xl transition-all',
-                'flex items-center justify-center gap-2',
-                'disabled:opacity-70 disabled:cursor-not-allowed',
-                colorClass,
+                variantClass,
+                'w-full h-11 px-4',
                 className
             )}
         >
-            {isLoading && (
-                <Loader className="w-5 h-5 animate-spin" />
-            )}
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             {children}
-        </motion.button>
+        </button>
     );
 }

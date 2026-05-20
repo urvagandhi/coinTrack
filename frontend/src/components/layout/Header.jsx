@@ -1,267 +1,172 @@
 'use client';
 
+import { ThemeToggle } from '@/components/theme-toggle';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useBrokerSummary } from '@/hooks/useBrokerConnection';
 import { cn } from '@/lib/utils';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronRight, LogOut, Moon, Plus, Shield, Sun, UserCircle } from 'lucide-react';
+import { LogOut, Menu, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-// ── Route label mapping ─────────────────────────────────────────
-
-const ROUTE_LABELS = {
-    dashboard: 'Dashboard',
-    portfolio: 'Portfolio',
-    brokers: 'Brokers',
-    calculators: 'Calculators',
-    notes: 'Notes',
-    profile: 'Profile',
-    settings: 'Settings',
-    '2fa-settings': '2FA Settings',
-    zerodha: 'Zerodha',
-    angelone: 'Angel One',
-    upstox: 'Upstox',
-    callback: 'Connecting...',
-    investment: 'Investment',
-    savings: 'Savings',
-    loans: 'Loans',
-    tax: 'Tax',
-    trading: 'Trading',
-    planning: 'Planning',
-    holdings: 'Holdings',
-    positions: 'Positions',
-    orders: 'Orders',
-    funds: 'Funds',
+const ROUTE = {
+    '/dashboard': { num: '001', title: 'Dashboard', kicker: 'The Ledger' },
+    '/portfolio': { num: '002', title: 'Portfolio', kicker: 'Holdings & Activity' },
+    '/brokers':   { num: '003', title: 'Brokers',   kicker: 'Connected Vendors' },
+    '/brokers/zerodha':  { num: '003.1', title: 'Zerodha',  kicker: 'Vendor Setup' },
+    '/brokers/upstox':   { num: '003.2', title: 'Upstox',   kicker: 'Vendor Setup' },
+    '/brokers/angelone': { num: '003.3', title: 'Angel One', kicker: 'Vendor Setup' },
+    '/calculators': { num: '004', title: 'Calculators', kicker: 'Numerical Reference' },
+    '/notes':    { num: '005', title: 'Notes',     kicker: 'Margin Annotations' },
+    '/profile':  { num: '006', title: 'Profile',   kicker: 'Account & Identity' },
 };
 
-// ── Breadcrumb generator ────────────────────────────────────────
-
-function generateBreadcrumbs(pathname) {
-    const segments = pathname.split('/').filter(Boolean);
-    return segments.map((segment, index) => {
-        const href = '/' + segments.slice(0, index + 1).join('/');
-        const label =
-            ROUTE_LABELS[segment] ||
-            segment
-                .replace(/-/g, ' ')
-                .replace(/\b\w/g, (c) => c.toUpperCase());
-        const isLast = index === segments.length - 1;
-        return { href, label, isLast };
-    });
+function deriveRoute(pathname) {
+    if (ROUTE[pathname]) return ROUTE[pathname];
+    const seg = pathname.split('/').filter(Boolean).pop() ?? '';
+    return {
+        num: '—',
+        title: seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Dashboard',
+        kicker: 'Section',
+    };
 }
 
-// ── Broker status pill ──────────────────────────────────────────
-
-function BrokerStatusPill() {
-    const { connectedCount, hasExpired, hasExpiringSoon, isLoading } = useBrokerSummary();
-
-    if (isLoading) return null;
-
-    if (connectedCount === 0 && !hasExpired) {
-        return (
-            <Link href="/brokers">
-                <button className="hidden sm:flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-lg text-sm font-medium transition-transform active:scale-95 shadow-lg shadow-purple-500/10 dark:shadow-purple-500/20">
-                    <Plus size={14} />
-                    <span>Connect Broker</span>
-                </button>
-            </Link>
-        );
-    }
-
-    const variant = hasExpired
-        ? { bg: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800', text: 'text-red-700 dark:text-red-400', dot: 'bg-red-600', label: 'Token expired' }
-        : hasExpiringSoon
-            ? { bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800', text: 'text-amber-700 dark:text-amber-400', dot: 'bg-amber-600', label: 'Expiring soon' }
-            : { bg: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-600', label: `${connectedCount} connected` };
-
-    return (
-        <Link href="/brokers">
-            <button className={cn(
-                'hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors',
-                variant.bg, variant.text
-            )}>
-                <div className={cn('w-1.5 h-1.5 rounded-full', variant.dot)} />
-                {variant.label}
-            </button>
-        </Link>
-    );
-}
-
-// ── Profile dropdown ────────────────────────────────────────────
-
-function ProfileDropdown({ user, onLogout }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef(null);
-
-    const displayName = user?.name || user?.username || 'Account';
-    const displayEmail = user?.email || '';
-
-    // Close on outside click
+function useNow() {
+    const [now, setNow] = useState(new Date());
     useEffect(() => {
-        if (!isOpen) return;
-        const handleClick = (e) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
-    }, [isOpen]);
-
-    // Close on Escape
-    useEffect(() => {
-        if (!isOpen) return;
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') setIsOpen(false);
-        };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [isOpen]);
-
-    const handleLogout = useCallback(async () => {
-        setIsOpen(false);
-        await onLogout();
-    }, [onLogout]);
-
-    return (
-        <div ref={dropdownRef} className="relative">
-            {/* Trigger */}
-            <button
-                onClick={() => setIsOpen((prev) => !prev)}
-                className="flex items-center gap-3"
-            >
-                <div className="text-right hidden sm:block">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{displayName}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{displayEmail}</p>
-                </div>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-orange-400 to-pink-500 p-0.5 cursor-pointer shadow-md">
-                    <img
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
-                        alt="Profile"
-                        className="w-full h-full rounded-full bg-white dark:bg-black"
-                    />
-                </div>
-            </button>
-
-            {/* Dropdown */}
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 4 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.97, y: 4 }}
-                        transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800
-                                   rounded-xl shadow-lg py-1 z-50"
-                    >
-                        {/* User info header */}
-                        <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-800">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{displayName}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{displayEmail}</p>
-                        </div>
-
-                        {/* Menu items */}
-                        <div className="py-1">
-                            <Link
-                                href="/profile"
-                                onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-2.5 mx-1 px-2.5 py-2 rounded-lg text-sm
-                                           text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800
-                                           hover:text-gray-900 dark:hover:text-white transition-colors"
-                            >
-                                <UserCircle size={16} />
-                                Profile
-                            </Link>
-                            <Link
-                                href="/settings/2fa-settings"
-                                onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-2.5 mx-1 px-2.5 py-2 rounded-lg text-sm
-                                           text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800
-                                           hover:text-gray-900 dark:hover:text-white transition-colors"
-                            >
-                                <Shield size={16} />
-                                2FA Settings
-                            </Link>
-                        </div>
-
-                        <div className="border-t border-gray-200 dark:border-gray-800 py-1">
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center gap-2.5 mx-1 px-2.5 py-2 rounded-lg text-sm w-[calc(100%-8px)]
-                                           text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600
-                                           transition-colors"
-                            >
-                                <LogOut size={16} />
-                                Log Out
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
+        const t = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(t);
+    }, []);
+    return now;
 }
-
-// ── Header component ────────────────────────────────────────────
 
 export default function Header({ onMenuClick }) {
     const { user, logout } = useAuth();
-    const { theme, toggleTheme } = useTheme();
     const pathname = usePathname();
+    const route = deriveRoute(pathname);
+    const now = useNow();
 
-    const breadcrumbs = generateBreadcrumbs(pathname);
+    const displayName = user?.name || user?.username || 'Account';
+    const displayEmail = user?.email || '';
+    const initials = (displayName || 'U')
+        .split(' ').map((s) => s[0]).filter(Boolean).slice(0, 2)
+        .join('').toUpperCase();
+
+    const dateString = now.toLocaleDateString('en-IN', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+    const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
 
     return (
-        <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-30
-            bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border-b border-white/50 dark:border-white/10 shadow-sm transition-colors duration-300
-        ">
-            {/* Left: Breadcrumb / Title */}
-            <div className="flex items-center gap-2">
+        <header className={cn(
+            'sticky top-0 z-20 bg-background/92 backdrop-blur-sm',
+            'border-b border-hairline'
+        )}>
+            <div className="flex items-stretch min-h-16">
                 <button
-                    className="md:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                     onClick={onMenuClick}
+                    aria-label="Open navigation"
+                    className="md:hidden flex items-center justify-center px-4 border-r border-border text-muted-foreground hover:text-foreground transition-colors"
                 >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    <Menu className="h-5 w-5" />
                 </button>
-                <nav className="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400">
-                    <Link href="/dashboard" className="hover:text-gray-900 dark:hover:text-white transition-colors">
-                        Home
-                    </Link>
-                    {breadcrumbs.map((crumb) => (
-                        <div key={crumb.href} className="flex items-center">
-                            <ChevronRight className="w-4 h-4 mx-1" />
-                            {crumb.isLast ? (
-                                <span className="text-gray-900 dark:text-white font-semibold">
-                                    {crumb.label}
+
+                {/* Section identifier */}
+                <div className="flex items-center gap-4 px-4 md:px-8 py-3 flex-1 min-w-0">
+                    <span className="display-num text-[13px] text-[hsl(var(--accent))] hidden sm:inline">
+                        §{route.num}
+                    </span>
+                    <div className="min-w-0">
+                        <p className="eyebrow leading-none mb-1.5">{route.kicker}</p>
+                        <h1 className="font-serif text-[22px] md:text-[26px] leading-none tracking-tight text-foreground truncate">
+                            {route.title}
+                        </h1>
+                    </div>
+                </div>
+
+                {/* Date masthead */}
+                <div className="hidden lg:flex items-center px-6 border-l border-border">
+                    <div className="text-right">
+                        <p className="eyebrow leading-none mb-1.5">Edition</p>
+                        <p className="font-serif italic text-[13px] text-foreground">{dateString}</p>
+                    </div>
+                </div>
+
+                {/* Live clock */}
+                <div className="hidden md:flex items-center px-6 border-l border-border">
+                    <div className="flex items-center gap-2">
+                        <span className="live-dot" />
+                        <span className="display-num text-[15px] text-foreground tabular-nums">
+                            {timeString}
+                        </span>
+                        <span className="text-[9px] tracking-[0.2em] uppercase text-muted-foreground">IST</span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-1 px-3 md:px-4 border-l border-border">
+                    <ThemeToggle />
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                type="button"
+                                className="flex items-center gap-2 pl-2 pr-1 py-1.5 hover:bg-muted transition-colors rounded-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                aria-label="Account menu"
+                            >
+                                <span className="hidden md:flex flex-col items-end">
+                                    <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground leading-none">
+                                        Holder
+                                    </span>
+                                    <span className="text-[12px] font-medium text-foreground leading-none mt-1 max-w-[120px] truncate">
+                                        {displayName}
+                                    </span>
                                 </span>
-                            ) : (
-                                <Link href={crumb.href} className="hover:text-gray-900 dark:hover:text-white transition-colors">
-                                    {crumb.label}
+                                <Avatar className="h-8 w-8 rounded-sm border border-hairline">
+                                    {user?.name && (
+                                        <AvatarImage
+                                            src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=000&textColor=fff`}
+                                            alt={displayName}
+                                        />
+                                    )}
+                                    <AvatarFallback className="rounded-sm bg-foreground text-background text-xs font-semibold tracking-wider">
+                                        {initials || 'U'}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-60 rounded-sm border-hairline">
+                            <DropdownMenuLabel className="font-normal py-3">
+                                <span className="eyebrow block mb-1.5">Subscriber</span>
+                                <span className="block text-sm font-medium text-foreground truncate">{displayName}</span>
+                                {displayEmail && (
+                                    <span className="block text-[11px] text-muted-foreground truncate mt-0.5 font-mono">
+                                        {displayEmail}
+                                    </span>
+                                )}
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link href="/profile" className="cursor-pointer text-[13px]">
+                                    <UserCircle className="mr-2 h-3.5 w-3.5" /> Profile
                                 </Link>
-                            )}
-                        </div>
-                    ))}
-                </nav>
-            </div>
-
-            {/* Right: Actions */}
-            <div className="flex items-center gap-4">
-                <BrokerStatusPill />
-
-                {/* Theme Toggle */}
-                <button
-                    onClick={toggleTheme}
-                    className="p-2 text-gray-500 hover:bg-white/50 dark:text-gray-400 dark:hover:bg-white/10 rounded-full transition-colors"
-                >
-                    {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                </button>
-
-                {/* Profile */}
-                <div className="flex items-center pl-4 border-l border-gray-200 dark:border-gray-800">
-                    <ProfileDropdown user={user} onLogout={logout} />
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                onClick={logout}
+                                className="cursor-pointer text-destructive focus:text-destructive text-[13px]"
+                            >
+                                <LogOut className="mr-2 h-3.5 w-3.5" /> Sign out
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
         </header>

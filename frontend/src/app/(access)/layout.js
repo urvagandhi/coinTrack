@@ -18,7 +18,7 @@ export default function AccessLayout({ children }) {
 
     if (isInitializing) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-muted dark:bg-background">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <Loader2 size={20} className="animate-spin text-muted-foreground" />
             </div>
         );
@@ -27,7 +27,7 @@ export default function AccessLayout({ children }) {
     if (isAuthenticated) return null;
 
     return (
-        <div className="min-h-screen bg-muted dark:bg-background">
+        <div className="min-h-screen bg-background">
             {children}
         </div>
     );

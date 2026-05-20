@@ -53,6 +53,7 @@ public class MarketDataServiceImpl implements MarketDataService {
     private static final String KITE_BASE = "https://api.kite.trade";
     private static final int LTP_BATCH_SIZE = 200;
     private static final long MAX_STALE_MINUTES = 1440; // 24 hours
+    private static final long PERMISSION_DENIED_TTL_MS = 60L * 60L * 1000L; // 1 hour
 
     private final MarketPriceRepository priceRepository;
     private final BrokerAccountRepository brokerAccountRepository;
@@ -60,6 +61,12 @@ public class MarketDataServiceImpl implements MarketDataService {
     private final EncryptionUtil encryptionUtil;
     private final WebClient webClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // accountId -> expiry timestamp (ms). While present, skip LTP calls for that account.
+    // Cleared on reconnect path or after TTL so a user who later upgrades their Kite plan
+    // sees live prices return within an hour without a server restart.
+    private final java.util.concurrent.ConcurrentMap<String, Long> noMarketDataPermission =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     public MarketDataServiceImpl(MarketPriceRepository priceRepository,
                                   BrokerAccountRepository brokerAccountRepository,
@@ -157,15 +164,31 @@ public class MarketDataServiceImpl implements MarketDataService {
     private Map<String, MarketPrice> fetchFromZerodhaLtp(List<String> symbols) {
         Map<String, MarketPrice> result = new HashMap<>();
 
-        // Find ANY active Zerodha account for LTP access
+        // Find any Zerodha account that (a) is active, (b) has a non-expired token,
+        // and (c) is NOT in the "known to lack market-data permission" cache.
+        // The cache is the root-cause fix: once an API key has returned PermissionException,
+        // every subsequent LTP call against the same key is guaranteed to 403 until the
+        // user enables the Market Data add-on on their Kite plan. Skip and use fallback.
+        long nowMs = System.currentTimeMillis();
         List<BrokerAccount> zerodhaAccounts = brokerAccountRepository.findByBroker(Broker.ZERODHA);
         BrokerAccount active = zerodhaAccounts.stream()
                 .filter(a -> a.getIsActive() && !a.isTokenExpired() && a.getZerodhaAccessToken() != null)
+                .filter(a -> {
+                    Long expiry = noMarketDataPermission.get(a.getId());
+                    if (expiry == null) return true;
+                    if (expiry < nowMs) {
+                        noMarketDataPermission.remove(a.getId());
+                        return true;
+                    }
+                    return false;
+                })
                 .findFirst()
                 .orElse(null);
 
         if (active == null) {
-            log.debug("No active Zerodha account for LTP API, falling back to cached data");
+            // Either no Zerodha accounts at all, or every one we have lacks market-data
+            // permission. Don't even attempt the API — go straight to canonical fallback.
+            log.debug("No Zerodha account eligible for LTP (none connected, or all lack market-data permission). Using canonical prices.");
             return result;
         }
 
@@ -177,7 +200,7 @@ public class MarketDataServiceImpl implements MarketDataService {
         for (int i = 0; i < symbols.size(); i += LTP_BATCH_SIZE) {
             List<String> batch = symbols.subList(i, Math.min(i + LTP_BATCH_SIZE, symbols.size()));
             try {
-                Map<String, MarketPrice> batchResult = callZerodhaLtpApi(batch, apiKey, accessToken);
+                Map<String, MarketPrice> batchResult = callZerodhaLtpApi(batch, apiKey, accessToken, active);
                 result.putAll(batchResult);
             } catch (Exception e) {
                 log.warn("Zerodha LTP batch failed for {} symbols: {}", batch.size(), e.getMessage());
@@ -196,7 +219,7 @@ public class MarketDataServiceImpl implements MarketDataService {
      * GET https://api.kite.trade/quote/ltp?i=NSE:RELIANCE&i=BSE:SBIN
      * Response: { "status": "success", "data": { "NSE:RELIANCE": { "instrument_token": 738561, "last_price": 2680.30 } } }
      */
-    private Map<String, MarketPrice> callZerodhaLtpApi(List<String> symbols, String apiKey, String accessToken) {
+    private Map<String, MarketPrice> callZerodhaLtpApi(List<String> symbols, String apiKey, String accessToken, BrokerAccount active) {
         Map<String, MarketPrice> result = new HashMap<>();
 
         // Build query params: ?i=NSE:RELIANCE&i=BSE:SBIN
@@ -238,15 +261,61 @@ public class MarketDataServiceImpl implements MarketDataService {
             });
 
         } catch (WebClientResponseException e) {
+            String acctId = active != null ? active.getId() : "n/a";
+            String acctUser = active != null ? active.getUserId() : "n/a";
+            String apiKeyPreview = apiKey != null && apiKey.length() >= 4 ? apiKey.substring(0, 4) + "***" : "null";
+            int tokLen = accessToken != null ? accessToken.length() : -1;
+            String body = e.getResponseBodyAsString();
+            // Parse Kite's error_type — different errors need very different responses.
+            String errorType = null;
+            try {
+                JsonNode b = objectMapper.readTree(body);
+                if (b != null) errorType = b.path("error_type").asText(null);
+            } catch (Exception ignore) { /* body wasn't JSON */ }
+
             if (e.getStatusCode().value() == 429) {
-                log.warn("Zerodha LTP rate limited (429)");
-            } else if (e.getStatusCode().value() == 403) {
-                log.warn("Zerodha LTP auth failed (403) — token may be expired");
+                log.warn("Zerodha LTP 429 rate limited — account={} user={}", acctId, acctUser);
+            } else if (e.getStatusCode().value() == 403 && "TokenException".equals(errorType) && active != null) {
+                // Real auth failure (expired/revoked session). Signal reconnect.
+                log.warn("Zerodha LTP TokenException — flagging account={} user={} apiKey={} for reconnect.",
+                        acctId, acctUser, apiKeyPreview);
+                try {
+                    active.setZerodhaAccessToken(null);
+                    active.setZerodhaTokenExpiresAt(java.time.LocalDateTime.now());
+                    active.setExpiryReason(com.urva.myfinance.coinTrack.broker.model.ExpiryReason.TOKEN_INVALID);
+                    brokerAccountRepository.save(active);
+                } catch (Exception saveEx) {
+                    log.warn("Failed to flag account {} for reconnect: {}", acctId, saveEx.getMessage());
+                }
+            } else if (e.getStatusCode().value() == 403 && "PermissionException".equals(errorType) && active != null) {
+                // API key valid but no market-data scope. Cache so we skip this account
+                // for the next hour — no more 403 spam, no more hammering Zerodha.
+                // Reconnecting will NOT fix this; only enabling Market Data on the Kite plan will.
+                boolean firstTime = noMarketDataPermission.putIfAbsent(
+                        active.getId(), System.currentTimeMillis() + PERMISSION_DENIED_TTL_MS) == null;
+                if (firstTime) {
+                    log.warn("Zerodha LTP PermissionException — account={} user={} apiKey={} lacks market-data scope. "
+                            + "Suppressing LTP calls for 60min; using cached/holdings prices. "
+                            + "Fix: enable Market Data add-on at developers.kite.trade.",
+                            acctId, acctUser, apiKeyPreview);
+                }
+                // Token itself is valid (Zerodha got past auth to return PermissionException).
+                // Clear any stale TOKEN_INVALID flag from prior mis-categorized 403s.
+                if (active.getExpiryReason() != null
+                        && active.getExpiryReason() != com.urva.myfinance.coinTrack.broker.model.ExpiryReason.NONE
+                        && active.getZerodhaAccessToken() != null) {
+                    try {
+                        active.setExpiryReason(com.urva.myfinance.coinTrack.broker.model.ExpiryReason.NONE);
+                        brokerAccountRepository.save(active);
+                    } catch (Exception ignore) { /* best-effort */ }
+                }
             } else {
-                log.warn("Zerodha LTP API error: {} {}", e.getStatusCode(), e.getMessage());
+                log.warn("Zerodha LTP API error account={}: status={} type={} body={}",
+                        acctId, e.getStatusCode(), errorType, body);
             }
         } catch (Exception e) {
-            log.warn("Zerodha LTP API call failed: {}", e.getMessage());
+            log.warn("Zerodha LTP API call failed account={}: {}",
+                    active != null ? active.getId() : "n/a", e.getMessage());
         }
 
         return result;

@@ -1,4 +1,3 @@
-// src/app/(main)/brokers/_shared/CredentialField.jsx
 'use client';
 
 import { Eye, EyeOff, Lock } from 'lucide-react';
@@ -6,25 +5,30 @@ import { useState } from 'react';
 
 export function CredentialField({ field, value, onChange, isSaved, onEdit, disabled }) {
     const [showValue, setShowValue] = useState(false);
-
-    const maskedLast4 = value ? value.slice(-4) : '••••';
+    const last4 = value ? value.slice(-4) : '••••';
 
     return (
-        <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-foreground">
-                {field.label}
-                {field.sensitive && <Lock size={11} className="inline ml-1.5 text-muted-foreground" />}
-            </label>
+        <div className="space-y-2">
+            <div className="flex items-baseline justify-between gap-2">
+                <label className="flex items-center gap-1.5 text-[11px] tracking-[0.16em] uppercase font-semibold text-foreground">
+                    {field.label}
+                    {field.sensitive && <Lock className="h-2.5 w-2.5 text-muted-foreground" />}
+                </label>
+                {isSaved && (
+                    <span className="text-[10px] font-mono text-[hsl(var(--gain))] tnum">stored ✓</span>
+                )}
+            </div>
 
             {isSaved ? (
                 <div className="flex items-center gap-2">
-                    <div className="flex-1 h-10 px-3 flex items-center bg-background border border-border rounded-lg">
-                        <span className="text-sm font-mono text-muted-foreground">
-                            ••••••••{maskedLast4}
-                        </span>
+                    <div className="flex-1 h-10 border border-border bg-muted px-3 flex items-center font-mono text-[12px] text-muted-foreground rounded-sm tnum">
+                        ••••••••{last4}
                     </div>
-                    <button onClick={onEdit}
-                        className="h-10 px-3 border border-border rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                    <button
+                        type="button"
+                        onClick={onEdit}
+                        className="ed-btn ed-btn-ghost h-10"
+                    >
                         Edit
                     </button>
                 </div>
@@ -36,19 +40,23 @@ export function CredentialField({ field, value, onChange, isSaved, onEdit, disab
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={field.placeholder}
                         disabled={disabled}
-                        className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                        className={`w-full h-10 px-3 ${field.sensitive ? 'pr-10' : ''} bg-background border border-input text-[13px] text-foreground placeholder:text-muted-foreground/60 rounded-sm transition-colors focus:outline-none focus:border-[hsl(var(--accent))] focus:ring-1 focus:ring-[hsl(var(--accent))]/30 font-mono tnum disabled:opacity-50`}
                     />
                     {field.sensitive && (
-                        <button type="button" onClick={() => setShowValue((v) => !v)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                            {showValue ? <EyeOff size={15} /> : <Eye size={15} />}
+                        <button
+                            type="button"
+                            onClick={() => setShowValue((v) => !v)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            tabIndex={-1}
+                        >
+                            {showValue ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </button>
                     )}
                 </div>
             )}
 
             {field.helpText && !isSaved && (
-                <p className="text-xs text-muted-foreground">{field.helpText}</p>
+                <p className="text-[11px] text-muted-foreground font-serif italic leading-relaxed">{field.helpText}</p>
             )}
         </div>
     );

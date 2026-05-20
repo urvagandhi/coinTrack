@@ -3,10 +3,11 @@
 # For Render.com Deployment
 # ==========================================
 # OPTIMIZATIONS APPLIED:
-# ✅ POM-first layering (dependencies cached)
-# ✅ BuildKit cache for Maven repo
-# ✅ No 'clean' during Docker builds
-# ✅ Spring Boot layered JAR support
+# - POM-first layering (dependencies cached)
+# - BuildKit cache for Maven repo
+# - No 'clean' during Docker builds
+# - Spring Boot layered JAR support
+# - Non-root user for security
 # ==========================================
 
 # 1. BUILD STAGE
@@ -15,18 +16,18 @@ FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
-# 1️⃣ Copy only pom.xml first (layer optimization)
+# 1. Copy only pom.xml first (layer optimization)
 COPY pom.xml .
 
-# 2️⃣ Download dependencies (cached layer)
+# 2. Download dependencies (cached layer)
 # BuildKit cache: Dependencies persist between builds for faster rebuilds
 RUN --mount=type=cache,target=/root/.m2 \
     mvn dependency:go-offline -B
 
-# 3️⃣ Copy source code
+# 3. Copy source code
 COPY src ./src
 
-# 4️⃣ Build the application
+# 4. Build the application
 # - No 'clean' needed (fresh Docker layer)
 # - BuildKit cache for Maven repo
 # - Skip tests (run in CI, not during container build)
@@ -57,11 +58,27 @@ USER appuser
 # Expose port (Documentation only)
 EXPOSE 8080
 
-# Environment variables
+# ==========================================
+# Environment Variables
+# ==========================================
+# Required (set in Render dashboard / env):
+#   MONGODB_URI          - MongoDB Atlas connection string
+#   JWT_SECRET           - 256-bit JWT signing key (hex)
+#   ENCRYPTION_SECRET_KEY - AES-256 key (exactly 32 chars)
+#   TOTP_ENCRYPTION_KEY  - TOTP secret encryption (64 hex chars)
+#   BREVO_API_KEY        - Brevo transactional email API key
+#   FRONTEND_URL         - Frontend origin for email links
+#   CORS_ALLOWED_ORIGINS - Allowed CORS origins (comma-separated)
+#
+# Optional:
+#   PORT                 - Server port (default: 8080)
+#   SPRING_PROFILES_ACTIVE - Profile (default: prod)
+# ==========================================
+
 ENV SPRING_PROFILES_ACTIVE=prod
 ENV SERVER_PORT=${PORT:-8080}
 
-# Healthcheck
+# Healthcheck (matches render.yaml healthCheckPath)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
 

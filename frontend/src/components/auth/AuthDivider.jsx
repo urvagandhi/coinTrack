@@ -1,10 +1,12 @@
 // src/components/auth/AuthDivider.jsx
 export function AuthDivider({ label = 'or' }) {
     return (
-        <div className="relative flex items-center my-4">
-            <div className="flex-grow border-t border-gray-200 dark:border-gray-700" />
-            <span className="mx-3 text-xs text-gray-400">{label}</span>
-            <div className="flex-grow border-t border-gray-200 dark:border-gray-700" />
+        <div className="relative flex items-center my-6">
+            <div className="flex-grow border-t border-hairline" />
+            <span className="mx-3 text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-mono">
+                {label}
+            </span>
+            <div className="flex-grow border-t border-hairline" />
         </div>
     );
 }

@@ -1,50 +1,98 @@
 // src/app/not-found.js
 'use client';
 
-import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+function useNow() {
+    const [now, setNow] = useState(() => new Date());
+    useEffect(() => {
+        const t = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(t);
+    }, []);
+    return now;
+}
 
 export default function NotFound() {
+    const now = useNow();
+    const dateString = now.toLocaleDateString('en-IN', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+    const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-muted dark:bg-background p-4 text-center">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
-                <p className="text-8xl font-bold text-blue-600/20 select-none mb-2">404</p>
-            </motion.div>
+        <div className="min-h-screen bg-background text-foreground flex flex-col">
+            {/* Masthead */}
+            <header className="border-b border-hairline">
+                <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+                    <Link href="/" className="flex items-baseline gap-3">
+                        <span className="font-serif italic text-[24px] leading-none tracking-tight">coinTrack</span>
+                        <span className="hidden sm:inline display-num text-[10px] text-muted-foreground">VOL.04</span>
+                    </Link>
+                    <p className="hidden sm:block eyebrow">Errata</p>
+                </div>
+            </header>
 
-            <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.3 }}
-                className="space-y-2 mb-8"
-            >
-                <h1 className="text-xl font-semibold text-foreground">Page not found</h1>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                    The page you&apos;re looking for doesn&apos;t exist or has been moved.
-                </p>
-            </motion.div>
+            <main className="flex-1 flex items-center justify-center px-4 sm:px-8 py-12">
+                <div className="w-full max-w-3xl">
+                    {/* Big 404 in editorial style */}
+                    <div className="border-b border-hairline pb-8">
+                        <div className="flex items-baseline gap-4 mb-4">
+                            <span className="index-num tnum text-[11px]">[ XX ]</span>
+                            <span className="eyebrow">Missing Folio</span>
+                        </div>
+                        <p className="font-serif text-[clamp(96px,18vw,200px)] leading-[0.85] tracking-tight text-foreground select-none">
+                            404
+                        </p>
+                        <p className="mt-2 eyebrow">Filed under: errors, navigation, archive</p>
+                    </div>
 
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="flex gap-3"
-            >
-                <Link href="/dashboard">
-                    <button className="h-9 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                        Go to dashboard
-                    </button>
-                </Link>
-                <button
-                    onClick={() => window.history.back()}
-                    className="h-9 px-4 border border-border text-foreground rounded-lg text-sm hover:bg-accent transition-colors"
-                >
-                    Go back
-                </button>
-            </motion.div>
+                    {/* Headline */}
+                    <div className="py-10 border-b border-hairline">
+                        <h1 className="font-serif text-[36px] sm:text-[48px] leading-[1.05] tracking-tight text-foreground">
+                            Page not found.
+                        </h1>
+                        <p className="mt-4 font-serif italic text-[17px] text-muted-foreground leading-snug max-w-xl">
+                            The page you were looking for has either moved to a quieter corner of the archive
+                            or was never set in type. Our apologies for the inconvenience.
+                        </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="py-8 flex flex-col sm:flex-row gap-3">
+                        <Link href="/dashboard">
+                            <button className="ed-btn ed-btn-primary h-11 px-6">
+                                Return to Dashboard
+                            </button>
+                        </Link>
+                        <button
+                            onClick={() => window.history.back()}
+                            className="ed-btn ed-btn-ghost h-11 px-6"
+                        >
+                            Go Back
+                        </button>
+                        <Link href="/login">
+                            <button className="ed-btn ed-btn-ghost h-11 px-6">
+                                Sign In
+                            </button>
+                        </Link>
+                    </div>
+
+                    {/* Footer note */}
+                    <div className="border-t border-hairline pt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                        <p className="font-serif italic text-[13px] text-muted-foreground">
+                            {dateString} · <span className="display-num text-foreground">{timeString}</span> IST
+                        </p>
+                        <p className="eyebrow">Reference No. 404-NF-{now.getFullYear()}</p>
+                    </div>
+                </div>
+            </main>
+
+            <footer className="border-t border-hairline">
+                <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
+                    <p className="eyebrow">&copy; {now.getFullYear()} CoinTrack — Printed in Browser</p>
+                </div>
+            </footer>
         </div>
     );
 }

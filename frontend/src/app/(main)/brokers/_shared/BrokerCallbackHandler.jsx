@@ -1,99 +1,124 @@
-// src/app/(main)/brokers/_shared/BrokerCallbackHandler.jsx
 'use client';
 
 import { getBrokerByKey } from '@/lib/brokerConfig';
-import { itemVariants, useMotionVariants } from '@/lib/motion';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 export function BrokerCallbackHandler({ brokerKey, onCallback, successRedirect = '/brokers' }) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const broker = getBrokerByKey(brokerKey);
     const called = useRef(false);
     const [status, setStatus] = useState('loading');
     const [errorMessage, setErrorMessage] = useState('');
-    const itemV = useMotionVariants(itemVariants);
 
-    useEffect(() => {
-        if (called.current) return;
-        called.current = true;
+    const invalidate = () => {
+        queryClient.invalidateQueries({ queryKey: ['brokers', 'sync-status'] });
+        queryClient.invalidateQueries({ queryKey: ['brokers'] });
+        queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+    };
 
+    const runCallback = () => {
+        setStatus('loading');
+        setErrorMessage('');
         onCallback()
             .then(() => {
+                invalidate();
                 setStatus('success');
                 setTimeout(() => router.push(successRedirect), 1800);
             })
             .catch((err) => {
-                // Handle reused/expired tokens gracefully
                 if (err?.status === 400 || err?.original?.response?.status === 400) {
+                    invalidate();
                     setStatus('success');
                     setTimeout(() => router.push(successRedirect), 1800);
                     return;
                 }
                 setStatus('error');
-                setErrorMessage(err?.message || 'Connection failed. Please try again.');
+                setErrorMessage(err?.message || err?.original?.message || 'Connection failed. Please try again.');
             });
+    };
+
+    useEffect(() => {
+        if (called.current) return;
+        called.current = true;
+        runCallback();
+        const t = setTimeout(() => {
+            setStatus((s) => (s === 'loading' ? 'stalled' : s));
+        }, 12000);
+        return () => clearTimeout(t);
     }, []);
 
     return (
-        <div className="min-h-[60vh] flex items-center justify-center">
-            <motion.div variants={itemV} initial="hidden" animate="visible" className="text-center space-y-4 max-w-sm">
-                <AnimatePresence mode="wait">
-                    {status === 'loading' && (
-                        <motion.div key="loading" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                            className="flex flex-col items-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                                    <Loader2 size={28} className="text-blue-600" />
-                                </motion.div>
-                            </div>
-                            <div>
-                                <p className="text-base font-semibold text-foreground">Connecting {broker?.displayName}</p>
-                                <p className="text-sm text-muted-foreground mt-1">Exchanging tokens and syncing your portfolio...</p>
-                            </div>
-                        </motion.div>
-                    )}
+        <div className="min-h-[70vh] flex items-center justify-center">
+            <div className="ed-card relative max-w-md w-full px-8 py-12 text-center">
+                <span className="corner-mark corner-tl" />
+                <span className="corner-mark corner-tr" />
+                <span className="corner-mark corner-bl" />
+                <span className="corner-mark corner-br" />
 
-                    {status === 'success' && (
-                        <motion.div key="success" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-                            className="flex flex-col items-center gap-4">
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-                                className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
-                                <CheckCircle2 size={32} className="text-green-600" />
-                            </motion.div>
-                            <div>
-                                <p className="text-base font-semibold text-foreground">{broker?.displayName} connected</p>
-                                <p className="text-sm text-muted-foreground mt-1">Your portfolio is being synced. Redirecting...</p>
-                            </div>
-                        </motion.div>
-                    )}
+                <div className="flex items-center justify-center gap-3 mb-6">
+                    <span className="index-num tnum">[ CALLBACK ]</span>
+                    <span className="h-px w-8 bg-hairline" />
+                    <span className="eyebrow">{broker?.displayName || 'Broker'}</span>
+                </div>
 
-                    {status === 'error' && (
-                        <motion.div key="error" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-                            className="flex flex-col items-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
-                                <XCircle size={32} className="text-red-600" />
-                            </div>
-                            <div>
-                                <p className="text-base font-semibold text-foreground">Connection failed</p>
-                                <p className="text-sm text-muted-foreground mt-1">{errorMessage}</p>
-                            </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => router.push(broker?.setupPath || '/brokers')}
-                                    className="h-9 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                                    Try again
-                                </button>
-                                <button onClick={() => router.push('/brokers')}
-                                    className="h-9 px-4 border border-border text-foreground rounded-lg text-sm hover:bg-accent transition-colors">
-                                    Back to brokers
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
+                {status === 'loading' && (
+                    <div className="space-y-5">
+                        <Loader2 className="h-10 w-10 text-[hsl(var(--accent))] mx-auto animate-spin" strokeWidth={1.5} />
+                        <div>
+                            <p className="font-serif italic text-[24px] text-foreground mb-2">Tokens in transit…</p>
+                            <p className="text-[12px] text-muted-foreground">Exchanging credentials and reconciling your portfolio.</p>
+                        </div>
+                    </div>
+                )}
+
+                {status === 'success' && (
+                    <div className="space-y-5">
+                        <div className="inline-flex h-14 w-14 items-center justify-center rounded-sm border-2 border-[hsl(var(--gain))]/40 bg-[hsl(var(--gain))]/8">
+                            <CheckCircle2 className="h-7 w-7 text-[hsl(var(--gain))]" strokeWidth={2} />
+                        </div>
+                        <div>
+                            <p className="font-serif italic text-[24px] text-foreground mb-2">{broker?.displayName} connected.</p>
+                            <p className="text-[12px] text-muted-foreground">Returning you to the directory…</p>
+                        </div>
+                    </div>
+                )}
+
+                {status === 'stalled' && (
+                    <div className="space-y-5">
+                        <Loader2 className="h-10 w-10 text-[hsl(var(--chart-4))] mx-auto animate-spin" strokeWidth={1.5} />
+                        <div>
+                            <p className="font-serif italic text-[24px] text-foreground mb-2">This is taking longer than usual.</p>
+                            <p className="text-[12px] text-muted-foreground">
+                                Open DevTools → Network and click Retry. Look for <code className="font-mono text-foreground">POST /api/brokers/callback</code>.
+                            </p>
+                        </div>
+                        <div className="flex justify-center gap-2 pt-2">
+                            <button onClick={() => { called.current = false; runCallback(); }} className="ed-btn ed-btn-primary">Retry</button>
+                            <button onClick={() => router.push('/brokers')} className="ed-btn ed-btn-ghost">Back</button>
+                        </div>
+                    </div>
+                )}
+
+                {status === 'error' && (
+                    <div className="space-y-5">
+                        <div className="inline-flex h-14 w-14 items-center justify-center rounded-sm border-2 border-[hsl(var(--loss))]/40 bg-[hsl(var(--loss))]/8">
+                            <XCircle className="h-7 w-7 text-[hsl(var(--loss))]" strokeWidth={2} />
+                        </div>
+                        <div>
+                            <p className="font-serif italic text-[24px] text-foreground mb-2">Connection failed.</p>
+                            <p className="text-[12px] text-muted-foreground">{errorMessage}</p>
+                        </div>
+                        <div className="flex justify-center gap-2 pt-2">
+                            <button onClick={() => router.push(broker?.setupPath || '/brokers')} className="ed-btn ed-btn-primary">Try again</button>
+                            <button onClick={() => router.push('/brokers')} className="ed-btn ed-btn-ghost">Back</button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

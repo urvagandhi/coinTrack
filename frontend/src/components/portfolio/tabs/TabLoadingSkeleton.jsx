@@ -1,22 +1,28 @@
-// src/components/portfolio/tabs/TabLoadingSkeleton.jsx
 'use client';
 
-import { Skeleton, SkeletonTableRow } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export function TabLoadingSkeleton({ rows = 8, columns = 6 }) {
     return (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border">
-                <Skeleton className="h-4 w-32" />
+        <div className="ed-card relative">
+            <span className="corner-mark corner-tl" />
+            <span className="corner-mark corner-tr" />
+            <div className="px-6 py-5 border-b border-hairline flex items-center justify-between">
+                <Skeleton className="h-5 w-40 rounded-sm" />
+                <Skeleton className="h-3 w-16 rounded-sm" />
             </div>
-            <div className="p-4">
-                <table className="w-full">
-                    <tbody>
-                        {Array.from({ length: rows }).map((_, i) => (
-                            <SkeletonTableRow key={i} columns={columns} />
+            <div className="p-5 space-y-3">
+                {Array.from({ length: rows }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                        {Array.from({ length: columns }).map((_, j) => (
+                            <Skeleton
+                                key={j}
+                                className="h-3.5 rounded-sm"
+                                style={{ width: j === 0 ? '12rem' : `${4 + Math.random() * 4}rem` }}
+                            />
                         ))}
-                    </tbody>
-                </table>
+                    </div>
+                ))}
             </div>
         </div>
     );

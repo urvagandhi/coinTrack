@@ -24,12 +24,16 @@ services:
         sync: false  # Set in dashboard - sensitive
       - key: JWT_SECRET
         sync: false  # Set in dashboard - sensitive
-      - key: ENCRYPTION_KEY
-        sync: false  # Set in dashboard - sensitive
-      - key: ENCRYPTION_SALT
-        sync: false  # Set in dashboard - sensitive
+      - key: ENCRYPTION_SECRET_KEY
+        sync: false  # Set in dashboard - AES-256 key (exactly 32 chars)
       - key: TOTP_ENCRYPTION_KEY
-        sync: false  # Set in dashboard - sensitive
+        sync: false  # Set in dashboard - 64 hex chars
+      - key: BREVO_API_KEY
+        sync: false  # Set in dashboard - Brevo transactional email
+      - key: FRONTEND_URL
+        sync: false  # Set in dashboard - for email links
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false  # Set in dashboard - comma-separated origins
 
     # Build settings
     buildCommand: ""  # Dockerfile handles build

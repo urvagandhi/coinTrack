@@ -1,4 +1,3 @@
-// src/app/(main)/dashboard/page.jsx
 'use client';
 
 import { BrokerStatusBanner } from '@/components/dashboard/BrokerStatusBanner';
@@ -16,30 +15,39 @@ function getGreeting() {
 
 export default function DashboardPage() {
     const { user } = useAuth();
-    const firstName = user?.name?.split(' ')[0] || user?.username || 'there';
+    const firstName = user?.name?.split(' ')[0] || user?.username || 'reader';
+    const today = new Date();
+    const dateLine = today.toLocaleDateString('en-IN', {
+        weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    });
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">
-                        {getGreeting()}, {firstName}
+        <div className="space-y-8">
+            {/* Editorial masthead — newspaper page-header */}
+            <header className="relative pb-6 border-b border-hairline">
+                <div className="flex items-center justify-between gap-4 mb-5">
+                    <div className="flex items-center gap-3">
+                        <span className="index-num">FOLIO</span>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                            {dateLine}
+                        </span>
+                    </div>
+                    <RefreshButton />
+                </div>
+                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+                    <h1 className="display-serif text-[44px] md:text-[64px] text-foreground">
+                        {getGreeting()}, <span className="text-[hsl(var(--accent))]">{firstName}</span>.
                     </h1>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                        All your investments, at a glance.
+                    <p className="text-[13px] text-muted-foreground max-w-sm md:text-right leading-relaxed font-serif italic">
+                        All your investments — equities, derivatives, mutuals — laid bare across the page.
                     </p>
                 </div>
-                <RefreshButton />
-            </div>
+            </header>
 
-            {/* Broker Status */}
             <BrokerStatusBanner />
 
-            {/* Summary Cards */}
             <PortfolioSummary />
 
-            {/* Holdings */}
             <HoldingsTable />
         </div>
     );

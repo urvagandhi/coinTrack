@@ -1,41 +1,45 @@
-// src/app/(main)/brokers/page.jsx
 'use client';
 
-import { BrokerCard } from './_shared/BrokerCard';
 import { BROKER_LIST } from '@/lib/brokerConfig';
-import { containerVariants, pageVariants, useMotionVariants } from '@/lib/motion';
-import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
+import { BrokerCard } from './_shared/BrokerCard';
 
 export default function BrokersPage() {
-    const pageV = useMotionVariants(pageVariants);
-    const container = useMotionVariants(containerVariants);
-
     return (
-        <motion.div variants={pageV} initial="initial" animate="animate" className="space-y-6">
-            <div>
-                <h1 className="text-lg font-semibold text-foreground">Broker Integrations</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                    Connect your brokerage accounts to sync holdings, positions, and funds automatically.
+        <div className="space-y-10">
+            <header className="pb-6 border-b border-hairline">
+                <div className="flex items-center gap-3 mb-5">
+                    <span className="index-num">FOLIO·§03</span>
+                    <span className="h-px w-8 bg-hairline" />
+                    <span className="eyebrow">Vendor Directory</span>
+                </div>
+                <h1 className="display-serif text-[40px] md:text-[56px] text-foreground mb-3">
+                    Broker <span className="italic text-[hsl(var(--accent))]">Integrations</span>
+                </h1>
+                <p className="font-serif italic text-[15px] text-muted-foreground max-w-2xl leading-relaxed">
+                    Authorise your brokerage accounts to syndicate holdings, positions, and funds. CoinTrack reads only — it cannot trade on your behalf.
                 </p>
+            </header>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 stagger-fade">
+                {BROKER_LIST.map((broker, i) => (
+                    <BrokerCard key={broker.id} broker={broker} index={i} />
+                ))}
             </div>
 
-            <motion.div variants={container} initial="hidden" animate="visible"
-                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {BROKER_LIST.map((broker) => (
-                    <BrokerCard key={broker.id} broker={broker} />
-                ))}
-            </motion.div>
-
-            <div className="flex items-start gap-3 p-4 bg-accent border border-border rounded-xl">
-                <ShieldCheck size={16} className="text-muted-foreground mt-0.5 flex-shrink-0" />
+            <div className="ed-card relative px-6 py-5 flex items-start gap-4 mt-2">
+                <span className="corner-mark corner-tl" />
+                <span className="corner-mark corner-br" />
+                <div className="h-10 w-10 flex items-center justify-center rounded-sm bg-[hsl(var(--accent))]/10 border border-[hsl(var(--accent))]/30 flex-shrink-0">
+                    <ShieldCheck className="h-4 w-4 text-[hsl(var(--accent))]" strokeWidth={2} />
+                </div>
                 <div>
-                    <p className="text-sm font-medium text-foreground">Your credentials are encrypted</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                        API keys are encrypted with AES-256-GCM before storage. CoinTrack only reads your portfolio data — it cannot place orders on your behalf.
+                    <p className="eyebrow-strong mb-1.5">Notice on Security</p>
+                    <p className="text-[12px] text-muted-foreground font-serif italic leading-relaxed">
+                        Credentials are encrypted with AES-256-GCM before storage. CoinTrack reads portfolio data only — placement, modification, or cancellation of orders is impossible by design.
                     </p>
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 }

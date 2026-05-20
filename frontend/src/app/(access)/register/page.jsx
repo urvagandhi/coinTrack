@@ -6,15 +6,15 @@ import { AuthFormField } from '@/components/auth/AuthFormField';
 import { AuthPageShell } from '@/components/auth/AuthPageShell';
 import { AuthSubmitButton } from '@/components/auth/AuthSubmitButton';
 import { useAuth } from '@/contexts/AuthContext';
-import { itemVariants, useMotionVariants } from '@/lib/motion';
-import { motion } from 'framer-motion';
 import { Calendar, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-const INPUT_CLASS = 'w-full h-10 pl-9 pr-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-colors placeholder:text-gray-400';
-const INPUT_PW_CLASS = 'w-full h-10 pl-9 pr-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-colors placeholder:text-gray-400';
+const FIELD_BASE =
+    'w-full h-11 px-3 bg-transparent border border-hairline text-foreground text-[14px] ' +
+    'focus:outline-none focus:border-[hsl(var(--accent))] focus:ring-1 focus:ring-[hsl(var(--accent))] ' +
+    'transition-colors placeholder:text-muted-foreground/60';
 const ICON_CLASS = 'absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground';
 
 function getPasswordStrength(password) {
@@ -30,7 +30,19 @@ function getPasswordStrength(password) {
     return { level: 'strong', segments: 4 };
 }
 
-const STRENGTH_COLORS = { weak: 'bg-red-600', fair: 'bg-amber-600', good: 'bg-blue-500', strong: 'bg-green-600' };
+const STRENGTH_COLORS = {
+    weak: 'bg-[hsl(var(--loss))]',
+    fair: 'bg-[hsl(var(--chart-4))]',
+    good: 'bg-[hsl(var(--neutral))]',
+    strong: 'bg-[hsl(var(--gain))]',
+};
+
+const STRENGTH_LABELS = {
+    weak: 'Weak — choose a stronger password',
+    fair: 'Fair — could be stronger',
+    good: 'Good',
+    strong: 'Strong',
+};
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -42,7 +54,6 @@ export default function RegisterPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { register } = useAuth();
     const router = useRouter();
-    const item = useMotionVariants(itemVariants);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -124,101 +135,130 @@ export default function RegisterPage() {
 
     return (
         <AuthPageShell
-            title="Create your account"
-            subtitle="Start tracking your portfolio across all brokers"
-            maxWidth="sm"
+            title="Open your ledger"
+            subtitle="Register a new CoinTrack account to start tracking your portfolio across brokers."
+            index="II"
+            kicker="New Subscriber"
+            maxWidth="md"
+            asideQuote={'"Every great portfolio begins with a single, honest entry."'}
         >
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
                 <AuthAlert type="error" message={error} />
 
-                <AuthFormField label="Full name" id="name">
-                    <div className="relative">
-                        <div className={ICON_CLASS}><User size={16} /></div>
-                        <input id="name" name="name" type="text" required value={formData.name} onChange={handleChange} placeholder="Full name" className={INPUT_CLASS} />
-                    </div>
-                </AuthFormField>
-
-                <AuthFormField label="Username" id="username">
-                    <div className="relative">
-                        <div className={ICON_CLASS}><User size={16} /></div>
-                        <input id="username" name="username" type="text" required value={formData.username} onChange={handleChange} placeholder="Username" className={INPUT_CLASS} />
-                    </div>
-                </AuthFormField>
-
-                <AuthFormField label="Email address" id="email">
-                    <div className="relative">
-                        <div className={ICON_CLASS}><Mail size={16} /></div>
-                        <input id="email" name="email" type="email" required value={formData.email} onChange={handleChange} placeholder="name@example.com" className={INPUT_CLASS} />
-                    </div>
-                </AuthFormField>
-
-                <AuthFormField label="Phone number" id="phoneNumber">
-                    <div className="relative">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-muted-foreground">
-                            <Phone size={16} />
-                            <span className="text-xs border-l border-border pl-1.5">+91</span>
-                        </div>
-                        <input
-                            id="phoneNumber" name="phoneNumber" type="tel" required maxLength={10}
-                            value={formData.phoneNumber}
-                            onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); setFormData((p) => ({ ...p, phoneNumber: val })); }}
-                            placeholder="Phone number"
-                            className="w-full h-10 pl-[4.5rem] pr-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-colors placeholder:text-gray-400"
-                        />
-                    </div>
-                </AuthFormField>
-
-                <AuthFormField label="Date of birth" id="dateOfBirth">
-                    <div className="relative">
-                        <div className={ICON_CLASS}><Calendar size={16} /></div>
-                        <input id="dateOfBirth" name="dateOfBirth" type="date" required value={formData.dateOfBirth} onChange={handleChange} className={INPUT_CLASS} />
-                    </div>
-                </AuthFormField>
-
-                <AuthFormField label="Password" id="password">
-                    <div className="relative">
-                        <div className={ICON_CLASS}><Lock size={16} /></div>
-                        <input id="password" name="password" type={showPassword ? 'text' : 'password'} required value={formData.password} onChange={handleChange} placeholder="Password" className={INPUT_PW_CLASS} />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                    </div>
-                    {/* Password strength bar */}
-                    {strength && (
-                        <div className="mt-2 space-y-1">
-                            <div className="flex gap-1">
-                                {[1, 2, 3, 4].map((seg) => (
-                                    <div key={seg} className={`h-1 flex-1 rounded-full ${seg <= strength.segments ? STRENGTH_COLORS[strength.level] : 'bg-border'}`} />
-                                ))}
+                {/* Identity */}
+                <div>
+                    <p className="eyebrow mb-3">[ A ] Identity</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <AuthFormField label="Full name" id="name">
+                            <div className="relative">
+                                <div className={ICON_CLASS}><User size={14} /></div>
+                                <input id="name" name="name" type="text" required value={formData.name} onChange={handleChange} placeholder="Jane Doe" className={`${FIELD_BASE} pl-9`} />
                             </div>
-                            <p className="text-xs text-muted-foreground">Password strength: {strength.level}</p>
-                        </div>
-                    )}
-                </AuthFormField>
+                        </AuthFormField>
 
-                <AuthFormField label="Confirm password" id="confirmPassword">
-                    <div className="relative">
-                        <div className={ICON_CLASS}><Lock size={16} /></div>
-                        <input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} required value={formData.confirmPassword} onChange={handleChange} placeholder="Confirm password" className={INPUT_PW_CLASS} />
-                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
+                        <AuthFormField label="Username" id="username">
+                            <div className="relative">
+                                <div className={ICON_CLASS}><User size={14} /></div>
+                                <input id="username" name="username" type="text" required value={formData.username} onChange={handleChange} placeholder="jane_doe" className={`${FIELD_BASE} pl-9`} />
+                            </div>
+                        </AuthFormField>
                     </div>
-                </AuthFormField>
+                </div>
 
-                <motion.div variants={item}>
-                    <AuthSubmitButton isLoading={isLoading} className="mt-2">
-                        {isLoading ? 'Creating account...' : 'Create account'}
+                {/* Contact */}
+                <div>
+                    <p className="eyebrow mb-3">[ B ] Contact</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <AuthFormField label="Email address" id="email">
+                            <div className="relative">
+                                <div className={ICON_CLASS}><Mail size={14} /></div>
+                                <input id="email" name="email" type="email" required value={formData.email} onChange={handleChange} placeholder="jane@example.com" className={`${FIELD_BASE} pl-9`} />
+                            </div>
+                        </AuthFormField>
+
+                        <AuthFormField label="Phone (+91)" id="phoneNumber">
+                            <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-muted-foreground">
+                                    <Phone size={14} />
+                                    <span className="text-[11px] font-mono border-l border-hairline pl-1.5">+91</span>
+                                </div>
+                                <input
+                                    id="phoneNumber" name="phoneNumber" type="tel" required maxLength={10}
+                                    value={formData.phoneNumber}
+                                    onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); setFormData((p) => ({ ...p, phoneNumber: val })); }}
+                                    placeholder="9876543210"
+                                    className={`${FIELD_BASE} pl-[4.5rem]`}
+                                />
+                            </div>
+                        </AuthFormField>
+                    </div>
+
+                    <div className="mt-4">
+                        <AuthFormField label="Date of birth" id="dateOfBirth" hint="You must be 18 or older.">
+                            <div className="relative">
+                                <div className={ICON_CLASS}><Calendar size={14} /></div>
+                                <input id="dateOfBirth" name="dateOfBirth" type="date" required value={formData.dateOfBirth} onChange={handleChange} className={`${FIELD_BASE} pl-9`} />
+                            </div>
+                        </AuthFormField>
+                    </div>
+                </div>
+
+                {/* Credentials */}
+                <div>
+                    <p className="eyebrow mb-3">[ C ] Credentials</p>
+                    <div className="space-y-4">
+                        <AuthFormField label="Password" id="password">
+                            <div className="relative">
+                                <div className={ICON_CLASS}><Lock size={14} /></div>
+                                <input id="password" name="password" type={showPassword ? 'text' : 'password'} required value={formData.password} onChange={handleChange} placeholder="••••••••" className={`${FIELD_BASE} pl-9 pr-10`} />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                            </div>
+                            {strength && (
+                                <div className="mt-2.5 space-y-1.5">
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4].map((seg) => (
+                                            <div key={seg} className={`h-[3px] flex-1 ${seg <= strength.segments ? STRENGTH_COLORS[strength.level] : 'bg-hairline'}`} />
+                                        ))}
+                                    </div>
+                                    <p className="text-[11px] font-mono text-muted-foreground">
+                                        Strength · <span className="text-foreground">{STRENGTH_LABELS[strength.level]}</span>
+                                    </p>
+                                </div>
+                            )}
+                        </AuthFormField>
+
+                        <AuthFormField label="Confirm password" id="confirmPassword">
+                            <div className="relative">
+                                <div className={ICON_CLASS}><Lock size={14} /></div>
+                                <input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} required value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" className={`${FIELD_BASE} pl-9 pr-10`} />
+                                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}>
+                                    {showConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                            </div>
+                        </AuthFormField>
+                    </div>
+                </div>
+
+                <div className="pt-2">
+                    <AuthSubmitButton isLoading={isLoading}>
+                        {isLoading ? 'Creating account…' : 'Create Account'}
                     </AuthSubmitButton>
-                </motion.div>
+                    <p className="mt-3 text-[11px] text-muted-foreground font-mono text-center">
+                        By registering you agree to our <Link href="/terms" className="text-foreground underline">Terms</Link> and <Link href="/privacy" className="text-foreground underline">Privacy Policy</Link>.
+                    </p>
+                </div>
             </form>
 
-            <motion.div variants={item} className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 text-center">
-                <p className="text-sm text-muted-foreground">
-                    Already have an account?{' '}
-                    <Link href="/login" className="text-purple-600 font-medium hover:underline">Sign in</Link>
+            <div className="mt-10 pt-6 border-t border-hairline text-center">
+                <p className="text-[12px] text-muted-foreground">
+                    Already a subscriber?{' '}
+                    <Link href="/login" className="text-[hsl(var(--accent))] font-medium uppercase tracking-[0.16em] hover:underline">
+                        Sign in
+                    </Link>
                 </p>
-            </motion.div>
+            </div>
         </AuthPageShell>
     );
 }

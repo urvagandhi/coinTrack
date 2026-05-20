@@ -1,74 +1,39 @@
 'use client';
 
-import { overlayVariants, pageVariants, useMotionVariants } from '@/lib/motion';
-import { AnimatePresence, motion } from 'framer-motion';
-import { usePathname } from 'next/navigation';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 
 export default function MainLayout({ children }) {
-    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-    const pathname = usePathname();
-    const variants = useMotionVariants(pageVariants);
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-black transition-colors duration-300 relative">
-            {/* Background Orbs (Global for Main Layout) */}
-            <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen" />
-            </div>
-
-            {/* Desktop sidebar — always visible, hover to expand */}
-            <div className="hidden md:flex flex-shrink-0 relative z-10">
+        <div className="relative min-h-screen bg-background text-foreground">
+            {/* Desktop sidebar */}
+            <aside className="hidden md:flex fixed inset-y-0 left-0 z-30 w-64 border-r border-hairline">
                 <Sidebar />
-            </div>
+            </aside>
 
-            {/* Mobile sidebar drawer */}
-            <AnimatePresence>
-                {isMobileSidebarOpen && (
-                    <>
-                        <motion.div
-                            variants={overlayVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="hidden"
-                            onClick={() => setIsMobileSidebarOpen(false)}
-                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-                        />
-                        <motion.div
-                            initial={{ x: '-100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '-100%' }}
-                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                            className="fixed inset-y-0 left-0 z-50 w-[280px] md:hidden"
-                        >
-                            <Sidebar
-                                isMobile
-                                onClose={() => setIsMobileSidebarOpen(false)}
-                            />
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
+            {/* Mobile sidebar */}
+            <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+                <SheetContent side="left" className="p-0 w-64 bg-sidebar border-r border-hairline">
+                    <SheetTitle className="sr-only">Navigation</SheetTitle>
+                    <Sidebar onNavigate={() => setIsMobileOpen(false)} />
+                </SheetContent>
+            </Sheet>
 
-            {/* Main content area */}
-            <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
-                <Header onMenuClick={() => setIsMobileSidebarOpen(true)} />
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scrollbar-hide">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={pathname}
-                            variants={variants}
-                            initial="initial"
-                            animate="animate"
-                            exit="exit"
-                        >
-                            {children}
-                        </motion.div>
-                    </AnimatePresence>
+            <div className="md:pl-64 flex min-h-screen flex-col relative z-10">
+                <Header onMenuClick={() => setIsMobileOpen(true)} />
+                <main className="flex-1 px-4 md:px-10 lg:px-14 py-8 md:py-12 max-w-[1600px] w-full">
+                    {children}
                 </main>
+                <footer className="px-4 md:px-10 lg:px-14 py-6 border-t border-border">
+                    <div className="flex items-center justify-between text-[10px] tracking-[0.16em] uppercase text-muted-foreground">
+                        <span>© coinTrack · The Daily Ledger</span>
+                        <span className="font-mono">PRINTED IN BROWSER</span>
+                    </div>
+                </footer>
             </div>
         </div>
     );

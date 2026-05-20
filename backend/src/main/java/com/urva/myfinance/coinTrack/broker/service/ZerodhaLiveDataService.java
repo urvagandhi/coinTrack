@@ -135,9 +135,10 @@ public class ZerodhaLiveDataService {
      * @return next 6:00 AM IST
      */
     public LocalDateTime extractTokenExpiry(BrokerAccount account) {
-        LocalDateTime now = LocalDateTime.now();
+        // Zerodha invalidates daily at 06:00 IST — always compute in IST regardless of JVM zone.
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
         LocalDateTime expiry = now.withHour(6).withMinute(0).withSecond(0).withNano(0);
-        if (now.isAfter(expiry)) {
+        if (!now.isBefore(expiry)) {
             expiry = expiry.plusDays(1);
         }
         return expiry;

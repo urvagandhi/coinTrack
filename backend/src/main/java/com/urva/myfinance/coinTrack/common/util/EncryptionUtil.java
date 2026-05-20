@@ -108,7 +108,11 @@ public class EncryptionUtil {
         try {
             return doDecrypt(data, this.secretKey);
         } catch (Exception e) {
-            // If decryption fails, assume it's plain text
+            // Looked encrypted (right length/base64) but decryption failed — likely a key
+            // mismatch. Returning the ciphertext silently sends garbage to downstream APIs
+            // (e.g. Zerodha → 403). Log so this class of bug is debuggable.
+            org.slf4j.LoggerFactory.getLogger(EncryptionUtil.class)
+                    .warn("decryptSafe: ciphertext-shaped input failed to decrypt (key mismatch?): {}", e.getMessage());
             return data;
         }
     }

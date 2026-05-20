@@ -1,13 +1,12 @@
-// src/app/(main)/brokers/zerodha/page.jsx
 'use client';
 
-import { AuthAlert } from '@/components/auth/AuthAlert';
 import { useBrokerConnection } from '@/hooks/useBrokerConnection';
 import { brokerAPI, BROKERS } from '@/lib/api';
 import { BROKERS as BROKER_CONFIG } from '@/lib/brokerConfig';
-import { CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { BrokerSetupLayout } from '../_shared/BrokerSetupLayout';
 import { CredentialField } from '../_shared/CredentialField';
 
@@ -24,11 +23,8 @@ export default function ZerodhaPage() {
     const [credentialsSaved, setCredentialsSaved] = useState(false);
     const [error, setError] = useState('');
 
-    // If a broker account exists in DB, credentials were already saved previously
     useEffect(() => {
-        if (brokerStatus && !credentialsSaved) {
-            setCredentialsSaved(true);
-        }
+        if (brokerStatus) setCredentialsSaved(true);
     }, [brokerStatus]);
 
     const handleSaveCredentials = async () => {
@@ -38,10 +34,11 @@ export default function ZerodhaPage() {
         try {
             await brokerAPI.saveZerodhaCredentials({ apiKey: form.apiKey, apiSecret: form.apiSecret });
             setCredentialsSaved(true);
-            // Auto-redirect to Zerodha OAuth
+            toast.success('Credentials saved. Redirecting to Zerodha…');
             await handleConnect();
         } catch (err) {
             setError(err.message || 'Failed to save credentials');
+            toast.error(err.message || 'Failed to save credentials');
             setIsSaving(false);
         }
     };
@@ -58,77 +55,100 @@ export default function ZerodhaPage() {
             }
         } catch (err) {
             setError(err.message || 'Failed to get login URL');
+            toast.error(err.message || 'Failed to get login URL');
             setIsConnecting(false);
         }
     };
 
     const statusBadge = isConnected ? (
-        <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-green-50 text-green-700">Connected</span>
+        <span className="ed-pill ed-pill-gain"><span className="live-dot" />Connected</span>
     ) : null;
 
     return (
         <BrokerSetupLayout broker={broker} statusBadge={statusBadge}>
-            <div className="bg-card border border-border rounded-xl p-6 space-y-5">
-                <AuthAlert type="error" message={error} />
+            <div className="ed-card relative">
+                <span className="corner-mark corner-tl" />
+                <span className="corner-mark corner-br" />
 
-                {isConnected ? (
-                    /* Connected state */
-                    <>
-                        <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 rounded-xl">
-                            <CheckCircle2 size={16} className="text-green-600" />
-                            <div>
-                                <p className="text-sm font-medium text-green-700">Zerodha connected</p>
-                                {brokerStatus?.lastSuccessAt && (
-                                    <p className="text-xs text-green-700/70 mt-0.5">
-                                        Last synced {new Date(brokerStatus.lastSuccessAt).toLocaleString('en-IN')}
-                                    </p>
-                                )}
+                <div className="px-5 py-4 border-b border-hairline">
+                    <p className="eyebrow">
+                        {isConnected ? '§ Active Session' : credentialsSaved ? '§ Awaiting Authorisation' : '§ Affidavit'}
+                    </p>
+                    <h3 className="font-serif text-[18px] text-foreground mt-1 leading-none">
+                        {isConnected ? 'Connection details' : credentialsSaved ? 'Authorize with Zerodha' : 'Enter credentials'}
+                    </h3>
+                </div>
+
+                <div className="p-5 space-y-5">
+                    {error && (
+                        <div className="flex items-start gap-2 p-3 border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss))]/8">
+                            <AlertCircle className="h-3.5 w-3.5 text-[hsl(var(--loss))] mt-0.5 flex-shrink-0" />
+                            <p className="text-[12px] text-[hsl(var(--loss))]">{error}</p>
+                        </div>
+                    )}
+
+                    {isConnected ? (
+                        <>
+                            <div className="flex items-center gap-3 p-4 border border-[hsl(var(--gain))]/30 bg-[hsl(var(--gain))]/8 rounded-sm">
+                                <CheckCircle2 className="h-4 w-4 text-[hsl(var(--gain))]" />
+                                <div className="flex-1">
+                                    <p className="text-[13px] font-medium text-foreground">Zerodha connected</p>
+                                    {brokerStatus?.lastSuccessAt && (
+                                        <p className="text-[10px] font-mono text-muted-foreground mt-0.5 tnum">
+                                            Last sync · {new Date(brokerStatus.lastSuccessAt).toLocaleString('en-IN')}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                        </div>
 
-                        <button onClick={handleConnect} disabled={isConnecting}
-                            className="w-full h-9 border border-border text-muted-foreground rounded-lg text-sm hover:bg-accent disabled:opacity-50 transition-colors">
-                            {isConnecting ? 'Redirecting...' : 'Reconnect (refresh token)'}
-                        </button>
-
-                        <Link href="/portfolio?tab=holdings" className="block text-center text-sm text-blue-600 hover:underline underline-offset-2 mt-3">
-                            View portfolio
-                        </Link>
-                    </>
-                ) : credentialsSaved ? (
-                    /* Credentials saved — show connect button */
-                    <>
-                        <h3 className="text-sm font-semibold text-foreground">Credentials saved</h3>
-                        {broker.credentialFields.map((field) => (
-                            <CredentialField key={field.key} field={field} value={form[field.key]} onChange={() => {}}
-                                isSaved onEdit={() => setCredentialsSaved(false)} />
-                        ))}
-                        <div className="pt-4 border-t border-border">
-                            <h3 className="text-sm font-semibold text-foreground mb-3">Authorize with Zerodha</h3>
-                            <p className="text-xs text-muted-foreground mb-4">
-                                Click below to be redirected to Zerodha Kite for authorization.
-                            </p>
-                            <button onClick={handleConnect} disabled={isConnecting}
-                                className="w-full h-10 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                                {isConnecting ? 'Redirecting to Zerodha...' : 'Connect via Zerodha Kite'}
+                            <button onClick={handleConnect} disabled={isConnecting} className="ed-btn ed-btn-ghost w-full">
+                                {isConnecting ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Redirecting…</>) : 'Reconnect (refresh token)'}
                             </button>
-                        </div>
-                    </>
-                ) : (
-                    /* Credential entry form */
-                    <>
-                        <h3 className="text-sm font-semibold text-foreground">Enter your credentials</h3>
-                        {broker.credentialFields.map((field) => (
-                            <CredentialField key={field.key} field={field} value={form[field.key]}
-                                onChange={(v) => setForm((p) => ({ ...p, [field.key]: v }))} disabled={isSaving} />
-                        ))}
-                        <button onClick={handleSaveCredentials}
-                            disabled={!form.apiKey.trim() || !form.apiSecret.trim() || isSaving}
-                            className="w-full h-10 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                            {isSaving ? 'Saving...' : 'Save & Connect'}
-                        </button>
-                    </>
-                )}
+
+                            <Link href="/portfolio?tab=holdings" className="block text-center ed-link text-[12px]">
+                                View portfolio
+                            </Link>
+                        </>
+                    ) : credentialsSaved ? (
+                        <>
+                            {broker.credentialFields.map((field) => (
+                                <CredentialField
+                                    key={field.key}
+                                    field={field}
+                                    value={form[field.key]}
+                                    onChange={() => {}}
+                                    isSaved
+                                    onEdit={() => setCredentialsSaved(false)}
+                                />
+                            ))}
+                            <p className="text-[11.5px] text-muted-foreground font-serif italic leading-relaxed">
+                                You will be redirected to Zerodha Kite. After successful login, Zerodha returns you here automatically.
+                            </p>
+                            <button onClick={handleConnect} disabled={isConnecting} className="ed-btn ed-btn-primary w-full">
+                                {isConnecting ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Redirecting to Zerodha…</>) : 'Connect via Zerodha Kite'}
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            {broker.credentialFields.map((field) => (
+                                <CredentialField
+                                    key={field.key}
+                                    field={field}
+                                    value={form[field.key]}
+                                    onChange={(v) => setForm((p) => ({ ...p, [field.key]: v }))}
+                                    disabled={isSaving}
+                                />
+                            ))}
+                            <button
+                                onClick={handleSaveCredentials}
+                                disabled={!form.apiKey.trim() || !form.apiSecret.trim() || isSaving}
+                                className="ed-btn ed-btn-primary w-full"
+                            >
+                                {isSaving ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</>) : 'Save & Connect'}
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
         </BrokerSetupLayout>
     );

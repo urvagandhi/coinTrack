@@ -1,18 +1,15 @@
 // src/app/calculators/layout.jsx — Public calculator layout, no auth required
 'use client';
 
+import { ThemeToggle } from '@/components/theme-toggle';
 import { useModal } from '@/contexts/ModalContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import { ChevronLeft, Moon, Sun } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function CalculatorsLayout({ children }) {
-    const themeContext = useTheme();
     const { openModal } = useModal();
-    const theme = themeContext?.theme || 'light';
-    const toggleTheme = themeContext?.toggleTheme || (() => {});
     const pathname = usePathname();
 
     return (
@@ -29,16 +26,13 @@ export default function CalculatorsLayout({ children }) {
                         </Link>
 
                         <div className="flex items-center gap-2">
-                            <button onClick={toggleTheme}
-                                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-                                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                            </button>
+                            <ThemeToggle />
                             <div className="hidden sm:flex items-center gap-2 border-l border-border pl-2 ml-1">
                                 <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5">
                                     Sign in
                                 </Link>
                                 <Link href="/register"
-                                    className="text-sm font-medium bg-blue-600 text-white rounded-lg px-3 py-1.5 hover:bg-blue-700 transition-colors">
+                                    className="text-sm font-medium bg-primary text-primary-foreground rounded-lg px-3 py-1.5 hover:bg-primary/90 transition-colors">
                                     Sign up
                                 </Link>
                             </div>

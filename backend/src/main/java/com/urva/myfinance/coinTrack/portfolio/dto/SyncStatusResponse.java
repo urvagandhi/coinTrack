@@ -49,5 +49,8 @@ public class SyncStatusResponse {
 
         @Schema(description = "Whether the last sync is older than 30 minutes")
         private boolean stale;
+
+        @Schema(description = "Credentials present but OAuth token rejected/expired — user just needs to redo OAuth, not re-enter API keys")
+        private boolean needsReconnect;
     }
 }

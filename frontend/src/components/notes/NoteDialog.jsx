@@ -1,30 +1,25 @@
-// src/components/notes/NoteDialog.jsx — Design tokens, motion variants from motion.js
 'use client';
 
-import { modalVariants, overlayVariants, useMotionVariants } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Pin, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const COLORS = [
-    { name: 'Default', key: 'default', dot: 'bg-gray-300/30' },
-    { name: 'Rose', key: 'rose', dot: 'bg-rose-400' },
-    { name: 'Orange', key: 'orange', dot: 'bg-orange-400' },
-    { name: 'Amber', key: 'amber', dot: 'bg-amber-400' },
-    { name: 'Lime', key: 'lime', dot: 'bg-lime-500' },
-    { name: 'Emerald', key: 'emerald', dot: 'bg-emerald-400' },
-    { name: 'Cyan', key: 'cyan', dot: 'bg-cyan-400' },
-    { name: 'Blue', key: 'blue', dot: 'bg-blue-400' },
-    { name: 'Violet', key: 'violet', dot: 'bg-violet-400' },
-    { name: 'Fuchsia', key: 'fuchsia', dot: 'bg-fuchsia-400' },
+    { name: 'Default', key: 'default', color: 'hsl(var(--muted-foreground))' },
+    { name: 'Rose',    key: 'rose',    color: 'hsl(346 65% 50%)' },
+    { name: 'Orange',  key: 'orange',  color: 'hsl(24 90% 50%)' },
+    { name: 'Amber',   key: 'amber',   color: 'hsl(var(--accent))' },
+    { name: 'Lime',    key: 'lime',    color: 'hsl(80 65% 45%)' },
+    { name: 'Emerald', key: 'emerald', color: 'hsl(var(--gain))' },
+    { name: 'Cyan',    key: 'cyan',    color: 'hsl(189 70% 45%)' },
+    { name: 'Blue',    key: 'blue',    color: 'hsl(var(--neutral))' },
+    { name: 'Violet',  key: 'violet',  color: 'hsl(265 60% 55%)' },
+    { name: 'Fuchsia', key: 'fuchsia', color: 'hsl(310 70% 55%)' },
 ];
 
-function getColorKeyFromBg(bgStr) {
+function getColorKey(bgStr) {
     if (!bgStr) return 'default';
-    for (const c of COLORS) {
-        if (bgStr.includes(c.key) && c.key !== 'default') return c.key;
-    }
+    for (const c of COLORS) if (bgStr.includes(c.key) && c.key !== 'default') return c.key;
     return 'default';
 }
 
@@ -35,8 +30,6 @@ export default function NoteDialog({ isOpen, onClose, onSave, onDelete, initialD
     const [tagInput, setTagInput] = useState('');
     const [selectedColor, setSelectedColor] = useState('default');
     const [isPinned, setIsPinned] = useState(false);
-    const overlayV = useMotionVariants(overlayVariants);
-    const modalV = useMotionVariants(modalVariants);
     const inputRef = useRef(null);
 
     useEffect(() => {
@@ -45,7 +38,7 @@ export default function NoteDialog({ isOpen, onClose, onSave, onDelete, initialD
                 setTitle(initialData.title || '');
                 setContent(initialData.content || '');
                 setTags(initialData.tags || []);
-                setSelectedColor(getColorKeyFromBg(initialData.color));
+                setSelectedColor(getColorKey(initialData.color));
                 setIsPinned(initialData.pinned || false);
             } else {
                 setTitle(''); setContent(''); setTags([]); setTagInput('');
@@ -57,9 +50,9 @@ export default function NoteDialog({ isOpen, onClose, onSave, onDelete, initialD
 
     useEffect(() => {
         if (!isOpen) return;
-        const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
-        document.addEventListener('keydown', handleEsc);
-        return () => document.removeEventListener('keydown', handleEsc);
+        const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', onEsc);
+        return () => document.removeEventListener('keydown', onEsc);
     }, [isOpen, onClose]);
 
     const handleSubmit = () => {
@@ -71,8 +64,7 @@ export default function NoteDialog({ isOpen, onClose, onSave, onDelete, initialD
         onSave({
             ...(initialData || {}),
             title: title.trim(),
-            content,
-            tags,
+            content, tags,
             color: colorBg,
             pinned: isPinned,
         });
@@ -91,86 +83,127 @@ export default function NoteDialog({ isOpen, onClose, onSave, onDelete, initialD
     };
 
     const isEditing = !!initialData;
+    if (!isOpen) return null;
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <motion.div variants={overlayV} initial="hidden" animate="visible" exit="hidden"
-                        onClick={onClose} className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div onClick={onClose} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+            <div className="relative ed-card w-full max-w-xl p-6 z-10 animate-in fade-in zoom-in-95 duration-200">
+                <span className="corner-mark corner-tl" />
+                <span className="corner-mark corner-tr" />
+                <span className="corner-mark corner-bl" />
+                <span className="corner-mark corner-br" />
 
-                    <motion.div variants={modalV} initial="hidden" animate="visible" exit="exit"
-                        className="relative bg-card border border-border rounded-xl shadow-lg w-full max-w-lg p-6 z-10">
-
-                        {/* Header */}
-                        <div className="flex items-center gap-2 mb-5">
-                            <input ref={inputRef} type="text" placeholder="Note title..." value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="flex-1 text-base font-semibold bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none" />
-                            <button onClick={() => setIsPinned(!isPinned)}
-                                className={cn('w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
-                                    isPinned ? 'bg-blue-50 text-blue-600' : 'text-muted-foreground hover:bg-accent')}>
-                                <Pin size={14} />
-                            </button>
-                            <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-accent transition-colors">
-                                <X size={14} />
-                            </button>
-                        </div>
-
-                        {/* Color picker */}
-                        <div className="mb-4">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">Color</p>
-                            <div className="flex gap-2">
-                                {COLORS.map((c) => (
-                                    <button key={c.key} onClick={() => setSelectedColor(c.key)}
-                                        className={cn('w-5 h-5 rounded-full transition-transform flex items-center justify-center', c.dot,
-                                            selectedColor === c.key ? 'ring-2 ring-offset-2 ring-foreground/30 scale-110' : 'hover:scale-105')}>
-                                        {selectedColor === c.key && <Check size={10} className="text-white" />}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Content */}
-                        <textarea placeholder="Write something..." value={content} onChange={(e) => setContent(e.target.value)}
-                            rows={6} className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none leading-relaxed mb-4" />
-
-                        {/* Tags */}
-                        <div className="mb-5">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">Tags</p>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                {tags.map((tag) => (
-                                    <span key={tag} className="text-[11px] bg-accent rounded px-2 py-1 flex items-center gap-1 text-muted-foreground">
-                                        #{tag}
-                                        <button onClick={() => setTags(tags.filter((t) => t !== tag))} className="text-gray-400 hover:text-foreground transition-colors"><X size={10} /></button>
-                                    </span>
-                                ))}
-                                <input type="text" placeholder="Add tag..." value={tagInput}
-                                    onChange={(e) => setTagInput(e.target.value)}
-                                    onKeyDown={handleTagKeyDown}
-                                    onBlur={() => { if (tagInput.trim()) addTag(tagInput); }}
-                                    className="text-xs h-7 bg-background border border-border rounded px-2 focus:border-blue-500 focus:outline-none w-20 text-foreground placeholder:text-gray-400" />
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="flex items-center gap-2 pt-4 border-t border-border">
-                            {isEditing && onDelete && (
-                                <button onClick={onDelete} className="text-xs text-red-600 hover:text-red-600/80 mr-auto transition-colors flex items-center gap-1">
-                                    <Trash2 size={12} /> Delete
-                                </button>
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-hairline">
+                    <div className="flex items-baseline gap-2">
+                        <span className="index-num tnum">[ ENTRY ]</span>
+                        <span className="eyebrow">{isEditing ? 'Editing' : 'New'}</span>
+                    </div>
+                    <div className="flex items-center gap-1 ml-auto">
+                        <button
+                            onClick={() => setIsPinned(!isPinned)}
+                            className={cn(
+                                'w-7 h-7 flex items-center justify-center transition-colors',
+                                isPinned ? 'text-[hsl(var(--accent))]' : 'text-muted-foreground hover:text-foreground'
                             )}
-                            <div className="flex gap-2 ml-auto">
-                                <button onClick={onClose} className="h-8 px-4 border border-border text-muted-foreground rounded-lg text-sm hover:bg-accent transition-colors">Cancel</button>
-                                <button onClick={handleSubmit} disabled={!title.trim()}
-                                    className="h-8 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                                    {isEditing ? 'Update' : 'Save'}
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
+                        >
+                            <Pin className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        </button>
+                        <button onClick={onClose} className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
                 </div>
-            )}
-        </AnimatePresence>
+
+                {/* Title */}
+                <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="Title…"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full font-serif text-[28px] tracking-tight bg-transparent text-foreground placeholder:text-muted-foreground/40 focus:outline-none mb-4"
+                />
+
+                {/* Color picker */}
+                <div className="mb-4">
+                    <p className="eyebrow mb-2">Tone — {COLORS.find(c => c.key === selectedColor)?.name}</p>
+                    <div className="flex flex-wrap gap-2">
+                        {COLORS.map((c) => {
+                            const active = selectedColor === c.key;
+                            return (
+                                <button
+                                    key={c.key}
+                                    type="button"
+                                    onClick={() => setSelectedColor(c.key)}
+                                    className={cn(
+                                        'h-7 w-7 rounded-full transition-all flex items-center justify-center border-2',
+                                        active
+                                            ? 'scale-110 border-foreground shadow-sm'
+                                            : 'border-transparent hover:scale-110 hover:shadow-sm'
+                                    )}
+                                    style={{ background: c.color }}
+                                    title={c.name}
+                                    aria-label={c.name}
+                                >
+                                    {active && (
+                                        <Check className="h-3.5 w-3.5 text-white drop-shadow-sm" strokeWidth={3} />
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Content */}
+                <textarea
+                    placeholder="Begin writing…"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    rows={7}
+                    className="w-full bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/40 resize-none focus:outline-none leading-relaxed mb-4 font-serif"
+                />
+
+                {/* Tags */}
+                <div className="mb-5 pb-5 border-b border-border">
+                    <p className="eyebrow mb-2">Tags</p>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        {tags.map((tag) => (
+                            <span key={tag} className="text-[10px] font-mono uppercase tracking-[0.08em] border border-border bg-muted/40 rounded-sm px-1.5 py-0.5 flex items-center gap-1 text-muted-foreground">
+                                #{tag}
+                                <button onClick={() => setTags(tags.filter((t) => t !== tag))} className="text-muted-foreground/60 hover:text-foreground transition-colors">
+                                    <X className="h-2.5 w-2.5" />
+                                </button>
+                            </span>
+                        ))}
+                        <input
+                            type="text"
+                            placeholder="add tag…"
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onKeyDown={handleTagKeyDown}
+                            onBlur={() => { if (tagInput.trim()) addTag(tagInput); }}
+                            className="text-[11px] h-6 bg-transparent border-b border-dashed border-border px-1 focus:outline-none focus:border-[hsl(var(--accent))] w-24 text-foreground placeholder:text-muted-foreground/60 font-mono"
+                        />
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between">
+                    {isEditing && onDelete ? (
+                        <button onClick={onDelete} className="ed-btn ed-btn-loss">
+                            <Trash2 className="h-3 w-3" /> Delete
+                        </button>
+                    ) : <span />}
+                    <div className="flex gap-2 ml-auto">
+                        <button onClick={onClose} className="ed-btn ed-btn-ghost">Cancel</button>
+                        <button onClick={handleSubmit} disabled={!title.trim()} className="ed-btn ed-btn-accent">
+                            {isEditing ? 'Update' : 'Save Entry'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

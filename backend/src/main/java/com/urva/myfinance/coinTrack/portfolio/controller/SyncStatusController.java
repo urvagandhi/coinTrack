@@ -101,6 +101,14 @@ public class SyncStatusController {
             boolean stale = lastSuccessAt == null
                     || Duration.between(lastSuccessAt, LocalDateTime.now()).toMinutes() > STALE_THRESHOLD_MINUTES;
 
+            // needsReconnect = "the user has set up this broker (credentials saved) but the
+            // OAuth session is dead". The fix is to redo OAuth — not the credentials form.
+            boolean needsReconnect = Boolean.TRUE.equals(account.getIsActive())
+                    && account.hasCredentials()
+                    && (!tokenActive
+                        || (account.getExpiryReason() != null
+                            && account.getExpiryReason() != com.urva.myfinance.coinTrack.broker.model.ExpiryReason.NONE));
+
             if (stale || !tokenActive) {
                 hasIssues = true;
             }
@@ -114,6 +122,7 @@ public class SyncStatusController {
                     .lastDurationMs(lastDurationMs)
                     .tokenActive(tokenActive)
                     .stale(stale)
+                    .needsReconnect(needsReconnect)
                     .build());
         }
 

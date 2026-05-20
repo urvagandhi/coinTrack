@@ -1,4 +1,3 @@
-// src/components/dashboard/BrokerStatusBanner.jsx
 'use client';
 
 import { useBrokerConnection } from '@/hooks/useBrokerConnection';
@@ -7,11 +6,21 @@ import { AlertTriangle, X } from 'lucide-react';
 import { useState } from 'react';
 
 const BROKER_NAMES = { ZERODHA: 'Zerodha', ANGEL_ONE: 'Angel One', UPSTOX: 'Upstox' };
-const BROKER_COLORS = {
-    ZERODHA: 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800',
-    ANGEL_ONE: 'bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800',
-    UPSTOX: 'bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+const BROKER_VARS = {
+    ZERODHA:   'hsl(var(--broker-zerodha))',
+    ANGEL_ONE: 'hsl(var(--broker-angel))',
+    UPSTOX:    'hsl(var(--broker-upstox))',
 };
+
+function relativeTime(iso) {
+    if (!iso) return null;
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+}
 
 export function BrokerStatusBanner() {
     const { data: syncData } = useBrokerConnection();
@@ -27,40 +36,29 @@ export function BrokerStatusBanner() {
     const handleReconnect = async (brokerName) => {
         try {
             const response = await brokerAPI.getConnectUrl(brokerName);
-            if (response?.loginUrl) {
-                window.location.href = response.loginUrl;
-            }
-        } catch (error) {
-            console.error('Failed to get connect URL', error);
-        }
+            if (response?.loginUrl) window.location.href = response.loginUrl;
+        } catch (error) { console.error('Failed to get connect URL', error); }
     };
 
-    // Active broker pills
     if (alerts.length === 0) {
-        const activeBrokers = brokers.filter(b => b.tokenActive);
-        if (activeBrokers.length === 0) return null;
-
+        const active = brokers.filter(b => b.tokenActive);
+        if (active.length === 0) return null;
         return (
-            <div className="flex flex-wrap gap-2">
-                {activeBrokers.map(b => {
-                    const lastSync = b.lastSuccessAt
-                        ? (() => {
-                            const m = Math.floor((Date.now() - new Date(b.lastSuccessAt).getTime()) / 60000);
-                            if (m < 1) return 'just now';
-                            if (m < 60) return `${m}m ago`;
-                            const h = Math.floor(m / 60);
-                            if (h < 24) return `${h}h ago`;
-                            return `${Math.floor(h / 24)}d ago`;
-                        })()
-                        : null;
-
-                    const colors = BROKER_COLORS[b.broker] || 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700';
-
+            <div className="ed-card flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3">
+                <span className="eyebrow-strong">Live Feeds</span>
+                <span className="h-3 w-px bg-border" />
+                {active.map(b => {
+                    const last = relativeTime(b.lastSuccessAt);
                     return (
-                        <div key={b.broker} className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium ${colors}`}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                            {BROKER_NAMES[b.broker] || b.broker}
-                            {lastSync && <span className="opacity-60">· {lastSync}</span>}
+                        <div key={b.broker} className="flex items-center gap-2 text-[12px]">
+                            <span
+                                className="h-1.5 w-1.5 rounded-full"
+                                style={{ background: BROKER_VARS[b.broker] }}
+                            />
+                            <span className="font-medium text-foreground">{BROKER_NAMES[b.broker] || b.broker}</span>
+                            {last && (
+                                <span className="text-muted-foreground tnum font-mono text-[11px]">· {last}</span>
+                            )}
                         </div>
                     );
                 })}
@@ -68,32 +66,37 @@ export function BrokerStatusBanner() {
         );
     }
 
-    // Expired alerts
     return (
         <div className="space-y-2">
             {alerts.map((alert) => (
                 <div
                     key={alert.broker}
-                    className="flex items-center justify-between px-4 py-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-lg text-sm"
+                    className="relative flex items-center justify-between gap-4 px-5 py-3 ed-card"
+                    style={{ borderLeft: `3px solid hsl(var(--loss))` }}
                 >
-                    <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                        <AlertTriangle size={16} />
-                        <span>
-                            <span className="font-semibold">{BROKER_NAMES[alert.broker] || alert.broker}</span> session expired. Reconnect to resume sync.
-                        </span>
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle className="h-4 w-4 text-[hsl(var(--loss))]" strokeWidth={2} />
+                        <div>
+                            <p className="text-[11px] eyebrow text-[hsl(var(--loss))]">Session Expired</p>
+                            <p className="text-[13px] text-foreground mt-0.5">
+                                <span className="font-semibold">{BROKER_NAMES[alert.broker] || alert.broker}</span>
+                                {' — reconnect to resume sync.'}
+                            </p>
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => handleReconnect(alert.broker)}
-                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-md transition-colors"
+                            className="ed-btn ed-btn-primary"
                         >
                             Reconnect
                         </button>
                         <button
                             onClick={() => setDismissed(prev => [...prev, alert.broker])}
-                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+                            className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label="Dismiss"
                         >
-                            <X size={14} />
+                            <X className="h-3.5 w-3.5" />
                         </button>
                     </div>
                 </div>

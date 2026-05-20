@@ -104,6 +104,11 @@ public class PortfolioSyncScheduler {
     }
 
     private boolean shouldSyncOffHours(BrokerAccount account) {
+        // Skip orphan/stale accounts (no credentials or token expired) — they can't sync
+        // successfully and only generate noise.
+        if (!account.hasCredentials() || account.isTokenExpired()) {
+            return false;
+        }
         LocalDateTime lastSync = account.getLastSuccessfulSync();
         if (lastSync == null) {
             return true; // Never synced, so sync it.

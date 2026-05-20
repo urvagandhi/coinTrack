@@ -297,6 +297,15 @@ export const endpoints = {
         connect: (broker) => `/api/brokers/${broker}/connect`,
         status: (broker) => `/api/brokers/${broker}/status`,
         zerodha: { saveCredentials: '/api/brokers/zerodha/credentials' },
+        upstox: {
+            saveCredentials: '/api/brokers/upstox/credentials',
+            disconnect: '/api/brokers/upstox/disconnect',
+        },
+        angelone: {
+            saveCredentials: '/api/brokers/angelone/credentials',
+            connect: '/api/brokers/angelone/connect',
+            disconnect: '/api/brokers/angelone/disconnect',
+        },
         callback: '/api/brokers/callback',
     },
     notes: {
@@ -485,6 +494,26 @@ export const brokerAPI = {
             ? { broker: brokerName, requestToken: tokenOrCode }
             : { broker: brokerName, ...tokenOrCode };
         const { data } = await api.post(endpoints.brokers.callback, payload);
+        return unwrapResponse(data);
+    },
+    saveUpstoxCredentials: async (creds) => {
+        const { data } = await api.post(endpoints.brokers.upstox.saveCredentials, creds);
+        return unwrapResponse(data);
+    },
+    disconnectUpstox: async () => {
+        const { data } = await api.post(endpoints.brokers.upstox.disconnect);
+        return unwrapResponse(data);
+    },
+    saveAngelOneCredentials: async (creds) => {
+        const { data } = await api.post(endpoints.brokers.angelone.saveCredentials, creds);
+        return unwrapResponse(data);
+    },
+    connectAngelOne: async () => {
+        const { data } = await api.post(endpoints.brokers.angelone.connect);
+        return unwrapResponse(data);
+    },
+    disconnectAngelOne: async () => {
+        const { data } = await api.post(endpoints.brokers.angelone.disconnect);
         return unwrapResponse(data);
     },
 };

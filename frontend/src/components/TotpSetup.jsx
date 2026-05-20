@@ -4,14 +4,12 @@
 import { AuthAlert } from '@/components/auth/AuthAlert';
 import { AuthSubmitButton } from '@/components/auth/AuthSubmitButton';
 import { useAuth } from '@/contexts/AuthContext';
-import { itemVariants, useMotionVariants } from '@/lib/motion';
-import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Check, CheckCircle2, Copy, Download, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export default function TotpSetup({ onComplete, onCancel, isMandatory = false, setupAction, verifyAction }) {
     const { setupTotp, verifyTotpSetup, user } = useAuth();
-    const [step, setStep] = useState('init'); // init, scan, backup
+    const [step, setStep] = useState('init');
     const [setupData, setSetupData] = useState(null);
     const [verificationCode, setVerificationCode] = useState('');
     const [error, setError] = useState('');
@@ -19,7 +17,6 @@ export default function TotpSetup({ onComplete, onCancel, isMandatory = false, s
     const [backupCodes, setBackupCodes] = useState([]);
     const [copied, setCopied] = useState(false);
     const inputRefs = useRef([]);
-    const item = useMotionVariants(itemVariants);
 
     const performSetup = setupAction || setupTotp;
     const performVerify = verifyAction || verifyTotpSetup;
@@ -102,7 +99,6 @@ CoinTrack - Your Portfolio, Secured`;
         document.body.removeChild(element);
     };
 
-    // Handle individual OTP box input
     const handleOtpChange = (index, value) => {
         if (!/^\d*$/.test(value)) return;
         const char = value.slice(-1);
@@ -129,228 +125,190 @@ CoinTrack - Your Portfolio, Secured`;
         inputRefs.current[focusIdx]?.focus();
     };
 
-    // ── Step indicator ──
-    const steps = ['Setup', 'Verify', 'Backup codes'];
+    const steps = ['Initialize', 'Scan & verify', 'Backup codes'];
     const stepIndex = step === 'init' ? 0 : step === 'scan' ? 1 : 2;
 
     return (
-        <div className="w-full space-y-6">
-            {/* Step indicator */}
-            <div className="flex items-center justify-between mb-2">
+        <div className="w-full space-y-7">
+            {/* Editorial step indicator */}
+            <div className="grid grid-cols-3 gap-3">
                 {steps.map((label, i) => (
-                    <div key={label} className="flex items-center">
-                        {i > 0 && (
-                            <div className={`flex-1 h-px w-8 sm:w-12 mx-1.5 ${i <= stepIndex ? 'bg-blue-600' : 'bg-border'}`} />
-                        )}
-                        <div className="flex items-center gap-1.5">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${i < stepIndex
-                                    ? 'bg-green-600 text-white'
-                                    : i === stepIndex
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-accent text-muted-foreground'
-                                }`}>
-                                {i < stepIndex ? <Check size={12} /> : i + 1}
-                            </div>
-                            <span className={`text-xs hidden sm:inline ${i === stepIndex ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                                {label}
+                    <div key={label} className="flex flex-col gap-1.5">
+                        <div className="flex items-baseline gap-1.5">
+                            <span className={`display-num text-[11px] ${i <= stepIndex ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {String(i + 1).padStart(2, '0')}
                             </span>
+                            {i < stepIndex && <Check size={11} className="text-[hsl(var(--gain))]" />}
                         </div>
+                        <div className={`h-[2px] ${i <= stepIndex ? 'bg-foreground' : 'bg-hairline'}`} />
+                        <p className={`text-[10px] uppercase tracking-[0.2em] ${i === stepIndex ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                            {label}
+                        </p>
                     </div>
                 ))}
             </div>
 
-            <AnimatePresence mode="wait">
-                {/* ── STEP: Init ── */}
-                {step === 'init' && (
-                    <motion.div
-                        key="init"
-                        variants={item}
-                        initial="hidden"
-                        animate="visible"
-                        exit={{ opacity: 0, y: -8 }}
-                        className="space-y-5"
-                    >
-                        <div className="flex justify-center">
-                            <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center">
-                                <ShieldCheck size={28} className="text-blue-600" />
-                            </div>
-                        </div>
-                        <div className="text-center space-y-1">
-                            <p className="text-sm text-foreground">
-                                You&apos;ll need an authenticator app like Google Authenticator or Authy.
+            {/* ── STEP: Init ── */}
+            {step === 'init' && (
+                <div className="space-y-6">
+                    <div className="flex items-start gap-4 border-l-2 border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.08)] px-4 py-4">
+                        <ShieldCheck size={20} className="text-[hsl(var(--accent))] flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="eyebrow mb-1" style={{ color: 'hsl(var(--accent))' }}>Two-factor authentication</p>
+                            <p className="text-[13px] text-foreground leading-snug">
+                                You will need an authenticator app such as Google Authenticator, Authy, or 1Password.
                             </p>
                             {isMandatory && (
-                                <p className="text-xs text-amber-600 font-medium">
-                                    Two-factor authentication is required to continue.
+                                <p className="mt-2 text-[11px] font-mono text-[hsl(var(--chart-4))]">
+                                    * 2FA is mandatory for all CoinTrack accounts.
                                 </p>
                             )}
                         </div>
-                        <AuthAlert type="error" message={error} />
-                        <div className="flex gap-2">
-                            {!isMandatory && (
-                                <AuthSubmitButton
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={onCancel}
-                                    isLoading={false}
-                                >
-                                    Cancel
-                                </AuthSubmitButton>
-                            )}
-                            <AuthSubmitButton
+                    </div>
+
+                    <AuthAlert type="error" message={error} />
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        {!isMandatory && (
+                            <button
                                 type="button"
-                                isLoading={loading}
-                                onClick={startSetup}
+                                onClick={onCancel}
+                                className="ed-btn ed-btn-ghost flex-1 h-11"
                             >
-                                {loading ? 'Initializing...' : 'Start setup'}
-                            </AuthSubmitButton>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* ── STEP: Scan QR ── */}
-                {step === 'scan' && (
-                    <motion.div
-                        key="scan"
-                        variants={item}
-                        initial="hidden"
-                        animate="visible"
-                        exit={{ opacity: 0, y: -8 }}
-                        className="space-y-5"
-                    >
-                        {/* QR Code */}
-                        {setupData?.qrCodeBase64 && (
-                            <div className="flex justify-center">
-                                <div className="bg-white p-3 rounded-xl border border-border">
-                                    <img src={setupData.qrCodeBase64} alt="QR Code" className="w-44 h-44" />
-                                </div>
-                            </div>
+                                Cancel
+                            </button>
                         )}
-
-                        {/* Manual secret */}
-                        <div className="space-y-1.5">
-                            <p className="text-xs text-muted-foreground">Or enter this code manually:</p>
-                            <div className="flex items-center gap-2">
-                                <code className="flex-1 font-mono text-sm bg-accent rounded-lg px-3 py-2 tracking-widest text-foreground break-all">
-                                    {setupData?.secret}
-                                </code>
-                                <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(setupData?.secret)}
-                                    className="p-2 rounded-lg text-muted-foreground hover:text-blue-600 hover:bg-accent transition-colors"
-                                >
-                                    {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* OTP input */}
-                        <div className="space-y-2">
-                            <p className="text-sm font-medium text-foreground">
-                                Enter the 6-digit code from your app
-                            </p>
-                            <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                                {Array.from({ length: 6 }).map((_, i) => (
-                                    <input
-                                        key={i}
-                                        ref={(el) => { inputRefs.current[i] = el; }}
-                                        type="text"
-                                        inputMode="numeric"
-                                        maxLength={1}
-                                        value={verificationCode[i] || ''}
-                                        onChange={(e) => handleOtpChange(i, e.target.value)}
-                                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                                        className="w-10 h-12 text-center text-lg font-mono border border-border rounded-lg
-                                                   bg-background text-foreground
-                                                   focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600
-                                                   transition-colors"
-                                    />
-                                ))}
-                            </div>
-                        </div>
-
-                        <AuthAlert type="error" message={error} />
-
                         <AuthSubmitButton
                             type="button"
                             isLoading={loading}
-                            disabled={verificationCode.length !== 6}
-                            onClick={verifyCode}
+                            onClick={startSetup}
+                            className="flex-1"
                         >
-                            {loading ? 'Verifying...' : 'Verify code'}
+                            {loading ? 'Initializing…' : 'Begin Setup'}
                         </AuthSubmitButton>
-                    </motion.div>
-                )}
+                    </div>
+                </div>
+            )}
 
-                {/* ── STEP: Backup codes ── */}
-                {step === 'backup' && (
-                    <motion.div
-                        key="backup"
-                        variants={item}
-                        initial="hidden"
-                        animate="visible"
-                        exit={{ opacity: 0, y: -8 }}
-                        className="space-y-5"
-                    >
-                        <div className="flex items-center gap-2 text-green-600">
-                            <CheckCircle2 size={20} />
-                            <span className="text-sm font-semibold">Setup complete</span>
+            {/* ── STEP: Scan QR ── */}
+            {step === 'scan' && (
+                <div className="space-y-6">
+                    {setupData?.qrCodeBase64 && (
+                        <div className="flex justify-center">
+                            <div className="bg-white p-3 border border-hairline">
+                                <img src={setupData.qrCodeBase64} alt="QR Code" className="w-44 h-44" />
+                            </div>
                         </div>
+                    )}
 
-                        <div className="space-y-1">
-                            <p className="text-sm text-foreground">Save your backup codes</p>
-                            <p className="text-xs text-muted-foreground">
-                                Use these if you lose access to your authenticator app. Each code works once.
-                            </p>
+                    <div className="space-y-2">
+                        <p className="eyebrow">Manual entry secret</p>
+                        <div className="flex items-stretch gap-0 border border-hairline">
+                            <code className="flex-1 font-mono text-[13px] bg-muted/40 px-3 py-2.5 tracking-widest text-foreground break-all">
+                                {setupData?.secret}
+                            </code>
+                            <button
+                                type="button"
+                                onClick={() => copyToClipboard(setupData?.secret)}
+                                className="px-3 border-l border-hairline text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                aria-label="Copy secret"
+                            >
+                                {copied ? <Check size={15} className="text-[hsl(var(--gain))]" /> : <Copy size={15} />}
+                            </button>
                         </div>
+                    </div>
 
-                        <div className="border-l-4 border-amber-500 bg-amber-50 p-3 rounded-r-lg">
-                            <p className="text-xs text-amber-700 font-medium">
-                                These codes will only be shown once. Save them now.
-                            </p>
-                        </div>
-
-                        {/* Backup codes grid */}
-                        <div className="bg-accent rounded-lg p-4 grid grid-cols-2 gap-2">
-                            {backupCodes.map((code, i) => (
-                                <div
+                    <div className="space-y-2">
+                        <p className="eyebrow-strong">Enter 6-digit code</p>
+                        <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <input
                                     key={i}
-                                    className="font-mono text-sm bg-card rounded px-2 py-1.5 text-center text-foreground border border-border"
-                                >
-                                    {code}
-                                </div>
+                                    ref={(el) => { inputRefs.current[i] = el; }}
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    value={verificationCode[i] || ''}
+                                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                    className="w-11 h-12 text-center text-[18px] font-mono border border-hairline bg-transparent text-foreground focus:outline-none focus:border-[hsl(var(--accent))] focus:ring-1 focus:ring-[hsl(var(--accent))] transition-colors"
+                                />
                             ))}
                         </div>
+                    </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => copyToClipboard(backupCodes.join('\n'))}
-                                className="flex-1 h-9 flex items-center justify-center gap-1.5 text-sm border border-border
-                                           rounded-lg text-foreground hover:bg-accent transition-colors"
-                            >
-                                <Copy size={14} />
-                                Copy
-                            </button>
-                            <button
-                                type="button"
-                                onClick={downloadBackupCodes}
-                                className="flex-1 h-9 flex items-center justify-center gap-1.5 text-sm border border-border
-                                           rounded-lg text-foreground hover:bg-accent transition-colors"
-                            >
-                                <Download size={14} />
-                                Download
-                            </button>
-                        </div>
+                    <AuthAlert type="error" message={error} />
 
-                        <AuthSubmitButton type="button" isLoading={false} onClick={finishSetup}>
-                            Continue
-                            <ArrowRight size={14} />
-                        </AuthSubmitButton>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    <AuthSubmitButton
+                        type="button"
+                        isLoading={loading}
+                        disabled={verificationCode.length !== 6}
+                        onClick={verifyCode}
+                    >
+                        {loading ? 'Verifying…' : 'Verify Code'}
+                    </AuthSubmitButton>
+                </div>
+            )}
+
+            {/* ── STEP: Backup codes ── */}
+            {step === 'backup' && (
+                <div className="space-y-6">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 size={18} className="text-[hsl(var(--gain))]" />
+                        <span className="eyebrow text-[hsl(var(--gain))]">Setup complete</span>
+                    </div>
+
+                    <div>
+                        <p className="font-serif text-[22px] text-foreground leading-snug">Save your backup codes</p>
+                        <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
+                            Use these if you lose access to your authenticator app. Each code works once.
+                        </p>
+                    </div>
+
+                    <div className="border-l-2 border-[hsl(var(--chart-4))] bg-[hsl(var(--chart-4)/0.08)] px-4 py-3">
+                        <p className="eyebrow text-[hsl(var(--chart-4))] mb-1">Notice</p>
+                        <p className="text-[12px] text-foreground leading-snug">
+                            These codes will only be shown once. Save them now.
+                        </p>
+                    </div>
+
+                    <div className="border border-hairline bg-muted/30 p-4 grid grid-cols-2 gap-2">
+                        {backupCodes.map((code, i) => (
+                            <div
+                                key={i}
+                                className="font-mono text-[13px] bg-background border border-hairline px-2 py-1.5 text-center text-foreground flex items-center justify-center gap-2"
+                            >
+                                <span className="display-num text-[9px] text-muted-foreground">{String(i + 1).padStart(2, '0')}</span>
+                                <span>{code}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => copyToClipboard(backupCodes.join('\n'))}
+                            className="ed-btn ed-btn-ghost flex-1 h-10"
+                        >
+                            <Copy size={13} />
+                            Copy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={downloadBackupCodes}
+                            className="ed-btn ed-btn-info flex-1 h-10"
+                        >
+                            <Download size={13} />
+                            Download .txt
+                        </button>
+                    </div>
+
+                    <AuthSubmitButton type="button" isLoading={false} onClick={finishSetup}>
+                        Continue
+                        <ArrowRight size={14} />
+                    </AuthSubmitButton>
+                </div>
+            )}
         </div>
     );
 }

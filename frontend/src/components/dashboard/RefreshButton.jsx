@@ -1,4 +1,3 @@
-// src/components/dashboard/RefreshButton.jsx
 'use client';
 
 import { portfolioAPI } from '@/lib/api';
@@ -6,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 export function RefreshButton() {
     const queryClient = useQueryClient();
@@ -21,10 +21,12 @@ export function RefreshButton() {
                     queryClient.invalidateQueries({ queryKey: ['holdings'] }),
                 ]);
                 setIsRefreshing(false);
+                toast.success('Portfolio synced');
             }, 2000);
         },
-        onError: () => {
+        onError: (err) => {
             setIsRefreshing(false);
+            toast.error(err?.message || 'Sync failed');
         },
     });
 
@@ -38,14 +40,13 @@ export function RefreshButton() {
         <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className={cn(
-                'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed',
-                'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-foreground hover:bg-gray-50 dark:hover:bg-gray-800',
-                isRefreshing && 'opacity-70'
-            )}
+            className="ed-btn ed-btn-ghost group"
         >
-            <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
-            <span>{isRefreshing ? 'Syncing...' : 'Sync'}</span>
+            <RefreshCw className={cn('h-3 w-3', isRefreshing && 'animate-spin')} strokeWidth={2} />
+            <span>{isRefreshing ? 'Syncing' : 'Sync'}</span>
+            <span className="hidden sm:inline text-[9px] tracking-[0.18em] text-muted-foreground border-l border-border pl-2 ml-1">
+                ⌘R
+            </span>
         </button>
     );
 }

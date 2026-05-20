@@ -2,9 +2,7 @@
 'use client';
 
 import { AuthPageShell } from '@/components/auth/AuthPageShell';
-import { AuthSubmitButton } from '@/components/auth/AuthSubmitButton';
 import { emailAPI } from '@/lib/api';
-import { motion } from 'framer-motion';
 import { CheckCircle2, MailCheck, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -12,7 +10,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 
 function VerifyEmailContent() {
     const searchParams = useSearchParams();
-    const [status, setStatus] = useState('loading'); // loading | success | already | error
+    const [status, setStatus] = useState('loading');
     const [message, setMessage] = useState('');
     const [isChange, setIsChange] = useState(false);
     const verificationStarted = useRef(false);
@@ -50,59 +48,76 @@ function VerifyEmailContent() {
     };
 
     const titles = {
-        loading: 'Verifying...',
+        loading: 'Verifying email…',
         success: isChange ? 'Email changed' : 'Email verified',
         already: 'Already verified',
         error: 'Verification failed',
     };
 
     const subtitles = {
-        loading: 'Verifying your email address',
-        success: isChange ? 'Your email address has been updated.' : 'Your email address has been verified.',
-        already: 'This email address has already been verified.',
+        loading: 'Hold on while we authenticate your link.',
+        success: isChange
+            ? 'Your email address on file has been updated.'
+            : 'Your email is confirmed. Your account is active.',
+        already: 'This email address has already been verified previously.',
         error: message,
     };
 
     return (
-        <AuthPageShell title={titles[status]} subtitle={subtitles[status]} maxWidth="sm" showFooterLinks={false}>
+        <AuthPageShell
+            title={titles[status]}
+            subtitle={subtitles[status]}
+            index="V"
+            kicker="Email Confirmation"
+            showFooterLinks={status !== 'loading'}
+            asideQuote={'"Each verified entry is a vow kept to the ledger."'}
+        >
             {status === 'loading' && (
-                <div className="flex justify-center py-6">
-                    <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        className="w-8 h-8 rounded-full border-2 border-blue-200 border-t-blue-600"
-                    />
+                <div className="flex flex-col items-center gap-3 py-6">
+                    <div className="w-8 h-8 rounded-full border border-hairline border-t-foreground animate-spin" />
+                    <p className="eyebrow">Authenticating</p>
                 </div>
             )}
 
             {(status === 'success' || status === 'already') && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-                    <div className="flex justify-center">
-                        <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-                            {status === 'success' ? <MailCheck size={24} className="text-green-600" /> : <CheckCircle2 size={24} className="text-green-600" />}
+                <div className="space-y-6">
+                    <div className="flex items-start gap-4 border-l-2 border-[hsl(var(--gain))] bg-[hsl(var(--gain)/0.06)] px-4 py-4">
+                        {status === 'success'
+                            ? <MailCheck size={20} className="text-[hsl(var(--gain))] flex-shrink-0 mt-0.5" />
+                            : <CheckCircle2 size={20} className="text-[hsl(var(--gain))] flex-shrink-0 mt-0.5" />
+                        }
+                        <div>
+                            <p className="eyebrow text-[hsl(var(--gain))] mb-1">
+                                {status === 'success' ? 'Confirmed' : 'Previously confirmed'}
+                            </p>
+                            <p className="text-[13px] text-foreground leading-snug">{message}</p>
                         </div>
                     </div>
+
                     <Link href="/dashboard" className="block">
-                        <AuthSubmitButton type="button" isLoading={false}>
-                            Go to dashboard
-                        </AuthSubmitButton>
+                        <button type="button" className="ed-btn ed-btn-primary w-full h-11">
+                            Go to Dashboard
+                        </button>
                     </Link>
-                </motion.div>
+                </div>
             )}
 
             {status === 'error' && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-                    <div className="flex justify-center">
-                        <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
-                            <XCircle size={24} className="text-red-600" />
+                <div className="space-y-6">
+                    <div className="flex items-start gap-4 border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.06)] px-4 py-4">
+                        <XCircle size={20} className="text-[hsl(var(--loss))] flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="eyebrow text-[hsl(var(--loss))] mb-1">Verification failed</p>
+                            <p className="text-[13px] text-foreground leading-snug">{message}</p>
                         </div>
                     </div>
+
                     <Link href="/dashboard" className="block">
-                        <AuthSubmitButton type="button" isLoading={false}>
-                            Return to dashboard
-                        </AuthSubmitButton>
+                        <button type="button" className="ed-btn ed-btn-ghost w-full h-11">
+                            Return to Dashboard
+                        </button>
                     </Link>
-                </motion.div>
+                </div>
             )}
         </AuthPageShell>
     );
@@ -111,8 +126,8 @@ function VerifyEmailContent() {
 export default function VerifyEmailPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
-                <div className="w-5 h-5 border-2 border-gray-400/20 border-t-gray-400 rounded-full animate-spin" />
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="w-5 h-5 border border-hairline border-t-foreground rounded-full animate-spin" />
             </div>
         }>
             <VerifyEmailContent />

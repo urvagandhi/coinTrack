@@ -67,7 +67,7 @@ function Setup2FAContent() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <Loader2 size={20} className="animate-spin text-muted-foreground" />
             </div>
         );
@@ -76,8 +76,11 @@ function Setup2FAContent() {
     return (
         <AuthPageShell
             title="Secure your account"
-            subtitle="Two-factor authentication is required for all CoinTrack accounts"
+            subtitle="Two-factor authentication is mandatory for all CoinTrack accounts. Scan, verify, and store your backup codes."
+            index="VII"
+            kicker="Two-Factor Setup"
             maxWidth="md"
+            asideQuote={'"Security is the editor of every great ledger — quiet, unceasing, essential."'}
         >
             <TotpSetup
                 isMandatory
@@ -93,7 +96,7 @@ function Setup2FAContent() {
 export default function Setup2FAPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <Loader2 size={20} className="animate-spin text-muted-foreground" />
             </div>
         }>

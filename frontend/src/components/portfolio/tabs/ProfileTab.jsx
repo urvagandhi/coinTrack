@@ -1,12 +1,9 @@
-// src/components/portfolio/tabs/ProfileTab.jsx
 'use client';
 
 import { useBrokerConnection } from '@/hooks/useBrokerConnection';
-import { portfolioAPI } from '@/lib/api';
+import { brokerAPI, portfolioAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { containerVariants, itemVariants, useMotionVariants } from '@/lib/motion';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import {
     AlertCircle,
     BarChart3,
@@ -23,43 +20,30 @@ import {
     Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 import { TabLoadingSkeleton } from './TabLoadingSkeleton';
-
-// ── Broker metadata ─────────────────────────────────────────────
 
 const BROKER_META = {
     ZERODHA: {
-        name: 'Zerodha',
-        initials: 'ZE',
-        slug: 'zerodha',
-        color: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-        accent: 'border-blue-500',
+        name: 'Zerodha', initials: 'ZE', slug: 'zerodha',
+        accentVar: '--broker-zerodha',
         capabilities: ['Holdings', 'Positions', 'Funds', 'MF Holdings', 'MF SIPs', 'Orders'],
     },
     ANGEL_ONE: {
-        name: 'Angel One',
-        initials: 'AO',
-        slug: 'angelone',
-        color: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
-        accent: 'border-orange-500',
+        name: 'Angel One', initials: 'AO', slug: 'angelone',
+        accentVar: '--broker-angel',
         capabilities: ['Holdings', 'Positions', 'Funds', 'Orders', 'Trades'],
     },
     UPSTOX: {
-        name: 'Upstox',
-        initials: 'UP',
-        slug: 'upstox',
-        color: 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
-        accent: 'border-purple-500',
+        name: 'Upstox', initials: 'UP', slug: 'upstox',
+        accentVar: '--broker-upstox',
         capabilities: ['Holdings', 'Positions', 'Funds', 'Orders'],
     },
 };
 
-// ── Helpers ─────────────────────────────────────────────────────
-
 function relativeTime(iso) {
     if (!iso) return null;
-    const d = Date.now() - new Date(iso).getTime();
-    const m = Math.floor(d / 60000);
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
     if (m < 1) return 'just now';
     if (m < 60) return `${m}m ago`;
     const h = Math.floor(m / 60);
@@ -70,233 +54,229 @@ function relativeTime(iso) {
 function formatDateTime(iso) {
     if (!iso) return '—';
     return new Date(iso).toLocaleString('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
 }
 
-// ── Info row component ──────────────────────────────────────────
-
-function InfoRow({ icon: Icon, label, value, className }) {
+function InfoRow({ icon: Icon, label, value }) {
     if (!value || value === '—') return null;
     return (
-        <div className={cn('flex items-start gap-3 py-2', className)}>
-            <Icon size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-3 py-2">
+            <Icon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" strokeWidth={1.5} />
             <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-                <p className="text-sm text-foreground break-all">{value}</p>
+                <p className="eyebrow mb-1">{label}</p>
+                <p className="text-[12px] text-foreground font-mono break-all">{value}</p>
             </div>
         </div>
     );
 }
 
-// ── Status badge ────────────────────────────────────────────────
-
-function StatusBadge({ broker }) {
+function StatusPill({ broker }) {
     const isActive = broker.tokenActive;
+    const needsReconnect = broker.needsReconnect;
     const isExpired = !isActive && broker.lastStatus !== null && broker.lastStatus !== 'NEVER_SYNCED';
-
-    if (isActive) {
-        return <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>;
-    }
-    if (isExpired) {
-        return <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Session Expired</span>;
-    }
-    return <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Not connected</span>;
+    if (isActive && !needsReconnect) return <span className="ed-pill ed-pill-gain"><span className="live-dot" />Active</span>;
+    if (needsReconnect) return <span className="ed-pill ed-pill-loss">Reconnect needed</span>;
+    if (isExpired) return <span className="ed-pill ed-pill-loss">Expired</span>;
+    return <span className="ed-pill">Not connected</span>;
 }
 
-// ── Capability pills ────────────────────────────────────────────
+function BrokerProfileCard({ broker, profileData, index }) {
+    const meta = BROKER_META[broker.broker] || { name: broker.broker, initials: broker.broker?.slice(0, 2), capabilities: [], accentVar: '--muted-foreground' };
+    const isActive = broker.tokenActive;
+    const needsReconnect = !!broker.needsReconnect;
+    const profile = broker.broker === 'ZERODHA' ? profileData : null;
+    const accentColor = `hsl(var(${meta.accentVar}))`;
+    const [reconnecting, setReconnecting] = useState(false);
 
-function CapabilityPills({ capabilities, isActive }) {
-    return (
-        <div className="flex flex-wrap gap-1.5">
-            {capabilities.map(cap => (
-                <div key={cap} className={cn(
-                    'text-[11px] rounded-md px-2 py-1 flex items-center gap-1 border',
-                    isActive
-                        ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
-                        : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
-                )}>
-                    {isActive ? <Check size={10} /> : <Minus size={10} />}
-                    {cap}
-                </div>
-            ))}
-        </div>
-    );
-}
-
-// ── Sync detail row ─────────────────────────────────────────────
-
-function SyncDetails({ broker }) {
-    const lastSync = relativeTime(broker.lastSuccessAt);
-
-    return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Last Sync</p>
-                <p className="text-sm font-medium text-foreground">{lastSync || 'Never'}</p>
-                {broker.lastSuccessAt && (
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{formatDateTime(broker.lastSuccessAt)}</p>
-                )}
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Status</p>
-                <p className={cn('text-sm font-medium', {
-                    'text-green-600': broker.lastStatus === 'SUCCESS',
-                    'text-red-600': broker.lastStatus === 'FAILURE',
-                    'text-amber-600': broker.lastStatus === 'PARTIAL_FAILURE',
-                    'text-muted-foreground': !broker.lastStatus || broker.lastStatus === 'NEVER_SYNCED',
-                })}>
-                    {broker.lastStatus === 'SUCCESS' ? 'Success'
-                        : broker.lastStatus === 'FAILURE' ? 'Failed'
-                            : broker.lastStatus === 'PARTIAL_FAILURE' ? 'Partial'
-                                : broker.lastStatus === 'NEVER_SYNCED' ? 'Never synced'
-                                    : '—'}
-                </p>
-            </div>
-            {broker.lastDurationMs && (
-                <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Duration</p>
-                    <p className="text-sm font-medium text-foreground">
-                        {broker.lastDurationMs < 1000
-                            ? `${broker.lastDurationMs}ms`
-                            : `${(broker.lastDurationMs / 1000).toFixed(1)}s`}
-                    </p>
-                </div>
-            )}
-        </div>
-    );
-}
-
-// ── Broker Profile Card ─────────────────────────────────────────
-
-function BrokerProfileCard({ broker, profileData }) {
-    const item = useMotionVariants(itemVariants);
-    const meta = BROKER_META[broker.broker] || {
-        name: broker.broker,
-        initials: broker.broker?.slice(0, 2),
-        color: 'bg-gray-500/15 text-gray-600',
-        accent: 'border-gray-500',
-        capabilities: [],
+    const handleReconnect = async () => {
+        if (reconnecting || !meta.slug) return;
+        setReconnecting(true);
+        try {
+            // Backend returns the broker's OAuth login URL — go straight there,
+            // skipping the "save credentials" form since the keys are already on file.
+            const res = await brokerAPI.getConnectUrl(meta.slug);
+            const url = res?.loginUrl || res?.data?.loginUrl;
+            if (url) {
+                window.location.href = url;
+            } else {
+                window.location.href = '/brokers';
+            }
+        } catch (e) {
+            window.location.href = '/brokers';
+        } finally {
+            setReconnecting(false);
+        }
     };
 
-    const isActive = broker.tokenActive;
-
-    // Match profile data to this broker (currently profile API returns Zerodha data)
-    const profile = broker.broker === 'ZERODHA' ? profileData : null;
-
     return (
-        <motion.div
-            variants={item}
-            className={cn(
-                'bg-white dark:bg-gray-900/60 backdrop-blur-sm border rounded-2xl overflow-hidden shadow-sm',
-                'border-gray-200 dark:border-gray-800'
-            )}
-        >
-            {/* Header with accent bar */}
-            <div className={cn('border-t-[3px]', meta.accent)} />
+        <article className="ed-card relative">
+            <span className="corner-mark corner-tl" />
+            <span className="corner-mark corner-tr" />
+            <span className="corner-mark corner-bl" />
+            <span className="corner-mark corner-br" />
 
-            <div className="p-5 sm:p-6">
-                {/* Broker identity + status */}
-                <div className="flex items-center justify-between mb-5">
-                    <div className="flex items-center gap-3">
-                        <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold', meta.color)}>
+            {/* Accent header strip */}
+            <div className="h-1" style={{ background: accentColor }} />
+
+            <div className="p-6">
+                <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                        <div
+                            className="h-12 w-12 flex items-center justify-center rounded-sm text-[13px] font-mono font-bold tracking-wider"
+                            style={{
+                                color: accentColor,
+                                background: `hsl(var(${meta.accentVar}) / 0.1)`,
+                                border: `1px solid hsl(var(${meta.accentVar}) / 0.3)`,
+                            }}
+                        >
                             {meta.initials}
                         </div>
                         <div>
-                            <h3 className="text-base font-semibold text-foreground">{meta.name}</h3>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="index-num tnum">№ {String(index + 1).padStart(2, '0')}</span>
+                            </div>
+                            <h3 className="font-serif text-[22px] text-foreground leading-none">{meta.name}</h3>
                             {broker.lastSuccessAt && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                    <Clock size={10} />
-                                    Last synced {relativeTime(broker.lastSuccessAt)}
-                                    {broker.lastDurationMs != null && (
-                                        <span className="text-gray-400 dark:text-gray-500">· {broker.lastDurationMs}ms</span>
-                                    )}
+                                <p className="text-[11px] text-muted-foreground mt-1.5 flex items-center gap-1 font-mono">
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {relativeTime(broker.lastSuccessAt)}
+                                    {broker.lastDurationMs != null && <span className="text-muted-foreground/60">· {broker.lastDurationMs}ms</span>}
                                 </p>
                             )}
                         </div>
                     </div>
-                    <StatusBadge broker={broker} />
+                    <StatusPill broker={broker} />
                 </div>
 
-                {/* Account info from profile API */}
                 {profile && (
-                    <div className="mb-5 bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4">
-                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                            <User size={12} />
-                            Account Details
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 divide-y sm:divide-y-0 divide-gray-200 dark:divide-gray-700">
-                            <InfoRow icon={User} label="Name" value={profile.user_name} />
+                    <div className="mb-6 px-5 py-4 border-l-2 border-[hsl(var(--accent))]/40 bg-muted/40">
+                        <div className="flex items-baseline gap-2 mb-3">
+                            <span className="eyebrow-strong">Account</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                            <InfoRow icon={User} label="Holder" value={profile.user_name} />
                             <InfoRow icon={Mail} label="Email" value={profile.email} />
                             <InfoRow icon={Shield} label="Client ID" value={profile.user_id} />
                             <InfoRow icon={Globe} label="Broker" value={profile.broker} />
-                            {profile.exchanges?.length > 0 && (
-                                <InfoRow icon={BarChart3} label="Exchanges" value={profile.exchanges.join(', ')} />
-                            )}
-                            {profile.products?.length > 0 && (
-                                <InfoRow icon={Wallet} label="Products" value={profile.products.join(', ')} />
-                            )}
+                            {profile.exchanges?.length > 0 && <InfoRow icon={BarChart3} label="Exchanges" value={profile.exchanges.join(', ')} />}
+                            {profile.products?.length > 0 && <InfoRow icon={Wallet} label="Products" value={profile.products.join(', ')} />}
                         </div>
                     </div>
                 )}
 
-                {/* Sync details */}
-                <div className="mb-5">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                        <RefreshCw size={12} />
-                        Sync Status
-                    </h4>
-                    <SyncDetails broker={broker} />
+                <div className="mb-6">
+                    <div className="flex items-baseline gap-2 mb-3">
+                        <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                        <span className="eyebrow-strong">Sync Status</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 divide-x divide-border border-y border-border">
+                        <div className="px-4 py-3">
+                            <p className="eyebrow mb-1">Last Sync</p>
+                            <p className="text-[13px] font-medium text-foreground">{relativeTime(broker.lastSuccessAt) || 'Never'}</p>
+                            {broker.lastSuccessAt && (
+                                <p className="text-[10px] font-mono text-muted-foreground/70 mt-0.5">{formatDateTime(broker.lastSuccessAt)}</p>
+                            )}
+                        </div>
+                        <div className="px-4 py-3">
+                            <p className="eyebrow mb-1">Status</p>
+                            <p className={cn('text-[13px] font-medium', {
+                                'text-[hsl(var(--gain))]': broker.lastStatus === 'SUCCESS',
+                                'text-[hsl(var(--loss))]': broker.lastStatus === 'FAILURE',
+                                'text-[hsl(var(--chart-4))]': broker.lastStatus === 'PARTIAL_FAILURE',
+                                'text-muted-foreground': !broker.lastStatus || broker.lastStatus === 'NEVER_SYNCED',
+                            })}>
+                                {broker.lastStatus === 'SUCCESS' ? 'Success'
+                                    : broker.lastStatus === 'FAILURE' ? 'Failed'
+                                        : broker.lastStatus === 'PARTIAL_FAILURE' ? 'Partial'
+                                            : broker.lastStatus === 'NEVER_SYNCED' ? 'Never' : '—'}
+                            </p>
+                        </div>
+                        {broker.lastDurationMs && (
+                            <div className="px-4 py-3 col-span-2 sm:col-span-1">
+                                <p className="eyebrow mb-1">Duration</p>
+                                <p className="text-[13px] font-medium text-foreground font-mono tnum">
+                                    {broker.lastDurationMs < 1000 ? `${broker.lastDurationMs}ms` : `${(broker.lastDurationMs / 1000).toFixed(1)}s`}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                     {broker.lastError && (
-                        <div className="mt-2 flex items-start gap-2 p-2.5 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg">
-                            <AlertCircle size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs text-red-700 dark:text-red-400">{broker.lastError}</p>
+                        <div className="mt-3 flex items-start gap-2 p-3 border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss))]/8">
+                            <AlertCircle className="h-3 w-3 text-[hsl(var(--loss))] mt-0.5 flex-shrink-0" />
+                            <p className="text-[11px] text-[hsl(var(--loss))]">{broker.lastError}</p>
                         </div>
                     )}
                 </div>
 
-                {/* Capabilities */}
-                <div className="mb-5">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                        Capabilities
-                    </h4>
-                    <CapabilityPills capabilities={meta.capabilities} isActive={isActive} />
+                <div className="mb-6">
+                    <div className="flex items-baseline gap-2 mb-3">
+                        <span className="eyebrow-strong">Capabilities</span>
+                        <span className="index-num tnum">{meta.capabilities.length}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                        {meta.capabilities.map(cap => (
+                            <span
+                                key={cap}
+                                className={cn(
+                                    'inline-flex items-center gap-1 text-[10px] font-mono tracking-[0.06em] px-2 py-1 border rounded-sm',
+                                    isActive
+                                        ? 'text-[hsl(var(--gain))] border-[hsl(var(--gain))]/30 bg-[hsl(var(--gain))]/5'
+                                        : 'text-muted-foreground border-border bg-muted'
+                                )}
+                            >
+                                {isActive ? <Check className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
+                                {cap}
+                            </span>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    {!isActive && meta.slug && (
+                {needsReconnect && (
+                    <div className="mb-4 flex items-start gap-2 p-3 border-l-2 border-[hsl(var(--chart-4))] bg-[hsl(var(--chart-4))]/8">
+                        <AlertCircle className="h-3 w-3 text-[hsl(var(--chart-4))] mt-0.5 flex-shrink-0" />
+                        <p className="text-[11px] text-foreground/80">
+                            Your {meta.name} session expired or was rejected. Credentials are still saved —
+                            just reauthorize to resume syncing.
+                        </p>
+                    </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-2 pt-5 border-t border-hairline">
+                    {needsReconnect && meta.slug && (
+                        <button
+                            onClick={handleReconnect}
+                            disabled={reconnecting}
+                            className="ed-btn ed-btn-accent"
+                        >
+                            <RefreshCw className={cn('h-3 w-3', reconnecting && 'animate-spin')} />
+                            {reconnecting ? 'Redirecting…' : `Reconnect ${meta.name}`}
+                        </button>
+                    )}
+                    {!needsReconnect && !isActive && meta.slug && (
                         <Link href="/brokers">
-                            <button className="h-8 px-4 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1.5">
-                                <RefreshCw size={12} />
-                                Reconnect
+                            <button className="ed-btn ed-btn-accent">
+                                <RefreshCw className="h-3 w-3" /> Connect
                             </button>
                         </Link>
                     )}
-                    {isActive && meta.slug && (
+                    {isActive && !needsReconnect && meta.slug && (
                         <Link href={`/brokers/${meta.slug}`}>
-                            <button className="h-8 px-4 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-1.5">
-                                <ExternalLink size={12} />
-                                Manage
+                            <button className="ed-btn ed-btn-ghost">
+                                <ExternalLink className="h-3 w-3" /> Manage
                             </button>
                         </Link>
                     )}
                     <Link href="/portfolio?tab=holdings">
-                        <button className="h-8 px-4 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <button className="ed-btn ed-btn-ghost">
                             View Holdings
                         </button>
                     </Link>
                 </div>
             </div>
-        </motion.div>
+        </article>
     );
 }
-
-// ── Main ProfileTab ─────────────────────────────────────────────
 
 export function ProfileTab() {
     const { data: syncData, isLoading: syncLoading } = useBrokerConnection();
@@ -306,7 +286,6 @@ export function ProfileTab() {
         staleTime: 5 * 60 * 1000,
         retry: false,
     });
-    const container = useMotionVariants(containerVariants);
 
     if (syncLoading) return <TabLoadingSkeleton rows={4} columns={3} />;
 
@@ -314,43 +293,42 @@ export function ProfileTab() {
 
     if (brokers.length === 0) {
         return (
-            <div className="bg-white dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-2xl p-12 flex flex-col items-center text-center gap-3 shadow-sm">
-                <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <Link2 size={24} className="text-gray-400" />
-                </div>
-                <h3 className="text-base font-semibold text-foreground">No brokers connected</h3>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                    Connect your brokerage account to view portfolio data, sync holdings, and track performance.
+            <section className="ed-card relative px-8 py-14 text-center">
+                <span className="corner-mark corner-tl" />
+                <span className="corner-mark corner-tr" />
+                <span className="corner-mark corner-bl" />
+                <span className="corner-mark corner-br" />
+                <Link2 className="h-6 w-6 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
+                <h3 className="font-serif italic text-[24px] text-foreground mb-1">No brokers on file.</h3>
+                <p className="text-[12px] text-muted-foreground max-w-xs mx-auto mb-5">
+                    Connect a brokerage account to view portfolio data, sync holdings, and track performance.
                 </p>
-                <Link href="/brokers" className="mt-2">
-                    <button className="h-9 px-5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-                        Connect a Broker
-                    </button>
+                <Link href="/brokers">
+                    <button className="ed-btn ed-btn-primary">Connect a Broker</button>
                 </Link>
-            </div>
+            </section>
         );
     }
 
     return (
-        <motion.div variants={container} initial="hidden" animate="visible" className="space-y-5">
-            <div className="flex items-center gap-2">
-                <Shield size={16} className="text-muted-foreground" />
-                <h2 className="text-sm font-semibold text-foreground">Connected Brokers</h2>
-                <span className="text-xs text-muted-foreground ml-1">({brokers.length})</span>
+        <div className="space-y-5">
+            <div className="flex items-baseline justify-between pb-4 border-b border-border">
+                <div className="flex items-baseline gap-3">
+                    <Shield className="h-3.5 w-3.5 text-muted-foreground self-center" />
+                    <span className="eyebrow-strong">Connected Vendors</span>
+                    <span className="index-num tnum">[{String(brokers.length).padStart(2, '0')}]</span>
+                </div>
             </div>
 
-            {brokers.map(b => (
-                <BrokerProfileCard
-                    key={b.broker}
-                    broker={b}
-                    profileData={profileData}
-                />
-            ))}
+            <div className="space-y-5 stagger-fade">
+                {brokers.map((b, i) => (
+                    <BrokerProfileCard key={b.broker} broker={b} profileData={profileData} index={i} />
+                ))}
+            </div>
 
-            {/* Info footer */}
-            <p className="text-[11px] text-muted-foreground text-center pt-2">
-                Zerodha sessions expire daily at 6:00 AM IST. Reconnect to refresh your session.
+            <p className="font-serif italic text-[11px] text-muted-foreground text-center pt-2">
+                Zerodha sessions expire daily at 06:00 IST. Reconnect to refresh authorization.
             </p>
-        </motion.div>
+        </div>
     );
 }

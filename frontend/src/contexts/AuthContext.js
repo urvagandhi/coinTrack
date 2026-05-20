@@ -59,6 +59,16 @@ export function AuthProvider({ children }) {
     // ── Initialize auth state on mount ──
     useEffect(() => {
         initializeAuth();
+        // Safety net: if init never completes (hung refresh/profile call),
+        // force-exit the "isInitializing" gate after 8s so the UI can render
+        // — guest if no auth, redirect target otherwise.
+        const safety = setTimeout(() => {
+            setIsInitializing((v) => {
+                if (v) logger.warn('Auth init timed out — releasing isInitializing gate');
+                return false;
+            });
+        }, 8000);
+        return () => clearTimeout(safety);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

@@ -11,8 +11,8 @@ export const BROKERS = {
         authType: 'oauth',
         setupPath: '/brokers/zerodha',
         callbackPath: '/brokers/zerodha/callback',
-        accentClass: 'border-l-blue-400 dark:border-l-blue-500',
-        badgeClass: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+        accentClass: 'border-l-chart-3',
+        badgeClass: 'bg-chart-3/10 text-chart-3',
         initials: 'ZE',
         capabilities: [
             'Equity Holdings',
@@ -48,7 +48,7 @@ export const BROKERS = {
             {
                 title: 'Set the redirect URL',
                 body: 'In your app settings, set the redirect URL to:',
-                code: `${APP_URL}/api/kite/callback`,
+                code: `${APP_URL}/brokers/zerodha/callback`,
             },
             {
                 title: 'Copy your credentials',
@@ -65,8 +65,8 @@ export const BROKERS = {
         authType: 'direct',
         setupPath: '/brokers/angelone',
         callbackPath: null,
-        accentClass: 'border-l-orange-400 dark:border-l-orange-500',
-        badgeClass: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+        accentClass: 'border-l-chart-4',
+        badgeClass: 'bg-chart-4/10 text-chart-4',
         initials: 'AO',
         capabilities: [
             'Equity Holdings',
@@ -77,22 +77,6 @@ export const BROKERS = {
         ],
         credentialFields: [
             {
-                key: 'clientId',
-                label: 'Client ID',
-                type: 'text',
-                placeholder: 'Your Angel One Client ID (e.g. A123456)',
-                sensitive: false,
-                helpText: 'Your Angel One login ID',
-            },
-            {
-                key: 'mpin',
-                label: 'MPIN',
-                type: 'password',
-                placeholder: '4-digit MPIN',
-                sensitive: true,
-                helpText: 'Your Angel One trading PIN',
-            },
-            {
                 key: 'apiKey',
                 label: 'SmartAPI Key',
                 type: 'text',
@@ -101,12 +85,28 @@ export const BROKERS = {
                 helpText: 'From smartapi.angelbroking.com',
             },
             {
+                key: 'clientCode',
+                label: 'Client Code',
+                type: 'text',
+                placeholder: 'Your Angel One Client Code (e.g. A123456)',
+                sensitive: false,
+                helpText: 'Your Angel One login ID',
+            },
+            {
+                key: 'password',
+                label: 'Password',
+                type: 'password',
+                placeholder: 'Your Angel One login password',
+                sensitive: true,
+                helpText: 'Your Angel One trading password',
+            },
+            {
                 key: 'totpSecret',
                 label: 'TOTP Secret',
                 type: 'password',
                 placeholder: 'Base32 TOTP secret (e.g. JBSWY3DPEHPK3PXP)',
                 sensitive: true,
-                helpText: 'The secret key shown when setting up 2FA in Angel One',
+                helpText: 'NOT your 6-digit OTP. The 32-char seed shown when setting up TOTP at smartapi.angelbroking.com',
             },
         ],
         setupSteps: [
@@ -134,8 +134,8 @@ export const BROKERS = {
         authType: 'oauth',
         setupPath: '/brokers/upstox',
         callbackPath: '/brokers/upstox/callback',
-        accentClass: 'border-l-purple-400 dark:border-l-purple-500',
-        badgeClass: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+        accentClass: 'border-l-chart-5',
+        badgeClass: 'bg-chart-5/10 text-chart-5',
         initials: 'UP',
         capabilities: [
             'Equity Holdings',
@@ -144,7 +144,32 @@ export const BROKERS = {
             'Live Quotes',
             'Order History',
         ],
-        credentialFields: [],
+        credentialFields: [
+            {
+                key: 'apiKey',
+                label: 'API Key',
+                type: 'text',
+                placeholder: 'Your Upstox API Key',
+                sensitive: false,
+                helpText: 'From the Upstox Developer Console',
+            },
+            {
+                key: 'apiSecret',
+                label: 'API Secret',
+                type: 'password',
+                placeholder: 'Your Upstox API Secret',
+                sensitive: true,
+                helpText: 'Never share this with anyone',
+            },
+            {
+                key: 'redirectUri',
+                label: 'Redirect URI',
+                type: 'text',
+                placeholder: `${APP_URL}/brokers/upstox/callback`,
+                sensitive: false,
+                helpText: 'Must exactly match the redirect URL set in your Upstox developer app',
+            },
+        ],
         setupSteps: [
             {
                 title: 'Create an Upstox developer app',

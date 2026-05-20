@@ -53,6 +53,8 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
     private final PortfolioTotalsCalculator totalsCalculator;
     private final com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository brokerAccountRepository;
     private final com.urva.myfinance.coinTrack.broker.service.ZerodhaLiveDataService zerodhaLiveDataService;
+    private final com.urva.myfinance.coinTrack.broker.adapters.upstox.UpstoxBrokerAdapter upstoxBrokerAdapter;
+    private final com.urva.myfinance.coinTrack.broker.adapters.angelone.AngelOneBrokerAdapter angelOneBrokerAdapter;
     private final com.urva.myfinance.coinTrack.portfolio.repository.CanonicalFundsRepository canonicalFundsRepository;
     private final com.urva.myfinance.coinTrack.portfolio.repository.CanonicalMfOrderRepository canonicalMfOrderRepository;
 
@@ -66,6 +68,8 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
             PortfolioTotalsCalculator totalsCalculator,
             com.urva.myfinance.coinTrack.broker.repository.BrokerAccountRepository brokerAccountRepository,
             com.urva.myfinance.coinTrack.broker.service.ZerodhaLiveDataService zerodhaLiveDataService,
+            com.urva.myfinance.coinTrack.broker.adapters.upstox.UpstoxBrokerAdapter upstoxBrokerAdapter,
+            com.urva.myfinance.coinTrack.broker.adapters.angelone.AngelOneBrokerAdapter angelOneBrokerAdapter,
             com.urva.myfinance.coinTrack.portfolio.repository.CanonicalFundsRepository canonicalFundsRepository,
             com.urva.myfinance.coinTrack.portfolio.repository.CanonicalMfOrderRepository canonicalMfOrderRepository) {
         this.holdingRepository = holdingRepository;
@@ -77,6 +81,8 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         this.totalsCalculator = totalsCalculator;
         this.brokerAccountRepository = brokerAccountRepository;
         this.zerodhaLiveDataService = zerodhaLiveDataService;
+        this.upstoxBrokerAdapter = upstoxBrokerAdapter;
+        this.angelOneBrokerAdapter = angelOneBrokerAdapter;
         this.canonicalFundsRepository = canonicalFundsRepository;
         this.canonicalMfOrderRepository = canonicalMfOrderRepository;
     }
@@ -157,13 +163,17 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         LocalDateTime syncTime = LocalDateTime.now();
 
         for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
-            if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
-                    && account.hasValidToken()) {
-                try {
+            if (!account.hasValidToken()) continue;
+            try {
+                if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA) {
                     allOrders.addAll(zerodhaLiveDataService.fetchOrders(account));
-                } catch (Exception e) {
-                    log.warn("Failed to fetch orders: {}", e.getMessage());
+                } else if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.UPSTOX) {
+                    allOrders.addAll(upstoxBrokerAdapter.fetchOrders(account));
+                } else if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ANGELONE) {
+                    allOrders.addAll(angelOneBrokerAdapter.fetchOrders(account));
                 }
+            } catch (Exception e) {
+                log.warn("Failed to fetch orders for {}: {}", account.getBroker(), e.getMessage());
             }
         }
 
@@ -183,13 +193,17 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         LocalDateTime syncTime = LocalDateTime.now();
 
         for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
-            if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
-                    && account.hasValidToken()) {
-                try {
+            if (!account.hasValidToken()) continue;
+            try {
+                if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA) {
                     allTrades.addAll(zerodhaLiveDataService.fetchTrades(account));
-                } catch (Exception e) {
-                    log.warn("Failed to fetch trades: {}", e.getMessage());
+                } else if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.UPSTOX) {
+                    allTrades.addAll(upstoxBrokerAdapter.fetchTrades(account));
+                } else if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ANGELONE) {
+                    allTrades.addAll(angelOneBrokerAdapter.fetchTrades(account));
                 }
+            } catch (Exception e) {
+                log.warn("Failed to fetch trades for {}: {}", account.getBroker(), e.getMessage());
             }
         }
 
@@ -206,47 +220,60 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .findByUserId(userId);
 
         for (com.urva.myfinance.coinTrack.broker.model.BrokerAccount account : accounts) {
-            if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
-                    && account.hasValidToken()) {
-                try {
-                    com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO funds = zerodhaLiveDataService
-                            .fetchFunds(account);
-                    if (funds != null) {
-                        funds.setLastSyncedAt(LocalDateTime.now());
-                        funds.setSource("LIVE");
-
-                        // Persist as CanonicalFunds
-                        try {
-                            var canonicalFunds = com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalFunds.builder()
-                                    .userId(userId)
-                                    .brokerAccountId(account.getId())
-                                    .brokerType(account.getBroker())
-                                    .availableCash(funds.getEquity() != null && funds.getEquity().getAvailable() != null
-                                            ? funds.getEquity().getAvailable().getCash() : BigDecimal.ZERO)
-                                    .usedMargin(funds.getEquity() != null && funds.getEquity().getUtilised() != null
-                                            ? funds.getEquity().getUtilised().getDebits() : BigDecimal.ZERO)
-                                    .totalMargin(funds.getEquity() != null ? funds.getEquity().getNet() : BigDecimal.ZERO)
-                                    .collateral(funds.getEquity() != null && funds.getEquity().getAvailable() != null
-                                            ? funds.getEquity().getAvailable().getCollateral() : null)
-                                    .openingBalance(funds.getEquity() != null && funds.getEquity().getAvailable() != null
-                                            ? funds.getEquity().getAvailable().getOpeningBalance() : null)
-                                    .lastSyncedAt(java.time.Instant.now())
-                                    .build();
-
-                            canonicalFundsRepository.findFirstByUserIdAndBrokerType(userId, account.getBroker())
-                                    .ifPresent(existing -> canonicalFunds.setId(existing.getId()));
-                            canonicalFundsRepository.save(canonicalFunds);
-                        } catch (Exception persistenceEx) {
-                            log.warn("Failed to persist canonical funds: {}", persistenceEx.getMessage());
-                        }
-                    }
-                    return funds;
-                } catch (Exception e) {
-                    log.warn("Failed to fetch funds: {}", e.getMessage());
+            if (!account.hasValidToken()) continue;
+            try {
+                com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO funds = null;
+                if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA) {
+                    funds = zerodhaLiveDataService.fetchFunds(account);
+                } else if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.UPSTOX) {
+                    funds = upstoxBrokerAdapter.fetchFundsAsKite(account);
+                } else if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ANGELONE) {
+                    funds = angelOneBrokerAdapter.fetchFundsAsKite(account);
                 }
+                if (funds != null) {
+                    funds.setLastSyncedAt(LocalDateTime.now());
+                    funds.setSource("LIVE");
+                    persistCanonicalFunds(userId, account, funds);
+                    return funds;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch funds for {}: {}", account.getBroker(), e.getMessage());
             }
         }
         return null;
+    }
+
+    private void persistCanonicalFunds(String userId,
+            com.urva.myfinance.coinTrack.broker.model.BrokerAccount account,
+            com.urva.myfinance.coinTrack.portfolio.dto.kite.FundsDTO funds) {
+        try {
+            var equity = funds.getEquity();
+            var available = equity != null ? equity.getAvailable() : null;
+            var utilised = equity != null ? equity.getUtilised() : null;
+
+            var canonicalFunds = com.urva.myfinance.coinTrack.broker.core.canonical.CanonicalFunds.builder()
+                    .userId(userId)
+                    .brokerAccountId(account.getId())
+                    .brokerType(account.getBroker())
+                    .availableCash(available != null && available.getCash() != null
+                            ? available.getCash() : BigDecimal.ZERO)
+                    .usedMargin(utilised != null && utilised.getDebits() != null
+                            ? utilised.getDebits() : BigDecimal.ZERO)
+                    .totalMargin(equity != null && equity.getNet() != null
+                            ? equity.getNet() : BigDecimal.ZERO)
+                    .collateral(available != null ? available.getCollateral() : null)
+                    .openingBalance(available != null ? available.getOpeningBalance() : null)
+                    .lastSyncedAt(java.time.Instant.now())
+                    .build();
+
+            // Match the unique index (userId, brokerAccountId). Using brokerType caused
+            // dup-key errors when the same user had multiple/replaced ZERODHA accounts.
+            canonicalFundsRepository.findByUserIdAndBrokerAccountId(userId, account.getId())
+                    .ifPresent(existing -> canonicalFunds.setId(existing.getId()));
+            canonicalFundsRepository.save(canonicalFunds);
+        } catch (Exception persistenceEx) {
+            log.warn("Failed to persist canonical funds: {}", persistenceEx.getMessage());
+        }
     }
 
     @Override

@@ -1,25 +1,26 @@
-// src/components/portfolio/tabs/TabError.jsx
 'use client';
 
 import { AlertCircle } from 'lucide-react';
 
 export function TabError({ error, onRetry }) {
     return (
-        <div className="bg-card border border-border rounded-xl p-12 flex flex-col items-center text-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
-                <AlertCircle size={18} className="text-red-600" />
-            </div>
-            <div>
-                <p className="text-sm font-medium text-foreground">Failed to load data</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                    {error?.message || 'Something went wrong. Please try again.'}
+        <div className="ed-card relative px-8 py-14 text-center">
+            <span className="corner-mark corner-tl" />
+            <span className="corner-mark corner-tr" />
+            <span className="corner-mark corner-bl" />
+            <span className="corner-mark corner-br" />
+            <div className="max-w-sm mx-auto">
+                <AlertCircle className="h-6 w-6 text-[hsl(var(--loss))] mx-auto mb-4" strokeWidth={1.5} />
+                <p className="font-serif italic text-[22px] text-foreground mb-1">An error has been recorded.</p>
+                <p className="text-[12px] text-muted-foreground mb-5">
+                    {error?.message || 'Something went wrong while fetching this section.'}
                 </p>
+                {onRetry && (
+                    <button onClick={onRetry} className="ed-btn ed-btn-primary">
+                        Retry
+                    </button>
+                )}
             </div>
-            {onRetry && (
-                <button onClick={onRetry} className="h-8 px-4 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-                    Try again
-                </button>
-            )}
         </div>
     );
 }

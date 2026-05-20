@@ -1,39 +1,65 @@
 'use client';
 
-import PageTransition from '@/components/ui/PageTransition';
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
-import { emailAPI, portfolioAPI, twofaAPI, userAPI } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import { emailAPI, portfolioAPI, totpAPI, twofaAPI, userAPI } from '@/lib/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeCheck, Bell, Camera, DollarSign, Edit, Eye, EyeOff, Key, Loader2, Save, Shield, ShieldAlert, TrendingUp, User, X } from 'lucide-react';
+import {
+    BadgeCheck,
+    Bell,
+    Camera,
+    Edit,
+    Eye,
+    EyeOff,
+    Key,
+    Loader2,
+    Save,
+    Shield,
+    ShieldAlert,
+    ShieldCheck,
+    X
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+const NOTIF_LABELS = {
+    priceAlerts:     { title: 'Price Alerts',     body: 'Notify when watched symbols cross your levels.' },
+    portfolioUpdates:{ title: 'Portfolio Updates',body: 'Daily summary of net worth movement.' },
+    marketNews:      { title: 'Market News',      body: 'Curated headlines for markets you follow.' },
+    weeklyReports:   { title: 'Weekly Reports',   body: 'Performance digest delivered every Sunday.' },
+};
+
 export default function ProfilePage() {
-    const { user, login, resetTotp, verifyResetTotp } = useAuth(); // getting login to update context if needed
+    const { user, resetTotp, verifyResetTotp } = useAuth();
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
-    // Fetch user profile from API to ensure authoritative state
-    const { data: apiUser, isLoading } = useQuery({
+    const { data: apiUser } = useQuery({
         queryKey: ['profile'],
         queryFn: userAPI.getProfile,
-        initialData: user, // Hydrate from AuthContext instantly
-        staleTime: 1000 * 60 * 5, // 5 minutes stale time
+        initialData: user,
+        staleTime: 1000 * 60 * 5,
     });
 
-    // Fetch portfolio summary for stats
     const { data: portfolioSummary } = useQuery({
         queryKey: ['portfolioSummary'],
         queryFn: portfolioAPI.getSummary,
         staleTime: 1000 * 60 * 5,
     });
 
+    const { data: totpStatus, isLoading: totpStatusLoading } = useQuery({
+        queryKey: ['totp', 'status'],
+        queryFn: totpAPI.getStatus,
+        staleTime: 1000 * 60,
+        retry: false,
+    });
+
     const [isEditing, setIsEditing] = useState(false);
     const [showPasswordFields, setShowPasswordFields] = useState(false);
     const [show2FAResetFlow, setShow2FAResetFlow] = useState(false);
-    const [twoFAStep, setTwoFAStep] = useState('verify'); // 'verify', 'newcode', 'backup'
+    const [twoFAStep, setTwoFAStep] = useState('verify');
     const [currentTotpCode, setCurrentTotpCode] = useState('');
-    const [useBackupForReset, setUseBackupForReset] = useState(false); // Toggle between TOTP and backup code
+    const [useBackupForReset, setUseBackupForReset] = useState(false);
     const [newTotpCode, setNewTotpCode] = useState('');
     const [newBackupCodes, setNewBackupCodes] = useState([]);
     const [resetSetupData, setResetSetupData] = useState(null);
@@ -41,7 +67,6 @@ export default function ProfilePage() {
     const [isSendingRecovery, setIsSendingRecovery] = useState(false);
     const [showRecoveryConfirm, setShowRecoveryConfirm] = useState(false);
 
-    // Form state - initialized from apiUser
     const [profileData, setProfileData] = useState({
         name: apiUser?.name || '',
         username: apiUser?.username || '',
@@ -49,20 +74,10 @@ export default function ProfilePage() {
         bio: apiUser?.bio || '',
         location: apiUser?.location || '',
         phoneNumber: apiUser?.mobile || apiUser?.phoneNumber || '',
-        // These are static for now as per original mock, backend could provide them later
         joinDate: apiUser?.createdAt ? new Date(apiUser.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
-        totalInvestment: 15420.50,
-        totalProfit: 2840.75,
-        portfolioCount: 12,
-        notifications: {
-            priceAlerts: true,
-            portfolioUpdates: true,
-            marketNews: false,
-            weeklyReports: true
-        }
+        notifications: { priceAlerts: true, portfolioUpdates: true, marketNews: false, weeklyReports: true },
     });
 
-    // Update form when apiUser loads/changes
     useEffect(() => {
         if (apiUser) {
             setProfileData(prev => ({
@@ -78,199 +93,97 @@ export default function ProfilePage() {
         }
     }, [apiUser]);
 
-    const [passwords, setPasswords] = useState({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-    });
+    const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
 
-    const [showPasswords, setShowPasswords] = useState({
-        current: false,
-        new: false,
-        confirm: false
-    });
+    const handleChange = (f, v) => setProfileData(p => ({ ...p, [f]: v }));
+    const handleNotif = (f, v) => setProfileData(p => ({ ...p, notifications: { ...p.notifications, [f]: v } }));
+    const handlePwd = (f, v) => setPasswords(p => ({ ...p, [f]: v }));
+    const togglePwdVisibility = (f) => setShowPasswords(p => ({ ...p, [f]: !p[f] }));
 
-    const handleInputChange = (field, value) => {
-        setProfileData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
-
-    const handleNotificationChange = (field, value) => {
-        setProfileData(prev => ({
-            ...prev,
-            notifications: {
-                ...prev.notifications,
-                [field]: value
-            }
-        }));
-    };
-
-    const handlePasswordChange = (field, value) => {
-        setPasswords(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
-
-    const togglePasswordVisibility = (field) => {
-        setShowPasswords(prev => ({
-            ...prev,
-            [field]: !prev[field]
-        }));
-    };
-
-    // Profile Update Mutation
     const updateProfileMutation = useMutation({
         mutationFn: (data) => userAPI.updateProfile(data),
         onSuccess: (updatedUser) => {
             queryClient.setQueryData(['profile'], updatedUser);
-            toast({
-                title: "Profile Updated",
-                description: "Your profile details have been saved successfully.",
-                variant: "success",
-            });
+            toast({ title: "Profile Updated", description: "Your details were saved.", variant: "success" });
             setIsEditing(false);
         },
-        onError: (error) => {
-            toast({
-                title: "Update Failed",
-                description: error.message || "Failed to update profile",
-                variant: "destructive",
-            });
-        }
+        onError: (e) => toast({ title: "Update Failed", description: e.message || "Failed", variant: "destructive" }),
     });
 
-    // Password Change Mutation
     const changePasswordMutation = useMutation({
         mutationFn: (data) => userAPI.changePassword(data.newPassword, data.currentPassword),
         onSuccess: () => {
-            toast({
-                title: "Password Changed",
-                description: "Your password has been updated securely.",
-                variant: "success",
-            });
+            toast({ title: "Password Changed", description: "Your password has been updated.", variant: "success" });
             setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
             setShowPasswordFields(false);
         },
-        onError: (error) => {
-            toast({
-                title: "Change Password Failed",
-                description: error.message || "Failed to change password",
-                variant: "destructive",
-            });
-        }
+        onError: (e) => toast({ title: "Change Password Failed", description: e.message || "Failed", variant: "destructive" }),
     });
 
     const handleSaveProfile = async () => {
-        // ══════════════════════════════════════════════════════════════════════
-        // VALIDATION
-        // ══════════════════════════════════════════════════════════════════════
-
-        // Email is mandatory and must be valid format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!profileData.email || profileData.email.trim() === '') {
-            toast({ title: "Validation Error", description: "Email is required", variant: "destructive" });
-            return;
+        if (!profileData.email?.trim()) {
+            toast({ title: "Validation", description: "Email is required", variant: "destructive" }); return;
         }
         if (!emailRegex.test(profileData.email)) {
-            toast({ title: "Validation Error", description: "Please enter a valid email address", variant: "destructive" });
-            return;
+            toast({ title: "Validation", description: "Invalid email address", variant: "destructive" }); return;
         }
 
-        // Mobile: if provided, must be exactly 10 digits
-        // Strip +91 prefix first, then remove non-digits
-        let cleanedMobile = profileData.phoneNumber || '';
-        cleanedMobile = cleanedMobile.replace(/^\+91/, '').replace(/\D/g, '');
-
-        // Take only last 10 digits if somehow we have more
-        if (cleanedMobile.length > 10) {
-            cleanedMobile = cleanedMobile.slice(-10);
-        }
-
+        let cleanedMobile = (profileData.phoneNumber || '').replace(/^\+91/, '').replace(/\D/g, '');
+        if (cleanedMobile.length > 10) cleanedMobile = cleanedMobile.slice(-10);
         if (cleanedMobile && cleanedMobile.length !== 10) {
-            toast({ title: "Validation Error", description: "Mobile number must be exactly 10 digits", variant: "destructive" });
-            return;
+            toast({ title: "Validation", description: "Mobile must be exactly 10 digits", variant: "destructive" }); return;
         }
         if (cleanedMobile && !/^[6-9]\d{9}$/.test(cleanedMobile)) {
-            toast({ title: "Validation Error", description: "Please enter a valid Indian mobile number", variant: "destructive" });
-            return;
+            toast({ title: "Validation", description: "Invalid Indian mobile number", variant: "destructive" }); return;
         }
 
-        // ══════════════════════════════════════════════════════════════════════
-        // CHECK FOR EMAIL CHANGE
-        // ══════════════════════════════════════════════════════════════════════
         const originalEmail = (apiUser?.email || '').toLowerCase().trim();
         const newEmail = profileData.email.trim().toLowerCase();
-        const emailChanged = newEmail !== originalEmail;
-
-        // If email changed, use the secure email change flow
-        if (emailChanged) {
+        if (newEmail !== originalEmail) {
             try {
                 await emailAPI.change(newEmail);
-                toast({
-                    title: "Verification Email Sent",
-                    description: "A verification link has been sent to your new email address. Please click it to complete the change.",
-                    variant: "success",
-                });
-            } catch (error) {
-                toast({
-                    title: "Email Change Failed",
-                    description: error.message || "Failed to initiate email change",
-                    variant: "destructive",
-                });
+                toast({ title: "Verification Email Sent", description: "Click the link sent to your new address.", variant: "success" });
+            } catch (e) {
+                toast({ title: "Email Change Failed", description: e.message || "Failed", variant: "destructive" });
                 return;
             }
         }
-
-        // Update other profile fields (excluding email - that's handled above)
         updateProfileMutation.mutate({
             name: profileData.name,
             bio: profileData.bio,
             location: profileData.location,
-            phoneNumber: cleanedMobile || null // Send only digits, backend will add +91
+            phoneNumber: cleanedMobile || null,
         });
     };
 
     const handleChangePassword = async () => {
         if (!passwords.currentPassword) {
-            toast({ title: "Validation Error", description: "Current password is required", variant: "destructive" });
-            return;
+            toast({ title: "Validation", description: "Current password required", variant: "destructive" }); return;
         }
         if (passwords.newPassword.length < 8) {
-            toast({ title: "Validation Error", description: "New password must be at least 8 characters", variant: "destructive" });
-            return;
+            toast({ title: "Validation", description: "Must be at least 8 characters", variant: "destructive" }); return;
         }
         if (passwords.currentPassword === passwords.newPassword) {
-            toast({ title: "Validation Error", description: "New password cannot be the same as the current password", variant: "destructive" });
-            return;
+            toast({ title: "Validation", description: "New password must differ", variant: "destructive" }); return;
         }
         if (!/[A-Z]/.test(passwords.newPassword) || !/[0-9]/.test(passwords.newPassword)) {
-            toast({ title: "Validation Error", description: "Password must contain at least one uppercase letter and one number", variant: "destructive" });
-            return;
+            toast({ title: "Validation", description: "Need uppercase and number", variant: "destructive" }); return;
         }
         if (passwords.newPassword !== passwords.confirmPassword) {
-            toast({ title: "Validation Error", description: "New passwords do not match!", variant: "destructive" });
-            return;
+            toast({ title: "Validation", description: "Passwords do not match", variant: "destructive" }); return;
         }
-
-        changePasswordMutation.mutate({
-            newPassword: passwords.newPassword,
-            currentPassword: passwords.currentPassword
-        });
+        changePasswordMutation.mutate({ newPassword: passwords.newPassword, currentPassword: passwords.currentPassword });
     };
 
-    // 2FA Reset Flow
     const handleInitiate2FAReset = async () => {
-        const codeLength = useBackupForReset ? 8 : 6;
-        if (!currentTotpCode || currentTotpCode.length !== codeLength) {
-            toast({ title: "Validation Error", description: `Please enter your ${useBackupForReset ? '8-digit backup' : '6-digit authenticator'} code`, variant: "destructive" });
-            return;
+        const len = useBackupForReset ? 8 : 6;
+        if (!currentTotpCode || currentTotpCode.length !== len) {
+            toast({ title: "Validation", description: `Enter ${useBackupForReset ? '8-digit backup' : '6-digit'} code`, variant: "destructive" }); return;
         }
         setIs2FALoading(true);
         try {
-            // Use the same resetTotp function - backend should accept both TOTP and backup codes
             const result = await resetTotp(currentTotpCode);
             if (result.success) {
                 setResetSetupData(result.data);
@@ -279,17 +192,13 @@ export default function ProfilePage() {
             } else {
                 toast({ title: "Reset Failed", description: result.error || "Invalid code", variant: "destructive" });
             }
-        } catch (error) {
-            toast({ title: "Error", description: "Failed to initiate 2FA reset", variant: "destructive" });
-        } finally {
-            setIs2FALoading(false);
-        }
+        } catch { toast({ title: "Error", description: "Failed to initiate 2FA reset", variant: "destructive" }); }
+        finally { setIs2FALoading(false); }
     };
 
     const handleVerifyNew2FA = async () => {
         if (!newTotpCode || newTotpCode.length !== 6) {
-            toast({ title: "Validation Error", description: "Please enter the new 6-digit code", variant: "destructive" });
-            return;
+            toast({ title: "Validation", description: "Enter 6-digit code", variant: "destructive" }); return;
         }
         setIs2FALoading(true);
         try {
@@ -298,607 +207,550 @@ export default function ProfilePage() {
                 setNewBackupCodes(result.backupCodes || []);
                 setTwoFAStep('backup');
                 setNewTotpCode('');
-                toast({ title: "2FA Reset Complete", description: "Your authenticator has been reset. Save your new backup codes!", variant: "success" });
+                queryClient.invalidateQueries({ queryKey: ['totp', 'status'] });
+                toast({ title: "2FA Reset Complete", description: "Save your new backup codes.", variant: "success" });
             } else {
                 toast({ title: "Verification Failed", description: result.error || "Invalid code", variant: "destructive" });
             }
-        } catch (error) {
-            toast({ title: "Error", description: "Failed to verify new 2FA code", variant: "destructive" });
-        } finally {
-            setIs2FALoading(false);
-        }
+        } catch { toast({ title: "Error", description: "Failed to verify", variant: "destructive" }); }
+        finally { setIs2FALoading(false); }
     };
 
     const downloadNewBackupCodes = () => {
         const now = new Date();
-        const formattedDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        const content = `
-+-----------------------------------------------------------------------+
-|                                                                       |
-|                     COINTRACK BACKUP CODES                            |
-|                                                                       |
-+-----------------------------------------------------------------------+
-
-  [!] IMPORTANT: STORE THESE CODES SECURELY
-
-      * Each code can only be used ONCE
-      * Keep these codes in a safe place (password manager, safe)
-      * Do NOT share these codes with anyone
-      * If codes are compromised, reset your 2FA immediately
-
-=======================================================================
-                         YOUR BACKUP CODES
-=======================================================================
-
-${newBackupCodes.map((code, i) => `        [ ${String(i + 1).padStart(2, '0')} ]    ${code}`).join('\n')}
-
-=======================================================================
-
-    Generated: ${formattedDate}
-    Total Codes: ${newBackupCodes.length}
-
-=======================================================================
-                      HOW TO USE BACKUP CODES
-=======================================================================
-
-    1. Go to the CoinTrack login page
-    2. Enter your username and password
-    3. When prompted for 2FA code, click "Use Backup Code"
-    4. Enter one of your backup codes from this list
-    5. Cross off the used code - it cannot be used again!
-
-+-----------------------------------------------------------------------+
-|                 CoinTrack - Your Portfolio, Secured                   |
-+-----------------------------------------------------------------------+
-`.trim();
-        const element = document.createElement("a");
-        const file = new Blob([content], { type: 'text/plain' });
-        element.href = URL.createObjectURL(file);
-        element.download = `coinTrack_backup-codes_${apiUser?.username || 'user'}.txt`;
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
+        const formattedDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const content = `COINTRACK · BACKUP CODES\nGenerated: ${formattedDate}\n\n${newBackupCodes.map((c, i) => `[${String(i + 1).padStart(2, '0')}]  ${c}`).join('\n')}\n\nEach code is single-use. Store securely.`;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `coinTrack_backup-codes_${apiUser?.username || 'user'}.txt`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
 
     const close2FAFlow = () => {
-        setShow2FAResetFlow(false);
-        setTwoFAStep('verify');
-        setCurrentTotpCode('');
-        setNewTotpCode('');
-        setNewBackupCodes([]);
-        setResetSetupData(null);
-        setUseBackupForReset(false);
+        setShow2FAResetFlow(false); setTwoFAStep('verify'); setCurrentTotpCode('');
+        setNewTotpCode(''); setNewBackupCodes([]); setResetSetupData(null); setUseBackupForReset(false);
     };
 
-    const stats = [
-        {
-            name: 'Total Investment',
-            value: portfolioSummary?.totalInvestedValue ? `₹${portfolioSummary.totalInvestedValue.toLocaleString('en-IN')}` : '₹0',
-            icon: DollarSign,
-            color: 'text-blue-600 dark:text-blue-400',
-            bgColor: 'bg-blue-100 dark:bg-blue-900/20'
-        },
-        {
-            name: 'Total Profit/Loss',
-            value: portfolioSummary?.totalUnrealizedPL ? `${portfolioSummary.totalUnrealizedPL >= 0 ? '+' : ''}₹${portfolioSummary.totalUnrealizedPL.toLocaleString('en-IN')}` : '₹0',
-            icon: TrendingUp,
-            color: 'text-green-600 dark:text-green-400',
-            bgColor: 'bg-green-100 dark:bg-green-900/20'
-        },
-        {
-            name: 'Active Holdings',
-            value: portfolioSummary?.holdingsList?.length || 0,
-            icon: Shield,
-            color: 'text-purple-600 dark:text-purple-400',
-            bgColor: 'bg-purple-100 dark:bg-purple-900/20'
-        }
-    ];
+    const displayName = profileData.name || profileData.username;
+    const initials = (displayName || 'U').split(' ').map(s => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
 
     return (
-        <PageTransition>
-            <div className="max-w-7xl mx-auto space-y-8 pb-12">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <span className="p-2 bg-orange-500/10 text-orange-600 rounded-lg">
-                        <User className="w-6 h-6" />
-                    </span>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Manage your account information and preferences.</p>
-                    </div>
+        <div className="space-y-10">
+            <header className="pb-6 border-b border-hairline">
+                <div className="flex items-center gap-3 mb-4">
+                    <span className="index-num">FOLIO·§06</span>
+                    <span className="h-px w-8 bg-hairline" />
+                    <span className="eyebrow">Press Credential</span>
                 </div>
+                <h1 className="display-serif text-[40px] md:text-[56px] text-foreground">
+                    Profile <span className="italic text-[hsl(var(--accent))]">&amp;</span> Identity
+                </h1>
+            </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-8">
+                {/* IDENTITY CARD */}
+                <aside className="space-y-6">
+                    <article className="ed-card relative overflow-hidden">
+                        <span className="corner-mark corner-tl" />
+                        <span className="corner-mark corner-tr" />
+                        <span className="corner-mark corner-bl" />
+                        <span className="corner-mark corner-br" />
 
-                    {/* Left Column: Profile Card & Stats */}
-                    <div className="lg:col-span-1 space-y-6">
-                        {/* Profile Card */}
-                        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-6 shadow-sm">
-                            <div className="flex flex-col items-center">
-                                <div className="relative group">
-                                    <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-orange-400 to-pink-500">
-                                        <div className="w-full h-full bg-white dark:bg-gray-800 rounded-full flex items-center justify-center overflow-hidden">
-                                            <img
-                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.name || 'User'}`}
-                                                alt="Profile"
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                    </div>
-                                    <button className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white p-2.5 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95">
-                                        <Camera className="w-4 h-4" />
-                                    </button>
-                                </div>
-
-                                <div className="text-center mt-4">
-                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                        {profileData.name || profileData.username}
-                                    </h2>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        @{profileData.username}
-                                    </p>
-                                    <div className="mt-3 inline-flex px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Member since {profileData.joinDate}
-                                    </div>
-                                </div>
-                            </div>
+                        {/* Press tag header */}
+                        <div className="bg-foreground text-background px-5 py-3 flex items-center justify-between">
+                            <span className="text-[9px] tracking-[0.24em] uppercase font-mono">CoinTrack · Subscriber</span>
+                            <span className="text-[9px] tracking-[0.18em] uppercase font-mono opacity-60">№ {(apiUser?.id || '0001').toString().slice(-4)}</span>
                         </div>
 
-                        {/* Stats Cards */}
-                        <div className="space-y-4">
-                            {stats.map((stat, index) => (
-                                <div key={index} className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-5 shadow-sm flex items-center gap-4 transition-transform hover:scale-[1.02]">
-                                    <div className={`w-10 h-10 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                                        <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                            {stat.name}
-                                        </p>
-                                        <p className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">
-                                            {stat.value}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Right Column: Details */}
-                    <div className="lg:col-span-2 space-y-6">
-
-                        {/* Personal Information */}
-                        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-6 md:p-8 shadow-sm">
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                    Personal Information
-                                </h3>
-                                <button
-                                    onClick={() => setIsEditing(!isEditing)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                        <div className="p-6 text-center">
+                            <div className="relative inline-block group">
+                                <div
+                                    className="h-32 w-32 rounded-sm border-2 border-foreground flex items-center justify-center bg-muted relative overflow-hidden"
                                 >
-                                    {isEditing ? <X className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-                                    <span>{isEditing ? 'Cancel' : 'Edit'}</span>
+                                    <img
+                                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName || 'User'}`}
+                                        alt={displayName}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <button className="absolute bottom-0 right-0 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] p-1.5 hover:scale-105 transition-transform rounded-sm">
+                                    <Camera className="h-3 w-3" />
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Full Name */}
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                        Full Name
-                                    </label>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={profileData.name}
-                                            onChange={(e) => handleInputChange('name', e.target.value)}
-                                            className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
-                                        />
-                                    ) : (
-                                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
-                                            {profileData.name || <span className="text-gray-400 italic">Not provided</span>}
-                                        </div>
-                                    )}
-                                </div>
+                            <h2 className="font-serif text-[26px] text-foreground mt-5 tracking-tight">
+                                {displayName}
+                            </h2>
+                            <p className="text-[11px] text-muted-foreground mt-1 font-mono tnum tracking-wider">
+                                @{profileData.username}
+                            </p>
 
-                                {/* Username (Read-only) */}
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                        Username
-                                    </label>
-                                    <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
-                                        {profileData.username || <span className="text-gray-400 italic">Not provided</span>}
-                                    </div>
-                                </div>
+                            <div className="mt-5 pt-5 border-t border-hairline">
+                                <p className="eyebrow mb-1">Issued</p>
+                                <p className="text-[12px] font-mono tnum text-foreground">{profileData.joinDate}</p>
+                            </div>
 
-                                {/* Email (Mandatory) */}
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                        Email <span className="text-red-500">*</span>
-                                        {apiUser?.isEmailVerified && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium normal-case">
-                                                <BadgeCheck className="w-3.5 h-3.5" />
-                                                Verified
-                                            </span>
-                                        )}
-                                    </label>
-                                    {isEditing ? (
-                                        <input
-                                            type="email"
-                                            value={profileData.email}
-                                            onChange={(e) => handleInputChange('email', e.target.value)}
-                                            required
-                                            className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
-                                            placeholder="name@example.com"
-                                        />
-                                    ) : (
-                                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate flex items-center gap-2">
-                                            {profileData.email || <span className="text-gray-400 italic">Not provided</span>}
-                                        </div>
-                                    )}
+                            {apiUser?.isEmailVerified && (
+                                <div className="mt-4 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] font-semibold text-[hsl(var(--gain))]">
+                                    <BadgeCheck className="h-3 w-3" /> Verified
                                 </div>
+                            )}
+                        </div>
 
-                                {/* Mobile with +91 prefix */}
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                        Mobile
-                                    </label>
-                                    {isEditing ? (
+                        {/* Authentic stamp */}
+                        <div className="border-t border-hairline px-5 py-3 flex items-center justify-between">
+                            <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-muted-foreground">Authentic</span>
+                            <span className="font-mono text-[10px] text-[hsl(var(--accent))] tnum">⌘ {initials}</span>
+                        </div>
+                    </article>
+
+                    {/* Portfolio mini metrics */}
+                    {portfolioSummary && (
+                        <div className="ed-card relative p-5">
+                            <span className="corner-mark corner-tl" />
+                            <span className="corner-mark corner-br" />
+                            <p className="eyebrow-strong mb-3">At a glance</p>
+                            <dl className="space-y-3">
+                                <div className="flex justify-between items-baseline pb-2 border-b border-border">
+                                    <dt className="eyebrow">Invested</dt>
+                                    <dd className="font-mono tnum text-foreground font-medium">
+                                        ₹{portfolioSummary.totalInvestedValue?.toLocaleString('en-IN') || '0'}
+                                    </dd>
+                                </div>
+                                <div className="flex justify-between items-baseline pb-2 border-b border-border">
+                                    <dt className="eyebrow">P&amp;L</dt>
+                                    <dd className={cn('font-mono tnum font-medium',
+                                        (portfolioSummary.totalUnrealizedPL ?? 0) >= 0 ? 'text-[hsl(var(--gain))]' : 'text-[hsl(var(--loss))]'
+                                    )}>
+                                        {(portfolioSummary.totalUnrealizedPL ?? 0) >= 0 ? '+' : ''}₹{portfolioSummary.totalUnrealizedPL?.toLocaleString('en-IN') || '0'}
+                                    </dd>
+                                </div>
+                                <div className="flex justify-between items-baseline">
+                                    <dt className="eyebrow">Holdings</dt>
+                                    <dd className="font-mono tnum text-foreground font-medium">{portfolioSummary.holdingsList?.length || 0}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    )}
+                </aside>
+
+                {/* MAIN — Personal info, security, notifications */}
+                <div className="space-y-6">
+                    {/* Personal Information */}
+                    <section className="ed-card relative">
+                        <span className="corner-mark corner-tl" />
+                        <span className="corner-mark corner-br" />
+
+                        <header className="flex items-center justify-between px-6 py-4 border-b border-hairline">
+                            <div className="flex items-baseline gap-3">
+                                <span className="index-num tnum">[ I ]</span>
+                                <h3 className="font-serif text-[22px] text-foreground leading-none">Personal Information</h3>
+                            </div>
+                            <button
+                                onClick={() => setIsEditing(!isEditing)}
+                                className={cn('ed-btn', isEditing ? 'ed-btn-ghost' : 'ed-btn-info')}
+                            >
+                                {isEditing ? <X className="h-3 w-3" /> : <Edit className="h-3 w-3" />}
+                                {isEditing ? 'Cancel' : 'Edit Profile'}
+                            </button>
+                        </header>
+
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                            <ProfileField label="Full Name" editing={isEditing} value={profileData.name} onChange={(v) => handleChange('name', v)} />
+                            <ProfileField label="Username" readOnly value={profileData.username} />
+                            <ProfileField
+                                label="Email"
+                                required
+                                editing={isEditing}
+                                value={profileData.email}
+                                onChange={(v) => handleChange('email', v)}
+                                badge={apiUser?.isEmailVerified ? 'Verified' : null}
+                            />
+                            <ProfileField
+                                label="Mobile"
+                                editing={isEditing}
+                                value={profileData.phoneNumber?.replace(/^\+91/, '').replace(/\D/g, '') || ''}
+                                onChange={(v) => handleChange('phoneNumber', v.replace(/\D/g, ''))}
+                                displayValue={profileData.phoneNumber ? `+91 ${profileData.phoneNumber.replace(/^\+91/, '')}` : ''}
+                                prefix="+91"
+                                maxLength={10}
+                            />
+                            <ProfileField label="Location" editing={isEditing} value={profileData.location} onChange={(v) => handleChange('location', v)} />
+                            <ProfileField label="Bio" editing={isEditing} value={profileData.bio} onChange={(v) => handleChange('bio', v)} className="md:col-span-2" multiline />
+                        </div>
+
+                        {isEditing && (
+                            <div className="flex justify-end gap-2 px-6 py-4 border-t border-hairline">
+                                <button onClick={() => setIsEditing(false)} className="ed-btn ed-btn-ghost">Cancel</button>
+                                <button onClick={handleSaveProfile} disabled={updateProfileMutation.isPending} className="ed-btn ed-btn-accent">
+                                    {updateProfileMutation.isPending ? (<><Loader2 className="h-3 w-3 animate-spin" /> Saving</>) : (<><Save className="h-3 w-3" /> Save Changes</>)}
+                                </button>
+                            </div>
+                        )}
+                    </section>
+
+                    {/* Security */}
+                    <section className="ed-card relative">
+                        <span className="corner-mark corner-tl" />
+                        <span className="corner-mark corner-br" />
+
+                        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 py-4 border-b border-hairline">
+                            <div className="flex items-baseline gap-3">
+                                <span className="index-num tnum">[ II ]</span>
+                                <h3 className="font-serif text-[22px] text-foreground leading-none">Security</h3>
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                                <button
+                                    onClick={() => { setShowPasswordFields(!showPasswordFields); if (!showPasswordFields) setShow2FAResetFlow(false); }}
+                                    className={cn('ed-btn', showPasswordFields ? 'ed-btn-ghost' : 'ed-btn-gain')}
+                                >
+                                    <Shield className="h-3 w-3" /> Change Password
+                                </button>
+                                <button
+                                    onClick={() => { setShow2FAResetFlow(!show2FAResetFlow); if (!show2FAResetFlow) setShowPasswordFields(false); }}
+                                    className={cn('ed-btn', show2FAResetFlow ? 'ed-btn-ghost' : 'ed-btn-warn')}
+                                >
+                                    <Key className="h-3 w-3" /> Reset 2FA
+                                </button>
+                            </div>
+                        </header>
+
+                        {showPasswordFields && (
+                            <div className="p-6 space-y-4 border-b border-hairline">
+                                {[
+                                    { label: 'Current Password', field: 'currentPassword', type: 'current' },
+                                    { label: 'New Password',     field: 'newPassword',     type: 'new' },
+                                    { label: 'Confirm New',      field: 'confirmPassword', type: 'confirm' },
+                                ].map((item) => (
+                                    <div key={item.field}>
+                                        <label className="block eyebrow-strong mb-2">{item.label}</label>
                                         <div className="relative">
-                                            <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-500 dark:text-gray-400 text-sm font-medium">
-                                                +91
-                                            </span>
                                             <input
-                                                type="tel"
-                                                maxLength={10}
-                                                value={profileData.phoneNumber?.replace(/^\+91/, '').replace(/\D/g, '') || ''}
-                                                onChange={(e) => {
-                                                    const val = e.target.value.replace(/\D/g, '');
-                                                    handleInputChange('phoneNumber', val);
-                                                }}
-                                                className="w-full pl-14 pr-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
-                                                placeholder="9876543210"
+                                                type={showPasswords[item.type] ? "text" : "password"}
+                                                value={passwords[item.field]}
+                                                onChange={(e) => handlePwd(item.field, e.target.value)}
+                                                className="w-full h-10 px-3 pr-10 bg-background border border-input text-[13px] text-foreground rounded-sm focus:outline-none focus:border-[hsl(var(--accent))] font-mono"
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => togglePwdVisibility(item.type)}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                            >
+                                                {showPasswords[item.type] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                            </button>
                                         </div>
-                                    ) : (
-                                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
-                                            {profileData.phoneNumber ? `+91 ${profileData.phoneNumber.replace(/^\+91/, '')}` : <span className="text-gray-400 italic">Not provided</span>}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Location */}
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                        Location
-                                    </label>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={profileData.location}
-                                            onChange={(e) => handleInputChange('location', e.target.value)}
-                                            placeholder="City, Country"
-                                            className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
-                                        />
-                                    ) : (
-                                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium border border-transparent truncate">
-                                            {profileData.location || <span className="text-gray-400 italic">Not provided</span>}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Bio - Full width */}
-                                <div className="md:col-span-2">
-                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                        Bio
-                                    </label>
-                                    {isEditing ? (
-                                        <textarea
-                                            value={profileData.bio}
-                                            onChange={(e) => handleInputChange('bio', e.target.value)}
-                                            rows={3}
-                                            className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-900 dark:text-white transition-all resize-none"
-                                            placeholder="Tell us about yourself..."
-                                        />
-                                    ) : (
-                                        <div className="px-4 py-3 bg-gray-50/50 dark:bg-white/5 rounded-xl text-gray-900 dark:text-white font-medium min-h-[80px]">
-                                            {profileData.bio || <span className="text-gray-400 italic">No bio provided</span>}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {isEditing && (
-                                <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
-                                    <button
-                                        onClick={() => setIsEditing(false)}
-                                        className="px-6 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleSaveProfile}
-                                        disabled={updateProfileMutation.isPending}
-                                        className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2 disabled:opacity-50"
-                                    >
-                                        {updateProfileMutation.isPending ? 'Saving...' : (
-                                            <>
-                                                <Save className="w-4 h-4" />
-                                                Save Changes
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Security Settings */}
-                        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-6 md:p-8 shadow-sm">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                    Security Settings
-                                </h3>
-                                <div className="grid grid-cols-2 sm:flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            setShowPasswordFields(!showPasswordFields);
-                                            if (!showPasswordFields) setShow2FAResetFlow(false);
-                                        }}
-                                        className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-xs sm:text-sm font-semibold hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
-                                    >
-                                        <Shield className="w-4 h-4" />
-                                        <span className="whitespace-nowrap">Change Password</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShow2FAResetFlow(!show2FAResetFlow);
-                                            if (!show2FAResetFlow) setShowPasswordFields(false);
-                                        }}
-                                        className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg text-xs sm:text-sm font-semibold hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
-                                    >
-                                        <Key className="w-4 h-4" />
-                                        <span className="whitespace-nowrap">Reset 2FA</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {showPasswordFields && (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
-                                    {[
-                                        { label: 'Current Password', field: 'currentPassword', type: 'current' },
-                                        { label: 'New Password', field: 'newPassword', type: 'new' },
-                                        { label: 'Confirm New Password', field: 'confirmPassword', type: 'confirm' },
-                                    ].map((item) => (
-                                        <div key={item.field}>
-                                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                                {item.label}
-                                            </label>
-                                            <div className="relative">
-                                                <input
-                                                    type={showPasswords[item.type] ? "text" : "password"}
-                                                    value={passwords[item.field]}
-                                                    onChange={(e) => handlePasswordChange(item.field, e.target.value)}
-                                                    className="w-full px-4 py-3 pr-12 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 text-gray-900 dark:text-white transition-all"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => togglePasswordVisibility(item.type)}
-                                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                                                >
-                                                    {showPasswords[item.type] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    <div className="flex justify-end gap-4 pt-4">
-                                        <button
-                                            onClick={() => setShowPasswordFields(false)}
-                                            className="px-6 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleChangePassword}
-                                            disabled={changePasswordMutation.isPending}
-                                            className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
-                                        >
-                                            {changePasswordMutation.isPending ? 'Updating...' : 'Update Password'}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 2FA Reset Flow */}
-                            {show2FAResetFlow && (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300 border-t border-gray-100 dark:border-gray-800 pt-6 mt-4">
-                                    {twoFAStep === 'verify' && (
-                                        <>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {useBackupForReset
-                                                    ? "Enter one of your backup codes to verify your identity and reset 2FA."
-                                                    : "To reset your 2FA, first verify your identity with your current authenticator code."}
-                                            </p>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                                    {useBackupForReset ? 'Backup Code' : 'Current 2FA Code'}
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    maxLength={useBackupForReset ? 8 : 6}
-                                                    value={currentTotpCode}
-                                                    onChange={(e) => setCurrentTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                                    className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 text-gray-900 dark:text-white transition-all text-center text-lg tracking-widest font-mono"
-                                                    placeholder={useBackupForReset ? "00000000" : "000000"}
-                                                />
-                                            </div>
-                                            <div className="text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setUseBackupForReset(!useBackupForReset);
-                                                        setCurrentTotpCode('');
-                                                    }}
-                                                    className="text-sm font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 transition-colors"
-                                                >
-                                                    {useBackupForReset ? '← Use Authenticator Code' : 'Lost your device? Use Backup Code →'}
-                                                </button>
-
-                                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                                    {!showRecoveryConfirm ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowRecoveryConfirm(true)}
-                                                            className="text-sm font-medium text-red-600 hover:text-red-500 dark:text-red-400 transition-colors flex items-center justify-center gap-2 mx-auto"
-                                                        >
-                                                            <ShieldAlert className="w-4 h-4" />
-                                                            Lost everything? Request Recovery Link
-                                                        </button>
-                                                    ) : (
-                                                        <div className="text-center bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30">
-                                                            <p className="text-sm text-red-800 dark:text-red-300 mb-3 font-medium">
-                                                                Send recovery link to {user.email}? <br />
-                                                                <span className="text-xs font-normal opacity-80">Existing 2FA will be disabled.</span>
-                                                            </p>
-                                                            <div className="flex justify-center gap-3">
-                                                                <button
-                                                                    onClick={() => setShowRecoveryConfirm(false)}
-                                                                    className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                                                                >
-                                                                    Cancel
-                                                                </button>
-                                                                <button
-                                                                    onClick={async () => {
-                                                                        setIsSendingRecovery(true);
-                                                                        try {
-                                                                            await twofaAPI.requestRecovery(user.email);
-                                                                            toast({ title: "Recovery Link Sent", description: "Check your email to disable 2FA.", variant: "success" });
-                                                                            close2FAFlow();
-                                                                            setShowRecoveryConfirm(false);
-                                                                        } catch (error) {
-                                                                            toast({ title: "Error", description: error.message || "Failed to send recovery link", variant: "destructive" });
-                                                                        } finally {
-                                                                            setIsSendingRecovery(false);
-                                                                        }
-                                                                    }}
-                                                                    disabled={isSendingRecovery}
-                                                                    className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-colors flex items-center gap-1"
-                                                                >
-                                                                    {isSendingRecovery ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Yes, Send It'}
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-end gap-4 pt-2">
-                                                <button onClick={close2FAFlow} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancel</button>
-                                                <button onClick={handleInitiate2FAReset} disabled={is2FALoading || currentTotpCode.length !== (useBackupForReset ? 8 : 6)} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50">
-                                                    {is2FALoading ? 'Verifying...' : 'Continue'}
-                                                </button>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {twoFAStep === 'newcode' && resetSetupData && (
-                                        <>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">Scan this QR code with your authenticator app, then enter the new code.</p>
-                                            {resetSetupData.qrCodeBase64 && (
-                                                <div className="flex justify-center bg-white p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                                                    <img src={resetSetupData.qrCodeBase64} alt="QR Code" className="w-40 h-40" />
-                                                </div>
-                                            )}
-                                            {resetSetupData.secret && (
-                                                <div className="text-center">
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Or enter manually:</p>
-                                                    <code className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded text-sm font-mono text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 inline-block">{resetSetupData.secret}</code>
-                                                </div>
-                                            )}
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">New 2FA Code</label>
-                                                <input
-                                                    type="text"
-                                                    maxLength={6}
-                                                    value={newTotpCode}
-                                                    onChange={(e) => setNewTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                                    className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 text-gray-900 dark:text-white transition-all text-center text-lg tracking-widest font-mono"
-                                                    placeholder="000000"
-                                                />
-                                            </div>
-                                            <div className="flex justify-end gap-4 pt-2">
-                                                <button onClick={close2FAFlow} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancel</button>
-                                                <button onClick={handleVerifyNew2FA} disabled={is2FALoading || newTotpCode.length !== 6} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50">
-                                                    {is2FALoading ? 'Verifying...' : 'Verify & Complete'}
-                                                </button>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {twoFAStep === 'backup' && (
-                                        <>
-                                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
-                                                <p className="text-green-800 dark:text-green-300 font-semibold">✓ 2FA Reset Complete!</p>
-                                                <p className="text-green-700 dark:text-green-400 text-sm mt-1">Save your new backup codes below. You won&apos;t see them again!</p>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {newBackupCodes.map((code, i) => (
-                                                    <div key={i} className="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg text-center font-mono text-sm">{code}</div>
-                                                ))}
-                                            </div>
-                                            <div className="flex justify-end gap-4 pt-2">
-                                                <button onClick={downloadNewBackupCodes} className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold shadow-lg hover:shadow-xl transition-all">Download Codes</button>
-                                                <button onClick={close2FAFlow} className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all">Done</button>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Notification Preferences */}
-                        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl p-6 md:p-8 shadow-sm">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg">
-                                    <Bell className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                    Notification Preferences
-                                </h3>
-                            </div>
-
-                            <div className="space-y-3">
-                                {Object.entries(profileData.notifications).map(([key, value]) => (
-                                    <div key={key} className="flex items-center justify-between p-4 rounded-xl hover:bg-white/50 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-gray-800">
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
-                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                            </h4>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                {key === 'priceAlerts' && 'Get notified when coin prices reach your target'}
-                                                {key === 'portfolioUpdates' && 'Receive updates about your portfolio performance'}
-                                                {key === 'marketNews' && 'Stay updated with latest cryptocurrency news'}
-                                                {key === 'weeklyReports' && 'Get weekly summary of your investments'}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => handleNotificationChange(key, !value)}
-                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-orange-500' : 'bg-gray-200 dark:bg-gray-700'
-                                                }`}
-                                        >
-                                            <span
-                                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'
-                                                    }`}
-                                            />
-                                        </button>
                                     </div>
                                 ))}
-                            </div>
-                        </div>
 
-                    </div>
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <button onClick={() => setShowPasswordFields(false)} className="ed-btn ed-btn-ghost">Cancel</button>
+                                    <button onClick={handleChangePassword} disabled={changePasswordMutation.isPending} className="ed-btn ed-btn-gain">
+                                        <Shield className="h-3 w-3" />
+                                        {changePasswordMutation.isPending ? 'Updating…' : 'Update Password'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {show2FAResetFlow && (
+                            <div className="p-6 border-b border-hairline space-y-4">
+                                {twoFAStep === 'verify' && (
+                                    <>
+                                        <p className="text-[12.5px] text-muted-foreground font-serif italic leading-relaxed">
+                                            {useBackupForReset
+                                                ? "Enter one of your backup codes to verify and reset 2FA."
+                                                : "To reset 2FA, verify with your current authenticator code."}
+                                        </p>
+                                        <div>
+                                            <label className="block eyebrow-strong mb-2">
+                                                {useBackupForReset ? 'Backup Code' : 'Current 2FA Code'}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                maxLength={useBackupForReset ? 8 : 6}
+                                                value={currentTotpCode}
+                                                onChange={(e) => setCurrentTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                                className="w-full h-12 px-4 bg-background border border-input text-[20px] text-foreground rounded-sm focus:outline-none focus:border-[hsl(var(--accent))] font-mono tnum text-center tracking-[0.4em]"
+                                                placeholder={useBackupForReset ? "00000000" : "000000"}
+                                            />
+                                        </div>
+                                        <div className="text-center space-y-3">
+                                            <button
+                                                onClick={() => { setUseBackupForReset(!useBackupForReset); setCurrentTotpCode(''); }}
+                                                className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[hsl(var(--accent))] hover:underline transition-colors"
+                                            >
+                                                {useBackupForReset ? '← Use Authenticator' : 'Lost device? Use Backup Code →'}
+                                            </button>
+
+                                            <div className="pt-3 border-t border-border">
+                                                {!showRecoveryConfirm ? (
+                                                    <button
+                                                        onClick={() => setShowRecoveryConfirm(true)}
+                                                        className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[hsl(var(--loss))] hover:underline flex items-center justify-center gap-2 mx-auto"
+                                                    >
+                                                        <ShieldAlert className="h-3 w-3" />
+                                                        Lost everything? Recovery Link
+                                                    </button>
+                                                ) : (
+                                                    <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss))]/8 p-4 text-left">
+                                                        <p className="text-[11.5px] text-foreground mb-3">
+                                                            Send recovery link to <span className="font-mono">{user?.email}</span>? Existing 2FA will be disabled.
+                                                        </p>
+                                                        <div className="flex justify-end gap-2">
+                                                            <button onClick={() => setShowRecoveryConfirm(false)} className="ed-btn ed-btn-ghost">No</button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    setIsSendingRecovery(true);
+                                                                    try {
+                                                                        await twofaAPI.requestRecovery(user.email);
+                                                                        toast({ title: "Recovery Link Sent", description: "Check your email.", variant: "success" });
+                                                                        close2FAFlow(); setShowRecoveryConfirm(false);
+                                                                    } catch (err) {
+                                                                        toast({ title: "Error", description: err.message || "Failed", variant: "destructive" });
+                                                                    } finally { setIsSendingRecovery(false); }
+                                                                }}
+                                                                disabled={isSendingRecovery}
+                                                                className="ed-btn ed-btn-loss"
+                                                            >
+                                                                {isSendingRecovery ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Send Recovery Link'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-2">
+                                            <button onClick={close2FAFlow} className="ed-btn ed-btn-ghost">Cancel</button>
+                                            <button onClick={handleInitiate2FAReset} disabled={is2FALoading || currentTotpCode.length !== (useBackupForReset ? 8 : 6)} className="ed-btn ed-btn-warn">
+                                                <Key className="h-3 w-3" />
+                                                {is2FALoading ? 'Verifying…' : 'Continue Reset'}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+
+                                {twoFAStep === 'newcode' && resetSetupData && (
+                                    <>
+                                        <p className="text-[12.5px] text-muted-foreground font-serif italic leading-relaxed">
+                                            Scan this QR with your authenticator, then enter the new 6-digit code.
+                                        </p>
+                                        {resetSetupData.qrCodeBase64 && (
+                                            <div className="flex justify-center bg-white p-4 border border-border rounded-sm">
+                                                <img src={resetSetupData.qrCodeBase64} alt="QR Code" className="w-40 h-40" />
+                                            </div>
+                                        )}
+                                        {resetSetupData.secret && (
+                                            <div className="text-center">
+                                                <p className="eyebrow mb-1">Or enter manually</p>
+                                                <code className="bg-muted px-3 py-1.5 text-[12px] font-mono text-foreground border border-border inline-block rounded-sm">{resetSetupData.secret}</code>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <label className="block eyebrow-strong mb-2">New 2FA Code</label>
+                                            <input
+                                                type="text"
+                                                maxLength={6}
+                                                value={newTotpCode}
+                                                onChange={(e) => setNewTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                                className="w-full h-12 px-4 bg-background border border-input text-[20px] text-foreground rounded-sm focus:outline-none focus:border-[hsl(var(--accent))] font-mono tnum text-center tracking-[0.4em]"
+                                                placeholder="000000"
+                                            />
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-2">
+                                            <button onClick={close2FAFlow} className="ed-btn ed-btn-ghost">Cancel</button>
+                                            <button onClick={handleVerifyNew2FA} disabled={is2FALoading || newTotpCode.length !== 6} className="ed-btn ed-btn-gain">
+                                                <Shield className="h-3 w-3" />
+                                                {is2FALoading ? 'Verifying…' : 'Verify & Complete'}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+
+                                {twoFAStep === 'backup' && (
+                                    <>
+                                        <div className="border-l-2 border-[hsl(var(--gain))] bg-[hsl(var(--gain))]/8 p-4">
+                                            <p className="text-[13px] font-semibold text-[hsl(var(--gain))]">✓ 2FA Reset Complete</p>
+                                            <p className="text-[11.5px] text-foreground mt-1">Save your new backup codes — you will not see them again.</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {newBackupCodes.map((code, i) => (
+                                                <div key={i} className="bg-muted border border-border px-3 py-2 text-center font-mono text-[13px] text-foreground rounded-sm tnum">
+                                                    [{String(i + 1).padStart(2, '0')}] {code}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-2">
+                                            <button onClick={downloadNewBackupCodes} className="ed-btn ed-btn-info">Download Codes</button>
+                                            <button onClick={close2FAFlow} className="ed-btn ed-btn-gain">Done</button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 2FA Status Panel — always visible at the bottom */}
+                        <div className="p-6 border-t border-hairline">
+                            <div className="flex items-baseline justify-between mb-4">
+                                <div className="flex items-baseline gap-3">
+                                    <span className="index-num tnum">[ II.A ]</span>
+                                    <h4 className="font-serif text-[18px] text-foreground leading-none">Two-Factor Authentication</h4>
+                                </div>
+                                {totpStatusLoading ? (
+                                    <span className="ed-pill">…</span>
+                                ) : totpStatus?.enabled ? (
+                                    <span className="ed-pill ed-pill-gain"><span className="live-dot" />Enabled</span>
+                                ) : (
+                                    <span className="ed-pill ed-pill-loss">Disabled</span>
+                                )}
+                            </div>
+
+                            <p className="text-[12.5px] text-muted-foreground font-serif italic leading-relaxed mb-4">
+                                Add an extra layer of security to your account using TOTP (Google Authenticator, Authy).
+                            </p>
+
+                            {totpStatusLoading ? (
+                                <div className="px-5 py-4 border-l-2 border-border bg-muted/40 flex items-center gap-3">
+                                    <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                                    <p className="text-[12px] text-muted-foreground">Checking 2FA status…</p>
+                                </div>
+                            ) : totpStatus?.enabled ? (
+                                <div className="px-5 py-4 border-l-2 border-[hsl(var(--gain))] bg-[hsl(var(--gain))]/8">
+                                    <div className="flex items-start gap-3">
+                                        <ShieldCheck className="h-5 w-5 text-[hsl(var(--gain))] mt-0.5 flex-shrink-0" strokeWidth={2} />
+                                        <div className="flex-1">
+                                            <p className="text-[13px] font-semibold text-[hsl(var(--gain))] mb-1">2FA is active</p>
+                                            <p className="text-[12px] text-foreground leading-relaxed">
+                                                Your account is protected. You will be asked for a code when you log in.
+                                            </p>
+                                            {totpStatus.setupAt && (
+                                                <p className="text-[10px] font-mono text-muted-foreground mt-2 tnum">
+                                                    Setup on · {new Date(totpStatus.setupAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="px-5 py-4 border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss))]/8">
+                                    <div className="flex items-start gap-3">
+                                        <ShieldAlert className="h-5 w-5 text-[hsl(var(--loss))] mt-0.5 flex-shrink-0" strokeWidth={2} />
+                                        <div className="flex-1">
+                                            <p className="text-[13px] font-semibold text-[hsl(var(--loss))] mb-1">Action Required</p>
+                                            <p className="text-[12px] text-foreground leading-relaxed">
+                                                2FA is currently disabled. Enable it to secure your account.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {totpStatus?.enabled && (
+                                <div className="mt-5 pt-5 border-t border-border">
+                                    <p className="eyebrow-strong mb-2">Management</p>
+                                    <p className="text-[11.5px] text-muted-foreground font-serif italic leading-relaxed">
+                                        Resetting 2FA will generate a new secret key and invalidate all previous backup codes. Use the <span className="font-semibold not-italic text-foreground">Reset 2FA</span> button above to begin.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    {/* Notifications */}
+                    <section className="ed-card relative">
+                        <span className="corner-mark corner-tl" />
+                        <span className="corner-mark corner-br" />
+
+                        <header className="px-6 py-4 border-b border-hairline flex items-baseline gap-3">
+                            <span className="index-num tnum">[ III ]</span>
+                            <h3 className="font-serif text-[22px] text-foreground leading-none">Notifications</h3>
+                            <Bell className="h-3 w-3 text-muted-foreground ml-1" />
+                        </header>
+
+                        <ul className="divide-y divide-border">
+                            {Object.entries(profileData.notifications).map(([key, value]) => {
+                                const meta = NOTIF_LABELS[key] || { title: key, body: '' };
+                                return (
+                                    <li key={key} className="flex items-center justify-between gap-4 px-6 py-4">
+                                        <div>
+                                            <p className="text-[13px] font-medium text-foreground tracking-tight">{meta.title}</p>
+                                            <p className="text-[11.5px] text-muted-foreground font-serif italic mt-0.5">{meta.body}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleNotif(key, !value)}
+                                            className={cn(
+                                                'relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0',
+                                                value ? 'bg-[hsl(var(--accent))]' : 'bg-muted border border-border'
+                                            )}
+                                            aria-pressed={value}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    'inline-block h-3.5 w-3.5 rounded-full bg-background transition-transform shadow-sm',
+                                                    value ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                                                )}
+                                            />
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </section>
                 </div>
             </div>
-        </PageTransition >
+        </div>
+    );
+}
+
+function ProfileField({ label, value, onChange, editing, readOnly, required, displayValue, prefix, maxLength, badge, className, multiline }) {
+    return (
+        <div className={className}>
+            <div className="flex items-baseline justify-between mb-2">
+                <label className="eyebrow-strong">
+                    {label}
+                    {required && <span className="text-[hsl(var(--loss))] ml-0.5">*</span>}
+                </label>
+                {badge && (
+                    <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-[0.16em] font-semibold text-[hsl(var(--gain))]">
+                        <BadgeCheck className="h-2.5 w-2.5" /> {badge}
+                    </span>
+                )}
+            </div>
+            {editing && !readOnly ? (
+                multiline ? (
+                    <textarea
+                        value={value || ''}
+                        onChange={(e) => onChange(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 bg-background border border-input text-[13px] text-foreground rounded-sm focus:outline-none focus:border-[hsl(var(--accent))] resize-none"
+                    />
+                ) : (
+                    <div className="relative">
+                        {prefix && (
+                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-muted-foreground text-[12px] font-mono pointer-events-none">
+                                {prefix}
+                            </span>
+                        )}
+                        <input
+                            type="text"
+                            value={value || ''}
+                            onChange={(e) => onChange(e.target.value)}
+                            maxLength={maxLength}
+                            className={cn(
+                                'w-full h-10 pr-3 bg-background border border-input text-[13px] text-foreground rounded-sm focus:outline-none focus:border-[hsl(var(--accent))]',
+                                prefix ? 'pl-11' : 'pl-3'
+                            )}
+                        />
+                    </div>
+                )
+            ) : (
+                <div className={cn(
+                    'min-h-10 px-3 py-2 bg-muted/40 border border-border text-[13px] text-foreground rounded-sm',
+                    multiline && 'min-h-[80px]'
+                )}>
+                    {(displayValue ?? value) || <span className="text-muted-foreground/60 italic font-serif">— Not provided —</span>}
+                </div>
+            )}
+        </div>
     );
 }

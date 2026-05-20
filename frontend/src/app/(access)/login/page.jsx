@@ -6,18 +6,20 @@ import { AuthFormField } from '@/components/auth/AuthFormField';
 import { AuthPageShell } from '@/components/auth/AuthPageShell';
 import { AuthSubmitButton } from '@/components/auth/AuthSubmitButton';
 import { useAuth } from '@/contexts/AuthContext';
-import { itemVariants, useMotionVariants } from '@/lib/motion';
-import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
+const FIELD_BASE =
+    'w-full h-11 px-3 bg-transparent border border-hairline text-foreground text-[14px] ' +
+    'focus:outline-none focus:border-[hsl(var(--accent))] focus:ring-1 focus:ring-[hsl(var(--accent))] ' +
+    'transition-colors placeholder:text-muted-foreground/60';
+
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { login, verifyTotpLogin, verifyRecoveryLogin } = useAuth();
-    const item = useMotionVariants(itemVariants);
 
     const [formData, setFormData] = useState({ usernameOrEmail: '', password: '' });
     const [totpCode, setTotpCode] = useState('');
@@ -32,7 +34,6 @@ function LoginForm() {
 
     const redirectPath = searchParams.get('redirect') || '/dashboard';
 
-    // Load remembered username
     useEffect(() => {
         const rememberedUser = localStorage.getItem('cointrack_remembered_user');
         const wasRemembered = localStorage.getItem('cointrack_remember_me') === 'true';
@@ -129,7 +130,6 @@ function LoginForm() {
         }
     }, [isLoading, isRecoveryMode, tempToken, totpCode, verifyRecoveryLogin, verifyTotpLogin, redirectPath, router]);
 
-    // Auto-submit TOTP
     useEffect(() => {
         const expectedLength = isRecoveryMode ? 8 : 6;
         if (totpCode.length === expectedLength && showTotpInput && !isLoading) {
@@ -139,13 +139,12 @@ function LoginForm() {
 
     const getInputIcon = () => {
         const value = formData.usernameOrEmail;
-        if (!value) return <Mail size={16} />;
-        if (value.includes('@')) return <Mail size={16} />;
-        if (/^\d+$/.test(value) || /^\+?\d+$/.test(value)) return <Phone size={16} />;
-        return <User size={16} />;
+        if (!value) return <Mail size={14} />;
+        if (value.includes('@')) return <Mail size={14} />;
+        if (/^\d+$/.test(value) || /^\+?\d+$/.test(value)) return <Phone size={14} />;
+        return <User size={14} />;
     };
 
-    // OTP box handlers
     const handleOtpChange = (index, value) => {
         if (!/^\d*$/.test(value)) return;
         const char = value.slice(-1);
@@ -167,183 +166,179 @@ function LoginForm() {
         setTotpCode(pasted);
     };
 
-    const title = showTotpInput ? 'Verify your identity' : 'Welcome back';
+    const title = showTotpInput
+        ? (isRecoveryMode ? 'Recovery code' : 'Verify identity')
+        : 'Welcome back, reader';
     const subtitle = showTotpInput
-        ? (isRecoveryMode ? 'Enter one of your backup codes' : 'Enter the code from your authenticator app')
-        : 'Sign in to your CoinTrack account';
+        ? (isRecoveryMode ? 'Enter one of your backup codes to continue.' : 'Enter the six-digit code from your authenticator app.')
+        : 'Sign in to access your portfolio ledger.';
 
     return (
-        <AuthPageShell title={title} subtitle={subtitle} maxWidth="sm">
-            <AnimatePresence mode="wait">
-                {showTotpInput ? (
-                    <motion.div
-                        key="totp"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
+        <AuthPageShell
+            title={title}
+            subtitle={subtitle}
+            index="I"
+            kicker={showTotpInput ? 'Two-Factor Verification' : 'Sign In'}
+            asideQuote={'"A trusted account is the foundation of every honest ledger."'}
+        >
+            {showTotpInput ? (
+                <form onSubmit={handleTotpSubmit} className="space-y-6">
+                    <button
+                        type="button"
+                        onClick={() => { setShowTotpInput(false); setTotpCode(''); setTempToken(''); setFormData((p) => ({ ...p, password: '' })); }}
+                        className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.22em] text-muted-foreground hover:text-foreground transition-colors"
                     >
-                        <form onSubmit={handleTotpSubmit} className="space-y-4">
-                            {/* Back button */}
-                            <button
-                                type="button"
-                                onClick={() => { setShowTotpInput(false); setTotpCode(''); setTempToken(''); setFormData((p) => ({ ...p, password: '' })); }}
-                                className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                            >
-                                <ArrowLeft size={14} />
-                                Back to login
-                            </button>
+                        <ArrowLeft size={12} />
+                        Back to sign in
+                    </button>
 
-                            {/* Identity context */}
-                            <div className="bg-accent rounded-lg p-3">
-                                <p className="text-sm text-muted-foreground">
-                                    Verifying for <span className="text-foreground font-medium">{formData.usernameOrEmail}</span>
-                                </p>
-                            </div>
+                    <div className="border-l-2 border-foreground/40 bg-muted/40 px-4 py-3">
+                        <p className="eyebrow mb-1">Verifying for</p>
+                        <p className="font-mono text-[13px] text-foreground truncate">{formData.usernameOrEmail}</p>
+                    </div>
 
-                            <AuthAlert type="error" message={error} />
+                    <AuthAlert type="error" message={error} />
 
-                            {isRecoveryMode ? (
-                                /* Recovery code: single input */
-                                <AuthFormField label="Backup code" id="recovery-code">
+                    {isRecoveryMode ? (
+                        <AuthFormField label="Backup code" id="recovery-code" hint="Eight-digit backup code.">
+                            <input
+                                id="recovery-code"
+                                type="text"
+                                maxLength={8}
+                                value={totpCode}
+                                onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                placeholder="00000000"
+                                className={`${FIELD_BASE} text-center tracking-[0.4em] font-mono`}
+                            />
+                        </AuthFormField>
+                    ) : (
+                        <div className="space-y-2">
+                            <p className="eyebrow-strong">Authentication code</p>
+                            <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+                                {Array.from({ length: 6 }).map((_, i) => (
                                     <input
-                                        id="recovery-code"
+                                        key={i}
+                                        ref={(el) => { otpRefs.current[i] = el; }}
                                         type="text"
-                                        maxLength={8}
-                                        value={totpCode}
-                                        onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                        placeholder="00000000"
-                                        className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-foreground text-sm text-center tracking-[0.3em] font-mono focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-colors"
+                                        inputMode="numeric"
+                                        maxLength={1}
+                                        value={totpCode[i] || ''}
+                                        onChange={(e) => handleOtpChange(i, e.target.value)}
+                                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                        className="w-11 h-12 text-center text-[18px] font-mono border border-hairline bg-transparent text-foreground focus:outline-none focus:border-[hsl(var(--accent))] focus:ring-1 focus:ring-[hsl(var(--accent))] transition-colors"
                                     />
-                                </AuthFormField>
-                            ) : (
-                                /* TOTP: 6-box OTP input */
-                                <div className="space-y-1.5">
-                                    <p className="text-sm font-medium text-foreground">Authentication code</p>
-                                    <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                                        {Array.from({ length: 6 }).map((_, i) => (
-                                            <input
-                                                key={i}
-                                                ref={(el) => { otpRefs.current[i] = el; }}
-                                                type="text"
-                                                inputMode="numeric"
-                                                maxLength={1}
-                                                value={totpCode[i] || ''}
-                                                onChange={(e) => handleOtpChange(i, e.target.value)}
-                                                onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                                                className="w-10 h-12 text-center text-lg font-mono border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-colors"
-                                            />
-                                        ))}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground text-center mt-1">
-                                        Make sure your device time is synced
-                                    </p>
+                                ))}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground text-center font-mono mt-1">
+                                Ensure your device time is synced.
+                            </p>
+                        </div>
+                    )}
+
+                    <AuthSubmitButton
+                        isLoading={isLoading}
+                        disabled={isRecoveryMode ? totpCode.length !== 8 : totpCode.length !== 6}
+                    >
+                        {isLoading ? 'Verifying…' : 'Verify & Continue'}
+                    </AuthSubmitButton>
+
+                    <div className="text-center pt-2">
+                        <button
+                            type="button"
+                            onClick={() => { setIsRecoveryMode(!isRecoveryMode); setTotpCode(''); setError(''); }}
+                            className="text-[12px] uppercase tracking-[0.2em] text-[hsl(var(--accent))] hover:underline"
+                        >
+                            {isRecoveryMode ? 'Use authenticator app' : 'Use recovery code'}
+                        </button>
+                    </div>
+                </form>
+            ) : (
+                <>
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <AuthAlert type="error" message={error} />
+
+                        <AuthFormField label="Username · Email · Phone" id="usernameOrEmail">
+                            <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                    {getInputIcon()}
                                 </div>
-                            )}
+                                <input
+                                    id="usernameOrEmail"
+                                    name="usernameOrEmail"
+                                    type="text"
+                                    required
+                                    value={formData.usernameOrEmail}
+                                    onChange={handleChange}
+                                    placeholder="reader@cointrack.app"
+                                    className={`${FIELD_BASE} pl-9`}
+                                />
+                            </div>
+                        </AuthFormField>
 
-                            <AuthSubmitButton
-                                isLoading={isLoading}
-                                disabled={isRecoveryMode ? totpCode.length !== 8 : totpCode.length !== 6}
-                            >
-                                {isLoading ? 'Verifying...' : 'Verify'}
-                            </AuthSubmitButton>
-
-                            <div className="text-center">
+                        <AuthFormField label="Password" id="password">
+                            <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                    <Lock size={14} />
+                                </div>
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    required
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    placeholder="••••••••"
+                                    className={`${FIELD_BASE} pl-9 pr-10`}
+                                />
                                 <button
                                     type="button"
-                                    onClick={() => { setIsRecoveryMode(!isRecoveryMode); setTotpCode(''); setError(''); }}
-                                    className="text-sm text-purple-600 hover:underline"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
-                                    {isRecoveryMode ? 'Use authenticator app' : 'Use recovery code instead'}
+                                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                                 </button>
                             </div>
-                        </form>
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="credentials"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <AuthAlert type="error" message={error} />
+                        </AuthFormField>
 
-                            <AuthFormField label="Username, email or phone" id="usernameOrEmail">
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                        {getInputIcon()}
-                                    </div>
-                                    <input
-                                        id="usernameOrEmail"
-                                        name="usernameOrEmail"
-                                        type="text"
-                                        required
-                                        value={formData.usernameOrEmail}
-                                        onChange={handleChange}
-                                        placeholder="Enter your email, username, or phone"
-                                        className="w-full h-10 pl-9 pr-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-colors placeholder:text-gray-400"
-                                    />
-                                </div>
-                            </AuthFormField>
+                        <div className="flex items-center justify-between pt-1">
+                            <label className="flex items-center cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    className="w-3.5 h-3.5 border border-hairline accent-[hsl(var(--accent))]"
+                                />
+                                <span className="ml-2 text-[12px] uppercase tracking-[0.18em] text-muted-foreground group-hover:text-foreground transition-colors">
+                                    Remember me
+                                </span>
+                            </label>
+                            <Link
+                                href="/forgot-password"
+                                className="text-[12px] uppercase tracking-[0.18em] text-[hsl(var(--accent))] hover:underline"
+                            >
+                                Forgot password?
+                            </Link>
+                        </div>
 
-                            <AuthFormField label="Password" id="password">
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                        <Lock size={16} />
-                                    </div>
-                                    <input
-                                        id="password"
-                                        name="password"
-                                        type={showPassword ? 'text' : 'password'}
-                                        required
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        placeholder="Enter your password"
-                                        className="w-full h-10 pl-9 pr-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-purple-600/50 focus:border-purple-600 transition-colors placeholder:text-gray-400"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                    >
-                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-                            </AuthFormField>
+                        <AuthSubmitButton isLoading={isLoading}>
+                            {isLoading ? 'Signing in…' : 'Sign In'}
+                        </AuthSubmitButton>
+                    </form>
 
-                            <motion.div variants={item} className="flex items-center justify-between">
-                                <label className="flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={rememberMe}
-                                        onChange={(e) => setRememberMe(e.target.checked)}
-                                        className="w-3.5 h-3.5 rounded border-border accent-blue-600"
-                                    />
-                                    <span className="ml-2 text-sm text-muted-foreground">Remember me</span>
-                                </label>
-                                <Link href="/forgot-password" className="text-sm text-purple-600 hover:underline">
-                                    Forgot password?
-                                </Link>
-                            </motion.div>
-
-                            <AuthSubmitButton isLoading={isLoading}>
-                                {isLoading ? 'Signing in...' : 'Sign in'}
-                            </AuthSubmitButton>
-                        </form>
-
-                        <motion.div variants={item} className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 text-center">
-                            <p className="text-sm text-muted-foreground">
-                                Don&apos;t have an account?{' '}
-                                <Link href="/register" className="text-purple-600 font-medium hover:underline">
-                                    Sign up
-                                </Link>
-                            </p>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    <div className="mt-10 pt-6 border-t border-hairline">
+                        <p className="text-[12px] text-muted-foreground text-center">
+                            New to CoinTrack?{' '}
+                            <Link
+                                href="/register"
+                                className="text-[hsl(var(--accent))] font-medium uppercase tracking-[0.16em] hover:underline"
+                            >
+                                Open an account
+                            </Link>
+                        </p>
+                    </div>
+                </>
+            )}
         </AuthPageShell>
     );
 }
@@ -351,8 +346,8 @@ function LoginForm() {
 export default function LoginPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
-                <div className="w-5 h-5 border-2 border-gray-400/20 border-t-gray-400 rounded-full animate-spin" />
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="w-5 h-5 border border-hairline border-t-foreground rounded-full animate-spin" />
             </div>
         }>
             <LoginForm />
