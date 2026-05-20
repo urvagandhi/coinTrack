@@ -44,12 +44,6 @@ const nextConfig = {
   poweredByHeader: false,
 
   /**
-   * Ensures correct output tracing for monorepos or nested project structures.
-   * Helps Next.js understand where dependencies exist on the filesystem.
-   */
-  outputFileTracingRoot: process.cwd(),
-
-  /**
    * Improved image security and optimization configuration.
    *
    * Next.js 16 recommends using "remotePatterns" instead of "domains".
