@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 function useNow() {
-    const [now, setNow] = useState(() => new Date());
+    const [now, setNow] = useState(null);
     useEffect(() => {
+        setNow(new Date());
         const t = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(t);
     }, []);
@@ -15,10 +16,11 @@ function useNow() {
 
 export default function NotFound() {
     const now = useNow();
-    const dateString = now.toLocaleDateString('en-IN', {
+    const dateString = now ? now.toLocaleDateString('en-IN', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    });
-    const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }) : '';
+    const timeString = now ? now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--';
+    const year = now ? now.getFullYear() : '';
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -83,14 +85,14 @@ export default function NotFound() {
                         <p className="font-serif italic text-[13px] text-muted-foreground">
                             {dateString} · <span className="display-num text-foreground">{timeString}</span> IST
                         </p>
-                        <p className="eyebrow">Reference No. 404-NF-{now.getFullYear()}</p>
+                        <p className="eyebrow">Reference No. 404-NF-{year}</p>
                     </div>
                 </div>
             </main>
 
             <footer className="border-t border-hairline">
                 <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
-                    <p className="eyebrow">&copy; {now.getFullYear()} CoinTrack — Printed in Browser</p>
+                    <p className="eyebrow">&copy; {year} CoinTrack — Printed in Browser</p>
                 </div>
             </footer>
         </div>

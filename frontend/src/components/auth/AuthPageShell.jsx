@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 function useNow() {
-    const [now, setNow] = useState(() => new Date());
+    const [now, setNow] = useState(null);
     useEffect(() => {
+        setNow(new Date());
         const t = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(t);
     }, []);
@@ -27,10 +28,10 @@ export function AuthPageShell({
     const now = useNow();
     const widthClass = maxWidth === 'md' ? 'max-w-md' : maxWidth === 'lg' ? 'max-w-lg' : 'max-w-sm';
 
-    const dateString = now.toLocaleDateString('en-IN', {
+    const dateString = now ? now.toLocaleDateString('en-IN', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    });
-    const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }) : '';
+    const timeString = now ? now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--';
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
