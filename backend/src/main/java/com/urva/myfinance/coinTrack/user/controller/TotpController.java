@@ -323,6 +323,10 @@ public class TotpController {
 
         // Generate TOTP setup for this pending user
         TotpSetupResponse response = totpService.generateSetupForPendingUser(pendingUser);
+        
+        // Save the generated encrypted secret back to the database for this pending user
+        userAuthService.updatePendingTotpSecret(username, pendingUser.getTotpSecretPending());
+        
         return ResponseEntity.ok(ApiResponse.success(response, "TOTP Setup Initiated"));
     }
 

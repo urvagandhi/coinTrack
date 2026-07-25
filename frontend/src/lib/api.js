@@ -332,6 +332,53 @@ export const endpoints = {
     public: {
         contact: '/api/public/contact',
     },
+    fd: {
+        list: '/api/fixed-deposits',
+        create: '/api/fixed-deposits',
+        update: (id) => `/api/fixed-deposits/${id}`,
+        delete: (id) => `/api/fixed-deposits/${id}`,
+        close: (id) => `/api/fixed-deposits/${id}/close`,
+        summary: '/api/fixed-deposits/summary',
+        export: '/api/fixed-deposits/export',
+        getById: (id) => `/api/fixed-deposits/${id}`,
+    },
+    ppf: {
+        list: '/api/ppf/transactions',
+        create: '/api/ppf/transactions',
+        update: (id) => `/api/ppf/transactions/${id}`,
+        delete: (id) => `/api/ppf/transactions/${id}`,
+        summary: '/api/ppf/summary',
+        export: '/api/ppf/export',
+        getById: (id) => `/api/ppf/transactions/${id}`,
+        settings: '/api/ppf/settings',
+        withdrawalStatus: '/api/ppf/withdrawal-status',
+    },
+    epf: {
+        list: '/api/epf/transactions',
+        create: '/api/epf/transactions',
+        update: (id) => `/api/epf/transactions/${id}`,
+        delete: (id) => `/api/epf/transactions/${id}`,
+        summary: '/api/epf/summary',
+        export: '/api/epf/export',
+        getById: (id) => `/api/epf/transactions/${id}`,
+        settings: '/api/epf/settings',
+        interestRates: '/api/epf/interest-rates',
+    },
+    goldSilver: {
+        list: '/api/gold-silver',
+        create: '/api/gold-silver',
+        update: (id) => `/api/gold-silver/${id}`,
+        delete: (id) => `/api/gold-silver/${id}`,
+        summary: '/api/gold-silver/summary',
+        export: '/api/gold-silver/export',
+        getById: (id) => `/api/gold-silver/${id}`,
+        marketRate: '/api/gold-silver/market-rate',
+        ratesCurrent: '/api/gold-silver/rates/current',
+        ratesRefresh: '/api/gold-silver/rates/refresh',
+        rateSettings: '/api/gold-silver/rate-settings',
+        rateMode: (id) => `/api/gold-silver/${id}/rate-mode`,
+        purityOptions: '/api/gold-silver/purity-options',
+    },
 };
 
 // ============================================================================
@@ -655,6 +702,275 @@ export const totpAPI = {
     registerVerify: async (tempToken, code) => {
         const { data } = await api.post(endpoints.auth.totp.registerVerify, { tempToken, code }, noRetry);
         return unwrapResponse(data);
+    },
+};
+
+// ============================================================================
+// FIXED DEPOSIT API
+// ============================================================================
+
+export const fdAPI = {
+    getAll: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+        const qs = searchParams.toString();
+        const { data } = await api.get(`${endpoints.fd.list}${qs ? '?' + qs : ''}`);
+        return unwrapResponse(data) || {};
+    },
+    getSummary: async () => {
+        const { data } = await api.get(endpoints.fd.summary);
+        return unwrapResponse(data);
+    },
+    getById: async (id) => {
+        const { data } = await api.get(endpoints.fd.getById(id));
+        return unwrapResponse(data);
+    },
+    create: async (fdData) => {
+        const { data } = await api.post(endpoints.fd.create, fdData);
+        return unwrapResponse(data);
+    },
+    update: async (id, fdData) => {
+        const { data } = await api.put(endpoints.fd.update(id), fdData);
+        return unwrapResponse(data);
+    },
+    delete: async (id) => {
+        const { data } = await api.delete(endpoints.fd.delete(id));
+        return unwrapResponse(data);
+    },
+    close: async (id) => {
+        const { data } = await api.patch(endpoints.fd.close(id));
+        return unwrapResponse(data);
+    },
+    exportCSV: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+        const qs = searchParams.toString();
+        const response = await api.get(`${endpoints.fd.export}${qs ? '?' + qs : ''}`, {
+            responseType: 'blob',
+        });
+        return response.data;
+    },
+};
+
+// ============================================================================
+// PUBLIC PROVIDENT FUND (PPF) API
+// ============================================================================
+
+export const ppfAPI = {
+    getAll: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+        const qs = searchParams.toString();
+        const { data } = await api.get(`${endpoints.ppf.list}${qs ? '?' + qs : ''}`);
+        return unwrapResponse(data) || {};
+    },
+    getSummary: async () => {
+        const { data } = await api.get(endpoints.ppf.summary);
+        return unwrapResponse(data);
+    },
+    getById: async (id) => {
+        const { data } = await api.get(endpoints.ppf.getById(id));
+        return unwrapResponse(data);
+    },
+    create: async (txnData) => {
+        const { data } = await api.post(endpoints.ppf.create, txnData);
+        return unwrapResponse(data);
+    },
+    update: async (id, txnData) => {
+        const { data } = await api.put(endpoints.ppf.update(id), txnData);
+        return unwrapResponse(data);
+    },
+    delete: async (id) => {
+        const { data } = await api.delete(endpoints.ppf.delete(id));
+        return unwrapResponse(data);
+    },
+    getSettings: async () => {
+        const { data } = await api.get(endpoints.ppf.settings);
+        return unwrapResponse(data);
+    },
+    updateSettings: async (settingsData) => {
+        const { data } = await api.put(endpoints.ppf.settings, settingsData);
+        return unwrapResponse(data);
+    },
+    getWithdrawalStatus: async () => {
+        const { data } = await api.get(endpoints.ppf.withdrawalStatus);
+        return unwrapResponse(data);
+    },
+    exportCSV: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+        const qs = searchParams.toString();
+        const response = await api.get(`${endpoints.ppf.export}${qs ? '?' + qs : ''}`, {
+            responseType: 'blob',
+        });
+        return response.data;
+    },
+};
+
+// ============================================================================
+// EMPLOYEE PROVIDENT FUND (EPF) API
+// ============================================================================
+
+export const epfAPI = {
+    getAll: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+        const qs = searchParams.toString();
+        const { data } = await api.get(`${endpoints.epf.list}${qs ? '?' + qs : ''}`);
+        return unwrapResponse(data) || {};
+    },
+    getSummary: async () => {
+        const { data } = await api.get(endpoints.epf.summary);
+        return unwrapResponse(data);
+    },
+    getById: async (id) => {
+        const { data } = await api.get(endpoints.epf.getById(id));
+        return unwrapResponse(data);
+    },
+    create: async (txnData) => {
+        const { data } = await api.post(endpoints.epf.create, txnData);
+        return unwrapResponse(data);
+    },
+    update: async (id, txnData) => {
+        const { data } = await api.put(endpoints.epf.update(id), txnData);
+        return unwrapResponse(data);
+    },
+    delete: async (id) => {
+        const { data } = await api.delete(endpoints.epf.delete(id));
+        return unwrapResponse(data);
+    },
+    getSettings: async () => {
+        const { data } = await api.get(endpoints.epf.settings);
+        return unwrapResponse(data);
+    },
+    updateSettings: async (settingsData) => {
+        const { data } = await api.put(endpoints.epf.settings, settingsData);
+        return unwrapResponse(data);
+    },
+    getInterestRates: async () => {
+        const { data } = await api.get(endpoints.epf.interestRates);
+        return unwrapResponse(data) || [];
+    },
+    saveInterestRate: async (rateData) => {
+        const { data } = await api.post(endpoints.epf.interestRates, rateData);
+        return unwrapResponse(data);
+    },
+    exportCSV: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+        const qs = searchParams.toString();
+        const response = await api.get(`${endpoints.epf.export}${qs ? '?' + qs : ''}`, {
+            responseType: 'blob',
+        });
+        return response.data;
+    },
+};
+
+// ============================================================================
+// GOLD & SILVER API
+// ============================================================================
+
+export const goldSilverAPI = {
+    getAll: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+        const qs = searchParams.toString();
+        const { data } = await api.get(`${endpoints.goldSilver.list}${qs ? '?' + qs : ''}`);
+        return unwrapResponse(data) || {};
+    },
+    getSummary: async () => {
+        const { data } = await api.get(endpoints.goldSilver.summary);
+        return unwrapResponse(data);
+    },
+    getById: async (id) => {
+        const { data } = await api.get(endpoints.goldSilver.getById(id));
+        return unwrapResponse(data);
+    },
+    create: async (gsData) => {
+        const { data } = await api.post(endpoints.goldSilver.create, gsData);
+        return unwrapResponse(data);
+    },
+    update: async (id, gsData) => {
+        const { data } = await api.put(endpoints.goldSilver.update(id), gsData);
+        return unwrapResponse(data);
+    },
+    delete: async (id) => {
+        const { data } = await api.delete(endpoints.goldSilver.delete(id));
+        return unwrapResponse(data);
+    },
+    updateMarketRate: async (rateData) => {
+        const { data } = await api.patch(endpoints.goldSilver.marketRate, rateData);
+        return unwrapResponse(data);
+    },
+    getCurrentRates: async () => {
+        const { data } = await api.get(endpoints.goldSilver.ratesCurrent);
+        return unwrapResponse(data) || [];
+    },
+    refreshRates: async () => {
+        const { data } = await api.post(endpoints.goldSilver.ratesRefresh);
+        return unwrapResponse(data) || [];
+    },
+    getRateSettings: async () => {
+        const { data } = await api.get(endpoints.goldSilver.rateSettings);
+        return unwrapResponse(data);
+    },
+    updateRateSettings: async (settingsData) => {
+        const { data } = await api.put(endpoints.goldSilver.rateSettings, settingsData);
+        return unwrapResponse(data);
+    },
+    updateRateMode: async (id, payload) => {
+        const { data } = await api.patch(endpoints.goldSilver.rateMode(id), payload);
+        return unwrapResponse(data);
+    },
+    getPurityOptions: async (metalType) => {
+        const qs = metalType ? `?metalType=${metalType}` : '';
+        const { data } = await api.get(`${endpoints.goldSilver.purityOptions}${qs}`);
+        return unwrapResponse(data) || [];
+    },
+    createPurityOption: async (optionData) => {
+        const { data } = await api.post(endpoints.goldSilver.purityOptions, optionData);
+        return unwrapResponse(data);
+    },
+    exportCSV: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+        const qs = searchParams.toString();
+        const response = await api.get(`${endpoints.goldSilver.export}${qs ? '?' + qs : ''}`, {
+            responseType: 'blob',
+        });
+        return response.data;
     },
 };
 

@@ -19,10 +19,21 @@ function Setup2FAContent() {
         const existingUserToken = sessionStorage.getItem('tempToken');
 
         if (registrationToken) {
+            if (tokenManager.isTokenExpired(registrationToken)) {
+                sessionStorage.removeItem('totpSetupToken');
+                sessionStorage.removeItem('totpSetupUsername');
+                router.push('/register?error=Registration expired. Please register again.');
+                return;
+            }
             setTempToken(registrationToken);
             setIsRegistration(true);
             setLoading(false);
         } else if (existingUserToken) {
+            if (tokenManager.isTokenExpired(existingUserToken)) {
+                sessionStorage.removeItem('tempToken');
+                router.push('/login?error=Session expired. Please login again.');
+                return;
+            }
             tokenManager.setToken(existingUserToken);
             setIsRegistration(false);
             setLoading(false);
@@ -36,7 +47,13 @@ function Setup2FAContent() {
             const data = await totpAPI.registerSetup(tempToken);
             return { success: true, data };
         } catch (error) {
-            return { success: false, error: error.message || 'Setup failed' };
+            const msg = error.message || '';
+            if (msg.toLowerCase().includes('expired')) {
+                sessionStorage.removeItem('totpSetupToken');
+                sessionStorage.removeItem('totpSetupUsername');
+                router.push('/register?error=Registration expired. Please register again.');
+            }
+            return { success: false, error: msg || 'Setup failed' };
         }
     };
 
@@ -49,7 +66,13 @@ function Setup2FAContent() {
             }
             return { success: true, backupCodes: data.backupCodes || [] };
         } catch (error) {
-            return { success: false, error: error.message || 'Verification failed' };
+            const msg = error.message || '';
+            if (msg.toLowerCase().includes('expired')) {
+                sessionStorage.removeItem('totpSetupToken');
+                sessionStorage.removeItem('totpSetupUsername');
+                router.push('/register?error=Registration expired. Please register again.');
+            }
+            return { success: false, error: msg || 'Verification failed' };
         }
     };
 

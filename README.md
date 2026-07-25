@@ -451,8 +451,10 @@ coinTrack/
 │   │   │   └── service/                        #   BrevoEmailService, EmailSender
 │   │   │
 │   │   ├── notes/                              # Personal investment journal
+│   │   ├── fixeddeposit/                       # Fixed Deposit (FD) management module
+│   │   ├── ppf/                                # Public Provident Fund (PPF) Ledger module
 │   │   ├── calculator/                         # 41 financial calculators (6 controllers)
-│   │   └── common/                             # Shared: EncryptionUtil, GlobalExceptionHandler
+│   │   └── common/                             # Shared: EncryptionUtil, GlobalExceptionHandler, SequenceGeneratorService, CsvExportUtil
 │   │
 │   ├── src/main/resources/
 │   │   ├── templates/email/                    # 7 Thymeleaf email templates
@@ -784,6 +786,70 @@ graph LR
 | `POST` | `/api/notes` | JWT | Create note |
 | `PUT` | `/api/notes/{id}` | JWT | Update note |
 | `DELETE` | `/api/notes/{id}` | JWT | Delete note |
+
+### Fixed Deposits
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/fixed-deposits` | JWT | Create new Fixed Deposit |
+| `GET` | `/api/fixed-deposits` | JWT | List FDs (filtered, 6-mode sorted, paginated) |
+| `GET` | `/api/fixed-deposits/summary` | JWT | Dashboard metrics (total investment, expected maturity, counts) |
+| `GET` | `/api/fixed-deposits/export` | JWT | Export filtered FDs to 14-column Excel (.xlsx) |
+| `GET` | `/api/fixed-deposits/{id}` | JWT | Get single FD by ID |
+| `PUT` | `/api/fixed-deposits/{id}` | JWT | Update FD details |
+| `PATCH` | `/api/fixed-deposits/{id}/close` | JWT | Mark FD as CLOSED (sticky override) |
+| `DELETE` | `/api/fixed-deposits/{id}` | JWT | Delete FD |
+
+> **Key FD Module Features:**
+> - **Smart Relative Sorting**: `maturityDate:asc` (Nearest First) evaluates relative to `today` (`LocalDate.now()`), placing upcoming maturities first and past/matured ones at the bottom.
+> - **6-Mode Sorting Engine**: `maturityDate:asc`, `maturityDate:desc`, `issueDate:desc`, `issueDate:asc` (Export Default), `issueAmount:desc`, `issueAmount:asc`.
+> - **Excel (XLSX) Export Formatting**: 14-column output via `ExcelExportUtil` with bold headers, right alignment, and auto column widths. Formats `Days To Maturity` as `-` for matured/due/closed FDs.
+> - **Dual View UI**: Switch seamlessly between Card Grid View (`FdCard`) and Financial Table View (`FdTable`).
+
+### Public Provident Fund (PPF)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/ppf/transactions` | JWT | Add new transaction (triggers ledger recalculation) |
+| `GET` | `/api/ppf/transactions` | JWT | List transactions (chronological, filtered, paginated) |
+| `GET` | `/api/ppf/summary` | JWT | Dashboard metrics (programmatic current balance, total deposits, etc.) |
+| `GET` | `/api/ppf/export` | JWT | Export filtered transactions to Excel (.xlsx) in chronological order |
+| `GET` | `/api/ppf/withdrawal-status` | JWT | Get live statutory eligibility for withdrawals and max caps |
+| `GET` | `/api/ppf/transactions/{id}` | JWT | Get single transaction by ID |
+| `PUT` | `/api/ppf/transactions/{id}` | JWT | Edit transaction (triggers ledger recalculation) |
+| `DELETE` | `/api/ppf/transactions/{id}` | JWT | Delete transaction (triggers ledger recalculation) |
+| `GET / PUT`| `/api/ppf/settings` | JWT | Get/update account details and Post-Maturity Extension Mode |
+
+> **Key PPF Module Features:**
+> - **Statutory Withdrawal Validation**: Strict enforcement of PPF Scheme 2019/2023 rules including lock-in periods, 50% max withdrawal caps, and single withdrawal per FY constraints.
+> - **Post-Maturity Extension Modes**: Full support for both `WITHOUT_CONTRIBUTION` and `WITH_CONTRIBUTION` (Form H) modes with dynamic 60% block limit calculations.
+
+### Employees' Provident Fund (EPF)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET / PUT` | `/api/epf/settings` | JWT | Get/update user EPF settings |
+| `POST` | `/api/epf/transactions` | JWT | Add entry (AUTO_SALARY split or MANUAL_OVERRIDE) |
+| `GET` | `/api/epf/transactions` | JWT | List paginated transactions with optional filters |
+| `GET` | `/api/epf/summary` | JWT | Dashboard summary metrics (EPF & EPS balances, totals, live accrued interest, tax flag) |
+| `GET` | `/api/epf/export` | JWT | Export filtered transactions to styled Excel (XLSX) |
+
+### Gold & Silver (v2 — Live Purity-Based Rates)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/gold-silver` | JWT | Create investment entry |
+| `GET` | `/api/gold-silver` | JWT | List investments (filtered, paginated) |
+| `GET` | `/api/gold-silver/summary` | JWT | Dashboard summary metrics (invested, live current value, P&L, return %) |
+| `GET` | `/api/gold-silver/rates/current` | JWT | Fetch latest cached metal rate snapshots & staleness status |
+| `POST` | `/api/gold-silver/rates/refresh` | JWT | Manual force refresh (rate-limited to protect API quota) |
+| `GET / PUT` | `/api/gold-silver/rate-settings` | JWT | Get / update user's local premium settings (%) |
+| `PATCH` | `/api/gold-silver/{id}/rate-mode` | JWT | Switch holding between `LIVE` and `MANUAL` rate modes |
+| `GET / POST` | `/api/gold-silver/purity-options` | JWT | Fetch available purities or create custom purity option |
+| `PATCH` | `/api/gold-silver/market-rate` | JWT | Bulk update rate for `MANUAL`-mode records only |
+| `GET` | `/api/gold-silver/export` | JWT | Export investments to Excel (.xlsx) |
+
+> **Collections:** `gold_silver_investments`, `metal_purity_options`, `metal_rate_snapshots`, `metal_rate_settings`
 
 ### Calculators (Public — No Auth Required)
 

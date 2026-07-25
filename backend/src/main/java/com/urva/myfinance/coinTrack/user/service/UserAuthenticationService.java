@@ -187,7 +187,7 @@ public class UserAuthenticationService {
 
         List<String> backupCodes = totpService.verifySetupForPendingUser(pendingUser, totpCode);
 
-        User savedUser = userService.completePendingRegistration(username);
+        User savedUser = userService.completePendingRegistration(pendingUser);
 
         String accessToken = jwtService.generateToken(savedUser);
         String refreshToken = jwtService.generateRefreshToken(savedUser.getId(), deviceInfo, ipAddress);
@@ -240,6 +240,10 @@ public class UserAuthenticationService {
 
     public User getPendingUser(String username) {
         return userService.getPendingRegistrationUser(username);
+    }
+
+    public void updatePendingTotpSecret(String username, String encryptedSecret) {
+        userService.updatePendingTotpSecret(username, encryptedSecret);
     }
 
     @Transactional(readOnly = true)

@@ -138,14 +138,13 @@ public class UserService {
      * Called after TOTP verification is successful.
      */
     @Transactional
-    public User completePendingRegistration(String username) {
-        PendingRegistration pending = pendingRegistrationRepository.findByUsername(username)
+    public User completePendingRegistration(User verifiedUser) {
+        String username = verifiedUser.getUsername();
+        pendingRegistrationRepository.findByUsername(username)
                 .orElseThrow(() -> new AuthenticationException("Registration expired. Please register again."));
 
-        User user = toTransientUser(pending);
-
         @SuppressWarnings("null")
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.save(verifiedUser);
         logger.info("User saved to DB after TOTP verification: {}", savedUser.getUsername());
 
         // Remove pending registration
@@ -286,7 +285,7 @@ public class UserService {
                 .phoneNumber(pending.getPhoneNumber())
                 .name(pending.getName())
                 .password(pending.getPasswordHash())
-                .totpSecretEncrypted(pending.getTotpSecretEncrypted())
+                .totpSecretPending(pending.getTotpSecretEncrypted())
                 .totpEnabled(false)
                 .totpVerified(false)
                 .totpSecretVersion(0)

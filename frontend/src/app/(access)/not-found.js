@@ -18,9 +18,15 @@ function useNow() {
 }
 
 const ACCESS_LINKS = [
-    { label: 'Sign In', href: '/login', kicker: '§I' },
-    { label: 'Open an Account', href: '/register', kicker: '§II' },
-    { label: 'Reset Password', href: '/forgot-password', kicker: '§III' },
+    { label: 'Dashboard', href: '/dashboard', kicker: '001' },
+    { label: 'Portfolio', href: '/portfolio', kicker: '002' },
+    { label: 'Brokers', href: '/brokers', kicker: '003' },
+    { label: 'Calculators', href: '/calculators', kicker: '004' },
+    { label: 'Fixed Deposits', href: '/fixed-deposit', kicker: '005' },
+    { label: 'PPF Ledger', href: '/ppf', kicker: '006' },
+    { label: 'EPF Ledger', href: '/epf', kicker: '007' },
+    { label: 'Gold & Silver', href: '/gold-silver', kicker: '008' },
+    { label: 'Notes', href: '/notes', kicker: '009' },
 ];
 
 export default function NotFound() {
@@ -138,7 +144,7 @@ export default function NotFound() {
                                 Perhaps you meant one of these?
                             </p>
                             <p className="text-[12px] text-muted-foreground font-mono mb-6">
-                                {ACCESS_LINKS.length} entries — Identity & Access
+                                {ACCESS_LINKS.length} entries — Navigation Index
                             </p>
 
                             <ul className="divide-y divide-hairline border-y border-hairline">

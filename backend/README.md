@@ -1,9 +1,9 @@
 # CoinTrack Backend Architecture & Developer Guide
 
-> **Version**: 3.0.0
+> **Version**: 3.1.0
 > **Status**: Production-Ready
 > **Tech Stack**: Java 21, Spring Boot 3.5.5, MongoDB Atlas, Spring Security (JWT + TOTP 2FA)
-> **Last Updated**: 2026-03-19
+> **Last Updated**: 2026-07-25
 
 ---
 
@@ -160,8 +160,12 @@ Each module has its own comprehensive README documentation.
 | **calculator** | 41 financial calculators, config-driven, rate-limited | 1500+ lines | [calculator/README.md](src/main/java/com/urva/myfinance/coinTrack/calculator/README.md) |
 | **common** | Shared infrastructure, exceptions, encryption utils | 400+ lines | [common/README.md](src/main/java/com/urva/myfinance/coinTrack/common/README.md) |
 | **email** | Brevo transactional email, strategy-based sender | 300+ lines | [email/README.md](src/main/java/com/urva/myfinance/coinTrack/email/README.md) |
+| **fixeddeposit** | Fixed Deposit manual ledger & Excel exports | 1000+ lines | [fixeddeposit/README.md](src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/README.md) |
 | **notes** | Personal investment journal (CRUD) | 200+ lines | [notes/README.md](src/main/java/com/urva/myfinance/coinTrack/notes/README.md) |
 | **portfolio** | Aggregation, sync engine, P&L calculation | 2000+ lines | [portfolio/README.md](src/main/java/com/urva/myfinance/coinTrack/portfolio/README.md) |
+| **ppf** | PPF transactions, ledger balance recalculating, withdrawal validation | 800+ lines | [ppf/README.md](src/main/java/com/urva/myfinance/coinTrack/ppf/README.md) |
+| **epf** | EPF & EPS dual-balance ledger, statutory split & interest engine | 1000+ lines | [epf/README.md](src/main/java/com/urva/myfinance/coinTrack/epf/README.md) |
+| **goldsilver** | Gold & Silver investments, status scheduler, manual ledger | 800+ lines | [goldsilver/README.md](src/main/java/com/urva/myfinance/coinTrack/goldsilver/README.md) |
 | **security** | JWT auth, filter chain, token blacklist | 628 lines | [security/README.md](src/main/java/com/urva/myfinance/coinTrack/security/README.md) |
 | **user** | Registration, profile, TOTP 2FA, refresh tokens | 750+ lines | [user/README.md](src/main/java/com/urva/myfinance/coinTrack/user/README.md) |
 
@@ -883,6 +887,12 @@ graph LR
 | `invalidated_tokens` | security | JWT blacklist |
 | `email_tokens` | email | Verification/reset tokens |
 | `notes` | notes | User notes (text indexed) |
+| `fixed_deposits` | fixeddeposit | Manual fixed deposits |
+| `ppf_transactions` | ppf | Public Provident Fund ledger |
+| `epf_settings` | epf | EPF per-user calculation settings |
+| `epf_transactions` | epf | EPF/EPS dual-balance transaction ledger |
+| `epf_interest_rates` | epf | User-maintained FY interest rate table |
+| `gold_silver_investments` | goldsilver | Gold & Silver investments ledger |
 
 ---
 
@@ -898,6 +908,10 @@ graph LR
 | Email | [email/README.md](src/main/java/com/urva/myfinance/coinTrack/email/README.md) | 450+ |
 | Notes | [notes/README.md](src/main/java/com/urva/myfinance/coinTrack/notes/README.md) | 660+ |
 | Portfolio | [portfolio/README.md](src/main/java/com/urva/myfinance/coinTrack/portfolio/README.md) | 700+ |
+| Fixed Deposit | [fixeddeposit/README.md](src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/README.md) | 260+ |
+| PPF | [ppf/README.md](src/main/java/com/urva/myfinance/coinTrack/ppf/README.md) | 220+ |
+| EPF | [epf/README.md](src/main/java/com/urva/myfinance/coinTrack/epf/README.md) | 100+ |
+| Gold & Silver | [goldsilver/README.md](src/main/java/com/urva/myfinance/coinTrack/goldsilver/README.md) | 100+ |
 | Security | [security/README.md](src/main/java/com/urva/myfinance/coinTrack/security/README.md) | 660+ |
 | User | [user/README.md](src/main/java/com/urva/myfinance/coinTrack/user/README.md) | 760+ |
 
