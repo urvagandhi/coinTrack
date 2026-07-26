@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
+import com.urva.myfinance.coinTrack.common.util.ExcelExportUtil;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
 
@@ -114,24 +115,22 @@ public class FixedDepositExcelExporter {
             Row totalRow = sheet.createRow(totalRowIdx);
             totalRow.setHeightInPoints(22);
             
-            Font boldFont = workbook.createFont();
-            boldFont.setBold(true);
+            CellStyle borderTopStyle = workbook.createCellStyle();
+            setCellBackground(workbook, borderTopStyle, "#e2e8f0");
+            applyGridBorders(workbook, borderTopStyle);
+            borderTopStyle.setBorderBottom(BorderStyle.THIN);
             
             CellStyle totalLabelStyle = workbook.createCellStyle();
-            totalLabelStyle.setFont(boldFont);
-            totalLabelStyle.setBorderTop(BorderStyle.THIN);
-            totalLabelStyle.setBorderBottom(BorderStyle.DOUBLE);
+            totalLabelStyle.cloneStyleFrom(borderTopStyle);
+            totalLabelStyle.setFont(createCustomFont(workbook, "#1e293b", true, (short) 0));
             totalLabelStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             
             CellStyle totalCurrencyStyle = workbook.createCellStyle();
-            totalCurrencyStyle.cloneStyleFrom(currencyStyle);
-            totalCurrencyStyle.setFont(boldFont);
-            totalCurrencyStyle.setBorderTop(BorderStyle.THIN);
-            totalCurrencyStyle.setBorderBottom(BorderStyle.DOUBLE);
-            
-            CellStyle borderTopStyle = workbook.createCellStyle();
-            borderTopStyle.setBorderTop(BorderStyle.THIN);
-            borderTopStyle.setBorderBottom(BorderStyle.DOUBLE);
+            totalCurrencyStyle.cloneStyleFrom(borderTopStyle);
+            totalCurrencyStyle.setFont(createCustomFont(workbook, "#1e293b", true, (short) 0));
+            totalCurrencyStyle.setDataFormat(workbook.createDataFormat().getFormat("[$₹-en-IN]#,##0.00"));
+            totalCurrencyStyle.setAlignment(HorizontalAlignment.RIGHT);
+            totalCurrencyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             
             for (int col = 0; col < headers.length; col++) {
                 Cell cell = totalRow.createCell(col);
@@ -157,26 +156,8 @@ public class FixedDepositExcelExporter {
             cellMaturity.setCellStyle(totalCurrencyStyle);
         }
 
-        // Fast column sizing
-        int[] columnWidths = {
-            10, // FD No
-            15, // Place
-            20, // Holder Name
-            20, // Nominee
-            18, // Account Number
-            14, // Interest Rate
-            18, // Investment Period
-            15, // Issue Date
-            15, // Maturity Date
-            18, // Issue Amount
-            18, // Maturity Amount
-            12, // Status
-            18, // Days to Maturity
-            30  // Remarks
-        };
-        for (int i = 0; i < headers.length; i++) {
-            sheet.setColumnWidth(i, columnWidths[i] * 256);
-        }
+        // Auto column sizing
+        ExcelExportUtil.autoSizeColumns(sheet, headers.length);
     }
 
     private static void createCell(Row row, int column, String value, CellStyle style) {
@@ -193,46 +174,84 @@ public class FixedDepositExcelExporter {
         cell.setCellStyle(style);
     }
 
-    private static CellStyle createHeaderStyle(Workbook workbook) {
-        CellStyle style = workbook.createCellStyle();
-        Font font = workbook.createFont();
-        font.setBold(true);
-        font.setColor(IndexedColors.BLACK.getIndex());
-        style.setFont(font);
-        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        style.setAlignment(HorizontalAlignment.LEFT);
-        style.setVerticalAlignment(VerticalAlignment.CENTER);
-        
-        // Add border to headers
-        style.setBorderBottom(BorderStyle.THIN);
+    private static void applyGridBorders(Workbook workbook, CellStyle style) {
         style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
-        
+        if (style instanceof org.apache.poi.xssf.usermodel.XSSFCellStyle) {
+            org.apache.poi.xssf.usermodel.XSSFCellStyle xssfStyle = (org.apache.poi.xssf.usermodel.XSSFCellStyle) style;
+            byte[] borderRgb = new byte[]{(byte) 203, (byte) 213, (byte) 225}; // #cbd5e1
+            org.apache.poi.xssf.usermodel.XSSFColor borderColor = new org.apache.poi.xssf.usermodel.XSSFColor(borderRgb, new org.apache.poi.xssf.usermodel.DefaultIndexedColorMap());
+            xssfStyle.setTopBorderColor(borderColor);
+            xssfStyle.setBottomBorderColor(borderColor);
+            xssfStyle.setLeftBorderColor(borderColor);
+            xssfStyle.setRightBorderColor(borderColor);
+        }
+    }
+
+    private static void setCellBackground(Workbook workbook, CellStyle style, String hexColor) {
+        if (style instanceof org.apache.poi.xssf.usermodel.XSSFCellStyle && workbook instanceof org.apache.poi.xssf.usermodel.XSSFWorkbook) {
+            org.apache.poi.xssf.usermodel.XSSFCellStyle xssfStyle = (org.apache.poi.xssf.usermodel.XSSFCellStyle) style;
+            int r = Integer.parseInt(hexColor.substring(1, 3), 16);
+            int g = Integer.parseInt(hexColor.substring(3, 5), 16);
+            int b = Integer.parseInt(hexColor.substring(5, 7), 16);
+            byte[] rgb = new byte[]{(byte) r, (byte) g, (byte) b};
+            org.apache.poi.xssf.usermodel.XSSFColor color = new org.apache.poi.xssf.usermodel.XSSFColor(rgb, new org.apache.poi.xssf.usermodel.DefaultIndexedColorMap());
+            xssfStyle.setFillForegroundColor(color);
+            xssfStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        }
+    }
+
+    private static Font createCustomFont(Workbook workbook, String hexColor, boolean bold, short heightPoints) {
+        Font font = workbook.createFont();
+        font.setBold(bold);
+        if (heightPoints > 0) {
+            font.setFontHeightInPoints(heightPoints);
+        }
+        if (font instanceof org.apache.poi.xssf.usermodel.XSSFFont && workbook instanceof org.apache.poi.xssf.usermodel.XSSFWorkbook) {
+            org.apache.poi.xssf.usermodel.XSSFFont xssfFont = (org.apache.poi.xssf.usermodel.XSSFFont) font;
+            int r = Integer.parseInt(hexColor.substring(1, 3), 16);
+            int g = Integer.parseInt(hexColor.substring(3, 5), 16);
+            int b = Integer.parseInt(hexColor.substring(5, 7), 16);
+            byte[] rgb = new byte[]{(byte) r, (byte) g, (byte) b};
+            org.apache.poi.xssf.usermodel.XSSFColor color = new org.apache.poi.xssf.usermodel.XSSFColor(rgb, new org.apache.poi.xssf.usermodel.DefaultIndexedColorMap());
+            xssfFont.setColor(color);
+        }
+        return font;
+    }
+
+    private static CellStyle createHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setFont(createCustomFont(workbook, "#1e293b", true, (short) 11));
+        setCellBackground(workbook, style, "#e2e8f0");
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 
     private static CellStyle createDataStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 
     private static CellStyle createRightAlignStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
-        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setAlignment(HorizontalAlignment.RIGHT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 
     private static CellStyle createBoldStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
-        Font font = workbook.createFont();
-        font.setBold(true);
-        style.setFont(font);
+        style.setFont(createCustomFont(workbook, "#1e293b", true, (short) 0));
         style.setAlignment(HorizontalAlignment.LEFT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 
@@ -242,6 +261,7 @@ public class FixedDepositExcelExporter {
         style.setDataFormat(format.getFormat("[$₹-en-IN]#,##0.00"));
         style.setAlignment(HorizontalAlignment.RIGHT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 
@@ -251,6 +271,7 @@ public class FixedDepositExcelExporter {
         style.setDataFormat(format.getFormat("0.00\"%\""));
         style.setAlignment(HorizontalAlignment.RIGHT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 }

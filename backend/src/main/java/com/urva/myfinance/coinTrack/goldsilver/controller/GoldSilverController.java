@@ -3,6 +3,8 @@ package com.urva.myfinance.coinTrack.goldsilver.controller;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -43,6 +45,8 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/gold-silver")
 public class GoldSilverController {
 
+    private static final Logger logger = LoggerFactory.getLogger(GoldSilverController.class);
+
     private final GoldSilverService service;
     private final LiveMetalRateService liveRateService;
     private final MetalRateSettingsService settingsService;
@@ -64,6 +68,7 @@ public class GoldSilverController {
     public ResponseEntity<ApiResponse<GoldSilverResponseDTO>> create(
             @Valid @RequestBody GoldSilverRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
+        logger.info("Creating Gold/Silver investment for user: {}", currentUser.getUsername());
         GoldSilverResponseDTO responseDTO = service.addInvestment(requestDTO, currentUser.getUsername());
         return ResponseEntity.ok(ApiResponse.success(responseDTO, "Investment created successfully"));
     }
@@ -102,6 +107,7 @@ public class GoldSilverController {
             @PathVariable String id,
             @Valid @RequestBody GoldSilverRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
+        logger.info("Updating Gold/Silver investment {} for user: {}", id, currentUser.getUsername());
         GoldSilverResponseDTO responseDTO = service.updateInvestment(id, requestDTO, currentUser.getUsername());
         return ResponseEntity.ok(ApiResponse.success(responseDTO, "Investment updated successfully"));
     }
@@ -111,6 +117,7 @@ public class GoldSilverController {
             @PathVariable String id,
             @Valid @RequestBody RateModeUpdateRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
+        logger.info("Updating rate mode of Gold/Silver investment {} for user: {}", id, currentUser.getUsername());
         GoldSilverResponseDTO responseDTO = service.updateRateMode(id, requestDTO, currentUser.getUsername());
         return ResponseEntity.ok(ApiResponse.success(responseDTO, "Investment rate mode updated successfully"));
     }
@@ -119,6 +126,7 @@ public class GoldSilverController {
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable String id,
             @AuthenticationPrincipal UserPrincipal currentUser) {
+        logger.info("Deleting Gold/Silver investment {} for user: {}", id, currentUser.getUsername());
         service.deleteInvestment(id, currentUser.getUsername());
         return ResponseEntity.ok(ApiResponse.success(null, "Investment deleted successfully"));
     }
@@ -127,6 +135,7 @@ public class GoldSilverController {
     public ResponseEntity<ApiResponse<Void>> updateMarketRate(
             @Valid @RequestBody MarketRateUpdateRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
+        logger.info("Updating market rate for MANUAL-mode investments for user: {}", currentUser.getUsername());
         service.updateMarketRate(requestDTO, currentUser.getUsername());
         return ResponseEntity.ok(ApiResponse.success(null, "Market rate updated successfully for MANUAL-mode investments"));
     }
@@ -163,6 +172,7 @@ public class GoldSilverController {
     public ResponseEntity<ApiResponse<MetalRateSettingsDTO>> updateRateSettings(
             @Valid @RequestBody MetalRateSettingsDTO settingsDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
+        logger.info("Updating metal rate settings for user: {}", currentUser.getUsername());
         MetalRateSettingsDTO updated = settingsService.updateSettings(currentUser.getUsername(), settingsDTO);
         return ResponseEntity.ok(ApiResponse.success(updated, "Updated metal rate settings successfully"));
     }
@@ -177,6 +187,7 @@ public class GoldSilverController {
     @PostMapping("/purity-options")
     public ResponseEntity<ApiResponse<PurityOptionDTO>> createPurityOption(
             @Valid @RequestBody PurityOptionDTO optionDTO) {
+        logger.info("Creating custom purity option");
         PurityOptionDTO created = purityOptionService.createCustomPurityOption(optionDTO);
         return ResponseEntity.ok(ApiResponse.success(created, "Custom purity option created successfully"));
     }
@@ -197,6 +208,8 @@ public class GoldSilverController {
 
         String exportSortBy = "purchaseDate";
         String exportSortDir = "asc";
+
+        logger.info("Exporting Gold and Silver investments to XLSX for user: {}", currentUser.getUsername());
 
         List<GoldSilverResponseDTO> data = service.getAllForExport(
                 currentUser.getUsername(), metalType, purchasedFrom, purity, status, dateFrom, dateTo, maturityFrom, maturityTo, exportSortBy, exportSortDir);

@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
+import com.urva.myfinance.coinTrack.common.util.ExcelExportUtil;
 import com.urva.myfinance.coinTrack.ppf.dto.response.PpfTransactionResponseDTO;
 import com.urva.myfinance.coinTrack.ppf.dto.response.PpfSettingsResponseDTO;
 
@@ -72,24 +73,22 @@ public class PpfExcelExporter {
                 Row totalRow = sheet.createRow(totalRowIdx);
                 totalRow.setHeightInPoints(22);
 
-                Font boldFont = workbook.createFont();
-                boldFont.setBold(true);
+                CellStyle borderTopStyle = workbook.createCellStyle();
+                setCellBackground(workbook, borderTopStyle, "#e2e8f0");
+                applyGridBorders(workbook, borderTopStyle);
+                borderTopStyle.setBorderBottom(BorderStyle.THIN);
 
                 CellStyle totalLabelStyle = workbook.createCellStyle();
-                totalLabelStyle.setFont(boldFont);
-                totalLabelStyle.setBorderTop(BorderStyle.THIN);
-                totalLabelStyle.setBorderBottom(BorderStyle.DOUBLE);
+                totalLabelStyle.cloneStyleFrom(borderTopStyle);
+                totalLabelStyle.setFont(createCustomFont(workbook, "#1e293b", true, (short) 0));
                 totalLabelStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
                 CellStyle totalCurrencyStyle = workbook.createCellStyle();
-                totalCurrencyStyle.cloneStyleFrom(currencyStyle);
-                totalCurrencyStyle.setFont(boldFont);
-                totalCurrencyStyle.setBorderTop(BorderStyle.THIN);
-                totalCurrencyStyle.setBorderBottom(BorderStyle.DOUBLE);
-
-                CellStyle borderTopStyle = workbook.createCellStyle();
-                borderTopStyle.setBorderTop(BorderStyle.THIN);
-                borderTopStyle.setBorderBottom(BorderStyle.DOUBLE);
+                totalCurrencyStyle.cloneStyleFrom(borderTopStyle);
+                totalCurrencyStyle.setFont(createCustomFont(workbook, "#1e293b", true, (short) 0));
+                totalCurrencyStyle.setDataFormat(workbook.createDataFormat().getFormat("[$₹-en-IN]#,##0.00"));
+                totalCurrencyStyle.setAlignment(HorizontalAlignment.RIGHT);
+                totalCurrencyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
                 for (int col = 0; col < headers.length; col++) {
                     Cell cell = totalRow.createCell(col);
@@ -115,18 +114,8 @@ public class PpfExcelExporter {
                 cellCredit.setCellStyle(totalCurrencyStyle);
             }
 
-            // Auto-size columns with min 14, max 45 width
-            for (int i = 0; i < headers.length; i++) {
-                int maxLen = headers[i].length();
-                for (PpfTransactionResponseDTO txn : transactions) {
-                    Object val = getCellValueForLength(txn, i);
-                    if (val != null) {
-                        maxLen = Math.max(maxLen, val.toString().length());
-                    }
-                }
-                int colWidth = Math.min(Math.max(maxLen + 6, 14), 45) * 256;
-                sheet.setColumnWidth(i, colWidth);
-            }
+            // Auto-size columns with min 12, max 45 width
+            ExcelExportUtil.autoSizeColumns(sheet, headers.length);
 
             workbook.write(out);
             byte[] bytes = out.toByteArray();
@@ -151,20 +140,18 @@ public class PpfExcelExporter {
         Row titleRow = sheet.createRow(0);
         titleRow.setHeightInPoints(28);
         CellStyle titleStyle = workbook.createCellStyle();
-        Font titleFont = workbook.createFont();
-        titleFont.setBold(true);
-        titleFont.setFontHeightInPoints((short) 16);
-        titleFont.setColor(IndexedColors.DARK_BLUE.getIndex());
-        titleStyle.setFont(titleFont);
+        titleStyle.setFont(createCustomFont(workbook, "#1e293b", true, (short) 14));
+        setCellBackground(workbook, titleStyle, "#dbeafe");
         titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        Cell titleCell = titleRow.createCell(0);
-        titleCell.setCellValue("Public Provident Fund (PPF) Ledger");
-        titleCell.setCellStyle(titleStyle);
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, colCount - 1));
+        applyGridBorders(workbook, titleStyle);
 
-        // Row 1: Empty spacer
-        // Row spacerRow = sheet.createRow(1);
-        // spacerRow.setHeightInPoints(10);
+        // Fill all cells in title row for correct styling of merged cells
+        for (int col = 0; col < colCount; col++) {
+            Cell c = titleRow.createCell(col);
+            c.setCellStyle(titleStyle);
+        }
+        titleRow.getCell(0).setCellValue("Public Provident Fund (PPF) Ledger");
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, colCount - 1));
 
         if (settings == null) {
             return 2;
@@ -172,26 +159,17 @@ public class PpfExcelExporter {
 
         // Style for metadata label
         CellStyle labelStyle = workbook.createCellStyle();
-        labelStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-        labelStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        Font labelFont = workbook.createFont();
-        labelFont.setBold(true);
-        labelStyle.setFont(labelFont);
+        setCellBackground(workbook, labelStyle, "#e2e8f0");
+        labelStyle.setFont(createCustomFont(workbook, "#1e293b", true, (short) 0));
         labelStyle.setAlignment(HorizontalAlignment.LEFT);
         labelStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        labelStyle.setBorderTop(BorderStyle.THIN);
-        labelStyle.setBorderBottom(BorderStyle.THIN);
-        labelStyle.setBorderLeft(BorderStyle.THIN);
-        labelStyle.setBorderRight(BorderStyle.THIN);
+        applyGridBorders(workbook, labelStyle);
 
         // Style for metadata value
         CellStyle valueStyle = workbook.createCellStyle();
         valueStyle.setAlignment(HorizontalAlignment.LEFT);
         valueStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        valueStyle.setBorderTop(BorderStyle.THIN);
-        valueStyle.setBorderBottom(BorderStyle.THIN);
-        valueStyle.setBorderLeft(BorderStyle.THIN);
-        valueStyle.setBorderRight(BorderStyle.THIN);
+        applyGridBorders(workbook, valueStyle);
 
         // Row 2: Account Number & Date of Issue
         Row row2 = sheet.createRow(2);
@@ -233,8 +211,7 @@ public class PpfExcelExporter {
         cell3_1.setCellStyle(valueStyle);
         sheet.addMergedRegion(new CellRangeAddress(3, 3, 1, 7));
 
-        // Apply styles/borders for all cells in these rows (including merged region
-        // cells) to look correct
+        // Apply styles/borders for all cells in these rows (including merged region cells)
         for (int col = 0; col < colCount; col++) {
             Cell c2 = row2.getCell(col);
             if (c2 == null) {
@@ -296,45 +273,84 @@ public class PpfExcelExporter {
         cell.setCellStyle(style);
     }
 
-    private static CellStyle createHeaderStyle(Workbook workbook) {
-        CellStyle style = workbook.createCellStyle();
-        Font font = workbook.createFont();
-        font.setBold(true);
-        font.setColor(IndexedColors.BLACK.getIndex());
-        style.setFont(font);
-        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        style.setAlignment(HorizontalAlignment.LEFT);
-        style.setVerticalAlignment(VerticalAlignment.CENTER);
-
-        style.setBorderBottom(BorderStyle.THIN);
+    private static void applyGridBorders(Workbook workbook, CellStyle style) {
         style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
+        if (style instanceof org.apache.poi.xssf.usermodel.XSSFCellStyle) {
+            org.apache.poi.xssf.usermodel.XSSFCellStyle xssfStyle = (org.apache.poi.xssf.usermodel.XSSFCellStyle) style;
+            byte[] borderRgb = new byte[]{(byte) 203, (byte) 213, (byte) 225}; // #cbd5e1
+            org.apache.poi.xssf.usermodel.XSSFColor borderColor = new org.apache.poi.xssf.usermodel.XSSFColor(borderRgb, new org.apache.poi.xssf.usermodel.DefaultIndexedColorMap());
+            xssfStyle.setTopBorderColor(borderColor);
+            xssfStyle.setBottomBorderColor(borderColor);
+            xssfStyle.setLeftBorderColor(borderColor);
+            xssfStyle.setRightBorderColor(borderColor);
+        }
+    }
 
+    private static void setCellBackground(Workbook workbook, CellStyle style, String hexColor) {
+        if (style instanceof org.apache.poi.xssf.usermodel.XSSFCellStyle && workbook instanceof org.apache.poi.xssf.usermodel.XSSFWorkbook) {
+            org.apache.poi.xssf.usermodel.XSSFCellStyle xssfStyle = (org.apache.poi.xssf.usermodel.XSSFCellStyle) style;
+            int r = Integer.parseInt(hexColor.substring(1, 3), 16);
+            int g = Integer.parseInt(hexColor.substring(3, 5), 16);
+            int b = Integer.parseInt(hexColor.substring(5, 7), 16);
+            byte[] rgb = new byte[]{(byte) r, (byte) g, (byte) b};
+            org.apache.poi.xssf.usermodel.XSSFColor color = new org.apache.poi.xssf.usermodel.XSSFColor(rgb, new org.apache.poi.xssf.usermodel.DefaultIndexedColorMap());
+            xssfStyle.setFillForegroundColor(color);
+            xssfStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        }
+    }
+
+    private static Font createCustomFont(Workbook workbook, String hexColor, boolean bold, short heightPoints) {
+        Font font = workbook.createFont();
+        font.setBold(bold);
+        if (heightPoints > 0) {
+            font.setFontHeightInPoints(heightPoints);
+        }
+        if (font instanceof org.apache.poi.xssf.usermodel.XSSFFont && workbook instanceof org.apache.poi.xssf.usermodel.XSSFWorkbook) {
+            org.apache.poi.xssf.usermodel.XSSFFont xssfFont = (org.apache.poi.xssf.usermodel.XSSFFont) font;
+            int r = Integer.parseInt(hexColor.substring(1, 3), 16);
+            int g = Integer.parseInt(hexColor.substring(3, 5), 16);
+            int b = Integer.parseInt(hexColor.substring(5, 7), 16);
+            byte[] rgb = new byte[]{(byte) r, (byte) g, (byte) b};
+            org.apache.poi.xssf.usermodel.XSSFColor color = new org.apache.poi.xssf.usermodel.XSSFColor(rgb, new org.apache.poi.xssf.usermodel.DefaultIndexedColorMap());
+            xssfFont.setColor(color);
+        }
+        return font;
+    }
+
+    private static CellStyle createHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setFont(createCustomFont(workbook, "#1e293b", true, (short) 11));
+        setCellBackground(workbook, style, "#e2e8f0");
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 
     private static CellStyle createDataStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 
     private static CellStyle createRightAlignStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
-        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setAlignment(HorizontalAlignment.RIGHT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 
     private static CellStyle createBoldStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
-        Font font = workbook.createFont();
-        font.setBold(true);
-        style.setFont(font);
+        style.setFont(createCustomFont(workbook, "#1e293b", true, (short) 0));
         style.setAlignment(HorizontalAlignment.LEFT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 
@@ -344,6 +360,7 @@ public class PpfExcelExporter {
         style.setDataFormat(format.getFormat("[$₹-en-IN]#,##0.00"));
         style.setAlignment(HorizontalAlignment.RIGHT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
         return style;
     }
 }

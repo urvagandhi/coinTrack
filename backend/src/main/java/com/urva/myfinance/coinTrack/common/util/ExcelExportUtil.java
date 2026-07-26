@@ -7,6 +7,8 @@ import java.util.function.Function;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
@@ -141,6 +143,29 @@ public class ExcelExportUtil {
         } catch (Exception e) {
             org.slf4j.LoggerFactory.getLogger(ExcelExportUtil.class).error("Error generating Excel export", e);
             throw new RuntimeException("Error generating Excel export: " + e.getMessage(), e);
+        }
+    }
+
+    public static void autoSizeColumns(Sheet sheet, int numColumns) {
+        DataFormatter formatter = new DataFormatter();
+        for (int i = 0; i < numColumns; i++) {
+            int maxLen = 0;
+            for (int r = 0; r <= sheet.getLastRowNum(); r++) {
+                Row row = sheet.getRow(r);
+                if (row == null) continue;
+                Cell cell = row.getCell(i);
+                if (cell == null) continue;
+                
+                String val = formatter.formatCellValue(cell);
+                if (val != null && !val.isEmpty()) {
+                    for (String line : val.split("\n")) {
+                        maxLen = Math.max(maxLen, line.length());
+                    }
+                }
+            }
+            // Use 12 min and 45 max, plus 4 characters padding
+            int colWidth = Math.min(Math.max(maxLen + 4, 12), 45) * 256;
+            sheet.setColumnWidth(i, colWidth);
         }
     }
 }
