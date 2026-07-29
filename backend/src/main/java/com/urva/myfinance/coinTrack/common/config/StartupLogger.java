@@ -114,10 +114,8 @@ public class StartupLogger {
     }
 
     private boolean isEmailConfigured() {
-        String mailHost = environment.getProperty("spring.mail.host");
-        String mailUsername = environment.getProperty("spring.mail.username");
-        return mailHost != null && !mailHost.isBlank()
-                && mailUsername != null && !mailUsername.isBlank();
+        String brevoKey = environment.getProperty("brevo.api-key");
+        return brevoKey != null && !brevoKey.isBlank();
     }
 
     private String center(String text, int width) {

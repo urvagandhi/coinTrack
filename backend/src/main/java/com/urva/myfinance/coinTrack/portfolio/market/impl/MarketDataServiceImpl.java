@@ -146,13 +146,7 @@ public class MarketDataServiceImpl implements MarketDataService {
 
     @Override
     public boolean isMarketOpen() {
-        LocalDateTime now = LocalDateTime.now(INDIA_ZONE);
-        DayOfWeek day = now.getDayOfWeek();
-        LocalTime time = now.toLocalTime();
-
-        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) return false;
-
-        return !time.isBefore(LocalTime.of(9, 15)) && !time.isAfter(LocalTime.of(15, 30));
+        return com.urva.myfinance.coinTrack.common.util.MarketHoursUtil.isMarketOpen();
     }
 
     // ── Zerodha LTP API ─────────────────────────────────────────
@@ -245,7 +239,7 @@ public class MarketDataServiceImpl implements MarketDataService {
             JsonNode data = root.get("data");
             if (data == null) return result;
 
-            data.fields().forEachRemaining(entry -> {
+            data.properties().forEach(entry -> {
                 String symbol = entry.getKey();
                 JsonNode priceNode = entry.getValue();
                 double lastPrice = priceNode.path("last_price").asDouble(0);

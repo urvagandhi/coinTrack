@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.epf.controller;
 
-import java.security.Principal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -42,9 +43,9 @@ public class EpfSettingsController {
 
     @Operation(summary = "Get user EPF settings")
     @GetMapping("/settings")
-    public ResponseEntity<ApiResponse<EpfSettings>> getSettings(Principal principal) {
-        logger.debug("Fetching EPF settings for user: {}", principal.getName());
-        EpfSettings settings = epfTransactionService.getSettings(principal.getName());
+    public ResponseEntity<ApiResponse<EpfSettings>> getSettings(@AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching EPF settings for user: {}", principal.getUsername());
+        EpfSettings settings = epfTransactionService.getSettings(principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(settings));
     }
 
@@ -52,9 +53,9 @@ public class EpfSettingsController {
     @PutMapping("/settings")
     public ResponseEntity<ApiResponse<EpfSettings>> updateSettings(
             @Valid @RequestBody EpfSettingsRequestDTO requestDTO,
-            Principal principal) {
-        logger.info("Updating EPF settings for user: {}", principal.getName());
-        EpfSettings updated = epfTransactionService.updateSettings(requestDTO, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Updating EPF settings for user: {}", principal.getUsername());
+        EpfSettings updated = epfTransactionService.updateSettings(requestDTO, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(updated));
     }
 

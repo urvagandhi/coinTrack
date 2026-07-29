@@ -1,5 +1,7 @@
-# Ignore sensitive Spring Boot config
-backend/src/main/resources/application.properties
+# Ignore sensitive Spring Boot config (local-only, not in repo)
+# backend/src/main/resources/application.properties
+backend/node_modules
+backend/build
 
 # Environment variables
 .env
@@ -51,6 +53,7 @@ Thumbs.db
 # Sensitive files - NEVER commit
 Backup Codes/
 *.bak
+migrate-userid.js
 
 # Claude Code (AI assistant cache — may contain secrets)
 .claude/

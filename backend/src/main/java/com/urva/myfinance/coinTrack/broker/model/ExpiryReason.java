@@ -10,5 +10,6 @@ public enum ExpiryReason {
     TOKEN_INVALID, // Token rejected by broker API as invalid
     BROKER_SESSION_INVALID, // Broker session terminated
     USER_REVOKED, // User revoked access
-    API_FAILURE // Unable to validate due to API error
+    API_FAILURE, // Unable to validate due to API error
+    SECRET_ROTATION // Token invalidated due to API secret being rotated
 }

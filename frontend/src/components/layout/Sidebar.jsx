@@ -15,6 +15,7 @@ import {
     Landmark,
     PiggyBank,
     Coins,
+    PieChart,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -26,15 +27,16 @@ const PRIMARY_NAV = [
     { idx: '002', label: 'Portfolio',  href: '/portfolio', icon: TrendingUp },
     { idx: '003', label: 'Brokers',    href: '/brokers',   icon: Link2 },
     { idx: '004', label: 'Calculators',href: '/calculators',icon: Calculator },
-    { idx: '005', label: 'Fixed Deposits', href: '/fixed-deposit', icon: Building2 },
-    { idx: '006', label: 'PPF Ledger', href: '/ppf', icon: Landmark },
-    { idx: '007', label: 'EPF Ledger', href: '/epf', icon: PiggyBank },
-    { idx: '008', label: 'Gold & Silver', href: '/gold-silver', icon: Coins },
-    { idx: '009', label: 'Notes',      href: '/notes',     icon: StickyNote },
+    { idx: '005', label: 'Mutual Funds', href: '/mutual-fund', icon: PieChart },
+    { idx: '006', label: 'Fixed Deposits', href: '/fixed-deposit', icon: Building2 },
+    { idx: '007', label: 'PPF Ledger', href: '/ppf', icon: Landmark },
+    { idx: '008', label: 'EPF Ledger', href: '/epf', icon: PiggyBank },
+    { idx: '009', label: 'Gold & Silver', href: '/gold-silver', icon: Coins },
+    { idx: '010', label: 'Notes',      href: '/notes',     icon: StickyNote },
 ];
 
 const BOTTOM_NAV = [
-    { idx: '010', label: 'Profile', href: '/profile', icon: User },
+    { idx: '011', label: 'Profile', href: '/profile', icon: User },
 ];
 
 const isActive = (href, pathname) =>

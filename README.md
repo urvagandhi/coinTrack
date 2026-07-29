@@ -47,13 +47,13 @@ coinTrack is a production-grade personal finance platform built for Indian retai
 
 ### Why coinTrack?
 
-| Problem | Solution |
-|---------|----------|
-| Portfolio split across multiple brokers | Unified dashboard aggregating Zerodha + Angel One + Upstox |
-| Broker sessions expire daily | Auto-detection + one-click reconnect flow |
-| No free tool for MF + equity in one view | Holdings, positions, mutual funds, SIPs — all in one screen |
-| Manual P&L tracking in spreadsheets | Real-time day gain, unrealized P&L, cost basis from broker APIs |
-| Financial planning scattered across sites | 41 built-in calculators (SIP, EMI, tax, NPS, retirement, etc.) |
+| Problem                                   | Solution                                                        |
+| ----------------------------------------- | --------------------------------------------------------------- |
+| Portfolio split across multiple brokers   | Unified dashboard aggregating Zerodha + Angel One + Upstox      |
+| Broker sessions expire daily              | Auto-detection + one-click reconnect flow                       |
+| No free tool for MF + equity in one view  | Holdings, positions, mutual funds, SIPs — all in one screen    |
+| Manual P&L tracking in spreadsheets       | Real-time day gain, unrealized P&L, cost basis from broker APIs |
+| Financial planning scattered across sites | 41 built-in calculators (SIP, EMI, tax, NPS, retirement, etc.)  |
 
 ---
 
@@ -286,53 +286,54 @@ flowchart LR
 
 ### Backend
 
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| Java | 21 (LTS) | Runtime |
-| Spring Boot | 3.5.5 | Application framework |
-| Spring Security | 6.5.x | Authentication & authorization |
-| Spring Data MongoDB | 4.x | Database access |
-| Spring WebFlux | 6.x | Non-blocking HTTP client (broker APIs) |
-| SpringDoc OpenAPI | 2.x | **Swagger UI** — interactive API docs |
-| JJWT | 0.12.5 | JWT token signing & validation |
-| TOTP (dev.samstevens) | 1.7.1 | Time-based One-Time Password |
-| BouncyCastle | 1.78 | AES-256-GCM encryption |
-| Bucket4j | 8.x | Rate limiting |
-| Caffeine | 3.x | In-memory cache (JWT blacklist) |
-| ZXing | 3.5.3 | QR code generation for 2FA setup |
-| Brevo API | REST | Transactional email delivery |
-| Maven | 3.9.9 | Build & dependency management |
+| Technology            | Version  | Purpose                                      |
+| --------------------- | -------- | -------------------------------------------- |
+| Java                  | 21 (LTS) | Runtime                                      |
+| Spring Boot           | 3.5.5    | Application framework                        |
+| Spring Security       | 6.5.x    | Authentication & authorization               |
+| Spring Data MongoDB   | 4.x      | Database access                              |
+| Spring WebFlux        | 6.x      | Non-blocking HTTP client (broker APIs)       |
+| SpringDoc OpenAPI     | 2.x      | **Swagger UI** — interactive API docs |
+| JJWT                  | 0.12.5   | JWT token signing & validation               |
+| TOTP (dev.samstevens) | 1.7.1    | Time-based One-Time Password                 |
+| BouncyCastle          | 1.78     | AES-256-GCM encryption                       |
+| Bucket4j              | 8.x      | Rate limiting                                |
+| Caffeine              | 3.x      | In-memory cache (JWT blacklist)              |
+| ZXing                 | 3.5.3    | QR code generation for 2FA setup             |
+| Brevo API             | REST     | Transactional email delivery                 |
+| Maven                 | 3.9.9    | Build & dependency management                |
 
 ### Frontend
 
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| Next.js | 16.0.10 | React framework (App Router) |
-| React | 18.3.1 | UI library |
-| Tailwind CSS | 3.4.14 | Utility-first styling |
-| React Query | 5.90.12 | Server state management + caching |
-| Axios | 1.7.0 | HTTP client |
-| Framer Motion | 11.0.0 | Animations & transitions |
-| Radix UI | latest | Accessible UI primitives |
-| React Hook Form | 7.52.0 | Form handling |
-| Recharts | 2.9.0 | Charts & data visualization |
-| Lucide React | 0.545.0 | Icon library |
+| Technology      | Version | Purpose                           |
+| --------------- | ------- | --------------------------------- |
+| Next.js         | 16.0.10 | React framework (App Router)      |
+| React           | 18.3.1  | UI library                        |
+| Tailwind CSS    | 3.4.14  | Utility-first styling             |
+| React Query     | 5.90.12 | Server state management + caching |
+| Axios           | 1.7.0   | HTTP client                       |
+| Framer Motion   | 11.0.0  | Animations & transitions          |
+| Radix UI        | latest  | Accessible UI primitives          |
+| React Hook Form | 7.52.0  | Form handling                     |
+| Recharts        | 2.9.0   | Charts & data visualization       |
+| Lucide React    | 0.545.0 | Icon library                      |
 
 ### Infrastructure
 
-| Service | Purpose |
-|---------|---------|
-| MongoDB Atlas | Database (3-node replica set, AP_SOUTH_1) |
-| Render.com | Backend hosting (Docker container) |
-| Vercel | Frontend hosting (Edge network) |
-| Brevo | Transactional email (300/day free tier) |
-| GitHub Actions | CI/CD + keep-alive cron pings |
+| Service        | Purpose                                   |
+| -------------- | ----------------------------------------- |
+| MongoDB Atlas  | Database (3-node replica set, AP_SOUTH_1) |
+| Render.com     | Backend hosting (Docker container)        |
+| Vercel         | Frontend hosting (Edge network)           |
+| Brevo          | Transactional email (300/day free tier)   |
+| GitHub Actions | CI/CD + keep-alive cron pings             |
 
 ---
 
 ## Features
 
 ### Portfolio Management
+
 - **Multi-broker aggregation** — View holdings from Zerodha, Angel One, and Upstox in a single dashboard
 - **Real-time P&L** — Day gain, unrealized P&L with percentage change
 - **Holdings tracking** — Equity, ETFs with cost basis, current value, and broker tags
@@ -369,19 +370,20 @@ graph LR
     style U fill:#7b1fa2,color:#fff
 ```
 
-| Capability | Zerodha | Angel One | Upstox |
-|-----------|---------|-----------|--------|
-| OAuth Connection | Yes | Yes | Yes |
-| Holdings | Yes | Yes | Yes |
-| Positions | Yes | Yes | Yes |
-| Funds/Margins | Yes | Yes | Yes |
-| MF Holdings | Yes | — | — |
-| MF SIPs | Yes | — | — |
-| MF Orders | Yes | — | — |
-| Order History | Yes | — | — |
-| Live WebSocket | Yes | — | — |
+| Capability       | Zerodha | Angel One | Upstox |
+| ---------------- | ------- | --------- | ------ |
+| OAuth Connection | Yes     | Yes       | Yes    |
+| Holdings         | Yes     | Yes       | Yes    |
+| Positions        | Yes     | Yes       | Yes    |
+| Funds/Margins    | Yes     | Yes       | Yes    |
+| MF Holdings      | Yes     | —        | —     |
+| MF SIPs          | Yes     | —        | —     |
+| MF Orders        | Yes     | —        | —     |
+| Order History    | Yes     | —        | —     |
+| Live WebSocket   | Yes     | —        | —     |
 
 ### Security
+
 - **Mandatory 2FA** — TOTP-based (Google Authenticator, Authy)
 - **10 backup codes** — One-time recovery codes generated at setup
 - **AES-256-GCM encryption** — All broker API secrets and access tokens encrypted at rest
@@ -391,16 +393,17 @@ graph LR
 
 ### Financial Calculators (41 tools)
 
-| Category | Calculators |
-|----------|------------|
-| **Investment** | SIP, Lumpsum, Step-up SIP, XIRR, CAGR, Inflation, Stock Average |
-| **Loans** | EMI, Home Loan, Car Loan, Compound Interest, Simple Interest, Flat vs Reducing |
-| **Savings** | PPF, NPS, FD, RD, SSY, NSC, SCSS, MIS, APY, EPF |
-| **Tax** | Income Tax, Salary, HRA, Gratuity, TDS, GST |
-| **Trading** | Brokerage, Margin |
-| **Planning** | Retirement |
+| Category             | Calculators                                                                    |
+| -------------------- | ------------------------------------------------------------------------------ |
+| **Investment** | SIP, Lumpsum, Step-up SIP, XIRR, CAGR, Inflation, Stock Average                |
+| **Loans**      | EMI, Home Loan, Car Loan, Compound Interest, Simple Interest, Flat vs Reducing |
+| **Savings**    | PPF, NPS, FD, RD, SSY, NSC, SCSS, MIS, APY, EPF                                |
+| **Tax**        | Income Tax, Salary, HRA, Gratuity, TDS, GST                                    |
+| **Trading**    | Brokerage, Margin                                                              |
+| **Planning**   | Retirement                                                                     |
 
 ### User Experience
+
 - **Dark mode** — System-aware theme with manual toggle
 - **Mobile responsive** — Works on all screen sizes
 - **Skeleton loading** — Smooth loading states
@@ -453,6 +456,9 @@ coinTrack/
 │   │   ├── notes/                              # Personal investment journal
 │   │   ├── fixeddeposit/                       # Fixed Deposit (FD) management module
 │   │   ├── ppf/                                # Public Provident Fund (PPF) Ledger module
+│   │   ├── epf/                                # Employees' Provident Fund (EPF) Ledger module
+│   │   ├── goldsilver/                         # Gold & Silver module
+│   │   ├── mutualfund/                         # Mutual Fund module
 │   │   ├── calculator/                         # 41 financial calculators (6 controllers)
 │   │   └── common/                             # Shared: EncryptionUtil, GlobalExceptionHandler, SequenceGeneratorService, CsvExportUtil
 │   │
@@ -499,13 +505,13 @@ coinTrack/
 
 ### Prerequisites
 
-| Tool | Version | Download |
-|------|---------|----------|
-| Java JDK | 21+ | [Eclipse Temurin](https://adoptium.net/) |
-| Node.js | 18.17+ | [nodejs.org](https://nodejs.org/) |
-| npm | 9+ | Included with Node.js |
-| MongoDB | 7+ (or Atlas) | [mongodb.com](https://www.mongodb.com/atlas) |
-| Git | 2.x | [git-scm.com](https://git-scm.com/) |
+| Tool     | Version       | Download                                    |
+| -------- | ------------- | ------------------------------------------- |
+| Java JDK | 21+           | [Eclipse Temurin](https://adoptium.net/)     |
+| Node.js  | 18.17+        | [nodejs.org](https://nodejs.org/)            |
+| npm      | 9+            | Included with Node.js                       |
+| MongoDB  | 7+ (or Atlas) | [mongodb.com](https://www.mongodb.com/atlas) |
+| Git      | 2.x           | [git-scm.com](https://git-scm.com/)          |
 
 ### Option A: Run Locally (Recommended for Development)
 
@@ -585,11 +591,11 @@ npm run build && npm start
 
 ### Option C: Use Live Production
 
-| Service | URL |
-|---------|-----|
-| Frontend | https://cointrack-finance.vercel.app |
-| Backend API | https://cointrack-15gt.onrender.com |
-| Swagger UI | https://cointrack-15gt.onrender.com/swagger-ui.html |
+| Service     | URL                                                         |
+| ----------- | ----------------------------------------------------------- |
+| Frontend    | https://cointrack-finance.vercel.app                        |
+| Backend API | https://cointrack-backend-1g44.onrender.com                 |
+| Swagger UI  | https://cointrack-backend-1g44.onrender.com/swagger-ui.html |
 
 > **Note:** The Render free tier spins down after inactivity. First request may take 30-60 seconds. A GitHub Actions cron pings the health endpoint every 5 minutes to keep it warm.
 
@@ -612,26 +618,26 @@ openssl rand -hex 32
 
 ### Backend (`application-secret.properties` or system env)
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `MONGODB_URI` | Yes | MongoDB connection string | `mongodb+srv://user:pass@cluster/` |
-| `MONGODB_DB` | No | Database name (default: `Finance`) | `Finance` |
-| `JWT_SECRET` | Yes | 256-bit signing key (hex) | `a1b2c3d4...` (64 chars) |
-| `ENCRYPTION_SECRET_KEY` | Yes | AES-256 key (exactly 32 chars) | `mySecretKey12345678901234567890` |
-| `TOTP_ENCRYPTION_KEY` | Yes | TOTP encryption key (64 hex chars) | `a1b2c3...` |
-| `BREVO_API_KEY` | Yes | Brevo email API key | `xkeysib-...` |
-| `FRONTEND_URL` | Yes | Frontend origin for emails/links | `http://localhost:3000` |
-| `CORS_ALLOWED_ORIGINS` | Yes | Allowed CORS origins | `http://localhost:3000` |
-| `ZERODHA_REDIRECT_URL` | No | Zerodha OAuth callback | `.../brokers/zerodha/callback` |
-| `ANGELONE_REDIRECT_URL` | No | Angel One OAuth callback | `.../brokers/angelone/callback` |
-| `UPSTOX_REDIRECT_URL` | No | Upstox OAuth callback | `.../brokers/upstox/callback` |
+| Variable                  | Required | Description                         | Example                              |
+| ------------------------- | -------- | ----------------------------------- | ------------------------------------ |
+| `MONGODB_URI`           | Yes      | MongoDB connection string           | `mongodb+srv://user:pass@cluster/` |
+| `MONGODB_DB`            | No       | Database name (default:`Finance`) | `Finance`                          |
+| `JWT_SECRET`            | Yes      | 256-bit signing key (hex)           | `a1b2c3d4...` (64 chars)           |
+| `ENCRYPTION_SECRET_KEY` | Yes      | AES-256 key (exactly 32 chars)      | `mySecretKey12345678901234567890`  |
+| `TOTP_ENCRYPTION_KEY`   | Yes      | TOTP encryption key (64 hex chars)  | `a1b2c3...`                        |
+| `BREVO_API_KEY`         | Yes      | Brevo email API key                 | `xkeysib-...`                      |
+| `FRONTEND_URL`          | Yes      | Frontend origin for emails/links    | `http://localhost:3000`            |
+| `CORS_ALLOWED_ORIGINS`  | Yes      | Allowed CORS origins                | `http://localhost:3000`            |
+| `ZERODHA_REDIRECT_URL`  | No       | Zerodha OAuth callback              | `.../brokers/zerodha/callback`     |
+| `ANGELONE_REDIRECT_URL` | No       | Angel One OAuth callback            | `.../brokers/angelone/callback`    |
+| `UPSTOX_REDIRECT_URL`   | No       | Upstox OAuth callback               | `.../brokers/upstox/callback`      |
 
 ### Frontend (`.env.local`)
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NEXT_PUBLIC_API_BASE` | Yes | Backend API URL |
-| `NEXT_PUBLIC_APP_URL` | No | Frontend URL (for OAuth callbacks) |
+| Variable                 | Required | Description                        |
+| ------------------------ | -------- | ---------------------------------- |
+| `NEXT_PUBLIC_API_BASE` | Yes      | Backend API URL                    |
+| `NEXT_PUBLIC_APP_URL`  | No       | Frontend URL (for OAuth callbacks) |
 
 ---
 
@@ -695,17 +701,17 @@ coinTrack includes **SpringDoc OpenAPI 3** with full Swagger UI for interactive 
 
 ### Access Swagger UI
 
-| Environment | URL |
-|------------|-----|
-| Local | http://localhost:8080/swagger-ui.html |
-| Production | https://cointrack-15gt.onrender.com/swagger-ui.html |
+| Environment | URL                                                         |
+| ----------- | ----------------------------------------------------------- |
+| Local       | http://localhost:8080/swagger-ui.html                       |
+| Production  | https://cointrack-backend-1g44.onrender.com/swagger-ui.html |
 
 ### OpenAPI JSON Spec
 
-| Environment | URL |
-|------------|-----|
-| Local | http://localhost:8080/v3/api-docs |
-| Production | https://cointrack-15gt.onrender.com/v3/api-docs |
+| Environment | URL                                                     |
+| ----------- | ------------------------------------------------------- |
+| Local       | http://localhost:8080/v3/api-docs                       |
+| Production  | https://cointrack-backend-1g44.onrender.com/v3/api-docs |
 
 ### What's Documented
 
@@ -737,70 +743,71 @@ graph LR
 
 ### Authentication
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/auth/register` | Public | Register new user |
-| `GET` | `/api/auth/verify` | Public | Verify email token |
-| `POST` | `/api/auth/login` | Public | Login (returns JWT or TOTP prompt) |
-| `POST` | `/api/auth/refresh` | Public | Refresh JWT token |
-| `POST` | `/api/auth/logout` | JWT | Invalidate token |
-| `POST` | `/api/auth/forgot-password` | Public | Send reset email |
-| `POST` | `/api/auth/reset-password` | Public | Reset with token |
+| Method   | Endpoint                      | Auth   | Description                        |
+| -------- | ----------------------------- | ------ | ---------------------------------- |
+| `POST` | `/api/auth/register`        | Public | Register new user                  |
+| `GET`  | `/api/auth/verify`          | Public | Verify email token                 |
+| `POST` | `/api/auth/login`           | Public | Login (returns JWT or TOTP prompt) |
+| `POST` | `/api/auth/refresh`         | Public | Refresh JWT token                  |
+| `POST` | `/api/auth/logout`          | JWT    | Invalidate token                   |
+| `POST` | `/api/auth/forgot-password` | Public | Send reset email                   |
+| `POST` | `/api/auth/reset-password`  | Public | Reset with token                   |
 
 ### User & 2FA
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/user/profile` | JWT | Get user profile |
-| `PUT` | `/api/user/profile` | JWT | Update profile |
-| `POST` | `/api/totp/setup` | JWT | Generate TOTP secret + QR code |
-| `POST` | `/api/totp/verify` | JWT | Verify TOTP code |
-| `POST` | `/api/totp/backup-codes/verify` | JWT | Verify backup code |
-| `GET` | `/api/totp/backup-codes` | JWT | Get remaining backup codes |
+| Method   | Endpoint                          | Auth | Description                    |
+| -------- | --------------------------------- | ---- | ------------------------------ |
+| `GET`  | `/api/user/profile`             | JWT  | Get user profile               |
+| `PUT`  | `/api/user/profile`             | JWT  | Update profile                 |
+| `POST` | `/api/totp/setup`               | JWT  | Generate TOTP secret + QR code |
+| `POST` | `/api/totp/verify`              | JWT  | Verify TOTP code               |
+| `POST` | `/api/totp/backup-codes/verify` | JWT  | Verify backup code             |
+| `GET`  | `/api/totp/backup-codes`        | JWT  | Get remaining backup codes     |
 
 ### Broker
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/broker/{broker}/credentials` | JWT | Save API key/secret |
-| `GET` | `/api/broker/{broker}/connect` | JWT | Get OAuth login URL |
-| `POST` | `/api/broker/callback` | JWT | Handle OAuth callback |
-| `GET` | `/api/broker/status` | JWT | All broker statuses |
-| `DELETE` | `/api/broker/{broker}/disconnect` | JWT | Disconnect broker |
+| Method     | Endpoint                             | Auth | Description           |
+| ---------- | ------------------------------------ | ---- | --------------------- |
+| `POST`   | `/api/broker/{broker}/credentials` | JWT  | Save API key/secret   |
+| `GET`    | `/api/broker/{broker}/connect`     | JWT  | Get OAuth login URL   |
+| `POST`   | `/api/broker/callback`             | JWT  | Handle OAuth callback |
+| `GET`    | `/api/broker/status`               | JWT  | All broker statuses   |
+| `DELETE` | `/api/broker/{broker}/disconnect`  | JWT  | Disconnect broker     |
 
 ### Portfolio
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/portfolio/summary` | JWT | Full portfolio summary with P&L |
-| `GET` | `/api/portfolio/holdings` | JWT | All holdings across brokers |
-| `GET` | `/api/portfolio/positions` | JWT | All positions across brokers |
-| `GET` | `/api/portfolio/funds` | JWT | Funds/margins per broker |
-| `POST` | `/api/portfolio/refresh` | JWT | Trigger manual sync |
+| Method   | Endpoint                     | Auth | Description                     |
+| -------- | ---------------------------- | ---- | ------------------------------- |
+| `GET`  | `/api/portfolio/summary`   | JWT  | Full portfolio summary with P&L |
+| `GET`  | `/api/portfolio/holdings`  | JWT  | All holdings across brokers     |
+| `GET`  | `/api/portfolio/positions` | JWT  | All positions across brokers    |
+| `GET`  | `/api/portfolio/funds`     | JWT  | Funds/margins per broker        |
+| `POST` | `/api/portfolio/refresh`   | JWT  | Trigger manual sync             |
 
 ### Notes
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/notes` | JWT | List all notes (paginated) |
-| `POST` | `/api/notes` | JWT | Create note |
-| `PUT` | `/api/notes/{id}` | JWT | Update note |
-| `DELETE` | `/api/notes/{id}` | JWT | Delete note |
+| Method     | Endpoint            | Auth | Description                |
+| ---------- | ------------------- | ---- | -------------------------- |
+| `GET`    | `/api/notes`      | JWT  | List all notes (paginated) |
+| `POST`   | `/api/notes`      | JWT  | Create note                |
+| `PUT`    | `/api/notes/{id}` | JWT  | Update note                |
+| `DELETE` | `/api/notes/{id}` | JWT  | Delete note                |
 
 ### Fixed Deposits
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/fixed-deposits` | JWT | Create new Fixed Deposit |
-| `GET` | `/api/fixed-deposits` | JWT | List FDs (filtered, 6-mode sorted, paginated) |
-| `GET` | `/api/fixed-deposits/summary` | JWT | Dashboard metrics (total investment, expected maturity, counts) |
-| `GET` | `/api/fixed-deposits/export` | JWT | Export filtered FDs to 14-column Excel (.xlsx) |
-| `GET` | `/api/fixed-deposits/{id}` | JWT | Get single FD by ID |
-| `PUT` | `/api/fixed-deposits/{id}` | JWT | Update FD details |
-| `PATCH` | `/api/fixed-deposits/{id}/close` | JWT | Mark FD as CLOSED (sticky override) |
-| `DELETE` | `/api/fixed-deposits/{id}` | JWT | Delete FD |
+| Method     | Endpoint                           | Auth | Description                                                     |
+| ---------- | ---------------------------------- | ---- | --------------------------------------------------------------- |
+| `POST`   | `/api/fixed-deposits`            | JWT  | Create new Fixed Deposit                                        |
+| `GET`    | `/api/fixed-deposits`            | JWT  | List FDs (filtered, 6-mode sorted, paginated)                   |
+| `GET`    | `/api/fixed-deposits/summary`    | JWT  | Dashboard metrics (total investment, expected maturity, counts) |
+| `GET`    | `/api/fixed-deposits/export`     | JWT  | Export filtered FDs to 14-column Excel (.xlsx)                  |
+| `GET`    | `/api/fixed-deposits/{id}`       | JWT  | Get single FD by ID                                             |
+| `PUT`    | `/api/fixed-deposits/{id}`       | JWT  | Update FD details                                               |
+| `PATCH`  | `/api/fixed-deposits/{id}/close` | JWT  | Mark FD as CLOSED (sticky override)                             |
+| `DELETE` | `/api/fixed-deposits/{id}`       | JWT  | Delete FD                                                       |
 
 > **Key FD Module Features:**
+>
 > - **Smart Relative Sorting**: `maturityDate:asc` (Nearest First) evaluates relative to `today` (`LocalDate.now()`), placing upcoming maturities first and past/matured ones at the bottom.
 > - **6-Mode Sorting Engine**: `maturityDate:asc`, `maturityDate:desc`, `issueDate:desc`, `issueDate:asc` (Export Default), `issueAmount:desc`, `issueAmount:asc`.
 > - **Excel (XLSX) Export Formatting**: 14-column output via `ExcelExportUtil` with bold headers, right alignment, and auto column widths. Formats `Days To Maturity` as `-` for matured/due/closed FDs.
@@ -808,61 +815,78 @@ graph LR
 
 ### Public Provident Fund (PPF)
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/ppf/transactions` | JWT | Add new transaction (triggers ledger recalculation) |
-| `GET` | `/api/ppf/transactions` | JWT | List transactions (chronological, filtered, paginated) |
-| `GET` | `/api/ppf/summary` | JWT | Dashboard metrics (programmatic current balance, total deposits, etc.) |
-| `GET` | `/api/ppf/export` | JWT | Export filtered transactions to Excel (.xlsx) in chronological order |
-| `GET` | `/api/ppf/withdrawal-status` | JWT | Get live statutory eligibility for withdrawals and max caps |
-| `GET` | `/api/ppf/transactions/{id}` | JWT | Get single transaction by ID |
-| `PUT` | `/api/ppf/transactions/{id}` | JWT | Edit transaction (triggers ledger recalculation) |
-| `DELETE` | `/api/ppf/transactions/{id}` | JWT | Delete transaction (triggers ledger recalculation) |
-| `GET / PUT`| `/api/ppf/settings` | JWT | Get/update account details and Post-Maturity Extension Mode |
+| Method        | Endpoint                       | Auth | Description                                                            |
+| ------------- | ------------------------------ | ---- | ---------------------------------------------------------------------- |
+| `POST`      | `/api/ppf/transactions`      | JWT  | Add new transaction (triggers ledger recalculation)                    |
+| `GET`       | `/api/ppf/transactions`      | JWT  | List transactions (chronological, filtered, paginated)                 |
+| `GET`       | `/api/ppf/summary`           | JWT  | Dashboard metrics (programmatic current balance, total deposits, etc.) |
+| `GET`       | `/api/ppf/export`            | JWT  | Export filtered transactions to Excel (.xlsx) in chronological order   |
+| `GET`       | `/api/ppf/withdrawal-status` | JWT  | Get live statutory eligibility for withdrawals and max caps            |
+| `GET`       | `/api/ppf/transactions/{id}` | JWT  | Get single transaction by ID                                           |
+| `PUT`       | `/api/ppf/transactions/{id}` | JWT  | Edit transaction (triggers ledger recalculation)                       |
+| `DELETE`    | `/api/ppf/transactions/{id}` | JWT  | Delete transaction (triggers ledger recalculation)                     |
+| `GET / PUT` | `/api/ppf/settings`          | JWT  | Get/update account details and Post-Maturity Extension Mode            |
 
 > **Key PPF Module Features:**
+>
 > - **Statutory Withdrawal Validation**: Strict enforcement of PPF Scheme 2019/2023 rules including lock-in periods, 50% max withdrawal caps, and single withdrawal per FY constraints.
 > - **Post-Maturity Extension Modes**: Full support for both `WITHOUT_CONTRIBUTION` and `WITH_CONTRIBUTION` (Form H) modes with dynamic 60% block limit calculations.
 
 ### Employees' Provident Fund (EPF)
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET / PUT` | `/api/epf/settings` | JWT | Get/update user EPF settings |
-| `POST` | `/api/epf/transactions` | JWT | Add entry (AUTO_SALARY split or MANUAL_OVERRIDE) |
-| `GET` | `/api/epf/transactions` | JWT | List paginated transactions with optional filters |
-| `GET` | `/api/epf/summary` | JWT | Dashboard summary metrics (EPF & EPS balances, totals, live accrued interest, tax flag) |
-| `GET` | `/api/epf/export` | JWT | Export filtered transactions to styled Excel (XLSX) |
+| Method        | Endpoint                  | Auth | Description                                                                             |
+| ------------- | ------------------------- | ---- | --------------------------------------------------------------------------------------- |
+| `GET / PUT` | `/api/epf/settings`     | JWT  | Get/update user EPF settings                                                            |
+| `POST`      | `/api/epf/transactions` | JWT  | Add entry (AUTO_SALARY split or MANUAL_OVERRIDE)                                        |
+| `GET`       | `/api/epf/transactions` | JWT  | List paginated transactions with optional filters                                       |
+| `GET`       | `/api/epf/summary`      | JWT  | Dashboard summary metrics (EPF & EPS balances, totals, live accrued interest, tax flag) |
+| `GET`       | `/api/epf/export`       | JWT  | Export filtered transactions to styled Excel (XLSX)                                     |
 
 ### Gold & Silver (v2 — Live Purity-Based Rates)
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/gold-silver` | JWT | Create investment entry |
-| `GET` | `/api/gold-silver` | JWT | List investments (filtered, paginated) |
-| `GET` | `/api/gold-silver/summary` | JWT | Dashboard summary metrics (invested, live current value, P&L, return %) |
-| `GET` | `/api/gold-silver/rates/current` | JWT | Fetch latest cached metal rate snapshots & staleness status |
-| `POST` | `/api/gold-silver/rates/refresh` | JWT | Manual force refresh (rate-limited to protect API quota) |
-| `GET / PUT` | `/api/gold-silver/rate-settings` | JWT | Get / update user's local premium settings (%) |
-| `PATCH` | `/api/gold-silver/{id}/rate-mode` | JWT | Switch holding between `LIVE` and `MANUAL` rate modes |
-| `GET / POST` | `/api/gold-silver/purity-options` | JWT | Fetch available purities or create custom purity option |
-| `PATCH` | `/api/gold-silver/market-rate` | JWT | Bulk update rate for `MANUAL`-mode records only |
-| `GET` | `/api/gold-silver/export` | JWT | Export investments to Excel (.xlsx) |
+| Method         | Endpoint                            | Auth | Description                                                             |
+| -------------- | ----------------------------------- | ---- | ----------------------------------------------------------------------- |
+| `POST`       | `/api/gold-silver`                | JWT  | Create investment entry                                                 |
+| `GET`        | `/api/gold-silver`                | JWT  | List investments (filtered, paginated)                                  |
+| `GET`        | `/api/gold-silver/summary`        | JWT  | Dashboard summary metrics (invested, live current value, P&L, return %) |
+| `GET`        | `/api/gold-silver/rates/current`  | JWT  | Fetch latest cached metal rate snapshots & staleness status             |
+| `POST`       | `/api/gold-silver/rates/refresh`  | JWT  | Manual force refresh (rate-limited to protect API quota)                |
+| `GET / PUT`  | `/api/gold-silver/rate-settings`  | JWT  | Get / update user's local premium settings (%)                          |
+| `PATCH`      | `/api/gold-silver/{id}/rate-mode` | JWT  | Switch holding between`LIVE` and `MANUAL` rate modes                |
+| `GET / POST` | `/api/gold-silver/purity-options` | JWT  | Fetch available purities or create custom purity option                 |
+| `PATCH`      | `/api/gold-silver/market-rate`    | JWT  | Bulk update rate for`MANUAL`-mode records only                        |
+| `GET`        | `/api/gold-silver/export`         | JWT  | Export investments to Excel (.xlsx)                                     |
 
 > **Collections:** `gold_silver_investments`, `metal_purity_options`, `metal_rate_snapshots`, `metal_rate_settings`
 
+### Mutual Fund (MF) Investment Management
+
+| Method                        | Endpoint                                 | Auth | Description                                   |
+| ----------------------------- | ---------------------------------------- | ---- | --------------------------------------------- |
+| `POST / GET / PUT / DELETE` | `/api/mutual-fund/schemes`             | JWT  | CRUD mutual fund schemes                      |
+| `POST / GET / PUT / DELETE` | `/api/mutual-fund/lumpsum`             | JWT  | CRUD lumpsum transactions                     |
+| `POST / GET / PUT / DELETE` | `/api/mutual-fund/sip-mandate`         | JWT  | CRUD SIP mandates                             |
+| `POST / GET / PUT / DELETE` | `/api/mutual-fund/sip-contribution`    | JWT  | CRUD monthly SIP contributions                |
+| `POST / GET / PUT / DELETE` | `/api/mutual-fund/redemption`          | JWT  | CRUD redemption transactions                  |
+| `POST / GET / PUT / DELETE` | `/api/mutual-fund/valuation-snapshots` | JWT  | CRUD manual valuation snapshots               |
+| `GET`                       | `/api/mutual-fund/scheme-summary`      | JWT  | Aggregated per-scheme ledger stats            |
+| `GET`                       | `/api/mutual-fund/summary`             | JWT  | Dashboard totals + manual discrepancy reports |
+| `GET`                       | `/api/mutual-fund/export`              | JWT  | Export 5-tab dynamic Excel ledger workbook    |
+
+> **Collections:** `mf_schemes`, `mf_lumpsum_transactions`, `mf_sip_mandates`, `mf_sip_contributions`, `mf_redemption_transactions`, `mf_valuation_snapshots`
+
 ### Calculators (Public — No Auth Required)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/calculators/investment/sip` | SIP returns calculator |
-| `POST` | `/api/calculators/investment/lumpsum` | Lumpsum returns |
-| `POST` | `/api/calculators/investment/cagr` | CAGR calculator |
-| `POST` | `/api/calculators/loans/emi` | EMI calculator |
-| `POST` | `/api/calculators/savings/ppf` | PPF maturity |
-| `POST` | `/api/calculators/savings/nps` | NPS projection |
-| `POST` | `/api/calculators/tax/income-tax` | Income tax estimator |
-| ... | `/api/calculators/**` | **41 calculators total** |
+| Method   | Endpoint                                | Description                    |
+| -------- | --------------------------------------- | ------------------------------ |
+| `POST` | `/api/calculators/investment/sip`     | SIP returns calculator         |
+| `POST` | `/api/calculators/investment/lumpsum` | Lumpsum returns                |
+| `POST` | `/api/calculators/investment/cagr`    | CAGR calculator                |
+| `POST` | `/api/calculators/loans/emi`          | EMI calculator                 |
+| `POST` | `/api/calculators/savings/ppf`        | PPF maturity                   |
+| `POST` | `/api/calculators/savings/nps`        | NPS projection                 |
+| `POST` | `/api/calculators/tax/income-tax`     | Income tax estimator           |
+| ...      | `/api/calculators/**`                 | **41 calculators total** |
 
 > Full interactive docs with request/response schemas available at **[Swagger UI](#api-documentation-swagger)**.
 
@@ -892,11 +916,13 @@ graph LR
 ```
 
 **What's encrypted:**
+
 - Broker API secrets (`encryptedZerodhaApiSecret`)
 - Broker access tokens (`zerodhaAccessToken`)
 - TOTP secrets (separate key via `TOTP_ENCRYPTION_KEY`)
 
 **What's hashed (irreversible):**
+
 - User passwords (BCrypt with salt)
 
 ### JWT Token Lifecycle
@@ -1002,6 +1028,7 @@ graph TD
 All 41 calculators are **publicly accessible** (no login required) and **rate-limited** to prevent abuse.
 
 ### Investment Calculators
+
 - **SIP Calculator** — Monthly investment returns over time
 - **Lumpsum Calculator** — One-time investment growth
 - **Step-up SIP** — SIP with annual increment
@@ -1011,6 +1038,7 @@ All 41 calculators are **publicly accessible** (no login required) and **rate-li
 - **Stock Average Calculator** — Average buy price across multiple purchases
 
 ### Loan Calculators
+
 - **EMI Calculator** — Equated monthly installment
 - **Home Loan EMI** — With down payment and tenure
 - **Car Loan EMI** — Auto loan specific
@@ -1019,6 +1047,7 @@ All 41 calculators are **publicly accessible** (no login required) and **rate-li
 - **Flat vs Reducing Rate** — Compare loan structures
 
 ### Savings Calculators
+
 - **PPF** — Public Provident Fund maturity
 - **NPS** — National Pension System projection
 - **FD / RD** — Fixed & Recurring Deposit returns
@@ -1026,6 +1055,7 @@ All 41 calculators are **publicly accessible** (no login required) and **rate-li
 - **NSC / SCSS / MIS / APY / EPF** — Government scheme calculators
 
 ### Tax Calculators
+
 - **Income Tax** — Old vs new regime comparison
 - **Salary Calculator** — Net take-home from CTC
 - **HRA Exemption** — House Rent Allowance calculation

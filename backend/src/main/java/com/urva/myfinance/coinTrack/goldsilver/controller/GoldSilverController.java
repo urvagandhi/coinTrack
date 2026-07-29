@@ -32,11 +32,13 @@ import com.urva.myfinance.coinTrack.goldsilver.dto.response.MetalRateSnapshotDTO
 import com.urva.myfinance.coinTrack.goldsilver.dto.response.PurityOptionDTO;
 import com.urva.myfinance.coinTrack.goldsilver.model.GsStatus;
 import com.urva.myfinance.coinTrack.goldsilver.model.MetalType;
+import com.urva.myfinance.coinTrack.goldsilver.service.GoldApiUsageService;
 import com.urva.myfinance.coinTrack.goldsilver.service.GoldSilverService;
 import com.urva.myfinance.coinTrack.goldsilver.service.LiveMetalRateService;
 import com.urva.myfinance.coinTrack.goldsilver.service.MetalRateSettingsService;
 import com.urva.myfinance.coinTrack.goldsilver.service.PurityOptionService;
 import com.urva.myfinance.coinTrack.goldsilver.util.GoldSilverExcelExporter;
+import com.urva.myfinance.coinTrack.goldsilver.dto.response.GoldApiUsageDTO;
 import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 
 import jakarta.validation.Valid;
@@ -51,17 +53,20 @@ public class GoldSilverController {
     private final LiveMetalRateService liveRateService;
     private final MetalRateSettingsService settingsService;
     private final PurityOptionService purityOptionService;
+    private final GoldApiUsageService goldApiUsageService;
 
     @Autowired
     public GoldSilverController(
             GoldSilverService service,
             LiveMetalRateService liveRateService,
             MetalRateSettingsService settingsService,
-            PurityOptionService purityOptionService) {
+            PurityOptionService purityOptionService,
+            GoldApiUsageService goldApiUsageService) {
         this.service = service;
         this.liveRateService = liveRateService;
         this.settingsService = settingsService;
         this.purityOptionService = purityOptionService;
+        this.goldApiUsageService = goldApiUsageService;
     }
 
     @PostMapping
@@ -69,7 +74,7 @@ public class GoldSilverController {
             @Valid @RequestBody GoldSilverRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         logger.info("Creating Gold/Silver investment for user: {}", currentUser.getUsername());
-        GoldSilverResponseDTO responseDTO = service.addInvestment(requestDTO, currentUser.getUsername());
+        GoldSilverResponseDTO responseDTO = service.addInvestment(requestDTO, currentUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success(responseDTO, "Investment created successfully"));
     }
 
@@ -90,7 +95,7 @@ public class GoldSilverController {
             @RequestParam(required = false, defaultValue = "10") int size) {
 
         Page<GoldSilverResponseDTO> pagedResult = service.getInvestments(
-                currentUser.getUsername(), metalType, purchasedFrom, purity, status, dateFrom, dateTo, maturityFrom, maturityTo, sortBy, sortDir, page, size);
+                currentUser.getUserId(), metalType, purchasedFrom, purity, status, dateFrom, dateTo, maturityFrom, maturityTo, sortBy, sortDir, page, size);
         return ResponseEntity.ok(ApiResponse.success(pagedResult, "Fetched investments successfully"));
     }
 
@@ -98,7 +103,7 @@ public class GoldSilverController {
     public ResponseEntity<ApiResponse<GoldSilverResponseDTO>> getById(
             @PathVariable String id,
             @AuthenticationPrincipal UserPrincipal currentUser) {
-        GoldSilverResponseDTO responseDTO = service.getInvestmentById(id, currentUser.getUsername());
+        GoldSilverResponseDTO responseDTO = service.getInvestmentById(id, currentUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success(responseDTO, "Fetched investment successfully"));
     }
 
@@ -108,7 +113,7 @@ public class GoldSilverController {
             @Valid @RequestBody GoldSilverRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         logger.info("Updating Gold/Silver investment {} for user: {}", id, currentUser.getUsername());
-        GoldSilverResponseDTO responseDTO = service.updateInvestment(id, requestDTO, currentUser.getUsername());
+        GoldSilverResponseDTO responseDTO = service.updateInvestment(id, requestDTO, currentUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success(responseDTO, "Investment updated successfully"));
     }
 
@@ -118,7 +123,7 @@ public class GoldSilverController {
             @Valid @RequestBody RateModeUpdateRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         logger.info("Updating rate mode of Gold/Silver investment {} for user: {}", id, currentUser.getUsername());
-        GoldSilverResponseDTO responseDTO = service.updateRateMode(id, requestDTO, currentUser.getUsername());
+        GoldSilverResponseDTO responseDTO = service.updateRateMode(id, requestDTO, currentUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success(responseDTO, "Investment rate mode updated successfully"));
     }
 
@@ -127,7 +132,7 @@ public class GoldSilverController {
             @PathVariable String id,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         logger.info("Deleting Gold/Silver investment {} for user: {}", id, currentUser.getUsername());
-        service.deleteInvestment(id, currentUser.getUsername());
+        service.deleteInvestment(id, currentUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success(null, "Investment deleted successfully"));
     }
 
@@ -136,35 +141,55 @@ public class GoldSilverController {
             @Valid @RequestBody MarketRateUpdateRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         logger.info("Updating market rate for MANUAL-mode investments for user: {}", currentUser.getUsername());
-        service.updateMarketRate(requestDTO, currentUser.getUsername());
+        service.updateMarketRate(requestDTO, currentUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success(null, "Market rate updated successfully for MANUAL-mode investments"));
     }
 
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<GoldSilverSummaryDTO>> getSummary(
             @AuthenticationPrincipal UserPrincipal currentUser) {
-        GoldSilverSummaryDTO summary = service.getSummary(currentUser.getUsername());
+        GoldSilverSummaryDTO summary = service.getSummary(currentUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success(summary, "Fetched summary successfully"));
     }
 
     @GetMapping("/rates/current")
     public ResponseEntity<ApiResponse<List<MetalRateSnapshotDTO>>> getCurrentRates(
             @AuthenticationPrincipal UserPrincipal currentUser) {
-        String userId = (currentUser != null) ? currentUser.getUsername() : null;
+        String userId = (currentUser != null) ? currentUser.getUserId() : null;
         List<MetalRateSnapshotDTO> rates = liveRateService.getCurrentRatesForUser(userId);
         return ResponseEntity.ok(ApiResponse.success(rates, "Fetched current metal rates successfully"));
     }
 
     @PostMapping("/rates/refresh")
     public ResponseEntity<ApiResponse<List<MetalRateSnapshotDTO>>> refreshRates() {
+        int remaining = goldApiUsageService.getRemainingRequests();
         List<MetalRateSnapshotDTO> rates = liveRateService.forceRefreshRates();
-        return ResponseEntity.ok(ApiResponse.success(rates, "Refreshed metal rates successfully"));
+        String message = remaining >= 0
+                ? String.format("Refreshed metal rates successfully. API requests remaining this month: %d", remaining)
+                : "Refreshed metal rates successfully";
+        return ResponseEntity.ok(ApiResponse.success(rates, message));
+    }
+
+    @GetMapping("/rates/usage")
+    public ResponseEntity<ApiResponse<GoldApiUsageDTO>> getApiUsage() {
+        GoldApiUsageDTO usage = goldApiUsageService.getUsageStats();
+        if (usage == null) {
+            return ResponseEntity.ok(ApiResponse.success(null, "Unable to fetch GoldAPI usage statistics"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(usage, "Fetched GoldAPI usage statistics successfully"));
+    }
+
+    @GetMapping("/rates/health")
+    public ResponseEntity<ApiResponse<Boolean>> getApiHealth() {
+        boolean healthy = goldApiUsageService.isApiHealthy();
+        String message = healthy ? "GoldAPI service is operational" : "GoldAPI service is down or unreachable";
+        return ResponseEntity.ok(ApiResponse.success(healthy, message));
     }
 
     @GetMapping("/rate-settings")
     public ResponseEntity<ApiResponse<MetalRateSettingsDTO>> getRateSettings(
             @AuthenticationPrincipal UserPrincipal currentUser) {
-        MetalRateSettingsDTO settings = settingsService.getSettings(currentUser.getUsername());
+        MetalRateSettingsDTO settings = settingsService.getSettings(currentUser.getUserId());
         return ResponseEntity.ok(ApiResponse.success(settings, "Fetched metal rate settings successfully"));
     }
 
@@ -173,7 +198,7 @@ public class GoldSilverController {
             @Valid @RequestBody MetalRateSettingsDTO settingsDTO,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         logger.info("Updating metal rate settings for user: {}", currentUser.getUsername());
-        MetalRateSettingsDTO updated = settingsService.updateSettings(currentUser.getUsername(), settingsDTO);
+        MetalRateSettingsDTO updated = settingsService.updateSettings(currentUser.getUserId(), settingsDTO);
         return ResponseEntity.ok(ApiResponse.success(updated, "Updated metal rate settings successfully"));
     }
 
@@ -212,7 +237,7 @@ public class GoldSilverController {
         logger.info("Exporting Gold and Silver investments to XLSX for user: {}", currentUser.getUsername());
 
         List<GoldSilverResponseDTO> data = service.getAllForExport(
-                currentUser.getUsername(), metalType, purchasedFrom, purity, status, dateFrom, dateTo, maturityFrom, maturityTo, exportSortBy, exportSortDir);
+                currentUser.getUserId(), metalType, purchasedFrom, purity, status, dateFrom, dateTo, maturityFrom, maturityTo, exportSortBy, exportSortDir);
 
         return GoldSilverExcelExporter.export(data);
     }

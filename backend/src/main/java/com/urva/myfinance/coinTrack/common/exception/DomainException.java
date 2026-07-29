@@ -9,7 +9,6 @@ package com.urva.myfinance.coinTrack.common.exception;
  * ├── AuthenticationException (401)
  * ├── AuthorizationException (403)
  * ├── ValidationException (400)
- * └── ExternalServiceException (502/503)
  */
 public class DomainException extends RuntimeException {
 

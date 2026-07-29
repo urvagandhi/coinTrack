@@ -3,6 +3,7 @@
 import { useToast } from '@/components/ui/use-toast';
 import { Calculator, Loader2, X, RefreshCw, Calendar, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const INITIAL_STATE = {
     place: '',
@@ -215,6 +216,7 @@ export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialDat
     const [formData, setFormData] = useState(INITIAL_STATE);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
+    const { user } = useAuth();
 
     useEffect(() => {
         if (isOpen) {
@@ -237,7 +239,10 @@ export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialDat
                     remarks: initialData.remarks || '',
                 });
             } else {
-                setFormData(INITIAL_STATE);
+                setFormData({
+                    ...INITIAL_STATE,
+                    holderName: user?.name || user?.username || ''
+                });
             }
             setIsSubmitting(false);
         }
@@ -401,8 +406,10 @@ export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialDat
                                         type="text"
                                         required
                                         value={formData.holderName}
+                                        readOnly
+                                        disabled
                                         onChange={(e) => setFormData({ ...formData, holderName: e.target.value })}
-                                        className="ed-input w-full"
+                                        className="ed-input w-full bg-muted/40 cursor-not-allowed opacity-70"
                                         placeholder="Primary account holder"
                                     />
                                 </div>

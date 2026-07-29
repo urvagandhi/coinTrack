@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.ppf.controller;
 
-import java.security.Principal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 import java.util.List;
 import java.util.function.Function;
 
@@ -63,16 +64,16 @@ public class PpfController {
     @PostMapping("/transactions")
     public ResponseEntity<ApiResponse<PpfTransactionResponseDTO>> createTransaction(
             @Valid @RequestBody PpfTransactionRequestDTO requestDTO,
-            Principal principal) {
-        logger.info("Creating PPF transaction for user: {}", principal.getName());
-        PpfTransactionResponseDTO response = ppfTransactionService.createTransaction(requestDTO, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Creating PPF transaction for user: {}", principal.getUsername());
+        PpfTransactionResponseDTO response = ppfTransactionService.createTransaction(requestDTO, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @Operation(summary = "Get paginated PPF transactions with optional filters")
     @GetMapping("/transactions")
     public ResponseEntity<ApiResponse<Page<PpfTransactionResponseDTO>>> getTransactions(
-            Principal principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String dateFrom,
             @RequestParam(required = false) String dateTo,
             @RequestParam(required = false) String financialYear,
@@ -81,35 +82,35 @@ public class PpfController {
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        logger.debug("Fetching PPF transactions for user: {}, page={}, size={}", principal.getName(), page, size);
+        logger.debug("Fetching PPF transactions for user: {}, page={}, size={}", principal.getUsername(), page, size);
         Page<PpfTransactionResponseDTO> result = ppfTransactionService.getTransactions(
-                principal.getName(), dateFrom, dateTo, financialYear, particulars, sortBy, sortDir, page, size);
+                principal.getUserId(), dateFrom, dateTo, financialYear, particulars, sortBy, sortDir, page, size);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @Operation(summary = "Get PPF summary metrics for dashboard")
     @GetMapping("/summary")
-    public ResponseEntity<ApiResponse<PpfSummaryDTO>> getSummary(Principal principal) {
-        logger.debug("Fetching PPF summary for user: {}", principal.getName());
-        PpfSummaryDTO summary = ppfTransactionService.getSummary(principal.getName());
+    public ResponseEntity<ApiResponse<PpfSummaryDTO>> getSummary(@AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching PPF summary for user: {}", principal.getUsername());
+        PpfSummaryDTO summary = ppfTransactionService.getSummary(principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
     @Operation(summary = "Export PPF transactions to Excel respecting active filters")
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportTransactions(
-            Principal principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String dateFrom,
             @RequestParam(required = false) String dateTo,
             @RequestParam(required = false) String financialYear,
             @RequestParam(required = false) String particulars,
             @RequestParam(defaultValue = "transactionDate") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
-        logger.info("Exporting PPF transactions to XLSX for user: {}", principal.getName());
+        logger.info("Exporting PPF transactions to XLSX for user: {}", principal.getUsername());
 
         // Force sort to chronological ascending (oldest first)
         List<PpfTransactionResponseDTO> list = ppfTransactionService.getAllForExport(
-                principal.getName(), dateFrom, dateTo, financialYear, particulars, "transactionDate", "asc");
+                principal.getUserId(), dateFrom, dateTo, financialYear, particulars, "transactionDate", "asc");
 
         // Re-sequence the transaction number sequentially for clean reporting
         for (int i = 0; i < list.size(); i++) {
@@ -117,12 +118,12 @@ public class PpfController {
         }
 
         // Fetch settings for metadata header
-        PpfSettingsResponseDTO settings = ppfTransactionService.getSettings(principal.getName());
+        PpfSettingsResponseDTO settings = ppfTransactionService.getSettings(principal.getUserId());
 
-        // Fetch user's full name
-        String fullName = principal.getName();
+        // Fetch user's full name via userId (MongoDB _id)
+        String fullName = principal.getUsername();
         if (userService != null) {
-            com.urva.myfinance.coinTrack.user.model.User user = userService.findUserByUsername(principal.getName());
+            com.urva.myfinance.coinTrack.user.model.User user = userService.getUserById(principal.getUserId());
             if (user != null && user.getName() != null && !user.getName().trim().isEmpty()) {
                 fullName = user.getName();
             }
@@ -135,9 +136,9 @@ public class PpfController {
     @GetMapping("/transactions/{id}")
     public ResponseEntity<ApiResponse<PpfTransactionResponseDTO>> getTransactionById(
             @PathVariable String id,
-            Principal principal) {
-        logger.debug("Fetching PPF transaction {} for user: {}", id, principal.getName());
-        PpfTransactionResponseDTO response = ppfTransactionService.getTransactionById(id, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching PPF transaction {} for user: {}", id, principal.getUsername());
+        PpfTransactionResponseDTO response = ppfTransactionService.getTransactionById(id, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -146,10 +147,10 @@ public class PpfController {
     public ResponseEntity<ApiResponse<PpfTransactionResponseDTO>> updateTransaction(
             @PathVariable String id,
             @Valid @RequestBody PpfTransactionRequestDTO requestDTO,
-            Principal principal) {
-        logger.info("Updating PPF transaction {} for user: {}", id, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Updating PPF transaction {} for user: {}", id, principal.getUsername());
         PpfTransactionResponseDTO response = ppfTransactionService.updateTransaction(id, requestDTO,
-                principal.getName());
+                principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -157,17 +158,17 @@ public class PpfController {
     @DeleteMapping("/transactions/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteTransaction(
             @PathVariable String id,
-            Principal principal) {
-        logger.info("Deleting PPF transaction {} for user: {}", id, principal.getName());
-        ppfTransactionService.deleteTransaction(id, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Deleting PPF transaction {} for user: {}", id, principal.getUsername());
+        ppfTransactionService.deleteTransaction(id, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success("PPF transaction deleted successfully"));
     }
 
     @Operation(summary = "Get PPF account settings (account number, date of issue)")
     @GetMapping("/settings")
-    public ResponseEntity<ApiResponse<PpfSettingsResponseDTO>> getSettings(Principal principal) {
-        logger.debug("Fetching PPF settings for user: {}", principal.getName());
-        PpfSettingsResponseDTO settings = ppfTransactionService.getSettings(principal.getName());
+    public ResponseEntity<ApiResponse<PpfSettingsResponseDTO>> getSettings(@AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching PPF settings for user: {}", principal.getUsername());
+        PpfSettingsResponseDTO settings = ppfTransactionService.getSettings(principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(settings));
     }
 
@@ -175,17 +176,17 @@ public class PpfController {
     @PutMapping("/settings")
     public ResponseEntity<ApiResponse<PpfSettingsResponseDTO>> updateSettings(
             @RequestBody PpfSettingsRequestDTO requestDTO,
-            Principal principal) {
-        logger.info("Updating PPF settings for user: {}", principal.getName());
-        PpfSettingsResponseDTO settings = ppfTransactionService.updateSettings(requestDTO, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Updating PPF settings for user: {}", principal.getUsername());
+        PpfSettingsResponseDTO settings = ppfTransactionService.updateSettings(requestDTO, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(settings));
     }
 
     @Operation(summary = "Get PPF withdrawal status and eligibility")
     @GetMapping("/withdrawal-status")
-    public ResponseEntity<ApiResponse<PpfWithdrawalStatusDTO>> getWithdrawalStatus(Principal principal) {
-        logger.debug("Fetching PPF withdrawal status for user: {}", principal.getName());
-        PpfWithdrawalStatusDTO status = ppfWithdrawalValidationService.getWithdrawalStatus(principal.getName(),
+    public ResponseEntity<ApiResponse<PpfWithdrawalStatusDTO>> getWithdrawalStatus(@AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching PPF withdrawal status for user: {}", principal.getUsername());
+        PpfWithdrawalStatusDTO status = ppfWithdrawalValidationService.getWithdrawalStatus(principal.getUserId(),
                 LocalDate.now());
         return ResponseEntity.ok(ApiResponse.success(status));
     }

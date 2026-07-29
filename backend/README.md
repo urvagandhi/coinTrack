@@ -340,7 +340,7 @@ stateDiagram-v2
 
 ### Critical Rules
 
-- **Manual Parsing Forbidden**: Never manually parse `Authorization` headers. Use `@AuthenticationPrincipal` or `Principal`.
+- **Manual Parsing Forbidden**: Never manually parse `Authorization` headers. Use `@AuthenticationPrincipal UserPrincipal` to access `getUserId()` (the MongoDB `_id`).
 - **Public Routes**: Explicitly whitelisted in `SecurityConfig` (e.g., `/login`, `/register`, `/api/calculators/**`). All others are deny-by-default.
 
 ---
@@ -888,6 +888,12 @@ graph LR
 | `email_tokens` | email | Verification/reset tokens |
 | `notes` | notes | User notes (text indexed) |
 | `fixed_deposits` | fixeddeposit | Manual fixed deposits |
+| `mf_schemes` | mutualfund | Master scheme records |
+| `mf_lumpsum_transactions` | mutualfund | Lumpsum investments |
+| `mf_sip_mandates` | mutualfund | SIP registry |
+| `mf_sip_contributions` | mutualfund | Monthly SIP ledgers |
+| `mf_redemption_transactions` | mutualfund | Mutual fund redemptions |
+| `mf_valuation_snapshots` | mutualfund | Periodic P&L snapshots |
 | `ppf_transactions` | ppf | Public Provident Fund ledger |
 | `epf_settings` | epf | EPF per-user calculation settings |
 | `epf_transactions` | epf | EPF/EPS dual-balance transaction ledger |

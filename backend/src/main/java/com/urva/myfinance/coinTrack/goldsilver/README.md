@@ -21,10 +21,12 @@ Purities are structured reference options rather than free-text strings:
 - **`LIVE` (Default)**: Automatically updated whenever a new `MetalRateSnapshot` is persisted by the scheduler or force refresh.
 - **`MANUAL`**: Pinned by the user for custom quotes/jeweller overrides. Untouched by automated scheduler recomputation.
 
-### 4. Fetching, Caching & Rate-Limit Protections
+### 4. Fetching, Caching & Quota Management
 - **Provider Abstraction**: `MetalPriceProvider` interface decouples service logic from `GoldApiIoProvider`.
-- **Scheduled Caching (`MetalRateFetchScheduler`)**: Cron job (default `0 0 */6 * * *` / every 6 hours) fetches rates once globally for the entire application to protect free-tier API quotas.
-- **Server-Side Force Refresh Rate Limiting**: `POST /api/gold-silver/rates/refresh` enforces a minimum 15-minute gap between external provider calls across the deployment.
+- **Scheduled Caching (`MetalRateFetchScheduler`)**: Cron job (default `0 0 10 * * *` / daily at 10 AM) fetches rates once globally for the entire application. Before each fetch, performs a **quota guard** (via `/api/stat`) and **health check** (via `/api/status`).
+- **Quota Management (`GoldApiUsageService`)**: Monitors the 100 req/month GoldAPI limit. Configurable via `goldapi.monthly-limit` and `goldapi.safety-buffer` (default 5). Both scheduled and manual refreshes are blocked when usage exceeds `limit - buffer`. Usage stats are cached for 30 minutes to avoid burning API calls on monitoring.
+- **Health Check**: Pre-flight health check via GoldAPI `/api/status` endpoint. If the service reports unhealthy, rate fetches are skipped and cached rates are preserved.
+- **Server-Side Force Refresh Rate Limiting**: `POST /api/gold-silver/rates/refresh` enforces a minimum 30-minute gap between external provider calls across the deployment.
 - **Stale-Rate Fallback**: If external API calls fail (network issue or quota limit), the previous snapshot is retained with `isStale = true` and `rateStale`/`rateAsOf` flags are propagated to DTOs for transparent UI rendering.
 
 ## Core Logic & Calculation Chain
@@ -43,7 +45,9 @@ Purities are structured reference options rather than free-text strings:
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/gold-silver/rates/current` | Get latest cached metal rate snapshots & staleness status |
-| POST | `/api/gold-silver/rates/refresh` | Manual force refresh (rate-limited to protect API quota) |
+| POST | `/api/gold-silver/rates/refresh` | Manual force refresh (quota-guarded + health-checked) |
+| GET | `/api/gold-silver/rates/usage` | Get GoldAPI quota usage stats (today, month, remaining) |
+| GET | `/api/gold-silver/rates/health` | Check GoldAPI service health status |
 | GET / PUT | `/api/gold-silver/rate-settings` | Get / update user's local premium settings |
 | PATCH | `/api/gold-silver/{id}/rate-mode` | Switch holding between `LIVE` and `MANUAL` rate modes |
 | GET / POST | `/api/gold-silver/purity-options` | Fetch available purities or create custom purity option |

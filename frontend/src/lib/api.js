@@ -375,9 +375,52 @@ export const endpoints = {
         marketRate: '/api/gold-silver/market-rate',
         ratesCurrent: '/api/gold-silver/rates/current',
         ratesRefresh: '/api/gold-silver/rates/refresh',
+        ratesUsage: '/api/gold-silver/rates/usage',
+        ratesHealth: '/api/gold-silver/rates/health',
         rateSettings: '/api/gold-silver/rate-settings',
         rateMode: (id) => `/api/gold-silver/${id}/rate-mode`,
         purityOptions: '/api/gold-silver/purity-options',
+    },
+    mutualFund: {
+        dashboard: '/api/mutual-fund/dashboard',
+        export: '/api/mutual-fund/export',
+        
+        schemes: '/api/mutual-fund/schemes',
+        schemeSummary: '/api/mutual-fund/scheme-summary',
+        schemeDropdown: '/api/mutual-fund/schemes/dropdown',
+        schemeSearch: '/api/mutual-fund/schemes/search',
+        schemeCategory: (cat) => `/api/mutual-fund/schemes/category/${cat}`,
+        schemePlatform: (plat) => `/api/mutual-fund/schemes/platform/${plat}`,
+        schemeBank: (bank) => `/api/mutual-fund/schemes/bank/${bank}`,
+        updateScheme: (id) => `/api/mutual-fund/schemes/${id}`,
+        deleteScheme: (id) => `/api/mutual-fund/schemes/${id}`,
+        
+        lumpsum: '/api/mutual-fund/lumpsum',
+        lumpsumPage: '/api/mutual-fund/lumpsum/page',
+        lumpsumDateRange: '/api/mutual-fund/lumpsum/date-range',
+        lumpsumFinYear: (year) => `/api/mutual-fund/lumpsum/financial-year/${year}`,
+        updateLumpsum: (id) => `/api/mutual-fund/lumpsum/${id}`,
+        deleteLumpsum: (id) => `/api/mutual-fund/lumpsum/${id}`,
+        
+        sipMandate: '/api/mutual-fund/sip-mandate',
+        sipMandateStatus: (status) => `/api/mutual-fund/sip-mandate/status/${status}`,
+        updateSipMandate: (id) => `/api/mutual-fund/sip-mandate/${id}`,
+        stopSipMandate: (id) => `/api/mutual-fund/sip-mandate/${id}/stop`,
+        restartSipMandate: (id) => `/api/mutual-fund/sip-mandate/${id}/restart`,
+        deleteSipMandate: (id) => `/api/mutual-fund/sip-mandate/${id}`,
+        
+        sipContribution: '/api/mutual-fund/sip-contribution',
+        sipContributionMandate: (id) => `/api/mutual-fund/sip-contribution/mandate/${id}`,
+        sipContributionDateRange: '/api/mutual-fund/sip-contribution/date-range',
+        sipContributionFinYear: (year) => `/api/mutual-fund/sip-contribution/financial-year/${year}`,
+        updateSipContribution: (id) => `/api/mutual-fund/sip-contribution/${id}`,
+        deleteSipContribution: (id) => `/api/mutual-fund/sip-contribution/${id}`,
+        
+        redemption: '/api/mutual-fund/redemption',
+        redemptionDateRange: '/api/mutual-fund/redemption/date-range',
+        redemptionFinYear: (year) => `/api/mutual-fund/redemption/financial-year/${year}`,
+        updateRedemption: (id) => `/api/mutual-fund/redemption/${id}`,
+        deleteRedemption: (id) => `/api/mutual-fund/redemption/${id}`,
     },
 };
 
@@ -420,6 +463,14 @@ export const authAPI = {
     },
     refresh: async (refreshToken) => {
         const { data } = await api.post('/api/auth/refresh', { refreshToken }, noRetry);
+        return unwrapResponse(data);
+    },
+    googleLogin: async (code, redirectUri) => {
+        const { data } = await api.post('/api/auth/oauth2/google', { code, redirectUri }, noRetry);
+        return unwrapResponse(data);
+    },
+    completeGoogleProfile: async (payload) => {
+        const { data } = await api.post('/api/auth/oauth2/complete-profile', payload, noRetry);
         return unwrapResponse(data);
     },
 };
@@ -938,6 +989,14 @@ export const goldSilverAPI = {
         const { data } = await api.post(endpoints.goldSilver.ratesRefresh);
         return unwrapResponse(data) || [];
     },
+    getApiUsage: async () => {
+        const { data } = await api.get(endpoints.goldSilver.ratesUsage);
+        return unwrapResponse(data);
+    },
+    getApiHealth: async () => {
+        const { data } = await api.get(endpoints.goldSilver.ratesHealth);
+        return unwrapResponse(data);
+    },
     getRateSettings: async () => {
         const { data } = await api.get(endpoints.goldSilver.rateSettings);
         return unwrapResponse(data);
@@ -971,6 +1030,168 @@ export const goldSilverAPI = {
             responseType: 'blob',
         });
         return response.data;
+    },
+};
+
+// ============================================================================
+// MUTUAL FUND API
+// ============================================================================
+
+export const mutualFundAPI = {
+    getDashboard: async () => {
+        const { data } = await api.get(endpoints.mutualFund.dashboard);
+        return unwrapResponse(data);
+    },
+    exportExcel: async () => {
+        const response = await api.get(endpoints.mutualFund.export, {
+            responseType: 'blob',
+        });
+        return response.data;
+    },
+    getSchemeDropdown: async () => {
+        const { data } = await api.get(endpoints.mutualFund.schemeDropdown);
+        return unwrapResponse(data) || [];
+    },
+    getSchemes: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.includeRedeemed) searchParams.set('includeRedeemed', params.includeRedeemed);
+        if (params.holderName) searchParams.set('holderName', params.holderName);
+        const qs = searchParams.toString();
+        const { data } = await api.get(`${endpoints.mutualFund.schemes}${qs ? '?' + qs : ''}`);
+        return unwrapResponse(data) || [];
+    },
+    getSchemeSummaries: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.includeRedeemed) searchParams.set('includeRedeemed', params.includeRedeemed);
+        if (params.holderName) searchParams.set('holderName', params.holderName);
+        const qs = searchParams.toString();
+        const { data } = await api.get(`${endpoints.mutualFund.schemeSummary}${qs ? '?' + qs : ''}`);
+        return unwrapResponse(data) || [];
+    },
+    createScheme: async (schemeData) => {
+        const { data } = await api.post(endpoints.mutualFund.schemes, schemeData);
+        return unwrapResponse(data);
+    },
+    updateScheme: async (id, schemeData) => {
+        const { data } = await api.put(endpoints.mutualFund.updateScheme(id), schemeData);
+        return unwrapResponse(data);
+    },
+    deleteScheme: async (id) => {
+        const { data } = await api.delete(endpoints.mutualFund.deleteScheme(id));
+        return unwrapResponse(data);
+    },
+    
+    getLumpsum: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.schemeId) searchParams.set('schemeId', params.schemeId);
+        const qs = searchParams.toString();
+        const { data } = await api.get(`${endpoints.mutualFund.lumpsum}${qs ? '?' + qs : ''}`);
+        return unwrapResponse(data) || [];
+    },
+    getLumpsumPaginated: async (page = 0, size = 10) => {
+        const { data } = await api.get(`${endpoints.mutualFund.lumpsumPage}?page=${page}&size=${size}`);
+        return unwrapResponse(data);
+    },
+    createLumpsum: async (txnData) => {
+        const { data } = await api.post(endpoints.mutualFund.lumpsum, txnData);
+        return unwrapResponse(data);
+    },
+    updateLumpsum: async (id, txnData) => {
+        const { data } = await api.put(endpoints.mutualFund.updateLumpsum(id), txnData);
+        return unwrapResponse(data);
+    },
+    deleteLumpsum: async (id) => {
+        const { data } = await api.delete(endpoints.mutualFund.deleteLumpsum(id));
+        return unwrapResponse(data);
+    },
+
+    getSipMandates: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.schemeId) searchParams.set('schemeId', params.schemeId);
+        const qs = searchParams.toString();
+        const { data } = await api.get(`${endpoints.mutualFund.sipMandate}${qs ? '?' + qs : ''}`);
+        return unwrapResponse(data) || [];
+    },
+    getSipMandatesByStatus: async (status) => {
+        const { data } = await api.get(endpoints.mutualFund.sipMandateStatus(status));
+        return unwrapResponse(data) || [];
+    },
+    createSipMandate: async (mandateData) => {
+        const { data } = await api.post(endpoints.mutualFund.sipMandate, mandateData);
+        return unwrapResponse(data);
+    },
+    updateSipMandate: async (id, mandateData) => {
+        const { data } = await api.put(endpoints.mutualFund.updateSipMandate(id), mandateData);
+        return unwrapResponse(data);
+    },
+    stopSipMandate: async ({ id, date }) => {
+        const { data } = await api.patch(endpoints.mutualFund.stopSipMandate(id), { date });
+        return unwrapResponse(data);
+    },
+    restartSipMandate: async ({ id, date }) => {
+        const { data } = await api.patch(endpoints.mutualFund.restartSipMandate(id), { date });
+        return unwrapResponse(data);
+    },
+    deleteSipMandate: async (id) => {
+        const { data } = await api.delete(endpoints.mutualFund.deleteSipMandate(id));
+        return unwrapResponse(data);
+    },
+
+    getSipContributions: async (schemeId) => {
+        const qs = schemeId ? `?schemeId=${schemeId}` : '';
+        const { data } = await api.get(`${endpoints.mutualFund.sipContribution}${qs}`);
+        return unwrapResponse(data) || [];
+    },
+    createSipContribution: async (contributionData) => {
+        const { data } = await api.post(endpoints.mutualFund.sipContribution, contributionData);
+        return unwrapResponse(data);
+    },
+    updateSipContribution: async (id, contributionData) => {
+        const { data } = await api.put(endpoints.mutualFund.updateSipContribution(id), contributionData);
+        return unwrapResponse(data);
+    },
+    deleteSipContribution: async (id) => {
+        const { data } = await api.delete(endpoints.mutualFund.deleteSipContribution(id));
+        return unwrapResponse(data);
+    },
+
+    getRedemptions: async (schemeId) => {
+        const qs = schemeId ? `?schemeId=${schemeId}` : '';
+        const { data } = await api.get(`${endpoints.mutualFund.redemption}${qs}`);
+        return unwrapResponse(data) || [];
+    },
+    createRedemption: async (txnData) => {
+        const { data } = await api.post(endpoints.mutualFund.redemption, txnData);
+        return unwrapResponse(data);
+    },
+    updateRedemption: async (id, txnData) => {
+        const { data } = await api.put(endpoints.mutualFund.updateRedemption(id), txnData);
+        return unwrapResponse(data);
+    },
+    deleteRedemption: async (id) => {
+        const { data } = await api.delete(endpoints.mutualFund.deleteRedemption(id));
+        return unwrapResponse(data);
+    },
+
+    getValuations: async (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.holderName) searchParams.set('holderName', params.holderName);
+        if (params.platform) searchParams.set('platform', params.platform);
+        const qs = searchParams.toString();
+        const { data } = await api.get(`${endpoints.mutualFund.valuation}${qs ? '?' + qs : ''}`);
+        return unwrapResponse(data) || [];
+    },
+    createValuation: async (valData) => {
+        const { data } = await api.post(endpoints.mutualFund.valuation, valData);
+        return unwrapResponse(data);
+    },
+    updateValuation: async (id, valData) => {
+        const { data } = await api.put(endpoints.mutualFund.updateValuation(id), valData);
+        return unwrapResponse(data);
+    },
+    deleteValuation: async (id) => {
+        const { data } = await api.delete(endpoints.mutualFund.deleteValuation(id));
+        return unwrapResponse(data);
     },
 };
 

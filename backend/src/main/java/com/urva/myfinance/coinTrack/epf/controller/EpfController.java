@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.epf.controller;
 
-import java.security.Principal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 import java.util.List;
 import java.util.function.Function;
 
@@ -55,16 +56,16 @@ public class EpfController {
     @PostMapping("/transactions")
     public ResponseEntity<ApiResponse<EpfTransactionResponseDTO>> createTransaction(
             @Valid @RequestBody EpfTransactionRequestDTO requestDTO,
-            Principal principal) {
-        logger.info("Creating EPF transaction for user: {}", principal.getName());
-        EpfTransactionResponseDTO response = epfTransactionService.createTransaction(requestDTO, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Creating EPF transaction for user: {}", principal.getUserId());
+        EpfTransactionResponseDTO response = epfTransactionService.createTransaction(requestDTO, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @Operation(summary = "Get paginated EPF transactions with optional filters")
     @GetMapping("/transactions")
     public ResponseEntity<ApiResponse<Page<EpfTransactionResponseDTO>>> getTransactions(
-            Principal principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String dateFrom,
             @RequestParam(required = false) String dateTo,
             @RequestParam(required = false) String financialYear,
@@ -73,24 +74,24 @@ public class EpfController {
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        logger.debug("Fetching EPF transactions for user: {}, page={}, size={}", principal.getName(), page, size);
+        logger.debug("Fetching EPF transactions for user: {}, page={}, size={}", principal.getUserId(), page, size);
         Page<EpfTransactionResponseDTO> result = epfTransactionService.getTransactions(
-                principal.getName(), dateFrom, dateTo, financialYear, mode, sortBy, sortDir, page, size);
+                principal.getUserId(), dateFrom, dateTo, financialYear, mode, sortBy, sortDir, page, size);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @Operation(summary = "Get EPF summary metrics for dashboard")
     @GetMapping("/summary")
-    public ResponseEntity<ApiResponse<EpfSummaryDTO>> getSummary(Principal principal) {
-        logger.debug("Fetching EPF summary for user: {}", principal.getName());
-        EpfSummaryDTO summary = epfTransactionService.getSummary(principal.getName());
+    public ResponseEntity<ApiResponse<EpfSummaryDTO>> getSummary(@AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching EPF summary for user: {}", principal.getUsername());
+        EpfSummaryDTO summary = epfTransactionService.getSummary(principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
     @Operation(summary = "Export EPF transactions to XLSX respecting active filters")
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportTransactions(
-            Principal principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String dateFrom,
             @RequestParam(required = false) String dateTo,
             @RequestParam(required = false) String financialYear,
@@ -98,11 +99,11 @@ public class EpfController {
             @RequestParam(defaultValue = "transactionDate") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
 
-        logger.info("Exporting EPF transactions to Excel for user: {}", principal.getName());
+        logger.info("Exporting EPF transactions to Excel for user: {}", principal.getUserId());
         List<EpfTransactionResponseDTO> list = epfTransactionService.getAllForExport(
-                principal.getName(), dateFrom, dateTo, financialYear, mode, sortBy, sortDir);
+                principal.getUserId(), dateFrom, dateTo, financialYear, mode, sortBy, sortDir);
         List<EpfInterestRate> rates = epfInterestRateRepository.findAll();
-        EpfSummaryDTO summary = epfTransactionService.getSummary(principal.getName());
+        EpfSummaryDTO summary = epfTransactionService.getSummary(principal.getUserId());
         return EpfExcelExporter.export(list, rates, summary);
     }
 
@@ -110,9 +111,9 @@ public class EpfController {
     @GetMapping("/transactions/{id}")
     public ResponseEntity<ApiResponse<EpfTransactionResponseDTO>> getTransactionById(
             @PathVariable String id,
-            Principal principal) {
-        logger.debug("Fetching EPF transaction {} for user: {}", id, principal.getName());
-        EpfTransactionResponseDTO response = epfTransactionService.getTransactionById(id, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching EPF transaction {} for user: {}", id, principal.getUserId());
+        EpfTransactionResponseDTO response = epfTransactionService.getTransactionById(id, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -121,10 +122,10 @@ public class EpfController {
     public ResponseEntity<ApiResponse<EpfTransactionResponseDTO>> updateTransaction(
             @PathVariable String id,
             @Valid @RequestBody EpfTransactionRequestDTO requestDTO,
-            Principal principal) {
-        logger.info("Updating EPF transaction {} for user: {}", id, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Updating EPF transaction {} for user: {}", id, principal.getUserId());
         EpfTransactionResponseDTO response = epfTransactionService.updateTransaction(id, requestDTO,
-                principal.getName());
+                principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -132,9 +133,9 @@ public class EpfController {
     @DeleteMapping("/transactions/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteTransaction(
             @PathVariable String id,
-            Principal principal) {
-        logger.info("Deleting EPF transaction {} for user: {}", id, principal.getName());
-        epfTransactionService.deleteTransaction(id, principal.getName());
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Deleting EPF transaction {} for user: {}", id, principal.getUserId());
+        epfTransactionService.deleteTransaction(id, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success("EPF transaction deleted successfully"));
     }
 }

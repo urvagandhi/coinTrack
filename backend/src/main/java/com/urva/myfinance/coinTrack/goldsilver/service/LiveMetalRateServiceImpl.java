@@ -43,6 +43,7 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
     private final PurityOptionRepository purityOptionRepository;
     private final GoldSilverInvestmentRepository investmentRepository;
     private final GoldSilverCalculationService calculationService;
+    private final GoldApiUsageService goldApiUsageService;
     private final MongoTemplate mongoTemplate;
 
     private Instant lastFetchTime = null;
@@ -55,6 +56,7 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
             PurityOptionRepository purityOptionRepository,
             GoldSilverInvestmentRepository investmentRepository,
             GoldSilverCalculationService calculationService,
+            GoldApiUsageService goldApiUsageService,
             MongoTemplate mongoTemplate) {
         this.metalPriceProvider = metalPriceProvider;
         this.snapshotRepository = snapshotRepository;
@@ -62,6 +64,7 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
         this.purityOptionRepository = purityOptionRepository;
         this.investmentRepository = investmentRepository;
         this.calculationService = calculationService;
+        this.goldApiUsageService = goldApiUsageService;
         this.mongoTemplate = mongoTemplate;
     }
 
@@ -72,6 +75,18 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
 
     @Override
     public List<MetalRateSnapshotDTO> forceRefreshRates() {
+        // Quota guard — check if we have remaining API requests this month
+        if (!goldApiUsageService.isWithinQuota()) {
+            logger.warn("Manual rate refresh BLOCKED — GoldAPI monthly quota limit reached. Returning cached rates.");
+            return getCurrentRates();
+        }
+
+        // Health check — verify GoldAPI is responding before burning quota
+        if (!goldApiUsageService.isApiHealthy()) {
+            logger.warn("Manual rate refresh BLOCKED — GoldAPI health check failed. Service may be down. Returning cached rates.");
+            return getCurrentRates();
+        }
+
         return executeRateFetch(true);
     }
 

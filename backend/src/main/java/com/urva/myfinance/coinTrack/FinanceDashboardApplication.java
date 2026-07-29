@@ -5,10 +5,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 import com.urva.myfinance.coinTrack.email.config.BrevoConfigProperties;
 
 @SpringBootApplication
+@EnableAsync
 @EnableMongoAuditing
 @EnableConfigurationProperties(BrevoConfigProperties.class)
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)

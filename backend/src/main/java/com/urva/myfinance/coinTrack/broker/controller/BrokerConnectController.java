@@ -155,6 +155,11 @@ public class BrokerConnectController {
             return ResponseEntity.status(401).build();
         }
 
+        if (!user.isTotpEnabled() || !user.isTotpVerified()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("TOTP 2FA must be enabled to connect brokers.");
+        }
+
         String apiKey = credentials.get("apiKey");
         String apiSecret = credentials.get("apiSecret");
 

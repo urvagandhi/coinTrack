@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.notes.controller;
 
-import java.security.Principal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,41 +46,41 @@ public class NoteController {
     @Operation(summary = "Get paginated notes with optional search and tag filter")
     @GetMapping
     public ResponseEntity<?> getAllNotes(
-            Principal principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String tag) {
 
         logger.debug("Getting notes for user: {}, page={}, size={}, search={}, tag={}",
-                principal.getName(), page, size, search, tag);
+                principal.getUsername(), page, size, search, tag);
 
-        Page<Note> notes = noteService.getNotesPaginated(principal.getName(), page, size, search, tag);
+        Page<Note> notes = noteService.getNotesPaginated(principal.getUserId(), page, size, search, tag);
         return ResponseEntity.ok(ApiResponse.success(notes));
     }
 
     @Operation(summary = "Create a new note")
     @PostMapping
-    public ResponseEntity<?> createNote(@RequestBody Note note, Principal principal) {
-        logger.info("Creating note for user: {}", principal.getName());
-        note.setUserId(principal.getName());
+    public ResponseEntity<?> createNote(@RequestBody Note note, @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Creating note for user: {}", principal.getUsername());
+        note.setUserId(principal.getUserId());
         Note createdNote = noteService.createNote(note);
         return ResponseEntity.ok(ApiResponse.success(createdNote));
     }
 
     @Operation(summary = "Update an existing note")
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateNote(@PathVariable String id, @RequestBody Note note, Principal principal) {
-        logger.info("Updating note {} for user: {}", id, principal.getName());
-        Note updatedNote = noteService.updateNote(id, note, principal.getName());
+    public ResponseEntity<?> updateNote(@PathVariable String id, @RequestBody Note note, @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Updating note {} for user: {}", id, principal.getUsername());
+        Note updatedNote = noteService.updateNote(id, note, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(updatedNote));
     }
 
     @Operation(summary = "Delete a note")
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteNote(@PathVariable String id, Principal principal) {
-        logger.info("Deleting note {} for user: {}", id, principal.getName());
-        noteService.deleteNote(id, principal.getName());
+    public ResponseEntity<?> deleteNote(@PathVariable String id, @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Deleting note {} for user: {}", id, principal.getUsername());
+        noteService.deleteNote(id, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success("Note deleted successfully"));
     }
 }

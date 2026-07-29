@@ -34,6 +34,12 @@ services:
         sync: false  # Set in dashboard - for email links
       - key: CORS_ALLOWED_ORIGINS
         sync: false  # Set in dashboard - comma-separated origins
+      - key: GOOGLE_CLIENT_ID
+        sync: false  # Set in dashboard - Google OAuth client ID
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false  # Set in dashboard - Google OAuth client secret
+      - key: GOOGLE_REDIRECT_URI
+        value: https://cointrack-finance.vercel.app/login  # Must match Google Cloud Console
 
     # Build settings
     buildCommand: ""  # Dockerfile handles build

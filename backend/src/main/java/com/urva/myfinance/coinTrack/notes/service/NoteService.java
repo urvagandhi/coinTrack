@@ -24,9 +24,9 @@ public class NoteService {
     /**
      * Get all notes for a user (unpaginated — backward compatibility).
      */
-    public List<Note> getNotesByUserId(String userId) {
-        return noteRepository.findByUserIdOrderByPinnedDescUpdatedAtDesc(userId);
-    }
+    // public List<Note> getNotesByUserId(String userId) {
+    // return noteRepository.findByUserIdOrderByPinnedDescUpdatedAtDesc(userId);
+    // }
 
     /**
      * Get paginated notes with optional search/tag filter.
