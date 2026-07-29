@@ -82,11 +82,23 @@ public class PortfolioHoldingService {
         holding.setRealizedGain(realizedGain);
 
         // Valuation / NAV
-        BigDecimal latestNav = BigDecimal.ZERO;
-        if (!lumpsums.isEmpty()) {
-            latestNav = lumpsums.get(lumpsums.size() - 1).getNavPrice();
-        } else if (!sips.isEmpty()) {
-            latestNav = sips.get(sips.size() - 1).getNavPrice();
+        BigDecimal latestNav = null;
+        for (int i = lumpsums.size() - 1; i >= 0; i--) {
+            if (lumpsums.get(i).getNavPrice() != null) {
+                latestNav = lumpsums.get(i).getNavPrice();
+                break;
+            }
+        }
+        if (latestNav == null) {
+            for (int i = sips.size() - 1; i >= 0; i--) {
+                if (sips.get(i).getNavPrice() != null) {
+                    latestNav = sips.get(i).getNavPrice();
+                    break;
+                }
+            }
+        }
+        if (latestNav == null) {
+            latestNav = BigDecimal.ZERO;
         }
 
         holding.setLatestNav(latestNav);

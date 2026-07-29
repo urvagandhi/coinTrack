@@ -81,4 +81,11 @@ public class SipMandateController {
         service.deleteMandate(userDetails.getUserId(), id);
         return ResponseEntity.ok(ApiResponse.success(null, "SIP mandate deleted successfully"));
     }
+
+    @PostMapping("/backfill-all")
+    public ResponseEntity<ApiResponse<Integer>> backfillAllMandates(
+            @AuthenticationPrincipal UserPrincipal userDetails) {
+        int backfilledCount = service.backfillAllMandates(userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(backfilledCount, "Successfully backfilled " + backfilledCount + " missing SIP contributions."));
+    }
 }

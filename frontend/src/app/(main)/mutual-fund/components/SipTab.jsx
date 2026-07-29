@@ -1,8 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mutualFundAPI } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Repeat, Plus, Play, Square, Pause } from "lucide-react";
+import { Repeat, Plus, Play, Pause } from "lucide-react";
 import SipContributionModal from "../SipContributionModal";
 import SipMandateModal from "../SipMandateModal";
 import { useToast } from "@/components/ui/use-toast";
@@ -34,6 +34,20 @@ function getDayOfMonth(dateStr) {
     return new Date(dateStr).getDate() || 0;
   }
   return 0;
+}
+
+function getYearMonthKey(dateStr) {
+  if (!dateStr) return "";
+  if (Array.isArray(dateStr)) {
+    return `${dateStr[0]}-${String(dateStr[1]).padStart(2, '0')}`;
+  }
+  if (typeof dateStr === 'string') {
+    const parts = dateStr.split('-');
+    if (parts.length >= 2) return `${parts[0]}-${parts[1].padStart(2, '0')}`;
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+  return "";
 }
 
 function calculateDuration(start, end) {
@@ -77,6 +91,7 @@ export default function SipTab() {
   const [confirmModal, setConfirmModal] = React.useState({ isOpen: false, type: null, mandate: null, date: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const scrollContainerRef = useRef(null);
 
   const handleSuccess = () => {
     queryClient.invalidateQueries({
@@ -117,10 +132,10 @@ export default function SipTab() {
   const restartMutation = useMutation({
     mutationFn: ({ id, date }) => mutualFundAPI.restartSipMandate({ id, date }),
     onSuccess: () => {
-      toast({ title: "Success", description: "Mandate restarted successfully." });
+      toast({ title: "Success", description: "Mandate renewed successfully." });
       handleSuccess();
     },
-    onError: () => toast({ title: "Error", description: "Failed to restart mandate.", variant: "destructive" }),
+    onError: () => toast({ title: "Error", description: "Failed to renew mandate.", variant: "destructive" }),
   });
 
   const isLoading = isLoadingSchemes || isLoadingSips || isLoadingMandates;
@@ -134,12 +149,13 @@ export default function SipTab() {
       schemeName: schemeMap[m.schemeId]?.schemeName || 'Unknown Scheme',
       platform: schemeMap[m.schemeId]?.platform || 'Unknown',
       bank: m.bank || schemeMap[m.schemeId]?.bank || '-',
+      folioNo: schemeMap[m.schemeId]?.folioNo || '-',
     }));
 
     const activeMandates = enrichedMandates.filter(m => m.active);
     const stoppedMandates = enrichedMandates.filter(m => !m.active);
 
-    activeMandates.sort((a, b) => {
+    const sortFn = (a, b) => {
       const platformA = (a.platform || "").toLowerCase();
       const platformB = (b.platform || "").toLowerCase();
       if (platformA !== platformB) {
@@ -148,29 +164,125 @@ export default function SipTab() {
       const dayA = getDayOfMonth(a.startDate);
       const dayB = getDayOfMonth(b.startDate);
       return dayA - dayB;
+    };
+
+    activeMandates.sort(sortFn);
+    stoppedMandates.sort(sortFn);
+
+    // Group SIP Contributions by Mandate and Month
+    const contributionsByMandate = {};
+    let minYear = new Date().getFullYear();
+    let minMonth = new Date().getMonth() + 1;
+    let maxYear = new Date().getFullYear();
+    let maxMonth = new Date().getMonth() + 1;
+
+    // Track min dates from mandates
+    enrichedMandates.forEach(m => {
+        if (m.startDate) {
+            const y = Array.isArray(m.startDate) ? m.startDate[0] : new Date(m.startDate).getFullYear();
+            const mo = Array.isArray(m.startDate) ? m.startDate[1] : new Date(m.startDate).getMonth() + 1;
+            if (y < minYear || (y === minYear && mo < minMonth)) {
+                minYear = y;
+                minMonth = mo;
+            }
+        }
     });
 
-    stoppedMandates.sort((a, b) => {
-      const platformA = (a.platform || "").toLowerCase();
-      const platformB = (b.platform || "").toLowerCase();
-      if (platformA !== platformB) {
-        return platformA.localeCompare(platformB);
-      }
-      const dayA = getDayOfMonth(a.startDate);
-      const dayB = getDayOfMonth(b.startDate);
-      return dayA - dayB;
+    sips.forEach(sip => {
+        const mandateId = sip.sipMandateId;
+        const key = getYearMonthKey(sip.contributionDate);
+        if (!contributionsByMandate[mandateId]) {
+            contributionsByMandate[mandateId] = {};
+        }
+        contributionsByMandate[mandateId][key] = sip;
+
+        if (sip.contributionDate) {
+            const y = Array.isArray(sip.contributionDate) ? sip.contributionDate[0] : new Date(sip.contributionDate).getFullYear();
+            const mo = Array.isArray(sip.contributionDate) ? sip.contributionDate[1] : new Date(sip.contributionDate).getMonth() + 1;
+            if (y > maxYear || (y === maxYear && mo > maxMonth)) {
+                maxYear = y;
+                maxMonth = mo;
+            }
+        }
     });
 
-    const enrichedSips = sips.map(s => ({
-      ...s,
-      schemeName: schemeMap[s.schemeId]?.schemeName || 'Unknown Scheme',
-      holderName: schemeMap[s.schemeId]?.holderName || 'Unknown',
-      platform: schemeMap[s.schemeId]?.platform || 'Unknown',
-      debitedBank: s.debitedBank || schemeMap[s.schemeId]?.bank || '-',
-    }));
+    const monthColumns = [];
+    let currY = minYear;
+    let currM = minMonth;
+    while (currY < maxYear || (currY === maxYear && currM <= maxMonth)) {
+        const monthName = new Date(currY, currM - 1).toLocaleString('default', { month: 'short' });
+        monthColumns.push({
+            key: `${currY}-${String(currM).padStart(2, '0')}`,
+            label: `${monthName}-${String(currY).slice(-2)}`,
+            year: currY,
+            month: currM
+        });
+        currM++;
+        if (currM > 12) {
+            currM = 1;
+            currY++;
+        }
+    }
 
-    return { activeMandates, stoppedMandates, enrichedSips, totalMandates: enrichedMandates.length };
+    const activeTotalAmount = activeMandates.reduce((sum, m) => sum + (m.amount || 0), 0);
+    const stoppedTotalAmount = stoppedMandates.reduce((sum, m) => sum + (m.amount || 0), 0);
+    const grandTotalAmount = activeTotalAmount + stoppedTotalAmount;
+
+    const activeMonthTotals = {};
+    const stoppedMonthTotals = {};
+    const grandMonthTotals = {};
+    const mandateTotals = {};
+    
+    enrichedMandates.forEach(m => {
+        mandateTotals[m.id] = 0;
+    });
+
+    monthColumns.forEach(col => {
+        activeMonthTotals[col.key] = activeMandates.reduce((sum, m) => {
+            const sip = contributionsByMandate[m.id]?.[col.key];
+            if (sip?.amount) { mandateTotals[m.id] += sip.amount; return sum + sip.amount; }
+            return sum;
+        }, 0);
+        
+        stoppedMonthTotals[col.key] = stoppedMandates.reduce((sum, m) => {
+            const sip = contributionsByMandate[m.id]?.[col.key];
+            if (sip?.amount) { mandateTotals[m.id] += sip.amount; return sum + sip.amount; }
+            return sum;
+        }, 0);
+
+        grandMonthTotals[col.key] = activeMonthTotals[col.key] + stoppedMonthTotals[col.key];
+    });
+
+    const activeTotalInvested = activeMandates.reduce((sum, m) => sum + mandateTotals[m.id], 0);
+    const stoppedTotalInvested = stoppedMandates.reduce((sum, m) => sum + mandateTotals[m.id], 0);
+    const grandTotalInvested = activeTotalInvested + stoppedTotalInvested;
+
+    return { 
+      activeMandates, 
+      stoppedMandates, 
+      totalMandates: enrichedMandates.length, 
+      hasSips: sips.length > 0,
+      monthColumns,
+      contributionsByMandate,
+      activeTotalAmount,
+      stoppedTotalAmount,
+      grandTotalAmount,
+      activeMonthTotals,
+      stoppedMonthTotals,
+      grandMonthTotals,
+      mandateTotals,
+      activeTotalInvested,
+      stoppedTotalInvested,
+      grandTotalInvested
+    };
   }, [schemes, sips, mandates]);
+
+  // Auto scroll to the end
+  useEffect(() => {
+      if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+      }
+  }, [data.monthColumns.length]);
 
   if (isLoading) {
     return (
@@ -186,7 +298,7 @@ export default function SipTab() {
     );
   }
 
-  if (data.totalMandates === 0 && data.enrichedSips.length === 0) {
+  if (data.totalMandates === 0 && !data.hasSips) {
     return (
       <section className="ed-card relative px-8 py-16 text-center max-w-md mx-auto">
         <span className="corner-mark corner-tl" />
@@ -204,266 +316,263 @@ export default function SipTab() {
     );
   }
 
+  const renderMandateRows = (mandateList, isStopped) => {
+    let currentPlatform = null;
+    const rows = [];
+    
+    mandateList.forEach((m) => {
+      if (m.platform !== currentPlatform) {
+        rows.push(
+          <tr key={`sep-${m.platform}`} className="border-b border-border/40">
+            <td colSpan={8 + data.monthColumns.length} className="py-1.5 px-0 bg-muted">
+              <div className="sticky left-4 inline-block text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-widest z-20">
+                {m.platform}
+              </div>
+            </td>
+          </tr>
+        );
+        currentPlatform = m.platform;
+      }
+      
+      rows.push(
+        <tr 
+          key={m.id} 
+          onClick={() => { setEditingMandate(m); setIsMandateModalOpen(true); }}
+          className="border-b border-hairline hover:bg-muted/30 transition-colors group cursor-pointer"
+        >
+          <td className="py-3 px-4 sticky left-0 w-[200px] min-w-[200px] bg-background group-hover:bg-muted z-10">
+            <p className="text-[13px] font-medium text-foreground">{m.holderName}</p>
+            <p className="text-[11px] font-mono text-muted-foreground">{m.platform}</p>
+          </td>
+          <td className="py-3 px-4 sticky left-[200px] w-[250px] min-w-[250px] bg-background group-hover:bg-muted z-10">
+            <p className="font-serif text-[14px] text-foreground font-medium">{m.schemeName}</p>
+            <p className="text-[11px] font-mono text-muted-foreground mt-0.5">Folio: {m.folioNo}</p>
+          </td>
+          <td className="py-3 px-4 font-mono text-[12px] text-muted-foreground whitespace-nowrap sticky left-[450px] w-[120px] min-w-[120px] bg-background group-hover:bg-muted z-10">
+            {m.bank}
+          </td>
+          <td className="py-3 px-4 font-mono text-[13px] text-foreground whitespace-nowrap sticky left-[570px] w-[150px] min-w-[150px] bg-background group-hover:bg-muted z-10">
+            {isStopped ? (
+               <>
+                 <div>S: {formatDate(m.startDate)}</div>
+                 {m.endDate && <div className="text-[11px] text-muted-foreground mt-0.5">E: {formatDate(m.endDate)}</div>}
+                 <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">({calculateDuration(m.startDate, m.endDate)})</div>
+               </>
+            ) : (
+               <>
+                 <div>{formatDate(m.startDate)}</div>
+                 <div className="text-[11px] text-muted-foreground mt-0.5">({calculateDuration(m.startDate, null)})</div>
+               </>
+            )}
+          </td>
+          <td className="py-3 px-4 text-right font-mono text-[13px] font-semibold text-foreground whitespace-nowrap sticky left-[720px] w-[120px] min-w-[120px] bg-background group-hover:bg-muted z-10">
+            {formatCurrency(m.amount)}
+          </td>
+          <td className="py-3 px-4 text-right font-mono text-[13px] font-bold text-primary whitespace-nowrap sticky left-[840px] w-[130px] min-w-[130px] bg-background group-hover:bg-muted z-10 border-r border-border shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
+            {formatCurrency(data.mandateTotals[m.id])}
+          </td>
+          
+          {/* Month Columns */}
+          {data.monthColumns.map(col => {
+              const contribution = data.contributionsByMandate[m.id]?.[col.key];
+              
+              const colDate = new Date(col.year, col.month - 1, 1);
+              const mStart = Array.isArray(m.startDate) 
+                  ? new Date(m.startDate[0], m.startDate[1] - 1, 1) 
+                  : m.startDate ? new Date(new Date(m.startDate).getFullYear(), new Date(m.startDate).getMonth(), 1) : null;
+              const mEnd = Array.isArray(m.endDate)
+                  ? new Date(m.endDate[0], m.endDate[1] - 1, 1)
+                  : m.endDate ? new Date(new Date(m.endDate).getFullYear(), new Date(m.endDate).getMonth(), 1) : null;
+                  
+              let isValid = true;
+              if (mStart && colDate < mStart) isValid = false;
+              if (!m.active && mEnd && colDate > mEnd) isValid = false;
+
+              return (
+                  <td key={col.key} className="py-3 px-4 text-center font-mono text-[12px] text-muted-foreground min-w-[80px]">
+                      {contribution ? (
+                          <div 
+                              className="text-foreground font-medium cursor-pointer hover:underline"
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingContribution({
+                                      ...contribution,
+                                      debitedBank: m.debitedBank
+                                  });
+                                  setIsContributionModalOpen(true);
+                              }}
+                              title={contribution.remarks || 'View details'}
+                          >
+                              ₹{contribution.amount}
+                          </div>
+                      ) : isValid ? (
+                          <div 
+                              className="cursor-pointer hover:text-foreground hover:font-bold opacity-40 hover:opacity-100 transition-all"
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingContribution({
+                                      sipMandateId: m.id,
+                                      schemeId: m.schemeId,
+                                      debitedBank: m.debitedBank,
+                                      amount: m.amount,
+                                      contributionDate: `${col.year}-${String(col.month).padStart(2, '0')}-${String(getDayOfMonth(m.startDate)).padStart(2, '0')}`,
+                                      remarks: `Manual Entry`
+                                  });
+                                  setIsContributionModalOpen(true);
+                              }}
+                              title="Add entry for this month"
+                          >
+                              -
+                          </div>
+                      ) : null}
+                  </td>
+              )
+          })}
+
+          <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap border-l border-border/30 sticky right-0 bg-background group-hover:bg-muted z-10">
+            {!isStopped ? (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setConfirmModal({ isOpen: true, type: 'STOP', mandate: m, date: "" }); }}
+                  disabled={stopMutation.isPending}
+                  className="text-[10px] font-mono text-amber-500 hover:underline inline-flex items-center gap-1"
+                >
+                  <Pause className="h-3 w-3" /> STOP
+                </button>
+            ) : (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setConfirmModal({ isOpen: true, type: 'RENEW', mandate: m, date: "" }); }}
+                  disabled={restartMutation.isPending}
+                  className="text-[10px] font-mono text-emerald-500 hover:underline inline-flex items-center gap-1"
+                >
+                  <Play className="h-3 w-3" /> RENEW
+                </button>
+            )}
+          </td>
+        </tr>
+      );
+    });
+    return rows;
+  };
+
   return (
     <div className="space-y-8">
-      {/* ACTIVE MANDATES SECTION */}
-      <div className="ed-card relative overflow-hidden">
+      {/* SIP LEDGER SECTION */}
+      <div className="ed-card relative overflow-hidden flex flex-col">
         <span className="corner-mark corner-tl" />
         <span className="corner-mark corner-tr" />
         <span className="corner-mark corner-bl" />
         <span className="corner-mark corner-br" />
 
         <div className="p-4 border-b border-border bg-muted/20 flex justify-between items-center">
-          <h3 className="font-serif italic text-lg">Active SIP Mandates</h3>
-          <button onClick={() => { setEditingMandate(null); setIsMandateModalOpen(true); }} className="ed-btn ed-btn-accent h-8 text-[11px]">
-            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-            <span>New Mandate</span>
-          </button>
+          <h3 className="font-serif italic text-lg">SIP Ledger</h3>
+          <div className="flex gap-2">
+            <button onClick={() => { setEditingContribution(null); setIsContributionModalOpen(true); }} className="ed-btn ed-btn-ghost h-8 text-[11px] border border-border">
+              <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+              <span>Log Entry</span>
+            </button>
+            <button onClick={() => { setEditingMandate(null); setIsMandateModalOpen(true); }} className="ed-btn ed-btn-accent h-8 text-[11px]">
+              <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+              <span>New Mandate</span>
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto custom-scrollbar" ref={scrollContainerRef}>
+          <table className="w-full text-left border-collapse min-w-max">
             <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Holder / Platform</th>
-                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Scheme Name</th>
-                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Debited Bank</th>
-                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Start Date / Duration</th>
-                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Amount</th>
-                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-center">Status</th>
-                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Action</th>
+              <tr className="border-b border-border bg-muted">
+                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground sticky left-0 w-[200px] min-w-[200px] bg-muted z-20">Holder / Platform</th>
+                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground sticky left-[200px] w-[250px] min-w-[250px] bg-muted z-20">Scheme Name</th>
+                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground sticky left-[450px] w-[120px] min-w-[120px] bg-muted z-20">Debited Bank</th>
+                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground sticky left-[570px] w-[150px] min-w-[150px] bg-muted z-20">Start Date</th>
+                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right sticky left-[720px] w-[120px] min-w-[120px] bg-muted z-20">Amount</th>
+                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right sticky left-[840px] w-[130px] min-w-[130px] bg-muted z-20 border-r border-border shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">Total Invested</th>
+                
+                {data.monthColumns.map(col => (
+                    <th key={col.key} className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-center">
+                        {col.label}
+                    </th>
+                ))}
+                
+                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right border-l border-border/30 sticky right-0 bg-muted z-20">Action</th>
               </tr>
             </thead>
             <tbody>
-              {(() => {
-                if (data.activeMandates.length === 0) {
-                  return (
-                    <tr>
-                      <td colSpan="7" className="py-6 text-center text-[12px] text-muted-foreground font-mono">
-                        No active mandates.
-                      </td>
-                    </tr>
-                  );
-                }
-                
-                let currentPlatform = null;
-                const rows = [];
-                
-                data.activeMandates.forEach((m) => {
-                  if (m.platform !== currentPlatform) {
-                    rows.push(
-                      <tr key={`sep-${m.platform}`} className="bg-muted/5 border-b border-border/40">
-                        <td colSpan="7" className="py-1.5 px-4 text-[10px] font-mono text-muted-foreground uppercase tracking-widest bg-muted/10">
-                          {m.platform}
-                        </td>
-                      </tr>
-                    );
-                    currentPlatform = m.platform;
-                  }
-                  
-                  rows.push(
-                    <tr 
-                      key={m.id} 
-                      onClick={() => { setEditingMandate(m); setIsMandateModalOpen(true); }}
-                      className="border-b border-hairline hover:bg-muted/30 transition-colors group cursor-pointer"
-                    >
-                      <td className="py-3 px-4">
-                        <p className="text-[13px] font-medium text-foreground">{m.holderName}</p>
-                        <p className="text-[11px] font-mono text-muted-foreground">{m.platform}</p>
-                      </td>
-                      <td className="py-3 px-4 font-serif text-[14px] text-foreground font-medium">
-                        {m.schemeName}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-[12px] text-muted-foreground">
-                        {m.bank}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-[13px] text-foreground">
-                        <div>{formatDate(m.startDate)}</div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">({calculateDuration(m.startDate, null)})</div>
-                      </td>
-                      <td className="py-3 px-4 text-right font-mono text-[13px] font-semibold text-foreground">
-                        {formatCurrency(m.amount)}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono border bg-[hsl(var(--gain))]/10 text-[hsl(var(--gain))] border-[hsl(var(--gain))]/30">ACTIVE</span>
-                      </td>
-                      <td className="py-3 px-4 text-right space-x-2">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setConfirmModal({ isOpen: true, type: 'STOP', mandate: m, date: "" }); }}
-                          disabled={stopMutation.isPending}
-                          className="text-[10px] font-mono text-amber-500 hover:underline inline-flex items-center gap-1"
-                        >
-                          <Pause className="h-3 w-3" /> STOP
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                });
-                return rows;
-              })()}
+              
+              {/* ACTIVE MANDATES */}
+              {data.activeMandates.length > 0 && (
+                <>
+                  <tr className="bg-[hsl(var(--gain))]/5 border-y border-[hsl(var(--gain))]/20">
+                    <td colSpan={8 + data.monthColumns.length} className="py-2 px-0 bg-background">
+                      <div className="sticky left-4 inline-block text-[11px] font-mono font-semibold text-[hsl(var(--gain))] uppercase tracking-widest z-20">
+                        Active SIPs
+                      </div>
+                    </td>
+                  </tr>
+                  {renderMandateRows(data.activeMandates, false)}
+                </>
+              )}
+
+              {/* ACTIVE TOTAL ROW */}
+              <tr className="bg-primary/5 border-t-2 border-primary/20 font-bold">
+                <td className="py-4 px-4 sticky left-0 z-10 bg-muted w-[200px] min-w-[200px]" colSpan={1}></td>
+                <td className="py-4 px-4 sticky left-[200px] z-10 bg-muted w-[250px] min-w-[250px]" colSpan={1}></td>
+                <td className="py-4 px-4 sticky left-[450px] z-10 bg-muted w-[120px] min-w-[120px]" colSpan={1}></td>
+                <td className="py-4 px-4 sticky left-[570px] z-10 bg-muted w-[150px] min-w-[150px] text-right">
+                  <span className="text-[13px] font-mono uppercase tracking-wider text-primary">Active Total</span>
+                </td>
+                <td className="py-4 px-4 text-right sticky left-[720px] w-[120px] min-w-[120px] bg-muted z-10 text-[14px] text-primary">
+                  {formatCurrency(data.activeTotalAmount)}
+                </td>
+                <td className="py-4 px-4 text-right sticky left-[840px] w-[130px] min-w-[130px] bg-muted z-10 border-r border-border shadow-[1px_0_0_0_rgba(0,0,0,0.1)] text-[14px] text-primary">
+                  {formatCurrency(data.activeTotalInvested)}
+                </td>
+                {data.monthColumns.map(col => (
+                  <td key={`total-active-${col.key}`} className="py-4 px-4 text-center font-mono text-[13px] text-primary bg-muted/20">
+                    {data.activeMonthTotals[col.key] > 0 ? formatCurrency(data.activeMonthTotals[col.key]) : "-"}
+                  </td>
+                ))}
+                <td className="py-4 px-4 sticky right-0 bg-muted z-10 border-l border-border/30"></td>
+              </tr>
+
+              {/* STOPPED MANDATES */}
+              {data.stoppedMandates.length > 0 && (
+                <>
+                  <tr className="bg-amber-500/5 border-y border-amber-500/20">
+                    <td colSpan={8 + data.monthColumns.length} className="py-2 px-0 mt-4 bg-background">
+                      <div className="sticky left-4 inline-block text-[11px] font-mono font-semibold text-amber-600 uppercase tracking-widest z-20">
+                        Stopped SIPs
+                      </div>
+                    </td>
+                  </tr>
+                  {renderMandateRows(data.stoppedMandates, true)}
+                </>
+              )}
+
+              {/* GRAND TOTAL ROW */}
+              <tr className="bg-[hsl(var(--gain))]/10 border-t-2 border-[hsl(var(--gain))]/30 font-bold">
+                <td className="py-4 px-4 sticky left-0 z-10 bg-muted w-[200px] min-w-[200px]" colSpan={1}></td>
+                <td className="py-4 px-4 sticky left-[200px] z-10 bg-muted w-[250px] min-w-[250px]" colSpan={1}></td>
+                <td className="py-4 px-4 sticky left-[450px] z-10 bg-muted w-[120px] min-w-[120px]" colSpan={1}></td>
+                <td className="py-4 px-4 sticky left-[570px] z-10 bg-muted w-[150px] min-w-[150px] text-right">
+                  <span className="text-[13px] font-mono uppercase tracking-wider text-[hsl(var(--gain))]">Grand Total</span>
+                </td>
+                <td className="py-4 px-4 text-right sticky left-[720px] w-[120px] min-w-[120px] bg-muted z-10 text-[14px] text-[hsl(var(--gain))]">
+                  {formatCurrency(data.grandTotalAmount)}
+                </td>
+                <td className="py-4 px-4 text-right sticky left-[840px] w-[130px] min-w-[130px] bg-muted z-10 border-r border-border shadow-[1px_0_0_0_rgba(0,0,0,0.1)] text-[14px] text-[hsl(var(--gain))]">
+                  {formatCurrency(data.grandTotalInvested)}
+                </td>
+                {data.monthColumns.map(col => (
+                  <td key={`total-grand-${col.key}`} className="py-4 px-4 text-center font-mono text-[13px] text-[hsl(var(--gain))] bg-muted/20">
+                    {data.grandMonthTotals[col.key] > 0 ? formatCurrency(data.grandMonthTotals[col.key]) : "-"}
+                  </td>
+                ))}
+                <td className="py-4 px-4 sticky right-0 bg-muted z-10 border-l border-border/30"></td>
+              </tr>
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* STOPPED MANDATES SECTION */}
-      {data.stoppedMandates.length > 0 && (
-        <div className="ed-card relative overflow-hidden">
-          <span className="corner-mark corner-tl" />
-          <span className="corner-mark corner-tr" />
-          <span className="corner-mark corner-bl" />
-          <span className="corner-mark corner-br" />
-
-          <div className="p-4 border-b border-border bg-muted/20 flex justify-between items-center">
-            <h3 className="font-serif italic text-lg">Stopped SIP Mandates</h3>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Holder / Platform</th>
-                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Scheme Name</th>
-                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Debited Bank</th>
-                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Start / End Date</th>
-                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Amount</th>
-                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-center">Status</th>
-                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  let currentPlatform = null;
-                  const rows = [];
-                  
-                  data.stoppedMandates.forEach((m) => {
-                    if (m.platform !== currentPlatform) {
-                      rows.push(
-                        <tr key={`sep-${m.platform}`} className="bg-muted/5 border-b border-border/40">
-                          <td colSpan="7" className="py-1.5 px-4 text-[10px] font-mono text-muted-foreground uppercase tracking-widest bg-muted/10">
-                            {m.platform}
-                          </td>
-                        </tr>
-                      );
-                      currentPlatform = m.platform;
-                    }
-                    
-                    rows.push(
-                      <tr 
-                        key={m.id} 
-                        onClick={() => { setEditingMandate(m); setIsMandateModalOpen(true); }}
-                        className="border-b border-hairline hover:bg-muted/30 transition-colors group cursor-pointer"
-                      >
-                        <td className="py-3 px-4">
-                          <p className="text-[13px] font-medium text-foreground">{m.holderName}</p>
-                          <p className="text-[11px] font-mono text-muted-foreground">{m.platform}</p>
-                        </td>
-                        <td className="py-3 px-4 font-serif text-[14px] text-foreground font-medium">
-                          {m.schemeName}
-                        </td>
-                        <td className="py-3 px-4 font-mono text-[12px] text-muted-foreground">
-                          {m.bank}
-                        </td>
-                        <td className="py-3 px-4 font-mono text-[13px] text-foreground">
-                          <div>S: {formatDate(m.startDate)}</div>
-                          {m.endDate && <div className="text-[11px] text-muted-foreground mt-0.5">E: {formatDate(m.endDate)}</div>}
-                          <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">({calculateDuration(m.startDate, m.endDate)})</div>
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono text-[13px] font-semibold text-foreground">
-                          {formatCurrency(m.amount)}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono border bg-amber-500/10 text-amber-600 border-amber-500/30">STOPPED</span>
-                        </td>
-                        <td className="py-3 px-4 text-right space-x-2">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setConfirmModal({ isOpen: true, type: 'RESTART', mandate: m, date: "" }); }}
-                            disabled={restartMutation.isPending}
-                            className="text-[10px] font-mono text-[hsl(var(--gain))] hover:underline inline-flex items-center gap-1"
-                          >
-                            <Play className="h-3 w-3" /> RESTART
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  });
-                  return rows;
-                })()}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* CONTRIBUTIONS SECTION */}
-      <div className="ed-card relative overflow-hidden">
-        <span className="corner-mark corner-tl" />
-        <span className="corner-mark corner-tr" />
-        <span className="corner-mark corner-bl" />
-        <span className="corner-mark corner-br" />
-
-        <div className="p-4 border-b border-border bg-muted/20 flex justify-between items-center">
-          <h3 className="font-serif italic text-lg">SIP Contribution Ledger</h3>
-          <button onClick={() => { setEditingContribution(null); setIsContributionModalOpen(true); }} className="ed-btn ed-btn-ghost h-8 text-[11px] border border-border">
-            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-            <span>Log Installment</span>
-          </button>
-        </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-border bg-muted/30">
-              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Holder / Platform</th>
-              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Scheme Name</th>
-              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Debited Bank</th>
-              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Month</th>
-              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Amount</th>
-              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">NAV / Units</th>
-              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Remarks</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.enrichedSips.map((sip) => (
-              <tr 
-                key={sip.id} 
-                onClick={() => { setEditingContribution(sip); setIsContributionModalOpen(true); }}
-                className="border-b border-hairline hover:bg-muted/30 transition-colors group cursor-pointer"
-              >
-                <td className="py-3 px-4">
-                  <p className="text-[13px] font-medium text-foreground">{sip.holderName}</p>
-                  <p className="text-[11px] font-mono text-muted-foreground">{sip.platform}</p>
-                </td>
-                <td className="py-3 px-4 font-serif text-[14px] text-foreground font-medium">
-                  {sip.schemeName}
-                </td>
-                <td className="py-3 px-4 font-mono text-[12px] text-muted-foreground">
-                  {sip.debitedBank}
-                </td>
-                <td className="py-3 px-4 font-mono text-[13px] text-foreground">
-                  {formatDate(sip.contributionDate)}
-                </td>
-                <td className="py-3 px-4 text-right font-mono text-[13px] font-semibold text-foreground">
-                  {formatCurrency(sip.amount)}
-                </td>
-                <td className="py-3 px-4 text-right font-mono text-[12px] text-foreground">
-                  {sip.navPrice ? `₹${sip.navPrice}` : "-"} / {sip.totalUnit != null ? sip.totalUnit.toFixed(3) : "-"}
-                </td>
-                <td className="py-3 px-4 text-[12px] text-muted-foreground italic">
-                  {sip.remarks || '-'}
-                </td>
-              </tr>
-            ))}
-            {data.enrichedSips.length === 0 && (
-              <tr>
-                <td colSpan="7" className="py-6 text-center text-[12px] text-muted-foreground font-mono">
-                  No contributions logged.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
       </div>
 
       <SipMandateModal 
@@ -485,7 +594,7 @@ export default function SipTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="ed-card w-full max-w-md p-6 space-y-6">
             <h3 className="font-serif italic text-xl">
-              {confirmModal.type === 'STOP' ? 'Stop SIP Mandate' : 'Restart SIP Mandate'}
+              {confirmModal.type === 'STOP' ? 'Stop SIP Mandate' : 'Renew SIP Mandate'}
             </h3>
             <p className="text-sm text-muted-foreground font-mono">
               {confirmModal.type === 'STOP' ? 'Please select the date when this SIP was stopped.' : 'Please select the new start date for this SIP.'}
@@ -526,7 +635,7 @@ export default function SipTab() {
                 }}
                 className={`ed-btn ${confirmModal.type === 'STOP' ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30' : 'ed-btn-accent'}`}
               >
-                {confirmModal.type === 'STOP' ? 'Stop SIP' : 'Restart SIP'}
+                {confirmModal.type === 'STOP' ? 'Stop SIP' : 'Renew SIP'}
               </button>
             </div>
           </div>

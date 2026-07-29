@@ -2,13 +2,18 @@ import React, { useState, useEffect, useMemo } from "react";
 import { X, Loader2 } from "lucide-react";
 import { mutualFundAPI } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, schemes, initialData }) {
+  const { user } = useAuth();
+  const defaultHolder = user?.name || user?.firstName ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : (user?.name || "Self");
+
   const [formData, setFormData] = useState({
     schemeId: "",
     startDate: "",
     amount: "",
     bank: "",
+    holderName: defaultHolder,
     registrationNo: "",
     active: true
   });
@@ -39,6 +44,7 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
             : new Date().toISOString().split('T')[0],
           amount: initialData.amount || initialData.instalmentAmount || "",
           bank: initialData.bank || "",
+          holderName: initialData.holderName || defaultHolder,
           registrationNo: initialData.registrationNo || "",
           active: initialData.active ?? (initialData.status === 'ACTIVE') ?? true
         });
@@ -48,6 +54,7 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
           startDate: new Date().toISOString().split('T')[0],
           amount: "",
           bank: "",
+          holderName: defaultHolder,
           registrationNo: "",
           active: true
         });
@@ -117,10 +124,10 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
             <h2 className="font-serif text-[24px] text-foreground leading-none mb-1">
-              New SIP Mandate
+              {initialData ? "Edit SIP Mandate" : "New SIP Mandate"}
             </h2>
             <p className="text-[12px] text-muted-foreground font-mono uppercase tracking-[0.05em]">
-              Automated Investment Setup
+              {initialData ? "Modify Investment Setup" : "Automated Investment Setup"}
             </p>
           </div>
           <button
@@ -149,7 +156,8 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
                     setFormData({
                       ...formData,
                       schemeId,
-                      bank: selected?.bank || formData.bank || ""
+                      bank: selected?.bank || formData.bank || "",
+                      holderName: selected?.holderName || formData.holderName || defaultHolder
                     });
                   }}
                   className="ed-input w-full font-mono"

@@ -17,6 +17,8 @@ public class SipMandateService {
     private SipMandateRepository repository;
     @Autowired
     private MfSchemeRepository schemeRepository;
+    @Autowired
+    private SipContributionService contributionService;
 
     /**
      * Validates that the schemeId belongs to the given userId.
@@ -54,7 +56,9 @@ public class SipMandateService {
                 mandate.setHolderName(scheme.getHolderName());
             }
         });
-        return repository.save(mandate);
+        SipMandate saved = repository.save(mandate);
+        contributionService.backfillMandate(saved);
+        return saved;
     }
 
     public SipMandate updateMandate(String userId, String id, SipMandate updatedMandate) {
@@ -67,7 +71,9 @@ public class SipMandateService {
         existing.setBank(updatedMandate.getBank());
         existing.setRegistrationNo(updatedMandate.getRegistrationNo());
         existing.setActive(updatedMandate.isActive());
-        return repository.save(existing);
+        SipMandate saved = repository.save(existing);
+        contributionService.backfillMandate(saved);
+        return saved;
     }
 
     public SipMandate stopMandate(String userId, String id, String dateStr) {
@@ -76,17 +82,33 @@ public class SipMandateService {
         if (dateStr != null && !dateStr.isEmpty()) {
             existing.setEndDate(LocalDate.parse(dateStr));
         }
-        return repository.save(existing);
+        SipMandate saved = repository.save(existing);
+        contributionService.backfillMandate(saved);
+        return saved;
     }
 
     public SipMandate restartMandate(String userId, String id, String dateStr) {
         SipMandate existing = getMandate(userId, id);
-        existing.setActive(true);
+        
+        SipMandate cloned = new SipMandate();
+        cloned.setUserId(userId);
+        cloned.setSchemeId(existing.getSchemeId());
+        cloned.setHolderName(existing.getHolderName());
+        cloned.setAmount(existing.getAmount());
+        cloned.setBank(existing.getBank());
+        cloned.setRegistrationNo(existing.getRegistrationNo());
+        cloned.setActive(true);
+        
         if (dateStr != null && !dateStr.isEmpty()) {
-            existing.setStartDate(LocalDate.parse(dateStr));
-            existing.setEndDate(null);
+            cloned.setStartDate(LocalDate.parse(dateStr));
+        } else {
+            cloned.setStartDate(LocalDate.now());
         }
-        return repository.save(existing);
+        cloned.setEndDate(null);
+
+        SipMandate saved = repository.save(cloned);
+        contributionService.backfillMandate(saved);
+        return saved;
     }
 
     public String calculateStatus(SipMandate mandate) {
@@ -111,5 +133,14 @@ public class SipMandateService {
                 .filter(m -> m.getUserId().equals(userId))
                 .orElseThrow(() -> new RuntimeException("Mandate not found"));
         repository.delete(existing);
+    }
+
+    public int backfillAllMandates(String userId) {
+        List<SipMandate> mandates = repository.findByUserId(userId);
+        int totalBackfilled = 0;
+        for (SipMandate mandate : mandates) {
+            totalBackfilled += contributionService.backfillMandate(mandate);
+        }
+        return totalBackfilled;
     }
 }

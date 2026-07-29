@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -137,5 +140,72 @@ public class SipContributionService {
                 .orElseThrow(() -> new RuntimeException("Contribution not found"));
         repository.delete(existing);
         portfolioHoldingService.updateHoldingForScheme(userId, existing.getSchemeId());
+    }
+
+    public int backfillMandate(SipMandate mandate) {
+        if (mandate.getStartDate() == null) {
+            return 0;
+        }
+
+        LocalDate startDate = mandate.getStartDate();
+        LocalDate endDate = mandate.getEndDate() != null ? mandate.getEndDate() : LocalDate.now();
+        
+        // Remove any future contributions if mandate has an end date
+        if (mandate.getEndDate() != null) {
+            repository.deleteBySipMandateIdAndContributionDateAfter(mandate.getId(), mandate.getEndDate());
+        }
+
+        if (startDate.isAfter(endDate)) {
+            return 0;
+        }
+
+        List<SipContribution> newContributions = new ArrayList<>();
+        int targetDay = startDate.getDayOfMonth();
+
+        YearMonth currentMonth = YearMonth.from(startDate);
+        YearMonth endMonth = YearMonth.from(endDate);
+
+        while (!currentMonth.isAfter(endMonth)) {
+            int currentMonthLength = currentMonth.lengthOfMonth();
+            int executionDay = Math.min(targetDay, currentMonthLength);
+            
+            LocalDate contributionDate = currentMonth.atDay(executionDay);
+
+            // Don't backfill in the future
+            if (contributionDate.isAfter(LocalDate.now())) {
+                break;
+            }
+
+            // Check if contribution exists
+            LocalDate startOfMonth = currentMonth.atDay(1);
+            LocalDate endOfCurrentMonth = currentMonth.atEndOfMonth();
+
+            boolean exists = repository.existsBySipMandateIdAndContributionDateBetween(
+                    mandate.getId(), startOfMonth, endOfCurrentMonth);
+
+            if (!exists) {
+                SipContribution contribution = new SipContribution();
+                contribution.setUserId(mandate.getUserId());
+                contribution.setSipMandateId(mandate.getId());
+                contribution.setSchemeId(mandate.getSchemeId());
+                contribution.setContributionDate(contributionDate);
+                contribution.setAmount(mandate.getAmount());
+                contribution.setDebitedBank(mandate.getBank());
+                
+                String monthYear = contributionDate.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+                contribution.setRemarks(monthYear + " Installment");
+
+                newContributions.add(contribution);
+            }
+
+            currentMonth = currentMonth.plusMonths(1);
+        }
+
+        if (!newContributions.isEmpty()) {
+            repository.saveAll(newContributions);
+            portfolioHoldingService.updateHoldingForScheme(mandate.getUserId(), mandate.getSchemeId());
+        }
+
+        return newContributions.size();
     }
 }

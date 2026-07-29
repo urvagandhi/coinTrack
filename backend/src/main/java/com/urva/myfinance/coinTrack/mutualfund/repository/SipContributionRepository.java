@@ -12,8 +12,11 @@ public interface SipContributionRepository extends MongoRepository<SipContributi
     List<SipContribution> findByUserId(String userId);
 
     List<SipContribution> findByUserIdAndSchemeId(String userId, String schemeId);
-    
+
     List<SipContribution> findByUserIdAndSipMandateId(String userId, String sipMandateId);
-    
+
     List<SipContribution> findByUserIdAndContributionDateBetween(String userId, LocalDate startDate, LocalDate endDate);
+    boolean existsBySipMandateIdAndContributionDateBetween(String sipMandateId, LocalDate startDate, LocalDate endDate);
+
+    void deleteBySipMandateIdAndContributionDateAfter(String sipMandateId, LocalDate date);
 }
