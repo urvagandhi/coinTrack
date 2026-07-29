@@ -748,3 +748,7 @@ return ResponseEntity.ok(
 |---------|------|---------|
 | 2.0.0 | 2025-12-17 | Comprehensive rewrite with accurate structure |
 | 1.0.0 | 2025-12-14 | Initial documentation |
+
+
+### Excel Export Utilities
+Provides standardized styling, header formatting, and auto-sizing logic for Excel exports across modules.

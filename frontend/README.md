@@ -225,6 +225,15 @@ and dedicated dashboard view. Broker-specific configuration lives in
 | Profile          | Broker account profile    |
 | Broker Info      | Connection status banner  |
 
+### Alternative Assets & Manual Tracking Views
+
+Track non-broker assets with comprehensive ledger UI and dedicated dashboards:
+
+- **Mutual Funds** — Manual tracking with automated SIPs, live NAV, and FIFO capital gains
+- **Gold & Silver** — Manage physical metal investments with live purity-based pricing
+- **Provident Funds** — Dedicated EPF and PPF ledgers with interest simulation
+- **Fixed Deposits** — Track FDs across banks with live maturity status and Excel export
+
 ### Financial Calculators (32+)
 
 All calculators are publicly accessible (no authentication required) and share
@@ -244,6 +253,7 @@ a common framework in `components/calculators/framework/CalculatorComponents`.
 - JWT + Refresh token with automatic silent refresh
 - Mandatory 2FA (TOTP) setup after registration
 - Password reset flow with email verification
+- Google SSO integration for fast onboarding and login
 - 2FA recovery flow
 - AuthGuard component wraps all (main) routes
 - Token race condition prevention via refresh queue

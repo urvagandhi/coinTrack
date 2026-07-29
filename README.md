@@ -342,6 +342,14 @@ flowchart LR
 - **Auto-sync** — Background portfolio refresh every 15 minutes during market hours
 - **Manual sync** — One-click refresh with optimistic UI updates
 
+### Alternative Assets & Manual Tracking
+
+- **Mutual Funds** — Manual ledger tracking with automated SIP backfilling, live NAV fetch, and FIFO capital gains calculator.
+- **Gold & Silver** — Physical metal tracking with live purity-based market rates.
+- **EPF & EPS** — Statutory provident fund ledger with dual-balance interest simulation.
+- **PPF** — Public Provident Fund ledger with strict withdrawal and maturity rules enforcement.
+- **Fixed Deposits** — Track FDs across banks with live maturity status and Excel export.
+
 ### Broker Integration
 
 ```mermaid
@@ -385,6 +393,7 @@ graph LR
 ### Security
 
 - **Mandatory 2FA** — TOTP-based (Google Authenticator, Authy)
+- **Google SSO** — One-click login and registration with Google OAuth2
 - **10 backup codes** — One-time recovery codes generated at setup
 - **AES-256-GCM encryption** — All broker API secrets and access tokens encrypted at rest
 - **JWT authentication** — Stateless auth with refresh token rotation
@@ -746,6 +755,7 @@ graph LR
 | Method   | Endpoint                      | Auth   | Description                        |
 | -------- | ----------------------------- | ------ | ---------------------------------- |
 | `POST` | `/api/auth/register`        | Public | Register new user                  |
+| `POST` | `/api/auth/google`          | Public | Google SSO Login/Registration      |
 | `GET`  | `/api/auth/verify`          | Public | Verify email token                 |
 | `POST` | `/api/auth/login`           | Public | Login (returns JWT or TOTP prompt) |
 | `POST` | `/api/auth/refresh`         | Public | Refresh JWT token                  |

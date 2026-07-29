@@ -63,6 +63,7 @@ CoinTrack solves this by acting as a **secure, normalizing middleware** between 
 | **Background Sync** | Scheduled portfolio synchronization |
 | **EmailSender Interface** | Strategy pattern for email dispatch (Brevo prod) |
 | **41 Financial Calculators** | Stateless, public, rate-limited computation suite |
+| **Alternative Assets** | Manual tracking for Mutual Funds, Gold & Silver, EPF, PPF, and FD with live rates & FIFO |
 
 ---
 

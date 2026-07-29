@@ -31,27 +31,29 @@ function useNow() {
     return { now, mounted };
 }
 
+import { motion } from 'framer-motion';
+import { Briefcase } from 'lucide-react';
 const FEATURES = [
     {
         idx: 'I',
         icon: TrendingUp,
         kicker: 'Coverage',
-        title: 'Real-time tracking',
-        body: 'Live market data across every connected broker, refreshed on the tick — without polling rituals or stale snapshots.',
+        title: 'Unified Portfolios',
+        body: 'Real-time tracking across Zerodha, Upstox, and Angel One, seamlessly combined with your manual alternative asset ledgers to provide a holistic view of your net worth in an instant.',
     },
     {
         idx: 'II',
-        icon: ShieldCheck,
-        kicker: 'Trust',
-        title: 'Mandatory 2FA',
-        body: 'TOTP-only authentication, encrypted credentials, and short-lived session tokens. Security is not an afterthought.',
+        icon: Briefcase,
+        kicker: 'Alternative Assets',
+        title: 'Statutory & Manual Tracking',
+        body: 'Granular tracking for Gold & Silver, EPF, PPF, Fixed Deposits, and Mutual Funds. Features automated SIP backfilling and an enterprise-grade FIFO capital gains engine.',
     },
     {
         idx: 'III',
-        icon: BarChart3,
-        kicker: 'Insight',
-        title: 'Editorial analytics',
-        body: 'Holdings, P&L, MF timelines, and broker funds rendered with the clarity of a printed quarterly — no chart-junk, no noise.',
+        icon: ShieldCheck,
+        kicker: 'Trust',
+        title: 'Secure Access',
+        body: 'Frictionless Google SSO combined with mandatory TOTP 2FA. Encrypted credentials, short-lived sessions, and isolated tenant databases by design.',
     },
 ];
 
@@ -188,17 +190,25 @@ export default function HomePage() {
                                     <span className="eyebrow">Cover Story · Edition {year}</span>
                                 </div>
 
-                                <h1 className="font-serif text-[clamp(48px,8vw,96px)] leading-[0.95] tracking-tight text-foreground">
+                                <motion.h1 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
+                                    className="font-serif text-[clamp(48px,8vw,96px)] leading-[0.95] tracking-tight text-foreground">
                                     Your portfolio,
                                     <br />
-                                    <span className="italic text-muted-foreground">set in clear</span>
-                                    <span className="italic"> type.</span>
-                                </h1>
+                                    <span className="italic bg-clip-text text-transparent bg-gradient-to-r from-muted-foreground via-foreground/70 to-muted-foreground">set in clear</span>
+                                    <span className="italic text-foreground"> type.</span>
+                                </motion.h1>
 
-                                <p className="mt-7 font-serif italic text-[18px] sm:text-[20px] leading-snug text-muted-foreground max-w-2xl">
+                                <motion.p 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3, duration: 1 }}
+                                    className="mt-7 font-serif italic text-[18px] sm:text-[20px] leading-snug text-muted-foreground max-w-2xl">
                                     coinTrack is the personal finance quarterly written for the modern Indian investor —
-                                    live broker integration, encrypted by design, and rendered with the patience of a printed page.
-                                </p>
+                                    live broker integration and robust alternative asset tracking, rendered with the patience of a printed page.
+                                </motion.p>
 
                                 <div className="mt-8 flex flex-wrap gap-3">
                                     <Link href={primaryHref}>
@@ -233,7 +243,11 @@ export default function HomePage() {
 
                             {/* Right column — mock dashboard card */}
                             <aside className="lg:col-span-5 hidden lg:block">
-                                <div className="border border-hairline bg-card p-5 sticky top-32">
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.5, duration: 0.8, type: "spring" }}
+                                    className="border border-hairline bg-card/60 backdrop-blur-xl p-5 sticky top-32 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                                     <div className="flex items-baseline justify-between mb-4">
                                         <span className="eyebrow">Today&apos;s Print · §002</span>
                                         <span className="display-num text-[10px] text-muted-foreground">FOLIO A1</span>
@@ -252,9 +266,9 @@ export default function HomePage() {
                                         <p className="eyebrow mb-3">Holdings · top 3</p>
                                         <ul className="space-y-2.5">
                                             {[
-                                                { sym: 'RELIANCE', q: 50, val: '₹1,42,500', pct: '+1.2%', gain: true },
-                                                { sym: 'INFY', q: 120, val: '₹2,28,000', pct: '+3.8%', gain: true },
-                                                { sym: 'HDFCBANK', q: 80, val: '₹1,28,000', pct: '−0.4%', gain: false },
+                                                { sym: 'RELIANCE (EQ)', q: 50, val: '₹1,42,500', pct: '+1.2%', gain: true },
+                                                { sym: 'GOLD 24K (Alt)', q: '50g', val: '₹3,75,000', pct: '+3.8%', gain: true },
+                                                { sym: 'EPF BAL (Stat)', q: '-', val: '₹4,52,000', pct: '+8.25%', gain: true },
                                             ].map((row) => (
                                                 <li key={row.sym} className="flex items-center justify-between text-[12px] font-mono">
                                                     <span className="text-foreground">{row.sym}</span>
@@ -273,7 +287,7 @@ export default function HomePage() {
                                         <span className="live-dot" />
                                         <span>Live · NSE · BSE</span>
                                     </div>
-                                </div>
+                                </motion.div>
                             </aside>
                         </div>
                     </div>
@@ -285,10 +299,10 @@ export default function HomePage() {
                         <div className="flex flex-col md:flex-row md:items-baseline md:justify-between gap-4 mb-6">
                             <div className="flex items-baseline gap-3">
                                 <span className="index-num tnum text-[11px]">[ 002 ]</span>
-                                <p className="eyebrow">Connected Vendors · Hexagonal Architecture</p>
+                                <p className="eyebrow">Vendors & Asset Classes</p>
                             </div>
                             <p className="font-serif italic text-[14px] text-muted-foreground">
-                                Three brokers. One canonical interface.
+                                Broker integrations alongside rigorous manual ledgers.
                             </p>
                         </div>
 
@@ -302,6 +316,17 @@ export default function HomePage() {
                                     <span className="ed-pill ed-pill-gain text-[10px]">
                                         <span className="live-dot" />
                                         Live
+                                    </span>
+                                </div>
+                            ))}
+                            {['Mutual Funds', 'Gold & Silver', 'Provident Funds'].map((b, i) => (
+                                <div key={b} className="px-6 py-6 flex items-baseline justify-between">
+                                    <div>
+                                        <p className="display-num text-[10px] text-muted-foreground mb-1">004.{i + 1}</p>
+                                        <p className="font-serif text-[24px] text-foreground">{b}</p>
+                                    </div>
+                                    <span className="ed-pill text-[10px] border border-hairline">
+                                        Manual
                                     </span>
                                 </div>
                             ))}
@@ -332,13 +357,19 @@ export default function HomePage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 border-t border-hairline">
-                            {FEATURES.map((f) => {
+                            {FEATURES.map((f, i) => {
                                 const Icon = f.icon;
                                 return (
-                                    <article
+                                    <motion.article
+                                        initial={{ opacity: 0, y: 30 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true, margin: "-50px" }}
+                                        transition={{ duration: 0.6, delay: i * 0.15 }}
                                         key={f.idx}
-                                        className="group border-b md:border-b-0 md:border-r last:border-r-0 border-hairline p-7 hover:bg-muted/30 transition-colors"
+                                        className="group relative overflow-hidden border-b md:border-b-0 md:border-r last:border-r-0 border-hairline p-7 hover:bg-muted/10 hover:shadow-lg transition-all duration-500"
                                     >
+                                        {/* Hover Gradient Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--accent))]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                         <div className="flex items-start justify-between mb-5">
                                             <span className="index-num tnum text-[11px]">[ {f.idx} ]</span>
                                             <Icon size={18} className="text-[hsl(var(--accent))]" strokeWidth={1.5} />
@@ -350,7 +381,7 @@ export default function HomePage() {
                                         <p className="text-[14px] text-muted-foreground leading-relaxed">
                                             {f.body}
                                         </p>
-                                    </article>
+                                    </motion.article>
                                 );
                             })}
                         </div>

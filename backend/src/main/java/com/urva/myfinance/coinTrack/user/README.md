@@ -37,7 +37,7 @@ The User module handles all user lifecycle operations including registration, lo
 | Feature | Description |
 |---------|-------------|
 | **Registration** | Username/email/phone validation, mandatory TOTP setup |
-| **Login** | Password + optional TOTP verification |
+| **Login** | Password + optional TOTP verification + Google SSO |
 | **TOTP 2FA** | Time-based One-Time Password with encrypted secrets |
 | **Backup Codes** | 10 recovery codes per user per TOTP version |
 | **Profile Management** | Update name, bio, contact details |
@@ -192,6 +192,7 @@ Total: 16 files
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `POST /api/auth/login` | POST | Login with username/password |
+| `POST /api/auth/google` | POST | Google SSO Login/Registration |
 | `POST /api/auth/register` | POST | Register new user |
 | `POST /api/auth/verify-token` | POST | Validate JWT token |
 | `GET /api/users/check/{username}` | GET | Check username availability |
@@ -293,6 +294,7 @@ Simple controller for basic login operations.
 | `email` | String | - | Email address |
 | `phoneNumber` | String | - | Phone number |
 | `password` | String | - | BCrypt hashed |
+| `provider` | AuthProvider | - | LOCAL or GOOGLE |
 | `bio` | String | - | User bio |
 | `location` | String | - | User location |
 | `dateOfBirth` | LocalDate | - | Birth date |

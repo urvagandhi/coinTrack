@@ -53,6 +53,9 @@ structural problems:
 |---|---|
 | **FK-enforced scheme linkage** | Every create operation validates `schemeId` (and `sipMandateId`) against user-owned master records — runtime error on invalid FK |
 | **SIP contribution ledger** | `SipContribution` replaces per-date-column tracking; `sipInvestment = SUM(amount WHERE schemeId = X)` is always correct |
+| **Automated SIP Scheduling** | Cron job `SipContributionScheduler` backfills missing SIP contributions on due dates, reducing manual entry |
+| **FIFO Capital Gains Engine** | `MfFifoEngine` accurately matches redemptions to lots (Lumpsum/SIP) to categorize STCG vs LTCG based on 1-year holding period |
+| **Live NAV Integration** | Portfolio holdings accurately compute Unrealized Gains and Absolute Return using latest NAV |
 | **Automatic aggregation** | `MfSchemeAggregationService` computes `lumpsumInvestment`, `sipInvestment`, `totalInvestment`, `totalTradedValue`, `currentInvestment`, `totalUnit` per scheme |
 | **Status derivation** | `ACTIVE_SIP` / `LUMPSUM_ONLY` / `FULLY_REDEEMED` computed from live mandates and ledger balances — no manual flags |
 | **Discrepancy cross-check** | Dashboard compares latest `ValuationSnapshot.investmentValue` against ledger-derived `totalInvestment` per holder+platform bucket; flags divergence > ₹1 |
@@ -95,7 +98,12 @@ structural problems:
 │  │  ├── RedemptionTransactionService (CRUD + FK + capitalGain compute)  │  │
 │  │  ├── ValuationSnapshotService     (CRUD)                             │  │
 │  │  ├── MfSchemeAggregationService   (per-scheme aggregation + summary) │  │
-│  │  └── MfExcelExportService         (data collection + export trigger) │  │
+│  │  ├── MfExcelExportService         (data collection + export trigger) │  │
+│  │  ├── MfFifoEngine                 (FIFO cost basis & STCG/LTCG calc) │  │
+│  │  ├── PortfolioHoldingService      (real-time NAV & gain calculations)│  │
+│  │  ├── MfNavService                 (NAV tracking and assignment)      │  │
+│  │  ├── PortfolioDashboardService    (overall dashboard analytics)      │  │
+│  │  └── SipContributionScheduler     (automated backfilling of SIPs)    │  │
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                                │                                            │
 │              ┌─────────────────┴─────────────────┐                         │
@@ -207,7 +215,9 @@ All three share the same FK enforcement pattern:
 3. `RedemptionTransactionService.createTransaction()` additionally auto-computes:
    `capitalGain = redemptionValue - tradeInvestmentValue` (§4 rule 6 of the spec).
 
-### 5.3 `SipContributionService` — Three-Part FK Integrity Check
+### 5.3 `SipContributionService` — Three-Part FK Integrity Check & Scheduling
+
+- Includes automated SIP contribution scheduling and mandate backfilling with improved NAV valuation logic.
 
 `createContribution()` performs:
 1. `schemeId` → user-owned `MfScheme` exists.
@@ -248,6 +258,18 @@ Single-responsibility service that:
 1. Fetches all user data from the 6 collections.
 2. Delegates per-scheme aggregation to `MfSchemeAggregationService`.
 3. Calls `MfExcelExporter.export()` to produce the 5-sheet workbook.
+
+### 5.6 `MfFifoEngine` — Accurate Capital Gains Engine
+- Simulates the chronological purchase and redemption of units using a First-In-First-Out (FIFO) queue of lots.
+- Computes Short-Term Capital Gains (STCG) vs Long-Term Capital Gains (LTCG) based on 1-year holding periods automatically upon redemption.
+
+### 5.7 `PortfolioHoldingService` — Advanced Metrics
+- Aggregates lumpsum, SIP, and redemption transactions to compute the user's `PortfolioHolding` per scheme.
+- Calculates derived metrics like `averageCost`, `realizedGain`, `unrealizedGain`, `marketGain`, and `absoluteReturnPercentage` utilizing the latest NAV prices.
+
+### 5.8 `SipContributionScheduler` & `MfNavService`
+- **Scheduler**: Automatically scans active `SipMandate`s and backfills missing monthly contributions on their due dates, eliminating manual tracking.
+- **NAV Service**: Responsible for fetching and applying the correct NAV value for transactions to ensure accurate mark-to-market valuations.
 
 Keeps `MfSchemeAggregationService` focused on computation only.
 
