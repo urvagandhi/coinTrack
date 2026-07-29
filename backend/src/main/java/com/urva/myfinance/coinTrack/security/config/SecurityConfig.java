@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> request
 
                         // Health
-                        .requestMatchers("/api/health", "/api/health/**").permitAll()
+                        .requestMatchers("/api/health", "/api/health/**", "/actuator/health", "/health").permitAll()
 
                         // CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -68,7 +68,8 @@ public class SecurityConfig {
                                 "/api/auth/2fa/verify",
                                 "/api/auth/2fa/register/setup",
                                 "/api/auth/2fa/register/verify",
-                                "/api/auth/refresh")
+                                "/api/auth/refresh",
+                                "/api/auth/oauth2/**")
                         .permitAll()
 
                         // Email verification / password reset (public)

@@ -10,6 +10,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,6 +37,7 @@ public class User {
     private String phoneNumber;
     private String bio;
     private String location;
+    @JsonIgnore
     private String password;
 
     @CreatedDate
@@ -56,8 +59,10 @@ public class User {
     @Builder.Default
     private boolean totpVerified = false;
 
+    @JsonIgnore
     private String totpSecretEncrypted;
 
+    @JsonIgnore
     private String totpSecretPending;
 
     @Builder.Default
@@ -78,4 +83,11 @@ public class User {
     private LocalDateTime emailVerifiedAt;
 
     private String pendingEmail;
+
+    // ── OAuth 2.0 / SSO ─────────────────────────────────────────────
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    @JsonIgnore
+    private String googleId;
 }

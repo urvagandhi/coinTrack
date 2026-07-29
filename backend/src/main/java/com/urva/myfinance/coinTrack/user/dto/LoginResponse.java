@@ -94,6 +94,11 @@ public class LoginResponse {
     private List<String> backupCodes;
 
     /**
+     * Indicates if the OAuth user has completed their profile (username choice, name, etc.).
+     */
+    private Boolean profileComplete;
+
+    /**
      * Default constructor for JSON deserialization.
      */
     public LoginResponse() {
@@ -248,6 +253,14 @@ public class LoginResponse {
 
     public void setBackupCodes(List<String> backupCodes) {
         this.backupCodes = backupCodes;
+    }
+
+    public Boolean getProfileComplete() {
+        return profileComplete;
+    }
+
+    public void setProfileComplete(Boolean profileComplete) {
+        this.profileComplete = profileComplete;
     }
 
     @Override

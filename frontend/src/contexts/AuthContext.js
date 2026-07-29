@@ -188,6 +188,118 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
+    // ── Google Login ──
+    const googleLogin = useCallback(async (code, redirectUri) => {
+        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+        dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+
+        try {
+            let response = await authAPI.googleLogin(code, redirectUri);
+            if (response.success && response.data) response = response.data;
+
+            // CASE 0: Profile Completion Required
+            if (response.profileComplete === false && response.tempToken) {
+                logger.info('Google Login requires profile completion', { userId: response.userId });
+                dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+                return {
+                    success: true,
+                    requiresProfileCompletion: true,
+                    tempToken: response.tempToken,
+                    userId: response.userId,
+                    email: response.email,
+                    name: response.firstName ? `${response.firstName} ${response.lastName || ''}`.trim() : '',
+                };
+            }
+
+            // CASE 1: TOTP required
+            if (response.tempToken && !response.requireTotpSetup && !response.token) {
+                logger.info('Google Login requires TOTP verification', { username: response.username });
+                dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+                return {
+                    success: true,
+                    requiresTotp: true,
+                    tempToken: response.tempToken,
+                    userId: response.userId,
+                    username: response.username,
+                    message: response.message,
+                };
+            }
+
+            // CASE 2: Direct success
+            const { token, refreshToken: loginRefreshToken, ...userData } = response;
+
+            if (token) {
+                const user = {
+                    id: userData.userId,
+                    username: userData.username,
+                    email: userData.email,
+                    name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
+                    phoneNumber: userData.mobile,
+                    bio: userData.bio,
+                    location: userData.location,
+                };
+
+                tokenManager.setToken(token, true);
+                if (loginRefreshToken) tokenManager.setRefreshToken(loginRefreshToken);
+                logger.info('Google Login successful', { userId: user.id });
+                dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
+                return { success: true, user };
+            }
+
+            throw new Error('Invalid server response during Google login');
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || error.message || 'Google Login failed';
+            logger.error('Google Login failed', { error: errorMessage });
+            dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+            return { success: false, error: errorMessage };
+        }
+    }, []);
+
+    // ── Complete Google Profile ──
+    const completeGoogleProfile = useCallback(async (payload) => {
+        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+        dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+
+        try {
+            let response = await authAPI.completeGoogleProfile(payload);
+            if (response.success && response.data) response = response.data;
+
+            const { token, refreshToken: loginRefreshToken, ...userData } = response;
+
+            if (token) {
+                const user = {
+                    id: userData.userId,
+                    username: userData.username,
+                    email: userData.email,
+                    name: (userData.firstName ? `${userData.firstName} ${userData.lastName || ''}` : userData.username).trim(),
+                    phoneNumber: userData.mobile,
+                    bio: userData.bio,
+                    location: userData.location,
+                };
+
+                tokenManager.setToken(token, true);
+                if (loginRefreshToken) tokenManager.setRefreshToken(loginRefreshToken);
+                logger.info('Profile completed successfully', { userId: user.id });
+                dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
+                return { success: true, user };
+            }
+            
+            if (response.requireTotpSetup && response.tempToken) {
+                logger.info('Profile requires TOTP setup', { userId: response.userId });
+                sessionStorage.setItem('tempToken', response.tempToken);
+                dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+                return { success: true, requireTotpSetup: true, tempToken: response.tempToken };
+            }
+
+            throw new Error('Invalid server response during profile completion');
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || error.message || 'Profile completion failed';
+            logger.error('Profile completion failed', { error: errorMessage });
+            dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+            return { success: false, error: errorMessage };
+        }
+    }, []);
+
     // ── Logout ──
     const logout = useCallback(async () => {
         logger.info('Logging out user');
@@ -323,6 +435,8 @@ export function AuthProvider({ children }) {
         ...state,
         isInitializing,
         login,
+        googleLogin,
+        completeGoogleProfile,
         logout,
         register,
         setupTotp,

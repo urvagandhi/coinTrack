@@ -27,6 +27,8 @@ import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.LoginRequest;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.dto.RegisterUserDTO;
+import com.urva.myfinance.coinTrack.user.dto.GoogleLoginRequest;
+import com.urva.myfinance.coinTrack.user.dto.CompleteProfileRequest;
 import com.urva.myfinance.coinTrack.user.model.RefreshToken;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.RefreshTokenRepository;
@@ -242,6 +244,57 @@ public class AuthController {
         } catch (Exception e) {
             logger.error("Logout error: {}", e.getMessage());
             return ResponseEntity.ok(ApiResponse.success("Logged out"));
+        }
+    }
+
+    @Operation(summary = "Authenticate or register user via Google SSO")
+    @PostMapping("/oauth2/google")
+    public ResponseEntity<?> oauth2Google(@Valid @RequestBody GoogleLoginRequest googleRequest, HttpServletRequest request) {
+        try {
+            logger.info("Google SSO authentication attempt starting...");
+            String deviceInfo = RequestUtils.extractUserAgent(request);
+            String ipAddress = RequestUtils.extractIpAddress(request);
+
+            LoginResponse response = authService.authenticateGoogle(
+                    googleRequest.getCode(),
+                    googleRequest.getRedirectUri(),
+                    deviceInfo,
+                    ipAddress);
+
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (com.urva.myfinance.coinTrack.common.exception.AuthenticationException e) {
+            logger.warn("Google authentication warning: {}", e.getMessage());
+            if (e.getMessage().contains("already exists")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(ApiResponse.error(e.getMessage()));
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Google authentication failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Google login failed: " + e.getMessage()));
+        }
+    }
+
+    @Operation(summary = "Complete profile for Google SSO registration")
+    @PostMapping("/oauth2/complete-profile")
+    public ResponseEntity<?> completeGoogleProfile(@Valid @RequestBody CompleteProfileRequest profileRequest, HttpServletRequest request) {
+        try {
+            logger.info("Google SSO profile completion attempt starting...");
+            String deviceInfo = RequestUtils.extractUserAgent(request);
+            String ipAddress = RequestUtils.extractIpAddress(request);
+
+            LoginResponse response = authService.completeGoogleProfile(
+                    profileRequest,
+                    deviceInfo,
+                    ipAddress);
+
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            logger.error("Google profile completion failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Failed to complete profile: " + e.getMessage()));
         }
     }
 }

@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.common.service.NotificationService;
 import com.urva.myfinance.coinTrack.common.util.RequestUtils;
@@ -36,6 +39,8 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/auth")
 @Tag(name = "Two-Factor Auth", description = "TOTP 2FA setup, verification, and recovery")
 public class TotpController {
+
+    private static final Logger logger = LoggerFactory.getLogger(TotpController.class);
 
     private final TotpService totpService;
     private final UserAuthenticationService userAuthService;
@@ -87,7 +92,8 @@ public class TotpController {
     @PostMapping("/2fa/verify")
     public ResponseEntity<?> verifySetup(
             @RequestHeader(name = "Authorization", required = false) String authHeader,
-            @Valid @RequestBody TotpVerifyRequest request) {
+            @Valid @RequestBody TotpVerifyRequest requestBody,
+            HttpServletRequest request) {
 
         User user = resolveUser(authHeader, "TOTP_SETUP");
         if (user == null) {
@@ -95,7 +101,7 @@ public class TotpController {
         }
 
         try {
-            List<String> backupCodes = totpService.verifySetup(user, request.getCode());
+            List<String> backupCodes = totpService.verifySetup(user, requestBody.getCode());
 
             // Send security alert for 2FA setup (non-blocking)
             try {
@@ -103,8 +109,7 @@ public class TotpController {
                     notificationService.sendSecurityAlert(user, "2-Factor Authentication Enabled", null);
                 }
             } catch (Exception emailEx) {
-                // Log but don't fail the request - email is secondary
-                System.err.println("[WARN] Failed to send 2FA setup security alert: " + emailEx.getMessage());
+                logger.warn("Failed to send 2FA setup security alert: {}", emailEx.getMessage());
             }
 
             return ResponseEntity
@@ -254,7 +259,7 @@ public class TotpController {
                 }
             } catch (Exception emailEx) {
                 // Log but don't fail the request - email is secondary
-                System.err.println("[WARN] Failed to send 2FA reset security alert: " + emailEx.getMessage());
+                logger.warn("Failed to send 2FA reset security alert: {}", emailEx.getMessage());
             }
 
             // Invalidate all email tokens on TOTP reset (non-blocking)
@@ -263,7 +268,7 @@ public class TotpController {
                     emailTokenService.invalidateAllForUser(user.getId());
                 }
             } catch (Exception tokenEx) {
-                System.err.println("[WARN] Failed to invalidate email tokens: " + tokenEx.getMessage());
+                logger.warn("Failed to invalidate email tokens: {}", tokenEx.getMessage());
             }
 
             return ResponseEntity.ok(ApiResponse.success(Map.of("backupCodes", backupCodes), "TOTP Reset Complete"));

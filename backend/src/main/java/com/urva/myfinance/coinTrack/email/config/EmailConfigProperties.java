@@ -56,9 +56,9 @@ public class EmailConfigProperties {
     /**
      * Backend API base URL for serving static assets like logo.
      * Used for email templates to reference the logo image.
-     * Default: https://cointrack-15gt.onrender.com
+     * Default: https://cointrack-backend-1g44.onrender.com
      */
-    private String apiBaseUrl = "https://cointrack-15gt.onrender.com";
+    private String apiBaseUrl = "https://cointrack-backend-1g44.onrender.com";
 
     /**
      * Get the full URL for the logo image

@@ -183,7 +183,7 @@ Total: 6 Java files + 7 HTML templates
 | `baseUrl` | `https://cointrack-finance.vercel.app` | Frontend URL for magic links |
 | `magicLinkExpiryMinutes` | `10` | Magic link token TTL |
 | `magicLinkSecret` | (none) | JWT signing secret for magic links |
-| `apiBaseUrl` | `https://cointrack-15gt.onrender.com` | Backend URL for static assets |
+| `apiBaseUrl` | `https://cointrack-backend-1g44.onrender.com` | Backend URL for static assets |
 
 ### 4.3 Required Environment Variables (Production)
 

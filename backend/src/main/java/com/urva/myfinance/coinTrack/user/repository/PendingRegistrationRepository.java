@@ -12,6 +12,8 @@ public interface PendingRegistrationRepository extends MongoRepository<PendingRe
 
     Optional<PendingRegistration> findByTempToken(String tempToken);
 
+    Optional<PendingRegistration> findByGoogleId(String googleId);
+
     Optional<PendingRegistration> findByUsername(String username);
 
     void deleteByTempToken(String tempToken);

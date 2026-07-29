@@ -49,6 +49,7 @@ public class JWTService {
     private static final int REFRESH_TOKEN_BYTES = 32; // 256 bits
 
     private final String secretKey;
+    private final Key cachedKey;
     private final RefreshTokenRepository refreshTokenRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -58,6 +59,16 @@ public class JWTService {
                       RefreshTokenRepository refreshTokenRepository) {
         this.secretKey = Base64.getEncoder().encodeToString(secret.getBytes());
         this.refreshTokenRepository = refreshTokenRepository;
+        this.cachedKey = computeKey();
+    }
+
+    private Key computeKey() {
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (DecodingException | WeakKeyException e) {
+            throw new RuntimeException("Failed to decode secret key for JWT", e);
+        }
     }
 
     // ── Access Token ────────────────────────────────────────────────
@@ -160,7 +171,7 @@ public class JWTService {
 
         return Jwts.builder()
                 .claims(claims)
-                .subject(user.getUsername())
+                .subject(user.getUsername() != null ? user.getUsername() : (user.getEmail() != null ? user.getEmail() : ""))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiryMinutes * 60 * 1000L))
                 .signWith(getKey())
@@ -252,6 +263,14 @@ public class JWTService {
         return resolver.apply(claims);
     }
 
+    /**
+     * Parse and verify a token, returning the Claims object.
+     * Useful when multiple fields need to be extracted from the same token.
+     */
+    public Claims parseToken(String token) {
+        return extractAllClaims(token);
+    }
+
     private Claims extractAllClaims(String token) {
         try {
             return Jwts.parser()
@@ -265,12 +284,7 @@ public class JWTService {
     }
 
     private Key getKey() {
-        try {
-            byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-            return Keys.hmacShaKeyFor(keyBytes);
-        } catch (DecodingException | WeakKeyException e) {
-            throw new RuntimeException("Failed to decode secret key for JWT", e);
-        }
+        return cachedKey;
     }
 
     private static String truncate(String value, int maxLength) {

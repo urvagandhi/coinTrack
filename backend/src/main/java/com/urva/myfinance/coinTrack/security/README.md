@@ -100,7 +100,7 @@ The Security module guards every API endpoint in CoinTrack. It employs a **state
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                        DOMAIN CONTROLLERS                                │
 │              (user, broker, portfolio, notes)                            │
-│              principal.getName() → "john"                                │
+│              principal.getUserId() → "6a635f3976973079b5c8ac5a"          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -521,7 +521,7 @@ boolean valid = totpVerify(secret, userInputCode);
 │           ▼                                                             │
 │     ┌─────────────────────────────────────────────────────────────┐   │
 │     │ PortfolioController                                         │   │
-│     │ └── principal.getName() → "john"                            │   │
+│     │ └── principal.getUserId() → "6a635f39..."                   │   │
 │     │     portfolioService.getSummary(userId) → data for john     │   │
 │     └─────────────────────────────────────────────────────────────┘   │
 │           │                                                             │

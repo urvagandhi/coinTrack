@@ -1,4 +1,3 @@
-// src/app/(access)/register/page.jsx
 'use client';
 
 import { AuthAlert } from '@/components/auth/AuthAlert';
@@ -10,7 +9,7 @@ import { useModal } from '@/contexts/ModalContext';
 import { Calendar, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const FIELD_BASE =
     'w-full h-11 px-3 bg-transparent border border-hairline text-foreground text-[14px] ' +
@@ -45,17 +44,46 @@ const STRENGTH_LABELS = {
     strong: 'Strong',
 };
 
-export default function RegisterPage() {
+export default function CompleteProfilePage() {
+    const router = useRouter();
+    const { completeGoogleProfile } = useAuth();
+    const { openModal } = useModal();
+
     const [formData, setFormData] = useState({
-        username: '', name: '', email: '', phoneNumber: '', dateOfBirth: '', password: '', confirmPassword: '',
+        username: '',
+        name: '',
+        email: '',
+        phoneNumber: '',
+        dateOfBirth: '',
+        password: '',
+        confirmPassword: '',
     });
+    const [tempToken, setTempToken] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const { register } = useAuth();
-    const { openModal } = useModal();
-    const router = useRouter();
+
+    useEffect(() => {
+        const token = sessionStorage.getItem('tempToken');
+        const tempEmail = sessionStorage.getItem('tempEmail') || '';
+        const tempName = sessionStorage.getItem('tempName') || '';
+        
+        if (!token) {
+            router.replace('/login');
+        } else {
+            setTempToken(token);
+            // Generate automatic username from email if available
+            const autoUsername = tempEmail ? tempEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_') : '';
+            
+            setFormData(prev => ({
+                ...prev,
+                email: tempEmail,
+                username: autoUsername,
+                name: tempName
+            }));
+        }
+    }, [router]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -70,8 +98,12 @@ export default function RegisterPage() {
             setError('Please fill in all fields');
             return false;
         }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            setError('Please enter a valid email address');
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            setError('Username can only contain letters, numbers, and underscores.');
+            return false;
+        }
+        if (username.length < 3 || username.length > 50) {
+            setError('Username must be between 3 and 50 characters.');
             return false;
         }
         if (!/^[\+]?[1-9][\d]{0,15}$/.test(phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
@@ -107,25 +139,32 @@ export default function RegisterPage() {
 
         try {
             const payload = {
+                tempToken,
                 username: formData.username,
-                email: formData.email,
+                phoneNumber: '+91' + formData.phoneNumber.replace(/[^0-9]/g, '').slice(-10),
                 password: formData.password,
-                mobile: formData.phoneNumber.replace(/[^0-9]/g, '').slice(-10),
-                firstName: formData.name.split(' ')[0],
-                lastName: formData.name.split(' ').slice(1).join(' ') || '',
+                confirmPassword: formData.confirmPassword,
+                name: formData.name,
+                dateOfBirth: formData.dateOfBirth,
             };
 
-            const result = await register(payload);
-            const data = result.data || result;
+            const result = await completeGoogleProfile(payload);
 
-            if (data.requireTotpSetup && data.tempToken) {
-                sessionStorage.setItem('totpSetupToken', data.tempToken);
-                sessionStorage.setItem('totpSetupUsername', data.username);
-                router.push('/setup-2fa');
-                return;
+            if (result.success) {
+                if (result.requireTotpSetup) {
+                    sessionStorage.removeItem('tempEmail');
+                    sessionStorage.removeItem('tempToken');
+                    sessionStorage.setItem('totpSetupToken', result.tempToken);
+                    sessionStorage.setItem('totpSetupUsername', formData.username);
+                    router.push('/setup-2fa');
+                } else {
+                    sessionStorage.removeItem('tempToken');
+                    sessionStorage.removeItem('tempEmail');
+                    router.push('/dashboard');
+                }
+            } else {
+                setError(result.error || 'Failed to complete profile. Please try again.');
             }
-
-            setError('Registration completed but TOTP setup was not triggered. Please contact support.');
         } catch (err) {
             setError(err.message || err.userMessage || 'An unexpected error occurred');
         } finally {
@@ -135,14 +174,22 @@ export default function RegisterPage() {
 
     const strength = formData.password ? getPasswordStrength(formData.password) : null;
 
+    if (!tempToken) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="w-5 h-5 border border-hairline border-t-foreground rounded-full animate-spin" />
+            </div>
+        );
+    }
+
     return (
         <AuthPageShell
-            title="Open your ledger"
-            subtitle="Register a new CoinTrack account to start tracking your portfolio across brokers."
-            index="II"
-            kicker="New Subscriber"
+            title="Complete your profile"
+            subtitle="Choose a unique username and finalize your details to finish setting up your account."
+            index="III"
+            kicker="Account Setup"
             maxWidth="md"
-            asideQuote={'"Every great portfolio begins with a single, honest entry."'}
+            asideQuote={'"Your identity is the key to a secure and personal financial ledger."'}
         >
             <form onSubmit={handleSubmit} className="space-y-5">
                 <AuthAlert type="error" message={error} />
@@ -171,10 +218,17 @@ export default function RegisterPage() {
                 <div>
                     <p className="eyebrow mb-3">[ B ] Contact</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <AuthFormField label="Email address" id="email">
+                        <AuthFormField label="Email address" id="email" hint="Linked to your Google account.">
                             <div className="relative">
                                 <div className={ICON_CLASS}><Mail size={14} /></div>
-                                <input id="email" name="email" type="email" required value={formData.email} onChange={handleChange} placeholder="jane@example.com" className={`${FIELD_BASE} pl-9`} />
+                                <input 
+                                    id="email" 
+                                    name="email" 
+                                    type="email" 
+                                    disabled 
+                                    value={formData.email} 
+                                    className={`${FIELD_BASE} pl-9 bg-muted/20 text-muted-foreground cursor-not-allowed`} 
+                                />
                             </div>
                         </AuthFormField>
 
@@ -245,7 +299,7 @@ export default function RegisterPage() {
 
                 <div className="pt-2">
                     <AuthSubmitButton isLoading={isLoading}>
-                        {isLoading ? 'Creating account…' : 'Create Account'}
+                        {isLoading ? 'Saving profile…' : 'Complete Registration'}
                     </AuthSubmitButton>
                     <p className="mt-3 text-[11px] text-muted-foreground font-mono text-center">
                         By registering you agree to our{' '}
@@ -267,15 +321,6 @@ export default function RegisterPage() {
                     </p>
                 </div>
             </form>
-
-            <div className="mt-10 pt-6 border-t border-hairline text-center">
-                <p className="text-[12px] text-muted-foreground">
-                    Already a subscriber?{' '}
-                    <Link href="/login" className="text-[hsl(var(--accent))] font-medium uppercase tracking-[0.16em] hover:underline">
-                        Sign in
-                    </Link>
-                </p>
-            </div>
         </AuthPageShell>
     );
 }

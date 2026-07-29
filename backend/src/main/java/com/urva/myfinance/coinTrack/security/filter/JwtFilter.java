@@ -27,7 +27,6 @@ import jakarta.servlet.http.HttpServletResponse;
  * JWT authentication filter.
  *
  * Changed:
- * - No longer calls CustomerUserDetailService (DB lookup) per request.
  *   Builds UserPrincipal from JWT claims (userId, username, email) directly.
  * - Checks InvalidatedTokenRepository for logout blacklist.
  */
@@ -54,7 +53,18 @@ public class JwtFilter extends OncePerRequestFilter {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
 
-                String username = jwtService.extractUsername(token);
+                // Parse JWT once — extract all fields from single Claims object
+                io.jsonwebtoken.Claims claims;
+                try {
+                    claims = jwtService.parseToken(token);
+                } catch (Exception e) {
+                    logger.warn(LoggingConstants.AUTH_TOKEN_INVALID, "expired or invalid signature");
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                String username = claims.getSubject();
                 if (username == null) {
                     filterChain.doFilter(request, response);
                     return;
@@ -63,21 +73,13 @@ public class JwtFilter extends OncePerRequestFilter {
                 logger.debug(LoggingConstants.AUTH_TOKEN_VALIDATED, username);
 
                 // Skip temp tokens (they have a "purpose" claim — not access tokens)
-                String purpose = jwtService.extractPurpose(token);
+                String purpose = claims.get("purpose", String.class);
                 if (purpose != null) {
                     filterChain.doFilter(request, response);
                     return;
                 }
 
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                    // Validate signature + expiry
-                    if (!jwtService.validateToken(token, username)) {
-                        logger.warn(LoggingConstants.AUTH_TOKEN_INVALID, "expired or invalid signature");
-                        SecurityContextHolder.clearContext();
-                        filterChain.doFilter(request, response);
-                        return;
-                    }
-
                     // Check blacklist (logout invalidation)
                     String tokenHash = HashUtil.sha256(token);
                     if (invalidatedTokenRepository.existsByTokenHash(tokenHash)) {
@@ -87,9 +89,9 @@ public class JwtFilter extends OncePerRequestFilter {
                         return;
                     }
 
-                    // Build principal from token claims — no DB call
-                    String userId = jwtService.extractUserId(token);
-                    String email = jwtService.extractEmail(token);
+                    // Build principal from parsed claims — no additional JWT parsing
+                    String userId = claims.get("userId", String.class);
+                    String email = claims.get("email", String.class);
                     UserPrincipal principal = new UserPrincipal(userId, username, email);
 
                     MDC.put(LoggingConstants.MDC_USER_ID, userId != null ? userId : username);

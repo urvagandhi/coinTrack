@@ -32,14 +32,21 @@ import dev.samstevens.totp.time.SystemTimeProvider;
 import dev.samstevens.totp.time.TimeProvider;
 import dev.samstevens.totp.util.Utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * TOTP 2FA service.
  *
- * Changed: Replaced TotpEncryptionUtil with EncryptionUtil.encrypt/decrypt(text, totpKey)
- * static overloads. Single encryption implementation, separate key for TOTP secrets.
+ * Changed: Replaced TotpEncryptionUtil with
+ * EncryptionUtil.encrypt/decrypt(text, totpKey)
+ * static overloads. Single encryption implementation, separate key for TOTP
+ * secrets.
  */
 @Service
 public class TotpService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TotpService.class);
 
     private final UserRepository userRepository;
     private final BackupCodeRepository backupCodeRepository;
@@ -227,6 +234,22 @@ public class TotpService {
 
         userRepository.save(user);
         backupCodeRepository.deleteByUserId(user.getId());
+    }
+
+    @Transactional
+    public void saveBackupCodes(User user, List<String> plaintextCodes, int version) {
+        List<BackupCode> hashedCodes = new ArrayList<>();
+        for (String code : plaintextCodes) {
+            hashedCodes.add(BackupCode.builder()
+                    .userId(user.getId())
+                    .codeHash(passwordEncoder.encode(code))
+                    .generation(version)
+                    .createdAt(LocalDateTime.now())
+                    .used(false)
+                    .build());
+        }
+        backupCodeRepository.saveAll(hashedCodes);
+        logger.info("Saved {} backup codes for user {} (generation: {})", hashedCodes.size(), user.getId(), version);
     }
 
     // ── Internal helpers ────────────────────────────────────────────

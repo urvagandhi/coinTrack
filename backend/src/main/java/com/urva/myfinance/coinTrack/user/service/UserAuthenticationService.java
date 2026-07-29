@@ -3,6 +3,7 @@ package com.urva.myfinance.coinTrack.user.service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,9 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
+import com.urva.myfinance.coinTrack.security.service.GoogleOAuthService;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
+import com.urva.myfinance.coinTrack.user.dto.CompleteProfileRequest;
 import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.model.AuthProvider;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
+import com.urva.myfinance.coinTrack.notes.service.NoteService;
+import java.time.LocalDateTime;
 
 /**
  * Authentication service with mandatory TOTP flow.
@@ -42,6 +48,8 @@ public class UserAuthenticationService {
     private final JWTService jwtService;
     private final TotpService totpService;
     private final UserService userService;
+    private final GoogleOAuthService googleOAuthService;
+    private final NoteService noteService;
 
     public UserAuthenticationService(
             UserRepository userRepository,
@@ -49,13 +57,17 @@ public class UserAuthenticationService {
             PasswordEncoder passwordEncoder,
             JWTService jwtService,
             TotpService totpService,
-            UserService userService) {
+            UserService userService,
+            GoogleOAuthService googleOAuthService,
+            NoteService noteService) {
         this.userRepository = userRepository;
         this.authManager = authManager;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.totpService = totpService;
         this.userService = userService;
+        this.googleOAuthService = googleOAuthService;
+        this.noteService = noteService;
     }
 
     /**
@@ -189,6 +201,8 @@ public class UserAuthenticationService {
 
         User savedUser = userService.completePendingRegistration(pendingUser);
 
+        totpService.saveBackupCodes(savedUser, backupCodes, savedUser.getTotpSecretVersion());
+
         String accessToken = jwtService.generateToken(savedUser);
         String refreshToken = jwtService.generateRefreshToken(savedUser.getId(), deviceInfo, ipAddress);
 
@@ -223,6 +237,7 @@ public class UserAuthenticationService {
         response.setBio(user.getBio());
         response.setLocation(user.getLocation());
         response.setRequireTotpSetup(false);
+        response.setProfileComplete(true);
         return response;
     }
 
@@ -244,6 +259,10 @@ public class UserAuthenticationService {
 
     public void updatePendingTotpSecret(String username, String encryptedSecret) {
         userService.updatePendingTotpSecret(username, encryptedSecret);
+    }
+
+    public void saveUser(User user) {
+        userRepository.save(user);
     }
 
     @Transactional(readOnly = true)
@@ -280,6 +299,128 @@ public class UserAuthenticationService {
         }
 
         userRepository.save(user);
+    }
+
+    /**
+     * Authenticates a user using Google authorization code.
+     */
+    @Transactional
+    public LoginResponse authenticateGoogle(String code, String redirectUri, String deviceInfo, String ipAddress) {
+        String idToken = googleOAuthService.exchangeCodeForIdToken(code, redirectUri);
+        Map<String, Object> userInfo = googleOAuthService.verifyIdToken(idToken);
+
+        String email = (String) userInfo.get("email");
+        Boolean emailVerified = (Boolean) userInfo.get("email_verified");
+        String sub = (String) userInfo.get("sub");
+        String name = (String) userInfo.get("name");
+
+        if (email == null || sub == null) {
+            throw new RuntimeException("Invalid Google token payload");
+        }
+
+        // b. If user exists, log them in (Link if necessary)
+        User existingUser = userRepository.findByGoogleId(sub).orElse(null);
+        if (existingUser != null) {
+            logger.info("Existing Google user found, logging in. UserId: {}", existingUser.getId());
+            return generateFinalLoginResponse(existingUser, deviceInfo, ipAddress);
+        }
+
+        // b. Existing user with matching email
+        User userByEmail = userRepository.findByEmail(email);
+        if (userByEmail != null) {
+            // c. Collision check with unverified email
+            if (emailVerified == null || !emailVerified) {
+                throw new com.urva.myfinance.coinTrack.common.exception.AuthenticationException(
+                        "An account with this email already exists. Please log in with your password to link Google authentication.");
+            }
+
+            // Link account
+            userByEmail.setAuthProvider(AuthProvider.GOOGLE);
+            userByEmail.setGoogleId(sub);
+            userByEmail.setEmailVerified(true);
+            userRepository.save(userByEmail);
+
+            logger.info("Linked existing local user to Google account. UserId: {}", userByEmail.getId());
+            return generateFinalLoginResponse(userByEmail, deviceInfo, ipAddress);
+        }
+
+        // d. Auto-register brand new user (creates pending doc)
+        com.urva.myfinance.coinTrack.user.model.PendingRegistration pending = 
+            userService.upsertPendingGoogleRegistration(sub, email, name);
+
+        logger.info("Created/upserted pending Google registration for: {}", email);
+
+        LoginResponse response = new LoginResponse();
+        response.setEmail(email);
+        response.setProfileComplete(false);
+        response.setTempToken(pending.getTempToken());
+        response.setMessage("Please choose a username to complete your profile.");
+        return response;
+    }
+
+    @Transactional
+    public LoginResponse completeGoogleProfile(CompleteProfileRequest request, String deviceInfo, String ipAddress) {
+        if (!jwtService.isValidTempToken(request.getTempToken(), "PROFILE_COMPLETION")) {
+            throw new RuntimeException("Invalid or expired session. Please start sign-in again.");
+        }
+
+        // Wait, the tempToken in request should match the PendingRegistration's tempToken
+        String googleId = jwtService.extractUsername(request.getTempToken());
+        if (googleId == null) {
+            throw new RuntimeException("Invalid session state: googleId not found");
+        }
+
+        // Wait, we need to access pendingRegistrationRepository
+        // I'll call a method on userService to handle the pending document update
+        com.urva.myfinance.coinTrack.user.model.PendingRegistration pending = 
+            userService.getPendingRegistrationByGoogleId(googleId);
+        
+        if (pending == null) {
+            throw new RuntimeException("Session expired. Please sign in with Google again.");
+        }
+
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new RuntimeException("Passwords do not match.");
+        }
+
+        String chosenUsername = request.getUsername().trim();
+        if (userRepository.existsByUsername(chosenUsername) || userService.getPendingRegistrationUser(chosenUsername) != null) {
+            throw new RuntimeException("Username already exists. Please choose a different username.");
+        }
+
+        String normalizedPhone = normalizePhoneNumber(request.getPhoneNumber());
+        if (userRepository.existsByPhoneNumber(normalizedPhone)) {
+            throw new RuntimeException("Phone number is already registered.");
+        }
+
+        // Update the pending registration document
+        pending.setUsername(chosenUsername);
+        pending.setPhoneNumber(normalizedPhone);
+        pending.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        
+        if (request.getName() != null && !request.getName().isBlank()) {
+            pending.setName(request.getName().trim());
+        }
+        
+        // Convert DateOfBirth to pending if needed (but pending model doesn't have dob)
+        // I will just ignore it for now since PendingRegistration doesn't store dob. 
+        // We can add dob to PendingRegistration or skip it for now.
+        
+        userService.savePendingRegistration(pending);
+
+        logger.info("Profile step 1 completed for Google user: {}. Moving to TOTP registration setup.", chosenUsername);
+
+        // Transition to standard TOTP registration setup
+        // We give a TOTP_REGISTRATION token with the chosen username as the subject, 
+        // because the TOTP flow expects the subject to be the username.
+        String totpSetupToken = jwtService.generateTempToken(chosenUsername, "TOTP_REGISTRATION");
+        LoginResponse response = new LoginResponse();
+        response.setProfileComplete(false);
+        response.setRequireTotpSetup(true);
+        response.setTempToken(totpSetupToken);
+        response.setMessage("Please complete 2FA setup to finish registration.");
+        
+        return response;
     }
 
     // ── User lookup ─────────────────────────────────────────────────

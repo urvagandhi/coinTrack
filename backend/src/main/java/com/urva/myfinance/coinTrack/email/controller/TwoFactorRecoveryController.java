@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.common.util.UserLookupUtil;
 import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
 import com.urva.myfinance.coinTrack.email.model.EmailToken;
 import com.urva.myfinance.coinTrack.email.service.EmailService;
@@ -71,7 +72,7 @@ public class TwoFactorRecoveryController {
         }
 
         // Find user by email, username, or phone
-        Optional<User> userOpt = findUserByIdentifier(identifier);
+        Optional<User> userOpt = UserLookupUtil.findByIdentifier(userRepository, identifier);
 
         if (userOpt.isPresent()) {
             User user = userOpt.get();
@@ -170,22 +171,4 @@ public class TwoFactorRecoveryController {
         }
     }
 
-    /**
-     * Find user by email, username, or phone number.
-     */
-    private Optional<User> findUserByIdentifier(String identifier) {
-        // Try email
-        User user = userRepository.findByEmail(identifier);
-        if (user != null)
-            return Optional.of(user);
-
-        // Try username
-        user = userRepository.findByUsername(identifier);
-        if (user != null)
-            return Optional.of(user);
-
-        // Try phone
-        user = userRepository.findByPhoneNumber(identifier);
-        return Optional.ofNullable(user);
-    }
 }

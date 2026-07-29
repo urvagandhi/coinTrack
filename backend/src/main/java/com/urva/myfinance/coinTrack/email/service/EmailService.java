@@ -66,11 +66,6 @@ public class EmailService {
     private final TemplateEngine templateEngine;
     private final EmailConfigProperties emailConfig;
 
-    // ============================================================================
-    // LEGACY SMTP (DISABLED – Gmail SMTP blocked on cloud providers like Render)
-    // Kept only for reference / local testing
-    // ============================================================================
-    // private final JavaMailSender mailSender;
 
     private static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a");
 
@@ -311,27 +306,5 @@ public class EmailService {
             logger.warn("Email not sent to {} - subject: {}", to, subject);
         }
 
-        // ====================================================================
-        // LEGACY SMTP CODE (DISABLED – Gmail SMTP blocked on cloud providers)
-        // Kept only for reference / local testing
-        // ====================================================================
-        // try {
-        // MimeMessage message = mailSender.createMimeMessage();
-        // MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-        //
-        // helper.setFrom(emailConfig.getFrom());
-        // helper.setTo(to);
-        // helper.setSubject(subject);
-        // helper.setText(htmlContent, true);
-        //
-        // mailSender.send(message);
-        // logger.info("Email sent successfully via SMTP: to={}, subject={}", to,
-        // subject);
-        //
-        // } catch (MessagingException e) {
-        // logger.error("SMTP failed: to={}, subject={}, error={}", to, subject,
-        // e.getMessage());
-        // // Don't throw - email failures shouldn't break the main flow
-        // }
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import com.urva.myfinance.coinTrack.user.model.AuthProvider;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,6 +38,11 @@ public class PendingRegistration {
     private String passwordHash;
     private String totpSecretEncrypted;
 
+    @Indexed(unique = true, sparse = true)
+    private String googleId;
+
+    private AuthProvider authProvider;
+    
     @CreatedDate
     private Instant createdAt;
 

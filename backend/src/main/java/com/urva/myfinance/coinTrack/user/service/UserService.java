@@ -1,12 +1,18 @@
 package com.urva.myfinance.coinTrack.user.service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +24,7 @@ import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.notes.service.NoteService;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
+import com.urva.myfinance.coinTrack.user.model.AuthProvider;
 import com.urva.myfinance.coinTrack.user.model.PendingRegistration;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.PendingRegistrationRepository;
@@ -26,8 +33,10 @@ import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 /**
  * User registration and management service.
  *
- * Changed: Replaced in-memory HashMap with MongoDB PendingRegistrationRepository.
- * Pending registrations now survive server restarts and work across multiple instances.
+ * Changed: Replaced in-memory HashMap with MongoDB
+ * PendingRegistrationRepository.
+ * Pending registrations now survive server restarts and work across multiple
+ * instances.
  */
 @Service
 public class UserService {
@@ -36,6 +45,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PendingRegistrationRepository pendingRegistrationRepository;
+    private final MongoTemplate mongoTemplate;
     private final PasswordEncoder passwordEncoder;
     private final JWTService jwtService;
     private final NoteService noteService;
@@ -60,12 +70,14 @@ public class UserService {
     }
 
     public UserService(UserRepository userRepository,
-                       PendingRegistrationRepository pendingRegistrationRepository,
-                       PasswordEncoder passwordEncoder,
-                       JWTService jwtService,
-                       NoteService noteService) {
+            PendingRegistrationRepository pendingRegistrationRepository,
+            MongoTemplate mongoTemplate,
+            PasswordEncoder passwordEncoder,
+            JWTService jwtService,
+            NoteService noteService) {
         this.userRepository = userRepository;
         this.pendingRegistrationRepository = pendingRegistrationRepository;
+        this.mongoTemplate = mongoTemplate;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.noteService = noteService;
@@ -133,6 +145,36 @@ public class UserService {
                 .orElse(null);
     }
 
+    public PendingRegistration getPendingRegistrationByGoogleId(String googleId) {
+        return pendingRegistrationRepository.findByGoogleId(googleId).orElse(null);
+    }
+
+    public void savePendingRegistration(PendingRegistration pending) {
+        pendingRegistrationRepository.save(pending);
+    }
+
+    @Transactional
+    public PendingRegistration upsertPendingGoogleRegistration(String googleId, String email, String name) {
+        String tempToken = jwtService.generateTempToken(googleId, "PROFILE_COMPLETION");
+        Instant now = Instant.now();
+        Instant expires = now.plusSeconds(15 * 60);
+
+        Query query = new Query(Criteria.where("googleId").is(googleId));
+
+        Update update = new Update()
+                .setOnInsert("googleId", googleId)
+                .setOnInsert("createdAt", now)
+                .set("email", email)
+                .set("name", name)
+                .set("authProvider", AuthProvider.GOOGLE)
+                .set("tempToken", tempToken)
+                .set("expiresAt", expires);
+
+        FindAndModifyOptions options = new FindAndModifyOptions().returnNew(true).upsert(true);
+
+        return mongoTemplate.findAndModify(query, update, options, PendingRegistration.class);
+    }
+
     /**
      * Complete pending registration by saving user to DB.
      * Called after TOTP verification is successful.
@@ -181,7 +223,8 @@ public class UserService {
     }
 
     public User findUserByUsername(String username) {
-        if (username == null || username.trim().isEmpty()) return null;
+        if (username == null || username.trim().isEmpty())
+            return null;
         return userRepository.findByUsername(username);
     }
 
@@ -194,13 +237,15 @@ public class UserService {
     @SuppressWarnings("null")
     public User updateUser(String id, User user) {
         Optional<User> existingUserOpt = userRepository.findById(id);
-        if (existingUserOpt.isEmpty()) return null;
+        if (existingUserOpt.isEmpty())
+            return null;
 
         User existing = existingUserOpt.get();
 
         if (user.getUsername() != null) {
             String newUsername = user.getUsername().trim();
-            if (newUsername.isEmpty()) throw new IllegalArgumentException("Username cannot be empty");
+            if (newUsername.isEmpty())
+                throw new IllegalArgumentException("Username cannot be empty");
             if (!newUsername.equals(existing.getUsername())) {
                 if (userRepository.findByUsername(newUsername) != null) {
                     throw new IllegalArgumentException("Username is already taken");
@@ -211,7 +256,8 @@ public class UserService {
 
         if (user.getEmail() != null) {
             String newEmail = user.getEmail().trim().toLowerCase();
-            if (newEmail.isEmpty()) throw new IllegalArgumentException("Email cannot be empty");
+            if (newEmail.isEmpty())
+                throw new IllegalArgumentException("Email cannot be empty");
             if (!newEmail.equals(existing.getEmail())) {
                 if (userRepository.findByEmail(newEmail) != null) {
                     throw new IllegalArgumentException("Email is already registered with another account");
@@ -232,10 +278,14 @@ public class UserService {
             existing.setPhoneNumber(newPhone);
         }
 
-        if (user.getName() != null) existing.setName(user.getName());
-        if (user.getDateOfBirth() != null) existing.setDateOfBirth(user.getDateOfBirth());
-        if (user.getBio() != null) existing.setBio(user.getBio());
-        if (user.getLocation() != null) existing.setLocation(user.getLocation());
+        if (user.getName() != null)
+            existing.setName(user.getName());
+        if (user.getDateOfBirth() != null)
+            existing.setDateOfBirth(user.getDateOfBirth());
+        if (user.getBio() != null)
+            existing.setBio(user.getBio());
+        if (user.getLocation() != null)
+            existing.setLocation(user.getLocation());
 
         return userRepository.save(existing);
     }
@@ -279,6 +329,8 @@ public class UserService {
     // ── Internal helpers ────────────────────────────────────────────
 
     private User toTransientUser(PendingRegistration pending) {
+        AuthProvider provider = pending.getAuthProvider() != null ? pending.getAuthProvider() : AuthProvider.LOCAL;
+        boolean isGoogle = provider == AuthProvider.GOOGLE;
         return User.builder()
                 .username(pending.getUsername())
                 .email(pending.getEmail())
@@ -286,6 +338,10 @@ public class UserService {
                 .name(pending.getName())
                 .password(pending.getPasswordHash())
                 .totpSecretPending(pending.getTotpSecretEncrypted())
+                .googleId(pending.getGoogleId())
+                .authProvider(provider)
+                .emailVerified(isGoogle)
+                .emailVerifiedAt(isGoogle ? LocalDateTime.now() : null)
                 .totpEnabled(false)
                 .totpVerified(false)
                 .totpSecretVersion(0)
@@ -301,19 +357,25 @@ public class UserService {
             emailService.sendWelcomeEmail(user);
             logger.info("Welcome email sent to: {}", user.getEmail());
 
-            String token = emailTokenService.createToken(user, "EMAIL_VERIFY", null);
-            String magicLink = emailConfig.getEmailVerifyUrl(token);
-            emailService.sendEmailVerification(user, magicLink);
-            logger.info("Verification email sent to: {}", user.getEmail());
+            if (user.getAuthProvider() != AuthProvider.GOOGLE) {
+                String token = emailTokenService.createToken(user, "EMAIL_VERIFY", null);
+                String magicLink = emailConfig.getEmailVerifyUrl(token);
+                emailService.sendEmailVerification(user, magicLink);
+                logger.info("Verification email sent to: {}", user.getEmail());
+            } else {
+                logger.info("Skipping verification email for Google SSO user: {}", user.getEmail());
+            }
         } catch (Exception e) {
             logger.error("Failed to send registration emails: {}", e.getMessage());
         }
     }
 
     private String normalizePhoneNumber(String input) {
-        if (input == null || input.trim().isEmpty()) return null;
+        if (input == null || input.trim().isEmpty())
+            return null;
         String cleaned = input.replaceAll("[^0-9+]", "");
-        if (cleaned.matches("^\\d{10}$")) return "+91" + cleaned;
+        if (cleaned.matches("^\\d{10}$"))
+            return "+91" + cleaned;
         return cleaned;
     }
 }

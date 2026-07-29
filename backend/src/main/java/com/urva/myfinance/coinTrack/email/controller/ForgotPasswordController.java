@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.common.util.RequestUtils;
+import com.urva.myfinance.coinTrack.common.util.UserLookupUtil;
 import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
 import com.urva.myfinance.coinTrack.email.model.EmailToken;
 import com.urva.myfinance.coinTrack.email.service.EmailService;
@@ -82,7 +83,7 @@ public class ForgotPasswordController {
         }
 
         // Find user by email, username, or phone
-        Optional<User> userOpt = findUserByIdentifier(identifier);
+        Optional<User> userOpt = UserLookupUtil.findByIdentifier(userRepository, identifier);
 
         if (userOpt.isPresent()) {
             User user = userOpt.get();
@@ -176,7 +177,7 @@ public class ForgotPasswordController {
         if (!isValidPassword(newPassword)) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(
-                            "Password must contain at least one uppercase letter, one lowercase letter, and one digit"));
+                            "Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&#)"));
         }
 
         // Extract and validate temp JWT
@@ -224,25 +225,6 @@ public class ForgotPasswordController {
     }
 
     /**
-     * Find user by email, username, or phone number.
-     */
-    private Optional<User> findUserByIdentifier(String identifier) {
-        // Try email
-        User user = userRepository.findByEmail(identifier);
-        if (user != null)
-            return Optional.of(user);
-
-        // Try username
-        user = userRepository.findByUsername(identifier);
-        if (user != null)
-            return Optional.of(user);
-
-        // Try phone
-        user = userRepository.findByPhoneNumber(identifier);
-        return Optional.ofNullable(user);
-    }
-
-    /**
      * Create temporary JWT for password reset.
      * Short-lived (5 minutes), purpose-bound.
      */
@@ -283,7 +265,7 @@ public class ForgotPasswordController {
      * Validate password strength.
      */
     private boolean isValidPassword(String password) {
-        // At least one uppercase, one lowercase, one digit
-        return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$");
+        if (password == null || password.length() < 8) return false;
+        return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#]).*$");
     }
 }

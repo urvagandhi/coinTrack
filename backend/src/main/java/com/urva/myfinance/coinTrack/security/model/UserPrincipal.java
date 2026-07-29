@@ -20,7 +20,7 @@ public class UserPrincipal implements UserDetails {
     private final String email;
     private final String password;
 
-    /** Full constructor from User entity (used by CustomerUserDetailService). */
+    /** Full constructor from User entity. */
     public UserPrincipal(User user) {
         this.userId = user.getId();
         this.username = user.getUsername();
