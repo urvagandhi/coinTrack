@@ -30,6 +30,7 @@ import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSettingsRepos
 import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSnapshotRepository;
 import com.urva.myfinance.coinTrack.goldsilver.repository.PurityOptionRepository;
 import com.urva.myfinance.coinTrack.goldsilver.service.GoldSilverCalculationService;
+import com.urva.myfinance.coinTrack.goldsilver.service.GoldApiUsageService;
 import com.urva.myfinance.coinTrack.goldsilver.service.LiveMetalRateServiceImpl;
 import com.urva.myfinance.coinTrack.goldsilver.service.MetalPriceProvider;
 
@@ -59,6 +60,9 @@ class LiveMetalRateServiceImplTest {
     @Mock
     private MongoTemplate mongoTemplate;
 
+    @Mock
+    private GoldApiUsageService goldApiUsageService;
+
     private GoldSilverCalculationService calculationService;
     private LiveMetalRateServiceImpl service;
 
@@ -72,6 +76,7 @@ class LiveMetalRateServiceImplTest {
                 purityOptionRepository,
                 investmentRepository,
                 calculationService,
+                goldApiUsageService,
                 mongoTemplate
         );
     }
