@@ -210,7 +210,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="eyebrow">Redeemed Units *</label>
+                    <label className="eyebrow">Redeemed Units</label>
                     {selectedScheme && selectedScheme.totalUnit != null && (
                       <span className="text-[10px] font-mono text-muted-foreground">
                         Total: <strong className="text-foreground">{selectedScheme.totalUnit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong>
@@ -218,7 +218,6 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                     )}
                   </div>
                   <input
-                    required
                     type="number"
                     step="0.001"
                     name="redemptionUnit"
@@ -228,9 +227,13 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                     className="ed-input w-full font-mono"
                     placeholder="e.g. 50.000"
                   />
-                  {selectedScheme && formData.redemptionUnit && selectedScheme.totalUnit != null && (
+                  {selectedScheme && formData.redemptionUnit && selectedScheme.totalUnit != null ? (
                     <p className="text-[10px] font-mono text-muted-foreground mt-1">
                       Redeeming <strong className="text-[hsl(var(--loss))]">{formData.redemptionUnit}</strong> out of <strong className="text-foreground">{selectedScheme.totalUnit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong> total units
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                      Leave blank to auto-calculate based on NAV date.
                     </p>
                   )}
                 </div>

@@ -1,6 +1,8 @@
 package com.urva.myfinance.coinTrack.mutualfund.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
@@ -8,6 +10,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 @Document(collection = "mf_lumpsum_transactions")
+@CompoundIndexes({
+    @CompoundIndex(name = "idx_lumpsum_user_scheme", def = "{'userId': 1, 'schemeId': 1}"),
+    @CompoundIndex(name = "idx_lumpsum_user_date", def = "{'userId': 1, 'investmentDate': -1}")
+})
 public class LumpsumTransaction {
     @Id
     private String id;

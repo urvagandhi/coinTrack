@@ -19,6 +19,7 @@ import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
 import com.urva.myfinance.coinTrack.mutualfund.model.SipMandate;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
+import com.urva.myfinance.coinTrack.mutualfund.service.SipContributionService;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SipMandateService - Comprehensive Tests")
@@ -26,6 +27,7 @@ class SipMandateServiceTest {
 
     @Mock private SipMandateRepository repository;
     @Mock private MfSchemeRepository schemeRepository;
+    @Mock private SipContributionService contributionService;
 
     @InjectMocks private SipMandateService service;
 

@@ -93,7 +93,7 @@ public class SipContributionService {
     public SipContribution createContribution(String userId, SipContribution contribution) {
         validateFkIntegrity(userId, contribution);
         contribution.setUserId(userId);
-        
+
         // Auto-populate debitedBank from Scheme if not explicitly set
         schemeRepository.findById(contribution.getSchemeId()).ifPresent(scheme -> {
             if (contribution.getDebitedBank() == null || contribution.getDebitedBank().trim().isEmpty()) {
@@ -149,7 +149,7 @@ public class SipContributionService {
 
         LocalDate startDate = mandate.getStartDate();
         LocalDate endDate = mandate.getEndDate() != null ? mandate.getEndDate() : LocalDate.now();
-        
+
         // Remove any future contributions if mandate has an end date
         if (mandate.getEndDate() != null) {
             repository.deleteBySipMandateIdAndContributionDateAfter(mandate.getId(), mandate.getEndDate());
@@ -168,7 +168,7 @@ public class SipContributionService {
         while (!currentMonth.isAfter(endMonth)) {
             int currentMonthLength = currentMonth.lengthOfMonth();
             int executionDay = Math.min(targetDay, currentMonthLength);
-            
+
             LocalDate contributionDate = currentMonth.atDay(executionDay);
 
             // Don't backfill in the future
@@ -191,9 +191,22 @@ public class SipContributionService {
                 contribution.setContributionDate(contributionDate);
                 contribution.setAmount(mandate.getAmount());
                 contribution.setDebitedBank(mandate.getBank());
-                
+
                 String monthYear = contributionDate.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
                 contribution.setRemarks(monthYear + " Installment");
+
+                schemeRepository.findById(mandate.getSchemeId()).ifPresent(scheme -> {
+                    if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().isEmpty()) {
+                        BigDecimal nav = mfNavService.fetchNavForDate(scheme.getAmfiCode(), contributionDate);
+                        if (nav != null) {
+                            contribution.setNavPrice(nav);
+                            if (contribution.getAmount() != null) {
+                                BigDecimal units = contribution.getAmount().divide(nav, 3, RoundingMode.HALF_UP);
+                                contribution.setTotalUnit(units);
+                            }
+                        }
+                    }
+                });
 
                 newContributions.add(contribution);
             }

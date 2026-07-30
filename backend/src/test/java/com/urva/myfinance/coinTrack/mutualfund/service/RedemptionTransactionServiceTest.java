@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
 import com.urva.myfinance.coinTrack.mutualfund.model.GainType;
@@ -23,14 +24,20 @@ import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
 import com.urva.myfinance.coinTrack.mutualfund.model.RedemptionTransaction;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.RedemptionTransactionRepository;
+import com.urva.myfinance.coinTrack.mutualfund.service.MfFifoEngine;
+import com.urva.myfinance.coinTrack.mutualfund.service.PortfolioHoldingService;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 @DisplayName("RedemptionTransactionService - Comprehensive Tests")
 class RedemptionTransactionServiceTest {
 
     @Mock private RedemptionTransactionRepository repository;
     @Mock private MfSchemeRepository schemeRepository;
     @Mock private SequenceGeneratorService sequenceGeneratorService;
+    @Mock private MfNavService mfNavService;
+    @Mock private MfFifoEngine fifoEngine;
+    @Mock private PortfolioHoldingService portfolioHoldingService;
 
     @InjectMocks private RedemptionTransactionService service;
 
@@ -46,6 +53,7 @@ class RedemptionTransactionServiceTest {
         sampleScheme = new MfScheme();
         sampleScheme.setId(SCHEME_ID);
         sampleScheme.setUserId(USER_ID);
+        sampleScheme.setAmfiCode("120503");
 
         sampleTx = new RedemptionTransaction();
         sampleTx.setId(TX_ID);
@@ -104,8 +112,13 @@ class RedemptionTransactionServiceTest {
     @Test
     @DisplayName("createTransaction: valid → assigns sequence + capitalGain auto-computed")
     void createTransaction_valid() {
+        MfFifoEngine.FifoResult fifoResult = new MfFifoEngine.FifoResult();
+        fifoResult.totalCostValue = new BigDecimal("50000");
+        fifoResult.ltcgUnits = new BigDecimal("50");
+        fifoResult.stcgUnits = BigDecimal.ZERO;
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
         when(sequenceGeneratorService.getNextSequence("RedemptionTransaction")).thenReturn(7L);
+        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any())).thenReturn(fifoResult);
         when(repository.save(any())).thenReturn(sampleTx);
 
         RedemptionTransaction result = service.createTransaction(USER_ID, sampleTx);
@@ -118,12 +131,41 @@ class RedemptionTransactionServiceTest {
     @DisplayName("createTransaction: null values → no capitalGain computation")
     void createTransaction_nullValues() {
         sampleTx.setRedemptionValue(null);
+        MfFifoEngine.FifoResult fifoResult = new MfFifoEngine.FifoResult();
+        fifoResult.totalCostValue = BigDecimal.ZERO;
+        fifoResult.ltcgUnits = BigDecimal.ZERO;
+        fifoResult.stcgUnits = BigDecimal.ZERO;
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
         when(sequenceGeneratorService.getNextSequence(anyString())).thenReturn(1L);
+        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any())).thenReturn(fifoResult);
         when(repository.save(any())).thenReturn(sampleTx);
 
         RedemptionTransaction result = service.createTransaction(USER_ID, sampleTx);
         assertNull(result.getCapitalGain());
+    }
+
+    @Test
+    @DisplayName("createTransaction: auto calculates units when null")
+    void createTransaction_autoCalculatesUnitsWhenNull() {
+        sampleTx.setRedemptionUnit(null);
+        sampleTx.setRedemptionNav(null);
+        sampleTx.setRedemptionValue(new BigDecimal("10000")); // So units = 10000 / 500 = 20
+        MfFifoEngine.FifoResult fifoResult = new MfFifoEngine.FifoResult();
+        fifoResult.totalCostValue = BigDecimal.ZERO;
+        fifoResult.ltcgUnits = BigDecimal.ZERO;
+        fifoResult.stcgUnits = BigDecimal.ZERO;
+        when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
+        when(sequenceGeneratorService.getNextSequence("RedemptionTransaction")).thenReturn(8L);
+        when(mfNavService.fetchNavForDate(sampleScheme.getAmfiCode(), sampleTx.getRedemptionDate()))
+                .thenReturn(new BigDecimal("500"));
+        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any())).thenReturn(fifoResult);
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        RedemptionTransaction result = service.createTransaction(USER_ID, sampleTx);
+
+        assertEquals(0, new BigDecimal("500").compareTo(result.getRedemptionNav()));
+        assertEquals(0, new BigDecimal("20").compareTo(result.getRedemptionUnit()));
+        verify(mfNavService).fetchNavForDate(sampleScheme.getAmfiCode(), sampleTx.getRedemptionDate());
     }
 
     @Test

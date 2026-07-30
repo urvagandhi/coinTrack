@@ -7,6 +7,7 @@ import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -22,6 +23,8 @@ public class RedemptionTransactionService {
     private SequenceGeneratorService sequenceGeneratorService;
     @Autowired
     private PortfolioHoldingService portfolioHoldingService;
+    @Autowired
+    private MfNavService mfNavService;
 
     /**
      * Validates that the schemeId belongs to the given userId.
@@ -67,6 +70,20 @@ public class RedemptionTransactionService {
         transaction.setUserId(userId);
         transaction.setTransactionNo(
                 sequenceGeneratorService.getNextSequence(RedemptionTransaction.class.getSimpleName()));
+
+        schemeRepository.findById(transaction.getSchemeId()).ifPresent(scheme -> {
+            if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().isEmpty()) {
+                BigDecimal nav = mfNavService.fetchNavForDate(scheme.getAmfiCode(), transaction.getRedemptionDate());
+                if (nav != null) {
+                    transaction.setRedemptionNav(nav);
+                    if (transaction.getRedemptionUnit() == null && transaction.getRedemptionValue() != null) {
+                        BigDecimal units = transaction.getRedemptionValue().divide(nav, 3,
+                                java.math.RoundingMode.HALF_UP);
+                        transaction.setRedemptionUnit(units);
+                    }
+                }
+            }
+        });
 
         MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(userId, transaction.getSchemeId(),
                 transaction.getRedemptionDate(), transaction.getRedemptionUnit());

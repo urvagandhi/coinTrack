@@ -2,10 +2,18 @@ package com.urva.myfinance.coinTrack.mutualfund.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.TimeSeries;
+import org.springframework.data.mongodb.core.timeseries.Granularity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+/**
+ * Time-Series collection: MongoDB uses columnar compression for this data.
+ * Each daily snapshot is a time-series measurement keyed by (userId + platform).
+ * Granularity.HOURS is suitable for daily snapshots.
+ */
+@TimeSeries(timeField = "snapshotDate", metaField = "userId", granularity = Granularity.HOURS)
 @Document(collection = "mf_valuation_snapshots")
 public class ValuationSnapshot {
     @Id

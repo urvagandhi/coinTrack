@@ -1,12 +1,18 @@
 package com.urva.myfinance.coinTrack.mutualfund.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Document(collection = "mf_sip_contributions")
+@CompoundIndexes({
+    @CompoundIndex(name = "idx_contrib_user_scheme", def = "{'userId': 1, 'schemeId': 1}"),
+    @CompoundIndex(name = "idx_contrib_mandate", def = "{'sipMandateId': 1, 'contributionDate': -1}")
+})
 public class SipContribution {
     @Id
     private String id;

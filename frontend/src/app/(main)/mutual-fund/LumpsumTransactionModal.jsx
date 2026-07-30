@@ -247,6 +247,9 @@ export default function LumpsumTransactionModal({ isOpen, onClose, onSuccess, sc
                     onChange={handleChange}
                     className="ed-input w-full font-mono"
                   />
+                  <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                    Leave blank to auto-calculate based on NAV date.
+                  </p>
                 </div>
               </div>
             </div>

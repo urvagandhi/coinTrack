@@ -25,6 +25,7 @@ import com.urva.myfinance.coinTrack.mutualfund.model.LumpsumTransaction;
 import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
 import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
+import com.urva.myfinance.coinTrack.mutualfund.service.PortfolioHoldingService;
 
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +35,8 @@ class LumpsumTransactionServiceTest {
     @Mock private LumpsumTransactionRepository repository;
     @Mock private MfSchemeRepository schemeRepository;
     @Mock private SequenceGeneratorService sequenceGeneratorService;
+    @Mock private MfNavService mfNavService;
+    @Mock private PortfolioHoldingService portfolioHoldingService;
 
     @InjectMocks private LumpsumTransactionService service;
 
@@ -49,6 +52,7 @@ class LumpsumTransactionServiceTest {
         sampleScheme = new MfScheme();
         sampleScheme.setId(SCHEME_ID);
         sampleScheme.setUserId(USER_ID);
+        sampleScheme.setAmfiCode("120503");
 
         sampleTx = new LumpsumTransaction();
         sampleTx.setId(TX_ID);
@@ -122,6 +126,24 @@ class LumpsumTransactionServiceTest {
         assertNotNull(result.getCreatedAt());
         assertNotNull(result.getUpdatedAt());
         assertEquals(USER_ID, result.getUserId());
+    }
+
+    @Test
+    @DisplayName("createTransaction: auto calculates units when null")
+    void createTransaction_autoCalculatesUnitsWhenNull() {
+        sampleTx.setTotalUnit(null);
+        sampleTx.setNavPrice(null);
+        when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
+        when(sequenceGeneratorService.getNextSequence("LumpsumTransaction")).thenReturn(43L);
+        when(mfNavService.fetchNavForDate(sampleScheme.getAmfiCode(), sampleTx.getInvestmentDate()))
+                .thenReturn(new BigDecimal("500"));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        LumpsumTransaction result = service.createTransaction(USER_ID, sampleTx);
+        
+        assertEquals(0, new BigDecimal("500").compareTo(result.getNavPrice()));
+        assertEquals(0, new BigDecimal("100").compareTo(result.getTotalUnit()));
+        verify(mfNavService).fetchNavForDate(sampleScheme.getAmfiCode(), sampleTx.getInvestmentDate());
     }
 
     @Test

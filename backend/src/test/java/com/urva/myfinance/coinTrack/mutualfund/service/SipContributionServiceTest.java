@@ -50,6 +50,7 @@ class SipContributionServiceTest {
         sampleScheme = new MfScheme();
         sampleScheme.setId(SCHEME_ID);
         sampleScheme.setUserId(USER_ID);
+        sampleScheme.setAmfiCode("120503");
 
         sampleMandate = new SipMandate();
         sampleMandate.setId(MANDATE_ID);
@@ -135,6 +136,25 @@ class SipContributionServiceTest {
 
         SipContribution result = service.createContribution(USER_ID, sampleContribution);
         assertNotNull(result);
+    }
+
+    @Test
+    @DisplayName("createContribution: auto calculates units when null")
+    void createContribution_autoCalculatesUnitsWhenNull() {
+        sampleContribution.setTotalUnit(null);
+        sampleContribution.setNavPrice(null);
+        sampleContribution.setAmount(new BigDecimal("10000")); // amount = 10000 / 500 = 20
+        when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
+        when(sipMandateRepository.findById(MANDATE_ID)).thenReturn(Optional.of(sampleMandate));
+        when(mfNavService.fetchNavForDate(sampleScheme.getAmfiCode(), sampleContribution.getContributionDate()))
+                .thenReturn(new BigDecimal("500"));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        SipContribution result = service.createContribution(USER_ID, sampleContribution);
+
+        assertEquals(0, new BigDecimal("500").compareTo(result.getNavPrice()));
+        assertEquals(0, new BigDecimal("20").compareTo(result.getTotalUnit()));
+        verify(mfNavService).fetchNavForDate(sampleScheme.getAmfiCode(), sampleContribution.getContributionDate());
     }
 
     @Test
