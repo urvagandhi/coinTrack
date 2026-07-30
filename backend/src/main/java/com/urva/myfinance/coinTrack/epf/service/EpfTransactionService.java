@@ -9,19 +9,18 @@ import com.urva.myfinance.coinTrack.epf.dto.request.EpfSettingsRequestDTO;
 import com.urva.myfinance.coinTrack.epf.dto.request.EpfTransactionRequestDTO;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfSummaryDTO;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfTransactionResponseDTO;
+import com.urva.myfinance.coinTrack.epf.dto.response.EpfSettingsResponseDTO;
 import com.urva.myfinance.coinTrack.epf.model.ContributionMode;
-import com.urva.myfinance.coinTrack.epf.model.EpfInterestRate;
-import com.urva.myfinance.coinTrack.epf.model.EpfSettings;
+import com.urva.myfinance.coinTrack.epf.config.EpfInterestRateConfig;
 
 public interface EpfTransactionService {
 
     // Settings
-    EpfSettings getSettings(String userId);
-    EpfSettings updateSettings(EpfSettingsRequestDTO requestDTO, String userId);
+    EpfSettingsResponseDTO getSettings(String userId);
+    EpfSettingsResponseDTO updateSettings(EpfSettingsRequestDTO requestDTO, String userId);
 
     // Interest Rates
-    List<EpfInterestRate> getAllInterestRates();
-    EpfInterestRate saveInterestRate(EpfInterestRateRequestDTO requestDTO);
+    List<EpfInterestRateConfig.InterestRate> getAllInterestRates();
 
     // Transactions
     EpfTransactionResponseDTO createTransaction(EpfTransactionRequestDTO requestDTO, String userId);

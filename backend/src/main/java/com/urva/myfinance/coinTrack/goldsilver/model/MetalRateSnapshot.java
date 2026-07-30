@@ -5,12 +5,20 @@ import java.time.Instant;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.TimeSeries;
+import org.springframework.data.mongodb.core.timeseries.Granularity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Time-Series collection for historical gold/silver spot prices.
+ * MongoDB columnar compression dramatically reduces storage for this
+ * append-only feed that grows daily.
+ */
+@TimeSeries(timeField = "fetchedAt", metaField = "metalType", granularity = Granularity.HOURS)
 @Document(collection = "metal_rate_snapshots")
 @Data
 @NoArgsConstructor

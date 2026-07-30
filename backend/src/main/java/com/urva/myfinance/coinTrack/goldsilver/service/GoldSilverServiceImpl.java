@@ -40,7 +40,7 @@ import com.urva.myfinance.coinTrack.goldsilver.model.PurityOption;
 import com.urva.myfinance.coinTrack.goldsilver.model.RateSource;
 import com.urva.myfinance.coinTrack.goldsilver.repository.GoldSilverInvestmentRepository;
 import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSnapshotRepository;
-import com.urva.myfinance.coinTrack.goldsilver.repository.PurityOptionRepository;
+import java.util.List;
 
 @Service
 public class GoldSilverServiceImpl implements GoldSilverService {
@@ -51,7 +51,7 @@ public class GoldSilverServiceImpl implements GoldSilverService {
     private final SequenceGeneratorService sequenceGeneratorService;
     private final MongoTemplate mongoTemplate;
     private final GoldSilverCalculationService calculationService;
-    private final PurityOptionRepository purityOptionRepository;
+    private final List<PurityOption> defaultPurityOptions;
     private final MetalRateSnapshotRepository snapshotRepository;
 
     @Autowired
@@ -60,13 +60,13 @@ public class GoldSilverServiceImpl implements GoldSilverService {
             SequenceGeneratorService sequenceGeneratorService,
             MongoTemplate mongoTemplate,
             GoldSilverCalculationService calculationService,
-            PurityOptionRepository purityOptionRepository,
+            List<PurityOption> defaultPurityOptions,
             MetalRateSnapshotRepository snapshotRepository) {
         this.repository = repository;
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.mongoTemplate = mongoTemplate;
         this.calculationService = calculationService;
-        this.purityOptionRepository = purityOptionRepository;
+        this.defaultPurityOptions = defaultPurityOptions;
         this.snapshotRepository = snapshotRepository;
     }
 
@@ -329,7 +329,9 @@ public class GoldSilverServiceImpl implements GoldSilverService {
         String purityText = requestDTO.getPurity();
 
         if (optionId != null && !optionId.trim().isEmpty()) {
-            Optional<PurityOption> opt = purityOptionRepository.findById(optionId);
+            Optional<PurityOption> opt = defaultPurityOptions.stream()
+                .filter(p -> p.getId().equals(optionId))
+                .findFirst();
             if (opt.isPresent()) {
                 PurityOption po = opt.get();
                 investment.setPurityOptionId(po.getId());
@@ -338,7 +340,9 @@ public class GoldSilverServiceImpl implements GoldSilverService {
                 investment.setPurity(po.getLabel());
             }
         } else if (purityText != null && !purityText.trim().isEmpty()) {
-            Optional<PurityOption> opt = purityOptionRepository.findByLabelIgnoreCase(purityText.trim());
+            Optional<PurityOption> opt = defaultPurityOptions.stream()
+                .filter(p -> p.getLabel().equalsIgnoreCase(purityText.trim()))
+                .findFirst();
             if (opt.isPresent()) {
                 PurityOption po = opt.get();
                 investment.setPurityOptionId(po.getId());

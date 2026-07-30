@@ -17,23 +17,22 @@ import org.springframework.stereotype.Service;
 
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.util.FinancialYearUtil;
-import com.urva.myfinance.coinTrack.epf.model.EpfInterestRate;
+import com.urva.myfinance.coinTrack.epf.config.EpfInterestRateConfig;
 import com.urva.myfinance.coinTrack.epf.model.EpfTransaction;
-import com.urva.myfinance.coinTrack.epf.repository.EpfInterestRateRepository;
 
 @Service
 public class EpfInterestAccrualService {
 
     private static final Logger logger = LoggerFactory.getLogger(EpfInterestAccrualService.class);
 
-    private final EpfInterestRateRepository epfInterestRateRepository;
+    private final EpfInterestRateConfig epfInterestRateConfig;
     private final MongoTemplate mongoTemplate;
 
     @Autowired
     public EpfInterestAccrualService(
-            EpfInterestRateRepository epfInterestRateRepository,
+            EpfInterestRateConfig epfInterestRateConfig,
             MongoTemplate mongoTemplate) {
-        this.epfInterestRateRepository = epfInterestRateRepository;
+        this.epfInterestRateConfig = epfInterestRateConfig;
         this.mongoTemplate = mongoTemplate;
     }
 
@@ -41,11 +40,19 @@ public class EpfInterestAccrualService {
         logger.debug("Calculating EPF/EPS interest accrual for user: {}, FY: {}", userId, financialYear);
 
         // 1. Get the annual rate for this FY
-        EpfInterestRate interestRate = epfInterestRateRepository.findByFinancialYear(financialYear)
-                .orElseThrow(() -> new DomainException(
-                        "Interest rate not configured for financial year: " + financialYear,
-                        "RATE_NOT_FOUND",
-                        400));
+        EpfInterestRateConfig.InterestRate interestRate = null;
+        if (epfInterestRateConfig.getInterestRates() != null) {
+            interestRate = epfInterestRateConfig.getInterestRates().stream()
+                    .filter(r -> r.getFinancialYear().equals(financialYear))
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (interestRate == null) {
+            throw new DomainException(
+                    "Interest rate not configured for financial year: " + financialYear,
+                    "RATE_NOT_FOUND",
+                    400);
+        }
 
         BigDecimal annualRate = interestRate.getRatePercent();
 

@@ -922,10 +922,6 @@ export const epfAPI = {
         const { data } = await api.get(endpoints.epf.interestRates);
         return unwrapResponse(data) || [];
     },
-    saveInterestRate: async (rateData) => {
-        const { data } = await api.post(endpoints.epf.interestRates, rateData);
-        return unwrapResponse(data);
-    },
     exportCSV: async (params = {}) => {
         const searchParams = new URLSearchParams();
         Object.entries(params).forEach(([key, value]) => {
@@ -1013,10 +1009,6 @@ export const goldSilverAPI = {
         const qs = metalType ? `?metalType=${metalType}` : '';
         const { data } = await api.get(`${endpoints.goldSilver.purityOptions}${qs}`);
         return unwrapResponse(data) || [];
-    },
-    createPurityOption: async (optionData) => {
-        const { data } = await api.post(endpoints.goldSilver.purityOptions, optionData);
-        return unwrapResponse(data);
     },
     exportCSV: async (params = {}) => {
         const searchParams = new URLSearchParams();

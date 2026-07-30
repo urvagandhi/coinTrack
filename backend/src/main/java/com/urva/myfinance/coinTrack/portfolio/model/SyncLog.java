@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.urva.myfinance.coinTrack.broker.model.Broker;
@@ -23,6 +24,8 @@ public class SyncLog {
     @Id
     private String id;
 
+    /** TTL: MongoDB auto-deletes sync logs older than 14 days. */
+    @Indexed(expireAfter = "14d")
     private LocalDateTime timestamp;
 
     private String userId;

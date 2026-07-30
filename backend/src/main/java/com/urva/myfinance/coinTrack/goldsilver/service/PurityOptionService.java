@@ -7,5 +7,5 @@ import com.urva.myfinance.coinTrack.goldsilver.model.MetalType;
 
 public interface PurityOptionService {
     List<PurityOptionDTO> getPurityOptions(MetalType metalType);
-    PurityOptionDTO createCustomPurityOption(PurityOptionDTO dto);
+
 }

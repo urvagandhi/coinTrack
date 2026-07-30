@@ -196,11 +196,6 @@ export default function EpfPage() {
         onSuccess: () => { invalidate(); },
         onError: onErr,
     });
-    const saveRateMutation = useMutation({
-        mutationFn: epfAPI.saveInterestRate,
-        onSuccess: () => { invalidate(); },
-        onError: onErr,
-    });
 
     const handleSaveTxn = async (txn) => {
         if (editingTxn && editingTxn.id) {
@@ -1065,9 +1060,6 @@ export default function EpfPage() {
                 isOpen={isRatesOpen}
                 onClose={() => setIsRatesOpen(false)}
                 rates={ratesData}
-                onSaveRate={async (data) => {
-                    await saveRateMutation.mutateAsync(data);
-                }}
             />
         </div>
     );

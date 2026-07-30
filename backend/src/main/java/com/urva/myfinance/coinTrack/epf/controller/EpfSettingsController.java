@@ -21,9 +21,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.epf.dto.request.EpfInterestRateRequestDTO;
 import com.urva.myfinance.coinTrack.epf.dto.request.EpfSettingsRequestDTO;
-import com.urva.myfinance.coinTrack.epf.model.EpfInterestRate;
-import com.urva.myfinance.coinTrack.epf.model.EpfSettings;
+import com.urva.myfinance.coinTrack.epf.dto.response.EpfSettingsResponseDTO;
 import com.urva.myfinance.coinTrack.epf.service.EpfTransactionService;
+import com.urva.myfinance.coinTrack.epf.config.EpfInterestRateConfig;
 
 import jakarta.validation.Valid;
 
@@ -43,36 +43,29 @@ public class EpfSettingsController {
 
     @Operation(summary = "Get user EPF settings")
     @GetMapping("/settings")
-    public ResponseEntity<ApiResponse<EpfSettings>> getSettings(@AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<ApiResponse<EpfSettingsResponseDTO>> getSettings(@AuthenticationPrincipal UserPrincipal principal) {
         logger.debug("Fetching EPF settings for user: {}", principal.getUsername());
-        EpfSettings settings = epfTransactionService.getSettings(principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(settings));
+        EpfSettingsResponseDTO settings = epfTransactionService.getSettings(principal.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(settings, "EPF settings retrieved successfully"));
     }
 
     @Operation(summary = "Update user EPF settings")
     @PutMapping("/settings")
-    public ResponseEntity<ApiResponse<EpfSettings>> updateSettings(
+    public ResponseEntity<ApiResponse<EpfSettingsResponseDTO>> updateSettings(
             @Valid @RequestBody EpfSettingsRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal principal) {
         logger.info("Updating EPF settings for user: {}", principal.getUsername());
-        EpfSettings updated = epfTransactionService.updateSettings(requestDTO, principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(updated));
+        EpfSettingsResponseDTO updated = epfTransactionService.updateSettings(requestDTO, principal.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(updated, "EPF settings updated successfully"));
     }
 
     @Operation(summary = "Get user-maintained FY EPF interest rates")
     @GetMapping("/interest-rates")
-    public ResponseEntity<ApiResponse<List<EpfInterestRate>>> getInterestRates() {
+    public ResponseEntity<ApiResponse<List<EpfInterestRateConfig.InterestRate>>> getInterestRates() {
         logger.debug("Fetching EPF interest rates");
-        List<EpfInterestRate> rates = epfTransactionService.getAllInterestRates();
+        List<EpfInterestRateConfig.InterestRate> rates = epfTransactionService.getAllInterestRates();
         return ResponseEntity.ok(ApiResponse.success(rates));
     }
 
-    @Operation(summary = "Add or update FY EPF interest rate entry")
-    @PostMapping("/interest-rates")
-    public ResponseEntity<ApiResponse<EpfInterestRate>> saveInterestRate(
-            @Valid @RequestBody EpfInterestRateRequestDTO requestDTO) {
-        logger.info("Saving EPF interest rate for FY: {}", requestDTO.getFinancialYear());
-        EpfInterestRate saved = epfTransactionService.saveInterestRate(requestDTO);
-        return ResponseEntity.ok(ApiResponse.success(saved));
-    }
+    // Interest rate saving is no longer supported via API as it is managed via configuration
 }

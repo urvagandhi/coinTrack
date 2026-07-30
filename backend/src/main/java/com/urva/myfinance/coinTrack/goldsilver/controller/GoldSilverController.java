@@ -209,14 +209,6 @@ public class GoldSilverController {
         return ResponseEntity.ok(ApiResponse.success(options, "Fetched purity options successfully"));
     }
 
-    @PostMapping("/purity-options")
-    public ResponseEntity<ApiResponse<PurityOptionDTO>> createPurityOption(
-            @Valid @RequestBody PurityOptionDTO optionDTO) {
-        logger.info("Creating custom purity option");
-        PurityOptionDTO created = purityOptionService.createCustomPurityOption(optionDTO);
-        return ResponseEntity.ok(ApiResponse.success(created, "Custom purity option created successfully"));
-    }
-
     @GetMapping("/export")
     public ResponseEntity<byte[]> export(
             @AuthenticationPrincipal UserPrincipal currentUser,

@@ -90,4 +90,24 @@ public class User {
 
     @JsonIgnore
     private String googleId;
+
+    // ── Embedded Settings (replaces 3 separate collections) ─────────
+
+    /**
+     * User's EPF configuration — embedded to avoid a separate epf_settings collection.
+     * Null until the user sets up their EPF for the first time.
+     */
+    private EpfSettingsEmbed epfSettings;
+
+    /**
+     * User's PPF account info — embedded to avoid a separate ppf_settings collection.
+     * Null until the user sets up their PPF for the first time.
+     */
+    private PpfSettingsEmbed ppfSettings;
+
+    /**
+     * User's local gold/silver premium config — embedded to avoid a separate
+     * metal_rate_settings collection. Null until the user customizes rates.
+     */
+    private MetalRateSettingsEmbed metalRateSettings;
 }

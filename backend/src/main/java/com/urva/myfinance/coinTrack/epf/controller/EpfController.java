@@ -29,8 +29,7 @@ import com.urva.myfinance.coinTrack.epf.dto.request.EpfTransactionRequestDTO;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfSummaryDTO;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfTransactionResponseDTO;
 import com.urva.myfinance.coinTrack.epf.model.ContributionMode;
-import com.urva.myfinance.coinTrack.epf.model.EpfInterestRate;
-import com.urva.myfinance.coinTrack.epf.repository.EpfInterestRateRepository;
+import com.urva.myfinance.coinTrack.epf.config.EpfInterestRateConfig;
 import com.urva.myfinance.coinTrack.epf.service.EpfTransactionService;
 
 import jakarta.validation.Valid;
@@ -43,13 +42,13 @@ public class EpfController {
     private static final Logger logger = LoggerFactory.getLogger(EpfController.class);
 
     private final EpfTransactionService epfTransactionService;
-    private final EpfInterestRateRepository epfInterestRateRepository;
+    private final EpfInterestRateConfig epfInterestRateConfig;
 
     @Autowired
     public EpfController(EpfTransactionService epfTransactionService,
-            EpfInterestRateRepository epfInterestRateRepository) {
+            EpfInterestRateConfig epfInterestRateConfig) {
         this.epfTransactionService = epfTransactionService;
-        this.epfInterestRateRepository = epfInterestRateRepository;
+        this.epfInterestRateConfig = epfInterestRateConfig;
     }
 
     @Operation(summary = "Create a new EPF transaction")
@@ -102,7 +101,7 @@ public class EpfController {
         logger.info("Exporting EPF transactions to Excel for user: {}", principal.getUserId());
         List<EpfTransactionResponseDTO> list = epfTransactionService.getAllForExport(
                 principal.getUserId(), dateFrom, dateTo, financialYear, mode, sortBy, sortDir);
-        List<EpfInterestRate> rates = epfInterestRateRepository.findAll();
+        List<EpfInterestRateConfig.InterestRate> rates = epfInterestRateConfig.getInterestRates();
         EpfSummaryDTO summary = epfTransactionService.getSummary(principal.getUserId());
         return EpfExcelExporter.export(list, rates, summary);
     }

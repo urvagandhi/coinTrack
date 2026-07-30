@@ -46,14 +46,13 @@ import com.urva.myfinance.coinTrack.goldsilver.model.PurityOption;
 import com.urva.myfinance.coinTrack.goldsilver.model.RateSource;
 import com.urva.myfinance.coinTrack.goldsilver.repository.GoldSilverInvestmentRepository;
 import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSnapshotRepository;
-import com.urva.myfinance.coinTrack.goldsilver.repository.PurityOptionRepository;
+
 
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GoldSilverServiceImpl - Comprehensive Tests")
 class GoldSilverServiceImplTest {
 
-    @InjectMocks
     private GoldSilverServiceImpl service;
 
     @Mock
@@ -68,8 +67,7 @@ class GoldSilverServiceImplTest {
     @Mock
     private GoldSilverCalculationService calculationService;
 
-    @Mock
-    private PurityOptionRepository purityOptionRepository;
+    private List<PurityOption> defaultPurityOptions;
 
     @Mock
     private MetalRateSnapshotRepository snapshotRepository;
@@ -82,6 +80,12 @@ class GoldSilverServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        defaultPurityOptions = new java.util.ArrayList<>();
+        service = new GoldSilverServiceImpl(
+                repository, sequenceGeneratorService, mongoTemplate,
+                calculationService, defaultPurityOptions, snapshotRepository
+        );
+
         baseRequest = GoldSilverRequestDTO.builder()
                 .purchaseDate(LocalDate.of(2025, 1, 15))
                 .purchasedFrom("Jeweller A")
@@ -281,7 +285,7 @@ class GoldSilverServiceImplTest {
                     .purityFactor(new BigDecimal("0.916"))
                     .isSystemDefault(true)
                     .build();
-            when(purityOptionRepository.findById("po-1")).thenReturn(Optional.of(po));
+            defaultPurityOptions.add(po);
             when(sequenceGeneratorService.getNextSequence("gs_item_no")).thenReturn(1L);
             when(snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD))
                     .thenReturn(Optional.of(buildSnapshot(MetalType.GOLD, new BigDecimal("6800.00"))));
@@ -305,13 +309,13 @@ class GoldSilverServiceImplTest {
             GoldSilverResponseDTO result = service.addInvestment(request, USER_ID);
 
             assertNotNull(result);
-            verify(purityOptionRepository).findById("po-1");
+
         }
 
         @Test
         @DisplayName("unknown purityOptionId falls through, no purity set")
         void unknownPurityOptionId_fallsThrough() {
-            when(purityOptionRepository.findById("unknown-id")).thenReturn(Optional.empty());
+
             when(sequenceGeneratorService.getNextSequence("gs_item_no")).thenReturn(1L);
             when(snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD))
                     .thenReturn(Optional.of(buildSnapshot(MetalType.GOLD, new BigDecimal("6800.00"))));
@@ -335,14 +339,14 @@ class GoldSilverServiceImplTest {
             GoldSilverResponseDTO result = service.addInvestment(request, USER_ID);
 
             assertNotNull(result);
-            verify(purityOptionRepository).findById("unknown-id");
+
         }
 
         @Test
         @DisplayName("purity text 22K derives factor 0.916")
         void purityText22K_derivesFactor() {
             when(sequenceGeneratorService.getNextSequence("gs_item_no")).thenReturn(1L);
-            when(purityOptionRepository.findByLabelIgnoreCase("22K")).thenReturn(Optional.empty());
+
             when(snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD))
                     .thenReturn(Optional.of(buildSnapshot(MetalType.GOLD, new BigDecimal("6800.00"))));
             when(repository.save(any())).thenAnswer(inv -> {
@@ -371,7 +375,7 @@ class GoldSilverServiceImplTest {
         @DisplayName("purity text 24K derives factor 0.999")
         void purityText24K_derivesFactor() {
             when(sequenceGeneratorService.getNextSequence("gs_item_no")).thenReturn(1L);
-            when(purityOptionRepository.findByLabelIgnoreCase("24K")).thenReturn(Optional.empty());
+
             when(snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD))
                     .thenReturn(Optional.of(buildSnapshot(MetalType.GOLD, new BigDecimal("6800.00"))));
             when(repository.save(any())).thenAnswer(inv -> {
@@ -400,7 +404,7 @@ class GoldSilverServiceImplTest {
         @DisplayName("purity text 925 derives factor 0.925")
         void purityText925_derivesFactor() {
             when(sequenceGeneratorService.getNextSequence("gs_item_no")).thenReturn(1L);
-            when(purityOptionRepository.findByLabelIgnoreCase("925")).thenReturn(Optional.empty());
+
             when(snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.SILVER))
                     .thenReturn(Optional.of(buildSnapshot(MetalType.SILVER, new BigDecimal("80.00"))));
             when(repository.save(any())).thenAnswer(inv -> {
@@ -429,7 +433,7 @@ class GoldSilverServiceImplTest {
         @DisplayName("purity text 18K derives factor 0.750")
         void purityText18K_derivesFactor() {
             when(sequenceGeneratorService.getNextSequence("gs_item_no")).thenReturn(1L);
-            when(purityOptionRepository.findByLabelIgnoreCase("18K")).thenReturn(Optional.empty());
+
             when(snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD))
                     .thenReturn(Optional.of(buildSnapshot(MetalType.GOLD, new BigDecimal("6800.00"))));
             when(repository.save(any())).thenAnswer(inv -> {
@@ -464,7 +468,7 @@ class GoldSilverServiceImplTest {
                     .purityFactor(new BigDecimal("0.999"))
                     .isSystemDefault(true)
                     .build();
-            when(purityOptionRepository.findByLabelIgnoreCase("24K (999)")).thenReturn(Optional.of(po));
+            defaultPurityOptions.add(po);
             when(sequenceGeneratorService.getNextSequence("gs_item_no")).thenReturn(1L);
             when(snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD))
                     .thenReturn(Optional.of(buildSnapshot(MetalType.GOLD, new BigDecimal("6800.00"))));
@@ -488,7 +492,7 @@ class GoldSilverServiceImplTest {
             GoldSilverResponseDTO result = service.addInvestment(request, USER_ID);
 
             assertNotNull(result);
-            verify(purityOptionRepository).findByLabelIgnoreCase("24K (999)");
+
         }
 
         @Test

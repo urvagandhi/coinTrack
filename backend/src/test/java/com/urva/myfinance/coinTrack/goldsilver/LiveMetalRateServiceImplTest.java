@@ -26,9 +26,9 @@ import com.urva.myfinance.coinTrack.goldsilver.model.MetalType;
 import com.urva.myfinance.coinTrack.goldsilver.model.PurityOption;
 import com.urva.myfinance.coinTrack.goldsilver.model.RateSource;
 import com.urva.myfinance.coinTrack.goldsilver.repository.GoldSilverInvestmentRepository;
-import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSettingsRepository;
+import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSnapshotRepository;
-import com.urva.myfinance.coinTrack.goldsilver.repository.PurityOptionRepository;
+import com.urva.myfinance.coinTrack.goldsilver.model.PurityOption;
 import com.urva.myfinance.coinTrack.goldsilver.service.GoldSilverCalculationService;
 import com.urva.myfinance.coinTrack.goldsilver.service.GoldApiUsageService;
 import com.urva.myfinance.coinTrack.goldsilver.service.LiveMetalRateServiceImpl;
@@ -49,10 +49,9 @@ class LiveMetalRateServiceImplTest {
     private MetalRateSnapshotRepository snapshotRepository;
 
     @Mock
-    private MetalRateSettingsRepository settingsRepository;
+    private UserRepository userRepository;
 
-    @Mock
-    private PurityOptionRepository purityOptionRepository;
+    private List<PurityOption> defaultPurityOptions;
 
     @Mock
     private GoldSilverInvestmentRepository investmentRepository;
@@ -68,12 +67,15 @@ class LiveMetalRateServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        defaultPurityOptions = List.of(
+            PurityOption.builder().id("gold-24k").metalType(MetalType.GOLD).label("24K (999)").purityFactor(new java.math.BigDecimal("0.999")).isSystemDefault(true).build()
+        );
         calculationService = new GoldSilverCalculationService();
         service = new LiveMetalRateServiceImpl(
                 metalPriceProvider,
                 snapshotRepository,
-                settingsRepository,
-                purityOptionRepository,
+                userRepository,
+                defaultPurityOptions,
                 investmentRepository,
                 calculationService,
                 goldApiUsageService,
@@ -103,7 +105,7 @@ class LiveMetalRateServiceImplTest {
 
         when(metalPriceProvider.fetchSpotRate(MetalType.GOLD)).thenReturn(fetchedGold);
         when(metalPriceProvider.fetchSpotRate(MetalType.SILVER)).thenReturn(fetchedSilver);
-        when(settingsRepository.findAll()).thenReturn(List.of());
+
         when(snapshotRepository.save(any(MetalRateSnapshot.class))).thenAnswer(i -> i.getArgument(0));
 
         List<MetalRateSnapshotDTO> dtos = service.fetchAndCacheRates();
@@ -119,7 +121,7 @@ class LiveMetalRateServiceImplTest {
     @DisplayName("Should handle provider fetch failure by creating stale snapshot fallback")
     void testFetchFailureStaleFallback() {
         when(metalPriceProvider.fetchSpotRate(MetalType.GOLD)).thenThrow(new MetalRateFetchException("API quota exceeded"));
-        when(settingsRepository.findAll()).thenReturn(List.of());
+
 
         MetalRateSnapshot cachedSnapshot = MetalRateSnapshot.builder()
                 .id("snap1")

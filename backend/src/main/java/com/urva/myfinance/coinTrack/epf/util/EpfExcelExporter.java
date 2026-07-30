@@ -17,7 +17,7 @@ import org.springframework.http.ResponseEntity;
 import com.urva.myfinance.coinTrack.common.util.ExcelExportUtil;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfTransactionResponseDTO;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfSummaryDTO;
-import com.urva.myfinance.coinTrack.epf.model.EpfInterestRate;
+import com.urva.myfinance.coinTrack.epf.config.EpfInterestRateConfig;
 
 public class EpfExcelExporter {
 
@@ -79,12 +79,12 @@ public class EpfExcelExporter {
     }
 
     public static ResponseEntity<byte[]> export(List<EpfTransactionResponseDTO> transactions,
-            List<EpfInterestRate> rates) {
+            List<EpfInterestRateConfig.InterestRate> rates) {
         return export(transactions, rates, null);
     }
 
     public static ResponseEntity<byte[]> export(List<EpfTransactionResponseDTO> transactions,
-            List<EpfInterestRate> rates, EpfSummaryDTO summary) {
+            List<EpfInterestRateConfig.InterestRate> rates, EpfSummaryDTO summary) {
         try (Workbook workbook = new XSSFWorkbook();
                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
@@ -159,7 +159,7 @@ public class EpfExcelExporter {
 
                         double yearRate = 8.25;
                         if (rates != null) {
-                            for (EpfInterestRate r : rates) {
+                            for (EpfInterestRateConfig.InterestRate r : rates) {
                                 if (yearFY.equals(r.getFinancialYear())) {
                                     if (r.getRatePercent() != null) {
                                         yearRate = r.getRatePercent().doubleValue();
@@ -383,7 +383,7 @@ public class EpfExcelExporter {
     }
 
     private static void createFySheet(Workbook workbook, String fy, List<EpfTransactionResponseDTO> fyList,
-            List<EpfInterestRate> rates, Map<String, YearBalanceSummary> yearBalances,
+            List<EpfInterestRateConfig.InterestRate> rates, Map<String, YearBalanceSummary> yearBalances,
             CellStyle headerStyle, CellStyle dataStyle, CellStyle rightAlignStyle, CellStyle boldStyle,
             CellStyle currencyStyle, CellStyle percentStyle) {
         Sheet sheet = workbook.createSheet(fy);
@@ -426,7 +426,7 @@ public class EpfExcelExporter {
 
         double activeRate = 8.25;
         if (rates != null) {
-            for (EpfInterestRate r : rates) {
+            for (EpfInterestRateConfig.InterestRate r : rates) {
                 if (fy.equals(r.getFinancialYear())) {
                     if (r.getRatePercent() != null) {
                         activeRate = r.getRatePercent().doubleValue();

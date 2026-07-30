@@ -10,27 +10,29 @@ import org.springframework.stereotype.Service;
 import com.urva.myfinance.coinTrack.common.util.FinancialYearUtil;
 import com.urva.myfinance.coinTrack.ppf.dto.response.PpfWithdrawalStatusDTO;
 import com.urva.myfinance.coinTrack.ppf.model.PpfParticularType;
-import com.urva.myfinance.coinTrack.ppf.model.PpfSettings;
 import com.urva.myfinance.coinTrack.ppf.model.PpfTransaction;
-import com.urva.myfinance.coinTrack.ppf.repository.PpfSettingsRepository;
 import com.urva.myfinance.coinTrack.ppf.repository.PpfTransactionRepository;
+import com.urva.myfinance.coinTrack.user.model.PpfSettingsEmbed;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
 @Service
 public class PpfWithdrawalValidationService {
 
     private final PpfTransactionRepository ppfTransactionRepository;
-    private final PpfSettingsRepository ppfSettingsRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public PpfWithdrawalValidationService(
             PpfTransactionRepository ppfTransactionRepository,
-            PpfSettingsRepository ppfSettingsRepository) {
+            UserRepository userRepository) {
         this.ppfTransactionRepository = ppfTransactionRepository;
-        this.ppfSettingsRepository = ppfSettingsRepository;
+        this.userRepository = userRepository;
     }
 
     public PpfWithdrawalStatusDTO getWithdrawalStatus(String userId, LocalDate currentDate) {
-        PpfSettings settings = ppfSettingsRepository.findByUserId(userId).orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
+        PpfSettingsEmbed settings = (user != null) ? user.getPpfSettings() : null;
         if (settings == null || settings.getDateOfIssue() == null) {
             return PpfWithdrawalStatusDTO.builder()
                     .withdrawalAllowed(false)

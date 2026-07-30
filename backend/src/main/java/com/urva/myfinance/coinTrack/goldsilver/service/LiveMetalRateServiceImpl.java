@@ -20,15 +20,16 @@ import org.springframework.stereotype.Service;
 
 import com.urva.myfinance.coinTrack.goldsilver.dto.response.MetalRateSnapshotDTO;
 import com.urva.myfinance.coinTrack.goldsilver.model.GoldSilverInvestment;
-import com.urva.myfinance.coinTrack.goldsilver.model.MetalRateSettings;
 import com.urva.myfinance.coinTrack.goldsilver.model.MetalRateSnapshot;
 import com.urva.myfinance.coinTrack.goldsilver.model.MetalType;
 import com.urva.myfinance.coinTrack.goldsilver.model.PurityOption;
 import com.urva.myfinance.coinTrack.goldsilver.model.RateSource;
 import com.urva.myfinance.coinTrack.goldsilver.repository.GoldSilverInvestmentRepository;
-import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSettingsRepository;
 import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSnapshotRepository;
-import com.urva.myfinance.coinTrack.goldsilver.repository.PurityOptionRepository;
+
+import com.urva.myfinance.coinTrack.user.model.MetalRateSettingsEmbed;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
 @Service
 public class LiveMetalRateServiceImpl implements LiveMetalRateService {
@@ -39,8 +40,8 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
 
     private final MetalPriceProvider metalPriceProvider;
     private final MetalRateSnapshotRepository snapshotRepository;
-    private final MetalRateSettingsRepository settingsRepository;
-    private final PurityOptionRepository purityOptionRepository;
+    private final UserRepository userRepository;
+    private final List<PurityOption> defaultPurityOptions;
     private final GoldSilverInvestmentRepository investmentRepository;
     private final GoldSilverCalculationService calculationService;
     private final GoldApiUsageService goldApiUsageService;
@@ -52,16 +53,16 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
     public LiveMetalRateServiceImpl(
             MetalPriceProvider metalPriceProvider,
             MetalRateSnapshotRepository snapshotRepository,
-            MetalRateSettingsRepository settingsRepository,
-            PurityOptionRepository purityOptionRepository,
+            UserRepository userRepository,
+            List<PurityOption> defaultPurityOptions,
             GoldSilverInvestmentRepository investmentRepository,
             GoldSilverCalculationService calculationService,
             GoldApiUsageService goldApiUsageService,
             MongoTemplate mongoTemplate) {
         this.metalPriceProvider = metalPriceProvider;
         this.snapshotRepository = snapshotRepository;
-        this.settingsRepository = settingsRepository;
-        this.purityOptionRepository = purityOptionRepository;
+        this.userRepository = userRepository;
+        this.defaultPurityOptions = defaultPurityOptions;
         this.investmentRepository = investmentRepository;
         this.calculationService = calculationService;
         this.goldApiUsageService = goldApiUsageService;
@@ -83,7 +84,8 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
 
         // Health check — verify GoldAPI is responding before burning quota
         if (!goldApiUsageService.isApiHealthy()) {
-            logger.warn("Manual rate refresh BLOCKED — GoldAPI health check failed. Service may be down. Returning cached rates.");
+            logger.warn(
+                    "Manual rate refresh BLOCKED — GoldAPI health check failed. Service may be down. Returning cached rates.");
             return getCurrentRates();
         }
 
@@ -95,7 +97,8 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
 
         Instant mostRecentFetch = lastFetchTime;
         if (mostRecentFetch == null) {
-            Optional<MetalRateSnapshot> latestGold = snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD);
+            Optional<MetalRateSnapshot> latestGold = snapshotRepository
+                    .findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD);
             if (latestGold.isPresent() && latestGold.get().getFetchedAt() != null) {
                 mostRecentFetch = latestGold.get().getFetchedAt();
             }
@@ -104,7 +107,9 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
         if (isForce && mostRecentFetch != null) {
             Duration elapsed = Duration.between(mostRecentFetch, now);
             if (elapsed.compareTo(MIN_REFRESH_INTERVAL) < 0) {
-                logger.info("Rate refresh requested within 30-minute cooldown ({}s elapsed). Returning existing cached rates to preserve API quota.", elapsed.getSeconds());
+                logger.info(
+                        "Rate refresh requested within 30-minute cooldown ({}s elapsed). Returning existing cached rates to preserve API quota.",
+                        elapsed.getSeconds());
                 return getCurrentRates();
             }
         }
@@ -120,15 +125,19 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
                 snapshot = metalPriceProvider.fetchSpotRate(metalType);
                 snapshot.setLocalPremiumPercent(premium);
 
-                BigDecimal baseRate = snapshot.getBaseRatePerGram() != null ? snapshot.getBaseRatePerGram() : BigDecimal.ZERO;
-                BigDecimal multiplier = BigDecimal.ONE.add(premium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
+                BigDecimal baseRate = snapshot.getBaseRatePerGram() != null ? snapshot.getBaseRatePerGram()
+                        : BigDecimal.ZERO;
+                BigDecimal multiplier = BigDecimal.ONE
+                        .add(premium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
                 BigDecimal effectiveBaseRate = baseRate.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
                 snapshot.setEffectiveBaseRate(effectiveBaseRate);
 
                 snapshot = snapshotRepository.save(snapshot);
-                logger.info("Successfully fetched and saved snapshot for {}: effectiveBaseRate={}", metalType, effectiveBaseRate);
+                logger.info("Successfully fetched and saved snapshot for {}: effectiveBaseRate={}", metalType,
+                        effectiveBaseRate);
             } catch (Exception e) {
-                logger.warn("Failed to fetch live rate for {}. Falling back to cached rate marked as stale.", metalType, e);
+                logger.warn("Failed to fetch live rate for {}. Falling back to cached rate marked as stale.", metalType,
+                        e);
                 snapshot = handleFetchFailure(metalType, premium);
             }
 
@@ -176,16 +185,8 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
     }
 
     private BigDecimal getLocalPremiumPercent(MetalType metalType) {
-        // Find default or global premium setting if present
-        List<MetalRateSettings> allSettings = settingsRepository.findAll();
-        if (!allSettings.isEmpty()) {
-            MetalRateSettings setting = allSettings.get(0);
-            if (metalType == MetalType.GOLD && setting.getGoldLocalPremiumPercent() != null) {
-                return setting.getGoldLocalPremiumPercent();
-            } else if (metalType == MetalType.SILVER && setting.getSilverLocalPremiumPercent() != null) {
-                return setting.getSilverLocalPremiumPercent();
-            }
-        }
+        // Use DEFAULT_PREMIUM_PERCENT since this method is for global
+        // (non-user-specific) lookups
         return DEFAULT_PREMIUM_PERCENT;
     }
 
@@ -197,20 +198,27 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
     @Override
     public List<MetalRateSnapshotDTO> getCurrentRatesForUser(String userId) {
         List<MetalRateSnapshotDTO> list = new ArrayList<>();
-        Optional<MetalRateSettings> userSettingsOpt = (userId != null) ? settingsRepository.findByUserId(userId) : Optional.empty();
+        // Look up embedded settings from User document — no extra collection needed
+        MetalRateSettingsEmbed userEmbed = null;
+        if (userId != null) {
+            User user = userRepository.findById(userId).orElse(null);
+            userEmbed = (user != null) ? user.getMetalRateSettings() : null;
+        }
+        final MetalRateSettingsEmbed finalEmbed = userEmbed;
 
         for (MetalType metalType : MetalType.values()) {
             MetalRateSnapshotDTO dto = getCurrentRateForMetal(metalType);
             if (dto != null) {
-                if (userSettingsOpt.isPresent() && dto.getBaseRatePerGram() != null) {
-                    MetalRateSettings userSettings = userSettingsOpt.get();
+                if (finalEmbed != null && dto.getBaseRatePerGram() != null) {
                     BigDecimal userPremium = (metalType == MetalType.GOLD)
-                            ? userSettings.getGoldLocalPremiumPercent()
-                            : userSettings.getSilverLocalPremiumPercent();
+                            ? finalEmbed.getGoldLocalPremiumPercent()
+                            : finalEmbed.getSilverLocalPremiumPercent();
 
                     if (userPremium != null) {
-                        BigDecimal multiplier = BigDecimal.ONE.add(userPremium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-                        BigDecimal userEffectiveBase = dto.getBaseRatePerGram().multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+                        BigDecimal multiplier = BigDecimal.ONE
+                                .add(userPremium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
+                        BigDecimal userEffectiveBase = dto.getBaseRatePerGram().multiply(multiplier).setScale(2,
+                                RoundingMode.HALF_UP);
                         dto.setLocalPremiumPercent(userPremium);
                         dto.setEffectiveBaseRate(userEffectiveBase);
                     }
@@ -230,25 +238,27 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
 
     @Override
     public void recomputeLiveInvestments(MetalType metalType) {
-        Optional<MetalRateSnapshot> snapshotOpt = snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(metalType);
+        Optional<MetalRateSnapshot> snapshotOpt = snapshotRepository
+                .findFirstByMetalTypeOrderByFetchedAtDesc(metalType);
         if (snapshotOpt.isEmpty()) {
             return;
         }
 
         MetalRateSnapshot snapshot = snapshotOpt.get();
         BigDecimal effectiveBaseRate = snapshot.getEffectiveBaseRate();
-        if (effectiveBaseRate == null) return;
+        if (effectiveBaseRate == null)
+            return;
 
         Criteria criteria = Criteria.where("metalType").is(metalType)
                 .andOperator(new Criteria().orOperator(
                         Criteria.where("rateSource").is(RateSource.LIVE),
-                        Criteria.where("rateSource").exists(false)
-                ));
+                        Criteria.where("rateSource").exists(false)));
 
         Query query = new Query(criteria);
         List<GoldSilverInvestment> records = mongoTemplate.find(query, GoldSilverInvestment.class);
 
-        if (records.isEmpty()) return;
+        if (records.isEmpty())
+            return;
 
         BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, GoldSilverInvestment.class);
 
@@ -256,22 +266,26 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
             BigDecimal effectiveBaseRateForUser = snapshot.getEffectiveBaseRate();
 
             if (record.getUserId() != null) {
-                Optional<MetalRateSettings> userSettingsOpt = settingsRepository.findByUserId(record.getUserId());
-                if (userSettingsOpt.isPresent() && snapshot.getBaseRatePerGram() != null) {
-                    MetalRateSettings userSettings = userSettingsOpt.get();
+                // Fetch embedded settings from User document
+                User user = userRepository.findById(record.getUserId()).orElse(null);
+                MetalRateSettingsEmbed userEmbed = (user != null) ? user.getMetalRateSettings() : null;
+                if (userEmbed != null && snapshot.getBaseRatePerGram() != null) {
                     BigDecimal userPremium = (metalType == MetalType.GOLD)
-                            ? userSettings.getGoldLocalPremiumPercent()
-                            : userSettings.getSilverLocalPremiumPercent();
+                            ? userEmbed.getGoldLocalPremiumPercent()
+                            : userEmbed.getSilverLocalPremiumPercent();
 
                     if (userPremium != null) {
-                        BigDecimal multiplier = BigDecimal.ONE.add(userPremium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-                        effectiveBaseRateForUser = snapshot.getBaseRatePerGram().multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+                        BigDecimal multiplier = BigDecimal.ONE
+                                .add(userPremium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
+                        effectiveBaseRateForUser = snapshot.getBaseRatePerGram().multiply(multiplier).setScale(2,
+                                RoundingMode.HALF_UP);
                     }
                 }
             }
 
             BigDecimal purityFactor = resolvePurityFactor(record);
-            BigDecimal currentMarketRate = effectiveBaseRateForUser.multiply(purityFactor).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal currentMarketRate = effectiveBaseRateForUser.multiply(purityFactor).setScale(2,
+                    RoundingMode.HALF_UP);
 
             record.setCurrentMarketRate(currentMarketRate);
             calculationService.recalculateMarketValue(record);
@@ -301,7 +315,9 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
         }
 
         if (record.getPurityOptionId() != null) {
-            Optional<PurityOption> opt = purityOptionRepository.findById(record.getPurityOptionId());
+            Optional<PurityOption> opt = defaultPurityOptions.stream()
+                    .filter(p -> p.getId().equals(record.getPurityOptionId()))
+                    .findFirst();
             if (opt.isPresent()) {
                 return opt.get().getPurityFactor();
             }
@@ -309,10 +325,14 @@ public class LiveMetalRateServiceImpl implements LiveMetalRateService {
 
         if (record.getPurity() != null) {
             String p = record.getPurity().trim().toUpperCase();
-            if (p.contains("24K") || p.contains("999")) return new BigDecimal("0.999");
-            if (p.contains("22K") || p.contains("916")) return new BigDecimal("0.916");
-            if (p.contains("18K") || p.contains("750")) return new BigDecimal("0.750");
-            if (p.contains("925")) return new BigDecimal("0.925");
+            if (p.contains("24K") || p.contains("999"))
+                return new BigDecimal("0.999");
+            if (p.contains("22K") || p.contains("916"))
+                return new BigDecimal("0.916");
+            if (p.contains("18K") || p.contains("750"))
+                return new BigDecimal("0.750");
+            if (p.contains("925"))
+                return new BigDecimal("0.925");
         }
 
         return BigDecimal.ONE;

@@ -26,10 +26,11 @@ import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
 import com.urva.myfinance.coinTrack.epf.dto.request.EpfTransactionRequestDTO;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfTransactionResponseDTO;
 import com.urva.myfinance.coinTrack.epf.model.ContributionMode;
-import com.urva.myfinance.coinTrack.epf.model.EpfSettings;
 import com.urva.myfinance.coinTrack.epf.model.EpfTransaction;
-import com.urva.myfinance.coinTrack.epf.repository.EpfInterestRateRepository;
-import com.urva.myfinance.coinTrack.epf.repository.EpfSettingsRepository;
+import com.urva.myfinance.coinTrack.epf.config.EpfInterestRateConfig;
+import com.urva.myfinance.coinTrack.user.model.EpfSettingsEmbed;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 import com.urva.myfinance.coinTrack.epf.repository.EpfTransactionRepository;
 import com.urva.myfinance.coinTrack.epf.service.EpfBalanceRecalculationService;
 import com.urva.myfinance.coinTrack.epf.service.EpfContributionCalculationService;
@@ -43,10 +44,10 @@ class EpfTransactionServiceTest {
     private EpfTransactionRepository epfTransactionRepository;
 
     @Mock
-    private EpfSettingsRepository epfSettingsRepository;
+    private UserRepository userRepository;
 
     @Mock
-    private EpfInterestRateRepository epfInterestRateRepository;
+    private EpfInterestRateConfig epfInterestRateConfig;
 
     @Mock
     private EpfContributionCalculationService contributionCalculationService;
@@ -120,14 +121,14 @@ class EpfTransactionServiceTest {
     @Test
     @DisplayName("2. Creating transaction triggers sequence generator, repo save and ledger recalculation")
     void testCreateTransactionFlow() {
-        when(epfSettingsRepository.findByUserId(userA)).thenReturn(Optional.of(
-                EpfSettings.builder()
-                        .userId(userA)
+        User user = new User();
+        user.setId(userA);
+        user.setEpfSettings(EpfSettingsEmbed.builder()
                         .defaultBasicDA(new BigDecimal("50000.00"))
                         .employeeContributionRate(new BigDecimal("12.00"))
                         .useActualSalaryForEps(false)
-                        .build()
-        ));
+                        .build());
+        when(userRepository.findById(userA)).thenReturn(Optional.of(user));
 
         EpfTransactionRequestDTO req = EpfTransactionRequestDTO.builder()
                 .transactionDate(LocalDate.of(2025, 4, 15))

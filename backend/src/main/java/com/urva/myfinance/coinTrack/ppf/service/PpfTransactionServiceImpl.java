@@ -34,10 +34,12 @@ import com.urva.myfinance.coinTrack.ppf.dto.response.PpfSettingsResponseDTO;
 import com.urva.myfinance.coinTrack.ppf.dto.response.PpfSummaryDTO;
 import com.urva.myfinance.coinTrack.ppf.dto.response.PpfTransactionResponseDTO;
 import com.urva.myfinance.coinTrack.ppf.model.PpfParticularType;
-import com.urva.myfinance.coinTrack.ppf.model.PpfSettings;
+
 import com.urva.myfinance.coinTrack.ppf.model.PpfTransaction;
-import com.urva.myfinance.coinTrack.ppf.repository.PpfSettingsRepository;
 import com.urva.myfinance.coinTrack.ppf.repository.PpfTransactionRepository;
+import com.urva.myfinance.coinTrack.user.model.PpfSettingsEmbed;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
 @Service
 public class PpfTransactionServiceImpl implements PpfTransactionService {
@@ -45,23 +47,23 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
     private static final Logger logger = LoggerFactory.getLogger(PpfTransactionServiceImpl.class);
 
     private final PpfTransactionRepository ppfTransactionRepository;
-    private final PpfSettingsRepository ppfSettingsRepository;
     private final PpfBalanceRecalculationService recalculationService;
     private final SequenceGeneratorService sequenceGeneratorService;
     private final MongoTemplate mongoTemplate;
+    private final UserRepository userRepository;
 
     @Autowired
     public PpfTransactionServiceImpl(
             PpfTransactionRepository ppfTransactionRepository,
-            PpfSettingsRepository ppfSettingsRepository,
             PpfBalanceRecalculationService recalculationService,
             SequenceGeneratorService sequenceGeneratorService,
-            MongoTemplate mongoTemplate) {
+            MongoTemplate mongoTemplate,
+            UserRepository userRepository) {
         this.ppfTransactionRepository = ppfTransactionRepository;
-        this.ppfSettingsRepository = ppfSettingsRepository;
         this.recalculationService = recalculationService;
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.mongoTemplate = mongoTemplate;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -317,37 +319,50 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
         return new Query(criteria);
     }
 
-    // ── Settings ─────────────────────────────────────────────────────────
+    // ── Settings (reads/writes embedded field on User document) ───────────
 
     @Override
     public PpfSettingsResponseDTO getSettings(String userId) {
-        PpfSettings settings = ppfSettingsRepository.findByUserId(userId)
-                .orElse(PpfSettings.builder().userId(userId).build());
-        return toSettingsDTO(settings);
+        User user = userRepository.findById(userId).orElse(null);
+        PpfSettingsEmbed embed = (user != null) ? user.getPpfSettings() : null;
+        if (embed != null) {
+            return toSettingsDTO(embed, userId);
+        }
+        return toSettingsDTO(null, userId);
     }
 
     @Override
     @Transactional
     public PpfSettingsResponseDTO updateSettings(PpfSettingsRequestDTO requestDTO, String userId) {
-        PpfSettings settings = ppfSettingsRepository.findByUserId(userId)
-                .orElse(PpfSettings.builder().userId(userId).build());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new DomainException("User not found", "USER_NOT_FOUND", 404));
 
-        settings.setAccountNumber(requestDTO.getAccountNumber());
-        settings.setDateOfIssue(requestDTO.getDateOfIssue());
-        settings.setExtensionMode(requestDTO.getExtensionMode());
+        PpfSettingsEmbed embed = (user.getPpfSettings() != null)
+                ? user.getPpfSettings()
+                : PpfSettingsEmbed.builder().build();
 
-        PpfSettings saved = ppfSettingsRepository.save(settings);
-        return toSettingsDTO(saved);
+        embed.setAccountNumber(requestDTO.getAccountNumber());
+        embed.setDateOfIssue(requestDTO.getDateOfIssue());
+        embed.setExtensionMode(requestDTO.getExtensionMode());
+        embed.setUpdatedAt(Instant.now());
+
+        user.setPpfSettings(embed);
+        userRepository.save(user);
+        return toSettingsDTO(embed, userId);
     }
 
-    private PpfSettingsResponseDTO toSettingsDTO(PpfSettings settings) {
+    private PpfSettingsResponseDTO toSettingsDTO(PpfSettingsEmbed embed, String userId) {
+        if (embed == null) {
+            return PpfSettingsResponseDTO.builder()
+                    .userId(userId)
+                    .build();
+        }
         return PpfSettingsResponseDTO.builder()
-                .id(settings.getId())
-                .userId(settings.getUserId())
-                .accountNumber(settings.getAccountNumber())
-                .dateOfIssue(settings.getDateOfIssue())
-                .extensionMode(settings.getExtensionMode())
-                .updatedAt(settings.getUpdatedAt())
+                .userId(userId)
+                .accountNumber(embed.getAccountNumber())
+                .dateOfIssue(embed.getDateOfIssue())
+                .extensionMode(embed.getExtensionMode())
+                .updatedAt(embed.getUpdatedAt())
                 .build();
     }
 }

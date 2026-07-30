@@ -8,7 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.urva.myfinance.coinTrack.epf.model.EpfSettings;
+import com.urva.myfinance.coinTrack.user.model.EpfSettingsEmbed;
 import com.urva.myfinance.coinTrack.epf.service.EpfContributionCalculationService;
 import com.urva.myfinance.coinTrack.epf.service.EpfContributionCalculationService.CalculationResult;
 

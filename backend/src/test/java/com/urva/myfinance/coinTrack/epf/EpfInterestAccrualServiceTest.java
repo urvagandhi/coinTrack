@@ -23,9 +23,9 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.epf.model.ContributionMode;
-import com.urva.myfinance.coinTrack.epf.model.EpfInterestRate;
+import com.urva.myfinance.coinTrack.epf.config.EpfInterestRateConfig;
+import com.urva.myfinance.coinTrack.epf.dto.request.EpfInterestRateRequestDTO;
 import com.urva.myfinance.coinTrack.epf.model.EpfTransaction;
-import com.urva.myfinance.coinTrack.epf.repository.EpfInterestRateRepository;
 import com.urva.myfinance.coinTrack.epf.service.EpfInterestAccrualService;
 import com.urva.myfinance.coinTrack.epf.service.EpfInterestAccrualService.EpfInterestAccrualResult;
 
@@ -33,7 +33,7 @@ import com.urva.myfinance.coinTrack.epf.service.EpfInterestAccrualService.EpfInt
 class EpfInterestAccrualServiceTest {
 
     @Mock
-    private EpfInterestRateRepository epfInterestRateRepository;
+    private EpfInterestRateConfig epfInterestRateConfig;
 
     @Mock
     private MongoTemplate mongoTemplate;
@@ -45,13 +45,13 @@ class EpfInterestAccrualServiceTest {
 
     @BeforeEach
     void setUp() {
-        interestAccrualService = new EpfInterestAccrualService(epfInterestRateRepository, mongoTemplate);
+        interestAccrualService = new EpfInterestAccrualService(epfInterestRateConfig, mongoTemplate);
     }
 
     @Test
     @DisplayName("1. Throws domain exception if interest rate not configured for FY")
     void testRateNotFoundThrowsException() {
-        when(epfInterestRateRepository.findByFinancialYear(fy)).thenReturn(Optional.empty());
+        when(epfInterestRateConfig.getInterestRates()).thenReturn(List.of());
 
         DomainException ex = assertThrows(DomainException.class, () ->
                 interestAccrualService.calculateAccruedInterest(userId, fy)
@@ -63,10 +63,10 @@ class EpfInterestAccrualServiceTest {
     @Test
     @DisplayName("2. Steady opening balance with no FY transactions earns full 12-month interest")
     void testSteadyOpeningBalanceFullYearInterest() {
-        EpfInterestRate rateObj = new EpfInterestRate();
+        EpfInterestRateConfig.InterestRate rateObj = new EpfInterestRateConfig.InterestRate();
         rateObj.setFinancialYear(fy);
         rateObj.setRatePercent(new BigDecimal("8.25"));
-        when(epfInterestRateRepository.findByFinancialYear(fy)).thenReturn(Optional.of(rateObj));
+        when(epfInterestRateConfig.getInterestRates()).thenReturn(List.of(rateObj));
 
         // Opening balance txn from previous FY
         EpfTransaction openingTxn = EpfTransaction.builder()
@@ -92,10 +92,10 @@ class EpfInterestAccrualServiceTest {
     @Test
     @DisplayName("3. Mid-year contribution earns interest from month AFTER contribution")
     void testMidYearContributionInterestAccrual() {
-        EpfInterestRate rateObj = new EpfInterestRate();
+        EpfInterestRateConfig.InterestRate rateObj = new EpfInterestRateConfig.InterestRate();
         rateObj.setFinancialYear(fy);
         rateObj.setRatePercent(new BigDecimal("12.00")); // 12% per year = 1% per month for easy hand verification
-        when(epfInterestRateRepository.findByFinancialYear(fy)).thenReturn(Optional.of(rateObj));
+        when(epfInterestRateConfig.getInterestRates()).thenReturn(List.of(rateObj));
 
         // No opening balance
         when(mongoTemplate.find(any(Query.class), eq(EpfTransaction.class)))
@@ -129,10 +129,10 @@ class EpfInterestAccrualServiceTest {
     @Test
     @DisplayName("4. Mid-year withdrawal stops earning interest from month of withdrawal onward")
     void testMidYearWithdrawalInterestAccrual() {
-        EpfInterestRate rateObj = new EpfInterestRate();
+        EpfInterestRateConfig.InterestRate rateObj = new EpfInterestRateConfig.InterestRate();
         rateObj.setFinancialYear(fy);
         rateObj.setRatePercent(new BigDecimal("12.00")); // 1% monthly rate
-        when(epfInterestRateRepository.findByFinancialYear(fy)).thenReturn(Optional.of(rateObj));
+        when(epfInterestRateConfig.getInterestRates()).thenReturn(List.of(rateObj));
 
         // Opening balance ₹100,000
         EpfTransaction openingTxn = EpfTransaction.builder()

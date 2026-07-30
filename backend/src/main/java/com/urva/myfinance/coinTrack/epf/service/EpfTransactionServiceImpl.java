@@ -29,13 +29,14 @@ import com.urva.myfinance.coinTrack.epf.dto.request.EpfSettingsRequestDTO;
 import com.urva.myfinance.coinTrack.epf.dto.request.EpfTransactionRequestDTO;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfSummaryDTO;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfTransactionResponseDTO;
+import com.urva.myfinance.coinTrack.epf.dto.response.EpfSettingsResponseDTO;
 import com.urva.myfinance.coinTrack.epf.model.ContributionMode;
-import com.urva.myfinance.coinTrack.epf.model.EpfInterestRate;
-import com.urva.myfinance.coinTrack.epf.model.EpfSettings;
+import com.urva.myfinance.coinTrack.epf.config.EpfInterestRateConfig;
 import com.urva.myfinance.coinTrack.epf.model.EpfTransaction;
-import com.urva.myfinance.coinTrack.epf.repository.EpfInterestRateRepository;
-import com.urva.myfinance.coinTrack.epf.repository.EpfSettingsRepository;
 import com.urva.myfinance.coinTrack.epf.repository.EpfTransactionRepository;
+import com.urva.myfinance.coinTrack.user.model.EpfSettingsEmbed;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
 @Service
 public class EpfTransactionServiceImpl implements EpfTransactionService {
@@ -43,79 +44,97 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
     private static final Logger logger = LoggerFactory.getLogger(EpfTransactionServiceImpl.class);
 
     private final EpfTransactionRepository epfTransactionRepository;
-    private final EpfSettingsRepository epfSettingsRepository;
-    private final EpfInterestRateRepository epfInterestRateRepository;
+    private final EpfInterestRateConfig epfInterestRateConfig;
     private final EpfContributionCalculationService contributionCalculationService;
     private final EpfInterestAccrualService interestAccrualService;
     private final EpfBalanceRecalculationService recalculationService;
     private final SequenceGeneratorService sequenceGeneratorService;
     private final MongoTemplate mongoTemplate;
+    private final UserRepository userRepository;
 
     @Autowired
     public EpfTransactionServiceImpl(
             EpfTransactionRepository epfTransactionRepository,
-            EpfSettingsRepository epfSettingsRepository,
-            EpfInterestRateRepository epfInterestRateRepository,
+            EpfInterestRateConfig epfInterestRateConfig,
             EpfContributionCalculationService contributionCalculationService,
             EpfInterestAccrualService interestAccrualService,
             EpfBalanceRecalculationService recalculationService,
             SequenceGeneratorService sequenceGeneratorService,
-            MongoTemplate mongoTemplate) {
+            MongoTemplate mongoTemplate,
+            UserRepository userRepository) {
         this.epfTransactionRepository = epfTransactionRepository;
-        this.epfSettingsRepository = epfSettingsRepository;
-        this.epfInterestRateRepository = epfInterestRateRepository;
+        this.epfInterestRateConfig = epfInterestRateConfig;
         this.contributionCalculationService = contributionCalculationService;
         this.interestAccrualService = interestAccrualService;
         this.recalculationService = recalculationService;
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.mongoTemplate = mongoTemplate;
+        this.userRepository = userRepository;
     }
 
-    // ── Settings ────────────────────────────────────────────────────────
+    // ── Settings (reads/writes embedded field on User document) ─────────
 
     @Override
-    public EpfSettings getSettings(String userId) {
-        return epfSettingsRepository.findByUserId(userId)
-                .orElseGet(() -> EpfSettings.builder()
-                        .userId(userId)
-                        .defaultBasicDA(BigDecimal.ZERO)
-                        .employeeContributionRate(new BigDecimal("12.00"))
-                        .useActualSalaryForEps(false)
-                        .monthlyVpfAmount(BigDecimal.ZERO)
-                        .updatedAt(Instant.now())
-                        .build());
+    public EpfSettingsResponseDTO getSettings(String userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        EpfSettingsEmbed embed = (user != null) ? user.getEpfSettings() : null;
+        if (embed != null) {
+            return EpfSettingsResponseDTO.builder()
+                    .userId(userId)
+                    .defaultBasicDA(embed.getDefaultBasicDA())
+                    .employeeContributionRate(embed.getEmployeeContributionRate())
+                    .useActualSalaryForEps(embed.isUseActualSalaryForEps())
+                    .monthlyVpfAmount(embed.getMonthlyVpfAmount())
+                    .updatedAt(embed.getUpdatedAt())
+                    .build();
+        }
+        // Return sensible defaults when user hasn't configured EPF yet
+        return EpfSettingsResponseDTO.builder()
+                .userId(userId)
+                .defaultBasicDA(BigDecimal.ZERO)
+                .employeeContributionRate(new BigDecimal("12.00"))
+                .useActualSalaryForEps(false)
+                .monthlyVpfAmount(BigDecimal.ZERO)
+                .updatedAt(Instant.now())
+                .build();
     }
 
     @Override
-    public EpfSettings updateSettings(EpfSettingsRequestDTO requestDTO, String userId) {
-        EpfSettings settings = epfSettingsRepository.findByUserId(userId)
-                .orElseGet(() -> EpfSettings.builder().userId(userId).build());
+    public EpfSettingsResponseDTO updateSettings(EpfSettingsRequestDTO requestDTO, String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new DomainException("User not found", "USER_NOT_FOUND", 404));
 
-        settings.setDefaultBasicDA(requestDTO.getDefaultBasicDA());
-        settings.setEmployeeContributionRate(requestDTO.getEmployeeContributionRate());
-        settings.setUseActualSalaryForEps(requestDTO.isUseActualSalaryForEps());
-        settings.setMonthlyVpfAmount(requestDTO.getMonthlyVpfAmount());
-        settings.setUpdatedAt(Instant.now());
+        EpfSettingsEmbed embed = EpfSettingsEmbed.builder()
+                .defaultBasicDA(requestDTO.getDefaultBasicDA())
+                .employeeContributionRate(requestDTO.getEmployeeContributionRate())
+                .useActualSalaryForEps(requestDTO.isUseActualSalaryForEps())
+                .monthlyVpfAmount(requestDTO.getMonthlyVpfAmount())
+                .updatedAt(Instant.now())
+                .build();
 
-        return epfSettingsRepository.save(settings);
+        user.setEpfSettings(embed);
+        userRepository.save(user);
+
+        return EpfSettingsResponseDTO.builder()
+                .userId(userId)
+                .defaultBasicDA(embed.getDefaultBasicDA())
+                .employeeContributionRate(embed.getEmployeeContributionRate())
+                .useActualSalaryForEps(embed.isUseActualSalaryForEps())
+                .monthlyVpfAmount(embed.getMonthlyVpfAmount())
+                .updatedAt(embed.getUpdatedAt())
+                .build();
     }
 
     // ── Interest Rates ─────────────────────────────────────────────────
 
     @Override
-    public List<EpfInterestRate> getAllInterestRates() {
-        return epfInterestRateRepository.findAll(Sort.by(Sort.Direction.DESC, "financialYear"));
-    }
-
-    @Override
-    public EpfInterestRate saveInterestRate(EpfInterestRateRequestDTO requestDTO) {
-        EpfInterestRate rate = epfInterestRateRepository.findByFinancialYear(requestDTO.getFinancialYear())
-                .orElseGet(() -> EpfInterestRate.builder().financialYear(requestDTO.getFinancialYear()).build());
-
-        rate.setRatePercent(requestDTO.getRatePercent());
-        rate.setUpdatedAt(Instant.now());
-
-        return epfInterestRateRepository.save(rate);
+    public List<EpfInterestRateConfig.InterestRate> getAllInterestRates() {
+        if (epfInterestRateConfig.getInterestRates() == null) {
+            return List.of();
+        }
+        return epfInterestRateConfig.getInterestRates().stream()
+                .sorted((a, b) -> b.getFinancialYear().compareTo(a.getFinancialYear()))
+                .toList();
     }
 
     // ── Transactions CRUD ──────────────────────────────────────────────
@@ -124,7 +143,7 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
     @Transactional
     public EpfTransactionResponseDTO createTransaction(EpfTransactionRequestDTO requestDTO, String userId) {
         logger.info("Creating EPF transaction for user: {}", userId);
-        EpfSettings settings = getSettings(userId);
+        EpfSettingsResponseDTO settings = getSettings(userId);
 
         BigDecimal basicDA = requestDTO.getBasicDA();
         BigDecimal empContr = requestDTO.getEmployeeContribution();
@@ -226,7 +245,7 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
     public EpfTransactionResponseDTO updateTransaction(String id, EpfTransactionRequestDTO requestDTO, String userId) {
         logger.info("Updating EPF transaction {} for user: {}", id, userId);
         EpfTransaction existing = findAndVerifyOwnership(id, userId);
-        EpfSettings settings = getSettings(userId);
+        EpfSettingsResponseDTO settings = getSettings(userId);
 
         BigDecimal basicDA = requestDTO.getBasicDA();
         BigDecimal empContr = requestDTO.getEmployeeContribution();
