@@ -19,21 +19,18 @@ public class SettlementDateCalculator {
     private static final ZoneId IST_ZONE = ZoneId.of("Asia/Kolkata");
 
     /**
-     * Calculates the applicable date (T) based on current time and cutoff.
-     * If submitted after 3 PM or on a non-business day, T is the next business day.
-     * Note: for historical transactions, we just use the provided date, but we still ensure it's a business day.
-     * @param investmentDate the date provided by the user (usually today)
-     * @param isLive whether the transaction is happening right now vs historical import
+     * Calculates the applicable date (T) based on the explicit cutoff flag.
+     * If isAfterCutoff is true, T starts from the next business day.
+     * @param investmentDate the date provided by the user
+     * @param isAfterCutoff explicit flag whether the transaction missed the cutoff
      */
-    public LocalDate calculateApplicableDate(LocalDate investmentDate, boolean isLive) {
-        if (isLive && LocalDate.now(IST_ZONE).equals(investmentDate)) {
-            LocalTime now = LocalTime.now(IST_ZONE);
-            if (now.isAfter(CUTOFF_TIME) || !calendar.isBusinessDay(investmentDate)) {
-                return calendar.getNextBusinessDay(investmentDate);
-            }
+    public LocalDate calculateApplicableDate(LocalDate investmentDate, Boolean isAfterCutoff) {
+        if (Boolean.TRUE.equals(isAfterCutoff)) {
+            // Cutoff missed, start from next business day
+            investmentDate = calendar.getNextBusinessDay(investmentDate);
         }
         
-        // If it's historical, or before cutoff, just ensure the date itself is a business day
+        // Ensure the base date itself is a business day (if someone selected a weekend but didn't say after cutoff)
         if (!calendar.isBusinessDay(investmentDate)) {
             return calendar.getNextBusinessDay(investmentDate);
         }

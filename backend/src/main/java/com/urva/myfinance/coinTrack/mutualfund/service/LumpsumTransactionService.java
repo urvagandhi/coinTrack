@@ -1,11 +1,17 @@
 package com.urva.myfinance.coinTrack.mutualfund.service;
 
+import com.urva.myfinance.coinTrack.mutualfund.config.MfChargesConfig;
 import com.urva.myfinance.coinTrack.mutualfund.model.LumpsumTransaction;
+import com.urva.myfinance.coinTrack.mutualfund.model.TransactionStatus;
 import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
+import com.urva.myfinance.coinTrack.mutualfund.service.settlement.SettlementDateCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.urva.myfinance.coinTrack.mutualfund.util.MfRoundingHelper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,16 +31,20 @@ public class LumpsumTransactionService {
     @Autowired
     private SequenceGeneratorService sequenceGeneratorService;
     @Autowired
+    private TransactionSequenceService transactionSequenceService;
+    @Autowired
     private PortfolioHoldingService portfolioHoldingService;
     @Autowired
     private MfNavService mfNavService;
+    @Autowired
+    private MfChargesConfig mfChargesConfig;
+    @Autowired
+    private SettlementDateCalculator settlementDateCalculator;
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private RedemptionTransactionService redemptionTransactionService;
 
-    /**
-     * Validates that the schemeId on the transaction belongs to the given userId.
-     * This enforces the FK integrity guarantee from §1 of the spec — every
-     * transaction
-     * must reference a real, user-owned MfScheme; never an ad-hoc free-typed name.
-     */
+
     private void validateSchemeOwnership(String userId, String schemeId) {
         schemeRepository.findById(schemeId)
                 .filter(s -> s.getUserId().equals(userId))
@@ -72,60 +82,150 @@ public class LumpsumTransactionService {
     public LumpsumTransaction createTransaction(String userId, LumpsumTransaction transaction) {
         validateSchemeOwnership(userId, transaction.getSchemeId());
         transaction.setUserId(userId);
-        transaction
-                .setTransactionNo(sequenceGeneratorService.getNextSequence(LumpsumTransaction.class.getSimpleName()));
+        transaction.setTransactionNo(0L);
         transaction.setCreatedAt(Instant.now());
         transaction.setUpdatedAt(Instant.now());
+        transaction.setStatus(TransactionStatus.PENDING_NAV); // default until proven COMPLETED
+        transaction.setRetryCount(0);
 
-        // Auto-populate debitedBank from Scheme if not explicitly set
+        LocalDate applicableDate = settlementDateCalculator.calculateApplicableDate(transaction.getInvestmentDate(),
+                transaction.getIsAfterCutoff());
+        transaction.setApplicableDate(applicableDate);
+
         schemeRepository.findById(transaction.getSchemeId()).ifPresent(scheme -> {
+            transaction.setSettlementDate(
+                    settlementDateCalculator.calculateSettlementDate(applicableDate, scheme.getSettlementType()));
+
             if (transaction.getDebitedBank() == null || transaction.getDebitedBank().trim().isEmpty()) {
                 transaction.setDebitedBank(scheme.getBank());
             }
 
             if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().isEmpty()) {
-                BigDecimal nav = mfNavService.fetchNavForDate(scheme.getAmfiCode(), transaction.getInvestmentDate());
+                // Pre-deduct stamp duty
+                if (transaction.getLumpsumInvestment() != null) {
+                    BigDecimal stampDutyRate = mfChargesConfig.getStampDutyForDate(applicableDate);
+                    BigDecimal stampDutyAmount = transaction.getLumpsumInvestment()
+                            .multiply(stampDutyRate)
+                            .divide(new BigDecimal("100"), MfRoundingHelper.FIAT_PRECISION, RoundingMode.HALF_UP);
+
+                    transaction.setStampDutyRate(stampDutyRate);
+                    transaction.setStampDuty(stampDutyAmount);
+                    // Do not overwrite the gross amount
+                }
+
+                // Try fetching NAV
+                BigDecimal nav = mfNavService.fetchNavForDate(scheme.getAmfiCode(), applicableDate);
                 if (nav != null) {
                     transaction.setNavPrice(nav);
+                    transaction.setStatus(TransactionStatus.COMPLETED);
                     if (transaction.getLumpsumInvestment() != null) {
-                        BigDecimal units = transaction.getLumpsumInvestment().divide(nav, 3, RoundingMode.HALF_UP);
+                        BigDecimal netInvestment = transaction.getLumpsumInvestment().subtract(
+                                transaction.getStampDuty() != null ? transaction.getStampDuty() : BigDecimal.ZERO);
+                        BigDecimal units = netInvestment.divide(nav, MfRoundingHelper.UNIT_PRECISION,
+                                RoundingMode.HALF_UP);
                         transaction.setTotalUnit(units);
                     }
+                } else {
+                    transaction.setNavPrice(null);
+                    transaction.setTotalUnit(null);
                 }
+            } else {
+                transaction.setStatus(TransactionStatus.NAV_UNAVAILABLE);
             }
         });
 
         LumpsumTransaction saved = repository.save(transaction);
-        portfolioHoldingService.updateHoldingForScheme(userId, saved.getSchemeId());
+        if (saved.getStatus() == TransactionStatus.COMPLETED) {
+            portfolioHoldingService.updateHoldingForScheme(userId, saved.getSchemeId());
+            redemptionTransactionService.recalculateRedemptionsAfterDate(userId, saved.getSchemeId(), saved.getInvestmentDate());
+        }
+        transactionSequenceService.reorderLumpsumTransactions(userId);
         return saved;
     }
 
     public LumpsumTransaction updateTransaction(String userId, String id, LumpsumTransaction transaction) {
         LumpsumTransaction existing = getTransaction(userId, id);
-        // If schemeId is being changed, validate the new one too
-        if (transaction.getSchemeId() != null && !transaction.getSchemeId().equals(existing.getSchemeId())) {
+        String oldSchemeId = existing.getSchemeId();
+        LocalDate oldDate = existing.getInvestmentDate();
+
+        if (transaction.getSchemeId() != null && !transaction.getSchemeId().equals(oldSchemeId)) {
             validateSchemeOwnership(userId, transaction.getSchemeId());
             existing.setSchemeId(transaction.getSchemeId());
         }
+
         existing.setInvestmentDate(transaction.getInvestmentDate());
         existing.setLumpsumInvestment(transaction.getLumpsumInvestment());
-        existing.setTotalUnit(transaction.getTotalUnit());
-        existing.setNavPrice(transaction.getNavPrice());
         existing.setDebitedBank(transaction.getDebitedBank());
         existing.setRemarks(transaction.getRemarks());
+        existing.setIsAfterCutoff(transaction.getIsAfterCutoff());
         existing.setUpdatedAt(Instant.now());
-        LumpsumTransaction saved = repository.save(existing);
-        portfolioHoldingService.updateHoldingForScheme(userId, saved.getSchemeId());
+        existing.setStatus(TransactionStatus.PENDING_NAV);
 
-        if (transaction.getSchemeId() != null && !transaction.getSchemeId().equals(existing.getSchemeId())) {
-            // If scheme changed, update the old one too (though the code above sets it
-            // before saving, so existing.getSchemeId() is new. We need to save the old
-            // schemeId before changing it. Let's assume we won't handle scheme changes
-            // perfectly right now or we just update both).
-            // Actually, the original code already mutated `existing`. Let's just update the
-            // new schemeId.
+        LocalDate applicableDate = settlementDateCalculator.calculateApplicableDate(transaction.getInvestmentDate(),
+                transaction.getIsAfterCutoff());
+        existing.setApplicableDate(applicableDate);
+
+        schemeRepository.findById(existing.getSchemeId()).ifPresent(scheme -> {
+            existing.setSettlementDate(
+                    settlementDateCalculator.calculateSettlementDate(applicableDate, scheme.getSettlementType()));
+
+            if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().isEmpty()) {
+                // Force recalculation of net amount and stamp duty on every update
+                if (existing.getLumpsumInvestment() != null) {
+                    BigDecimal stampDutyRate = mfChargesConfig.getStampDutyForDate(applicableDate);
+                    BigDecimal stampDutyAmount = existing.getLumpsumInvestment()
+                            .multiply(stampDutyRate)
+                            .divide(new BigDecimal("100"), MfRoundingHelper.FIAT_PRECISION, RoundingMode.HALF_UP);
+
+                    existing.setStampDutyRate(stampDutyRate);
+                    existing.setStampDuty(stampDutyAmount);
+                    // Do not overwrite the gross amount
+                }
+
+                BigDecimal nav = mfNavService.fetchNavForDate(scheme.getAmfiCode(), applicableDate);
+                if (nav != null) {
+                    existing.setNavPrice(nav);
+                    existing.setStatus(TransactionStatus.COMPLETED);
+                    if (existing.getLumpsumInvestment() != null) {
+                        BigDecimal netInvestment = existing.getLumpsumInvestment()
+                                .subtract(existing.getStampDuty() != null ? existing.getStampDuty() : BigDecimal.ZERO);
+                        BigDecimal units = netInvestment.divide(nav, MfRoundingHelper.UNIT_PRECISION,
+                                RoundingMode.HALF_UP);
+                        existing.setTotalUnit(units);
+                    }
+                } else {
+                    existing.setNavPrice(null);
+                    existing.setTotalUnit(null);
+                }
+            } else {
+                existing.setNavPrice(null);
+                existing.setTotalUnit(null);
+                existing.setLumpsumInvestment(transaction.getLumpsumInvestment()); // fallback
+                existing.setStatus(TransactionStatus.NAV_UNAVAILABLE);
+            }
+        });
+
+        LumpsumTransaction saved = repository.save(existing);
+
+        // Update holding for new scheme
+        if (saved.getStatus() == TransactionStatus.COMPLETED) {
+            portfolioHoldingService.updateHoldingForScheme(userId, saved.getSchemeId());
+        }
+        // If scheme changed, also update the holding of the old scheme
+        if (!oldSchemeId.equals(saved.getSchemeId())) {
+            portfolioHoldingService.updateHoldingForScheme(userId, oldSchemeId);
+            redemptionTransactionService.recalculateRedemptionsAfterDate(userId, oldSchemeId, oldDate);
+            if (saved.getStatus() == TransactionStatus.COMPLETED) {
+                redemptionTransactionService.recalculateRedemptionsAfterDate(userId, saved.getSchemeId(), saved.getInvestmentDate());
+            }
+        } else {
+            if (saved.getStatus() == TransactionStatus.COMPLETED) {
+                LocalDate earliestDate = oldDate.isBefore(saved.getInvestmentDate()) ? oldDate : saved.getInvestmentDate();
+                redemptionTransactionService.recalculateRedemptionsAfterDate(userId, saved.getSchemeId(), earliestDate);
+            }
         }
 
+        transactionSequenceService.reorderLumpsumTransactions(userId);
         return saved;
     }
 
@@ -133,5 +233,9 @@ public class LumpsumTransactionService {
         LumpsumTransaction existing = getTransaction(userId, id);
         repository.delete(existing);
         portfolioHoldingService.updateHoldingForScheme(userId, existing.getSchemeId());
+        if (existing.getStatus() == TransactionStatus.COMPLETED) {
+            redemptionTransactionService.recalculateRedemptionsAfterDate(userId, existing.getSchemeId(), existing.getInvestmentDate());
+        }
+        transactionSequenceService.reorderLumpsumTransactions(userId);
     }
 }

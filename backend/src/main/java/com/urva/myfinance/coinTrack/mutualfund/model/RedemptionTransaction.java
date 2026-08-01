@@ -31,8 +31,16 @@ public class RedemptionTransaction {
     private BigDecimal capitalGain;
     private GainType gainType;
     private BigDecimal redemptionNav;
+    private BigDecimal sttAmount;
+    private BigDecimal exitLoadDeducted;
+    private BigDecimal netRedemptionValue;
     private String amountCreditedBank;
+    private TransactionStatus status;
+    private LocalDate applicableDate;
+    private LocalDate settlementDate;
+    private int retryCount;
     private Instant createdAt;
+    private Boolean isAfterCutoff;
 
     public RedemptionTransaction() {
     }
@@ -163,6 +171,62 @@ public class RedemptionTransaction {
 
     public void setAmountCreditedBank(String amountCreditedBank) {
         this.amountCreditedBank = amountCreditedBank;
+    }
+
+    public BigDecimal getSttAmount() {
+        return sttAmount;
+    }
+
+    public void setSttAmount(BigDecimal sttAmount) {
+        this.sttAmount = sttAmount;
+    }
+
+    public BigDecimal getExitLoadDeducted() {
+        return exitLoadDeducted;
+    }
+
+    public void setExitLoadDeducted(BigDecimal exitLoadDeducted) {
+        this.exitLoadDeducted = exitLoadDeducted;
+    }
+
+    public BigDecimal getNetRedemptionValue() {
+        return netRedemptionValue;
+    }
+
+    public void setNetRedemptionValue(BigDecimal netRedemptionValue) {
+        this.netRedemptionValue = netRedemptionValue;
+    }
+
+    public TransactionStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TransactionStatus status) {
+        this.status = status;
+    }
+
+    public LocalDate getApplicableDate() {
+        return applicableDate;
+    }
+
+    public void setApplicableDate(LocalDate applicableDate) {
+        this.applicableDate = applicableDate;
+    }
+
+    public LocalDate getSettlementDate() {
+        return settlementDate;
+    }
+
+    public void setSettlementDate(LocalDate settlementDate) {
+        this.settlementDate = settlementDate;
+    }
+
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
     }
 
     public Instant getCreatedAt() {

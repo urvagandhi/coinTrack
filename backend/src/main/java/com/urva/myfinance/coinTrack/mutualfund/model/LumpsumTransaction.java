@@ -23,9 +23,16 @@ public class LumpsumTransaction {
     private LocalDate investmentDate;
     private BigDecimal lumpsumInvestment;
     private BigDecimal totalUnit;
+    private Boolean isAfterCutoff;
     private BigDecimal navPrice;
     private String debitedBank;
     private String remarks;
+    private BigDecimal stampDutyRate;
+    private BigDecimal stampDuty;
+    private TransactionStatus status;
+    private LocalDate applicableDate;
+    private LocalDate settlementDate;
+    private int retryCount;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -88,6 +95,14 @@ public class LumpsumTransaction {
         this.totalUnit = totalUnit;
     }
 
+    public Boolean getIsAfterCutoff() {
+        return isAfterCutoff;
+    }
+
+    public void setIsAfterCutoff(Boolean isAfterCutoff) {
+        this.isAfterCutoff = isAfterCutoff;
+    }
+
     public BigDecimal getNavPrice() {
         return navPrice;
     }
@@ -126,5 +141,53 @@ public class LumpsumTransaction {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public BigDecimal getStampDutyRate() {
+        return stampDutyRate;
+    }
+
+    public void setStampDutyRate(BigDecimal stampDutyRate) {
+        this.stampDutyRate = stampDutyRate;
+    }
+
+    public BigDecimal getStampDuty() {
+        return stampDuty;
+    }
+
+    public void setStampDuty(BigDecimal stampDuty) {
+        this.stampDuty = stampDuty;
+    }
+
+    public TransactionStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TransactionStatus status) {
+        this.status = status;
+    }
+
+    public LocalDate getApplicableDate() {
+        return applicableDate;
+    }
+
+    public void setApplicableDate(LocalDate applicableDate) {
+        this.applicableDate = applicableDate;
+    }
+
+    public LocalDate getSettlementDate() {
+        return settlementDate;
+    }
+
+    public void setSettlementDate(LocalDate settlementDate) {
+        this.settlementDate = settlementDate;
+    }
+
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
     }
 }
