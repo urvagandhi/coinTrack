@@ -142,8 +142,6 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-  const handleChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setFormData({ ...formData, [e.target.name]: value });
   };
 
@@ -157,8 +155,6 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
     }
     setLoading(true);
     try {
-      const payload = {
-        ...formData,
       const payload = {
         ...formData,
         redemptionUnit: formData.redemptionUnit ? Number(formData.redemptionUnit) : null,
