@@ -57,6 +57,7 @@ function PpfTableSkeleton() {
 export default function PpfPage() {
     const [page, setPage] = useState(0);
     const [financialYear, setFinancialYear] = useState('');
+    const [sortDir, setSortDir] = useState('desc');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [editingTxn, setEditingTxn] = useState(null);
@@ -65,12 +66,12 @@ export default function PpfPage() {
     const queryClient = useQueryClient();
 
     const { data: txnData, isLoading: isLoadingTxns } = useQuery({
-        queryKey: ['ppf', { page, financialYear }],
+        queryKey: ['ppf', { page, financialYear, sortDir }],
         queryFn: () => ppfAPI.getAll({
             page, size: PAGE_SIZE,
             financialYear: financialYear || undefined,
             sortBy: 'transactionDate',
-            sortDir: 'desc',
+            sortDir: sortDir,
         }),
         staleTime: 30 * 1000,
         keepPreviousData: true,
@@ -314,13 +315,22 @@ export default function PpfPage() {
             </header>
 
             <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-border">
-                <FilterDropdown
-                    label="Financial Year"
-                    value={financialYear}
-                    options={fyOptions}
-                    onChange={(val) => { setFinancialYear(val); setPage(0); }}
-                    placeholder="All Financial Years"
-                />
+                <div className="flex items-center gap-4 flex-wrap">
+                    <FilterDropdown
+                        label="Financial Year"
+                        value={financialYear}
+                        options={fyOptions}
+                        onChange={(val) => { setFinancialYear(val); setPage(0); }}
+                        placeholder="All Financial Years"
+                    />
+                    <FilterDropdown
+                        label="Sort Order"
+                        value={sortDir}
+                        options={[{ value: 'desc', label: 'Date: Newest First' }, { value: 'asc', label: 'Date: Oldest First' }]}
+                        onChange={(val) => { setSortDir(val); setPage(0); }}
+                        placeholder="Sort By Date"
+                    />
+                </div>
             </div>
 
             {isLoadingTxns ? (

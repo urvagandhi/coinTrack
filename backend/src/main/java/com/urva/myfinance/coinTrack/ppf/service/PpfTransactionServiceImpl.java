@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.common.util.FinancialYearUtil;
 import com.urva.myfinance.coinTrack.ppf.dto.request.PpfSettingsRequestDTO;
 import com.urva.myfinance.coinTrack.ppf.dto.request.PpfTransactionRequestDTO;
@@ -49,6 +50,7 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
     private final PpfTransactionRepository ppfTransactionRepository;
     private final PpfBalanceRecalculationService recalculationService;
     private final SequenceGeneratorService sequenceGeneratorService;
+    private final TransactionSequenceService transactionSequenceService;
     private final MongoTemplate mongoTemplate;
     private final UserRepository userRepository;
 
@@ -57,11 +59,13 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
             PpfTransactionRepository ppfTransactionRepository,
             PpfBalanceRecalculationService recalculationService,
             SequenceGeneratorService sequenceGeneratorService,
+            TransactionSequenceService transactionSequenceService,
             MongoTemplate mongoTemplate,
             UserRepository userRepository) {
         this.ppfTransactionRepository = ppfTransactionRepository;
         this.recalculationService = recalculationService;
         this.sequenceGeneratorService = sequenceGeneratorService;
+        this.transactionSequenceService = transactionSequenceService;
         this.mongoTemplate = mongoTemplate;
         this.userRepository = userRepository;
     }
@@ -72,7 +76,7 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
         logger.info("Creating PPF transaction for user: {}", userId);
         validateRequestDTO(requestDTO);
 
-        long nextTxnNo = sequenceGeneratorService.getNextSequence("ppf_txn_no_" + userId);
+        long nextTxnNo = 0L;
         Instant now = Instant.now();
 
         PpfTransaction transaction = PpfTransaction.builder()
@@ -90,6 +94,7 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
 
         PpfTransaction saved = ppfTransactionRepository.save(transaction);
         recalculationService.recalculateLedger(userId);
+        transactionSequenceService.reorderPpfTransactions(userId);
 
         // Fetch freshly calculated balance
         PpfTransaction reloaded = ppfTransactionRepository.findById(saved.getId()).orElse(saved);
@@ -153,6 +158,7 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
 
         ppfTransactionRepository.save(existing);
         recalculationService.recalculateLedger(userId);
+        transactionSequenceService.reorderPpfTransactions(userId);
 
         PpfTransaction reloaded = ppfTransactionRepository.findById(id).orElse(existing);
         return toResponseDTO(reloaded);
@@ -165,6 +171,7 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
         findAndVerifyOwnership(id, userId);
         ppfTransactionRepository.deleteById(id);
         recalculationService.recalculateLedger(userId);
+        transactionSequenceService.reorderPpfTransactions(userId);
     }
 
     @Override

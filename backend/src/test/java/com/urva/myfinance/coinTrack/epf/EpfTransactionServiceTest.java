@@ -23,6 +23,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.epf.dto.request.EpfTransactionRequestDTO;
 import com.urva.myfinance.coinTrack.epf.dto.response.EpfTransactionResponseDTO;
 import com.urva.myfinance.coinTrack.epf.model.ContributionMode;
@@ -60,6 +61,9 @@ class EpfTransactionServiceTest {
 
     @Mock
     private SequenceGeneratorService sequenceGeneratorService;
+
+    @Mock
+    private TransactionSequenceService transactionSequenceService;
 
     @Mock
     private MongoTemplate mongoTemplate;
@@ -146,7 +150,6 @@ class EpfTransactionServiceTest {
 
         when(contributionCalculationService.calculate(any(), any(), any(Boolean.class), any()))
                 .thenReturn(calcResult);
-        when(sequenceGeneratorService.getNextSequence("epf_txn_no_" + userA)).thenReturn(1L);
 
         when(epfTransactionRepository.save(any(EpfTransaction.class))).thenAnswer(inv -> {
             EpfTransaction t = inv.getArgument(0);
@@ -173,7 +176,7 @@ class EpfTransactionServiceTest {
         assertEquals(new BigDecimal("10750.50"), response.getEpfBalance());
         assertEquals(new BigDecimal("1249.50"), response.getEpsBalance());
 
-        verify(sequenceGeneratorService).getNextSequence("epf_txn_no_" + userA);
+        verify(transactionSequenceService).reorderEpfTransactions(userA);
         verify(recalculationService).recalculateLedger(userA);
     }
 }

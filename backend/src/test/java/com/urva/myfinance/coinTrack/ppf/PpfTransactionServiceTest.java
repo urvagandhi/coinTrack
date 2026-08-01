@@ -29,6 +29,7 @@ import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.exception.InsufficientPpfBalanceException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.ppf.dto.request.PpfTransactionRequestDTO;
 import com.urva.myfinance.coinTrack.ppf.dto.response.PpfTransactionResponseDTO;
 import com.urva.myfinance.coinTrack.ppf.model.PpfParticularType;
@@ -45,6 +46,9 @@ class PpfTransactionServiceTest {
 
     @Mock
     private SequenceGeneratorService sequenceGeneratorService;
+
+    @Mock
+    private TransactionSequenceService transactionSequenceService;
 
     @Mock
     private MongoTemplate mongoTemplate;
@@ -154,7 +158,6 @@ class PpfTransactionServiceTest {
                 .creditAmount(new BigDecimal("50000"))
                 .build();
 
-        when(sequenceGeneratorService.getNextSequence("ppf_txn_no_user_A")).thenReturn(10L);
         when(ppfTransactionRepository.save(any(PpfTransaction.class))).thenAnswer(invocation -> {
             PpfTransaction t = invocation.getArgument(0);
             t.setId("new_txn_1");
@@ -175,7 +178,7 @@ class PpfTransactionServiceTest {
         assertEquals(10L, response.getTransactionNo());
         assertEquals(new BigDecimal("50000"), response.getBalance());
         
-        verify(sequenceGeneratorService).getNextSequence("ppf_txn_no_user_A");
+        verify(transactionSequenceService).reorderPpfTransactions("user_A");
         verify(recalculationService).recalculateLedger("user_A");
     }
 }

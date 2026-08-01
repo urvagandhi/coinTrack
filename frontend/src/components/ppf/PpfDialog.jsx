@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { ppfAPI } from '@/lib/api';
+import { getFinancialYear } from '@/lib/format';
 import { useEffect, useState } from 'react';
 
 /**
@@ -111,6 +112,20 @@ export default function PpfDialog({ isOpen, onClose, onSave, onDelete, initialDa
             setIsSubmitting(false);
         }
     }, [isOpen, initialData]);
+
+    // Auto-generate remarks when date, type, or particularType changes
+    useEffect(() => {
+        if (isOpen && !initialData && formData.transactionDate) {
+            const fy = getFinancialYear(formData.transactionDate);
+            if (formData.type === 'CREDIT') {
+                if (formData.particularType === 'INTEREST_CREDIT') {
+                    setFormData(prev => ({ ...prev, remarks: `Annual Interest FY ${fy}` }));
+                } else if (formData.particularType === 'DEPOSIT') {
+                    setFormData(prev => ({ ...prev, remarks: `Contribution for FY ${fy}` }));
+                }
+            }
+        }
+    }, [formData.transactionDate, formData.type, formData.particularType, isOpen, initialData]);
 
     if (!isOpen) return null;
 

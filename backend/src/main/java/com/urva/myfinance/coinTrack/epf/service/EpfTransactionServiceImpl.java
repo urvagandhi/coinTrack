@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.common.util.FinancialYearUtil;
 import com.urva.myfinance.coinTrack.epf.dto.request.EpfInterestRateRequestDTO;
 import com.urva.myfinance.coinTrack.epf.dto.request.EpfSettingsRequestDTO;
@@ -49,6 +50,7 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
     private final EpfInterestAccrualService interestAccrualService;
     private final EpfBalanceRecalculationService recalculationService;
     private final SequenceGeneratorService sequenceGeneratorService;
+    private final TransactionSequenceService transactionSequenceService;
     private final MongoTemplate mongoTemplate;
     private final UserRepository userRepository;
 
@@ -60,6 +62,7 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
             EpfInterestAccrualService interestAccrualService,
             EpfBalanceRecalculationService recalculationService,
             SequenceGeneratorService sequenceGeneratorService,
+            TransactionSequenceService transactionSequenceService,
             MongoTemplate mongoTemplate,
             UserRepository userRepository) {
         this.epfTransactionRepository = epfTransactionRepository;
@@ -68,6 +71,7 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
         this.interestAccrualService = interestAccrualService;
         this.recalculationService = recalculationService;
         this.sequenceGeneratorService = sequenceGeneratorService;
+        this.transactionSequenceService = transactionSequenceService;
         this.mongoTemplate = mongoTemplate;
         this.userRepository = userRepository;
     }
@@ -175,7 +179,7 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
             }
         }
 
-        long nextTxnNo = sequenceGeneratorService.getNextSequence("epf_txn_no_" + userId);
+        long nextTxnNo = 0L;
         Instant now = Instant.now();
 
         EpfTransaction transaction = EpfTransaction.builder()
@@ -196,6 +200,7 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
 
         EpfTransaction saved = epfTransactionRepository.save(transaction);
         recalculationService.recalculateLedger(userId);
+        transactionSequenceService.reorderEpfTransactions(userId);
 
         EpfTransaction reloaded = epfTransactionRepository.findById(saved.getId()).orElse(saved);
         return toResponseDTO(reloaded);
@@ -286,6 +291,7 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
 
         epfTransactionRepository.save(existing);
         recalculationService.recalculateLedger(userId);
+        transactionSequenceService.reorderEpfTransactions(userId);
 
         EpfTransaction reloaded = epfTransactionRepository.findById(id).orElse(existing);
         return toResponseDTO(reloaded);
@@ -298,6 +304,7 @@ public class EpfTransactionServiceImpl implements EpfTransactionService {
         findAndVerifyOwnership(id, userId);
         epfTransactionRepository.deleteById(id);
         recalculationService.recalculateLedger(userId);
+        transactionSequenceService.reorderEpfTransactions(userId);
     }
 
     // ── Summary & Export ───────────────────────────────────────────────
