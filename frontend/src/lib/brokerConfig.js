@@ -1,6 +1,8 @@
 // src/lib/brokerConfig.js — Single source of truth for all broker metadata
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cointrack-finance.vercel.app';
+const APP_URL = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : (process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'production' ? 'https://cointrack-finance.vercel.app' : 'http://localhost:3000'));
 
 export const BROKERS = {
     ZERODHA: {

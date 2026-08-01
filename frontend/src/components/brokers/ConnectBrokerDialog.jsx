@@ -59,7 +59,7 @@ export default function ConnectBrokerDialog({ isOpen, onClose, onSubmit, isConne
                                                     <p><span className="font-medium">Type:</span> Personal</p>
                                                     <p><span className="font-medium">Redirect URL:</span></p>
                                                     <code className="block bg-gray-100 dark:bg-gray-800 p-1 rounded break-all select-all">
-                                                        {`${process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000'}/brokers/zerodha/callback`}
+                                                        {`${typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')}/brokers/zerodha/callback`}
                                                     </code>
                                                 </div>
                                             </div>

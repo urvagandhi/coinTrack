@@ -417,6 +417,7 @@ export const endpoints = {
         deleteSipContribution: (id) => `/api/mutual-fund/sip-contribution/${id}`,
         
         redemption: '/api/mutual-fund/redemption',
+        redemptionPreviewFifo: '/api/mutual-fund/redemption/preview-fifo',
         redemptionDateRange: '/api/mutual-fund/redemption/date-range',
         redemptionFinYear: (year) => `/api/mutual-fund/redemption/financial-year/${year}`,
         updateRedemption: (id) => `/api/mutual-fund/redemption/${id}`,
@@ -1151,6 +1152,14 @@ export const mutualFundAPI = {
         const qs = schemeId ? `?schemeId=${schemeId}` : '';
         const { data } = await api.get(`${endpoints.mutualFund.redemption}${qs}`);
         return unwrapResponse(data) || [];
+    },
+    previewFifo: async ({ schemeId, date, units }) => {
+        const searchParams = new URLSearchParams();
+        searchParams.set('schemeId', schemeId);
+        searchParams.set('date', date);
+        searchParams.set('units', units);
+        const { data } = await api.get(`${endpoints.mutualFund.redemptionPreviewFifo}?${searchParams.toString()}`);
+        return unwrapResponse(data);
     },
     createRedemption: async (txnData) => {
         const { data } = await api.post(endpoints.mutualFund.redemption, txnData);

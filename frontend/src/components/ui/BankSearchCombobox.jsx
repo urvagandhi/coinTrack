@@ -15,16 +15,26 @@ export default function BankSearchCombobox({ value, onChange }) {
   
   const debouncedQuery = useDebounce(query, 200);
   const ignoreSearchRef = useRef(false);
+  const inputRef = useRef(null);
 
   // Fetch all banks once on mount
   useEffect(() => {
     async function fetchBanks() {
       setLoading(true);
       try {
+        const cachedBanks = sessionStorage.getItem("all_banks_cache");
+        if (cachedBanks) {
+           setBanks(JSON.parse(cachedBanks));
+           setApiFailed(false);
+           setLoading(false);
+           return;
+        }
+
         const res = await fetch(`/api/ifsc?type=all_banks`);
         const data = await res.json();
         if (data && data.status && data.data && data.data.banks) {
            setBanks(data.data.banks);
+           sessionStorage.setItem("all_banks_cache", JSON.stringify(data.data.banks));
            setApiFailed(false);
         } else {
            setApiFailed(true);
@@ -54,6 +64,9 @@ export default function BankSearchCombobox({ value, onChange }) {
 
     if (!debouncedQuery || debouncedQuery.length < 2) {
       setResults([]);
+      if (inputRef.current === document.activeElement) {
+        setOpen(false);
+      }
       return;
     }
 
@@ -65,7 +78,11 @@ export default function BankSearchCombobox({ value, onChange }) {
     ).slice(0, 20); // Show max 20 results
 
     setResults(filtered);
-    setOpen(filtered.length > 0);
+    
+    // Only auto-open if the user is actively focused on the input
+    if (inputRef.current === document.activeElement) {
+      setOpen(filtered.length > 0);
+    }
   }, [debouncedQuery, banks]);
 
   return (
@@ -73,12 +90,14 @@ export default function BankSearchCombobox({ value, onChange }) {
       <PopoverTrigger asChild>
         <div className="relative w-full">
           <input
+            ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
               onChange(e.target.value); // Keep passing raw string to parent
               if (e.target.value.length >= 2) setOpen(true);
+              else setOpen(false);
             }}
             onFocus={() => {
               if (results.length > 0) setOpen(true);
