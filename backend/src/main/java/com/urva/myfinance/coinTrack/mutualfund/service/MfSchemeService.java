@@ -6,6 +6,7 @@ import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepo
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.RedemptionTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipContributionRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.PortfolioHoldingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +19,8 @@ public class MfSchemeService {
     @Autowired
     private MfSchemeRepository repository;
     @Autowired
+    private PortfolioHoldingService portfolioHoldingService;
+    @Autowired
     private LumpsumTransactionRepository lumpsumRepo;
     @Autowired
     private SipMandateRepository sipMandateRepo;
@@ -25,6 +28,8 @@ public class MfSchemeService {
     private RedemptionTransactionRepository redemptionRepo;
     @Autowired
     private SipContributionRepository sipContributionRepo;
+    @Autowired
+    private PortfolioHoldingRepository portfolioHoldingRepo;
 
     private String normalizeCategory(String category) {
         if (category == null || category.trim().isEmpty())
@@ -87,23 +92,32 @@ public class MfSchemeService {
         MfScheme existing = getScheme(userId, id);
         existing.setHolderName(updatedScheme.getHolderName());
         existing.setSchemeName(updatedScheme.getSchemeName());
+        existing.setAmfiCode(updatedScheme.getAmfiCode());
         existing.setMfCategory(normalizeCategory(updatedScheme.getMfCategory()));
         existing.setPlatform(updatedScheme.getPlatform());
         existing.setFolioNo(updatedScheme.getFolioNo());
         existing.setBank(updatedScheme.getBank());
         existing.setSipStartDate(updatedScheme.getSipStartDate());
         existing.setSipStopDate(updatedScheme.getSipStopDate());
+        existing.setManualTotalUnits(updatedScheme.getManualTotalUnits());
+        existing.setAverageNav(updatedScheme.getAverageNav());
         existing.setUpdatedAt(Instant.now());
-        return repository.save(existing);
+        MfScheme savedScheme = repository.save(existing);
+        portfolioHoldingService.updateHoldingForScheme(userId, id);
+        return savedScheme;
     }
 
     public void deleteScheme(String userId, String id) {
-        if (!lumpsumRepo.findByUserIdAndSchemeId(userId, id).isEmpty() ||
-                !sipMandateRepo.findByUserIdAndSchemeId(userId, id).isEmpty() ||
-                !redemptionRepo.findByUserIdAndSchemeId(userId, id).isEmpty() ||
-                !sipContributionRepo.findByUserIdAndSchemeId(userId, id).isEmpty()) {
-            throw new RuntimeException("Cannot delete scheme because it has associated transactions.");
-        }
+        // Cascading delete: delete all associated transactions
+        lumpsumRepo.deleteAll(lumpsumRepo.findByUserIdAndSchemeId(userId, id));
+        sipMandateRepo.deleteAll(sipMandateRepo.findByUserIdAndSchemeId(userId, id));
+        redemptionRepo.deleteAll(redemptionRepo.findByUserIdAndSchemeId(userId, id));
+        sipContributionRepo.deleteAll(sipContributionRepo.findByUserIdAndSchemeId(userId, id));
+
+        // Delete associated portfolio holding
+        portfolioHoldingRepo.findByUserIdAndSchemeId(userId, id)
+                .ifPresent(holding -> portfolioHoldingRepo.delete(holding));
+
         MfScheme existing = getScheme(userId, id);
         repository.delete(existing);
     }

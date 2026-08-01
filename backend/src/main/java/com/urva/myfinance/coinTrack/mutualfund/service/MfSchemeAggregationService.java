@@ -6,6 +6,8 @@ import com.urva.myfinance.coinTrack.mutualfund.dto.OverallSummaryDto.Discrepancy
 import com.urva.myfinance.coinTrack.mutualfund.model.*;
 import com.urva.myfinance.coinTrack.mutualfund.repository.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class MfSchemeAggregationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(MfSchemeAggregationService.class);
 
     @Autowired
     private MfSchemeRepository schemeRepository;
@@ -71,14 +75,39 @@ public class MfSchemeAggregationService {
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        BigDecimal lumpsumStampDuty = lumpsums.stream()
+                .map(LumpsumTransaction::getStampDuty)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal sipStampDuty = sips.stream()
+                .map(SipContribution::getStampDuty)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalStampDuty = lumpsumStampDuty.add(sipStampDuty);
         BigDecimal totalInvestment = lumpsumInvestment.add(sipInvestment);
+        BigDecimal netInvestment = totalInvestment.subtract(totalStampDuty);
         BigDecimal currentInvestment = totalInvestment.subtract(totalTradedValue);
         BigDecimal totalUnit;
-        if (scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) > 0) {
-            totalUnit = scheme.getManualTotalUnits().subtract(redeemedUnits);
+        if (scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
+            totalUnit = scheme.getManualTotalUnits();
         } else {
             totalUnit = lumpsumUnits.add(sipUnits).subtract(redeemedUnits);
         }
+        
+        BigDecimal totalPurchasedUnits = lumpsumUnits.add(sipUnits);
+        if (scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
+            totalPurchasedUnits = scheme.getManualTotalUnits().add(redeemedUnits);
+        }
+        BigDecimal averageNav = scheme.getAverageNav();
+        if ((averageNav == null || averageNav.compareTo(BigDecimal.ZERO) == 0) && totalPurchasedUnits.compareTo(BigDecimal.ZERO) > 0) {
+            averageNav = totalInvestment.divide(totalPurchasedUnits, 8, java.math.RoundingMode.HALF_UP);
+        }
+
+        logger.info(
+                "Aggregation for Scheme {}: Lumpsum Inv={}, SIP Inv={}, Total Inv={}, Total Traded={}, Current Inv={}",
+                schemeId, lumpsumInvestment, sipInvestment, totalInvestment, totalTradedValue, currentInvestment);
 
         java.util.Set<FundStatus> statuses = new java.util.HashSet<>();
         if (scheme.getStatuses() != null) {
@@ -88,7 +117,8 @@ public class MfSchemeAggregationService {
         boolean hasInvestments = false;
 
         if (lumpsumUnits.compareTo(BigDecimal.ZERO) > 0 || lumpsumInvestment.compareTo(BigDecimal.ZERO) > 0
-                || (scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) > 0)) {
+                || (scheme.getManualTotalUnits() != null
+                        && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) > 0)) {
             statuses.add(FundStatus.LUMPSUM);
             hasInvestments = true;
         }
@@ -129,8 +159,11 @@ public class MfSchemeAggregationService {
         dto.setLumpsumInvestment(lumpsumInvestment);
         dto.setSipInvestment(sipInvestment);
         dto.setTotalInvestment(totalInvestment);
+        dto.setTotalStampDuty(totalStampDuty);
+        dto.setNetInvestment(netInvestment);
         dto.setTotalTradedValue(totalTradedValue);
         dto.setCurrentInvestment(currentInvestment);
+        dto.setAverageNav(averageNav);
         dto.setStatuses(statuses);
 
         return dto;

@@ -18,6 +18,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [redemptionType, setRedemptionType] = useState("amount"); // 'amount' or 'unit'
+  const [entryMode, setEntryMode] = useState("automatic"); // 'automatic' or 'manual'
   const [calculatedNavData, setCalculatedNavData] = useState(null);
   const [navLoading, setNavLoading] = useState(false);
   const { toast } = useToast();
@@ -59,6 +60,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
           isAfterCutoff: initialData.isAfterCutoff || false
         });
         setRedemptionType(initialData.redemptionUnit && !initialData.redemptionValue ? "unit" : "amount");
+        setEntryMode(initialData.redemptionNav ? "manual" : "automatic");
       } else {
         setFormData({
           schemeId: "",
@@ -69,6 +71,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
           isAfterCutoff: false
         });
         setRedemptionType("amount");
+        setEntryMode("automatic");
       }
       setLoading(false);
       setDeleteLoading(false);
@@ -77,7 +80,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
 
   useEffect(() => {
     let active = true;
-    if (isOpen && formData.schemeId && formData.redemptionDate) {
+    if (isOpen && entryMode === "automatic" && formData.schemeId && formData.redemptionDate) {
       setNavLoading(true);
       mutualFundAPI.getSchemeNavForDate(formData.schemeId, formData.redemptionDate, formData.isAfterCutoff)
         .then((res) => {
@@ -98,7 +101,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
     return () => {
       active = false;
     };
-  }, [isOpen, formData.schemeId, formData.redemptionDate, formData.isAfterCutoff]);
+  }, [isOpen, entryMode, formData.schemeId, formData.redemptionDate, formData.isAfterCutoff]);
 
   const selectedScheme = useMemo(() => {
     if (!formData.schemeId || !schemes) return null;
@@ -114,6 +117,16 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
     return () => clearTimeout(handler);
   }, [formData.redemptionUnit]);
 
+  const calculateMissingValue = () => {
+    if (entryMode === "manual" && formData.redemptionNav) {
+      if (redemptionType === "amount" && formData.redemptionValue) {
+        setFormData(prev => ({ ...prev, redemptionUnit: (parseFloat(prev.redemptionValue) / parseFloat(prev.redemptionNav)).toFixed(3) }));
+      } else if (redemptionType === "unit" && formData.redemptionUnit) {
+        setFormData(prev => ({ ...prev, redemptionValue: (parseFloat(prev.redemptionUnit) * parseFloat(prev.redemptionNav)).toFixed(2) }));
+      }
+    }
+  };
+
   const { data: previewData, isLoading: isPreviewLoading } = useQuery({
     queryKey: ["previewFifo", formData.schemeId, formData.redemptionDate, debouncedUnits],
     queryFn: () => mutualFundAPI.previewFifo({ 
@@ -127,6 +140,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
 
   if (!isOpen) return null;
 
+  const handleChange = (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setFormData({ ...formData, [e.target.name]: value });
@@ -144,9 +159,11 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
     try {
       const payload = {
         ...formData,
-        redemptionUnit: redemptionType === "unit" && formData.redemptionUnit ? Number(formData.redemptionUnit) : null,
-        redemptionValue: redemptionType === "amount" && formData.redemptionValue ? Number(formData.redemptionValue) : null,
-        redemptionNav: null,
+      const payload = {
+        ...formData,
+        redemptionUnit: formData.redemptionUnit ? Number(formData.redemptionUnit) : null,
+        redemptionValue: formData.redemptionValue ? Number(formData.redemptionValue) : null,
+        redemptionNav: entryMode === "manual" && formData.redemptionNav ? Number(formData.redemptionNav) : null,
       };
       if (initialData?.id) {
         await mutualFundAPI.updateRedemption(initialData.id, payload);
@@ -309,31 +326,28 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                  </button>
               </div>
               
-              {redemptionType === "amount" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
-                  <div className="space-y-1.5">
-                    <label className="eyebrow">Redemption Value (₹) *</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
+                  <div className="space-y-1.5 flex-1">
+                    <label className="eyebrow">Redemption Value (₹) {redemptionType === "amount" && "*"}</label>
                     <input
                       type="number"
                       step="0.01"
                       required={redemptionType === "amount"}
+                      disabled={redemptionType !== "amount"}
                       name="redemptionValue"
                       value={formData.redemptionValue}
                       onChange={handleChange}
-                      className="ed-input w-full font-mono"
-                      placeholder="e.g. 10000.00"
+                      onBlur={calculateMissingValue}
+                      className="ed-input w-full font-mono max-w-[50%]"
+                      placeholder="e.g. 5000"
                     />
                   </div>
-                </div>
-              )}
-              {redemptionType === "unit" && (
-                <div className="grid grid-cols-1 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between min-h-[20px]">
-                      <label className="eyebrow mb-0">Redeemed Units *</label>
-                      {selectedScheme && selectedScheme.totalUnit != null && (
-                        <span className="text-[10px] font-mono text-muted-foreground leading-none">
-                          Total Available: <strong className="text-foreground">{selectedScheme.totalUnit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong>
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2">
+                      <label className="eyebrow">Redeemed Units {redemptionType === "unit" && "*"}</label>
+                      {redemptionType === "amount" && (
+                        <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border">
+                          <Info className="h-3 w-3" /> Auto
                         </span>
                       )}
                     </div>
@@ -341,9 +355,11 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                       type="number"
                       step="0.001"
                       required={redemptionType === "unit"}
+                      disabled={redemptionType !== "unit" && entryMode !== "manual"}
                       name="redemptionUnit"
                       value={formData.redemptionUnit}
                       onChange={handleChange}
+                      onBlur={calculateMissingValue}
                       className="ed-input w-full font-mono max-w-[50%]"
                       placeholder="e.g. 50.000"
                     />
@@ -353,7 +369,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                           Redeeming <strong className="text-foreground">{formData.redemptionUnit}</strong> out of <strong className="text-foreground">{selectedScheme.totalUnit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong> total units
                         </p>
                         <p className="text-[11px] font-mono font-medium text-accent">
-                          Remaining Units: {(selectedScheme.totalUnit - parseFloat(formData.redemptionUnit)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                          Remaining Units: {(selectedScheme.totalUnit - parseFloat(formData.redemptionUnit || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
                         </p>
                         
                         {isPreviewLoading ? (
@@ -382,10 +398,48 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                       </div>
                     )}
                   </div>
+              </div>
+              
+              <div className="flex items-center space-x-2 mt-4 mb-2">
+                 <button
+                    type="button"
+                    onClick={() => setEntryMode("automatic")}
+                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
+                       entryMode === "automatic" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                 >
+                    Automatic Mode
+                 </button>
+                 <button
+                    type="button"
+                    onClick={() => setEntryMode("manual")}
+                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
+                       entryMode === "manual" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                 >
+                    Manual Mode
+                 </button>
+              </div>
+
+              {entryMode === "manual" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200 mt-4">
+                  <div className="space-y-1.5">
+                    <label className="eyebrow">NAV Price</label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      name="redemptionNav"
+                      value={formData.redemptionNav}
+                      onChange={handleChange}
+                      onBlur={calculateMissingValue}
+                      className="ed-input w-full font-mono"
+                    />
+                  </div>
                 </div>
               )}
-              
-              <div className="bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1">
+
+              {entryMode === "automatic" && (
+                <div className="bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1">
                 <p className="text-[11px] text-muted-foreground leading-tight">
                   NAV Price and the missing value will be auto-calculated by the system based on the NAV of the applicable settlement date.
                 </p>
@@ -404,12 +458,17 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                       <span className="flex justify-between font-medium text-accent"><span>Est. Redemption Value:</span> <span>₹{(parseFloat(formData.redemptionUnit) * calculatedNavData.nav).toFixed(2)}</span></span>
                     )}
                   </div>
+                ) : calculatedNavData?.error ? (
+                  <div className="text-xs text-[hsl(var(--loss))] mt-2 italic">
+                    {calculatedNavData.error}
+                  </div>
                 ) : formData.schemeId && formData.redemptionDate ? (
                   <div className="text-xs text-ed-muted-text mt-2 italic">
                     NAV for the applicable date is currently unavailable (e.g., future date).
                   </div>
                 ) : null}
               </div>
+              )}
             </div>
 
             <div className="space-y-3">

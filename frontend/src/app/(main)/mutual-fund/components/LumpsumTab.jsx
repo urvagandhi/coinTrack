@@ -14,6 +14,13 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
+const getStatusBadge = (status) => {
+  if (status === 'COMPLETED') return <span className="text-[10px] bg-green-500/10 text-green-600 px-2 py-0.5 rounded">Completed</span>;
+  if (status === 'PENDING_NAV') return <span className="text-[10px] bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded">Pending NAV</span>;
+  if (status === 'FAILED') return <span className="text-[10px] bg-red-500/10 text-red-600 px-2 py-0.5 rounded flex items-center gap-1 w-max">Failed <span title="Needs manual intervention" className="cursor-help">⚠️</span></span>;
+  return <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded">{status || 'Unknown'}</span>;
+};
+
 export default function LumpsumTab() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingTxn, setEditingTxn] = React.useState(null);
@@ -51,7 +58,7 @@ export default function LumpsumTab() {
       holderName: schemeMap[l.schemeId]?.holderName || 'Unknown',
       platform: schemeMap[l.schemeId]?.platform || 'Unknown',
       debitedBank: l.debitedBank || schemeMap[l.schemeId]?.bank || '-',
-    }));
+    })).sort((a, b) => new Date(a.investmentDate) - new Date(b.investmentDate));
   }, [schemes, lumpsums]);
 
   if (isLoading) {
@@ -70,16 +77,35 @@ export default function LumpsumTab() {
 
   if (data.length === 0) {
     return (
-      <section className="ed-card relative px-8 py-16 text-center max-w-md mx-auto">
-        <span className="corner-mark corner-tl" />
-        <span className="corner-mark corner-tr" />
-        <span className="corner-mark corner-bl" />
-        <span className="corner-mark corner-br" />
-        <List className="h-8 w-8 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
-        <p className="font-serif italic text-[24px] text-foreground mb-1">
-          No lumpsum investments.
-        </p>
-      </section>
+      <>
+        <section className="ed-card relative px-8 py-16 text-center max-w-md mx-auto">
+          <span className="corner-mark corner-tl" />
+          <span className="corner-mark corner-tr" />
+          <span className="corner-mark corner-bl" />
+          <span className="corner-mark corner-br" />
+          <List className="h-8 w-8 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
+          <p className="font-serif italic text-[24px] text-foreground mb-1">
+            No lumpsum investments.
+          </p>
+          <p className="text-[12px] font-mono text-muted-foreground mb-6">
+            Record your first lumpsum investment.
+          </p>
+          <button
+            onClick={() => { setEditingTxn(null); setIsModalOpen(true); }}
+            className="ed-btn ed-btn-accent inline-flex items-center gap-2"
+          >
+            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+            <span>New Lumpsum</span>
+          </button>
+        </section>
+        <LumpsumTransactionModal 
+          isOpen={isModalOpen} 
+          onClose={() => { setIsModalOpen(false); setEditingTxn(null); }} 
+          onSuccess={handleSuccess}
+          schemes={schemes}
+          initialData={editingTxn}
+        />
+      </>
     );
   }
 
@@ -98,6 +124,10 @@ export default function LumpsumTab() {
         </button>
       </div>
 
+      <div className="px-4 py-2 bg-blue-500/10 border-b border-border text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+        Note: Investment amounts are shown strictly as Net Investment, after deducting the applicable Government Stamp Duty (0.005% since July 2020).
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -107,7 +137,8 @@ export default function LumpsumTab() {
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Scheme Name</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Debited Bank</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Date</th>
-              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Investment</th>
+              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Status</th>
+              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Net Investment</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">NAV</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Units</th>
             </tr>
@@ -134,6 +165,9 @@ export default function LumpsumTab() {
                 </td>
                 <td className="py-3 px-4 font-mono text-[13px] text-foreground">
                   {txn.investmentDate}
+                </td>
+                <td className="py-3 px-4">
+                  {getStatusBadge(txn.status)}
                 </td>
                 <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
                   {formatCurrency(txn.lumpsumInvestment)}

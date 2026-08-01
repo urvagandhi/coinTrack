@@ -12,7 +12,16 @@ function formatCurrency(amount) {
     currency: "INR",
     minimumFractionDigits: 2,
   }).format(amount);
-}export default function RedemptionTab() {
+}
+
+const getStatusBadge = (status) => {
+  if (status === 'COMPLETED') return <span className="text-[10px] bg-green-500/10 text-green-600 px-2 py-0.5 rounded">Completed</span>;
+  if (status === 'PENDING_NAV') return <span className="text-[10px] bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded">Pending NAV</span>;
+  if (status === 'FAILED') return <span className="text-[10px] bg-red-500/10 text-red-600 px-2 py-0.5 rounded flex items-center gap-1 w-max">Failed <span title="Needs manual intervention" className="cursor-help">⚠️</span></span>;
+  return <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded">{status || 'Unknown'}</span>;
+};
+
+export default function RedemptionTab() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingTxn, setEditingTxn] = React.useState(null);
   const queryClient = useQueryClient();
@@ -27,8 +36,8 @@ function formatCurrency(amount) {
   };
 
   const { data: schemes = [], isLoading: isLoadingSchemes } = useQuery({
-    queryKey: ["mfSchemeSummaries"],
-    queryFn: () => mutualFundAPI.getSchemeSummaries(),
+    queryKey: ["mfSchemeDropdown"],
+    queryFn: () => mutualFundAPI.getSchemeDropdown(),
     staleTime: 30 * 1000,
   });
 
@@ -55,7 +64,7 @@ function formatCurrency(amount) {
         platform: scheme?.platform || 'Unknown',
         totalUnit: scheme?.totalUnit ?? null,
       };
-    });
+    }).sort((a, b) => new Date(a.redemptionDate) - new Date(b.redemptionDate));
   }, [schemes, redemptions]);
 
   if (isLoading) {
@@ -74,25 +83,27 @@ function formatCurrency(amount) {
 
   if (data.length === 0) {
     return (
-      <section className="ed-card relative px-8 py-16 text-center max-w-md mx-auto">
-        <span className="corner-mark corner-tl" />
-        <span className="corner-mark corner-tr" />
-        <span className="corner-mark corner-bl" />
-        <span className="corner-mark corner-br" />
-        <ArrowDownLeft className="h-8 w-8 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
-        <p className="font-serif italic text-[24px] text-foreground mb-1">
-          No redemptions found.
-        </p>
-        <p className="text-[12px] font-mono text-muted-foreground mb-6">
-          Record a partial or full redemption for your schemes.
-        </p>
-        <button
-          onClick={() => { setEditingTxn(null); setIsModalOpen(true); }}
-          className="ed-btn ed-btn-accent inline-flex items-center gap-2 bg-[hsl(var(--loss))] border-[hsl(var(--loss))] hover:bg-[hsl(var(--loss))]/90"
-        >
-          <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-          <span>Record Redemption</span>
-        </button>
+      <>
+        <section className="ed-card relative px-8 py-16 text-center max-w-md mx-auto">
+          <span className="corner-mark corner-tl" />
+          <span className="corner-mark corner-tr" />
+          <span className="corner-mark corner-bl" />
+          <span className="corner-mark corner-br" />
+          <ArrowDownLeft className="h-8 w-8 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
+          <p className="font-serif italic text-[24px] text-foreground mb-1">
+            No redemptions found.
+          </p>
+          <p className="text-[12px] font-mono text-muted-foreground mb-6">
+            Record a partial or full redemption for your schemes.
+          </p>
+          <button
+            onClick={() => { setEditingTxn(null); setIsModalOpen(true); }}
+            className="ed-btn ed-btn-accent inline-flex items-center gap-2"
+          >
+            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+            <span>Record Redemption</span>
+          </button>
+        </section>
         <RedemptionModal 
           isOpen={isModalOpen} 
           onClose={() => { setIsModalOpen(false); setEditingTxn(null); }} 
@@ -100,7 +111,7 @@ function formatCurrency(amount) {
           schemes={schemes}
           initialData={editingTxn}
         />
-      </section>
+      </>
     );
   }
 
@@ -130,6 +141,7 @@ function formatCurrency(amount) {
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Holder / Platform</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Scheme Name</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Date</th>
+              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground">Status</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Units Sold</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">NAV</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Invested Value</th>
@@ -157,6 +169,9 @@ function formatCurrency(amount) {
                 <td className="py-3 px-4 font-mono text-[13px] text-foreground">
                   {txn.redemptionDate}
                 </td>
+                <td className="py-3 px-4">
+                  {getStatusBadge(txn.status)}
+                </td>
                 <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
                   <p className="font-semibold text-[hsl(var(--loss))]">
                     {txn.redemptionUnit != null
@@ -176,7 +191,17 @@ function formatCurrency(amount) {
                   {formatCurrency(txn.tradeInvestmentValue)}
                 </td>
                 <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
-                  {formatCurrency(txn.redemptionValue)}
+                  <div>{formatCurrency(txn.redemptionValue)}</div>
+                  {txn.sttAmount > 0 && (
+                    <div className="mt-1 flex flex-col items-end">
+                      <span className="text-[10px] text-[hsl(var(--loss))]" title="Securities Transaction Tax (0.001%)">
+                        - {formatCurrency(txn.sttAmount)} STT
+                      </span>
+                      <span className="text-[11px] text-muted-foreground border-t border-border mt-0.5 pt-0.5 w-max">
+                        Net: {formatCurrency(txn.netRedemptionValue)}
+                      </span>
+                    </div>
+                  )}
                 </td>
                 <td className={`py-3 px-4 text-right font-mono text-[13px] font-semibold ${txn.capitalGain >= 0 ? 'text-[hsl(var(--gain))]' : 'text-[hsl(var(--loss))]'}`}>
                   {txn.capitalGain >= 0 ? '+' : ''}{formatCurrency(txn.capitalGain)}

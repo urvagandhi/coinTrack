@@ -24,6 +24,8 @@ import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.RedemptionTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipContributionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.PortfolioHoldingRepository;
+import com.urva.myfinance.coinTrack.mutualfund.service.PortfolioHoldingService;
 
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +37,8 @@ class MfSchemeServiceTest {
     @Mock private SipMandateRepository sipMandateRepo;
     @Mock private RedemptionTransactionRepository redemptionRepo;
     @Mock private SipContributionRepository sipContributionRepo;
+    @Mock private PortfolioHoldingService portfolioHoldingService;
+    @Mock private PortfolioHoldingRepository portfolioHoldingRepo;
 
     @InjectMocks
     private MfSchemeService service;
@@ -53,6 +57,8 @@ class MfSchemeServiceTest {
         sampleScheme.setMfCategory("equity");
         sampleScheme.setPlatform("Groww");
         sampleScheme.setFolioNo("F123");
+
+        when(portfolioHoldingRepo.findByUserIdAndSchemeId(anyString(), anyString())).thenReturn(Optional.empty());
     }
 
     // ── getAllSchemes ──────────────────────────────────────────────
@@ -200,52 +206,25 @@ class MfSchemeServiceTest {
     }
 
     @Test
-    @DisplayName("deleteScheme: has lumpsum transactions → throws RuntimeException")
-    void deleteScheme_hasLumpsum_throws() {
+    @DisplayName("deleteScheme: cascades deletion to all transactions and mandates")
+    void deleteScheme_cascades() {
+        when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
         when(lumpsumRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
                 .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.LumpsumTransaction()));
-        when(sipMandateRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-        when(redemptionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-        when(sipContributionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.deleteScheme(USER_ID, SCHEME_ID));
-        assertTrue(ex.getMessage().contains("associated transactions"));
-    }
-
-    @Test
-    @DisplayName("deleteScheme: has SIP mandates → throws RuntimeException")
-    void deleteScheme_hasMandates_throws() {
-        when(lumpsumRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
         when(sipMandateRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
                 .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.SipMandate()));
-        when(redemptionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-        when(sipContributionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-
-        assertThrows(RuntimeException.class, () -> service.deleteScheme(USER_ID, SCHEME_ID));
-    }
-
-    @Test
-    @DisplayName("deleteScheme: has redemptions → throws RuntimeException")
-    void deleteScheme_hasRedemptions_throws() {
-        when(lumpsumRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-        when(sipMandateRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
         when(redemptionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
                 .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.RedemptionTransaction()));
-        when(sipContributionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-
-        assertThrows(RuntimeException.class, () -> service.deleteScheme(USER_ID, SCHEME_ID));
-    }
-
-    @Test
-    @DisplayName("deleteScheme: has SIP contributions → throws RuntimeException")
-    void deleteScheme_hasContributions_throws() {
-        when(lumpsumRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-        when(sipMandateRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-        when(redemptionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
         when(sipContributionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
                 .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.SipContribution()));
 
-        assertThrows(RuntimeException.class, () -> service.deleteScheme(USER_ID, SCHEME_ID));
+        assertDoesNotThrow(() -> service.deleteScheme(USER_ID, SCHEME_ID));
+        
+        verify(lumpsumRepo).deleteAll(any());
+        verify(sipMandateRepo).deleteAll(any());
+        verify(redemptionRepo).deleteAll(any());
+        verify(sipContributionRepo).deleteAll(any());
+        verify(repository).delete(sampleScheme);
     }
 
     @Test

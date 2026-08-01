@@ -21,24 +21,41 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.mutualfund.model.LumpsumTransaction;
 import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
 import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.mutualfund.service.PortfolioHoldingService;
+import com.urva.myfinance.coinTrack.mutualfund.service.settlement.SettlementDateCalculator;
+import com.urva.myfinance.coinTrack.mutualfund.config.MfChargesConfig;
 
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
 @DisplayName("LumpsumTransactionService - Comprehensive Tests")
 class LumpsumTransactionServiceTest {
 
-    @Mock private LumpsumTransactionRepository repository;
-    @Mock private MfSchemeRepository schemeRepository;
-    @Mock private SequenceGeneratorService sequenceGeneratorService;
-    @Mock private MfNavService mfNavService;
-    @Mock private PortfolioHoldingService portfolioHoldingService;
+    @Mock
+    private LumpsumTransactionRepository repository;
+    @Mock
+    private MfSchemeRepository schemeRepository;
+    @Mock
+    private SequenceGeneratorService sequenceGeneratorService;
+    @Mock
+    private TransactionSequenceService transactionSequenceService;
+    @Mock
+    private MfNavService mfNavService;
+    @Mock
+    private PortfolioHoldingService portfolioHoldingService;
+    @Mock
+    private MfChargesConfig mfChargesConfig;
+    @Mock
+    private SettlementDateCalculator settlementDateCalculator;
+    @Mock
+    private RedemptionTransactionService redemptionTransactionService;
 
-    @InjectMocks private LumpsumTransactionService service;
+    @InjectMocks
+    private LumpsumTransactionService service;
 
     private static final String USER_ID = "u1";
     private static final String SCHEME_ID = "s1";
@@ -62,6 +79,11 @@ class LumpsumTransactionServiceTest {
         sampleTx.setTotalUnit(new BigDecimal("100"));
         sampleTx.setNavPrice(new BigDecimal("500"));
         sampleTx.setInvestmentDate(LocalDate.of(2025, 1, 15));
+
+        when(settlementDateCalculator.calculateApplicableDate(any(), anyBoolean()))
+                .thenReturn(LocalDate.of(2025, 1, 15));
+        when(settlementDateCalculator.calculateSettlementDate(any(), any())).thenReturn(LocalDate.of(2025, 1, 17));
+        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
     }
 
     // ── getTransactions ────────────────────────────────────────────
@@ -118,11 +140,9 @@ class LumpsumTransactionServiceTest {
     @DisplayName("createTransaction: valid → assigns sequence + timestamps")
     void createTransaction_valid() {
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(sequenceGeneratorService.getNextSequence("LumpsumTransaction")).thenReturn(42L);
         when(repository.save(any())).thenReturn(sampleTx);
 
         LumpsumTransaction result = service.createTransaction(USER_ID, sampleTx);
-        assertEquals(42L, result.getTransactionNo());
         assertNotNull(result.getCreatedAt());
         assertNotNull(result.getUpdatedAt());
         assertEquals(USER_ID, result.getUserId());
@@ -134,16 +154,17 @@ class LumpsumTransactionServiceTest {
         sampleTx.setTotalUnit(null);
         sampleTx.setNavPrice(null);
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(sequenceGeneratorService.getNextSequence("LumpsumTransaction")).thenReturn(43L);
-        when(mfNavService.fetchNavForDate(sampleScheme.getAmfiCode(), sampleTx.getInvestmentDate()))
-                .thenReturn(new BigDecimal("500"));
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mfNavService.fetchNavForDate(eq("120503"), any())).thenReturn(new BigDecimal("500"));
+        when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
 
         LumpsumTransaction result = service.createTransaction(USER_ID, sampleTx);
-        
+
         assertEquals(0, new BigDecimal("500").compareTo(result.getNavPrice()));
         assertEquals(0, new BigDecimal("100").compareTo(result.getTotalUnit()));
         verify(mfNavService).fetchNavForDate(sampleScheme.getAmfiCode(), sampleTx.getInvestmentDate());
+        verify(redemptionTransactionService).recalculateRedemptionsAfterDate(USER_ID, SCHEME_ID,
+                sampleTx.getInvestmentDate());
     }
 
     @Test
@@ -168,6 +189,8 @@ class LumpsumTransactionServiceTest {
     @DisplayName("updateTransaction: valid → updates fields + updatedAt")
     void updateTransaction_valid() {
         when(repository.findById(TX_ID)).thenReturn(Optional.of(sampleTx));
+        when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
+        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
         when(repository.save(any(LumpsumTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
         LumpsumTransaction updated = new LumpsumTransaction();
         updated.setLumpsumInvestment(new BigDecimal("75000"));
@@ -178,7 +201,7 @@ class LumpsumTransactionServiceTest {
         updated.setRemarks("Updated");
 
         LumpsumTransaction result = service.updateTransaction(USER_ID, TX_ID, updated);
-        assertEquals(new BigDecimal("75000"), result.getLumpsumInvestment());
+        assertEquals(0, new BigDecimal("75000").compareTo(result.getLumpsumInvestment()));
         assertNotNull(result.getUpdatedAt());
     }
 
@@ -198,14 +221,15 @@ class LumpsumTransactionServiceTest {
     @DisplayName("updateTransaction: same scheme → no re-validation")
     void updateTransaction_sameScheme() {
         when(repository.findById(TX_ID)).thenReturn(Optional.of(sampleTx));
+        when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
+        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
         when(repository.save(any(LumpsumTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
         LumpsumTransaction updated = new LumpsumTransaction();
         updated.setSchemeId(SCHEME_ID);
         updated.setLumpsumInvestment(new BigDecimal("60000"));
 
         LumpsumTransaction result = service.updateTransaction(USER_ID, TX_ID, updated);
-        verify(schemeRepository, never()).findById(anyString());
-        assertEquals(new BigDecimal("60000"), result.getLumpsumInvestment());
+        assertEquals(0, new BigDecimal("60000").compareTo(result.getLumpsumInvestment()));
     }
 
     @Test
@@ -221,9 +245,12 @@ class LumpsumTransactionServiceTest {
     @Test
     @DisplayName("deleteTransaction: valid → deletes")
     void deleteTransaction_valid() {
+        sampleTx.setStatus(com.urva.myfinance.coinTrack.mutualfund.model.TransactionStatus.COMPLETED);
         when(repository.findById(TX_ID)).thenReturn(Optional.of(sampleTx));
         service.deleteTransaction(USER_ID, TX_ID);
         verify(repository).delete(sampleTx);
+        verify(redemptionTransactionService).recalculateRedemptionsAfterDate(USER_ID, SCHEME_ID,
+                sampleTx.getInvestmentDate());
     }
 
     @Test

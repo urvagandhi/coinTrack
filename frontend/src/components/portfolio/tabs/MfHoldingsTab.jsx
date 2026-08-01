@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PiggyBank } from 'lucide-react';
 import { useMemo } from 'react';
 import { BrokerInfoBanner } from './BrokerInfoBanner';
+import DataAccuracyWarning from './DataAccuracyWarning';
 import { TabError } from './TabError';
 import { TabLoadingSkeleton } from './TabLoadingSkeleton';
 
@@ -25,6 +26,7 @@ export function MfHoldingsTab() {
     return (
         <div>
             <BrokerInfoBanner message="Mutual fund holdings — synced from Zerodha Coin." />
+            <DataAccuracyWarning />
             <section className="ed-card relative">
                 <span className="corner-mark corner-tl" />
                 <span className="corner-mark corner-br" />

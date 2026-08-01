@@ -23,9 +23,11 @@ public class MfScheme {
     private String folioNo;
     private String bank;
     private BigDecimal manualTotalUnits;
+    private BigDecimal averageNav;
     private LocalDate sipStartDate;
     private LocalDate sipStopDate;
     private Set<FundStatus> statuses;
+    private String settlementType; // e.g. "T+1", "T+2"
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -112,6 +114,14 @@ public class MfScheme {
         this.manualTotalUnits = manualTotalUnits;
     }
 
+    public BigDecimal getAverageNav() {
+        return averageNav;
+    }
+
+    public void setAverageNav(BigDecimal averageNav) {
+        this.averageNav = averageNav;
+    }
+
     public LocalDate getSipStartDate() {
         return sipStartDate;
     }
@@ -134,6 +144,14 @@ public class MfScheme {
 
     public void setStatuses(Set<FundStatus> statuses) {
         this.statuses = statuses;
+    }
+
+    public String getSettlementType() {
+        return settlementType;
+    }
+
+    public void setSettlementType(String settlementType) {
+        this.settlementType = settlementType;
     }
 
     public Instant getCreatedAt() {

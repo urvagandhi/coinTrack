@@ -20,9 +20,11 @@ function StatusBadge({ scheme }) {
 
   if (statuses.includes("FULLY_REDEEMED")) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono border bg-red-500/10 text-red-600 border-red-500/30 dark:text-red-400">
-        REDEEMED
-      </span>
+      <div className="flex gap-1 flex-wrap justify-center">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono border bg-red-500/10 text-red-600 border-red-500/30 dark:text-red-400">
+          REDEEMED
+        </span>
+      </div>
     );
   }
 
@@ -32,7 +34,7 @@ function StatusBadge({ scheme }) {
   if (statuses.includes("PARTIALLY_REDEEMED")) activeBadges.push("PARTIALLY REDEEMED");
 
   return (
-    <div className="flex gap-1 flex-wrap justify-end">
+    <div className="flex gap-1 flex-wrap justify-center">
       {activeBadges.map((badge) => (
         <span
           key={badge}
@@ -56,11 +58,13 @@ function StatusBadge({ scheme }) {
 
 export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
   const [selectedSchemeForOverride, setSelectedSchemeForOverride] = React.useState(null);
+  const [filterPlatform, setFilterPlatform] = React.useState("ALL");
+  const [filterStatus, setFilterStatus] = React.useState("ALL");
   const queryClient = useQueryClient();
 
   const { data: schemes = [], isLoading: isLoadingSchemes } = useQuery({
-    queryKey: ["mfSchemeSummaries"],
-    queryFn: () => mutualFundAPI.getSchemeSummaries(),
+    queryKey: ["mfSchemeSummaries", { includeRedeemed: true }],
+    queryFn: () => mutualFundAPI.getSchemeSummaries({ includeRedeemed: true }),
     staleTime: 30 * 1000,
   });
 
@@ -76,17 +80,17 @@ export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
     queryClient.invalidateQueries();
   };
 
-  const groupedSchemes = useMemo(() => {
+  const processedSchemes = useMemo(() => {
     const schemesWithActiveMandates = new Set(
       mandates.filter(m => m.active).map(m => m.schemeId)
     );
 
-    return schemes.reduce((acc, scheme) => {
-      const p = scheme.platform || "Other Platforms";
-      if (!acc[p]) acc[p] = [];
-
+    return schemes.map((scheme) => {
       let newStatuses = [...(scheme.statuses || [])];
-      if (newStatuses.includes("SIP") && !schemesWithActiveMandates.has(scheme.schemeId)) {
+      
+      if (newStatuses.includes("FULLY_REDEEMED")) {
+         newStatuses = ["FULLY_REDEEMED"]; // Only show FULLY_REDEEMED if it's completely redeemed
+      } else if (newStatuses.includes("SIP") && !schemesWithActiveMandates.has(scheme.schemeId)) {
         newStatuses = newStatuses.filter(s => s !== "SIP");
         // If they have investments from the stopped SIP, mark it as LUMPSUM so it doesn't show "CREATED"
         if (!newStatuses.includes("LUMPSUM") && (scheme.totalUnit > 0 || scheme.totalInvestment > 0)) {
@@ -94,15 +98,41 @@ export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
         }
       }
 
-      const processedScheme = {
+      return {
         ...scheme,
         statuses: newStatuses
       };
+    });
+  }, [schemes, mandates]);
 
-      acc[p].push(processedScheme);
+  const uniquePlatforms = useMemo(() => {
+    const platforms = new Set(processedSchemes.map(s => s.platform || "Other Platforms"));
+    return Array.from(platforms).sort();
+  }, [processedSchemes]);
+
+  const filteredSchemes = useMemo(() => {
+    return processedSchemes.filter(s => {
+      const p = s.platform || "Other Platforms";
+      if (filterPlatform !== "ALL" && p !== filterPlatform) return false;
+      if (filterStatus !== "ALL") {
+        if (filterStatus === "CREATED") {
+           if (s.statuses.length !== 0) return false;
+        } else {
+           if (!s.statuses.includes(filterStatus)) return false;
+        }
+      }
+      return true;
+    });
+  }, [processedSchemes, filterPlatform, filterStatus]);
+
+  const groupedSchemes = useMemo(() => {
+    return filteredSchemes.reduce((acc, scheme) => {
+      const p = scheme.platform || "Other Platforms";
+      if (!acc[p]) acc[p] = [];
+      acc[p].push(scheme);
       return acc;
     }, {});
-  }, [schemes, mandates]);
+  }, [filteredSchemes]);
 
   if (isLoading) {
     return (
@@ -141,7 +171,43 @@ export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
 
   return (
     <div className="space-y-6">
-      {Object.entries(groupedSchemes).map(([platform, platformSchemes]) => (
+      <div className="flex flex-col sm:flex-row gap-4 mb-2">
+        <div className="flex-1">
+          <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1 block">Filter by Platform</label>
+          <select 
+            value={filterPlatform} 
+            onChange={(e) => setFilterPlatform(e.target.value)} 
+            className="ed-input w-full font-mono text-[13px] py-2"
+          >
+            <option value="ALL">All Platforms</option>
+            {uniquePlatforms.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex-1">
+          <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1 block">Filter by Status</label>
+          <select 
+            value={filterStatus} 
+            onChange={(e) => setFilterStatus(e.target.value)} 
+            className="ed-input w-full font-mono text-[13px] py-2"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="SIP">SIP</option>
+            <option value="LUMPSUM">LUMPSUM</option>
+            <option value="PARTIALLY_REDEEMED">PARTIALLY REDEEMED</option>
+            <option value="FULLY_REDEEMED">REDEEMED</option>
+            <option value="CREATED">CREATED</option>
+          </select>
+        </div>
+      </div>
+
+      {Object.keys(groupedSchemes).length === 0 ? (
+        <div className="ed-card p-8 text-center text-muted-foreground font-mono text-sm">
+          No schemes match the selected filters.
+        </div>
+      ) : (
+        Object.entries(groupedSchemes).map(([platform, platformSchemes]) => (
         <div key={platform} className="ed-card relative overflow-hidden">
           <span className="corner-mark corner-tl" />
           <span className="corner-mark corner-tr" />
@@ -171,12 +237,21 @@ export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
                     Total Units
                   </th>
                   <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">
-                    Total Invested
+                    Avg NAV
+                  </th>
+                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">
+                    Gross Invested
+                  </th>
+                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">
+                    Stamp Duty
+                  </th>
+                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">
+                    Net Invested
                   </th>
                   <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">
                     Current Invested
                   </th>
-                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-center">
+                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-left">
                     Status
                   </th>
                 </tr>
@@ -224,7 +299,16 @@ export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
                       </div>
                     </td>
                     <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
+                      {scheme.averageNav != null ? `₹${scheme.averageNav.toFixed(2)}` : "₹0.00"}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
                       {formatCurrency(scheme.totalInvestment)}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono text-[13px] text-muted-foreground">
+                      {formatCurrency(scheme.totalStampDuty)}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
+                      {formatCurrency(scheme.netInvestment)}
                     </td>
                     <td className="py-3 px-4 text-right font-mono text-[13px] font-semibold text-foreground">
                       {formatCurrency(scheme.currentInvestment)}
@@ -238,7 +322,8 @@ export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
             </table>
           </div>
         </div>
-      ))}
+        ))
+      )}
       {selectedSchemeForOverride && (
         <OverrideUnitsModal
           isOpen={!!selectedSchemeForOverride}

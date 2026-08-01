@@ -98,4 +98,28 @@ class MfNavServiceTest {
         verify(restTemplate, times(1)).getForObject(contains("mfapi.in"), eq(Map.class));
         verify(navCacheRepository, times(1)).save(any(MutualFundNavCache.class));
     }
+
+    @Test
+    @DisplayName("fetchNavForDate: data missing for exact date returns null")
+    void fetchNavForDate_missingDate() {
+        when(navCacheRepository.findBySchemeCodeAndNavDate(AMFI_CODE, TARGET_DATE))
+                .thenReturn(Optional.empty());
+
+        when(restTemplate.getForObject(contains("tigzig.com"), eq(Map.class)))
+                .thenReturn(null);
+
+        // Date returned is later than target date (descending order), and then it skips to earlier date, missing target
+        Map<String, String> row1 = Map.of("date", "16-01-2025", "nav", "520.20");
+        Map<String, String> row2 = Map.of("date", "14-01-2025", "nav", "518.00");
+        Map<String, Object> response = Map.of("status", "SUCCESS", "data", List.of(row1, row2));
+        when(restTemplate.getForObject(contains("mfapi.in"), eq(Map.class)))
+                .thenReturn(response);
+
+        BigDecimal result = mfNavService.fetchNavForDate(AMFI_CODE, TARGET_DATE);
+
+        assertNull(result); // Should not fallback to 16th or 14th
+        verify(restTemplate, times(1)).getForObject(contains("tigzig.com"), eq(Map.class));
+        verify(restTemplate, times(1)).getForObject(contains("mfapi.in"), eq(Map.class));
+        verify(navCacheRepository, never()).save(any(MutualFundNavCache.class));
+    }
 }

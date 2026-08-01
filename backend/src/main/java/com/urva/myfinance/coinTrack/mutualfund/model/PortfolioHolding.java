@@ -27,6 +27,8 @@ public class PortfolioHolding {
 
     private BigDecimal absoluteReturnPercentage;
     private BigDecimal xirr;
+    private BigDecimal totalStampDuty;
+    private BigDecimal totalSttPaid;
 
     private Instant lastUpdated;
 
@@ -143,5 +145,21 @@ public class PortfolioHolding {
 
     public void setLastUpdated(Instant lastUpdated) {
         this.lastUpdated = lastUpdated;
+    }
+
+    public BigDecimal getTotalStampDuty() {
+        return totalStampDuty;
+    }
+
+    public void setTotalStampDuty(BigDecimal totalStampDuty) {
+        this.totalStampDuty = totalStampDuty;
+    }
+
+    public BigDecimal getTotalSttPaid() {
+        return totalSttPaid;
+    }
+
+    public void setTotalSttPaid(BigDecimal totalSttPaid) {
+        this.totalSttPaid = totalSttPaid;
     }
 }

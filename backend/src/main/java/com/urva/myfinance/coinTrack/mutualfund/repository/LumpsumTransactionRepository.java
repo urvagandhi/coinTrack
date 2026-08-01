@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.mutualfund.repository;
 
 import com.urva.myfinance.coinTrack.mutualfund.model.LumpsumTransaction;
+import com.urva.myfinance.coinTrack.mutualfund.model.TransactionStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -15,7 +16,10 @@ public interface LumpsumTransactionRepository extends MongoRepository<LumpsumTra
 
     List<LumpsumTransaction> findByUserIdAndSchemeId(String userId, String schemeId);
 
-    List<LumpsumTransaction> findByUserIdAndInvestmentDateBetween(String userId, LocalDate startDate, LocalDate endDate);
-    
+    List<LumpsumTransaction> findByUserIdAndInvestmentDateBetween(String userId, LocalDate startDate,
+            LocalDate endDate);
+
     Page<LumpsumTransaction> findByUserId(String userId, Pageable pageable);
+
+    List<LumpsumTransaction> findByStatus(TransactionStatus status);
 }

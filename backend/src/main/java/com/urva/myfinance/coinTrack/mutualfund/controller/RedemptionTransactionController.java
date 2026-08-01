@@ -10,8 +10,10 @@ import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import com.urva.myfinance.coinTrack.mutualfund.service.MfFifoEngine;
 
 @RestController
 @RequestMapping({ "/api/mutual-fund/redemption", "/api/mutual-fund/redemptions" })
@@ -55,6 +57,16 @@ public class RedemptionTransactionController {
             @PathVariable String id) {
         RedemptionTransaction transaction = service.getTransaction(userDetails.getUserId(), id);
         return ResponseEntity.ok(ApiResponse.success(transaction, "Fetched redemption transaction successfully"));
+    }
+
+    @GetMapping("/preview-fifo")
+    public ResponseEntity<ApiResponse<MfFifoEngine.FifoResult>> previewFifo(
+            @AuthenticationPrincipal UserPrincipal userDetails,
+            @RequestParam String schemeId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam BigDecimal units) {
+        MfFifoEngine.FifoResult result = service.previewFifo(userDetails.getUserId(), schemeId, date, units);
+        return ResponseEntity.ok(ApiResponse.success(result, "Preview successful"));
     }
 
     @PostMapping

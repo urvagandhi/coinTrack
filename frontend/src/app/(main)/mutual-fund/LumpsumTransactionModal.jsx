@@ -367,6 +367,10 @@ export default function LumpsumTransactionModal({ isOpen, onClose, onSuccess, sc
                         <span className="flex justify-between font-medium text-accent"><span>Est. Allotted Units:</span> <span>{(parseFloat(formData.lumpsumInvestment) / calculatedNavData.nav).toFixed(3)}</span></span>
                       )}
                     </div>
+                  ) : calculatedNavData?.error ? (
+                    <div className="text-xs text-[hsl(var(--loss))] mt-2 italic">
+                      {calculatedNavData.error}
+                    </div>
                   ) : formData.schemeId && formData.investmentDate ? (
                     <div className="text-xs text-ed-muted-text mt-2 italic">
                       NAV for the applicable date is currently unavailable (e.g., future date).

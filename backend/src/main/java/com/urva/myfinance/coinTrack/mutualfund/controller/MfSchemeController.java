@@ -115,6 +115,14 @@ public class MfSchemeController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Scheme not found"));
         }
         
+        if (scheme.getAmfiCode() == null || scheme.getAmfiCode().trim().isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("nav", null);
+            response.put("applicableDate", settlementDateCalculator.calculateApplicableDate(date, isAfterCutoff));
+            response.put("error", "AMFI code is missing for this scheme. Cannot fetch NAV.");
+            return ResponseEntity.ok(ApiResponse.success(response, "AMFI code missing"));
+        }
+        
         LocalDate applicableDate = settlementDateCalculator.calculateApplicableDate(date, isAfterCutoff);
         BigDecimal nav = navService.fetchNavForDate(scheme.getAmfiCode(), applicableDate);
         

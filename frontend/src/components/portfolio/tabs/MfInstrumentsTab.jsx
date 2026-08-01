@@ -6,6 +6,7 @@ import { portfolioAPI } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { TabError } from './TabError';
 import { TabLoadingSkeleton } from './TabLoadingSkeleton';
+import DataAccuracyWarning from './DataAccuracyWarning';
 
 export function MfInstrumentsTab() {
     const { data: rawData, isLoading, error, refetch } = useQuery({
@@ -20,5 +21,10 @@ export function MfInstrumentsTab() {
 
     const instruments = Array.isArray(rawData) ? rawData : (rawData?.data || []);
 
-    return <MfInstrumentList instruments={instruments} isLoading={false} />;
+    return (
+        <div>
+            <DataAccuracyWarning />
+            <MfInstrumentList instruments={instruments} isLoading={false} />
+        </div>
+    );
 }

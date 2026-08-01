@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import CategoryDropdown from "@/components/ui/CategoryDropdown";
 import SchemeSearchCombobox from "@/components/ui/SchemeSearchCombobox";
 import BankSearchCombobox from "@/components/ui/BankSearchCombobox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 function autoExtractCategory(name) {
   if (!name) return "";
@@ -44,6 +46,7 @@ export default function NewSchemeModal({ isOpen, onClose, onSuccess, initialData
   });
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -102,19 +105,23 @@ export default function NewSchemeModal({ isOpen, onClose, onSuccess, initialData
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this scheme? All associated lumpsums and SIPs will be deleted!")) return;
+  const confirmDelete = async () => {
     setDeleteLoading(true);
     try {
       await mutualFundAPI.deleteScheme(initialData.id || initialData.schemeId);
       toast({ title: "Success", description: "Scheme deleted successfully." });
       onSuccess();
+      setShowDeleteConfirm(false);
       onClose();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to delete scheme.", variant: "destructive" });
+      toast({ title: "Error", description: error.response?.data?.message || "Failed to delete scheme.", variant: "destructive" });
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
   };
 
   return (
@@ -256,6 +263,24 @@ export default function NewSchemeModal({ isOpen, onClose, onSuccess, initialData
           </div>
         </div>
       </div>
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Scheme</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this scheme? All associated lumpsums and SIPs will be deleted! This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={deleteLoading}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleteLoading}>
+              {deleteLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.mutualfund.repository;
 
 import com.urva.myfinance.coinTrack.mutualfund.model.RedemptionTransaction;
+import com.urva.myfinance.coinTrack.mutualfund.model.TransactionStatus;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,6 +13,16 @@ public interface RedemptionTransactionRepository extends MongoRepository<Redempt
     List<RedemptionTransaction> findByUserId(String userId);
 
     List<RedemptionTransaction> findByUserIdAndSchemeId(String userId, String schemeId);
-    
-    List<RedemptionTransaction> findByUserIdAndRedemptionDateBetween(String userId, LocalDate startDate, LocalDate endDate);
+
+    List<RedemptionTransaction> findByUserIdAndSchemeIdAndRedemptionDateAfterOrderByRedemptionDateAsc(String userId,
+            String schemeId,
+            LocalDate date);
+
+    List<RedemptionTransaction> findByUserIdAndSchemeIdAndRedemptionDateAfter(String userId, String schemeId,
+            LocalDate date);
+
+    List<RedemptionTransaction> findByUserIdAndRedemptionDateBetween(String userId, LocalDate startDate,
+            LocalDate endDate);
+
+    List<RedemptionTransaction> findByStatus(TransactionStatus status);
 }

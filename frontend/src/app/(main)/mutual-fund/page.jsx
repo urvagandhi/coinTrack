@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useQuery, useQueryClient, useIsFetching, useIsMutating } from "@tanstack/react-query";
 import { mutualFundAPI } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { Download, Plus, AlertTriangle, Loader2 } from "lucide-react";
 import NewSchemeModal from "./NewSchemeModal";
 import { cn } from "@/lib/utils";
@@ -34,12 +36,47 @@ function formatCurrency(amount) {
 }
 
 export default function MutualFundDashboard() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  const activeTab = searchParams.get('tab') || 'dashboard';
+  
+  const setActiveTab = (tabId) => {
+    const params = new URLSearchParams(searchParams);
+    if (tabId === 'dashboard') {
+      params.delete('tab');
+    } else {
+      params.set('tab', tabId);
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingScheme, setEditingScheme] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const isFetching = useIsFetching();
+  const isMutating = useIsMutating();
+  const [syncStatus, setSyncStatus] = useState("idle");
+
+  useEffect(() => {
+    if (isFetching > 0 || isMutating > 0) {
+      if (syncStatus !== "syncing") {
+        setSyncStatus("syncing");
+        sonnerToast.loading("Syncing Background Data...", { id: "sync-toast" });
+      }
+    } else if (syncStatus === "syncing") {
+      setSyncStatus("success");
+      sonnerToast.success("Data Up to Date", { id: "sync-toast", duration: 3000 });
+      const timer = setTimeout(() => {
+        setSyncStatus("idle");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isFetching, isMutating, syncStatus]);
 
   const handleSuccess = () => {
     queryClient.invalidateQueries();
@@ -208,6 +245,28 @@ export default function MutualFundDashboard() {
         onSuccess={handleSuccess}
         initialData={editingScheme}
       />
+
+      {/* SYNC INDICATOR
+      {syncStatus !== "idle" && (
+        <div className={cn(
+          "fixed bottom-6 right-6 z-50 px-4 py-2 rounded-full border shadow-lg flex items-center gap-2 text-[12px] font-mono animate-in fade-in slide-in-from-bottom-4 transition-all duration-300",
+          syncStatus === "syncing" 
+            ? "bg-background border-border text-muted-foreground" 
+            : "bg-[hsl(var(--gain))]/10 border-[hsl(var(--gain))]/20 text-[hsl(var(--gain))]"
+        )}>
+          {syncStatus === "syncing" ? (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Syncing Background Data...</span>
+            </>
+          ) : (
+            <>
+              <span className="text-[14px]">✓</span>
+              <span>Data Up to Date</span>
+            </>
+          )}
+        </div>
+      )} */}
     </div>
   );
 }

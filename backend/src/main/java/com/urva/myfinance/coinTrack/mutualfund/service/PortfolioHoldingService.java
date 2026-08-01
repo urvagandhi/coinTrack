@@ -3,6 +3,7 @@ package com.urva.myfinance.coinTrack.mutualfund.service;
 import com.urva.myfinance.coinTrack.mutualfund.model.*;
 import com.urva.myfinance.coinTrack.mutualfund.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,8 +24,13 @@ public class PortfolioHoldingService {
     private RedemptionTransactionRepository redemptionRepository;
     @Autowired
     private ValuationSnapshotRepository valuationRepository;
+    @Autowired
+    private MfNavService navService;
+    @Autowired
+    private MfSchemeRepository schemeRepository;
 
-    public PortfolioHolding updateHoldingForScheme(String userId, String schemeId) {
+    @Async
+    public void updateHoldingForScheme(String userId, String schemeId) {
         PortfolioHolding holding = holdingRepository.findByUserIdAndSchemeId(userId, schemeId)
                 .orElse(new PortfolioHolding());
 
@@ -55,6 +61,21 @@ public class PortfolioHoldingService {
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        BigDecimal totalSipStampDuty = sips.stream()
+                .map(SipContribution::getStampDuty)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalLumpsumStampDuty = lumpsums.stream()
+                .map(LumpsumTransaction::getStampDuty)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalRedeemedStt = redemptions.stream()
+                .map(RedemptionTransaction::getSttAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         BigDecimal totalRedeemedUnits = redemptions.stream()
                 .map(RedemptionTransaction::getRedemptionUnit)
                 .filter(java.util.Objects::nonNull)
@@ -67,36 +88,66 @@ public class PortfolioHoldingService {
 
         BigDecimal totalPurchasedUnits = totalLumpsumUnits.add(totalSipUnits);
         BigDecimal totalInvestedAmount = totalLumpsumInvested.add(totalSipInvested);
+        BigDecimal totalStampDuty = totalLumpsumStampDuty.add(totalSipStampDuty);
+
+        MfScheme scheme = schemeRepository.findById(schemeId).orElse(null);
 
         BigDecimal currentUnits = totalPurchasedUnits.subtract(totalRedeemedUnits);
+        if (scheme != null && scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
+            currentUnits = scheme.getManualTotalUnits();
+            totalPurchasedUnits = currentUnits.add(totalRedeemedUnits);
+        }
+
         holding.setCurrentUnits(currentUnits);
+        holding.setTotalStampDuty(totalStampDuty);
+        holding.setTotalSttPaid(totalRedeemedStt);
 
         BigDecimal averageCost = BigDecimal.ZERO;
         if (totalPurchasedUnits.compareTo(BigDecimal.ZERO) > 0) {
-            averageCost = totalInvestedAmount.divide(totalPurchasedUnits, 4, RoundingMode.HALF_UP);
+            averageCost = totalInvestedAmount.divide(totalPurchasedUnits, 8, RoundingMode.HALF_UP);
         }
         holding.setAverageCost(averageCost);
 
-        BigDecimal currentInvestment = currentUnits.multiply(averageCost);
+        if (scheme != null) {
+            scheme.setAverageNav(averageCost);
+            schemeRepository.save(scheme);
+        }
+
+        BigDecimal currentInvestment;
+        if (totalRedeemedUnits.compareTo(BigDecimal.ZERO) == 0) {
+            currentInvestment = totalInvestedAmount;
+        } else {
+            currentInvestment = currentUnits.multiply(averageCost);
+        }
         holding.setCurrentInvestment(currentInvestment);
         holding.setRealizedGain(realizedGain);
 
         // Valuation / NAV
         BigDecimal latestNav = null;
-        for (int i = lumpsums.size() - 1; i >= 0; i--) {
-            if (lumpsums.get(i).getNavPrice() != null) {
-                latestNav = lumpsums.get(i).getNavPrice();
-                break;
-            }
+        
+        // Try to fetch latest live NAV first
+        if (scheme != null && scheme.getAmfiCode() != null && !scheme.getAmfiCode().trim().isEmpty()) {
+            latestNav = navService.fetchLatestNav(scheme.getAmfiCode());
         }
+
+        // Fallback to latest recorded transaction NAV if API fails
         if (latestNav == null) {
-            for (int i = sips.size() - 1; i >= 0; i--) {
-                if (sips.get(i).getNavPrice() != null) {
-                    latestNav = sips.get(i).getNavPrice();
+            for (int i = lumpsums.size() - 1; i >= 0; i--) {
+                if (lumpsums.get(i).getNavPrice() != null) {
+                    latestNav = lumpsums.get(i).getNavPrice();
                     break;
                 }
             }
+            if (latestNav == null) {
+                for (int i = sips.size() - 1; i >= 0; i--) {
+                    if (sips.get(i).getNavPrice() != null) {
+                        latestNav = sips.get(i).getNavPrice();
+                        break;
+                    }
+                }
+            }
         }
+
         if (latestNav == null) {
             latestNav = BigDecimal.ZERO;
         }
@@ -123,7 +174,39 @@ public class PortfolioHoldingService {
 
         holding.setLastUpdated(Instant.now());
 
-        return holdingRepository.save(holding);
+        holdingRepository.save(holding);
+        refreshAllHoldingsLiveNav(userId);
     }
 
+    @Async
+    public void refreshAllHoldingsLiveNav(String userId) {
+        List<PortfolioHolding> holdings = holdingRepository.findByUserId(userId);
+        for (PortfolioHolding h : holdings) {
+            MfScheme scheme = schemeRepository.findById(h.getSchemeId()).orElse(null);
+            if (scheme != null && scheme.getAmfiCode() != null && !scheme.getAmfiCode().trim().isEmpty()) {
+                BigDecimal latestNav = navService.fetchLatestNav(scheme.getAmfiCode());
+                if (latestNav != null) {
+                    h.setLatestNav(latestNav);
+                    
+                    BigDecimal currentValue = h.getCurrentUnits().multiply(latestNav);
+                    h.setCurrentValue(currentValue);
+                    
+                    BigDecimal marketGain = currentValue.subtract(h.getCurrentInvestment());
+                    h.setMarketGain(marketGain);
+                    h.setUnrealizedGain(marketGain);
+                    
+                    if (h.getCurrentInvestment().compareTo(BigDecimal.ZERO) > 0) {
+                        BigDecimal absoluteReturn = marketGain.divide(h.getCurrentInvestment(), 6, RoundingMode.HALF_UP)
+                                .multiply(new BigDecimal("100"));
+                        h.setAbsoluteReturnPercentage(absoluteReturn);
+                    } else {
+                        h.setAbsoluteReturnPercentage(BigDecimal.ZERO);
+                    }
+                    
+                    h.setLastUpdated(Instant.now());
+                    holdingRepository.save(h);
+                }
+            }
+        }
+    }
 }

@@ -42,9 +42,38 @@ export default function SchemeSearchCombobox({ value, onChange, onSelectScheme }
       }
       setLoading(true);
       try {
-        const res = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(debouncedQuery)}`, {
+        // If query is a 5-6 digit number, try direct lookup first (very robust for AMFI codes)
+        if (/^\d{5,6}$/.test(debouncedQuery)) {
+            try {
+                const directRes = await fetch(`https://api.mfapi.in/mf/${debouncedQuery}`, {
+                    signal: abortController.signal
+                });
+                const directData = await directRes.json();
+                if (directData && directData.meta && directData.meta.scheme_code) {
+                    setResults([{
+                        schemeCode: directData.meta.scheme_code,
+                        schemeName: directData.meta.scheme_name
+                    }]);
+                    setOpen(true);
+                    setLoading(false);
+                    return; // Skip the general text search if we found an exact code match
+                }
+            } catch (e) {
+                // Ignore direct lookup failure and fallback to general text search
+            }
+        }
+
+        let res = await fetch(`/api/mf-search?q=${encodeURIComponent(debouncedQuery)}`, {
           signal: abortController.signal
         });
+        
+        // If our custom AMFI route fails for any reason (e.g., 500 error from AMFI timeout), fallback to mfapi.in
+        if (!res.ok) {
+            res = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(debouncedQuery)}`, {
+              signal: abortController.signal
+            });
+        }
+        
         const data = await res.json();
         setResults(data || []);
         setOpen(true);

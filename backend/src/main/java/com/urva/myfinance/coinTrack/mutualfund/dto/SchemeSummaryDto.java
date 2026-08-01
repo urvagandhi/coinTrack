@@ -17,8 +17,11 @@ public class SchemeSummaryDto {
     private BigDecimal lumpsumInvestment;
     private BigDecimal sipInvestment;
     private BigDecimal totalInvestment;
+    private BigDecimal totalStampDuty;
+    private BigDecimal netInvestment;
     private BigDecimal totalTradedValue;
     private BigDecimal currentInvestment;
+    private BigDecimal averageNav;
     private Set<FundStatus> statuses;
 
     public SchemeSummaryDto() {
@@ -128,11 +131,35 @@ public class SchemeSummaryDto {
         this.currentInvestment = currentInvestment;
     }
 
+    public BigDecimal getAverageNav() {
+        return averageNav;
+    }
+
+    public void setAverageNav(BigDecimal averageNav) {
+        this.averageNav = averageNav;
+    }
+
     public Set<FundStatus> getStatuses() {
         return statuses;
     }
 
     public void setStatuses(Set<FundStatus> statuses) {
         this.statuses = statuses;
+    }
+
+    public BigDecimal getTotalStampDuty() {
+        return totalStampDuty;
+    }
+
+    public void setTotalStampDuty(BigDecimal totalStampDuty) {
+        this.totalStampDuty = totalStampDuty;
+    }
+
+    public BigDecimal getNetInvestment() {
+        return netInvestment;
+    }
+
+    public void setNetInvestment(BigDecimal netInvestment) {
+        this.netInvestment = netInvestment;
     }
 }

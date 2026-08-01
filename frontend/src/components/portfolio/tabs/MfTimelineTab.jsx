@@ -6,6 +6,7 @@ import { portfolioAPI } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { TabError } from './TabError';
 import { TabLoadingSkeleton } from './TabLoadingSkeleton';
+import DataAccuracyWarning from './DataAccuracyWarning';
 
 export function MfTimelineTab({ navigateTo, context }) {
     const { data: rawData, isLoading, error, refetch } = useQuery({
@@ -28,11 +29,14 @@ export function MfTimelineTab({ navigateTo, context }) {
     };
 
     return (
-        <MfTimeline
-            events={events}
-            isLoading={false}
-            onNavigate={handleNavigate}
-            initialContext={context}
-        />
+        <div>
+            <DataAccuracyWarning />
+            <MfTimeline
+                events={events}
+                isLoading={false}
+                onNavigate={handleNavigate}
+                initialContext={context}
+            />
+        </div>
     );
 }

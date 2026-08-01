@@ -24,10 +24,22 @@ public class PortfolioDashboardService {
     private SipMandateRepository sipMandateRepository;
     @Autowired
     private SipMandateService sipMandateService;
+    @Autowired
+    private PortfolioHoldingService portfolioHoldingService;
 
     public DashboardSummaryDto getDashboardSummary(String userId) {
+        portfolioHoldingService.refreshAllHoldingsLiveNav(userId);
         List<PortfolioHolding> holdings = holdingRepository.findByUserId(userId);
         List<MfScheme> schemes = schemeRepository.findByUserId(userId);
+
+        // Self-heal: Clean up orphan holdings from schemes that were deleted before cascading delete was added
+        List<PortfolioHolding> orphanHoldings = holdings.stream()
+                .filter(h -> schemes.stream().noneMatch(s -> s.getId().equals(h.getSchemeId())))
+                .collect(Collectors.toList());
+        if (!orphanHoldings.isEmpty()) {
+            holdingRepository.deleteAll(orphanHoldings);
+            holdings.removeAll(orphanHoldings);
+        }
 
         DashboardSummaryDto dto = new DashboardSummaryDto();
 

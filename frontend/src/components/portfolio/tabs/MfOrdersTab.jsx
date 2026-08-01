@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ClipboardList } from 'lucide-react';
 import { useMemo } from 'react';
 import { BrokerInfoBanner } from './BrokerInfoBanner';
+import DataAccuracyWarning from './DataAccuracyWarning';
 import { TabError } from './TabError';
 import { TabLoadingSkeleton } from './TabLoadingSkeleton';
 
@@ -31,6 +32,7 @@ export function MfOrdersTab() {
     return (
         <div>
             <BrokerInfoBanner message="Mutual fund order log — from Zerodha Coin." />
+            <DataAccuracyWarning />
             <section className="ed-card relative">
                 <span className="corner-mark corner-tl" />
                 <span className="corner-mark corner-br" />
