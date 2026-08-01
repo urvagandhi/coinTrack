@@ -154,12 +154,15 @@ public class RedemptionTransactionService {
                     transaction.getRedemptionUnit(), applicableDate);
             MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(userId, transaction.getSchemeId(),
                     applicableDate, transaction.getRedemptionUnit());
-            transaction.setTradeInvestmentValue(fifoResult.totalCostValue);
-            logger.info("FIFO calculated Trade Investment Value: {}", fifoResult.totalCostValue);
+            if (transaction.getTradeInvestmentValue() == null) {
+                transaction.setTradeInvestmentValue(fifoResult.totalCostValue);
+            }
+            logger.info("Trade Investment Value used: {}", transaction.getTradeInvestmentValue());
 
             if (transaction.getRedemptionValue() != null) {
+                BigDecimal exitLoad = transaction.getExitLoadDeducted() != null ? transaction.getExitLoadDeducted() : BigDecimal.ZERO;
                 transaction.setCapitalGain(
-                        transaction.getRedemptionValue().subtract(transaction.getTradeInvestmentValue()));
+                        transaction.getRedemptionValue().subtract(exitLoad).subtract(transaction.getTradeInvestmentValue()));
                 logger.info("Calculated Capital Gain: {}", transaction.getCapitalGain());
             }
 
@@ -203,9 +206,9 @@ public class RedemptionTransactionService {
         // Accept the new user input
         existing.setRedemptionUnit(updatedTransaction.getRedemptionUnit());
         existing.setRedemptionValue(updatedTransaction.getRedemptionValue());
+        existing.setTradeInvestmentValue(updatedTransaction.getTradeInvestmentValue());
 
         // Wipe historical calculations
-        existing.setTradeInvestmentValue(null);
         existing.setCapitalGain(null);
         existing.setGainType(null);
         existing.setSttAmount(null);
@@ -270,10 +273,12 @@ public class RedemptionTransactionService {
         if (existing.getStatus() == TransactionStatus.COMPLETED && existing.getRedemptionUnit() != null) {
             MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(userId, existing.getSchemeId(),
                     applicableDate, existing.getRedemptionUnit());
-            existing.setTradeInvestmentValue(fifoResult.totalCostValue);
-
+            if (existing.getTradeInvestmentValue() == null) {
+                existing.setTradeInvestmentValue(fifoResult.totalCostValue);
+            }
             if (existing.getRedemptionValue() != null) {
-                existing.setCapitalGain(existing.getRedemptionValue().subtract(existing.getTradeInvestmentValue()));
+                BigDecimal exitLoad = existing.getExitLoadDeducted() != null ? existing.getExitLoadDeducted() : BigDecimal.ZERO;
+                existing.setCapitalGain(existing.getRedemptionValue().subtract(exitLoad).subtract(existing.getTradeInvestmentValue()));
             }
 
             if (fifoResult.ltcgUnits.compareTo(java.math.BigDecimal.ZERO) > 0
@@ -422,8 +427,9 @@ public class RedemptionTransactionService {
                 redemption.setTradeInvestmentValue(fifoResult.totalCostValue);
 
                 if (redemption.getRedemptionValue() != null) {
+                    BigDecimal exitLoad = redemption.getExitLoadDeducted() != null ? redemption.getExitLoadDeducted() : BigDecimal.ZERO;
                     redemption.setCapitalGain(
-                            redemption.getRedemptionValue().subtract(redemption.getTradeInvestmentValue()));
+                            redemption.getRedemptionValue().subtract(exitLoad).subtract(redemption.getTradeInvestmentValue()));
                 }
 
                 if (fifoResult.ltcgUnits.compareTo(java.math.BigDecimal.ZERO) > 0

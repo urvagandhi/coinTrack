@@ -236,4 +236,12 @@ public class RedemptionTransaction {
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
+
+    public Boolean getIsAfterCutoff() {
+        return isAfterCutoff;
+    }
+
+    public void setIsAfterCutoff(Boolean isAfterCutoff) {
+        this.isAfterCutoff = isAfterCutoff;
+    }
 }

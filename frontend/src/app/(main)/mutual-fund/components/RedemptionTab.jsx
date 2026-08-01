@@ -192,11 +192,18 @@ export default function RedemptionTab() {
                 </td>
                 <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
                   <div>{formatCurrency(txn.redemptionValue)}</div>
-                  {txn.sttAmount > 0 && (
+                  {(txn.sttAmount > 0 || txn.exitLoadDeducted > 0) && (
                     <div className="mt-1 flex flex-col items-end">
-                      <span className="text-[10px] text-[hsl(var(--loss))]" title="Securities Transaction Tax (0.001%)">
-                        - {formatCurrency(txn.sttAmount)} STT
-                      </span>
+                      {txn.exitLoadDeducted > 0 && (
+                        <span className="text-[10px] text-[hsl(var(--loss))]" title="Exit Load Deducted">
+                          - {formatCurrency(txn.exitLoadDeducted)} Exit Load
+                        </span>
+                      )}
+                      {txn.sttAmount > 0 && (
+                        <span className="text-[10px] text-[hsl(var(--loss))]" title="Securities Transaction Tax (0.001%)">
+                          - {formatCurrency(txn.sttAmount)} STT
+                        </span>
+                      )}
                       <span className="text-[11px] text-muted-foreground border-t border-border mt-0.5 pt-0.5 w-max">
                         Net: {formatCurrency(txn.netRedemptionValue)}
                       </span>

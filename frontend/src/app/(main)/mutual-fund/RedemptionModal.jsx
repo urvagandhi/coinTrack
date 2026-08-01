@@ -13,6 +13,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
     redemptionValue: "",
     redemptionNav: "",
     amountCreditedBank: "",
+    tradeInvestmentValue: "",
+    exitLoadDeducted: "",
     isAfterCutoff: false
   });
   const [loading, setLoading] = useState(false);
@@ -57,6 +59,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
           redemptionValue: initialData.redemptionValue || "",
           redemptionNav: initialData.redemptionNav || "",
           amountCreditedBank: initialData.amountCreditedBank || "",
+          tradeInvestmentValue: initialData.tradeInvestmentValue || "",
+          exitLoadDeducted: initialData.exitLoadDeducted || "",
           isAfterCutoff: initialData.isAfterCutoff || false
         });
         setRedemptionType(initialData.redemptionUnit && !initialData.redemptionValue ? "unit" : "amount");
@@ -68,6 +72,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
           redemptionUnit: "",
           redemptionValue: "",
           amountCreditedBank: "",
+          tradeInvestmentValue: "",
+          exitLoadDeducted: "",
           isAfterCutoff: false
         });
         setRedemptionType("amount");
@@ -160,6 +166,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
         redemptionUnit: formData.redemptionUnit ? Number(formData.redemptionUnit) : null,
         redemptionValue: formData.redemptionValue ? Number(formData.redemptionValue) : null,
         redemptionNav: entryMode === "manual" && formData.redemptionNav ? Number(formData.redemptionNav) : null,
+        tradeInvestmentValue: entryMode === "manual" && formData.tradeInvestmentValue ? Number(formData.tradeInvestmentValue) : null,
+        exitLoadDeducted: entryMode === "manual" && formData.exitLoadDeducted ? Number(formData.exitLoadDeducted) : null,
       };
       if (initialData?.id) {
         await mutualFundAPI.updateRedemption(initialData.id, payload);
@@ -208,7 +216,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="ed-card w-full max-w-xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="ed-card w-full max-w-4xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200">
         <span className="corner-mark corner-tl" />
         <span className="corner-mark corner-tr" />
         <span className="corner-mark corner-bl" />
@@ -235,57 +243,50 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
           <div className="mb-6">
              <DataAccuracyWarning className="mb-4" />
           </div>
-          <form id="redemption-form" onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                01. Scheme Selection
-              </h3>
-              <div className="space-y-1.5">
-                <label className="eyebrow">Select Scheme *</label>
-                <select
-                  required
-                  name="schemeId"
-                  value={formData.schemeId}
-                  onChange={handleChange}
-                  className="ed-input w-full font-mono"
-                >
-                  <option value="">-- Choose a Scheme --</option>
-                  {Object.entries(schemesByPlatform).map(([platform, items]) => (
-                    <optgroup key={platform} label={`📍 ${platform.toUpperCase()} (${items.length} Schemes)`}>
-                      {items.map(s => {
-                        const id = s.id || s.schemeId;
-                        return (
-                          <option key={id} value={id}>
-                            {s.schemeName} — {s.holderName} (Folio: {s.folioNo || 'N/A'})
+          <form id="redemption-form" onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-8">
+            {/* LEFT COLUMN: Setup */}
+            <div className="flex-1 space-y-6 min-w-[300px]">
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+                  01. Configuration
+                </h3>
+                <div className="space-y-1.5">
+                  <label className="eyebrow">Select Scheme *</label>
+                  <select
+                    required
+                    name="schemeId"
+                    value={formData.schemeId}
+                    onChange={handleChange}
+                    className="ed-input w-full font-mono bg-card"
+                  >
+                    <option value="" disabled>-- Choose a Scheme --</option>
+                    {Object.entries(schemesByPlatform).map(([platform, platformSchemes]) => (
+                      <optgroup key={platform} label={platform}>
+                        {platformSchemes.map((scheme) => (
+                          <option key={scheme.id || scheme.schemeId} value={scheme.id || scheme.schemeId}>
+                            {scheme.schemeName}
                           </option>
-                        );
-                      })}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-            </div>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                02. Redemption Details
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="eyebrow">Date of Redemption *</label>
                   <input
-                    required
                     type="date"
+                    required
                     name="redemptionDate"
                     value={formData.redemptionDate}
                     onChange={handleChange}
-                    className="ed-input w-full font-mono"
+                    className="ed-input w-full font-mono bg-card"
                   />
-                  <p className="text-xs text-ed-muted-text mt-1">
+                  <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
                     For historical entries, enter the actual NAV processing date, not the submission date.
                   </p>
                   {isRecentDate && (
-                    <div className="flex items-center space-x-2 mt-2">
+                    <div className="flex items-center space-x-2 mt-3 p-2 bg-muted/20 border border-border/50 rounded">
                       <input
                         type="checkbox"
                         id="isAfterCutoff"
@@ -294,193 +295,239 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                         onChange={handleChange}
                         className="rounded border-border text-accent focus:ring-accent"
                       />
-                      <label htmlFor="isAfterCutoff" className="text-[12px] text-muted-foreground cursor-pointer">
+                      <label htmlFor="isAfterCutoff" className="text-[12px] text-foreground cursor-pointer font-medium">
                         Placed after 3:00 PM (Cut-off)
                       </label>
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="flex items-center space-x-2 mt-4 mb-2">
-                 <button
-                    type="button"
-                    onClick={() => setRedemptionType("amount")}
-                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
-                       redemptionType === "amount" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                 >
-                    Redeem by Amount
-                 </button>
-                 <button
-                    type="button"
-                    onClick={() => setRedemptionType("unit")}
-                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
-                       redemptionType === "unit" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                 >
-                    Redeem by Units
-                 </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
-                  <div className="space-y-1.5 flex-1">
-                    <label className="eyebrow">Redemption Value (₹) {redemptionType === "amount" && "*"}</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required={redemptionType === "amount"}
-                      disabled={redemptionType !== "amount"}
-                      name="redemptionValue"
-                      value={formData.redemptionValue}
-                      onChange={handleChange}
-                      onBlur={calculateMissingValue}
-                      className="ed-input w-full font-mono max-w-[50%]"
-                      placeholder="e.g. 5000"
-                    />
-                  </div>
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-center gap-2">
-                      <label className="eyebrow">Redeemed Units {redemptionType === "unit" && "*"}</label>
-                      {redemptionType === "amount" && (
-                        <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border">
-                          <Info className="h-3 w-3" /> Auto
-                        </span>
-                      )}
-                    </div>
-                    <input
-                      type="number"
-                      step="0.001"
-                      required={redemptionType === "unit"}
-                      disabled={redemptionType !== "unit" && entryMode !== "manual"}
-                      name="redemptionUnit"
-                      value={formData.redemptionUnit}
-                      onChange={handleChange}
-                      onBlur={calculateMissingValue}
-                      className="ed-input w-full font-mono max-w-[50%]"
-                      placeholder="e.g. 50.000"
-                    />
-                    {selectedScheme && formData.redemptionUnit && selectedScheme.totalUnit != null && (
-                      <div className="mt-3 p-3 rounded-md bg-muted/40 border border-border/50 w-full md:max-w-[80%]">
-                        <p className="text-[11px] font-mono text-muted-foreground mb-1">
-                          Redeeming <strong className="text-foreground">{formData.redemptionUnit}</strong> out of <strong className="text-foreground">{selectedScheme.totalUnit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong> total units
-                        </p>
-                        <p className="text-[11px] font-mono font-medium text-accent">
-                          Remaining Units: {(selectedScheme.totalUnit - parseFloat(formData.redemptionUnit || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
-                        </p>
-                        
-                        {isPreviewLoading ? (
-                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground animate-pulse mt-3 pt-3 border-t border-border/50">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            <span>Calculating FIFO gains...</span>
-                          </div>
-                        ) : previewData ? (
-                          <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-border/50">
-                            <div className="flex items-center justify-between text-[11px]">
-                              <span className="text-muted-foreground">STCG Units (&lt;1 year):</span>
-                              <span className="font-mono font-medium text-foreground">{previewData.stcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-[11px]">
-                              <span className="text-muted-foreground">LTCG Units (&gt;1 year):</span>
-                              <span className="font-mono font-medium text-foreground">{previewData.ltcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-2 bg-accent/20 px-2 py-1 rounded w-max">
-                              <Info className="h-3 w-3 text-accent-foreground" />
-                              <span className="text-[9px] uppercase tracking-widest font-mono text-accent-foreground font-semibold">
-                                {previewData.stcgUnits > 0 && previewData.ltcgUnits > 0 ? "STCG + LTCG Mix" : previewData.stcgUnits > 0 ? "Short Term (STCG)" : previewData.ltcgUnits > 0 ? "Long Term (LTCG)" : "No Gains Calculated"}
-                              </span>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-              </div>
-              
-              <div className="flex items-center space-x-2 mt-4 mb-2">
-                 <button
-                    type="button"
-                    onClick={() => setEntryMode("automatic")}
-                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
-                       entryMode === "automatic" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                 >
-                    Automatic Mode
-                 </button>
-                 <button
-                    type="button"
-                    onClick={() => setEntryMode("manual")}
-                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
-                       entryMode === "manual" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                 >
-                    Manual Mode
-                 </button>
-              </div>
 
-              {entryMode === "manual" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200 mt-4">
-                  <div className="space-y-1.5">
-                    <label className="eyebrow">NAV Price</label>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      name="redemptionNav"
-                      value={formData.redemptionNav}
-                      onChange={handleChange}
-                      onBlur={calculateMissingValue}
-                      className="ed-input w-full font-mono"
-                    />
-                  </div>
+                <div className="space-y-1.5 pt-4">
+                  <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3">
+                    03. Settlement
+                  </h3>
+                  <label className="eyebrow">Credited to Bank [Optional]</label>
+                  <input
+                    type="text"
+                    name="amountCreditedBank"
+                    value={formData.amountCreditedBank}
+                    onChange={handleChange}
+                    className="ed-input w-full font-mono bg-card"
+                    placeholder="e.g. HDFC Bank - 1234"
+                  />
                 </div>
-              )}
-
-              {entryMode === "automatic" && (
-                <div className="bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1">
-                <p className="text-[11px] text-muted-foreground leading-tight">
-                  NAV Price and the missing value will be auto-calculated by the system based on the NAV of the applicable settlement date.
-                </p>
-                {navLoading ? (
-                  <div className="flex items-center text-xs text-muted-foreground mt-2">
-                    <Loader2 className="w-3 h-3 animate-spin mr-2" /> Fetching applicable NAV...
-                  </div>
-                ) : calculatedNavData?.nav ? (
-                  <div className="flex flex-col text-xs mt-2 text-foreground/80 font-mono space-y-1">
-                    <span className="flex justify-between"><span>Applicable Date:</span> <span className="text-foreground">{calculatedNavData.applicableDate}</span></span>
-                    <span className="flex justify-between"><span>Applicable NAV:</span> <span className="text-foreground">₹{calculatedNavData.nav}</span></span>
-                    {redemptionType === "amount" && formData.redemptionValue && !isNaN(parseFloat(formData.redemptionValue)) && (
-                      <span className="flex justify-between font-medium text-accent"><span>Est. Redeemed Units:</span> <span>{(parseFloat(formData.redemptionValue) / calculatedNavData.nav).toFixed(3)}</span></span>
-                    )}
-                    {redemptionType === "unit" && formData.redemptionUnit && !isNaN(parseFloat(formData.redemptionUnit)) && (
-                      <span className="flex justify-between font-medium text-accent"><span>Est. Redemption Value:</span> <span>₹{(parseFloat(formData.redemptionUnit) * calculatedNavData.nav).toFixed(2)}</span></span>
-                    )}
-                  </div>
-                ) : calculatedNavData?.error ? (
-                  <div className="text-xs text-[hsl(var(--loss))] mt-2 italic">
-                    {calculatedNavData.error}
-                  </div>
-                ) : formData.schemeId && formData.redemptionDate ? (
-                  <div className="text-xs text-ed-muted-text mt-2 italic">
-                    NAV for the applicable date is currently unavailable (e.g., future date).
-                  </div>
-                ) : null}
               </div>
-              )}
             </div>
 
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                03. Settlement
-              </h3>
-              <div className="space-y-1.5">
-                <label className="eyebrow">Credited to Bank [Optional]</label>
-                <input
-                  type="text"
-                  name="amountCreditedBank"
-                  value={formData.amountCreditedBank}
-                  onChange={handleChange}
-                  className="ed-input w-full font-mono"
-                  placeholder="e.g. HDFC Bank - 1234"
-                />
+            {/* DIVIDER */}
+            <div className="hidden md:block w-px bg-border"></div>
+
+            {/* RIGHT COLUMN: Execution Details */}
+            <div className="flex-1 space-y-6 min-w-[300px]">
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+                  02. Execution Details
+                </h3>
+
+                <div className="bg-muted/20 border border-border rounded-md p-3 mb-4 space-y-4">
+                   <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center">
+                      <div>
+                        <span className="text-[10px] uppercase text-muted-foreground font-mono mb-1.5 block tracking-wider">Calculation Mode</span>
+                        <div className="flex bg-background rounded-full p-0.5 w-max border border-border/50">
+                          <button
+                             type="button"
+                             onClick={() => setEntryMode("automatic")}
+                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                                entryMode === "automatic" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                             }`}
+                          >
+                             Automatic
+                          </button>
+                          <button
+                             type="button"
+                             onClick={() => setEntryMode("manual")}
+                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                                entryMode === "manual" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                             }`}
+                          >
+                             Manual
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <span className="text-[10px] uppercase text-muted-foreground font-mono mb-1.5 block tracking-wider">Redemption Type</span>
+                        <div className="flex bg-background rounded-full p-0.5 w-max border border-border/50">
+                          <button
+                             type="button"
+                             onClick={() => setRedemptionType("amount")}
+                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                                redemptionType === "amount" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                             }`}
+                          >
+                             By Amount
+                          </button>
+                          <button
+                             type="button"
+                             onClick={() => setRedemptionType("unit")}
+                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                                redemptionType === "unit" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                             }`}
+                          >
+                             By Units
+                          </button>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
+                    <div className="space-y-1.5 flex-1">
+                      <label className="eyebrow">Redemption Value (₹) {redemptionType === "amount" && "*"}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required={redemptionType === "amount"}
+                        disabled={redemptionType !== "amount"}
+                        name="redemptionValue"
+                        value={formData.redemptionValue}
+                        onChange={handleChange}
+                        onBlur={calculateMissingValue}
+                        className="ed-input w-full font-mono bg-card"
+                        placeholder="e.g. 5000"
+                      />
+                    </div>
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2">
+                        <label className="eyebrow">Redeemed Units {redemptionType === "unit" && "*"}</label>
+                        {redemptionType === "amount" && (
+                          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border">
+                            <Info className="h-3 w-3" /> Auto
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        step="0.001"
+                        required={redemptionType === "unit"}
+                        disabled={redemptionType !== "unit" && entryMode !== "manual"}
+                        name="redemptionUnit"
+                        value={formData.redemptionUnit}
+                        onChange={handleChange}
+                        onBlur={calculateMissingValue}
+                        className="ed-input w-full font-mono bg-card"
+                        placeholder="e.g. 50.000"
+                      />
+                    </div>
+                </div>
+
+                {entryMode === "manual" && (
+                  <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200 mt-4">
+                    <div className="space-y-1.5">
+                      <label className="eyebrow">NAV Price</label>
+                      <input
+                        type="number"
+                        step="0.0001"
+                        name="redemptionNav"
+                        value={formData.redemptionNav}
+                        onChange={handleChange}
+                        onBlur={calculateMissingValue}
+                        className="ed-input w-full font-mono bg-card"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="eyebrow">Investment Traded Value</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        name="tradeInvestmentValue"
+                        value={formData.tradeInvestmentValue}
+                        onChange={handleChange}
+                        className="ed-input w-full font-mono bg-card"
+                        placeholder="Auto if blank"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="eyebrow">Exit Load Deducted</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        name="exitLoadDeducted"
+                        value={formData.exitLoadDeducted}
+                        onChange={handleChange}
+                        className="ed-input w-full font-mono bg-card"
+                        placeholder="e.g. 50"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {entryMode === "automatic" && (
+                  <div className="bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1 animate-in fade-in zoom-in-95">
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    NAV Price and the missing value will be auto-calculated by the system based on the NAV of the applicable settlement date.
+                  </p>
+                  {navLoading ? (
+                    <div className="flex items-center text-xs text-muted-foreground mt-2">
+                      <Loader2 className="h-3 w-3 animate-spin mr-2" /> Fetching applicable NAV...
+                    </div>
+                  ) : calculatedNavData?.nav ? (
+                    <div className="flex flex-col text-xs mt-2 text-foreground/80 font-mono space-y-1">
+                      <span className="flex justify-between"><span>Applicable Date:</span> <span className="text-foreground">{calculatedNavData.applicableDate}</span></span>
+                      <span className="flex justify-between"><span>Applicable NAV:</span> <span className="text-foreground">₹{calculatedNavData.nav}</span></span>
+                      {redemptionType === "amount" && formData.redemptionValue && !isNaN(parseFloat(formData.redemptionValue)) && (
+                        <span className="flex justify-between font-medium text-accent"><span>Est. Redeemed Units:</span> <span>{(parseFloat(formData.redemptionValue) / calculatedNavData.nav).toFixed(3)}</span></span>
+                      )}
+                      {redemptionType === "unit" && formData.redemptionUnit && !isNaN(parseFloat(formData.redemptionUnit)) && (
+                        <span className="flex justify-between font-medium text-accent"><span>Est. Redemption Value:</span> <span>₹{(parseFloat(formData.redemptionUnit) * calculatedNavData.nav).toFixed(2)}</span></span>
+                      )}
+                    </div>
+                  ) : calculatedNavData?.error ? (
+                    <div className="text-xs text-[hsl(var(--loss))] mt-2 italic">
+                      {calculatedNavData.error}
+                    </div>
+                  ) : formData.schemeId && formData.redemptionDate ? (
+                    <div className="text-xs text-ed-muted-text mt-2 italic">
+                      NAV for the applicable date is currently unavailable (e.g., future date).
+                    </div>
+                  ) : null}
+                </div>
+                )}
+
+                {selectedScheme && formData.redemptionUnit && selectedScheme.totalUnit != null && (
+                  <div className="mt-3 p-3 rounded-md bg-muted/40 border border-border/50 w-full animate-in fade-in slide-in-from-bottom-2">
+                    <p className="text-[11px] font-mono text-muted-foreground mb-1">
+                      Redeeming <strong className="text-foreground">{formData.redemptionUnit}</strong> out of <strong className="text-foreground">{selectedScheme.totalUnit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong> total units
+                    </p>
+                    <p className="text-[11px] font-mono font-medium text-accent">
+                      Remaining Units: {(selectedScheme.totalUnit - parseFloat(formData.redemptionUnit || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                    </p>
+                    
+                    {isPreviewLoading ? (
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground animate-pulse mt-3 pt-3 border-t border-border/50">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Calculating FIFO gains...</span>
+                      </div>
+                    ) : previewData ? (
+                      <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-border/50">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">STCG Units (&lt;1 year):</span>
+                          <span className="font-mono font-medium text-foreground">{previewData.stcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">LTCG Units (&gt;1 year):</span>
+                          <span className="font-mono font-medium text-foreground">{previewData.ltcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-2 bg-accent/20 px-2 py-1 rounded w-max">
+                          <Info className="h-3 w-3 text-accent-foreground" />
+                          <span className="text-[9px] uppercase tracking-widest font-mono text-accent-foreground font-semibold">
+                            {previewData.stcgUnits > 0 && previewData.ltcgUnits > 0 ? "STCG + LTCG Mix" : previewData.stcgUnits > 0 ? "Short Term (STCG)" : previewData.ltcgUnits > 0 ? "Long Term (LTCG)" : "No Gains Calculated"}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
             </div>
           </form>
