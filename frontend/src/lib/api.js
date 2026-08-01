@@ -394,6 +394,7 @@ export const endpoints = {
         schemeBank: (bank) => `/api/mutual-fund/schemes/bank/${bank}`,
         updateScheme: (id) => `/api/mutual-fund/schemes/${id}`,
         deleteScheme: (id) => `/api/mutual-fund/schemes/${id}`,
+        schemeNavForDate: (id) => `/api/mutual-fund/schemes/${id}/nav`,
         
         lumpsum: '/api/mutual-fund/lumpsum',
         lumpsumPage: '/api/mutual-fund/lumpsum/page',
@@ -1071,6 +1072,10 @@ export const mutualFundAPI = {
     },
     deleteScheme: async (id) => {
         const { data } = await api.delete(endpoints.mutualFund.deleteScheme(id));
+        return unwrapResponse(data);
+    },
+    getSchemeNavForDate: async (id, date, isAfterCutoff = false) => {
+        const { data } = await api.get(`${endpoints.mutualFund.schemeNavForDate(id)}?date=${date}&isAfterCutoff=${isAfterCutoff}`);
         return unwrapResponse(data);
     },
     

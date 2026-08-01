@@ -13,7 +13,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.math.BigDecimal;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import com.urva.myfinance.coinTrack.mutualfund.service.MfNavService;
+import com.urva.myfinance.coinTrack.mutualfund.service.settlement.SettlementDateCalculator;
 
 @RestController
 @RequestMapping({ "/api/mutual-fund/schemes", "/api/mutual-fund/scheme" })
@@ -24,6 +31,12 @@ public class MfSchemeController {
 
     @Autowired
     private MfSchemeAggregationService aggregationService;
+
+    @Autowired
+    private MfNavService navService;
+
+    @Autowired
+    private SettlementDateCalculator settlementDateCalculator;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<MfScheme>>> getAllSchemes(
@@ -88,6 +101,28 @@ public class MfSchemeController {
             @PathVariable String id) {
         MfScheme scheme = service.getScheme(userDetails.getUserId(), id);
         return ResponseEntity.ok(ApiResponse.success(scheme, "Fetched scheme successfully"));
+    }
+
+    @GetMapping("/{id}/nav")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getNavForDate(
+            @AuthenticationPrincipal UserPrincipal userDetails,
+            @PathVariable String id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false, defaultValue = "false") Boolean isAfterCutoff) {
+        
+        MfScheme scheme = service.getScheme(userDetails.getUserId(), id);
+        if (scheme == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Scheme not found"));
+        }
+        
+        LocalDate applicableDate = settlementDateCalculator.calculateApplicableDate(date, isAfterCutoff);
+        BigDecimal nav = navService.fetchNavForDate(scheme.getAmfiCode(), applicableDate);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("nav", nav);
+        response.put("applicableDate", applicableDate);
+        
+        return ResponseEntity.ok(ApiResponse.success(response, "Fetched NAV successfully"));
     }
 
     @PostMapping

@@ -17,6 +17,8 @@ export default function LumpsumTransactionModal({ isOpen, onClose, onSuccess, sc
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [entryMode, setEntryMode] = useState("automatic");
+  const [calculatedNavData, setCalculatedNavData] = useState(null);
+  const [navLoading, setNavLoading] = useState(false);
   const { toast } = useToast();
 
   const schemesByPlatform = useMemo(() => {
@@ -71,6 +73,31 @@ export default function LumpsumTransactionModal({ isOpen, onClose, onSuccess, sc
       setLoading(false);
     }
   }, [isOpen, initialData]);
+
+  useEffect(() => {
+    let active = true;
+    if (isOpen && entryMode === "automatic" && formData.schemeId && formData.investmentDate) {
+      setNavLoading(true);
+      mutualFundAPI.getSchemeNavForDate(formData.schemeId, formData.investmentDate, formData.isAfterCutoff)
+        .then((res) => {
+          if (active) {
+            setCalculatedNavData(res);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch NAV", err);
+          if (active) setCalculatedNavData(null);
+        })
+        .finally(() => {
+          if (active) setNavLoading(false);
+        });
+    } else {
+      setCalculatedNavData(null);
+    }
+    return () => {
+      active = false;
+    };
+  }, [isOpen, entryMode, formData.schemeId, formData.investmentDate, formData.isAfterCutoff]);
 
   if (!isOpen) return null;
 
@@ -324,9 +351,28 @@ export default function LumpsumTransactionModal({ isOpen, onClose, onSuccess, sc
                 </div>
               )}
               {entryMode === "automatic" && (
-                <p className="text-[11px] text-muted-foreground mt-1.5 leading-tight">
-                  NAV Price and Allotted Units will be auto-calculated by our optimized logic based on the NAV date.
-                </p>
+                <div className="bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1">
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    NAV Price and Allotted Units will be auto-calculated by our optimized logic based on the NAV date.
+                  </p>
+                  {navLoading ? (
+                    <div className="flex items-center text-xs text-muted-foreground mt-2">
+                      <Loader2 className="w-3 h-3 animate-spin mr-2" /> Fetching applicable NAV...
+                    </div>
+                  ) : calculatedNavData?.nav ? (
+                    <div className="flex flex-col text-xs mt-2 text-foreground/80 font-mono space-y-1">
+                      <span className="flex justify-between"><span>Applicable Date:</span> <span className="text-foreground">{calculatedNavData.applicableDate}</span></span>
+                      <span className="flex justify-between"><span>Applicable NAV:</span> <span className="text-foreground">₹{calculatedNavData.nav}</span></span>
+                      {formData.lumpsumInvestment && !isNaN(parseFloat(formData.lumpsumInvestment)) && (
+                        <span className="flex justify-between font-medium text-accent"><span>Est. Allotted Units:</span> <span>{(parseFloat(formData.lumpsumInvestment) / calculatedNavData.nav).toFixed(3)}</span></span>
+                      )}
+                    </div>
+                  ) : formData.schemeId && formData.investmentDate ? (
+                    <div className="text-xs text-ed-muted-text mt-2 italic">
+                      NAV for the applicable date is currently unavailable (e.g., future date).
+                    </div>
+                  ) : null}
+                </div>
               )}
             </div>
           </form>

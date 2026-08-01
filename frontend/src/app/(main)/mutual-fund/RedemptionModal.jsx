@@ -18,6 +18,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [redemptionType, setRedemptionType] = useState("amount"); // 'amount' or 'unit'
+  const [calculatedNavData, setCalculatedNavData] = useState(null);
+  const [navLoading, setNavLoading] = useState(false);
   const { toast } = useToast();
 
   const schemesByPlatform = useMemo(() => {
@@ -72,6 +74,31 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
       setDeleteLoading(false);
     }
   }, [isOpen, initialData]);
+
+  useEffect(() => {
+    let active = true;
+    if (isOpen && formData.schemeId && formData.redemptionDate) {
+      setNavLoading(true);
+      mutualFundAPI.getSchemeNavForDate(formData.schemeId, formData.redemptionDate, formData.isAfterCutoff)
+        .then((res) => {
+          if (active) {
+            setCalculatedNavData(res);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch NAV", err);
+          if (active) setCalculatedNavData(null);
+        })
+        .finally(() => {
+          if (active) setNavLoading(false);
+        });
+    } else {
+      setCalculatedNavData(null);
+    }
+    return () => {
+      active = false;
+    };
+  }, [isOpen, formData.schemeId, formData.redemptionDate, formData.isAfterCutoff]);
 
   const selectedScheme = useMemo(() => {
     if (!formData.schemeId || !schemes) return null;
@@ -322,8 +349,11 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                     />
                     {selectedScheme && formData.redemptionUnit && selectedScheme.totalUnit != null && (
                       <div className="mt-3 p-3 rounded-md bg-muted/40 border border-border/50 w-full md:max-w-[80%]">
-                        <p className="text-[11px] font-mono text-muted-foreground">
+                        <p className="text-[11px] font-mono text-muted-foreground mb-1">
                           Redeeming <strong className="text-foreground">{formData.redemptionUnit}</strong> out of <strong className="text-foreground">{selectedScheme.totalUnit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong> total units
+                        </p>
+                        <p className="text-[11px] font-mono font-medium text-accent">
+                          Remaining Units: {(selectedScheme.totalUnit - parseFloat(formData.redemptionUnit)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
                         </p>
                         
                         {isPreviewLoading ? (
@@ -355,9 +385,31 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                 </div>
               )}
               
-              <p className="text-[11px] text-muted-foreground mt-3 leading-tight">
-                NAV Price and the missing value will be auto-calculated by the system based on the NAV of the applicable settlement date.
-              </p>
+              <div className="bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1">
+                <p className="text-[11px] text-muted-foreground leading-tight">
+                  NAV Price and the missing value will be auto-calculated by the system based on the NAV of the applicable settlement date.
+                </p>
+                {navLoading ? (
+                  <div className="flex items-center text-xs text-muted-foreground mt-2">
+                    <Loader2 className="w-3 h-3 animate-spin mr-2" /> Fetching applicable NAV...
+                  </div>
+                ) : calculatedNavData?.nav ? (
+                  <div className="flex flex-col text-xs mt-2 text-foreground/80 font-mono space-y-1">
+                    <span className="flex justify-between"><span>Applicable Date:</span> <span className="text-foreground">{calculatedNavData.applicableDate}</span></span>
+                    <span className="flex justify-between"><span>Applicable NAV:</span> <span className="text-foreground">₹{calculatedNavData.nav}</span></span>
+                    {redemptionType === "amount" && formData.redemptionValue && !isNaN(parseFloat(formData.redemptionValue)) && (
+                      <span className="flex justify-between font-medium text-accent"><span>Est. Redeemed Units:</span> <span>{(parseFloat(formData.redemptionValue) / calculatedNavData.nav).toFixed(3)}</span></span>
+                    )}
+                    {redemptionType === "unit" && formData.redemptionUnit && !isNaN(parseFloat(formData.redemptionUnit)) && (
+                      <span className="flex justify-between font-medium text-accent"><span>Est. Redemption Value:</span> <span>₹{(parseFloat(formData.redemptionUnit) * calculatedNavData.nav).toFixed(2)}</span></span>
+                    )}
+                  </div>
+                ) : formData.schemeId && formData.redemptionDate ? (
+                  <div className="text-xs text-ed-muted-text mt-2 italic">
+                    NAV for the applicable date is currently unavailable (e.g., future date).
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="space-y-3">
