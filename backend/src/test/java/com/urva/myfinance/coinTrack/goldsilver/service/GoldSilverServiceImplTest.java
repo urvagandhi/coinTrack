@@ -33,6 +33,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.goldsilver.dto.request.GoldSilverRequestDTO;
 import com.urva.myfinance.coinTrack.goldsilver.dto.request.MarketRateUpdateRequestDTO;
 import com.urva.myfinance.coinTrack.goldsilver.dto.request.RateModeUpdateRequestDTO;
@@ -62,6 +63,9 @@ class GoldSilverServiceImplTest {
     private SequenceGeneratorService sequenceGeneratorService;
 
     @Mock
+    private TransactionSequenceService transactionSequenceService;
+
+    @Mock
     private MongoTemplate mongoTemplate;
 
     @Mock
@@ -82,7 +86,7 @@ class GoldSilverServiceImplTest {
     void setUp() {
         defaultPurityOptions = new java.util.ArrayList<>();
         service = new GoldSilverServiceImpl(
-                repository, sequenceGeneratorService, mongoTemplate,
+                repository, sequenceGeneratorService, transactionSequenceService, mongoTemplate,
                 calculationService, defaultPurityOptions, snapshotRepository
         );
 

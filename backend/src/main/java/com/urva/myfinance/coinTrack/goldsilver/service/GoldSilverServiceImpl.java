@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.goldsilver.dto.request.GoldSilverRequestDTO;
 import com.urva.myfinance.coinTrack.goldsilver.dto.request.MarketRateUpdateRequestDTO;
 import com.urva.myfinance.coinTrack.goldsilver.dto.request.RateModeUpdateRequestDTO;
@@ -49,6 +50,7 @@ public class GoldSilverServiceImpl implements GoldSilverService {
 
     private final GoldSilverInvestmentRepository repository;
     private final SequenceGeneratorService sequenceGeneratorService;
+    private final TransactionSequenceService transactionSequenceService;
     private final MongoTemplate mongoTemplate;
     private final GoldSilverCalculationService calculationService;
     private final List<PurityOption> defaultPurityOptions;
@@ -58,12 +60,14 @@ public class GoldSilverServiceImpl implements GoldSilverService {
     public GoldSilverServiceImpl(
             GoldSilverInvestmentRepository repository,
             SequenceGeneratorService sequenceGeneratorService,
+            TransactionSequenceService transactionSequenceService,
             MongoTemplate mongoTemplate,
             GoldSilverCalculationService calculationService,
             List<PurityOption> defaultPurityOptions,
             MetalRateSnapshotRepository snapshotRepository) {
         this.repository = repository;
         this.sequenceGeneratorService = sequenceGeneratorService;
+        this.transactionSequenceService = transactionSequenceService;
         this.mongoTemplate = mongoTemplate;
         this.calculationService = calculationService;
         this.defaultPurityOptions = defaultPurityOptions;
@@ -76,7 +80,7 @@ public class GoldSilverServiceImpl implements GoldSilverService {
             throw new ValidationException("itemNo", "itemNo is server-generated only");
         }
 
-        long nextItemNo = sequenceGeneratorService.getNextSequence("gs_item_no");
+        long nextItemNo = 0L;
         LocalDate today = LocalDate.now();
         GsStatus initialStatus = computeLiveStatus(requestDTO.getMaturityDate(), today);
         Instant now = Instant.now();
@@ -108,6 +112,7 @@ public class GoldSilverServiceImpl implements GoldSilverService {
         calculationService.calculateFields(investment);
 
         GoldSilverInvestment saved = repository.save(investment);
+        transactionSequenceService.reorderGoldSilverInvestments(userId);
         return toResponseDTO(saved);
     }
 
@@ -162,7 +167,9 @@ public class GoldSilverServiceImpl implements GoldSilverService {
 
         calculationService.calculateFields(existing);
 
-        return toResponseDTO(repository.save(existing));
+        GoldSilverInvestment saved = repository.save(existing);
+        transactionSequenceService.reorderGoldSilverInvestments(userId);
+        return toResponseDTO(saved);
     }
 
     @Override
@@ -189,6 +196,7 @@ public class GoldSilverServiceImpl implements GoldSilverService {
     public void deleteInvestment(String id, String userId) {
         findAndVerifyOwnership(id, userId);
         repository.deleteById(id);
+        transactionSequenceService.reorderGoldSilverInvestments(userId);
     }
 
     @Override
