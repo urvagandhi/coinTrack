@@ -14,9 +14,17 @@ import lombok.NoArgsConstructor;
 public class FixedDepositSummaryDTO {
 
     private BigDecimal totalInvestment;
+    private BigDecimal totalReturns; // All returns (active + due + matured + closed if applicable)
+    
     private BigDecimal totalActiveInvestment;
-    private BigDecimal totalExpectedMaturity;
     private BigDecimal totalEstimatedReturns;
+    
+    private BigDecimal totalDueInvestment;
+    private BigDecimal totalDueReturns;
+    
+    private BigDecimal totalMaturedInvestment;
+    private BigDecimal totalMaturedReturns;
+
     private long activeCount;
     private long dueAndMaturedCount;
 }

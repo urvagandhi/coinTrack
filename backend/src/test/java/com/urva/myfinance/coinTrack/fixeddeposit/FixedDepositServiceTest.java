@@ -26,6 +26,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.exception.InvalidFdDateRangeException;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
@@ -41,6 +42,9 @@ class FixedDepositServiceTest {
 
     @Mock
     private SequenceGeneratorService sequenceGeneratorService;
+
+    @Mock
+    private TransactionSequenceService transactionSequenceService;
 
     @Mock
     private MongoTemplate mongoTemplate;
@@ -179,8 +183,6 @@ class FixedDepositServiceTest {
                 .maturityAmount(new BigDecimal("230000"))
                 .remarks("Long term investment")
                 .build();
-
-        when(sequenceGeneratorService.getNextSequence("fd_no")).thenReturn(42L);
         when(fixedDepositRepository.save(any(FixedDeposit.class))).thenAnswer(invocation -> {
             FixedDeposit saved = invocation.getArgument(0);
             saved.setId("generated_id_42");
@@ -190,10 +192,9 @@ class FixedDepositServiceTest {
         FixedDepositResponseDTO response = fixedDepositService.createFixedDeposit(validDTO, "user_A");
 
         assertNotNull(response);
-        assertEquals(42L, response.getFdNo());
         assertEquals("user_A", response.getUserId());
         assertEquals(FdStatus.ACTIVE, response.getStatus());
-        verify(sequenceGeneratorService).getNextSequence("fd_no");
+        verify(transactionSequenceService).reorderFixedDeposits("user_A");
     }
 
     @Test

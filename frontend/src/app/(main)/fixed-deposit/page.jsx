@@ -247,30 +247,36 @@ export default function FixedDepositPage() {
     const totalPages = fdsData?.totalPages ?? fdsData?.page?.totalPages ?? (Array.isArray(fdsData) ? 1 : 0);
     const totalElements = fdsData?.totalElements ?? fdsData?.page?.totalElements ?? fds.length;
 
-    // Dynamic summary calculation based on status filter
     const computedSummary = useMemo(() => {
         if (!statusFilter) {
+            return {
+                totalInvestment: summaryData?.totalInvestment || 0,
+                totalReturns: summaryData?.totalReturns || 0,
+                totalActive: summaryData?.totalActiveInvestment || 0,
+                activeEstReturns: summaryData?.totalEstimatedReturns || 0,
+            };
+        } else if (statusFilter === 'ACTIVE') {
             return {
                 totalActiveInvestment: summaryData?.totalActiveInvestment || 0,
                 totalEstimatedReturns: summaryData?.totalEstimatedReturns || 0,
             };
+        } else if (statusFilter === 'DUE') {
+            return {
+                totalActiveInvestment: summaryData?.totalDueInvestment || 0,
+                totalEstimatedReturns: summaryData?.totalDueReturns || 0,
+            };
+        } else if (statusFilter === 'MATURED') {
+            return {
+                totalActiveInvestment: summaryData?.totalMaturedInvestment || 0,
+                totalEstimatedReturns: summaryData?.totalMaturedReturns || 0,
+            };
+        } else {
+            return {
+                totalActiveInvestment: 0,
+                totalEstimatedReturns: 0,
+            };
         }
-
-        let activeInvest = 0;
-        let estReturns = 0;
-
-        for (const fd of fds) {
-            activeInvest += (fd.issueAmount || 0);
-            if (fd.maturityAmount && fd.issueAmount) {
-                estReturns += (fd.maturityAmount - fd.issueAmount);
-            }
-        }
-
-        return {
-            totalActiveInvestment: activeInvest,
-            totalEstimatedReturns: estReturns,
-        };
-    }, [statusFilter, summaryData, fds]);
+    }, [statusFilter, summaryData]);
 
     const invalidate = () => {
         queryClient.invalidateQueries({ queryKey: ['fds'] });
@@ -366,18 +372,44 @@ export default function FixedDepositPage() {
                     <h1 className="display-serif text-[40px] md:text-[56px] text-foreground leading-none">
                         Fixed <span className="italic text-[hsl(var(--accent))]">Deposits</span>
                     </h1>
-                    <div className="flex gap-6 mt-4">
-                        <div>
-                            <p className="eyebrow text-muted-foreground">
-                                {statusFilter ? `${statusFilter} Investment` : 'Total Active'}
-                            </p>
-                            <p className="font-mono text-lg font-bold">{formatCurrency(computedSummary.totalActiveInvestment)}</p>
+                    {statusFilter === '' ? (
+                        <div className="flex flex-wrap gap-6 mt-4">
+                            <div>
+                                <p className="eyebrow text-muted-foreground">Total Investment</p>
+                                <p className="font-mono text-lg font-bold">{formatCurrency(computedSummary.totalInvestment)}</p>
+                            </div>
+                            <div>
+                                <p className="eyebrow text-muted-foreground">Total Returns</p>
+                                <p className="font-mono text-lg font-bold text-[hsl(var(--gain))]">+{formatCurrency(computedSummary.totalReturns)}</p>
+                            </div>
+                            <div>
+                                <p className="eyebrow text-muted-foreground">Total Active</p>
+                                <p className="font-mono text-lg font-bold">{formatCurrency(computedSummary.totalActive)}</p>
+                            </div>
+                            <div>
+                                <p className="eyebrow text-muted-foreground">Est. Returns</p>
+                                <p className="font-mono text-lg font-bold text-[hsl(var(--gain))]">+{formatCurrency(computedSummary.activeEstReturns)}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="eyebrow text-muted-foreground">Est. Returns</p>
-                            <p className="font-mono text-lg font-bold text-[hsl(var(--gain))]">+{formatCurrency(computedSummary.totalEstimatedReturns)}</p>
+                    ) : (
+                        <div className="flex flex-wrap gap-6 mt-4">
+                            <div>
+                                <p className="eyebrow text-muted-foreground">
+                                    {statusFilter === 'ACTIVE' ? 'Total Active' : 
+                                     statusFilter === 'DUE' ? 'Total Due' : 
+                                     statusFilter === 'MATURED' ? 'Total Matured' : 
+                                     `${statusFilter} Investment`}
+                                </p>
+                                <p className="font-mono text-lg font-bold">{formatCurrency(computedSummary.totalActiveInvestment)}</p>
+                            </div>
+                            <div>
+                                <p className="eyebrow text-muted-foreground">
+                                    {statusFilter === 'MATURED' ? 'Actual Returns' : 'Est. Returns'}
+                                </p>
+                                <p className="font-mono text-lg font-bold text-[hsl(var(--gain))]">+{formatCurrency(computedSummary.totalEstimatedReturns)}</p>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                     <button

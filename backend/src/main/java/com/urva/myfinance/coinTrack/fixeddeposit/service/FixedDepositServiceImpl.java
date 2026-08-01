@@ -25,6 +25,8 @@ import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.exception.InvalidFdDateRangeException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
+
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
@@ -39,15 +41,18 @@ public class FixedDepositServiceImpl implements FixedDepositService {
 
     private final FixedDepositRepository fixedDepositRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
+    private final TransactionSequenceService transactionSequenceService;
     private final MongoTemplate mongoTemplate;
 
     @Autowired
     public FixedDepositServiceImpl(
             FixedDepositRepository fixedDepositRepository,
             SequenceGeneratorService sequenceGeneratorService,
+            TransactionSequenceService transactionSequenceService,
             MongoTemplate mongoTemplate) {
         this.fixedDepositRepository = fixedDepositRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
+        this.transactionSequenceService = transactionSequenceService;
         this.mongoTemplate = mongoTemplate;
     }
 
@@ -56,7 +61,7 @@ public class FixedDepositServiceImpl implements FixedDepositService {
         logger.info("Creating fixed deposit for user: {}", userId);
         validateRequestDTO(requestDTO);
 
-        long nextFdNo = sequenceGeneratorService.getNextSequence("fd_no");
+        long nextFdNo = 0L;
         LocalDate today = LocalDate.now();
         FdStatus initialStatus = computeLiveStatus(null, requestDTO.getMaturityDate(), today);
         Instant now = Instant.now();
@@ -81,6 +86,7 @@ public class FixedDepositServiceImpl implements FixedDepositService {
                 .build();
 
         FixedDeposit saved = fixedDepositRepository.save(fixedDeposit);
+        transactionSequenceService.reorderFixedDeposits(userId);
         return toResponseDTO(saved);
     }
 
@@ -157,6 +163,7 @@ public class FixedDepositServiceImpl implements FixedDepositService {
         existing.setUpdatedAt(Instant.now());
 
         FixedDeposit updated = fixedDepositRepository.save(existing);
+        transactionSequenceService.reorderFixedDeposits(userId);
         return toResponseDTO(updated);
     }
 
@@ -184,9 +191,17 @@ public class FixedDepositServiceImpl implements FixedDepositService {
         LocalDate today = LocalDate.now();
 
         BigDecimal totalInvestment = BigDecimal.ZERO;
+        BigDecimal totalReturns = BigDecimal.ZERO;
+        
         BigDecimal totalActiveInvestment = BigDecimal.ZERO;
-        BigDecimal totalExpectedMaturity = BigDecimal.ZERO;
         BigDecimal totalEstimatedReturns = BigDecimal.ZERO;
+        
+        BigDecimal totalDueInvestment = BigDecimal.ZERO;
+        BigDecimal totalDueReturns = BigDecimal.ZERO;
+        
+        BigDecimal totalMaturedInvestment = BigDecimal.ZERO;
+        BigDecimal totalMaturedReturns = BigDecimal.ZERO;
+        
         long activeCount = 0;
         long dueAndMaturedCount = 0;
 
@@ -194,26 +209,41 @@ public class FixedDepositServiceImpl implements FixedDepositService {
             FdStatus status = computeLiveStatus(fd.getStatus(), fd.getMaturityDate(), today);
             BigDecimal issueAmt = fd.getIssueAmount() != null ? fd.getIssueAmount() : BigDecimal.ZERO;
             BigDecimal matAmt = fd.getMaturityAmount() != null ? fd.getMaturityAmount() : BigDecimal.ZERO;
+            
+            BigDecimal returns = BigDecimal.ZERO;
+            if (matAmt.compareTo(issueAmt) > 0) {
+                returns = matAmt.subtract(issueAmt);
+            }
 
-            totalInvestment = totalInvestment.add(issueAmt);
-            totalExpectedMaturity = totalExpectedMaturity.add(matAmt);
+            if (status != FdStatus.CLOSED) {
+                totalInvestment = totalInvestment.add(issueAmt);
+                totalReturns = totalReturns.add(returns);
+            }
 
             if (status == FdStatus.ACTIVE) {
                 activeCount++;
                 totalActiveInvestment = totalActiveInvestment.add(issueAmt);
-                if (matAmt.compareTo(issueAmt) > 0) {
-                    totalEstimatedReturns = totalEstimatedReturns.add(matAmt.subtract(issueAmt));
-                }
-            } else if (status == FdStatus.DUE || status == FdStatus.MATURED) {
+                totalEstimatedReturns = totalEstimatedReturns.add(returns);
+            } else if (status == FdStatus.DUE) {
                 dueAndMaturedCount++;
+                totalDueInvestment = totalDueInvestment.add(issueAmt);
+                totalDueReturns = totalDueReturns.add(returns);
+            } else if (status == FdStatus.MATURED) {
+                dueAndMaturedCount++;
+                totalMaturedInvestment = totalMaturedInvestment.add(issueAmt);
+                totalMaturedReturns = totalMaturedReturns.add(returns);
             }
         }
 
         return FixedDepositSummaryDTO.builder()
                 .totalInvestment(totalInvestment)
+                .totalReturns(totalReturns)
                 .totalActiveInvestment(totalActiveInvestment)
-                .totalExpectedMaturity(totalExpectedMaturity)
                 .totalEstimatedReturns(totalEstimatedReturns)
+                .totalDueInvestment(totalDueInvestment)
+                .totalDueReturns(totalDueReturns)
+                .totalMaturedInvestment(totalMaturedInvestment)
+                .totalMaturedReturns(totalMaturedReturns)
                 .activeCount(activeCount)
                 .dueAndMaturedCount(dueAndMaturedCount)
                 .build();

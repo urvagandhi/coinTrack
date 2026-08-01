@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Calculator, Loader2, X, RefreshCw, Calendar, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import BankSearchCombobox from '@/components/ui/BankSearchCombobox';
 
 const INITIAL_STATE = {
     place: '',
@@ -111,14 +112,35 @@ function calculateTenurePeriod(issueDate, maturityDate) {
     return `${parts.join(', ')} (${totalDays} Days)`;
 }
 
+const SIMPLE_INTEREST_THRESHOLD_DAYS = 181;
+
+function daysBetween(start, end) {
+    return Math.round((end - start) / (1000 * 60 * 60 * 24));
+}
+
+function fullQuartersAndBrokenDays(start, end) {
+    let totalMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    if (end.getDate() < start.getDate()) totalMonths -= 1;
+
+    const fullQuarters = Math.floor(totalMonths / 3);
+
+    const quarterEndDate = new Date(start);
+    quarterEndDate.setMonth(quarterEndDate.getMonth() + fullQuarters * 3);
+
+    const brokenDays = daysBetween(quarterEndDate, end);
+
+    return { fullQuarters, brokenDays };
+}
+
 /**
- * Calculate FD Maturity Amount using Indian bank standard (quarterly compounding for full quarters + simple interest for remaining broken days)
+ * Maturity amount from principal + rate + dates.
  */
 function calculateFdMaturity(issueAmount, interestRate, issueDate, maturityDate) {
     const P = parseFloat(issueAmount);
     const r = parseFloat(interestRate);
     if (!P || !r || P <= 0 || r <= 0) return null;
 
+    // No dates -> assume 1 year, quarterly compounded (common default)
     if (!issueDate || !maturityDate) {
         const amount = P * Math.pow(1 + r / 400, 4);
         return Math.round(amount * 100) / 100;
@@ -128,39 +150,27 @@ function calculateFdMaturity(issueAmount, interestRate, issueDate, maturityDate)
     const end = new Date(maturityDate);
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return null;
 
-    // Calculate full months and remaining broken days
-    let y1 = start.getFullYear(), m1 = start.getMonth(), d1 = start.getDate();
-    let y2 = end.getFullYear(), m2 = end.getMonth(), d2 = end.getDate();
+    const totalDays = daysBetween(start, end);
 
-    let totalMonths = (y2 - y1) * 12 + (m2 - m1);
-    let tempDate = new Date(start);
-    tempDate.setMonth(tempDate.getMonth() + totalMonths);
-
-    if (tempDate > end) {
-        totalMonths -= 1;
-        tempDate = new Date(start);
-        tempDate.setMonth(tempDate.getMonth() + totalMonths);
+    // Short tenure: simple interest only
+    if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
+        const amount = P + (P * r * totalDays) / (365 * 100);
+        return Math.round(amount * 100) / 100;
     }
 
-    const remainingDays = Math.round((end - tempDate) / (1000 * 60 * 60 * 24));
-    const fullQuarters = Math.floor(totalMonths / 3);
-    const extraMonths = totalMonths % 3;
+    // Long tenure: quarterly compounding + simple interest on the tail
+    const { fullQuarters, brokenDays } = fullQuartersAndBrokenDays(start, end);
 
-    // 1. Compound for full quarters
-    let currentAmount = P * Math.pow(1 + r / 400, fullQuarters);
-
-    // 2. Simple interest for remaining extra months + extra days
-    const totalExtraDays = (extraMonths * 30) + remainingDays;
-    if (totalExtraDays > 0) {
-        const simpleInterest = currentAmount * (r / 100) * (totalExtraDays / 365);
-        currentAmount += simpleInterest;
+    let amount = P * Math.pow(1 + r / 400, fullQuarters);
+    if (brokenDays > 0) {
+        amount += amount * (r / 100) * (brokenDays / 365);
     }
 
-    return Math.round(currentAmount * 100) / 100;
+    return Math.round(amount * 100) / 100;
 }
 
 /**
- * Calculate Interest Rate (% p.a.) from Maturity Amount and Initial Amount (Indian bank standard)
+ * Reverse-solve for interest rate (% p.a.) given principal, maturity amount and dates.
  */
 function calculateFdInterestRate(issueAmount, maturityAmount, issueDate, maturityDate) {
     const P = parseFloat(issueAmount);
@@ -176,30 +186,21 @@ function calculateFdInterestRate(issueAmount, maturityAmount, issueDate, maturit
     const end = new Date(maturityDate);
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return null;
 
-    let y1 = start.getFullYear(), m1 = start.getMonth(), d1 = start.getDate();
-    let y2 = end.getFullYear(), m2 = end.getMonth(), d2 = end.getDate();
+    const totalDays = daysBetween(start, end);
 
-    let totalMonths = (y2 - y1) * 12 + (m2 - m1);
-    let tempDate = new Date(start);
-    tempDate.setMonth(tempDate.getMonth() + totalMonths);
-
-    if (tempDate > end) {
-        totalMonths -= 1;
-        tempDate = new Date(start);
-        tempDate.setMonth(tempDate.getMonth() + totalMonths);
+    if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
+        const rate = ((A - P) * 365 * 100) / (P * totalDays);
+        return Math.round(rate * 100) / 100;
     }
 
-    const remainingDays = Math.round((end - tempDate) / (1000 * 60 * 60 * 24));
-    const fullQuarters = Math.floor(totalMonths / 3);
-    const extraMonths = totalMonths % 3;
-    const totalExtraDays = (extraMonths * 30) + remainingDays;
+    const { fullQuarters, brokenDays } = fullQuartersAndBrokenDays(start, end);
 
-    let low = 0.1, high = 100, bestRate = 0;
-    for (let i = 0; i < 30; i++) {
+    let low = 0.01, high = 100, bestRate = 0;
+    for (let i = 0; i < 60; i++) {
         const mid = (low + high) / 2;
         let testAmount = P * Math.pow(1 + mid / 400, fullQuarters);
-        if (totalExtraDays > 0) {
-            testAmount += testAmount * (mid / 100) * (totalExtraDays / 365);
+        if (brokenDays > 0) {
+            testAmount += testAmount * (mid / 100) * (brokenDays / 365);
         }
         if (testAmount >= A) {
             bestRate = mid;
@@ -211,12 +212,12 @@ function calculateFdInterestRate(issueAmount, maturityAmount, issueDate, maturit
 
     return Math.round(bestRate * 100) / 100;
 }
-
 export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialData }) {
-    const [formData, setFormData] = useState(INITIAL_STATE);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const { toast } = useToast();
     const { user } = useAuth();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [entryMode, setEntryMode] = useState('automatic');
+    const [formData, setFormData] = useState(INITIAL_STATE);
 
     useEffect(() => {
         if (isOpen) {
@@ -275,7 +276,7 @@ export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialDat
         const parsedVal = parseShortcutAmount(val);
         setFormData(prev => {
             const next = { ...prev, issueAmount: parsedVal };
-            if (next.interestRate && next.issueDate && next.maturityDate) {
+            if (entryMode === 'automatic' && next.interestRate && next.issueDate && next.maturityDate) {
                 const mat = calculateFdMaturity(parsedVal, next.interestRate, next.issueDate, next.maturityDate);
                 if (mat !== null) next.maturityAmount = String(mat);
             }
@@ -287,7 +288,7 @@ export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialDat
         const val = e.target.value;
         setFormData(prev => {
             const next = { ...prev, interestRate: val };
-            if (next.issueAmount && next.issueDate && next.maturityDate) {
+            if (entryMode === 'automatic' && next.issueAmount && next.issueDate && next.maturityDate) {
                 const mat = calculateFdMaturity(next.issueAmount, val, next.issueDate, next.maturityDate);
                 if (mat !== null) next.maturityAmount = String(mat);
             }
@@ -300,7 +301,7 @@ export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialDat
         const parsedVal = parseShortcutAmount(val);
         setFormData(prev => {
             const next = { ...prev, maturityAmount: parsedVal };
-            if (next.issueAmount && next.issueDate && next.maturityDate && parseFloat(parsedVal) > parseFloat(next.issueAmount)) {
+            if (entryMode === 'manual' && next.issueAmount && next.issueDate && next.maturityDate && parseFloat(parsedVal) > parseFloat(next.issueAmount)) {
                 const rate = calculateFdInterestRate(next.issueAmount, parsedVal, next.issueDate, next.maturityDate);
                 if (rate !== null) next.interestRate = String(rate);
             }
@@ -314,12 +315,14 @@ export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialDat
             const tenure = calculateTenurePeriod(next.issueDate, next.maturityDate);
             next.investmentPeriod = tenure;
 
-            if (next.issueAmount && next.interestRate && next.issueDate && next.maturityDate) {
-                const mat = calculateFdMaturity(next.issueAmount, next.interestRate, next.issueDate, next.maturityDate);
-                if (mat !== null) next.maturityAmount = String(mat);
-            } else if (next.issueAmount && next.maturityAmount && next.issueDate && next.maturityDate) {
-                const rate = calculateFdInterestRate(next.issueAmount, next.maturityAmount, next.issueDate, next.maturityDate);
-                if (rate !== null) next.interestRate = String(rate);
+            if (entryMode === 'automatic') {
+                if (next.issueAmount && next.interestRate && next.issueDate && next.maturityDate) {
+                    const mat = calculateFdMaturity(next.issueAmount, next.interestRate, next.issueDate, next.maturityDate);
+                    if (mat !== null) next.maturityAmount = String(mat);
+                } else if (next.issueAmount && next.maturityAmount && next.issueDate && next.maturityDate) {
+                    const rate = calculateFdInterestRate(next.issueAmount, next.maturityAmount, next.issueDate, next.maturityDate);
+                    if (rate !== null) next.interestRate = String(rate);
+                }
             }
             return next;
         });
@@ -391,13 +394,9 @@ export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialDat
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-1.5 md:col-span-1">
                                     <label className="eyebrow">Bank/Institution *</label>
-                                    <input
-                                        type="text"
-                                        required
+                                    <BankSearchCombobox
                                         value={formData.place}
-                                        onChange={(e) => setFormData({ ...formData, place: e.target.value })}
-                                        className="ed-input w-full"
-                                        placeholder="e.g. State Bank of India"
+                                        onChange={(val) => setFormData({ ...formData, place: val })}
                                     />
                                 </div>
                                 <div className="space-y-1.5 md:col-span-1">
@@ -527,23 +526,67 @@ export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialDat
                                         <Calculator className="h-3 w-3" /> Auto-Calc
                                     </button>
                                 </div>
-                                <input
-                                    type="text"
-                                    value={formData.maturityAmount}
-                                    onChange={handleMaturityAmountChange}
-                                    className="ed-input w-full font-mono text-[16px] font-semibold text-[hsl(var(--gain))] bg-[hsl(var(--gain))]/5 border-[hsl(var(--gain))]/30 focus:border-[hsl(var(--gain))]"
-                                    placeholder="0.00 (Auto-calculated)"
-                                />
+                                <div className="flex items-center space-x-2 mt-2 mb-2">
+                                   <button
+                                      type="button"
+                                      onClick={() => setEntryMode('automatic')}
+                                      className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
+                                         entryMode === 'automatic' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                      }`}
+                                   >
+                                      Automatic Mode
+                                   </button>
+                                   <button
+                                      type="button"
+                                      onClick={() => setEntryMode('manual')}
+                                      className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
+                                         entryMode === 'manual' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                      }`}
+                                   >
+                                      Manual Mode
+                                   </button>
+                                </div>
+
+                                {entryMode === 'manual' && (
+                                   <div className="animate-in slide-in-from-top-1 fade-in duration-200">
+                                      <input
+                                          type="text"
+                                          value={formData.maturityAmount}
+                                          onChange={handleMaturityAmountChange}
+                                          className="ed-input w-full font-mono text-[16px] font-semibold text-[hsl(var(--gain))] bg-[hsl(var(--gain))]/5 border-[hsl(var(--gain))]/30 focus:border-[hsl(var(--gain))]"
+                                          placeholder="Enter maturity amount manually"
+                                      />
+                                   </div>
+                                )}
+                                {entryMode === 'automatic' && (
+                                   <div className="animate-in slide-in-from-top-1 fade-in duration-200">
+                                      <input
+                                          type="text"
+                                          value={formData.maturityAmount}
+                                          readOnly
+                                          className="ed-input w-full font-mono text-[16px] font-semibold text-[hsl(var(--gain))] bg-[hsl(var(--gain))]/5 border-none opacity-80 cursor-not-allowed"
+                                          placeholder="0.00 (Auto-calculated)"
+                                      />
+                                      <p className="text-[11px] text-muted-foreground mt-1.5 leading-tight">
+                                        Maturity amount is auto-calculated based on interest rate and tenure. Switch to Manual mode to override.
+                                      </p>
+                                   </div>
+                                )}
                                 {formData.maturityAmount && !isNaN(formData.maturityAmount) && Number(formData.maturityAmount) > 0 && (
-                                    <div className="flex items-center justify-between text-[11px] font-mono text-[hsl(var(--gain))] mt-1">
-                                        <span>{formatIndianCurrency(formData.maturityAmount)} {formatInIndianWords(formData.maturityAmount) ? `(${formatInIndianWords(formData.maturityAmount)})` : ''}</span>
-                                        {formData.issueAmount && Number(formData.maturityAmount) > Number(formData.issueAmount) && (
-                                            <span className="text-muted-foreground">
-                                                Est. Interest: +{formatIndianCurrency(Number(formData.maturityAmount) - Number(formData.issueAmount))}
-                                            </span>
-                                        )}
+                                    <div className="flex flex-col gap-1.5 mt-1">
+                                        <div className="flex items-center justify-between text-[11px] font-mono text-[hsl(var(--gain))]">
+                                            <span>{formatIndianCurrency(formData.maturityAmount)} {formatInIndianWords(formData.maturityAmount) ? `(${formatInIndianWords(formData.maturityAmount)})` : ''}</span>
+                                            {formData.issueAmount && Number(formData.maturityAmount) > Number(formData.issueAmount) && (
+                                                <span className="text-muted-foreground">
+                                                    Est. Interest: +{formatIndianCurrency(Number(formData.maturityAmount) - Number(formData.issueAmount))}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
+                                <p className="text-[9.5px] text-muted-foreground/80 italic leading-tight font-serif mt-2">
+                                    * Note: Calculated maturity amount is an estimate based on standard banking formulas. The exact final amount may differ slightly depending on the specific bank's internal calculation precision.
+                                </p>
                             </div>
                         </div>
 
