@@ -159,6 +159,16 @@ public class GlobalExceptionHandler {
                 "Request body is missing or malformed", request);
     }
 
+    /**
+     * Illegal argument / state exceptions typically indicate business validation failures.
+     */
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgumentException(
+            RuntimeException ex, HttpServletRequest request) {
+        logger.warn("Validation failed: {}", ex.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", ex.getMessage(), request);
+    }
+
     // ── 404 ─────────────────────────────────────────────────────────────
 
     /**

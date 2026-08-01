@@ -53,6 +53,10 @@ public class SecurityConfig {
                         // Health
                         .requestMatchers("/api/health", "/api/health/**", "/actuator/health", "/health").permitAll()
 
+                        // Admin
+                        // TODO: REMOVE THIS LATER
+                        // .requestMatchers("/api/mutual-fund/admin/**").permitAll()
+
                         // CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 

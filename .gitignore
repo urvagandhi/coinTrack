@@ -13,6 +13,7 @@ HELP.md
 
 # Backend specific (Maven/Spring Boot)
 backend/target/
+backend/target_backup/
 backend/.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
