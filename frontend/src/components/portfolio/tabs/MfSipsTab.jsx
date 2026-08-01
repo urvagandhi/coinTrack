@@ -6,6 +6,7 @@ import { portfolioAPI } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { TabError } from './TabError';
 import { TabLoadingSkeleton } from './TabLoadingSkeleton';
+import DataAccuracyWarning from './DataAccuracyWarning';
 
 export function MfSipsTab({ navigateTo, context }) {
     const { data: rawData, isLoading, error, refetch } = useQuery({
@@ -31,12 +32,15 @@ export function MfSipsTab({ navigateTo, context }) {
     };
 
     return (
-        <MfSipList
-            sips={sips}
-            unlinkedOrders={unlinkedOrders}
-            isLoading={false}
-            onNavigate={handleNavigate}
-            initialContext={context}
-        />
+        <div>
+            <DataAccuracyWarning />
+            <MfSipList
+                sips={sips}
+                unlinkedOrders={unlinkedOrders}
+                isLoading={false}
+                onNavigate={handleNavigate}
+                initialContext={context}
+            />
+        </div>
     );
 }

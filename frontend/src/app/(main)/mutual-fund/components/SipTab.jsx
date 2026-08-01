@@ -161,9 +161,9 @@ export default function SipTab() {
       if (platformA !== platformB) {
         return platformA.localeCompare(platformB);
       }
-      const dayA = getDayOfMonth(a.startDate);
-      const dayB = getDayOfMonth(b.startDate);
-      return dayA - dayB;
+      const dateA = new Date(a.startDate);
+      const dateB = new Date(b.startDate);
+      return dateA - dateB;
     };
 
     activeMandates.sort(sortFn);
@@ -300,19 +300,35 @@ export default function SipTab() {
 
   if (data.totalMandates === 0 && !data.hasSips) {
     return (
-      <section className="ed-card relative px-8 py-16 text-center max-w-md mx-auto">
-        <span className="corner-mark corner-tl" />
-        <span className="corner-mark corner-tr" />
-        <span className="corner-mark corner-bl" />
-        <span className="corner-mark corner-br" />
-        <Repeat className="h-8 w-8 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
-        <p className="font-serif italic text-[24px] text-foreground mb-1">
-          No SIPs found.
-        </p>
-        <button onClick={() => { setEditingMandate(null); setIsMandateModalOpen(true); }} className="ed-btn ed-btn-accent mt-6">
-          <Plus className="h-4 w-4" /> Setup First Mandate
-        </button>
-      </section>
+      <>
+        <section className="ed-card relative px-8 py-16 text-center max-w-md mx-auto">
+          <span className="corner-mark corner-tl" />
+          <span className="corner-mark corner-tr" />
+          <span className="corner-mark corner-bl" />
+          <span className="corner-mark corner-br" />
+          <Repeat className="h-8 w-8 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
+          <p className="font-serif italic text-[24px] text-foreground mb-1">
+            No SIPs found.
+          </p>
+          <button onClick={() => { setEditingMandate(null); setIsMandateModalOpen(true); }} className="ed-btn ed-btn-accent mt-6">
+            <Plus className="h-4 w-4" /> Setup First Mandate
+          </button>
+        </section>
+        <SipMandateModal 
+          isOpen={isMandateModalOpen} 
+          onClose={() => { setIsMandateModalOpen(false); setEditingMandate(null); }} 
+          onSuccess={handleSuccess}
+          schemes={schemes}
+          initialData={editingMandate}
+        />
+        <SipContributionModal 
+          isOpen={isContributionModalOpen} 
+          onClose={() => { setIsContributionModalOpen(false); setEditingContribution(null); }} 
+          onSuccess={handleSuccess}
+          schemes={schemes}
+          initialData={editingContribution}
+        />
+      </>
     );
   }
 
@@ -392,7 +408,10 @@ export default function SipTab() {
                   <td key={col.key} className="py-3 px-4 text-center font-mono text-[12px] text-muted-foreground min-w-[80px]">
                       {contribution ? (
                           <div 
-                              className="text-foreground font-medium cursor-pointer hover:underline"
+                              className={`font-medium cursor-pointer hover:underline flex items-center justify-center gap-1 ${
+                                contribution.status === 'FAILED' ? 'text-red-500' : 
+                                contribution.status === 'PENDING_NAV' ? 'text-yellow-500' : 'text-foreground'
+                              }`}
                               onClick={(e) => {
                                   e.stopPropagation();
                                   setEditingContribution({
@@ -401,8 +420,14 @@ export default function SipTab() {
                                   });
                                   setIsContributionModalOpen(true);
                               }}
-                              title={contribution.remarks || 'View details'}
+                              title={
+                                contribution.status === 'FAILED' ? 'Failed - Action Required' : 
+                                contribution.status === 'PENDING_NAV' ? 'Pending NAV' : 
+                                (contribution.remarks || 'View details')
+                              }
                           >
+                              {contribution.status === 'FAILED' && <span className="text-[10px]" title="Failed">⚠️</span>}
+                              {contribution.status === 'PENDING_NAV' && <span className="text-[10px]" title="Pending NAV">⏳</span>}
                               ₹{contribution.amount}
                           </div>
                       ) : isValid ? (
@@ -477,6 +502,10 @@ export default function SipTab() {
           </div>
         </div>
 
+        <div className="px-4 py-2 bg-blue-500/10 border-b border-border text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+          Note: Investment amounts are shown strictly as Net Investment, after deducting the applicable Government Stamp Duty (0.005% since July 2020).
+        </div>
+
         <div className="overflow-x-auto custom-scrollbar" ref={scrollContainerRef}>
           <table className="w-full text-left border-collapse min-w-max">
             <thead>
@@ -486,7 +515,7 @@ export default function SipTab() {
                 <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground sticky left-[450px] w-[120px] min-w-[120px] bg-muted z-20">Debited Bank</th>
                 <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground sticky left-[570px] w-[150px] min-w-[150px] bg-muted z-20">Start Date</th>
                 <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right sticky left-[720px] w-[120px] min-w-[120px] bg-muted z-20">Amount</th>
-                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right sticky left-[840px] w-[130px] min-w-[130px] bg-muted z-20 border-r border-border shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">Total Invested</th>
+                <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right sticky left-[840px] w-[130px] min-w-[130px] bg-muted z-20 border-r border-border shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">Total Net Inv.</th>
                 
                 {data.monthColumns.map(col => (
                     <th key={col.key} className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-center">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { X, Loader2 } from "lucide-react";
 import { mutualFundAPI } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
+import DataAccuracyWarning from "@/components/portfolio/tabs/DataAccuracyWarning";
 
 export default function SipContributionModal({ isOpen, onClose, onSuccess, schemes, initialData }) {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
   });
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [entryMode, setEntryMode] = useState("automatic");
   const { toast } = useToast();
 
   const schemesByPlatform = useMemo(() => {
@@ -44,6 +46,7 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
           totalUnit: initialData.totalUnit || "",
           remarks: initialData.remarks || ""
         });
+        setEntryMode(initialData.navPrice ? "manual" : "automatic");
       } else {
         setFormData({
           schemeId: "",
@@ -54,6 +57,7 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
           totalUnit: "",
           remarks: ""
         });
+        setEntryMode("automatic");
       }
       setLoading(false);
       setDeleteLoading(false);
@@ -69,7 +73,7 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
   const calculateUnits = () => {
     const inv = parseFloat(formData.amount);
     const nav = parseFloat(formData.navPrice);
-    if (!isNaN(inv) && !isNaN(nav) && nav > 0) {
+    if (!isNaN(inv) && !isNaN(nav) && nav > 0 && !formData.totalUnit) {
       setFormData({ ...formData, totalUnit: (inv / nav).toFixed(3) });
     }
   };
@@ -81,8 +85,8 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
       const payload = {
         ...formData,
         amount: Number(formData.amount),
-        navPrice: formData.navPrice ? Number(formData.navPrice) : null,
-        totalUnit: formData.totalUnit ? Number(formData.totalUnit) : null,
+        navPrice: entryMode === "manual" && formData.navPrice ? Number(formData.navPrice) : null,
+        totalUnit: entryMode === "manual" && formData.totalUnit ? Number(formData.totalUnit) : null,
       };
       
       if (initialData?.id || initialData?.contributionId) {
@@ -102,19 +106,32 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this contribution?")) return;
-    setDeleteLoading(true);
-    try {
-      await mutualFundAPI.deleteSipContribution(initialData.id || initialData.contributionId);
-      toast({ title: "Success", description: "Contribution deleted successfully." });
-      onSuccess();
-      onClose();
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to delete contribution.", variant: "destructive" });
-    } finally {
-      setDeleteLoading(false);
-    }
+  const handleDelete = () => {
+    toast({
+      title: "Delete Contribution?",
+      description: "Are you sure you want to delete this contribution? This action cannot be undone.",
+      variant: "warning",
+      action: (
+        <button
+          onClick={async () => {
+            setDeleteLoading(true);
+            try {
+              await mutualFundAPI.deleteSipContribution(initialData.id || initialData.contributionId);
+              toast({ title: "Success", description: "Contribution deleted successfully." });
+              onSuccess();
+              onClose();
+            } catch (error) {
+              toast({ title: "Error", description: error.response?.data?.message || "Failed to delete contribution.", variant: "destructive" });
+            } finally {
+              setDeleteLoading(false);
+            }
+          }}
+          className="text-[11px] font-medium text-[hsl(var(--loss))] hover:underline"
+        >
+          Confirm
+        </button>
+      ),
+    });
   };
 
   return (
@@ -143,6 +160,9 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
         </div>
 
         <div className="p-6 overflow-y-auto">
+          <div className="mb-6">
+             <DataAccuracyWarning className="mb-4" />
+          </div>
           <form id="sip-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-3">
               <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
@@ -226,31 +246,59 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="eyebrow">NAV Price</label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    name="navPrice"
-                    value={formData.navPrice}
-                    onChange={handleChange}
-                    onBlur={calculateUnits}
-                    className="ed-input w-full font-mono"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="eyebrow">Allotted Units</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    name="totalUnit"
-                    value={formData.totalUnit}
-                    onChange={handleChange}
-                    className="ed-input w-full font-mono"
-                  />
-                </div>
+              <div className="flex items-center space-x-2 mt-4 mb-2">
+                 <button
+                    type="button"
+                    onClick={() => setEntryMode("automatic")}
+                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
+                       entryMode === "automatic" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                 >
+                    Automatic Mode
+                 </button>
+                 <button
+                    type="button"
+                    onClick={() => setEntryMode("manual")}
+                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
+                       entryMode === "manual" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                 >
+                    Manual Mode
+                 </button>
               </div>
+              
+              {entryMode === "manual" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200">
+                  <div className="space-y-1.5">
+                    <label className="eyebrow">NAV Price</label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      name="navPrice"
+                      value={formData.navPrice}
+                      onChange={handleChange}
+                      onBlur={calculateUnits}
+                      className="ed-input w-full font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="eyebrow">Allotted Units</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      name="totalUnit"
+                      value={formData.totalUnit}
+                      onChange={handleChange}
+                      className="ed-input w-full font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+              {entryMode === "automatic" && (
+                <p className="text-[11px] text-muted-foreground mt-1.5 leading-tight">
+                  NAV Price and Allotted Units will be auto-calculated by our optimized logic based on the NAV date.
+                </p>
+              )}
             </div>
 
             <div className="space-y-3">

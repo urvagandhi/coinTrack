@@ -11,6 +11,7 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
   const [formData, setFormData] = useState({
     schemeId: "",
     startDate: "",
+    endDate: "",
     amount: "",
     bank: "",
     holderName: defaultHolder,
@@ -42,6 +43,11 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
               ? `${initialData.startDate[0]}-${String(initialData.startDate[1]).padStart(2, '0')}-${String(initialData.startDate[2]).padStart(2, '0')}`
               : initialData.startDate.split('T')[0]
             : new Date().toISOString().split('T')[0],
+          endDate: initialData.endDate
+            ? Array.isArray(initialData.endDate)
+              ? `${initialData.endDate[0]}-${String(initialData.endDate[1]).padStart(2, '0')}-${String(initialData.endDate[2]).padStart(2, '0')}`
+              : initialData.endDate.split('T')[0]
+            : "",
           amount: initialData.amount || initialData.instalmentAmount || "",
           bank: initialData.bank || "",
           holderName: initialData.holderName || defaultHolder,
@@ -52,6 +58,7 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
         setFormData({
           schemeId: "",
           startDate: new Date().toISOString().split('T')[0],
+          endDate: "",
           amount: "",
           bank: "",
           holderName: defaultHolder,
@@ -77,7 +84,8 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
     try {
       const payload = {
         ...formData,
-        amount: Number(formData.amount)
+        amount: Number(formData.amount),
+        endDate: formData.active ? null : formData.endDate || null
       };
       
       if (initialData?.id || initialData?.sipId) {
@@ -98,19 +106,32 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this mandate?")) return;
-    setDeleteLoading(true);
-    try {
-      await mutualFundAPI.deleteSipMandate(initialData.id || initialData.sipId);
-      toast({ title: "Success", description: "Mandate deleted successfully." });
-      onSuccess();
-      onClose();
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to delete mandate.", variant: "destructive" });
-    } finally {
-      setDeleteLoading(false);
-    }
+  const handleDelete = () => {
+    toast({
+      title: "Delete Mandate?",
+      description: "Are you sure you want to delete this mandate? This action cannot be undone.",
+      variant: "warning",
+      action: (
+        <button
+          onClick={async () => {
+            setDeleteLoading(true);
+            try {
+              await mutualFundAPI.deleteSipMandate(initialData.id || initialData.sipId);
+              toast({ title: "Success", description: "Mandate deleted successfully." });
+              onSuccess();
+              onClose();
+            } catch (error) {
+              toast({ title: "Error", description: error.response?.data?.message || "Failed to delete mandate.", variant: "destructive" });
+            } finally {
+              setDeleteLoading(false);
+            }
+          }}
+          className="text-[11px] font-medium text-[hsl(var(--loss))] hover:underline"
+        >
+          Confirm
+        </button>
+      ),
+    });
   };
 
   return (
@@ -252,6 +273,22 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
                   Mark as Active Mandate
                 </label>
               </div>
+              {!formData.active && (
+                <div className="mt-4 space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                  <label className="eyebrow">End Date *</label>
+                  <input
+                    required={!formData.active}
+                    type="date"
+                    name="endDate"
+                    value={formData.endDate || ""}
+                    onChange={handleChange}
+                    className="ed-input w-full md:w-1/2 font-mono"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    If this mandate has been stopped, enter the date of the last installment.
+                  </p>
+                </div>
+              )}
             </div>
           </form>
         </div>

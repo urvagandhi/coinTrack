@@ -28,6 +28,7 @@ class SipMandateServiceTest {
     @Mock private SipMandateRepository repository;
     @Mock private MfSchemeRepository schemeRepository;
     @Mock private SipContributionService contributionService;
+    @Mock private PortfolioHoldingService portfolioHoldingService;
 
     @InjectMocks private SipMandateService service;
 

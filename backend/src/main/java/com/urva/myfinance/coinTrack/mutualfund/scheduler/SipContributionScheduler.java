@@ -2,6 +2,7 @@ package com.urva.myfinance.coinTrack.mutualfund.scheduler;
 
 import com.urva.myfinance.coinTrack.mutualfund.model.SipContribution;
 import com.urva.myfinance.coinTrack.mutualfund.model.SipMandate;
+import com.urva.myfinance.coinTrack.mutualfund.service.SipContributionService;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipContributionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
 import org.slf4j.Logger;
@@ -23,12 +24,15 @@ public class SipContributionScheduler {
 
     private final SipMandateRepository sipMandateRepository;
     private final SipContributionRepository sipContributionRepository;
+    private final SipContributionService sipContributionService;
 
     @Autowired
     public SipContributionScheduler(SipMandateRepository sipMandateRepository,
-            SipContributionRepository sipContributionRepository) {
+            SipContributionRepository sipContributionRepository,
+            SipContributionService sipContributionService) {
         this.sipMandateRepository = sipMandateRepository;
         this.sipContributionRepository = sipContributionRepository;
+        this.sipContributionService = sipContributionService;
     }
 
     /**
@@ -79,7 +83,7 @@ public class SipContributionScheduler {
                     String monthYear = today.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
                     contribution.setRemarks(monthYear + " Installment");
 
-                    sipContributionRepository.save(contribution);
+                    sipContributionService.createContribution(mandate.getUserId(), contribution);
                     logger.info("Generated SIP contribution for mandate {} on {}", mandate.getId(), today);
                     count++;
                 }

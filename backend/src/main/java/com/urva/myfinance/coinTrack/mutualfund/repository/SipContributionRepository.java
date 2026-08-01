@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.mutualfund.repository;
 
 import com.urva.myfinance.coinTrack.mutualfund.model.SipContribution;
+import com.urva.myfinance.coinTrack.mutualfund.model.TransactionStatus;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -19,4 +20,7 @@ public interface SipContributionRepository extends MongoRepository<SipContributi
     boolean existsBySipMandateIdAndContributionDateBetween(String sipMandateId, LocalDate startDate, LocalDate endDate);
 
     void deleteBySipMandateIdAndContributionDateAfter(String sipMandateId, LocalDate date);
+    void deleteBySipMandateId(String sipMandateId);
+
+    List<SipContribution> findByStatus(TransactionStatus status);
 }

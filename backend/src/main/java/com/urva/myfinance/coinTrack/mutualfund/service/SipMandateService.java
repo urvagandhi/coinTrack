@@ -19,6 +19,8 @@ public class SipMandateService {
     private MfSchemeRepository schemeRepository;
     @Autowired
     private SipContributionService contributionService;
+    @Autowired
+    private PortfolioHoldingService portfolioHoldingService;
 
     /**
      * Validates that the schemeId belongs to the given userId.
@@ -71,6 +73,7 @@ public class SipMandateService {
         existing.setBank(updatedMandate.getBank());
         existing.setRegistrationNo(updatedMandate.getRegistrationNo());
         existing.setActive(updatedMandate.isActive());
+        existing.setEndDate(updatedMandate.getEndDate());
         SipMandate saved = repository.save(existing);
         contributionService.backfillMandate(saved);
         return saved;
@@ -133,6 +136,8 @@ public class SipMandateService {
                 .filter(m -> m.getUserId().equals(userId))
                 .orElseThrow(() -> new RuntimeException("Mandate not found"));
         repository.delete(existing);
+        contributionService.deleteContributionsByMandateId(id);
+        portfolioHoldingService.updateHoldingForScheme(userId, existing.getSchemeId());
     }
 
     public int backfillAllMandates(String userId) {
