@@ -170,7 +170,7 @@ public class PendingTransactionSettlementService {
                 // Now run FIFO engine
                 if (t.getRedemptionUnit() != null) {
                     MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(t.getUserId(), t.getSchemeId(),
-                            t.getApplicableDate(), t.getRedemptionUnit());
+                            t.getApplicableDate(), t.getRedemptionUnit(), null);
                     t.setTradeInvestmentValue(fifoResult.totalCostValue);
 
                     if (t.getRedemptionValue() != null) {

@@ -136,7 +136,7 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="ed-card w-full max-w-xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="ed-card w-full max-w-4xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200">
         <span className="corner-mark corner-tl" />
         <span className="corner-mark corner-tr" />
         <span className="corner-mark corner-bl" />
@@ -163,12 +163,13 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
           <div className="mb-6">
              <DataAccuracyWarning className="mb-4" />
           </div>
-          <form id="sip-form" onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                01. Scheme Selection
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form id="sip-form" onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-8">
+            {/* LEFT COLUMN: Setup */}
+            <div className="flex-1 space-y-6 min-w-[300px]">
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+                  01. Configuration
+                </h3>
                 <div className="space-y-1.5">
                   <label className="eyebrow">Select Scheme *</label>
                   <select
@@ -184,11 +185,11 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
                         debitedBank: selected?.bank || formData.debitedBank || ""
                       });
                     }}
-                    className="ed-input w-full font-mono"
+                    className="ed-input w-full font-mono bg-card"
                   >
-                    <option value="">-- Choose a Scheme --</option>
+                    <option value="" disabled>-- Choose a Scheme --</option>
                     {Object.entries(schemesByPlatform).map(([platform, items]) => (
-                      <optgroup key={platform} label={`📍 ${platform.toUpperCase()} (${items.length} Schemes)`}>
+                      <optgroup key={platform} label={`${platform.toUpperCase()} (${items.length} Schemes)`}>
                         {items.map(s => {
                           const id = s.id || s.schemeId;
                           return (
@@ -201,7 +202,11 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
                     ))}
                   </select>
                 </div>
-                <div className="space-y-1.5">
+
+                <div className="space-y-1.5 pt-4">
+                  <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3">
+                    03. Settlement
+                  </h3>
                   <label className="eyebrow">Debited Bank Account *</label>
                   <input
                     type="text"
@@ -210,111 +215,127 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
                     readOnly
                     disabled
                     placeholder={formData.debitedBank ? "" : "Select a scheme to auto-fill bank"}
-                    className="ed-input w-full font-mono bg-muted/40 opacity-90"
+                    className="ed-input w-full font-mono bg-muted/40 opacity-90 cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="space-y-1.5 pt-4">
+                  <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3">
+                    04. Remarks
+                  </h3>
+                  <label className="eyebrow">Remarks [Optional]</label>
+                  <input
+                    type="text"
+                    name="remarks"
+                    value={formData.remarks}
+                    onChange={handleChange}
+                    className="ed-input w-full font-mono bg-card"
+                    placeholder="e.g. May 2025 installment"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                02. Transaction Details
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="eyebrow">Date of Contribution *</label>
-                  <input
-                    required
-                    type="date"
-                    name="contributionDate"
-                    value={formData.contributionDate}
-                    onChange={handleChange}
-                    className="ed-input w-full font-mono"
-                  />
+            {/* DIVIDER */}
+            <div className="hidden md:block w-px bg-border"></div>
+
+            {/* RIGHT COLUMN: Execution Details */}
+            <div className="flex-1 space-y-6 min-w-[300px]">
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+                  02. Execution Details
+                </h3>
+                
+                <div className="bg-muted/20 border border-border rounded-md p-3 mb-4 space-y-4">
+                   <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center">
+                      <div>
+                        <span className="text-[10px] uppercase text-muted-foreground font-mono mb-1.5 block tracking-wider">Calculation Mode</span>
+                        <div className="flex bg-background rounded-full p-0.5 w-max border border-border/50">
+                          <button
+                             type="button"
+                             onClick={() => setEntryMode("automatic")}
+                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                                entryMode === "automatic" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                             }`}
+                          >
+                             Automatic
+                          </button>
+                          <button
+                             type="button"
+                             onClick={() => setEntryMode("manual")}
+                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                                entryMode === "manual" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                             }`}
+                          >
+                             Manual
+                          </button>
+                        </div>
+                      </div>
+                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="eyebrow">Amount (₹) *</label>
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    name="amount"
-                    value={formData.amount}
-                    onChange={handleChange}
-                    onBlur={calculateUnits}
-                    className="ed-input w-full font-mono"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center space-x-2 mt-4 mb-2">
-                 <button
-                    type="button"
-                    onClick={() => setEntryMode("automatic")}
-                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
-                       entryMode === "automatic" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                 >
-                    Automatic Mode
-                 </button>
-                 <button
-                    type="button"
-                    onClick={() => setEntryMode("manual")}
-                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
-                       entryMode === "manual" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                 >
-                    Manual Mode
-                 </button>
-              </div>
-              
-              {entryMode === "manual" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200">
-                  <div className="space-y-1.5">
-                    <label className="eyebrow">NAV Price</label>
+
+                <div className="grid grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
+                  <div className="space-y-1.5 flex-1">
+                    <label className="eyebrow">Date of Contribution *</label>
                     <input
+                      required
+                      type="date"
+                      name="contributionDate"
+                      value={formData.contributionDate}
+                      onChange={handleChange}
+                      className="ed-input w-full font-mono bg-card"
+                    />
+                  </div>
+                  <div className="space-y-1.5 flex-1">
+                    <label className="eyebrow">Amount (₹) *</label>
+                    <input
+                      required
                       type="number"
-                      step="0.0001"
-                      name="navPrice"
-                      value={formData.navPrice}
+                      step="0.01"
+                      name="amount"
+                      value={formData.amount}
                       onChange={handleChange}
                       onBlur={calculateUnits}
-                      className="ed-input w-full font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="eyebrow">Allotted Units</label>
-                    <input
-                      type="number"
-                      step="0.001"
-                      name="totalUnit"
-                      value={formData.totalUnit}
-                      onChange={handleChange}
-                      className="ed-input w-full font-mono"
+                      className="ed-input w-full font-mono bg-card"
                     />
                   </div>
                 </div>
-              )}
-              {entryMode === "automatic" && (
-                <p className="text-[11px] text-muted-foreground mt-1.5 leading-tight">
-                  NAV Price and Allotted Units will be auto-calculated by our optimized logic based on the NAV date.
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                03. Remarks
-              </h3>
-              <div className="space-y-1.5">
-                <label className="eyebrow">Remarks [Optional]</label>
-                <input
-                  type="text"
-                  name="remarks"
-                  value={formData.remarks}
-                  onChange={handleChange}
-                  className="ed-input w-full font-mono"
-                  placeholder="e.g. May 2025 installment"
-                />
+                {entryMode === "manual" && (
+                  <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200 mt-4">
+                    <div className="space-y-1.5">
+                      <label className="eyebrow">NAV Price</label>
+                      <input
+                        type="number"
+                        step="0.0001"
+                        name="navPrice"
+                        value={formData.navPrice}
+                        onChange={handleChange}
+                        onBlur={calculateUnits}
+                        className="ed-input w-full font-mono bg-card"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="eyebrow">Allotted Units</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        name="totalUnit"
+                        value={formData.totalUnit}
+                        onChange={handleChange}
+                        className="ed-input w-full font-mono bg-card"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {entryMode === "automatic" && (
+                  <div className="bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1 animate-in fade-in zoom-in-95">
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      NAV Price and Allotted Units will be auto-calculated by the system based on the NAV of the applicable settlement date.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </form>

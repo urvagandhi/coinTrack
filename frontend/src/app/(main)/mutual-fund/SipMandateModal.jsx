@@ -136,7 +136,7 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="ed-card w-full max-w-xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="ed-card w-full max-w-4xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200">
         <span className="corner-mark corner-tl" />
         <span className="corner-mark corner-tr" />
         <span className="corner-mark corner-bl" />
@@ -160,77 +160,51 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
         </div>
 
         <div className="p-6 overflow-y-auto">
-          <form id="mandate-form" onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                01. Scheme Selection
-              </h3>
-              <div className="space-y-1.5">
-                <label className="eyebrow">Select Scheme *</label>
-                <select
-                  required
-                  name="schemeId"
-                  value={formData.schemeId}
-                  onChange={(e) => {
-                    const schemeId = e.target.value;
-                    const selected = schemes?.find(s => (s.id || s.schemeId) === schemeId);
-                    setFormData({
-                      ...formData,
-                      schemeId,
-                      bank: selected?.bank || formData.bank || "",
-                      holderName: selected?.holderName || formData.holderName || defaultHolder
-                    });
-                  }}
-                  className="ed-input w-full font-mono"
-                >
-                  <option value="">-- Choose a Scheme --</option>
-                  {Object.entries(schemesByPlatform).map(([platform, items]) => (
-                    <optgroup key={platform} label={`📍 ${platform.toUpperCase()} (${items.length} Schemes)`}>
-                      {items.map(s => {
-                        const id = s.id || s.schemeId;
-                        return (
-                          <option key={id} value={id}>
-                            {s.schemeName} — {s.holderName} (Folio: {s.folioNo || 'N/A'})
-                          </option>
-                        );
-                      })}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-            </div>
+          <form id="mandate-form" onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-8">
+            {/* LEFT COLUMN: Setup */}
+            <div className="flex-1 space-y-6 min-w-[300px]">
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+                  01. Configuration
+                </h3>
+                <div className="space-y-1.5">
+                  <label className="eyebrow">Select Scheme *</label>
+                  <select
+                    required
+                    name="schemeId"
+                    value={formData.schemeId}
+                    onChange={(e) => {
+                      const schemeId = e.target.value;
+                      const selected = schemes?.find(s => (s.id || s.schemeId) === schemeId);
+                      setFormData({
+                        ...formData,
+                        schemeId,
+                        bank: selected?.bank || formData.bank || "",
+                        holderName: selected?.holderName || formData.holderName || defaultHolder
+                      });
+                    }}
+                    className="ed-input w-full font-mono bg-card"
+                  >
+                    <option value="" disabled>-- Choose a Scheme --</option>
+                    {Object.entries(schemesByPlatform).map(([platform, items]) => (
+                      <optgroup key={platform} label={`${platform.toUpperCase()} (${items.length} Schemes)`}>
+                        {items.map(s => {
+                          const id = s.id || s.schemeId;
+                          return (
+                            <option key={id} value={id}>
+                              {s.schemeName} — {s.holderName} (Folio: {s.folioNo || 'N/A'})
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                02. Mandate Details
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="eyebrow">Start Date *</label>
-                  <input
-                    required
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleChange}
-                    className="ed-input w-full font-mono"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="eyebrow">Installment Amount (₹) *</label>
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    name="amount"
-                    value={formData.amount}
-                    onChange={handleChange}
-                    className="ed-input w-full font-mono"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 pt-4">
+                  <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3">
+                    03. Settlement & Details
+                  </h3>
                   <label className="eyebrow">Bank Account</label>
                   <input
                     type="text"
@@ -239,56 +213,93 @@ export default function SipMandateModal({ isOpen, onClose, onSuccess, onDelete, 
                     readOnly
                     disabled
                     placeholder={formData.bank ? "" : "Select a scheme to auto-fill bank"}
-                    className="ed-input w-full font-mono bg-muted/40 opacity-90 cursor-not-allowed"
+                    className="ed-input w-full font-mono bg-muted/40 opacity-90 cursor-not-allowed mb-3"
                   />
-                </div>
-                <div className="space-y-1.5">
+                  
                   <label className="eyebrow">Registration / URN No.</label>
                   <input
                     type="text"
                     name="registrationNo"
                     value={formData.registrationNo}
                     onChange={handleChange}
-                    className="ed-input w-full font-mono"
+                    className="ed-input w-full font-mono bg-card"
                     placeholder="e.g. BSE12345"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                03. Status
-              </h3>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="active"
-                  name="active"
-                  checked={formData.active}
-                  onChange={handleChange}
-                  className="rounded-sm border-border bg-card"
-                />
-                <label htmlFor="active" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Mark as Active Mandate
-                </label>
-              </div>
-              {!formData.active && (
-                <div className="mt-4 space-y-1.5 animate-in fade-in slide-in-from-top-1">
-                  <label className="eyebrow">End Date *</label>
-                  <input
-                    required={!formData.active}
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate || ""}
-                    onChange={handleChange}
-                    className="ed-input w-full md:w-1/2 font-mono"
-                  />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    If this mandate has been stopped, enter the date of the last installment.
-                  </p>
+            {/* DIVIDER */}
+            <div className="hidden md:block w-px bg-border"></div>
+
+            {/* RIGHT COLUMN: Execution Details */}
+            <div className="flex-1 space-y-6 min-w-[300px]">
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+                  02. Mandate Details
+                </h3>
+
+                <div className="grid grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
+                  <div className="space-y-1.5 flex-1">
+                    <label className="eyebrow">Start Date *</label>
+                    <input
+                      required
+                      type="date"
+                      name="startDate"
+                      value={formData.startDate}
+                      onChange={handleChange}
+                      className="ed-input w-full font-mono bg-card"
+                    />
+                  </div>
+                  <div className="space-y-1.5 flex-1">
+                    <label className="eyebrow">Installment Amount (₹) *</label>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      name="amount"
+                      value={formData.amount}
+                      onChange={handleChange}
+                      className="ed-input w-full font-mono bg-card"
+                    />
+                  </div>
                 </div>
-              )}
+
+                <div className="space-y-1.5 pt-4">
+                  <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3">
+                    04. Status
+                  </h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <input
+                      type="checkbox"
+                      id="active"
+                      name="active"
+                      checked={formData.active}
+                      onChange={handleChange}
+                      className="rounded border-border text-accent focus:ring-accent"
+                    />
+                    <label htmlFor="active" className="text-[12px] text-foreground cursor-pointer font-medium">
+                      Mark as Active Mandate
+                    </label>
+                  </div>
+                  {!formData.active && (
+                    <div className="mt-4 space-y-1.5 animate-in fade-in slide-in-from-top-1 bg-muted/20 p-3 rounded-md border border-border">
+                      <label className="eyebrow">End Date *</label>
+                      <input
+                        required={!formData.active}
+                        type="date"
+                        name="endDate"
+                        value={formData.endDate || ""}
+                        onChange={handleChange}
+                        className="ed-input w-full font-mono bg-card"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        If this mandate has been stopped, enter the date of the last installment.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </form>
         </div>

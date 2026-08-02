@@ -15,7 +15,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
     amountCreditedBank: "",
     tradeInvestmentValue: "",
     exitLoadDeducted: "",
-    isAfterCutoff: false
+    isAfterCutoff: false,
+    remarks: ""
   });
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -61,7 +62,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
           amountCreditedBank: initialData.amountCreditedBank || "",
           tradeInvestmentValue: initialData.tradeInvestmentValue || "",
           exitLoadDeducted: initialData.exitLoadDeducted || "",
-          isAfterCutoff: initialData.isAfterCutoff || false
+          isAfterCutoff: initialData.isAfterCutoff || false,
+          remarks: initialData.remarks || ""
         });
         setRedemptionType(initialData.redemptionUnit && !initialData.redemptionValue ? "unit" : "amount");
         setEntryMode(initialData.redemptionNav ? "manual" : "automatic");
@@ -74,7 +76,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
           amountCreditedBank: "",
           tradeInvestmentValue: "",
           exitLoadDeducted: "",
-          isAfterCutoff: false
+          isAfterCutoff: false,
+          remarks: ""
         });
         setRedemptionType("amount");
         setEntryMode("automatic");
@@ -114,14 +117,52 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
     return schemes.find(s => (s.id || s.schemeId) === formData.schemeId);
   }, [formData.schemeId, schemes]);
 
+  const originalRedemptionUnit = useMemo(() => {
+    if (initialData && initialData.redemptionUnit) {
+      return parseFloat(initialData.redemptionUnit);
+    }
+    return 0;
+  }, [initialData]);
+
+  const availableUnitsForThisTransaction = useMemo(() => {
+    if (initialData && initialData.totalUnit != null) {
+      return initialData.totalUnit;
+    }
+    if (!selectedScheme || selectedScheme.totalUnit == null) return 0;
+    return selectedScheme.totalUnit;
+  }, [selectedScheme, initialData]);
+
+  const effectiveRedemptionUnit = useMemo(() => {
+    if (entryMode === "manual") {
+      if (formData.redemptionUnit && !isNaN(parseFloat(formData.redemptionUnit))) {
+        return parseFloat(formData.redemptionUnit);
+      }
+      if (formData.redemptionValue && formData.redemptionNav && !isNaN(parseFloat(formData.redemptionValue)) && !isNaN(parseFloat(formData.redemptionNav))) {
+        return parseFloat(formData.redemptionValue) / parseFloat(formData.redemptionNav);
+      }
+      return 0;
+    }
+    
+    // Automatic Mode
+    if (redemptionType === "unit" && formData.redemptionUnit && !isNaN(parseFloat(formData.redemptionUnit))) {
+      return parseFloat(formData.redemptionUnit);
+    }
+    if (redemptionType === "amount" && formData.redemptionValue && !isNaN(parseFloat(formData.redemptionValue))) {
+      if (calculatedNavData?.nav) {
+        return parseFloat(formData.redemptionValue) / calculatedNavData.nav;
+      }
+    }
+    return 0;
+  }, [formData.redemptionUnit, formData.redemptionValue, formData.redemptionNav, redemptionType, entryMode, calculatedNavData]);
+
   // Debounce the units for the API call
   const [debouncedUnits, setDebouncedUnits] = useState("");
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedUnits(formData.redemptionUnit);
+      setDebouncedUnits(effectiveRedemptionUnit > 0 ? effectiveRedemptionUnit.toFixed(3) : "");
     }, 500);
     return () => clearTimeout(handler);
-  }, [formData.redemptionUnit]);
+  }, [effectiveRedemptionUnit]);
 
   const calculateMissingValue = () => {
     if (entryMode === "manual" && formData.redemptionNav) {
@@ -140,7 +181,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
       date: formData.redemptionDate, 
       units: debouncedUnits 
     }),
-    enabled: !!formData.schemeId && !!formData.redemptionDate && !!debouncedUnits && redemptionType === "unit",
+    enabled: !!formData.schemeId && !!formData.redemptionDate && !!debouncedUnits,
     staleTime: 60 * 1000,
   });
 
@@ -285,7 +326,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                   <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
                     For historical entries, enter the actual NAV processing date, not the submission date.
                   </p>
-                  {isRecentDate && (
+                  {isRecentDate && entryMode === "automatic" && (
                     <div className="flex items-center space-x-2 mt-3 p-2 bg-muted/20 border border-border/50 rounded">
                       <input
                         type="checkbox"
@@ -315,6 +356,16 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                     className="ed-input w-full font-mono bg-card"
                     placeholder="e.g. HDFC Bank - 1234"
                   />
+                  <div className="pt-2 space-y-1.5">
+                    <label className="eyebrow">Remarks / Notes</label>
+                    <textarea
+                      name="remarks"
+                      value={formData.remarks}
+                      onChange={handleChange}
+                      className="ed-input w-full font-mono bg-card min-h-[60px] resize-y"
+                      placeholder="Add any notes here..."
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -383,25 +434,32 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
 
                 <div className="grid grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
                     <div className="space-y-1.5 flex-1">
-                      <label className="eyebrow">Redemption Value (₹) {redemptionType === "amount" && "*"}</label>
+                      <div className="flex items-center gap-2 h-5">
+                        <label className={`eyebrow mb-0 ${redemptionType !== "amount" && entryMode !== "manual" ? 'text-muted-foreground/50' : ''}`}>Redemption Value (₹) {redemptionType === "amount" && "*"}</label>
+                        {redemptionType === "unit" && entryMode !== "manual" && (
+                          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border h-max leading-none">
+                            <Info className="h-3 w-3" /> Auto
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="number"
                         step="0.01"
                         required={redemptionType === "amount"}
-                        disabled={redemptionType !== "amount"}
+                        disabled={redemptionType !== "amount" && entryMode !== "manual"}
                         name="redemptionValue"
                         value={formData.redemptionValue}
                         onChange={handleChange}
                         onBlur={calculateMissingValue}
-                        className="ed-input w-full font-mono bg-card"
-                        placeholder="e.g. 5000"
+                        className={`ed-input w-full font-mono transition-all ${redemptionType !== "amount" && entryMode !== "manual" ? "opacity-50 cursor-not-allowed" : "bg-card"}`}
+                        placeholder={redemptionType !== "amount" && entryMode !== "manual" ? "Auto-calculated" : "e.g. 5000"}
                       />
                     </div>
                     <div className="space-y-1.5 flex-1">
-                      <div className="flex items-center gap-2">
-                        <label className="eyebrow">Redeemed Units {redemptionType === "unit" && "*"}</label>
-                        {redemptionType === "amount" && (
-                          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border">
+                      <div className="flex items-center gap-2 h-5">
+                        <label className={`eyebrow mb-0 ${redemptionType !== "unit" && entryMode !== "manual" ? 'text-muted-foreground/50' : ''}`}>Redeemed Units {redemptionType === "unit" && "*"}</label>
+                        {redemptionType === "amount" && entryMode !== "manual" && (
+                          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border h-max leading-none">
                             <Info className="h-3 w-3" /> Auto
                           </span>
                         )}
@@ -415,8 +473,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                         value={formData.redemptionUnit}
                         onChange={handleChange}
                         onBlur={calculateMissingValue}
-                        className="ed-input w-full font-mono bg-card"
-                        placeholder="e.g. 50.000"
+                        className={`ed-input w-full font-mono transition-all ${redemptionType !== "unit" && entryMode !== "manual" ? "opacity-50 cursor-not-allowed" : "bg-card"}`}
+                        placeholder={redemptionType !== "unit" && entryMode !== "manual" ? "Auto-calculated" : "e.g. 50.000"}
                       />
                     </div>
                 </div>
@@ -456,7 +514,7 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                         value={formData.exitLoadDeducted}
                         onChange={handleChange}
                         className="ed-input w-full font-mono bg-card"
-                        placeholder="e.g. 50"
+                        placeholder="Auto if blank"
                       />
                     </div>
                   </div>
@@ -494,38 +552,61 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
                 </div>
                 )}
 
-                {selectedScheme && formData.redemptionUnit && selectedScheme.totalUnit != null && (
+                {selectedScheme && selectedScheme.totalUnit != null && (
                   <div className="mt-3 p-3 rounded-md bg-muted/40 border border-border/50 w-full animate-in fade-in slide-in-from-bottom-2">
                     <p className="text-[11px] font-mono text-muted-foreground mb-1">
-                      Redeeming <strong className="text-foreground">{formData.redemptionUnit}</strong> out of <strong className="text-foreground">{selectedScheme.totalUnit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong> total units
-                    </p>
-                    <p className="text-[11px] font-mono font-medium text-accent">
-                      Remaining Units: {(selectedScheme.totalUnit - parseFloat(formData.redemptionUnit || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                      {effectiveRedemptionUnit > 0 ? (
+                        <>Redeeming <strong className="text-foreground">{effectiveRedemptionUnit.toFixed(3)}</strong> out of <strong className="text-foreground">{availableUnitsForThisTransaction.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong> total units</>
+                      ) : (
+                        <>Total Available Units: <strong className="text-foreground">{availableUnitsForThisTransaction.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong></>
+                      )}
                     </p>
                     
-                    {isPreviewLoading ? (
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground animate-pulse mt-3 pt-3 border-t border-border/50">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Calculating FIFO gains...</span>
+                    {effectiveRedemptionUnit > 0 && (
+                      <p className="text-[11px] font-mono font-medium text-accent">
+                        Remaining Units: {(availableUnitsForThisTransaction - effectiveRedemptionUnit).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                      </p>
+                    )}
+                    
+                    {effectiveRedemptionUnit > 0 && (
+                      isPreviewLoading ? (
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground animate-pulse mt-3 pt-3 border-t border-border/50">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Calculating FIFO gains...</span>
+                        </div>
+                      ) : previewData ? (
+                        <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-border/50">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground">STCG Units (&lt;1 year):</span>
+                            <span className="font-mono font-medium text-foreground">{previewData.stcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground">LTCG Units (&gt;1 year):</span>
+                            <span className="font-mono font-medium text-foreground">{previewData.ltcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-2 bg-accent/20 px-2 py-1 rounded w-max">
+                            <Info className="h-3 w-3 text-accent-foreground" />
+                            <span className="text-[9px] uppercase tracking-widest font-mono text-accent-foreground font-semibold">
+                              {previewData.stcgUnits > 0 && previewData.ltcgUnits > 0 ? "STCG + LTCG Mix" : previewData.stcgUnits > 0 ? "Short Term (STCG)" : previewData.ltcgUnits > 0 ? "Long Term (LTCG)" : "No Gains Calculated"}
+                            </span>
+                          </div>
+                        </div>
+                      ) : null
+                    )}
+                  </div>
+                )}
+                
+                {entryMode === "automatic" && (
+                  <div className="mt-4 p-3 bg-muted/40 border border-border/50 rounded-lg animate-in slide-in-from-top-1 fade-in duration-200">
+                    <div className="flex gap-2 text-muted-foreground">
+                      <Info className="h-4 w-4 shrink-0 mt-0.5 text-accent-foreground" />
+                      <div className="text-[11px] leading-relaxed">
+                        <span className="font-semibold text-foreground">How AMCs process redemptions: </span>
+                        When redeeming "By Amount", AMCs do not gross up units to hit your requested amount. Instead, they sell exactly that value worth of units, and charges (like Exit Load and STT) are deducted from the payout. 
+                        <br/>
+                        <span className="italic mt-1 block opacity-80">Use <strong>Manual Mode</strong> to precisely match AMC-specific decimal rounding if your CAS statement differs by a few paise.</span>
                       </div>
-                    ) : previewData ? (
-                      <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-border/50">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-muted-foreground">STCG Units (&lt;1 year):</span>
-                          <span className="font-mono font-medium text-foreground">{previewData.stcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-muted-foreground">LTCG Units (&gt;1 year):</span>
-                          <span className="font-mono font-medium text-foreground">{previewData.ltcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-2 bg-accent/20 px-2 py-1 rounded w-max">
-                          <Info className="h-3 w-3 text-accent-foreground" />
-                          <span className="text-[9px] uppercase tracking-widest font-mono text-accent-foreground font-semibold">
-                            {previewData.stcgUnits > 0 && previewData.ltcgUnits > 0 ? "STCG + LTCG Mix" : previewData.stcgUnits > 0 ? "Short Term (STCG)" : previewData.ltcgUnits > 0 ? "Long Term (LTCG)" : "No Gains Calculated"}
-                          </span>
-                        </div>
-                      </div>
-                    ) : null}
+                    </div>
                   </div>
                 )}
               </div>

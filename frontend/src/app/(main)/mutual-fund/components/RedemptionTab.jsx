@@ -36,8 +36,8 @@ export default function RedemptionTab() {
   };
 
   const { data: schemes = [], isLoading: isLoadingSchemes } = useQuery({
-    queryKey: ["mfSchemeDropdown"],
-    queryFn: () => mutualFundAPI.getSchemeDropdown(),
+    queryKey: ["mfSchemeSummaries"],
+    queryFn: () => mutualFundAPI.getSchemeSummaries(),
     staleTime: 30 * 1000,
   });
 
@@ -62,7 +62,6 @@ export default function RedemptionTab() {
         schemeName: scheme?.schemeName || 'Unknown Scheme',
         holderName: scheme?.holderName || 'Unknown',
         platform: scheme?.platform || 'Unknown',
-        totalUnit: scheme?.totalUnit ?? null,
       };
     }).sort((a, b) => new Date(a.redemptionDate) - new Date(b.redemptionDate));
   }, [schemes, redemptions]);

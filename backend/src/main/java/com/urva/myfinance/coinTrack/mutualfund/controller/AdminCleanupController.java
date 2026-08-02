@@ -8,8 +8,14 @@ import com.urva.myfinance.coinTrack.mutualfund.service.PortfolioHoldingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.urva.myfinance.coinTrack.mutualfund.model.RedemptionTransaction;
+import com.urva.myfinance.coinTrack.mutualfund.repository.RedemptionTransactionRepository;
+import com.urva.myfinance.coinTrack.mutualfund.service.RedemptionTransactionService;
+import java.util.HashMap;
+import java.util.Set;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -40,6 +46,12 @@ public class AdminCleanupController {
 
     @Autowired
     private com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository schemeRepo;
+    
+    @Autowired
+    private RedemptionTransactionRepository redemptionRepository;
+    
+    @Autowired
+    private RedemptionTransactionService redemptionTransactionService;
 
     @GetMapping("/cleanup-investments")
     public ResponseEntity<?> cleanupInvestments() {
@@ -170,6 +182,33 @@ public class AdminCleanupController {
                 "message", "Cleanup successful",
                 "sipUpdated", sipUpdated,
                 "lumpsumUpdated", lumpsumUpdated
+        ));
+    }
+
+    @PostMapping("/backfill-redemption-balances")
+    public ResponseEntity<Map<String, Object>> backfillRedemptionBalances() {
+        List<RedemptionTransaction> allRedemptions = redemptionRepository.findAll();
+        // Group by userId and schemeId
+        Map<String, Set<String>> userSchemeMap = new HashMap<>();
+        for (RedemptionTransaction tx : allRedemptions) {
+            userSchemeMap.computeIfAbsent(tx.getUserId(), k -> new java.util.HashSet<>()).add(tx.getSchemeId());
+        }
+
+        int schemesProcessed = 0;
+        int transactionsFixed = allRedemptions.size();
+
+        for (Map.Entry<String, Set<String>> entry : userSchemeMap.entrySet()) {
+            String userId = entry.getKey();
+            for (String schemeId : entry.getValue()) {
+                redemptionTransactionService.recalculateRedemptionsAfterDate(userId, schemeId, java.time.LocalDate.of(2000, 1, 1));
+                schemesProcessed++;
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Backfill of historical redemption balances successful",
+                "schemesProcessed", schemesProcessed,
+                "totalTransactionsChecked", transactionsFixed
         ));
     }
 }

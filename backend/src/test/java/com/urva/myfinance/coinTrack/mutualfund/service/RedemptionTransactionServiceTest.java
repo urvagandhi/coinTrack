@@ -98,7 +98,7 @@ class RedemptionTransactionServiceTest {
         defaultFifoResult.totalCostValue = new BigDecimal("50000");
         defaultFifoResult.ltcgUnits = new BigDecimal("50");
         defaultFifoResult.stcgUnits = BigDecimal.ZERO;
-        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any())).thenReturn(defaultFifoResult);
+        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any(), any())).thenReturn(defaultFifoResult);
     }
 
     // ── getTransactions ────────────────────────────────────────────
@@ -152,7 +152,7 @@ class RedemptionTransactionServiceTest {
         fifoResult.ltcgUnits = new BigDecimal("50");
         fifoResult.stcgUnits = BigDecimal.ZERO;
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any())).thenReturn(fifoResult);
+        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any(), any())).thenReturn(fifoResult);
         when(repository.save(any())).thenReturn(sampleTx);
 
         RedemptionTransaction result = service.createTransaction(USER_ID, sampleTx);
@@ -170,7 +170,7 @@ class RedemptionTransactionServiceTest {
         fifoResult.stcgUnits = BigDecimal.ZERO;
         when(mfNavService.fetchNavForDate(eq("120503"), any())).thenReturn(null);
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any())).thenReturn(fifoResult);
+        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any(), any())).thenReturn(fifoResult);
         when(repository.save(any())).thenReturn(sampleTx);
 
         RedemptionTransaction result = service.createTransaction(USER_ID, sampleTx);
@@ -190,7 +190,7 @@ class RedemptionTransactionServiceTest {
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
         when(mfNavService.fetchNavForDate(sampleScheme.getAmfiCode(), sampleTx.getRedemptionDate()))
                 .thenReturn(new BigDecimal("500"));
-        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any())).thenReturn(fifoResult);
+        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any(), any())).thenReturn(fifoResult);
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         RedemptionTransaction result = service.createTransaction(USER_ID, sampleTx);
@@ -217,7 +217,7 @@ class RedemptionTransactionServiceTest {
         fifoResult.stcgUnits = BigDecimal.ZERO;
 
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any())).thenReturn(fifoResult);
+        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any(), any())).thenReturn(fifoResult);
         when(mfChargesConfig.getSttRateForDate(any())).thenReturn(new BigDecimal("0.001"));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0)); // Return what is passed
 
@@ -247,7 +247,7 @@ class RedemptionTransactionServiceTest {
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
         when(mfNavService.fetchNavForDate(sampleScheme.getAmfiCode(), sampleTx.getRedemptionDate()))
                 .thenReturn(new BigDecimal("333.3333"));
-        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any())).thenReturn(fifoResult);
+        when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any(), any())).thenReturn(fifoResult);
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         RedemptionTransaction result = service.createTransaction(USER_ID, sampleTx);

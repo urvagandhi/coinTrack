@@ -80,7 +80,7 @@ class MfFifoEngineTest {
         // Redeem 100 units. Should take from txn2 (created earlier), cost should be
         // 10000
         FifoResult result = fifoEngine.calculateRedemptionCost(USER_ID, SCHEME_ID, LocalDate.of(2026, 1, 1),
-                new BigDecimal("100"));
+                new BigDecimal("100"), null);
 
         assertEquals(0, new BigDecimal("10000").compareTo(result.totalCostValue), "Should consume earlier lot first");
     }
@@ -104,7 +104,7 @@ class MfFifoEngineTest {
 
         // Redeem at 2025-01-01 (Exactly 2 years later)
         FifoResult result = fifoEngine.calculateRedemptionCost(USER_ID, SCHEME_ID, LocalDate.of(2025, 1, 1),
-                new BigDecimal("100"));
+                new BigDecimal("100"), null);
 
         assertEquals(0, new BigDecimal("100").compareTo(result.stcgUnits), "Should be STCG (Debt threshold = 3 years)");
         assertEquals(0, new BigDecimal("0").compareTo(result.ltcgUnits), "Should have no LTCG");
@@ -129,7 +129,7 @@ class MfFifoEngineTest {
 
         // Redeem at 2025-01-01 (Exactly 2 years later)
         FifoResult result = fifoEngine.calculateRedemptionCost(USER_ID, SCHEME_ID, LocalDate.of(2025, 1, 1),
-                new BigDecimal("100"));
+                new BigDecimal("100"), null);
 
         assertEquals(0, new BigDecimal("0").compareTo(result.stcgUnits),
                 "Should have no STCG (Equity threshold = 1 year)");

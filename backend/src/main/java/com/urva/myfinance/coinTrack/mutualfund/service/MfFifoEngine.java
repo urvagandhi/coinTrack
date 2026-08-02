@@ -59,6 +59,8 @@ public class MfFifoEngine {
         public BigDecimal ltcgCost = BigDecimal.ZERO; // Cost of units held >= 1 year
         public BigDecimal stcgUnits = BigDecimal.ZERO;
         public BigDecimal ltcgUnits = BigDecimal.ZERO;
+        public BigDecimal availableUnitsBeforeRedemption = BigDecimal.ZERO;
+        public BigDecimal availableInvestmentBeforeRedemption = BigDecimal.ZERO;
     }
 
     /**
@@ -68,7 +70,7 @@ public class MfFifoEngine {
      * Then calculates the cost basis for the new redemption amount.
      */
     public FifoResult calculateRedemptionCost(String userId, String schemeId, LocalDate redemptionDate,
-            BigDecimal redemptionUnits) {
+            BigDecimal redemptionUnits, String excludeTransactionId) {
         logger.info("Starting FIFO calculation for Scheme: {}, Redemption Date: {}, Units: {}", schemeId,
                 redemptionDate, redemptionUnits);
         List<MfLot> lots = new ArrayList<>();
@@ -106,6 +108,17 @@ public class MfFifoEngine {
             }
         }
 
+        // 2b. Add manual units as a synthesized lot if necessary
+        BigDecimal totalLotUnits = lots.stream().map(l -> l.availableUnits).reduce(BigDecimal.ZERO, BigDecimal::add);
+        MfScheme scheme = schemeRepository.findById(schemeId).orElse(null);
+        if (scheme != null && scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(totalLotUnits) > 0) {
+            BigDecimal missingUnits = scheme.getManualTotalUnits().subtract(totalLotUnits);
+            // Synthesize a lot for the missing units. We don't have a real date or cost basis.
+            // We use the scheme's averageNav as cost basis, and a very old date (e.g. 1970) so it's always LTCG and consumed first.
+            BigDecimal avgNav = scheme.getAverageNav() != null ? scheme.getAverageNav() : BigDecimal.ZERO;
+            lots.add(new MfLot(LocalDate.of(1970, 1, 1), java.time.Instant.EPOCH, missingUnits, missingUnits, avgNav));
+        }
+
         // 3. Sort lots by chronological order (FIFO), using createdAt as tie-breaker
         lots.sort(Comparator.comparing((MfLot lot) -> lot.date)
                 .thenComparing(lot -> lot.createdAt == null ? java.time.Instant.MIN : lot.createdAt));
@@ -116,6 +129,9 @@ public class MfFifoEngine {
                 .thenComparing(tx -> tx.getCreatedAt() == null ? java.time.Instant.MIN : tx.getCreatedAt()));
 
         for (RedemptionTransaction prior : priorRedemptions) {
+            if (excludeTransactionId != null && prior.getId() != null && prior.getId().equals(excludeTransactionId)) {
+                continue;
+            }
             if (prior.getRedemptionDate().isBefore(redemptionDate) ||
                     (prior.getRedemptionDate().isEqual(redemptionDate) && prior.getId() != null)) {
                 // We consume lots for previous redemptions to find the exact state of holdings
@@ -127,7 +143,6 @@ public class MfFifoEngine {
 
         // 5. Determine LTCG threshold based on category
         int ltcgYears = 1;
-        MfScheme scheme = schemeRepository.findById(schemeId).orElse(null);
         if (scheme != null && scheme.getMfCategory() != null) {
             String category = scheme.getMfCategory().toLowerCase();
             if (category.contains("debt") || category.contains("liquid")) {
@@ -137,8 +152,21 @@ public class MfFifoEngine {
 
         // 6. Now calculate the cost of the current redemption
         FifoResult result = calculateCostForUnits(lots, redemptionUnits, redemptionDate, ltcgYears);
-        logger.info("FIFO result for Scheme {}: Total Cost: {}, STCG Units: {}, LTCG Units: {}", schemeId,
-                result.totalCostValue, result.stcgUnits, result.ltcgUnits);
+        
+        // Calculate the total units that were available before this redemption was processed
+        BigDecimal availableBefore = BigDecimal.ZERO;
+        BigDecimal investmentBefore = BigDecimal.ZERO;
+        for (MfLot lot : lots) {
+            availableBefore = availableBefore.add(lot.availableUnits);
+            investmentBefore = investmentBefore.add(lot.availableUnits.multiply(lot.navPrice));
+        }
+        // Since calculateCostForUnits consumes units from the lots, we must add back the consumed units
+        // to get the true 'before redemption' amount. 
+        result.availableUnitsBeforeRedemption = availableBefore.add(redemptionUnits);
+        result.availableInvestmentBeforeRedemption = investmentBefore.add(result.totalCostValue);
+
+        logger.info("FIFO result for Scheme {}: Total Cost: {}, STCG Units: {}, LTCG Units: {}, Available Before: {}", schemeId,
+                result.totalCostValue, result.stcgUnits, result.ltcgUnits, result.availableUnitsBeforeRedemption);
         return result;
     }
 

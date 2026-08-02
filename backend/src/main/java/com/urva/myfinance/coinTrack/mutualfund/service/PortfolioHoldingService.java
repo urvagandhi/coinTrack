@@ -94,8 +94,8 @@ public class PortfolioHoldingService {
 
         BigDecimal currentUnits = totalPurchasedUnits.subtract(totalRedeemedUnits);
         if (scheme != null && scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
-            currentUnits = scheme.getManualTotalUnits();
-            totalPurchasedUnits = currentUnits.add(totalRedeemedUnits);
+            totalPurchasedUnits = scheme.getManualTotalUnits();
+            currentUnits = totalPurchasedUnits.subtract(totalRedeemedUnits);
         }
 
         holding.setCurrentUnits(currentUnits);

@@ -98,7 +98,7 @@ public class MfSchemeAggregationService {
         
         BigDecimal totalPurchasedUnits = lumpsumUnits.add(sipUnits);
         if (scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
-            totalPurchasedUnits = scheme.getManualTotalUnits().add(redeemedUnits);
+            totalPurchasedUnits = scheme.getManualTotalUnits();
         }
         BigDecimal averageNav = scheme.getAverageNav();
         if ((averageNav == null || averageNav.compareTo(BigDecimal.ZERO) == 0) && totalPurchasedUnits.compareTo(BigDecimal.ZERO) > 0) {

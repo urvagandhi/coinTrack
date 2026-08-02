@@ -96,6 +96,7 @@ public class RedemptionTransactionService {
         LocalDate applicableDate = settlementDateCalculator.calculateApplicableDate(transaction.getRedemptionDate(),
                 transaction.getIsAfterCutoff());
         transaction.setApplicableDate(applicableDate);
+        transaction.setRemarks(transaction.getRemarks());
 
         schemeRepository.findById(transaction.getSchemeId()).ifPresent(scheme -> {
             transaction.setSettlementDate(
@@ -153,14 +154,28 @@ public class RedemptionTransactionService {
             logger.info("Executing FIFO for Scheme: {}, Units: {}, Date: {}", transaction.getSchemeId(),
                     transaction.getRedemptionUnit(), applicableDate);
             MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(userId, transaction.getSchemeId(),
-                    applicableDate, transaction.getRedemptionUnit());
+                    applicableDate, transaction.getRedemptionUnit(), transaction.getId());
             if (transaction.getTradeInvestmentValue() == null) {
                 transaction.setTradeInvestmentValue(fifoResult.totalCostValue);
             }
             logger.info("Trade Investment Value used: {}", transaction.getTradeInvestmentValue());
 
             if (transaction.getRedemptionValue() != null) {
-                BigDecimal exitLoad = transaction.getExitLoadDeducted() != null ? transaction.getExitLoadDeducted() : BigDecimal.ZERO;
+                BigDecimal exitLoad = transaction.getExitLoadDeducted();
+                if (exitLoad == null) {
+                    if (fifoResult.stcgUnits.compareTo(BigDecimal.ZERO) > 0 && transaction.getRedemptionNav() != null) {
+                        exitLoad = fifoResult.stcgUnits.multiply(transaction.getRedemptionNav())
+                                .multiply(new BigDecimal("0.01"))
+                                .setScale(MfRoundingHelper.FIAT_PRECISION, RoundingMode.HALF_UP);
+                        transaction.setExitLoadDeducted(exitLoad);
+                        
+                        // Update netRedemptionValue since exit load was just calculated
+                        BigDecimal stt = transaction.getSttAmount() != null ? transaction.getSttAmount() : BigDecimal.ZERO;
+                        transaction.setNetRedemptionValue(transaction.getRedemptionValue().subtract(stt).subtract(exitLoad));
+                    } else {
+                        exitLoad = BigDecimal.ZERO;
+                    }
+                }
                 transaction.setCapitalGain(
                         transaction.getRedemptionValue().subtract(exitLoad).subtract(transaction.getTradeInvestmentValue()));
                 logger.info("Calculated Capital Gain: {}", transaction.getCapitalGain());
@@ -178,7 +193,7 @@ public class RedemptionTransactionService {
             }
 
             // Auto-calculate totalUnit, totalInvestment, balanceUnit, balanceInvestment
-            populateHoldingSummary(userId, transaction);
+            populateHoldingSummary(userId, transaction, fifoResult);
         }
 
         RedemptionTransaction saved = repository.save(transaction);
@@ -220,6 +235,7 @@ public class RedemptionTransactionService {
         }
         
         existing.setIsAfterCutoff(updatedTransaction.getIsAfterCutoff());
+        existing.setRemarks(updatedTransaction.getRemarks());
 
         LocalDate applicableDate = settlementDateCalculator
                 .calculateApplicableDate(updatedTransaction.getRedemptionDate(), updatedTransaction.getIsAfterCutoff());
@@ -272,12 +288,26 @@ public class RedemptionTransactionService {
 
         if (existing.getStatus() == TransactionStatus.COMPLETED && existing.getRedemptionUnit() != null) {
             MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(userId, existing.getSchemeId(),
-                    applicableDate, existing.getRedemptionUnit());
+                    applicableDate, existing.getRedemptionUnit(), existing.getId());
             if (existing.getTradeInvestmentValue() == null) {
                 existing.setTradeInvestmentValue(fifoResult.totalCostValue);
             }
             if (existing.getRedemptionValue() != null) {
-                BigDecimal exitLoad = existing.getExitLoadDeducted() != null ? existing.getExitLoadDeducted() : BigDecimal.ZERO;
+                BigDecimal exitLoad = existing.getExitLoadDeducted();
+                if (exitLoad == null) {
+                    if (fifoResult.stcgUnits.compareTo(BigDecimal.ZERO) > 0 && existing.getRedemptionNav() != null) {
+                        exitLoad = fifoResult.stcgUnits.multiply(existing.getRedemptionNav())
+                                .multiply(new BigDecimal("0.01"))
+                                .setScale(MfRoundingHelper.FIAT_PRECISION, RoundingMode.HALF_UP);
+                        existing.setExitLoadDeducted(exitLoad);
+                        
+                        // Update netRedemptionValue since exit load was just calculated
+                        BigDecimal stt = existing.getSttAmount() != null ? existing.getSttAmount() : BigDecimal.ZERO;
+                        existing.setNetRedemptionValue(existing.getRedemptionValue().subtract(stt).subtract(exitLoad));
+                    } else {
+                        exitLoad = BigDecimal.ZERO;
+                    }
+                }
                 existing.setCapitalGain(existing.getRedemptionValue().subtract(exitLoad).subtract(existing.getTradeInvestmentValue()));
             }
 
@@ -293,7 +323,7 @@ public class RedemptionTransactionService {
             }
 
             // Auto-calculate totalUnit, totalInvestment, balanceUnit, balanceInvestment
-            populateHoldingSummary(userId, existing);
+            populateHoldingSummary(userId, existing, fifoResult);
         }
 
         RedemptionTransaction saved = repository.save(existing);
@@ -314,102 +344,31 @@ public class RedemptionTransactionService {
     public MfFifoEngine.FifoResult previewFifo(String userId, String schemeId, LocalDate date, BigDecimal units) {
         validateSchemeOwnership(userId, schemeId);
         LocalDate applicableDate = settlementDateCalculator.calculateApplicableDate(date, false);
-        return fifoEngine.calculateRedemptionCost(userId, schemeId, applicableDate, units);
+        return fifoEngine.calculateRedemptionCost(userId, schemeId, applicableDate, units, null);
     }
 
     /**
      * Auto-calculates totalUnit, totalInvestment, balanceUnit, and
-     * balanceInvestment
-     * from actual SIP + Lumpsum purchase data minus prior redemptions.
-     *
-     * Formulas (matching manual Excel sheet):
-     * totalUnit = sum of all purchased units (SIPs + Lumpsums)
-     * totalInvestment = sum of all gross invested amounts (SIPs + Lumpsums)
-     * balanceUnit = totalUnit - sum of all redeemed units (including this one)
-     * balanceInvestment = totalInvestment - tradeInvestmentValue (cost basis of
-     * this redemption)
-     * adjusted for prior redemptions' trade investment values too
+     * balanceInvestment from the FifoResult (which accurately reflects the state right before this redemption).
      */
-    private void populateHoldingSummary(String userId, RedemptionTransaction transaction) {
-        logger.info("Populating holding summary for Scheme: {}", transaction.getSchemeId());
-        List<SipContribution> sips = sipRepository.findByUserIdAndSchemeId(userId, transaction.getSchemeId());
-        List<LumpsumTransaction> lumpsums = lumpsumRepository.findByUserIdAndSchemeId(userId,
-                transaction.getSchemeId());
-        List<RedemptionTransaction> allRedemptions = repository.findByUserIdAndSchemeId(userId,
-                transaction.getSchemeId());
-
-        // Total purchased units
-        BigDecimal totalPurchasedUnits = BigDecimal.ZERO;
-        for (SipContribution sip : sips) {
-                if (sip.getTotalUnit() != null) {
-                    totalPurchasedUnits = totalPurchasedUnits.add(sip.getTotalUnit());
-                }
-            }
-            for (LumpsumTransaction lump : lumpsums) {
-                if (lump.getTotalUnit() != null) {
-                    totalPurchasedUnits = totalPurchasedUnits.add(lump.getTotalUnit());
-                }
-            }
-
-        // Total gross investment
-        BigDecimal totalGrossInvestment = BigDecimal.ZERO;
-        for (SipContribution sip : sips) {
-            if (sip.getAmount() != null) {
-                totalGrossInvestment = totalGrossInvestment.add(sip.getAmount());
-            }
-        }
-        for (LumpsumTransaction lump : lumpsums) {
-            if (lump.getLumpsumInvestment() != null) {
-                totalGrossInvestment = totalGrossInvestment.add(lump.getLumpsumInvestment());
-            }
-        }
-
-        // Total redeemed units (including this transaction)
-        BigDecimal totalRedeemedUnits = BigDecimal.ZERO;
-        BigDecimal totalRedeemedCostBasis = BigDecimal.ZERO;
-        for (RedemptionTransaction r : allRedemptions) {
-            if (r.getRedemptionUnit() != null) {
-                totalRedeemedUnits = totalRedeemedUnits.add(r.getRedemptionUnit());
-            }
-            if (r.getTradeInvestmentValue() != null) {
-                totalRedeemedCostBasis = totalRedeemedCostBasis.add(r.getTradeInvestmentValue());
-            }
-        }
-        // If this transaction is new (not yet saved), its units won't be in
-        // allRedemptions
-        boolean alreadyIncluded = allRedemptions.stream()
-                .anyMatch(r -> r.getId() != null && r.getId().equals(transaction.getId()));
-        if (!alreadyIncluded) {
-            if (transaction.getRedemptionUnit() != null) {
-                totalRedeemedUnits = totalRedeemedUnits.add(transaction.getRedemptionUnit());
-            }
-            if (transaction.getTradeInvestmentValue() != null) {
-                totalRedeemedCostBasis = totalRedeemedCostBasis.add(transaction.getTradeInvestmentValue());
-            }
-        }
-
-        transaction.setTotalUnit(totalPurchasedUnits.setScale(3, RoundingMode.HALF_UP));
-        transaction.setTotalInvestment(totalGrossInvestment.setScale(2, RoundingMode.HALF_UP));
+    private void populateHoldingSummary(String userId, RedemptionTransaction transaction, MfFifoEngine.FifoResult fifoResult) {
+        if (fifoResult == null) return;
         
-        BigDecimal balanceUnits = totalPurchasedUnits.subtract(totalRedeemedUnits);
-        com.urva.myfinance.coinTrack.mutualfund.model.MfScheme scheme = schemeRepository
-                .findById(transaction.getSchemeId()).orElse(null);
-        if (scheme != null && scheme.getManualTotalUnits() != null
-                && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
-            balanceUnits = scheme.getManualTotalUnits();
-        }
+        logger.info("Populating holding summary for Scheme: {} using FIFO result", transaction.getSchemeId());
         
-        transaction.setBalanceUnit(balanceUnits.setScale(3, RoundingMode.HALF_UP));
-        transaction.setBalanceInvestment(
-                totalGrossInvestment.subtract(totalRedeemedCostBasis).setScale(2, RoundingMode.HALF_UP));
-
-        logger.info("Holding Summary - Total Purchased Units: {}, Total Gross Investment: {}", totalPurchasedUnits,
-                totalGrossInvestment);
-        logger.info("Holding Summary - Total Redeemed Units: {}, Total Redeemed Cost Basis: {}", totalRedeemedUnits,
-                totalRedeemedCostBasis);
-        logger.info("Holding Summary - Calculated Balance Units: {}, Calculated Balance Investment: {}",
-                transaction.getBalanceUnit(), transaction.getBalanceInvestment());
+        BigDecimal totalUnitsBefore = fifoResult.availableUnitsBeforeRedemption != null ? fifoResult.availableUnitsBeforeRedemption : BigDecimal.ZERO;
+        BigDecimal totalInvestBefore = fifoResult.availableInvestmentBeforeRedemption != null ? fifoResult.availableInvestmentBeforeRedemption : BigDecimal.ZERO;
+        
+        transaction.setTotalUnit(totalUnitsBefore.setScale(3, RoundingMode.HALF_UP));
+        transaction.setTotalInvestment(totalInvestBefore.setScale(2, RoundingMode.HALF_UP));
+        
+        BigDecimal redeemedUnits = transaction.getRedemptionUnit() != null ? transaction.getRedemptionUnit() : BigDecimal.ZERO;
+        BigDecimal redeemedInvest = transaction.getTradeInvestmentValue() != null ? transaction.getTradeInvestmentValue() : BigDecimal.ZERO;
+        
+        transaction.setBalanceUnit(totalUnitsBefore.subtract(redeemedUnits).setScale(3, RoundingMode.HALF_UP));
+        transaction.setBalanceInvestment(totalInvestBefore.subtract(redeemedInvest).setScale(2, RoundingMode.HALF_UP));
     }
+
 
     public void recalculateRedemptionsAfterDate(String userId, String schemeId, LocalDate afterDate) {
         logger.info("Recalculating redemptions for scheme {} after date {}", schemeId, afterDate);
@@ -423,7 +382,7 @@ public class RedemptionTransactionService {
                 logger.info("Recalculating FIFO for redemption ID: {} on date: {}", redemption.getId(),
                         redemption.getApplicableDate());
                 MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(userId, schemeId,
-                        redemption.getApplicableDate(), redemption.getRedemptionUnit());
+                        redemption.getApplicableDate(), redemption.getRedemptionUnit(), redemption.getId());
                 redemption.setTradeInvestmentValue(fifoResult.totalCostValue);
 
                 if (redemption.getRedemptionValue() != null) {
@@ -443,7 +402,7 @@ public class RedemptionTransactionService {
                     redemption.setGainType(com.urva.myfinance.coinTrack.mutualfund.model.GainType.STCG_LTCG);
                 }
 
-                populateHoldingSummary(userId, redemption);
+                populateHoldingSummary(userId, redemption, fifoResult);
                 repository.save(redemption);
                 // We don't need to recursively recalculate holding here because we recalculate
                 // for all future redemptions

@@ -41,6 +41,7 @@ public class RedemptionTransaction {
     private int retryCount;
     private Instant createdAt;
     private Boolean isAfterCutoff;
+    private String remarks;
 
     public RedemptionTransaction() {
     }
@@ -243,5 +244,13 @@ public class RedemptionTransaction {
 
     public void setIsAfterCutoff(Boolean isAfterCutoff) {
         this.isAfterCutoff = isAfterCutoff;
+    }
+
+    public String getRemarks() {
+        return remarks;
+    }
+
+    public void setRemarks(String remarks) {
+        this.remarks = remarks;
     }
 }
