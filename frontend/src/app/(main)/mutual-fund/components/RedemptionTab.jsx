@@ -144,7 +144,7 @@ export default function RedemptionTab() {
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Units Sold</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">NAV</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Invested Value</th>
-              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Redemption Value</th>
+              <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Net Redemption</th>
               <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">Capital Gain</th>
             </tr>
           </thead>
@@ -190,23 +190,27 @@ export default function RedemptionTab() {
                   {formatCurrency(txn.tradeInvestmentValue)}
                 </td>
                 <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
-                  <div>{formatCurrency(txn.redemptionValue)}</div>
-                  {(txn.sttAmount > 0 || txn.exitLoadDeducted > 0) && (
-                    <div className="mt-1 flex flex-col items-end">
-                      {txn.exitLoadDeducted > 0 && (
-                        <span className="text-[10px] text-[hsl(var(--loss))]" title="Exit Load Deducted">
-                          - {formatCurrency(txn.exitLoadDeducted)} Exit Load
+                  {(txn.sttAmount > 0 || txn.exitLoadDeducted > 0) ? (
+                    <>
+                      <div className="font-semibold text-foreground">{formatCurrency(txn.netRedemptionValue)}</div>
+                      <div className="mt-1 flex flex-col items-end">
+                        <span className="text-[10px] text-muted-foreground">
+                          Gross: {formatCurrency(txn.redemptionValue)}
                         </span>
-                      )}
-                      {txn.sttAmount > 0 && (
-                        <span className="text-[10px] text-[hsl(var(--loss))]" title="Securities Transaction Tax (0.001%)">
-                          - {formatCurrency(txn.sttAmount)} STT
-                        </span>
-                      )}
-                      <span className="text-[11px] text-muted-foreground border-t border-border mt-0.5 pt-0.5 w-max">
-                        Net: {formatCurrency(txn.netRedemptionValue)}
-                      </span>
-                    </div>
+                        {txn.exitLoadDeducted > 0 && (
+                          <span className="text-[10px] text-[hsl(var(--loss))]" title="Exit Load Deducted">
+                            - {formatCurrency(txn.exitLoadDeducted)} Exit Load
+                          </span>
+                        )}
+                        {txn.sttAmount > 0 && (
+                          <span className="text-[10px] text-[hsl(var(--loss))]" title="Securities Transaction Tax (0.001%)">
+                            - {formatCurrency(txn.sttAmount)} STT
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="font-semibold text-foreground">{formatCurrency(txn.redemptionValue)}</div>
                   )}
                 </td>
                 <td className={`py-3 px-4 text-right font-mono text-[13px] font-semibold ${txn.capitalGain >= 0 ? 'text-[hsl(var(--gain))]' : 'text-[hsl(var(--loss))]'}`}>

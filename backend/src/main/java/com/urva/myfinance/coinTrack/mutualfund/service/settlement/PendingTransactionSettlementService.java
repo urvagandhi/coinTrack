@@ -174,7 +174,7 @@ public class PendingTransactionSettlementService {
                     t.setTradeInvestmentValue(fifoResult.totalCostValue);
 
                     if (t.getRedemptionValue() != null) {
-                        t.setCapitalGain(t.getRedemptionValue().subtract(t.getTradeInvestmentValue()));
+                        t.setCapitalGain(t.getNetRedemptionValue().subtract(t.getTradeInvestmentValue()));
                     }
 
                     if (fifoResult.ltcgUnits.compareTo(BigDecimal.ZERO) > 0 && fifoResult.stcgUnits.compareTo(BigDecimal.ZERO) == 0) {
