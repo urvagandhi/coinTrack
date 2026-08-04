@@ -113,24 +113,32 @@ public class LumpsumTransactionService {
                     // Do not overwrite the gross amount
                 }
 
-                // Try fetching NAV
-                BigDecimal nav = mfNavService.fetchNavForDate(scheme.getAmfiCode(), applicableDate);
-                if (nav != null) {
-                    transaction.setNavPrice(nav);
+                if (transaction.getNavPrice() != null && transaction.getTotalUnit() != null) {
                     transaction.setStatus(TransactionStatus.COMPLETED);
-                    if (transaction.getLumpsumInvestment() != null) {
-                        BigDecimal netInvestment = transaction.getLumpsumInvestment().subtract(
-                                transaction.getStampDuty() != null ? transaction.getStampDuty() : BigDecimal.ZERO);
-                        BigDecimal units = netInvestment.divide(nav, MfRoundingHelper.UNIT_PRECISION,
-                                RoundingMode.HALF_UP);
-                        transaction.setTotalUnit(units);
-                    }
                 } else {
-                    transaction.setNavPrice(null);
-                    transaction.setTotalUnit(null);
+                    // Try fetching NAV
+                    BigDecimal nav = mfNavService.fetchNavForDate(scheme.getAmfiCode(), applicableDate);
+                    if (nav != null) {
+                        transaction.setNavPrice(nav);
+                        transaction.setStatus(TransactionStatus.COMPLETED);
+                        if (transaction.getLumpsumInvestment() != null) {
+                            BigDecimal netInvestment = transaction.getLumpsumInvestment().subtract(
+                                    transaction.getStampDuty() != null ? transaction.getStampDuty() : BigDecimal.ZERO);
+                            BigDecimal units = netInvestment.divide(nav, MfRoundingHelper.UNIT_PRECISION,
+                                    RoundingMode.HALF_UP);
+                            transaction.setTotalUnit(units);
+                        }
+                    } else {
+                        transaction.setNavPrice(null);
+                        transaction.setTotalUnit(null);
+                    }
                 }
             } else {
-                transaction.setStatus(TransactionStatus.NAV_UNAVAILABLE);
+                if (transaction.getNavPrice() != null && transaction.getTotalUnit() != null) {
+                    transaction.setStatus(TransactionStatus.COMPLETED);
+                } else {
+                    transaction.setStatus(TransactionStatus.NAV_UNAVAILABLE);
+                }
             }
         });
 
@@ -182,26 +190,38 @@ public class LumpsumTransactionService {
                     // Do not overwrite the gross amount
                 }
 
-                BigDecimal nav = mfNavService.fetchNavForDate(scheme.getAmfiCode(), applicableDate);
-                if (nav != null) {
-                    existing.setNavPrice(nav);
+                if (transaction.getNavPrice() != null && transaction.getTotalUnit() != null) {
+                    existing.setNavPrice(transaction.getNavPrice());
+                    existing.setTotalUnit(transaction.getTotalUnit());
                     existing.setStatus(TransactionStatus.COMPLETED);
-                    if (existing.getLumpsumInvestment() != null) {
-                        BigDecimal netInvestment = existing.getLumpsumInvestment()
-                                .subtract(existing.getStampDuty() != null ? existing.getStampDuty() : BigDecimal.ZERO);
-                        BigDecimal units = netInvestment.divide(nav, MfRoundingHelper.UNIT_PRECISION,
-                                RoundingMode.HALF_UP);
-                        existing.setTotalUnit(units);
+                } else {
+                    BigDecimal nav = mfNavService.fetchNavForDate(scheme.getAmfiCode(), applicableDate);
+                    if (nav != null) {
+                        existing.setNavPrice(nav);
+                        existing.setStatus(TransactionStatus.COMPLETED);
+                        if (existing.getLumpsumInvestment() != null) {
+                            BigDecimal netInvestment = existing.getLumpsumInvestment()
+                                    .subtract(existing.getStampDuty() != null ? existing.getStampDuty() : BigDecimal.ZERO);
+                            BigDecimal units = netInvestment.divide(nav, MfRoundingHelper.UNIT_PRECISION,
+                                    RoundingMode.HALF_UP);
+                            existing.setTotalUnit(units);
+                        }
+                    } else {
+                        existing.setNavPrice(null);
+                        existing.setTotalUnit(null);
                     }
+                }
+            } else {
+                if (transaction.getNavPrice() != null && transaction.getTotalUnit() != null) {
+                    existing.setNavPrice(transaction.getNavPrice());
+                    existing.setTotalUnit(transaction.getTotalUnit());
+                    existing.setStatus(TransactionStatus.COMPLETED);
                 } else {
                     existing.setNavPrice(null);
                     existing.setTotalUnit(null);
+                    existing.setLumpsumInvestment(transaction.getLumpsumInvestment()); // fallback
+                    existing.setStatus(TransactionStatus.NAV_UNAVAILABLE);
                 }
-            } else {
-                existing.setNavPrice(null);
-                existing.setTotalUnit(null);
-                existing.setLumpsumInvestment(transaction.getLumpsumInvestment()); // fallback
-                existing.setStatus(TransactionStatus.NAV_UNAVAILABLE);
             }
         });
 

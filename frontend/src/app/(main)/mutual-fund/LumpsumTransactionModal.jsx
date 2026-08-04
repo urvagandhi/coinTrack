@@ -109,11 +109,28 @@ export default function LumpsumTransactionModal({ isOpen, onClose, onSuccess, sc
     setFormData({ ...formData, [e.target.name]: value });
   };
 
-  const calculateUnits = () => {
+  const getStampDutyAmount = () => {
     const inv = parseFloat(formData.lumpsumInvestment);
+    if (!inv || isNaN(inv)) return 0;
+    const invDate = new Date(formData.investmentDate || new Date());
+    const stampDutyEffectiveDate = new Date("2020-07-01");
+    if (invDate >= stampDutyEffectiveDate) {
+      return inv * 0.00005; // 0.005%
+    }
+    return 0;
+  };
+
+  const getNetInvestment = () => {
+    const inv = parseFloat(formData.lumpsumInvestment);
+    if (!inv || isNaN(inv)) return 0;
+    return inv - getStampDutyAmount();
+  };
+
+  const calculateUnits = () => {
+    const netInv = getNetInvestment();
     const nav = parseFloat(formData.navPrice);
-    if (!isNaN(inv) && !isNaN(nav) && nav > 0 && !formData.totalUnit) {
-      setFormData({ ...formData, totalUnit: (inv / nav).toFixed(3) });
+    if (netInv > 0 && !isNaN(nav) && nav > 0 && !formData.totalUnit) {
+      setFormData({ ...formData, totalUnit: (netInv / nav).toFixed(3) });
     }
   };
 
@@ -358,6 +375,18 @@ export default function LumpsumTransactionModal({ isOpen, onClose, onSuccess, sc
                       className="ed-input w-full font-mono bg-card"
                       placeholder="e.g. 5000"
                     />
+                    {formData.lumpsumInvestment && !isNaN(parseFloat(formData.lumpsumInvestment)) && (
+                      <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5 border border-border/50 bg-muted/20 p-2 rounded">
+                        <div className="flex justify-between">
+                          <span>Stamp Duty:</span>
+                          <span className="font-mono text-[hsl(var(--loss))]">-₹{getStampDutyAmount().toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between font-medium">
+                          <span>Net Invested:</span>
+                          <span className="font-mono text-[hsl(var(--profit))]">₹{getNetInvestment().toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -403,7 +432,7 @@ export default function LumpsumTransactionModal({ isOpen, onClose, onSuccess, sc
                         <span className="flex justify-between"><span>Applicable Date:</span> <span className="text-foreground">{calculatedNavData.applicableDate}</span></span>
                         <span className="flex justify-between"><span>Applicable NAV:</span> <span className="text-foreground">₹{calculatedNavData.nav}</span></span>
                         {formData.lumpsumInvestment && !isNaN(parseFloat(formData.lumpsumInvestment)) && (
-                          <span className="flex justify-between font-medium text-accent"><span>Est. Allotted Units:</span> <span>{(parseFloat(formData.lumpsumInvestment) / calculatedNavData.nav).toFixed(3)}</span></span>
+                          <span className="flex justify-between font-medium text-accent"><span>Est. Allotted Units:</span> <span>{(getNetInvestment() / calculatedNavData.nav).toFixed(3)}</span></span>
                         )}
                       </div>
                     ) : calculatedNavData?.error ? (
