@@ -6,6 +6,15 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.stream.Collectors;
+import java.util.Comparator;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -60,7 +69,7 @@ public class MfExcelExporter {
             CellStyle percentStyle = createPercentStyle(workbook);
 
             // Tab 1: MF Investment (Scheme Summary) - Pass Overall Summary for Header Card
-            createMfInvestmentSheet(workbook, "MF Investment", summaries, schemeMap, summary, headerStyle, dataStyle,
+            createMfInvestmentSheet(workbook, "MF Investment", summaries, schemeMap, summary, sips, headerStyle, dataStyle,
                     currencyStyle, boldStyle, rightAlignStyle);
 
             // Tab 2: Investment & Valuation
@@ -207,104 +216,221 @@ public class MfExcelExporter {
         return 5;
     }
 
-    // ── Tab 1: MF Investment ──────────────────────────────────────────────────
+        // ── Tab 1: MF Investment ──────────────────────────────────────────────────
     private static void createMfInvestmentSheet(Workbook workbook, String sheetName, List<SchemeSummaryDto> data,
-            Map<String, MfScheme> schemeMap, OverallSummaryDto summary,
+            Map<String, MfScheme> schemeMap, OverallSummaryDto summary, List<SipContribution> sips,
             CellStyle headerStyle, CellStyle dataStyle, CellStyle currencyStyle, CellStyle boldStyle,
             CellStyle rightAlignStyle) {
         Sheet sheet = workbook.createSheet(sheetName);
-        String[] headers = {
-                "Holder Name", "Scheme Name", "Platform", "Category", "Folio No", "Status",
-                "Total Invested", "Current Invested", "Total Redeemed", "Total Units"
-        };
 
-        // Render summary header card if overall summary is available
-        int startRow = renderSummaryHeader(sheet, workbook, summary, headers.length);
-        if (startRow == 0) {
-            renderSheetTitle(sheet, workbook, "Mutual Fund Investments", headers.length);
-            startRow = 2;
+        // Sort data: Place -> Status Priority -> Scheme Name (Ascending)
+        List<SchemeSummaryDto> sortedData = new ArrayList<>(data);
+        sortedData.sort(Comparator.comparing((SchemeSummaryDto dto) -> dto.getPlatform() != null ? dto.getPlatform() : "")
+                .thenComparing((SchemeSummaryDto dto) -> {
+                    Set<FundStatus> statuses = dto.getStatuses() != null ? dto.getStatuses() : new HashSet<>();
+                    if (statuses.contains(FundStatus.SIP)) return 1;
+                    if (statuses.contains(FundStatus.LUMPSUM) && !statuses.contains(FundStatus.FULLY_REDEEMED)) return 2;
+                    return 3;
+                })
+                .thenComparing(dto -> dto.getSchemeName() != null ? dto.getSchemeName() : ""));
+
+        // Determine min and max SIP months for dynamic columns
+        YearMonth minMonth = null;
+        YearMonth maxMonth = null;
+        Map<String, Map<YearMonth, BigDecimal>> sipMatrix = new HashMap<>();
+        Map<String, LocalDate> sipStartDates = new HashMap<>();
+        Map<String, LocalDate> sipStopDates = new HashMap<>();
+
+        if (sips != null && !sips.isEmpty()) {
+            for (SipContribution sip : sips) {
+                if (sip.getContributionDate() == null || sip.getAmount() == null) continue;
+                YearMonth ym = YearMonth.from(sip.getContributionDate());
+                if (minMonth == null || ym.isBefore(minMonth)) minMonth = ym;
+                if (maxMonth == null || ym.isAfter(maxMonth)) maxMonth = ym;
+
+                sipMatrix.computeIfAbsent(sip.getSchemeId(), k -> new HashMap<>())
+                        .merge(ym, sip.getAmount(), BigDecimal::add);
+
+                LocalDate currStart = sipStartDates.get(sip.getSchemeId());
+                if (currStart == null || sip.getContributionDate().isBefore(currStart)) {
+                    sipStartDates.put(sip.getSchemeId(), sip.getContributionDate());
+                }
+
+                LocalDate currStop = sipStopDates.get(sip.getSchemeId());
+                if (currStop == null || sip.getContributionDate().isAfter(currStop)) {
+                    sipStopDates.put(sip.getSchemeId(), sip.getContributionDate());
+                }
+            }
         }
 
-        Row headerRow = sheet.createRow(startRow);
+        List<YearMonth> dynamicMonths = new ArrayList<>();
+        if (minMonth != null && maxMonth != null) {
+            YearMonth curr = minMonth;
+            while (!curr.isAfter(maxMonth)) {
+                dynamicMonths.add(curr);
+                curr = curr.plusMonths(1);
+            }
+        }
+
+        String[] staticHeaders = {
+                "Mutual Fund Scheme", "Place", "MF Category", "Bank", "Folio No.", 
+                "SIP start date", "SIP stop date", "Total Unit", "Total Investment", 
+                "Current Investment", "Total Traded Value", "Lumpsum Investment", "SIP Investment"
+        };
+
+        int totalCols = staticHeaders.length + dynamicMonths.size();
+
+        // Row 0: Summary header card
+        int startRow = renderSummaryHeader(sheet, workbook, summary, totalCols);
+        
+        // Row 1: Merged Title Row (Krishil Mutual Fund & SIP details)
+        Row titleRow = sheet.createRow(startRow);
+        titleRow.setHeightInPoints(28);
+        CellStyle titleStyle = workbook.createCellStyle();
+        titleStyle.setFont(createCustomFont(workbook, "#1e293b", true, (short) 14));
+        setCellBackground(workbook, titleStyle, "#dbeafe");
+        titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        titleStyle.setAlignment(HorizontalAlignment.CENTER);
+        applyGridBorders(workbook, titleStyle);
+
+        for (int i = 0; i < totalCols; i++) {
+            Cell c = titleRow.createCell(i);
+            c.setCellStyle(titleStyle);
+        }
+        String dynamicHolderName = "User";
+        if (data != null && !data.isEmpty()) {
+            for (SchemeSummaryDto dto : data) {
+                if (dto.getHolderName() != null && !dto.getHolderName().trim().isEmpty()) {
+                    dynamicHolderName = dto.getHolderName();
+                    break;
+                }
+            }
+        }
+        titleRow.getCell(0).setCellValue(dynamicHolderName + " Mutual Fund");
+        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, 0, staticHeaders.length - 1));
+
+        if (!dynamicMonths.isEmpty()) {
+            titleRow.getCell(staticHeaders.length).setCellValue("SIP details");
+            sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, staticHeaders.length, totalCols - 1));
+        }
+
+        // Row 2: Headers
+        Row headerRow = sheet.createRow(startRow + 1);
         headerRow.setHeightInPoints(25);
-        for (int i = 0; i < headers.length; i++) {
+        for (int i = 0; i < staticHeaders.length; i++) {
             Cell cell = headerRow.createCell(i);
-            cell.setCellValue(headers[i]);
+            cell.setCellValue(staticHeaders[i]);
+            cell.setCellStyle(headerStyle);
+        }
+        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMM-yy");
+        for (int i = 0; i < dynamicMonths.size(); i++) {
+            Cell cell = headerRow.createCell(staticHeaders.length + i);
+            cell.setCellValue(dynamicMonths.get(i).format(monthFormatter));
             cell.setCellStyle(headerStyle);
         }
 
+        // Styles for Green and Red rows
+        CellStyle greenRowStyle = workbook.createCellStyle();
+        greenRowStyle.cloneStyleFrom(dataStyle);
+        setCellBackground(workbook, greenRowStyle, "#dcfce7"); // Light Green
+
+        CellStyle redRowStyle = workbook.createCellStyle();
+        redRowStyle.cloneStyleFrom(dataStyle);
+        setCellBackground(workbook, redRowStyle, "#fee2e2"); // Light Red
+
+        CellStyle greenCurrencyStyle = workbook.createCellStyle();
+        greenCurrencyStyle.cloneStyleFrom(currencyStyle);
+        setCellBackground(workbook, greenCurrencyStyle, "#dcfce7");
+
+        CellStyle redCurrencyStyle = workbook.createCellStyle();
+        redCurrencyStyle.cloneStyleFrom(currencyStyle);
+        setCellBackground(workbook, redCurrencyStyle, "#fee2e2");
+
         CellStyle unitStyle = createUnitStyle(workbook);
+        CellStyle greenUnitStyle = workbook.createCellStyle();
+        greenUnitStyle.cloneStyleFrom(unitStyle);
+        setCellBackground(workbook, greenUnitStyle, "#dcfce7");
 
-        for (int i = 0; i < data.size(); i++) {
-            SchemeSummaryDto dto = data.get(i);
+        CellStyle redUnitStyle = workbook.createCellStyle();
+        redUnitStyle.cloneStyleFrom(unitStyle);
+        setCellBackground(workbook, redUnitStyle, "#fee2e2");
+
+        // Freeze Panes: freeze rows up to headers, freeze only the first column (Mutual Fund Scheme)
+        sheet.createFreezePane(1, startRow + 2);
+
+        int rowIdx = startRow + 2;
+        String currentPlace = null;
+        int placeStartRow = rowIdx;
+
+        for (int i = 0; i < sortedData.size(); i++) {
+            SchemeSummaryDto dto = sortedData.get(i);
             MfScheme scheme = schemeMap.get(dto.getSchemeId());
-            Row row = sheet.createRow(startRow + 1 + i);
-            row.setHeightInPoints(22);
+            Set<FundStatus> statuses = dto.getStatuses() != null ? dto.getStatuses() : new HashSet<>();
+            
+            CellStyle currentRowStyle = dataStyle;
+            CellStyle currentCurStyle = currencyStyle;
+            CellStyle currentUnitStyle = unitStyle;
 
-            createCell(row, 0, dto.getHolderName(), dataStyle);
-            createCell(row, 1, dto.getSchemeName(), boldStyle);
-            createCell(row, 2, dto.getPlatform(), dataStyle);
-            createCell(row, 3, scheme != null ? scheme.getMfCategory() : "-", dataStyle);
-            createCell(row, 4, scheme != null ? scheme.getFolioNo() : "-", dataStyle);
-            createCell(row, 5, formatStatus(dto.getStatuses()), dataStyle);
-
-            createNumericCell(row, 6, dto.getTotalInvestment() != null ? dto.getTotalInvestment().doubleValue() : 0.0,
-                    currencyStyle);
-            createNumericCell(row, 7,
-                    dto.getCurrentInvestment() != null ? dto.getCurrentInvestment().doubleValue() : 0.0, currencyStyle);
-            createNumericCell(row, 8, dto.getTotalTradedValue() != null ? dto.getTotalTradedValue().doubleValue() : 0.0,
-                    currencyStyle);
-            createNumericCell(row, 9, dto.getTotalUnit() != null ? dto.getTotalUnit().doubleValue() : 0.0, unitStyle);
-        }
-
-        // Summary Total Row
-        if (!data.isEmpty()) {
-            int totalRowIdx = startRow + 1 + data.size();
-            Row totalRow = sheet.createRow(totalRowIdx);
-            totalRow.setHeightInPoints(24);
-
-            CellStyle totalLabelStyle = createTotalLabelStyle(workbook);
-            CellStyle totalCurrencyStyle = createTotalCurrencyStyle(workbook);
-
-            for (int col = 0; col < headers.length; col++) {
-                Cell cell = totalRow.createCell(col);
-                cell.setCellStyle(totalLabelStyle);
+            if (statuses.contains(FundStatus.FULLY_REDEEMED)) {
+                currentRowStyle = redRowStyle;
+                currentCurStyle = redCurrencyStyle;
+                currentUnitStyle = redUnitStyle;
+            } else if (statuses.contains(FundStatus.SIP)) {
+                currentRowStyle = greenRowStyle;
+                currentCurStyle = greenCurrencyStyle;
+                currentUnitStyle = greenUnitStyle;
             }
 
-            totalRow.getCell(0).setCellValue("Total");
+            Row row = sheet.createRow(rowIdx);
+            row.setHeight((short)-1); // Auto fit height for wrapped text
 
-            double totInvested = data.stream()
-                    .mapToDouble(d -> d.getTotalInvestment() != null ? d.getTotalInvestment().doubleValue() : 0.0)
-                    .sum();
-            double totCurrent = data.stream()
-                    .mapToDouble(d -> d.getCurrentInvestment() != null ? d.getCurrentInvestment().doubleValue() : 0.0)
-                    .sum();
-            double totRedeemed = data.stream()
-                    .mapToDouble(d -> d.getTotalTradedValue() != null ? d.getTotalTradedValue().doubleValue() : 0.0)
-                    .sum();
-            double totUnits = data.stream()
-                    .mapToDouble(d -> d.getTotalUnit() != null ? d.getTotalUnit().doubleValue() : 0.0).sum();
+            String place = dto.getPlatform() != null ? dto.getPlatform() : "-";
+            
+            // Merge Place cells if Place changes or at the end
+            if (i > 0 && !place.equals(currentPlace)) {
+                if (rowIdx - 1 > placeStartRow) {
+                    sheet.addMergedRegion(new CellRangeAddress(placeStartRow, rowIdx - 1, 1, 1));
+                }
+                placeStartRow = rowIdx;
+            }
+            currentPlace = place;
 
-            Cell c6 = totalRow.getCell(6);
-            c6.setCellValue(totInvested);
-            c6.setCellStyle(totalCurrencyStyle);
-            Cell c7 = totalRow.getCell(7);
-            c7.setCellValue(totCurrent);
-            c7.setCellStyle(totalCurrencyStyle);
-            Cell c8 = totalRow.getCell(8);
-            c8.setCellValue(totRedeemed);
-            c8.setCellStyle(totalCurrencyStyle);
+            createCell(row, 0, dto.getSchemeName(), currentRowStyle);
+            createCell(row, 1, place, currentRowStyle); // Will be merged
+            createCell(row, 2, scheme != null ? scheme.getMfCategory() : "-", currentRowStyle);
+            createCell(row, 3, dto.getBank() != null ? dto.getBank() : (scheme != null ? scheme.getBank() : "-"), currentRowStyle);
+            createCell(row, 4, scheme != null ? scheme.getFolioNo() : "-", currentRowStyle);
+            
+            LocalDate startDate = sipStartDates.get(dto.getSchemeId());
+            LocalDate stopDate = sipStopDates.get(dto.getSchemeId());
+            createCell(row, 5, startDate != null ? formatDate(startDate) : "-", currentRowStyle);
+            createCell(row, 6, stopDate != null ? formatDate(stopDate) : "-", currentRowStyle);
+            
+            createNumericCell(row, 7, dto.getTotalUnit() != null ? dto.getTotalUnit().doubleValue() : 0.0, currentUnitStyle);
+            createNumericCell(row, 8, dto.getTotalInvestment() != null ? dto.getTotalInvestment().doubleValue() : 0.0, currentCurStyle);
+            createNumericCell(row, 9, dto.getCurrentInvestment() != null ? dto.getCurrentInvestment().doubleValue() : 0.0, currentCurStyle);
+            createNumericCell(row, 10, dto.getTotalTradedValue() != null ? dto.getTotalTradedValue().doubleValue() : 0.0, currentCurStyle);
+            createNumericCell(row, 11, dto.getLumpsumInvestment() != null ? dto.getLumpsumInvestment().doubleValue() : 0.0, currentCurStyle);
+            createNumericCell(row, 12, dto.getSipInvestment() != null ? dto.getSipInvestment().doubleValue() : 0.0, currentCurStyle);
 
-            CellStyle totalUnitStyle = workbook.createCellStyle();
-            totalUnitStyle.cloneStyleFrom(totalLabelStyle);
-            totalUnitStyle.setAlignment(HorizontalAlignment.RIGHT);
-            totalUnitStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.000"));
-            Cell c9 = totalRow.getCell(9);
-            c9.setCellValue(totUnits);
-            c9.setCellStyle(totalUnitStyle);
+            Map<YearMonth, BigDecimal> schemeSips = sipMatrix.getOrDefault(dto.getSchemeId(), Collections.emptyMap());
+            for (int m = 0; m < dynamicMonths.size(); m++) {
+                BigDecimal sipAmt = schemeSips.get(dynamicMonths.get(m));
+                if (sipAmt != null && sipAmt.compareTo(BigDecimal.ZERO) > 0) {
+                    createNumericCell(row, staticHeaders.length + m, sipAmt.doubleValue(), currentCurStyle);
+                } else {
+                    createCell(row, staticHeaders.length + m, "-", currentRowStyle);
+                }
+            }
+            rowIdx++;
         }
 
-        ExcelExportUtil.autoSizeColumns(sheet, headers.length);
+        // Merge the last place group
+        if (rowIdx - 1 > placeStartRow) {
+            sheet.addMergedRegion(new CellRangeAddress(placeStartRow, rowIdx - 1, 1, 1));
+        }
+
+        ExcelExportUtil.autoSizeColumns(sheet, totalCols, 20);
     }
 
     // ── Tab 2: Investment & Valuation ──────────────────────────────────────────
@@ -402,8 +528,8 @@ public class MfExcelExporter {
             CellStyle boldStyle) {
         Sheet sheet = workbook.createSheet(sheetName);
         String[] headers = {
-                "Txn No", "Holder Name", "Scheme Name", "Date", "Lumpsum Amount", "Units", "NAV Price", "Debited Bank",
-                "Remarks"
+                "Investment date", "Mutual Fund Scheme", "Folio No.", "Place", "Whom MF", "Lumpsum Amount", 
+                "NAV Price", "Units", "Debited Bank", "Remarks"
         };
 
         renderSheetTitle(sheet, workbook, "Lumpsum Investments", headers.length);
@@ -418,59 +544,85 @@ public class MfExcelExporter {
         }
 
         CellStyle unitStyle = createUnitStyle(workbook);
+        CellStyle fyHeaderStyle = createFyHeaderStyle(workbook);
+        CellStyle subtotalCurrencyStyle = createSubtotalCurrencyStyle(workbook);
+        
+        CellStyle totalUnitStyle = workbook.createCellStyle();
+        totalUnitStyle.cloneStyleFrom(createTotalLabelStyle(workbook));
+        totalUnitStyle.setAlignment(HorizontalAlignment.RIGHT);
+        totalUnitStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.000"));
 
-        for (int i = 0; i < data.size(); i++) {
-            LumpsumTransaction tx = data.get(i);
-            MfScheme scheme = schemeMap.get(tx.getSchemeId());
-            Row row = sheet.createRow(startRow + 1 + i);
-            row.setHeightInPoints(22);
+        List<LumpsumTransaction> sortedData = new java.util.ArrayList<>(data);
+        sortedData.sort((t1, t2) -> {
+            if (t1.getInvestmentDate() == null && t2.getInvestmentDate() == null) return 0;
+            if (t1.getInvestmentDate() == null) return 1;
+            if (t2.getInvestmentDate() == null) return -1;
+            return t1.getInvestmentDate().compareTo(t2.getInvestmentDate());
+        });
 
-            createNumericCell(row, 0, tx.getTransactionNo() != null ? tx.getTransactionNo().doubleValue() : null,
-                    rightAlignStyle);
-            createCell(row, 1, scheme != null ? scheme.getHolderName() : "-", dataStyle);
-            createCell(row, 2, scheme != null ? scheme.getSchemeName() : "-", boldStyle);
-            createCell(row, 3, formatDate(tx.getInvestmentDate()), dataStyle);
-
-            createNumericCell(row, 4, tx.getLumpsumInvestment() != null ? tx.getLumpsumInvestment().doubleValue() : 0.0,
-                    currencyStyle);
-            createNumericCell(row, 5, tx.getTotalUnit() != null ? tx.getTotalUnit().doubleValue() : 0.0, unitStyle);
-            createNumericCell(row, 6, tx.getNavPrice() != null ? tx.getNavPrice().doubleValue() : 0.0, currencyStyle);
-
-            createCell(row, 7, tx.getDebitedBank() != null ? tx.getDebitedBank() : "-", dataStyle);
-            createCell(row, 8, tx.getRemarks() != null ? tx.getRemarks() : "-", dataStyle);
+        java.util.Map<String, List<LumpsumTransaction>> fyMap = new java.util.LinkedHashMap<>();
+        for (LumpsumTransaction tx : sortedData) {
+            String fy = tx.getInvestmentDate() != null ? getFinancialYear(tx.getInvestmentDate()) : "Unknown";
+            fyMap.computeIfAbsent(fy, k -> new java.util.ArrayList<>()).add(tx);
         }
 
-        if (!data.isEmpty()) {
-            int totalRowIdx = startRow + 1 + data.size();
-            Row totalRow = sheet.createRow(totalRowIdx);
-            totalRow.setHeightInPoints(24);
+        int currentRow = startRow + 1;
+        for (Map.Entry<String, List<LumpsumTransaction>> entry : fyMap.entrySet()) {
+            String fy = entry.getKey();
+            List<LumpsumTransaction> txs = entry.getValue();
 
-            CellStyle totalLabelStyle = createTotalLabelStyle(workbook);
-            CellStyle totalCurrencyStyle = createTotalCurrencyStyle(workbook);
+            Row fyRow = sheet.createRow(currentRow++);
+            fyRow.setHeightInPoints(22);
+            Cell fyCell = fyRow.createCell(0);
+            fyCell.setCellValue(fy);
+            fyCell.setCellStyle(fyHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(fyRow.getRowNum(), fyRow.getRowNum(), 0, headers.length - 1));
 
-            for (int col = 0; col < headers.length; col++) {
-                Cell cell = totalRow.createCell(col);
-                cell.setCellStyle(totalLabelStyle);
+            double fyTotLumpsum = 0.0;
+            double fyTotUnits = 0.0;
+
+            for (LumpsumTransaction tx : txs) {
+                MfScheme scheme = schemeMap.get(tx.getSchemeId());
+                Row row = sheet.createRow(currentRow++);
+                row.setHeightInPoints(22);
+
+                createCell(row, 0, formatDate(tx.getInvestmentDate()), dataStyle);
+                createCell(row, 1, scheme != null ? scheme.getSchemeName() : "-", boldStyle);
+                createCell(row, 2, scheme != null ? scheme.getFolioNo() : "-", dataStyle);
+                createCell(row, 3, scheme != null ? scheme.getPlatform() : "-", dataStyle);
+                createCell(row, 4, scheme != null ? scheme.getHolderName() : "-", dataStyle);
+
+                double amt = tx.getLumpsumInvestment() != null ? tx.getLumpsumInvestment().doubleValue() : 0.0;
+                createNumericCell(row, 5, amt, currencyStyle);
+                fyTotLumpsum += amt;
+
+                createNumericCell(row, 6, tx.getNavPrice() != null ? tx.getNavPrice().doubleValue() : 0.0, currencyStyle);
+                
+                double units = tx.getTotalUnit() != null ? tx.getTotalUnit().doubleValue() : 0.0;
+                createNumericCell(row, 7, units, unitStyle);
+                fyTotUnits += units;
+
+                createCell(row, 8, tx.getDebitedBank() != null ? tx.getDebitedBank() : "-", dataStyle);
+                createCell(row, 9, tx.getRemarks() != null ? tx.getRemarks() : "-", dataStyle);
             }
 
-            totalRow.getCell(0).setCellValue("Total");
+            Row subtotalRow = sheet.createRow(currentRow++);
+            subtotalRow.setHeightInPoints(24);
+            
+            Cell totalLabelCell = subtotalRow.createCell(0);
+            totalLabelCell.setCellValue("Total " + fy);
+            totalLabelCell.setCellStyle(createTotalLabelStyle(workbook));
+            
+            Cell c5 = subtotalRow.createCell(5);
+            c5.setCellValue(fyTotLumpsum);
+            c5.setCellStyle(subtotalCurrencyStyle);
 
-            double totAmt = data.stream()
-                    .mapToDouble(d -> d.getLumpsumInvestment() != null ? d.getLumpsumInvestment().doubleValue() : 0.0)
-                    .sum();
-            Cell c4 = totalRow.getCell(4);
-            c4.setCellValue(totAmt);
-            c4.setCellStyle(totalCurrencyStyle);
+            Cell c7 = subtotalRow.createCell(7);
+            c7.setCellValue(fyTotUnits);
+            c7.setCellStyle(totalUnitStyle);
 
-            double totUnits = data.stream()
-                    .mapToDouble(d -> d.getTotalUnit() != null ? d.getTotalUnit().doubleValue() : 0.0).sum();
-            CellStyle totalUnitStyle = workbook.createCellStyle();
-            totalUnitStyle.cloneStyleFrom(totalLabelStyle);
-            totalUnitStyle.setAlignment(HorizontalAlignment.RIGHT);
-            totalUnitStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.000"));
-            Cell c5 = totalRow.getCell(5);
-            c5.setCellValue(totUnits);
-            c5.setCellStyle(totalUnitStyle);
+            Row spacerRow = sheet.createRow(currentRow++);
+            spacerRow.setHeightInPoints(15);
         }
 
         ExcelExportUtil.autoSizeColumns(sheet, headers.length);
@@ -483,12 +635,13 @@ public class MfExcelExporter {
             CellStyle boldStyle) {
         Sheet sheet = workbook.createSheet(sheetName);
         String[] headers = {
-                "Txn No", "Holder Name", "Scheme Name", "Redemption Date", "Units Redeemed", "Redemption Value",
-                "Capital Gain", "Gain Type", "Credited Bank"
+                "Redemption date", "Mutual Fund Scheme", "Folio No.", "Place", "Whom MF", "Total Unit",
+                "Redemption Unit", "Balance Unit", "Total Investment", "Trade Investment Value",
+                "Balance Investment", "Redemption NAV", "Redemption value", "LTCG/STCG",
+                "Annum return %", "Amount credited Bank", "Remarks"
         };
 
-        renderSheetTitle(sheet, workbook, "Redemption Transactions", headers.length);
-        int startRow = 2;
+        int startRow = 0;
 
         Row headerRow = sheet.createRow(startRow);
         headerRow.setHeightInPoints(25);
@@ -499,67 +652,134 @@ public class MfExcelExporter {
         }
 
         CellStyle unitStyle = createUnitStyle(workbook);
+        CellStyle fyHeaderStyle = createFyHeaderStyle(workbook);
+        CellStyle subtotalCurrencyStyle = createSubtotalCurrencyStyle(workbook);
+        
+        CellStyle multilineCurrencyStyle = workbook.createCellStyle();
+        multilineCurrencyStyle.cloneStyleFrom(currencyStyle);
+        multilineCurrencyStyle.setWrapText(true);
 
-        for (int i = 0; i < data.size(); i++) {
-            RedemptionTransaction tx = data.get(i);
-            MfScheme scheme = schemeMap.get(tx.getSchemeId());
-            Row row = sheet.createRow(startRow + 1 + i);
-            row.setHeightInPoints(22);
+        List<RedemptionTransaction> sortedData = new java.util.ArrayList<>(data);
+        sortedData.sort((t1, t2) -> {
+            if (t1.getRedemptionDate() == null && t2.getRedemptionDate() == null) return 0;
+            if (t1.getRedemptionDate() == null) return 1;
+            if (t2.getRedemptionDate() == null) return -1;
+            return t1.getRedemptionDate().compareTo(t2.getRedemptionDate());
+        });
 
-            createNumericCell(row, 0, tx.getTransactionNo() != null ? tx.getTransactionNo().doubleValue() : null,
-                    rightAlignStyle);
-            createCell(row, 1, scheme != null ? scheme.getHolderName() : "-", dataStyle);
-            createCell(row, 2, scheme != null ? scheme.getSchemeName() : "-", boldStyle);
-            createCell(row, 3, formatDate(tx.getRedemptionDate()), dataStyle);
-
-            createNumericCell(row, 4, tx.getRedemptionUnit() != null ? tx.getRedemptionUnit().doubleValue() : 0.0,
-                    unitStyle);
-            createNumericCell(row, 5, tx.getRedemptionValue() != null ? tx.getRedemptionValue().doubleValue() : 0.0,
-                    currencyStyle);
-            createNumericCell(row, 6, tx.getCapitalGain() != null ? tx.getCapitalGain().doubleValue() : 0.0,
-                    currencyStyle);
-
-            createCell(row, 7, tx.getGainType() != null ? tx.getGainType().name() : "-", dataStyle);
-            createCell(row, 8, tx.getAmountCreditedBank() != null ? tx.getAmountCreditedBank() : "-", dataStyle);
+        java.util.Map<String, List<RedemptionTransaction>> fyMap = new java.util.LinkedHashMap<>();
+        for (RedemptionTransaction tx : sortedData) {
+            String fy = tx.getRedemptionDate() != null ? getFinancialYear(tx.getRedemptionDate()) : "Unknown";
+            fyMap.computeIfAbsent(fy, k -> new java.util.ArrayList<>()).add(tx);
         }
 
-        if (!data.isEmpty()) {
-            int totalRowIdx = startRow + 1 + data.size();
-            Row totalRow = sheet.createRow(totalRowIdx);
-            totalRow.setHeightInPoints(24);
+        int currentRow = startRow + 1;
+        for (Map.Entry<String, List<RedemptionTransaction>> entry : fyMap.entrySet()) {
+            String fy = entry.getKey();
+            List<RedemptionTransaction> txs = entry.getValue();
 
-            CellStyle totalLabelStyle = createTotalLabelStyle(workbook);
-            CellStyle totalCurrencyStyle = createTotalCurrencyStyle(workbook);
+            Row fyRow = sheet.createRow(currentRow++);
+            fyRow.setHeightInPoints(22);
+            Cell fyCell = fyRow.createCell(0);
+            fyCell.setCellValue(fy);
+            fyCell.setCellStyle(fyHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(fyRow.getRowNum(), fyRow.getRowNum(), 0, headers.length - 1));
 
-            for (int col = 0; col < headers.length; col++) {
-                Cell cell = totalRow.createCell(col);
-                cell.setCellStyle(totalLabelStyle);
+            double fyTotRedemptionValue = 0.0;
+            double fyTotGain = 0.0;
+
+            for (RedemptionTransaction tx : txs) {
+                MfScheme scheme = schemeMap.get(tx.getSchemeId());
+                Row row = sheet.createRow(currentRow++);
+                row.setHeightInPoints(22);
+
+                createCell(row, 0, formatDate(tx.getRedemptionDate()), dataStyle);
+                createCell(row, 1, scheme != null ? scheme.getSchemeName() : "-", boldStyle);
+                createCell(row, 2, scheme != null ? scheme.getFolioNo() : "-", dataStyle);
+                createCell(row, 3, scheme != null ? scheme.getPlatform() : "-", dataStyle);
+                createCell(row, 4, scheme != null ? scheme.getHolderName() : "-", dataStyle);
+
+                createNumericCell(row, 5, tx.getTotalUnit() != null ? tx.getTotalUnit().doubleValue() : 0.0, unitStyle);
+                createNumericCell(row, 6, tx.getRedemptionUnit() != null ? tx.getRedemptionUnit().doubleValue() : 0.0, unitStyle);
+                createNumericCell(row, 7, tx.getBalanceUnit() != null ? tx.getBalanceUnit().doubleValue() : 0.0, unitStyle);
+
+                createNumericCell(row, 8, tx.getTotalInvestment() != null ? tx.getTotalInvestment().doubleValue() : 0.0, currencyStyle);
+                createNumericCell(row, 9, tx.getTradeInvestmentValue() != null ? tx.getTradeInvestmentValue().doubleValue() : 0.0, currencyStyle);
+                createNumericCell(row, 10, tx.getBalanceInvestment() != null ? tx.getBalanceInvestment().doubleValue() : 0.0, currencyStyle);
+
+                createNumericCell(row, 11, tx.getRedemptionNav() != null ? tx.getRedemptionNav().doubleValue() : 0.0, dataStyle); // NAV
+                
+                double redVal = tx.getNetRedemptionValue() != null ? tx.getNetRedemptionValue().doubleValue()
+                        : (tx.getRedemptionValue() != null ? tx.getRedemptionValue().doubleValue() : 0.0);
+                        
+                // NOTE: Kept for reference. Using multiline strings breaks Excel's ability to sum rows natively.
+                /*
+                boolean hasDeductions = (tx.getSttAmount() != null && tx.getSttAmount().doubleValue() > 0) 
+                                     || (tx.getExitLoadDeducted() != null && tx.getExitLoadDeducted().doubleValue() > 0);
+                                     
+                if (hasDeductions) {
+                    java.text.NumberFormat format = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("en", "IN"));
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(format.format(redVal)).append("\n-- Deductions --\nGross: ")
+                      .append(format.format(tx.getRedemptionValue()));
+                    if (tx.getExitLoadDeducted() != null && tx.getExitLoadDeducted().doubleValue() > 0) {
+                        sb.append("\nExit Load: -").append(format.format(tx.getExitLoadDeducted()));
+                    }
+                    if (tx.getSttAmount() != null && tx.getSttAmount().doubleValue() > 0) {
+                        sb.append("\nSTT: -").append(format.format(tx.getSttAmount()));
+                    }
+                    Cell cell = row.createCell(12);
+                    cell.setCellValue(sb.toString());
+                    cell.setCellStyle(multilineCurrencyStyle);
+                    row.setHeight((short)-1); // Auto fit height for multiline
+                } else {
+                    createNumericCell(row, 12, redVal, currencyStyle);
+                }
+                */
+                
+                createNumericCell(row, 12, redVal, currencyStyle);
+                fyTotRedemptionValue += redVal;
+
+                double gain = tx.getCapitalGain() != null ? tx.getCapitalGain().doubleValue() : 0.0;
+                
+                /*
+                if (tx.getGainType() != null) {
+                    java.text.NumberFormat format = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("en", "IN"));
+                    String gainText = format.format(gain) + "\n" + tx.getGainType().name();
+                    Cell cell = row.createCell(13);
+                    cell.setCellValue(gainText);
+                    cell.setCellStyle(multilineCurrencyStyle);
+                    row.setHeight((short)-1); // Auto fit height
+                } else {
+                    createNumericCell(row, 13, gain, currencyStyle);
+                }
+                */
+                
+                createNumericCell(row, 13, gain, currencyStyle);
+                fyTotGain += gain;
+
+                createCell(row, 14, "", dataStyle); // Annum return %
+                createCell(row, 15, scheme != null ? scheme.getBank() : "-", dataStyle);
+                createCell(row, 16, tx.getRemarks() != null ? tx.getRemarks() : "", dataStyle);
             }
 
-            totalRow.getCell(0).setCellValue("Total");
+            Row subtotalRow = sheet.createRow(currentRow++);
+            subtotalRow.setHeightInPoints(24);
+            
+            Cell totalLabelCell = subtotalRow.createCell(0);
+            totalLabelCell.setCellValue("Total " + fy);
+            totalLabelCell.setCellStyle(createTotalLabelStyle(workbook));
+            
+            Cell c12 = subtotalRow.createCell(12);
+            c12.setCellValue(fyTotRedemptionValue);
+            c12.setCellStyle(subtotalCurrencyStyle);
 
-            double totUnits = data.stream()
-                    .mapToDouble(d -> d.getRedemptionUnit() != null ? d.getRedemptionUnit().doubleValue() : 0.0).sum();
-            double totVal = data.stream()
-                    .mapToDouble(d -> d.getRedemptionValue() != null ? d.getRedemptionValue().doubleValue() : 0.0)
-                    .sum();
-            double totGain = data.stream()
-                    .mapToDouble(d -> d.getCapitalGain() != null ? d.getCapitalGain().doubleValue() : 0.0).sum();
+            Cell c13 = subtotalRow.createCell(13);
+            c13.setCellValue(fyTotGain);
+            c13.setCellStyle(subtotalCurrencyStyle);
 
-            CellStyle totalUnitStyle = workbook.createCellStyle();
-            totalUnitStyle.cloneStyleFrom(totalLabelStyle);
-            totalUnitStyle.setAlignment(HorizontalAlignment.RIGHT);
-            totalUnitStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.000"));
-
-            Cell c4 = totalRow.getCell(4);
-            c4.setCellValue(totUnits);
-            c4.setCellStyle(totalUnitStyle);
-            Cell c5 = totalRow.getCell(5);
-            c5.setCellValue(totVal);
-            c5.setCellStyle(totalCurrencyStyle);
-            Cell c6 = totalRow.getCell(6);
-            c6.setCellValue(totGain);
-            c6.setCellStyle(totalCurrencyStyle);
+            Row spacerRow = sheet.createRow(currentRow++);
+            spacerRow.setHeightInPoints(15);
         }
 
         ExcelExportUtil.autoSizeColumns(sheet, headers.length);
@@ -698,6 +918,7 @@ public class MfExcelExporter {
         setCellBackground(workbook, style, "#e2e8f0");
         style.setAlignment(HorizontalAlignment.LEFT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setWrapText(true);
         applyGridBorders(workbook, style);
         return style;
     }
@@ -705,6 +926,7 @@ public class MfExcelExporter {
     private static CellStyle createDataStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setWrapText(true);
         applyGridBorders(workbook, style);
         return style;
     }
@@ -722,6 +944,7 @@ public class MfExcelExporter {
         style.setFont(createCustomFont(workbook, "#1e293b", true, (short) 0));
         style.setAlignment(HorizontalAlignment.LEFT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setWrapText(true);
         applyGridBorders(workbook, style);
         return style;
     }
@@ -775,6 +998,42 @@ public class MfExcelExporter {
         style.setVerticalAlignment(VerticalAlignment.CENTER);
         applyGridBorders(workbook, style);
         return style;
+    }
+
+    private static CellStyle createFyHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setFont(createCustomFont(workbook, "#1e293b", true, (short) 11)); // bold dark slate
+        setCellBackground(workbook, style, "#e2f2e9"); // light green (EPF opening style)
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyGridBorders(workbook, style);
+        return style;
+    }
+
+    private static CellStyle createSubtotalCurrencyStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setFont(createCustomFont(workbook, "#000000", true, (short) 11)); // bold black
+        setCellBackground(workbook, style, "#c6efce"); // light green
+        DataFormat format = workbook.createDataFormat();
+        style.setDataFormat(format.getFormat("[$₹-en-IN]#,##0.00"));
+        style.setAlignment(HorizontalAlignment.RIGHT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        return style;
+    }
+
+    private static String getFinancialYear(LocalDate date) {
+        if (date == null)
+            return "Unknown FY";
+        int year = date.getYear();
+        if (date.getMonthValue() < 4) {
+            return "FY " + (year - 1) + " - " + String.format("%02d", year % 100);
+        } else {
+            return "FY " + year + " - " + String.format("%02d", (year + 1) % 100);
+        }
     }
 
     private static String formatDate(LocalDate date) {

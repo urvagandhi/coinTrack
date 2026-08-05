@@ -94,17 +94,12 @@ export default function SipTab() {
   const scrollContainerRef = useRef(null);
 
   const handleSuccess = () => {
-    queryClient.invalidateQueries({
-      predicate: (query) => {
-        const key = query.queryKey[0];
-        return typeof key === "string" && (key.startsWith("mf") || key.startsWith("mutualFund"));
-      }
-    });
+    queryClient.invalidateQueries();
   };
 
   const { data: schemes = [], isLoading: isLoadingSchemes } = useQuery({
-    queryKey: ["mfSchemeDropdown"],
-    queryFn: () => mutualFundAPI.getSchemeDropdown(),
+    queryKey: ["mfSchemeDropdown", { includeRedeemed: true }],
+    queryFn: () => mutualFundAPI.getSchemeDropdown({ includeRedeemed: true }),
     staleTime: 30 * 1000,
   });
 

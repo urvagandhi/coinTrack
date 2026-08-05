@@ -251,6 +251,9 @@ export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
                   <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">
                     Current Invested
                   </th>
+                  <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right">
+                    Current Value
+                  </th>
                   <th className="py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-left">
                     Status
                   </th>
@@ -310,8 +313,11 @@ export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
                     <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
                       {formatCurrency(scheme.netInvestment)}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono text-[13px] font-semibold text-foreground">
+                    <td className="py-3 px-4 text-right font-mono text-[13px] text-foreground">
                       {formatCurrency(scheme.currentInvestment)}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono text-[13px] font-semibold text-[hsl(var(--gain))]">
+                      {scheme.currentValue != null ? formatCurrency(scheme.currentValue) : "₹0.00"}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <StatusBadge scheme={scheme} />

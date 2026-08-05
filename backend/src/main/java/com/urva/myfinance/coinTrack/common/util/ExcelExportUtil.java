@@ -285,6 +285,10 @@ public class ExcelExportUtil {
     }
 
     public static void autoSizeColumns(Sheet sheet, int numColumns) {
+        autoSizeColumns(sheet, numColumns, 45); // Default max 45 characters
+    }
+
+    public static void autoSizeColumns(Sheet sheet, int numColumns, int maxChars) {
         DataFormatter formatter = new DataFormatter();
         for (int i = 0; i < numColumns; i++) {
             int maxLen = 0;
@@ -301,8 +305,8 @@ public class ExcelExportUtil {
                     }
                 }
             }
-            // Use 12 min and 45 max, plus 4 characters padding
-            int colWidth = Math.min(Math.max(maxLen + 4, 12), 45) * 256;
+            // Use 12 min and maxChars max, plus 4 characters padding
+            int colWidth = Math.min(Math.max(maxLen + 4, 12), maxChars) * 256;
             sheet.setColumnWidth(i, colWidth);
         }
     }
