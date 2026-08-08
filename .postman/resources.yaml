@@ -1,7 +1,0 @@
-# Use this workspace to collaborate
-workspace:
-  id: e02ba867-73ce-40ff-8c49-bfc395c4d365
-
-localResources:
-  collections:
-    - ../CoinTrack_API_Collection.json

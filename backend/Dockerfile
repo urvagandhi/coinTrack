@@ -69,7 +69,9 @@ EXPOSE 8080
 #   ENCRYPTION_SECRET_KEY   - AES-256 key (exactly 32 chars)
 #   TOTP_ENCRYPTION_KEY     - TOTP secret encryption (64 hex chars)
 #   BREVO_API_KEY           - Brevo transactional email API key
-#   FRONTEND_URL            - Frontend origin for email links
+#   FRONTEND_URL            - Frontend origins (comma-separated)
+#   EMAIL_BASE_URL          - Base URLs for email links (comma-separated)
+#   EMAIL_API_BASE_URL      - Backend API URLs for email assets (comma-separated)
 #   CORS_ALLOWED_ORIGINS    - Allowed CORS origins (comma-separated)
 #
 # Optional:
