@@ -433,8 +433,9 @@ public class BrokerConnectController {
         logger.info("Received browser callback from Zerodha. Request Token: {}", requestToken);
 
         // Using configured frontend URL
+        String resolvedFrontendUrl = com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(frontendUrl);
 
-        StringBuilder redirectUrl = new StringBuilder(frontendUrl);
+        StringBuilder redirectUrl = new StringBuilder(resolvedFrontendUrl);
         redirectUrl.append("?request_token=").append(requestToken);
 
         if (status != null)

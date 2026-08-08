@@ -64,34 +64,34 @@ public class EmailConfigProperties {
      * Get the full URL for the logo image
      */
     public String getLogoUrl() {
-        return apiBaseUrl + "/logo/coinTrack.png";
+        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(apiBaseUrl) + "/logo/coinTrack.png";
     }
 
     /**
      * Get the full URL for email verification
      */
     public String getEmailVerifyUrl(String token) {
-        return baseUrl + "/verify-email?token=" + token;
+        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl) + "/verify-email?token=" + token;
     }
 
     /**
      * Get the full URL for password reset
      */
     public String getPasswordResetUrl(String token) {
-        return baseUrl + "/reset-password?token=" + token;
+        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl) + "/reset-password?token=" + token;
     }
 
     /**
      * Get the full URL for email change verification
      */
     public String getEmailChangeVerifyUrl(String token) {
-        return baseUrl + "/verify-email?token=" + token + "&type=change";
+        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl) + "/verify-email?token=" + token + "&type=change";
     }
 
     /**
      * Get the full URL for 2FA recovery
      */
     public String get2FARecoveryUrl(String token) {
-        return baseUrl + "/reset-2fa?token=" + token;
+        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl) + "/reset-2fa?token=" + token;
     }
 }

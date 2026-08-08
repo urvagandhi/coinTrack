@@ -19,7 +19,8 @@ public class ZerodhaBridgeController {
     @GetMapping("/zerodha/callback")
     public RedirectView handleCallback(@RequestParam("request_token") String requestToken) {
         // Redirect to Frontend URL (configured via frontend.url property)
-        String redirectUrl = frontendUrl + "/brokers/zerodha/callback?request_token=" + requestToken;
+        String resolvedFrontendUrl = com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(frontendUrl);
+        String redirectUrl = resolvedFrontendUrl + "/brokers/zerodha/callback?request_token=" + requestToken;
         return new RedirectView(redirectUrl);
     }
 }
