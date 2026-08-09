@@ -7,6 +7,6 @@ import java.math.BigDecimal;
  */
 public record SimpleInterestResponse(
         BigDecimal principal,
-        BigDecimal maturityAmount,
-        BigDecimal totalInterest) {
+        BigDecimal totalAmount,
+        BigDecimal interest) {
 }

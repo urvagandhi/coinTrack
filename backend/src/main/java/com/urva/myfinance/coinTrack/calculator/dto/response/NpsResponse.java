@@ -6,12 +6,14 @@ import java.math.BigDecimal;
  * Response DTO for NPS Calculator.
  */
 public record NpsResponse(
-        BigDecimal totalContribution,
-        BigDecimal corpusAtRetirement,
-        BigDecimal lumpSumWithdrawal, // 60% max tax-free
-        BigDecimal annuityInvestment, // Min 40% for annuity
-        BigDecimal monthlyPension,
-        BigDecimal totalPensionReceived, // Over life expectancy
+        BigDecimal totalInvestment,
+        BigDecimal totalCorpus,
+        BigDecimal totalGains,
+        BigDecimal lumpSumAmount,
+        BigDecimal annuityAmount,
+        BigDecimal estimatedPension,
+        BigDecimal yearlyTaxBenefit,
+        BigDecimal totalPensionReceived,
         Integer yearsOfContribution,
         Integer pensionYears,
         BigDecimal effectiveReturn) {

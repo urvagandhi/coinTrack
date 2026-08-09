@@ -6,9 +6,12 @@ import java.math.BigDecimal;
  * Response DTO for Margin Calculator.
  */
 public record MarginResponse(
-        BigDecimal totalValue,
+        BigDecimal tradeValue,
         BigDecimal requiredMargin,
-        BigDecimal leverageUsed,
-        BigDecimal varMargin,
-        BigDecimal elmMargin) {
+        BigDecimal marginPercent,
+        BigDecimal leverage,
+        BigDecimal exposure,
+        BigDecimal spanMargin,
+        BigDecimal exposureMargin,
+        BigDecimal premiumMargin) {
 }

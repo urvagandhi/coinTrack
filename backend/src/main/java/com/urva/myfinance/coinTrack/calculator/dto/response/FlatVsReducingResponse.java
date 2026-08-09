@@ -8,10 +8,12 @@ import java.math.BigDecimal;
 public record FlatVsReducingResponse(
         BigDecimal principal,
         BigDecimal reducingEmi,
-        BigDecimal reducingInterest,
+        BigDecimal reducingTotalInterest,
         BigDecimal reducingTotalPayment,
         BigDecimal flatEmi,
-        BigDecimal flatInterest,
+        BigDecimal flatTotalInterest,
         BigDecimal flatTotalPayment,
-        BigDecimal savingsWithReducing) {
+        BigDecimal savings,
+        Boolean reducingIsBetter,
+        BigDecimal effectiveReducingRate) {
 }

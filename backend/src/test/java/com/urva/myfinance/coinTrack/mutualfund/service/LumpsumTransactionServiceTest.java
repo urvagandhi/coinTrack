@@ -28,7 +28,7 @@ import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepo
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.mutualfund.service.PortfolioHoldingService;
 import com.urva.myfinance.coinTrack.mutualfund.service.settlement.SettlementDateCalculator;
-import com.urva.myfinance.coinTrack.mutualfund.config.MfChargesConfig;
+import com.urva.myfinance.coinTrack.config.StatutoryChargesConfig;
 
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
@@ -48,7 +48,7 @@ class LumpsumTransactionServiceTest {
     @Mock
     private PortfolioHoldingService portfolioHoldingService;
     @Mock
-    private MfChargesConfig mfChargesConfig;
+    private StatutoryChargesConfig mfChargesConfig;
     @Mock
     private SettlementDateCalculator settlementDateCalculator;
     @Mock
@@ -80,10 +80,10 @@ class LumpsumTransactionServiceTest {
         sampleTx.setNavPrice(new BigDecimal("500"));
         sampleTx.setInvestmentDate(LocalDate.of(2025, 1, 15));
 
-        when(settlementDateCalculator.calculateApplicableDate(any(), anyBoolean()))
+        when(settlementDateCalculator.calculateApplicableDate(any(), any()))
                 .thenReturn(LocalDate.of(2025, 1, 15));
         when(settlementDateCalculator.calculateSettlementDate(any(), any())).thenReturn(LocalDate.of(2025, 1, 17));
-        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
     }
 
     // ── getTransactions ────────────────────────────────────────────
@@ -156,7 +156,7 @@ class LumpsumTransactionServiceTest {
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
         when(mfNavService.fetchNavForDate(eq("120503"), any())).thenReturn(new BigDecimal("500"));
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
-        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
 
         LumpsumTransaction result = service.createTransaction(USER_ID, sampleTx);
 
@@ -190,7 +190,7 @@ class LumpsumTransactionServiceTest {
     void updateTransaction_valid() {
         when(repository.findById(TX_ID)).thenReturn(Optional.of(sampleTx));
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
         when(repository.save(any(LumpsumTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
         LumpsumTransaction updated = new LumpsumTransaction();
         updated.setLumpsumInvestment(new BigDecimal("75000"));
@@ -222,7 +222,7 @@ class LumpsumTransactionServiceTest {
     void updateTransaction_sameScheme() {
         when(repository.findById(TX_ID)).thenReturn(Optional.of(sampleTx));
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
         when(repository.save(any(LumpsumTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
         LumpsumTransaction updated = new LumpsumTransaction();
         updated.setSchemeId(SCHEME_ID);

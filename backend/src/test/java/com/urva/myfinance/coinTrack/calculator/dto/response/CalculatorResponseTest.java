@@ -158,18 +158,29 @@ class CalculatorResponseTest {
     }
 
     @Test
-    @DisplayName("13. BrokerageResponse record fields")
+    @DisplayName("13. BrokerageResponse record")
     void brokerageResponse_Fields() {
-        BrokerageResponse response = new BrokerageResponse(
-                new BigDecimal("100000"), new BigDecimal("120000"),
-                new BigDecimal("20000"), new BigDecimal("20"),
-                new BigDecimal("200"), new BigDecimal("30"),
-                new BigDecimal("9"), new BigDecimal("10"),
-                new BigDecimal("15"), new BigDecimal("284"),
-                new BigDecimal("19716"), new BigDecimal("1002.84"),
-                "DELIVERY");
-        assertEquals("DELIVERY", response.transactionType());
-        assertEquals(new BigDecimal("19716"), response.netProfit());
+        BrokerageResponse res = new BrokerageResponse(BigDecimal.valueOf(100), BigDecimal.valueOf(110),
+                BigDecimal.valueOf(10), BigDecimal.valueOf(1), BigDecimal.valueOf(1), BigDecimal.valueOf(1),
+                BigDecimal.valueOf(1), BigDecimal.valueOf(1), BigDecimal.valueOf(1), BigDecimal.valueOf(6),
+                BigDecimal.valueOf(4), BigDecimal.valueOf(102), BigDecimal.valueOf(210), "DELIVERY");
+
+        assertEquals(BigDecimal.valueOf(100), res.buyValue());
+        assertEquals(BigDecimal.valueOf(10), res.grossPnl());
+        assertEquals(BigDecimal.valueOf(4), res.netPnl());
+        assertEquals(BigDecimal.valueOf(210), res.turnover());
+    }
+
+    @Test
+    @DisplayName("16. MarginResponse record fields")
+    void marginResponse_Fields() {
+        MarginResponse res = new MarginResponse(BigDecimal.valueOf(1000), BigDecimal.valueOf(200),
+                BigDecimal.valueOf(20), BigDecimal.valueOf(5), BigDecimal.valueOf(1000), BigDecimal.valueOf(50),
+                BigDecimal.valueOf(50), BigDecimal.ZERO);
+
+        assertEquals(BigDecimal.valueOf(1000), res.tradeValue());
+        assertEquals(BigDecimal.valueOf(200), res.requiredMargin());
+        assertEquals(BigDecimal.valueOf(5), res.leverage());
     }
 
     @Test
@@ -178,8 +189,8 @@ class CalculatorResponseTest {
         SimpleInterestResponse response = new SimpleInterestResponse(
                 new BigDecimal("100000"), new BigDecimal("150000"), new BigDecimal("50000"));
         assertEquals(new BigDecimal("100000"), response.principal());
-        assertEquals(new BigDecimal("150000"), response.maturityAmount());
-        assertEquals(new BigDecimal("50000"), response.totalInterest());
+        assertEquals(new BigDecimal("150000"), response.totalAmount());
+        assertEquals(new BigDecimal("50000"), response.interest());
     }
 
     @Test
@@ -189,17 +200,10 @@ class CalculatorResponseTest {
                 new BigDecimal("100000"), new BigDecimal("161051"),
                 new BigDecimal("61051"), new BigDecimal("10.47"), 12);
         assertEquals(12, response.compoundingFrequency());
-        assertEquals(new BigDecimal("10.47"), response.effectiveAnnualRate());
+        assertEquals(new BigDecimal("10.47"), response.effectiveRate());
     }
 
-    @Test
-    @DisplayName("16. MarginResponse record fields")
-    void marginResponse_Fields() {
-        MarginResponse response = new MarginResponse(
-                new BigDecimal("500000"), new BigDecimal("125000"),
-                BigDecimal.valueOf(4), new BigDecimal("10000"), new BigDecimal("15000"));
-        assertEquals(4, response.leverageUsed().intValue());
-    }
+
 
     @Test
     @DisplayName("17. FlatVsReducingResponse record fields")
@@ -208,7 +212,7 @@ class CalculatorResponseTest {
                 new BigDecimal("100000"), new BigDecimal("9000"),
                 new BigDecimal("20000"), new BigDecimal("120000"),
                 new BigDecimal("10000"), new BigDecimal("40000"),
-                new BigDecimal("140000"), new BigDecimal("20000"));
-        assertEquals(new BigDecimal("20000"), response.savingsWithReducing());
+                new BigDecimal("140000"), new BigDecimal("20000"), true, new BigDecimal("11.5"));
+        assertEquals(new BigDecimal("20000"), response.savings());
     }
 }

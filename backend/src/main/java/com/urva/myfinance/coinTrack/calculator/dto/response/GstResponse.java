@@ -6,7 +6,7 @@ import java.math.BigDecimal;
  * Response DTO for GST Calculator.
  */
 public record GstResponse(
-        BigDecimal originalAmount,
+        BigDecimal baseAmount,
         BigDecimal gstAmount,
         BigDecimal totalAmount,
         BigDecimal cgst,

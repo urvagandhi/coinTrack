@@ -8,15 +8,16 @@ import java.math.BigDecimal;
 public record BrokerageResponse(
         BigDecimal buyValue,
         BigDecimal sellValue,
-        BigDecimal grossProfit,
+        BigDecimal grossPnl,
         BigDecimal brokerage,
         BigDecimal stt,
-        BigDecimal transactionCharges,
+        BigDecimal exchangeCharges,
         BigDecimal gst,
         BigDecimal sebiCharges,
         BigDecimal stampDuty,
         BigDecimal totalCharges,
-        BigDecimal netProfit,
+        BigDecimal netPnl,
         BigDecimal breakeven, // Price where you break even
+        BigDecimal turnover,
         String transactionType) {
 }

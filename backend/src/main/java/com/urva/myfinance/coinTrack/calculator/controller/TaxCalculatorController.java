@@ -92,7 +92,7 @@ public class TaxCalculatorController {
             @Valid @RequestBody SalaryRequest request,
             @RequestParam(defaultValue = "false") boolean debug) {
 
-        logger.info("Salary calculation request: basic={}", request.basicSalary());
+        logger.info("Salary calculation request: basic={}", request.basic());
 
         CalculatorResponse<SalaryResponse> response = taxService.calculateSalary(request, debug);
         return ResponseEntity.ok(response);

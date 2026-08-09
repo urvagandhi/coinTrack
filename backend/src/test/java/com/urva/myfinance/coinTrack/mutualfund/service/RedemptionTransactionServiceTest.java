@@ -23,7 +23,7 @@ import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.mutualfund.model.GainType;
 import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
 import com.urva.myfinance.coinTrack.mutualfund.model.RedemptionTransaction;
-import com.urva.myfinance.coinTrack.mutualfund.config.MfChargesConfig;
+import com.urva.myfinance.coinTrack.config.StatutoryChargesConfig;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.RedemptionTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
@@ -56,7 +56,7 @@ class RedemptionTransactionServiceTest {
     @Mock
     private PortfolioHoldingService portfolioHoldingService;
     @Mock
-    private MfChargesConfig mfChargesConfig;
+    private StatutoryChargesConfig mfChargesConfig;
     @Mock
     private SettlementDateCalculator settlementDateCalculator;
 
@@ -88,10 +88,10 @@ class RedemptionTransactionServiceTest {
         sampleTx.setRedemptionDate(LocalDate.of(2025, 6, 1));
         sampleTx.setGainType(GainType.LTCG);
 
-        when(settlementDateCalculator.calculateApplicableDate(any(), anyBoolean()))
+        when(settlementDateCalculator.calculateApplicableDate(any(), any()))
                 .thenReturn(LocalDate.of(2025, 6, 1));
         when(settlementDateCalculator.calculateSettlementDate(any(), any())).thenReturn(LocalDate.of(2025, 6, 3));
-        when(mfChargesConfig.getSttRateForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfSttRateForDate(any())).thenReturn(BigDecimal.ZERO);
         when(mfNavService.fetchNavForDate(eq("120503"), any())).thenReturn(new BigDecimal("500"));
 
         MfFifoEngine.FifoResult defaultFifoResult = new MfFifoEngine.FifoResult();
@@ -218,7 +218,7 @@ class RedemptionTransactionServiceTest {
 
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
         when(fifoEngine.calculateRedemptionCost(anyString(), anyString(), any(), any(), any())).thenReturn(fifoResult);
-        when(mfChargesConfig.getSttRateForDate(any())).thenReturn(new BigDecimal("0.001"));
+        when(mfChargesConfig.getMfSttRateForDate(any())).thenReturn(new BigDecimal("0.001"));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0)); // Return what is passed
 
         RedemptionTransaction result = service.createTransaction(USER_ID, sampleTx);
@@ -264,8 +264,8 @@ class RedemptionTransactionServiceTest {
     void updateTransaction_nullValues() {
         when(repository.findById(TX_ID)).thenReturn(Optional.of(sampleTx));
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(mfChargesConfig.getSttRateForDate(any())).thenReturn(BigDecimal.ZERO);
-        when(mfChargesConfig.getSttRateForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfSttRateForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfSttRateForDate(any())).thenReturn(BigDecimal.ZERO);
         when(mfNavService.fetchNavForDate(eq("120503"), any())).thenReturn(new BigDecimal("400"));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         RedemptionTransaction updated = new RedemptionTransaction();
@@ -274,7 +274,7 @@ class RedemptionTransactionServiceTest {
         updated.setGainType(GainType.LTCG);
 
         RedemptionTransaction result = service.updateTransaction(USER_ID, TX_ID, updated);
-        assertEquals(0, new BigDecimal("20000").compareTo(result.getCapitalGain()));
+        assertEquals(0, new BigDecimal("15000").compareTo(result.getCapitalGain()));
         assertEquals(GainType.LTCG, result.getGainType());
     }
 
@@ -305,7 +305,7 @@ class RedemptionTransactionServiceTest {
         sampleScheme.setMfCategory("Flexi Cap"); // Equity scheme
         when(repository.findById(TX_ID)).thenReturn(Optional.of(sampleTx));
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(mfChargesConfig.getSttRateForDate(any())).thenReturn(new BigDecimal("0.001"));
+        when(mfChargesConfig.getMfSttRateForDate(any())).thenReturn(new BigDecimal("0.001"));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         RedemptionTransaction updated = new RedemptionTransaction();
@@ -318,7 +318,7 @@ class RedemptionTransactionServiceTest {
         // 80000 * 0.001 / 100 = 0.80
         assertEquals(0, new BigDecimal("0.80").compareTo(result.getSttAmount()));
         assertEquals(0, new BigDecimal("79999.20").compareTo(result.getNetRedemptionValue()));
-        assertEquals(0, new BigDecimal("30000").compareTo(result.getCapitalGain()));
+        assertEquals(0, new BigDecimal("20000").compareTo(result.getCapitalGain()));
     }
 
     // ── deleteTransaction ──────────────────────────────────────────

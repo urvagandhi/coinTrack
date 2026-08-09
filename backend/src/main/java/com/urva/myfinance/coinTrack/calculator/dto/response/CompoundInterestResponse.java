@@ -7,8 +7,8 @@ import java.math.BigDecimal;
  */
 public record CompoundInterestResponse(
         BigDecimal principal,
-        BigDecimal maturityAmount,
+        BigDecimal totalAmount,
         BigDecimal totalInterest,
-        BigDecimal effectiveAnnualRate,
+        BigDecimal effectiveRate,
         Integer compoundingFrequency) {
 }

@@ -6,8 +6,9 @@ import java.math.BigDecimal;
  * Response DTO for Post Office Monthly Income Scheme (MIS) Calculator.
  */
 public record MisResponse(
-        BigDecimal principalAmount,
+        BigDecimal investmentAmount,
         BigDecimal monthlyIncome,
+        BigDecimal yearlyIncome,
         BigDecimal totalInterest,
         BigDecimal interestRate) {
 }

@@ -66,8 +66,8 @@ public class TradingCalculatorController {
             @Valid @RequestBody MarginRequest request,
             @RequestParam(defaultValue = "false") boolean debug) {
 
-        logger.info("Margin calculation: type={}, price={}, qty={}",
-                request.transactionType(), request.price(), request.quantity());
+        logger.info("Margin calculation: segmentType={}, tradeValue={}",
+                request.segmentType(), request.tradeValue());
         return ResponseEntity.ok(tradingService.calculateMargin(request, debug));
     }
 }

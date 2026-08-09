@@ -7,14 +7,14 @@ import java.util.List;
  * Response DTO for Retirement Planning Calculator.
  */
 public record RetirementResponse(
-        BigDecimal monthlyExpenseAtRetirement,
-        BigDecimal totalCorpusRequired,
-        BigDecimal additionalSavingsNeeded,
-        BigDecimal requiredMonthlySip,
+        BigDecimal expenseAtRetirement,
+        BigDecimal requiredCorpus,
+        BigDecimal additionalCorpusNeeded,
+        BigDecimal monthlySipRequired,
         Integer yearsToRetirement,
         Integer yearsInRetirement,
         BigDecimal longevityRiskBuffer,
-        BigDecimal currentSavingsFutureValue,
+        BigDecimal currentSavingsGrowth,
         List<YearlyProjection> yearlyProjection) {
     public record YearlyProjection(
             int year,

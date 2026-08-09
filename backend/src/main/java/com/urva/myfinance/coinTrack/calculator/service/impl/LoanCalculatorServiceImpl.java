@@ -111,9 +111,17 @@ public class LoanCalculatorServiceImpl implements LoanCalculatorService {
 
         BigDecimal savings = flatInterest.subtract(reducingInterest);
 
+        boolean reducingIsBetter = savings.compareTo(BigDecimal.ZERO) > 0;
+        
+        // Approximate effective reducing rate of the flat loan
+        // Rate = (2 * n * flatRate) / (n + 1)
+        BigDecimal effectiveReducingRate = request.annualRate()
+                .multiply(BigDecimal.valueOf(2L * request.months()))
+                .divide(BigDecimal.valueOf(request.months() + 1), 2, RoundingMode.HALF_EVEN);
+
         FlatVsReducingResponse result = new FlatVsReducingResponse(
                 request.principal(), reducingEmi, reducingInterest, reducingTotal,
-                flatEmi, flatInterest, flatTotal, savings);
+                flatEmi, flatInterest, flatTotal, savings, reducingIsBetter, effectiveReducingRate);
 
         CalculatorMetadata metadata = CalculatorMetadata.of("flat-vs-reducing", CATEGORY, List.of(
                 "Reducing balance method is typically cheaper than flat rate",

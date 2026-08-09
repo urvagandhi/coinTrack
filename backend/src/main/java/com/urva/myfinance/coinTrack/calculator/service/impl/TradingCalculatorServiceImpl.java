@@ -127,7 +127,7 @@ public class TradingCalculatorServiceImpl implements com.urva.myfinance.coinTrac
                 BigDecimal breakeven = buyValue.add(totalCharges).divide(request.quantity(), 2, RoundingMode.HALF_EVEN);
 
                 BrokerageResponse result = new BrokerageResponse(buyValue, sellValue, grossProfit, brokerage, stt,
-                                transactionCharges, gst, sebiCharges, stampDuty, totalCharges, netProfit, breakeven,
+                                transactionCharges, gst, sebiCharges, stampDuty, totalCharges, netProfit, breakeven, turnover,
                                 txnType);
                 return CalculatorResponse.success(CalculatorMetadata.of("brokerage", CATEGORY,
                                 List.of("Exchange: " + request.exchange())), result, null);
@@ -138,25 +138,27 @@ public class TradingCalculatorServiceImpl implements com.urva.myfinance.coinTrac
          */
         @SuppressWarnings("unchecked")
         public CalculatorResponse<MarginResponse> calculateMargin(MarginRequest request, boolean debug) {
-                BigDecimal totalValue = request.price().multiply(request.quantity());
+                BigDecimal tradeValue = request.tradeValue();
 
                 Map<String, Object> marginConf = (Map<String, Object>) configLoader.getDefaultAssumptions()
                                 .get("margin");
                 Double leverage = request.leverage() != null ? request.leverage().doubleValue()
                                 : configLoader.getValue(marginConf,
-                                                "defaultLeverage." + request.transactionType().toLowerCase());
+                                                "defaultLeverage." + request.segmentType().toLowerCase());
                 if (leverage == null)
                         leverage = 1.0;
 
                 BigDecimal varRate = BigDecimal.valueOf(configLoader.getValue(marginConf, "varMargin"));
                 BigDecimal elmRate = BigDecimal.valueOf(configLoader.getValue(marginConf, "elmMargin"));
 
-                BigDecimal requiredMargin = totalValue.divide(BigDecimal.valueOf(leverage), 2, RoundingMode.HALF_EVEN);
-                BigDecimal varMargin = totalValue.multiply(varRate).divide(HUNDRED, 2, RoundingMode.HALF_EVEN);
-                BigDecimal elmMargin = totalValue.multiply(elmRate).divide(HUNDRED, 2, RoundingMode.HALF_EVEN);
+                BigDecimal requiredMargin = tradeValue.divide(BigDecimal.valueOf(leverage), 2, RoundingMode.HALF_EVEN);
+                BigDecimal varMargin = tradeValue.multiply(varRate).divide(HUNDRED, 2, RoundingMode.HALF_EVEN);
+                BigDecimal elmMargin = tradeValue.multiply(elmRate).divide(HUNDRED, 2, RoundingMode.HALF_EVEN);
+                BigDecimal marginPercent = BigDecimal.valueOf(100.0 / leverage).setScale(2, RoundingMode.HALF_EVEN);
+                BigDecimal exposure = tradeValue;
 
-                MarginResponse result = new MarginResponse(totalValue, requiredMargin, BigDecimal.valueOf(leverage),
-                                varMargin, elmMargin);
+                MarginResponse result = new MarginResponse(tradeValue, requiredMargin, marginPercent, BigDecimal.valueOf(leverage),
+                                exposure, varMargin, elmMargin, BigDecimal.ZERO);
                 return CalculatorResponse.success(
                                 CalculatorMetadata.of("margin", CATEGORY, List.of("Leverage used: " + leverage + "x")),
                                 result, null);

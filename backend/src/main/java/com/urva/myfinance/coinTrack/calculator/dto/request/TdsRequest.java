@@ -14,5 +14,5 @@ public record TdsRequest(
         @NotNull(message = "Payment type is required") String paymentType, // e.g., "SALARY", "PROFESSIONAL_FEES",
                                                                            // "RENT"
 
-        boolean isPanAvailable) {
+        boolean panAvailable) {
 }

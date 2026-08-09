@@ -7,8 +7,8 @@ import java.math.BigDecimal;
  */
 public record ApyResponse(
         BigDecimal monthlyContribution,
-        BigDecimal totalInvestment,
-        BigDecimal maturityCorpus,
+        BigDecimal totalContribution,
+        BigDecimal corpusAmount,
         BigDecimal desiredPension,
-        Integer yearsToInvest) {
+        Integer contributionYears) {
 }

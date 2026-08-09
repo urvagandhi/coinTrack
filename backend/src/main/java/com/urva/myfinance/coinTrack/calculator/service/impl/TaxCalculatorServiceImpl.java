@@ -54,8 +54,6 @@ public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.ca
             "Consult a qualified tax professional for accurate tax planning.";
 
     private static final List<String> EXCLUSIONS = List.of(
-            "Surcharge (income > ₹50L)",
-            "Rebate u/s 87A",
             "Section 80C/80D deductions (unless input provided)",
             "Capital gains tax",
             "Professional tax");
@@ -133,7 +131,7 @@ public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.ca
                 "Calculated for FY 2024-25",
                 "Standard deduction: " + oldStandardDeduction + " (Old) / " + newStandardDeduction + " (New)",
                 "Includes 4% Health & Education Cess",
-                "Surcharge not included (applicable for income > ₹50L)"));
+                "Includes Surcharge and Marginal Relief calculations"));
 
         return CalculatorResponse.success(metadata, result, null);
     }
@@ -165,7 +163,7 @@ public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.ca
         String appliedRule = exemption.compareTo(rule1) == 0 ? "Actual HRA"
                 : exemption.compareTo(rule2) == 0 ? percentage + "% of basic" : "Rent minus 10%";
 
-        HraResponse result = new HraResponse(request.hraReceived(), exemption, taxableHra, rule1, rule2, rule3,
+        HraResponse result = new HraResponse(exemption, request.hraReceived(), rule2, rule3, taxableHra,
                 appliedRule);
         CalculatorMetadata metadata = CalculatorMetadata.of("hra", CATEGORY, List.of("Salary = Basic + DA"));
 
@@ -176,9 +174,9 @@ public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.ca
      * Calculate Net Take-Home Salary.
      */
     public CalculatorResponse<SalaryResponse> calculateSalary(SalaryRequest request, boolean debug) {
-        BigDecimal grossMonthly = request.basicSalary().add(request.hra())
-                .add(request.specialAllowance()).add(request.otherAllowances());
-        BigDecimal grossYearly = grossMonthly.multiply(BigDecimal.valueOf(12)).add(request.performanceBonus());
+        BigDecimal grossMonthly = request.basic().add(request.hra())
+                .add(request.specialAllowance()).add(request.lta());
+        BigDecimal grossYearly = grossMonthly.multiply(BigDecimal.valueOf(12));
 
         // Calculate Income Tax (Yearly)
         IncomeTaxRequest taxRequest = new IncomeTaxRequest(grossYearly, BigDecimal.ZERO, BigDecimal.ZERO,
@@ -188,19 +186,19 @@ public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.ca
                                                                          // calc
         BigDecimal monthlyTax = yearlyTax.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_EVEN);
 
-        BigDecimal totalMonthlyDeductions = request.epfContribution().add(request.professionalTax())
-                .add(request.otherDeductions()).add(monthlyTax);
+        BigDecimal totalMonthlyDeductions = request.pf().add(request.professionalTax())
+                .add(monthlyTax);
         BigDecimal netTakeHomeMonthly = grossMonthly.subtract(totalMonthlyDeductions);
 
         Map<String, BigDecimal> breakdown = new HashMap<>();
         breakdown.put("GrossMonthly", grossMonthly);
         breakdown.put("MonthlyTax", monthlyTax);
-        breakdown.put("EPF", request.epfContribution());
+        breakdown.put("EPF", request.pf());
         breakdown.put("ProfessionalTax", request.professionalTax());
 
-        SalaryResponse result = new SalaryResponse(grossMonthly, grossYearly, totalMonthlyDeductions,
-                totalMonthlyDeductions.multiply(BigDecimal.valueOf(12)), netTakeHomeMonthly,
-                netTakeHomeMonthly.multiply(BigDecimal.valueOf(12)), breakdown);
+        SalaryResponse result = new SalaryResponse(
+                netTakeHomeMonthly, grossMonthly, request.pf(), request.professionalTax(), monthlyTax,
+                grossYearly, netTakeHomeMonthly.multiply(BigDecimal.valueOf(12)));
 
         return CalculatorResponse.success(
                 CalculatorMetadata.of("salary", CATEGORY, List.of("Using New Regime for tax estimation")), result,
@@ -234,7 +232,7 @@ public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.ca
         BigDecimal gstAmount;
         BigDecimal originalAmount;
 
-        if (request.isGstInclusive()) {
+        if (request.isInclusive()) {
             // Factor = 1 + (rate/100)
             BigDecimal factor = BigDecimal.ONE.add(rate.divide(HUNDRED, 4, RoundingMode.HALF_EVEN));
             originalAmount = amount.divide(factor, 2, RoundingMode.HALF_EVEN);
@@ -248,7 +246,7 @@ public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.ca
         BigDecimal halfGst = gstAmount.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_EVEN);
 
         GstResponse result = new GstResponse(originalAmount, gstAmount, totalAmount, halfGst, halfGst, rate,
-                request.isGstInclusive());
+                request.isInclusive());
         return CalculatorResponse.success(CalculatorMetadata.of("gst", CATEGORY, List.of("CGST and SGST split 50:50")),
                 result, null);
     }
@@ -263,15 +261,14 @@ public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.ca
             rateValue = 10.0; // Default 10%
 
         BigDecimal rate = BigDecimal.valueOf(rateValue);
-        if (!request.isPanAvailable()) {
+        if (!request.panAvailable()) {
             rate = new BigDecimal("20"); // 20% if no PAN
         }
 
         BigDecimal tdsAmount = request.amount().multiply(rate).divide(HUNDRED, 2, RoundingMode.HALF_EVEN);
         BigDecimal netAmount = request.amount().subtract(tdsAmount);
 
-        TdsResponse result = new TdsResponse(request.amount(), tdsAmount, netAmount, rate, request.paymentType(),
-                "Section 194-xyz");
+        TdsResponse result = new TdsResponse(request.amount(), tdsAmount, netAmount, rate, request.paymentType(), BigDecimal.ZERO);
         return CalculatorResponse.success(
                 CalculatorMetadata.of("tds", CATEGORY, List.of("TDS rate depends on payment type")), result, null);
     }
@@ -287,30 +284,104 @@ public class TaxCalculatorServiceImpl implements com.urva.myfinance.coinTrack.ca
             slabData = (List<Map<String, Object>>) configLoader.getValue(slabsConfig, "regimes.NEW.slabs");
         }
 
-        BigDecimal totalTax = BigDecimal.ZERO;
+        BigDecimal baseTax = computeTaxFromSlabs(taxableIncome, slabData, new ArrayList<>());
+        
+        // 1. Rebate u/s 87A & Marginal Relief
+        Integer rebateLimitObj = configLoader.getValue(slabsConfig, "regimes." + regime + ".rebateLimit");
+        BigDecimal rebateLimit = rebateLimitObj != null ? BigDecimal.valueOf(rebateLimitObj) : BigDecimal.ZERO;
+        
+        BigDecimal taxAfterRebate = baseTax;
+        
+        if (taxableIncome.compareTo(rebateLimit) <= 0) {
+            taxAfterRebate = BigDecimal.ZERO;
+        } else if ("NEW".equals(regime)) {
+            // Marginal relief for 87A is ONLY applicable in the NEW regime
+            BigDecimal extraIncome = taxableIncome.subtract(rebateLimit);
+            // Tax cannot exceed the extra income earned above the rebate limit
+            if (baseTax.compareTo(extraIncome) > 0) {
+                taxAfterRebate = extraIncome;
+            }
+        }
+        
+        // 2. Surcharge & Surcharge Marginal Relief
+        List<Map<String, Object>> surchargeData = (List<Map<String, Object>>) configLoader.getValue(slabsConfig, "surcharge." + regime);
+        
+        BigDecimal surchargeRate = BigDecimal.ZERO;
+        BigDecimal surchargeThreshold = BigDecimal.ZERO;
+        
+        if (surchargeData != null) {
+            for (Map<String, Object> tier : surchargeData) {
+                Object limitObj = tier.get("limit");
+                BigDecimal limit = limitObj == null ? BigDecimal.valueOf(Long.MAX_VALUE) : BigDecimal.valueOf(((Number) limitObj).longValue());
+                if (taxableIncome.compareTo(limit) <= 0) {
+                    break;
+                }
+                surchargeThreshold = limit;
+                surchargeRate = BigDecimal.valueOf(((Number) tier.get("rate")).longValue());
+            }
+        }
+        
+        BigDecimal surchargeAmount = taxAfterRebate.multiply(surchargeRate).divide(HUNDRED, 0, RoundingMode.HALF_EVEN);
+        BigDecimal totalTaxBeforeCess = taxAfterRebate.add(surchargeAmount);
+        
+        // Surcharge Marginal relief
+        if (surchargeRate.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal taxAtThreshold = computeTaxFromSlabs(surchargeThreshold, slabData, null);
+            // Rebate is definitely 0 at surcharge threshold
+            
+            // Find surcharge rate at threshold
+            BigDecimal prevSurchargeRate = BigDecimal.ZERO;
+            for (Map<String, Object> tier : surchargeData) {
+                Object limitObj = tier.get("limit");
+                BigDecimal limit = limitObj == null ? BigDecimal.valueOf(Long.MAX_VALUE) : BigDecimal.valueOf(((Number) limitObj).longValue());
+                if (surchargeThreshold.compareTo(limit) <= 0) {
+                    break;
+                }
+                prevSurchargeRate = BigDecimal.valueOf(((Number) tier.get("rate")).longValue());
+            }
+            
+            BigDecimal surchargeAtThreshold = taxAtThreshold.multiply(prevSurchargeRate).divide(HUNDRED, 0, RoundingMode.HALF_EVEN);
+            BigDecimal totalTaxAtThreshold = taxAtThreshold.add(surchargeAtThreshold);
+            
+            BigDecimal extraIncomeAboveThreshold = taxableIncome.subtract(surchargeThreshold);
+            BigDecimal maxAllowedTax = totalTaxAtThreshold.add(extraIncomeAboveThreshold);
+            
+            if (totalTaxBeforeCess.compareTo(maxAllowedTax) > 0) {
+                totalTaxBeforeCess = maxAllowedTax;
+            }
+        }
+        
         List<SlabBreakdown> breakdown = new ArrayList<>();
+        // Re-compute slabs for breakdown only if needed
+        computeTaxFromSlabs(taxableIncome, slabData, breakdown);
+
+        return new TaxCalculation(totalTaxBeforeCess, breakdown);
+    }
+    
+    private BigDecimal computeTaxFromSlabs(BigDecimal taxableIncome, List<Map<String, Object>> slabData, List<SlabBreakdown> breakdown) {
+        BigDecimal totalTax = BigDecimal.ZERO;
         BigDecimal prevLimit = BigDecimal.ZERO;
 
         for (Map<String, Object> slab : slabData) {
             Object limitObj = slab.get("limit");
-            Integer rateInt = (Integer) slab.get("rate");
-            BigDecimal rate = BigDecimal.valueOf(rateInt);
-            BigDecimal limit = limitObj == null ? BigDecimal.valueOf(Integer.MAX_VALUE)
-                    : BigDecimal.valueOf((Integer) limitObj);
+            BigDecimal rate = BigDecimal.valueOf(((Number) slab.get("rate")).longValue());
+            BigDecimal limit = limitObj == null ? BigDecimal.valueOf(Long.MAX_VALUE)
+                    : BigDecimal.valueOf(((Number) limitObj).longValue());
 
             if (taxableIncome.compareTo(prevLimit) > 0) {
                 BigDecimal taxableInSlab = taxableIncome.min(limit).subtract(prevLimit).max(BigDecimal.ZERO);
                 if (taxableInSlab.compareTo(BigDecimal.ZERO) > 0) {
                     BigDecimal tax = taxableInSlab.multiply(rate).divide(HUNDRED, 0, RoundingMode.HALF_EVEN);
                     totalTax = totalTax.add(tax);
-                    String range = limitObj == null ? "Above ₹" + prevLimit : "₹" + prevLimit + " - ₹" + limit;
-                    breakdown.add(new SlabBreakdown(range, taxableInSlab, rate.intValue(), tax));
+                    if (breakdown != null) {
+                        String range = limitObj == null ? "Above ₹" + prevLimit : "₹" + prevLimit + " - ₹" + limit;
+                        breakdown.add(new SlabBreakdown(range, taxableInSlab, rate.intValue(), tax));
+                    }
                 }
             }
             prevLimit = limit;
         }
-
-        return new TaxCalculation(totalTax, breakdown);
+        return totalTax;
     }
 
     private record TaxCalculation(BigDecimal tax, List<SlabBreakdown> breakdown) {

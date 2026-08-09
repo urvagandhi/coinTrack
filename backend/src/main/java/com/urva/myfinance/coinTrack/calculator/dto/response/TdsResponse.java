@@ -8,8 +8,8 @@ import java.math.BigDecimal;
 public record TdsResponse(
         BigDecimal grossAmount,
         BigDecimal tdsAmount,
-        BigDecimal netAmount,
+        BigDecimal netPayment,
         BigDecimal tdsRate,
-        String paymentType,
-        String sectionalReference) {
+        String section,
+        BigDecimal threshold) {
 }

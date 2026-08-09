@@ -9,12 +9,9 @@ import jakarta.validation.constraints.NotNull;
  * Request DTO for Margin Calculator.
  */
 public record MarginRequest(
-        @NotNull(message = "Transaction type is required") String transactionType, // DELIVERY, INTRADAY, FUTURES,
-                                                                                   // OPTIONS
+        @NotNull(message = "Segment type is required") String segmentType, 
 
-        @NotNull(message = "Price is required") @DecimalMin(value = "0.01") BigDecimal price,
-
-        @NotNull(message = "Quantity is required") @DecimalMin(value = "1") BigDecimal quantity,
+        @NotNull(message = "Trade value is required") @DecimalMin(value = "0.01") BigDecimal tradeValue,
 
         BigDecimal leverage) {
 }

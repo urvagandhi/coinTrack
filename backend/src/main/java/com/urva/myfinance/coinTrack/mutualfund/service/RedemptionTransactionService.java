@@ -176,8 +176,11 @@ public class RedemptionTransactionService {
                         exitLoad = BigDecimal.ZERO;
                     }
                 }
-                transaction.setCapitalGain(
-                        transaction.getNetRedemptionValue().subtract(transaction.getTradeInvestmentValue()));
+                BigDecimal effectiveRedemptionForCG = transaction.getRedemptionValue();
+                if (transaction.getExitLoadDeducted() != null) {
+                    effectiveRedemptionForCG = effectiveRedemptionForCG.subtract(transaction.getExitLoadDeducted());
+                }
+                transaction.setCapitalGain(effectiveRedemptionForCG.subtract(transaction.getTradeInvestmentValue()));
                 logger.info("Calculated Capital Gain: {}", transaction.getCapitalGain());
             }
 
@@ -308,7 +311,11 @@ public class RedemptionTransactionService {
                         exitLoad = BigDecimal.ZERO;
                     }
                 }
-                existing.setCapitalGain(existing.getNetRedemptionValue().subtract(existing.getTradeInvestmentValue()));
+                BigDecimal effectiveRedemptionForCG = existing.getRedemptionValue();
+                if (existing.getExitLoadDeducted() != null) {
+                    effectiveRedemptionForCG = effectiveRedemptionForCG.subtract(existing.getExitLoadDeducted());
+                }
+                existing.setCapitalGain(effectiveRedemptionForCG.subtract(existing.getTradeInvestmentValue()));
             }
 
             if (fifoResult.ltcgUnits.compareTo(java.math.BigDecimal.ZERO) > 0

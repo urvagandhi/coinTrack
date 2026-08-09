@@ -236,9 +236,21 @@ public class SavingsCalculatorServiceImpl implements com.urva.myfinance.coinTrac
                                 .divide(HUNDRED, 10, RoundingMode.HALF_EVEN)
                                 .divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_EVEN);
 
+                BigDecimal totalInvestment = request.monthlyContribution().multiply(BigDecimal.valueOf(years * 12));
+                BigDecimal totalGains = corpus.subtract(totalInvestment);
+                
+                BigDecimal yearlyContribution = request.monthlyContribution().multiply(BigDecimal.valueOf(12));
+                BigDecimal cappedContribution = yearlyContribution.min(new BigDecimal("200000"));
+                BigDecimal yearlyTaxBenefit = cappedContribution.multiply(new BigDecimal("0.30"));
+
                 NpsResponse result = new NpsResponse(
-                                request.monthlyContribution().multiply(BigDecimal.valueOf(years * 12)),
-                                corpus, lumpSum, annuityAmt, monthlyPension,
+                                totalInvestment,
+                                corpus,
+                                totalGains,
+                                lumpSum,
+                                annuityAmt,
+                                monthlyPension,
+                                yearlyTaxBenefit,
                                 monthlyPension.multiply(BigDecimal.valueOf(25 * 12)), years, 25,
                                 request.expectedReturn());
                 return CalculatorResponse.success(
@@ -278,7 +290,7 @@ public class SavingsCalculatorServiceImpl implements com.urva.myfinance.coinTrac
                 BigDecimal totalInterest = quarterlyInterest.multiply(BigDecimal.valueOf(5 * 4)); // 5 years
 
                 ScssResponse result = new ScssResponse(request.investmentAmount(), quarterlyInterest, totalInterest,
-                                request.investmentAmount().add(totalInterest), rate);
+                                request.investmentAmount().add(totalInterest), rate, totalInterest);
                 return CalculatorResponse.success(CalculatorMetadata.of("scss", CATEGORY,
                                 List.of("Lock-in: 5 years", "Quarterly payout")), result, null);
         }
@@ -295,9 +307,10 @@ public class SavingsCalculatorServiceImpl implements com.urva.myfinance.coinTrac
                                 10, RoundingMode.HALF_EVEN);
                 BigDecimal monthlyIncome = request.investmentAmount().multiply(monthlyRate).setScale(2,
                                 RoundingMode.HALF_EVEN);
+                BigDecimal yearlyIncome = monthlyIncome.multiply(BigDecimal.valueOf(12));
                 BigDecimal totalInterest = monthlyIncome.multiply(BigDecimal.valueOf(5 * 12)); // 5 years
 
-                MisResponse result = new MisResponse(request.investmentAmount(), monthlyIncome, totalInterest, rate);
+                MisResponse result = new MisResponse(request.investmentAmount(), monthlyIncome, yearlyIncome, totalInterest, rate);
                 return CalculatorResponse.success(
                                 CalculatorMetadata.of("mis", CATEGORY, List.of("Lock-in: 5 years", "Monthly payout")),
                                 result, null);

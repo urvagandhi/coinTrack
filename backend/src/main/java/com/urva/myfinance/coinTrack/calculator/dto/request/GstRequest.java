@@ -13,5 +13,5 @@ public record GstRequest(
 
         @NotNull(message = "GST rate is required") BigDecimal gstRate,
 
-        @NotNull(message = "Please specify if amount is inclusive or exclusive of GST") Boolean isGstInclusive) {
+        @NotNull(message = "Please specify if amount is inclusive or exclusive of GST") Boolean isInclusive) {
 }

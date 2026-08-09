@@ -44,7 +44,7 @@ class SipContributionServiceTest {
     @Mock
     private MfNavService mfNavService;
     @Mock
-    private com.urva.myfinance.coinTrack.mutualfund.config.MfChargesConfig mfChargesConfig;
+    private com.urva.myfinance.coinTrack.config.StatutoryChargesConfig mfChargesConfig;
     @Mock
     private SettlementDateCalculator settlementDateCalculator;
     @Mock
@@ -85,7 +85,7 @@ class SipContributionServiceTest {
         when(settlementDateCalculator.calculateApplicableDate(any(), anyBoolean()))
                 .thenReturn(LocalDate.of(2025, 1, 1));
         when(settlementDateCalculator.calculateSettlementDate(any(), any())).thenReturn(LocalDate.of(2025, 1, 3));
-        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
     }
 
     // ── getContributions ───────────────────────────────────────────
@@ -145,7 +145,7 @@ class SipContributionServiceTest {
         when(sipMandateRepository.findById(MANDATE_ID)).thenReturn(Optional.of(sampleMandate));
         when(mfNavService.fetchNavForDate(eq("120503"), any())).thenReturn(new BigDecimal("10.0"));
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
-        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
 
         SipContribution result = service.createContribution(USER_ID, sampleContribution);
         assertEquals(USER_ID, result.getUserId());
@@ -172,7 +172,7 @@ class SipContributionServiceTest {
         when(sipMandateRepository.findById(MANDATE_ID)).thenReturn(Optional.of(sampleMandate));
         when(mfNavService.fetchNavForDate(eq("120503"), any())).thenReturn(new BigDecimal("500"));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
 
         SipContribution result = service.createContribution(USER_ID, sampleContribution);
 
@@ -236,7 +236,7 @@ class SipContributionServiceTest {
     void updateContribution_valid() {
         when(repository.findById(CONTRIB_ID)).thenReturn(Optional.of(sampleContribution));
         when(schemeRepository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
         SipContribution updated = new SipContribution();
         updated.setContributionDate(LocalDate.of(2025, 2, 1));
@@ -316,7 +316,7 @@ class SipContributionServiceTest {
         when(mfNavService.fetchNavForDate(sampleScheme.getAmfiCode(), app3)).thenReturn(new BigDecimal("120"));
 
         when(repository.existsBySipMandateIdAndContributionDateBetween(any(), any(), any())).thenReturn(false);
-        when(mfChargesConfig.getStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
+        when(mfChargesConfig.getMfStampDutyForDate(any())).thenReturn(BigDecimal.ZERO);
 
         int result = service.backfillMandate(mandate);
         assertEquals(3, result);

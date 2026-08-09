@@ -6,8 +6,8 @@ import java.math.BigDecimal;
  * Response DTO for NSC (National Savings Certificate) Calculator.
  */
 public record NscResponse(
-        BigDecimal principalAmount,
-        BigDecimal interestEarned,
+        BigDecimal investmentAmount,
+        BigDecimal totalInterest,
         BigDecimal maturityAmount,
         BigDecimal interestRate) {
 }
