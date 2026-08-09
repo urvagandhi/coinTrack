@@ -50,8 +50,8 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request -> request
 
-                        // Health
-                        .requestMatchers("/api/health", "/api/health/**", "/actuator/health", "/health").permitAll()
+                        // Health & Actuator
+                        .requestMatchers("/api/health", "/api/health/**", "/actuator", "/actuator/**", "/health").permitAll()
 
                         // Admin
                         // TODO: REMOVE THIS LATER

@@ -46,7 +46,7 @@ public class HealthController {
      */
     @Operation(summary = "Comprehensive health check")
     @GetMapping("/api/health")
-    public ResponseEntity<Map<String, Object>> health() {
+    public ResponseEntity<?> health(@org.springframework.web.bind.annotation.RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader) {
         Map<String, Object> response = new LinkedHashMap<>();
         Map<String, Object> checks = new LinkedHashMap<>();
         boolean isHealthy = true;
@@ -54,7 +54,7 @@ public class HealthController {
         try {
             // Basic service info
             response.put("service", "coinTrack");
-            response.put("version", "1.0.0");
+            response.put("version", "2.0.0");
             response.put("timestamp", Instant.now().toString());
             response.put("uptime", System.currentTimeMillis() - startTime);
 
@@ -76,6 +76,9 @@ public class HealthController {
 
             // Return appropriate HTTP status
             HttpStatus status = isHealthy ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE;
+            if (acceptHeader != null && acceptHeader.contains("text/html")) {
+                return ResponseEntity.status(status).contentType(org.springframework.http.MediaType.TEXT_HTML).body(generateHtml(response));
+            }
             return ResponseEntity.status(status).body(response);
 
         } catch (Exception e) {
@@ -83,8 +86,118 @@ public class HealthController {
             response.put("status", "DOWN");
             response.put("error", "Health check failed: " + e.getMessage());
             response.put("timestamp", Instant.now().toString());
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+            HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+            if (acceptHeader != null && acceptHeader.contains("text/html")) {
+                return ResponseEntity.status(status).contentType(org.springframework.http.MediaType.TEXT_HTML).body(generateHtml(response));
+            }
+            return ResponseEntity.status(status).body(response);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String generateHtml(Map<String, Object> response) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<!DOCTYPE html><html><head><title>CoinTrack Health</title>");
+        sb.append("<meta charset='utf-8'><style>");
+        sb.append("body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f4f7f6;color:#333;margin:0;padding:0;display:flex;height:100vh;} ");
+        sb.append(".sidebar{width:50%;background-color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px;position:fixed;height:100%;box-sizing:border-box;border-right:1px solid #eaeaea;} ");
+        sb.append(".sidebar img{max-width:250px;margin-bottom:30px;} ");
+        sb.append(".sidebar h1{font-size:2.5rem;color:#2c3e50;margin:0 0 15px 0;text-align:center;} ");
+        sb.append(".sidebar p{color:#7f8c8d;font-size:1.2rem;margin:0 0 40px 0;text-align:center;} ");
+        sb.append(".back-btn{padding:12px 30px;background-color:#007bff;color:#fff;text-decoration:none;border-radius:30px;font-size:1.1rem;font-weight:600;transition:all 0.2s;} ");
+        sb.append(".back-btn:hover{background-color:#0056b3;transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,123,255,0.3);} ");
+        sb.append(".main-content{margin-left:50%;width:50%;padding:60px;box-sizing:border-box;overflow-y:auto;background-color:#f4f7f6;} ");
+        sb.append(".dashboard-header{margin-bottom:40px;color:#2c3e50;font-size:2rem;} ");
+        sb.append(".card{background:#fff;border-radius:12px;padding:30px;box-shadow:0 4px 15px rgba(0,0,0,0.03);margin-bottom:30px;transition:transform 0.2s;} ");
+        sb.append(".card:hover{transform:translateY(-2px);} ");
+        sb.append("h2{color:#34495e;border-bottom:2px solid #f1f4f6;padding-bottom:12px;margin-top:0;font-size:1.4rem;} ");
+        sb.append("table{width:100%;border-collapse:collapse;} th,td{padding:12px 15px;text-align:left;border-bottom:1px solid #f8f9fa;font-size:1.05rem;} ");
+        sb.append("th{color:#7f8c8d;font-weight:600;width:35%;} td{color:#2c3e50;} ");
+        sb.append(".status-up{color:#27ae60;background:#eafaf1;padding:5px 12px;border-radius:20px;font-weight:bold;font-size:0.9rem;display:inline-block;} ");
+        sb.append(".status-down{color:#e74c3c;background:#fdedec;padding:5px 12px;border-radius:20px;font-weight:bold;font-size:0.9rem;display:inline-block;} ");
+        sb.append("ul{list-style-type:none;padding:0;margin:0;} li{margin-bottom:6px;} ");
+        sb.append("</style>");
+        sb.append("<script>");
+        sb.append("setInterval(function() {");
+        sb.append("  fetch('/api/health', { headers: { 'Accept': 'text/html' } })");
+        sb.append("    .then(response => response.text())");
+        sb.append("    .then(html => {");
+        sb.append("      const parser = new DOMParser();");
+        sb.append("      const doc = parser.parseFromString(html, 'text/html');");
+        sb.append("      const newContent = doc.querySelector('.main-content');");
+        sb.append("      if (newContent) {");
+        sb.append("        document.querySelector('.main-content').innerHTML = newContent.innerHTML;");
+        sb.append("      }");
+        sb.append("    });");
+        sb.append("}, 3000);"); // 3 seconds
+        sb.append("</script>");
+        sb.append("</head><body>");
+
+        // Sidebar
+        sb.append("<div class='sidebar'>");
+        sb.append("<img src='/favicon.ico' alt='CoinTrack Logo'/>");
+        sb.append("<h1>CoinTrack API</h1>");
+        sb.append("<p>Service Health Dashboard<br/>Version ").append(response.get("version")).append("</p>");
+        sb.append("<a href='/' class='back-btn'>&larr; Back to Home</a>");
+        sb.append("</div>");
+
+        // Main Content
+        sb.append("<div class='main-content'>");
+        sb.append("<h1 class='dashboard-header'>System Metrics</h1>");
+        
+        String mainStatus = String.valueOf(response.get("status"));
+        String statusClass = "UP".equals(mainStatus) ? "status-up" : "status-down";
+        
+        // General Info
+        sb.append("<div class='card'><h2>General Information</h2>");
+        sb.append("<table><tr><th>Service</th><td>").append(response.get("service")).append("</td></tr>");
+        sb.append("<tr><th>Overall Status</th><td><span class='").append(statusClass).append("'>").append(mainStatus).append("</span></td></tr>");
+        sb.append("<tr><th>Uptime (ms)</th><td>").append(response.get("uptime")).append("</td></tr>");
+        sb.append("<tr><th>Timestamp</th><td>").append(response.get("timestamp")).append("</td></tr></table></div>");
+        
+        // Dynamic Checks (Database, System, Application)
+        if (response.containsKey("checks")) {
+            Map<String, Object> checks = (Map<String, Object>) response.get("checks");
+            for (Map.Entry<String, Object> entry : checks.entrySet()) {
+                String sectionTitle = entry.getKey().substring(0, 1).toUpperCase() + entry.getKey().substring(1) + " Metrics";
+                sb.append("<div class='card'><h2>").append(sectionTitle).append("</h2>");
+                sb.append("<table>");
+                if (entry.getValue() instanceof Map) {
+                    Map<String, Object> details = (Map<String, Object>) entry.getValue();
+                    for (Map.Entry<String, Object> detail : details.entrySet()) {
+                        String key = detail.getKey().substring(0, 1).toUpperCase() + detail.getKey().substring(1);
+                        Object val = detail.getValue();
+                        if (val instanceof Map) {
+                            StringBuilder nested = new StringBuilder("<ul>");
+                            ((Map<String, Object>) val).forEach((k, v) -> {
+                                nested.append("<li><strong style='color:#7f8c8d;'>").append(k).append(":</strong> ").append(v).append("</li>");
+                            });
+                            nested.append("</ul>");
+                            sb.append("<tr><th>").append(key).append("</th><td>").append(nested).append("</td></tr>");
+                        } else {
+                            if ("status".equalsIgnoreCase(key) || "status".equalsIgnoreCase(detail.getKey())) {
+                                String sClass = "UP".equals(val) ? "status-up" : ("DOWN".equals(val) ? "status-down" : "");
+                                sb.append("<tr><th>").append(key).append("</th><td><span class='").append(sClass).append("'>").append(val).append("</span></td></tr>");
+                            } else {
+                                sb.append("<tr><th>").append(key).append("</th><td>").append(val).append("</td></tr>");
+                            }
+                        }
+                    }
+                } else {
+                    sb.append("<tr><th>Details</th><td>").append(entry.getValue()).append("</td></tr>");
+                }
+                sb.append("</table></div>");
+            }
+        }
+        
+        // Errors
+        if (response.containsKey("error")) {
+            sb.append("<div class='card' style='border-left: 5px solid #e74c3c;'><h2>🚨 Critical Error</h2><p style='color:#e74c3c;font-weight:bold;'>").append(response.get("error")).append("</p></div>");
+        }
+        
+        sb.append("</div>"); // close main-content
+        sb.append("</body></html>");
+        return sb.toString();
     }
 
     /**
