@@ -2,6 +2,7 @@ package com.urva.myfinance.coinTrack.calculator.service.impl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.urva.myfinance.coinTrack.calculator.config.CalculatorConfigLoader;
+import com.urva.myfinance.coinTrack.config.StatutoryChargesConfig;
 import com.urva.myfinance.coinTrack.calculator.dto.request.BrokerageRequest;
 import com.urva.myfinance.coinTrack.calculator.dto.request.MarginRequest;
 import com.urva.myfinance.coinTrack.calculator.dto.response.BrokerageResponse;
@@ -26,16 +28,12 @@ public class TradingCalculatorServiceImpl implements com.urva.myfinance.coinTrac
         private static final BigDecimal HUNDRED = new BigDecimal("100");
 
         private final CalculatorConfigLoader configLoader;
+        private final StatutoryChargesConfig statutoryConfig;
 
         @Autowired
-        public TradingCalculatorServiceImpl(CalculatorConfigLoader configLoader) {
+        public TradingCalculatorServiceImpl(CalculatorConfigLoader configLoader, StatutoryChargesConfig statutoryConfig) {
                 this.configLoader = configLoader;
-        }
-
-        private BigDecimal getCharge(String key) {
-                Map<String, Object> assumptions = configLoader.getDefaultAssumptions();
-                Double value = configLoader.getValue(assumptions, "brokerage.charges." + key);
-                return value != null ? BigDecimal.valueOf(value) : BigDecimal.ZERO;
+                this.statutoryConfig = statutoryConfig;
         }
 
         private BigDecimal getBrokerage(String broker, String type) {
@@ -60,18 +58,32 @@ public class TradingCalculatorServiceImpl implements com.urva.myfinance.coinTrac
                 BigDecimal stt;
                 BigDecimal stampDuty;
 
-                // Load charges from config
-                BigDecimal gstRate = getCharge("gst");
-                BigDecimal sebiChargesRate = getCharge("sebiCharges");
-                BigDecimal transChargeRate = getCharge("transactionCharges." + request.exchange().toLowerCase());
+                LocalDate now = LocalDate.now();
+                BigDecimal gstRate = statutoryConfig.getGst() != null ? statutoryConfig.getGst().getDefaultRate() : new BigDecimal("18");
+                BigDecimal sebiChargesRate = statutoryConfig.getEffectiveRate(statutoryConfig.getSebiCharges(), now);
+                
+                String segmentKey = switch (txnType) {
+                        case "DELIVERY", "INTRADAY" -> "cash";
+                        case "FUTURES" -> "futures";
+                        case "OPTIONS" -> "options";
+                        default -> "cash";
+                };
+                
+                BigDecimal transChargeRate = BigDecimal.ZERO;
+                if (statutoryConfig.getTransactionCharges() != null) {
+                        var exchangeCharges = statutoryConfig.getTransactionCharges().get(request.exchange().toLowerCase());
+                        if (exchangeCharges != null) {
+                                transChargeRate = statutoryConfig.getEffectiveRate(exchangeCharges.get(segmentKey), now);
+                        }
+                }
 
                 switch (txnType) {
                         case "DELIVERY" -> {
                                 brokerage = buyValue.add(sellValue).multiply(getBrokerage(broker, "equityDelivery"))
                                                 .divide(HUNDRED, 2, RoundingMode.HALF_EVEN);
-                                stt = buyValue.add(sellValue).multiply(getCharge("stt.delivery")).divide(HUNDRED, 2,
+                                stt = buyValue.add(sellValue).multiply(statutoryConfig.getEffectiveRate(statutoryConfig.getStt().getTrading().get("delivery"), now)).divide(HUNDRED, 2,
                                                 RoundingMode.HALF_EVEN);
-                                stampDuty = buyValue.multiply(getCharge("stampDuty.delivery")).divide(HUNDRED, 2,
+                                stampDuty = buyValue.multiply(statutoryConfig.getEffectiveRate(statutoryConfig.getStampDuty().getTrading().get("delivery"), now)).divide(HUNDRED, 2,
                                                 RoundingMode.HALF_EVEN);
                         }
                         case "INTRADAY" -> {
@@ -79,23 +91,23 @@ public class TradingCalculatorServiceImpl implements com.urva.myfinance.coinTrac
                                                 .multiply(getBrokerage(broker, "equityIntraday"))
                                                 .divide(HUNDRED, 2, RoundingMode.HALF_EVEN);
                                 brokerage = pBrokerage.min(BigDecimal.valueOf(40)); // Max Rs 20 per side
-                                stt = sellValue.multiply(getCharge("stt.intraday")).divide(HUNDRED, 2,
+                                stt = sellValue.multiply(statutoryConfig.getEffectiveRate(statutoryConfig.getStt().getTrading().get("intraday"), now)).divide(HUNDRED, 2,
                                                 RoundingMode.HALF_EVEN);
-                                stampDuty = buyValue.multiply(getCharge("stampDuty.intraday")).divide(HUNDRED, 2,
+                                stampDuty = buyValue.multiply(statutoryConfig.getEffectiveRate(statutoryConfig.getStampDuty().getTrading().get("intraday"), now)).divide(HUNDRED, 2,
                                                 RoundingMode.HALF_EVEN);
                         }
                         case "FUTURES" -> {
                                 brokerage = BigDecimal.valueOf(40);
-                                stt = sellValue.multiply(getCharge("stt.futuresSell")).divide(HUNDRED, 2,
+                                stt = sellValue.multiply(statutoryConfig.getEffectiveRate(statutoryConfig.getStt().getTrading().get("futuresSell"), now)).divide(HUNDRED, 2,
                                                 RoundingMode.HALF_EVEN);
-                                stampDuty = buyValue.multiply(getCharge("stampDuty.futures")).divide(HUNDRED, 2,
+                                stampDuty = buyValue.multiply(statutoryConfig.getEffectiveRate(statutoryConfig.getStampDuty().getTrading().get("futures"), now)).divide(HUNDRED, 2,
                                                 RoundingMode.HALF_EVEN);
                         }
                         case "OPTIONS" -> {
                                 brokerage = BigDecimal.valueOf(40);
-                                stt = sellValue.multiply(getCharge("stt.optionsSell")).divide(HUNDRED, 2,
+                                stt = sellValue.multiply(statutoryConfig.getEffectiveRate(statutoryConfig.getStt().getTrading().get("optionsSell"), now)).divide(HUNDRED, 2,
                                                 RoundingMode.HALF_EVEN);
-                                stampDuty = buyValue.multiply(getCharge("stampDuty.options")).divide(HUNDRED, 2,
+                                stampDuty = buyValue.multiply(statutoryConfig.getEffectiveRate(statutoryConfig.getStampDuty().getTrading().get("options"), now)).divide(HUNDRED, 2,
                                                 RoundingMode.HALF_EVEN);
                         }
                         default -> {
@@ -106,7 +118,7 @@ public class TradingCalculatorServiceImpl implements com.urva.myfinance.coinTrac
                 BigDecimal transactionCharges = turnover.multiply(transChargeRate).divide(HUNDRED, 2,
                                 RoundingMode.HALF_EVEN);
                 BigDecimal sebiCharges = turnover.multiply(sebiChargesRate).divide(HUNDRED, 2, RoundingMode.HALF_EVEN);
-                BigDecimal gst = brokerage.add(transactionCharges).multiply(gstRate).divide(HUNDRED, 2,
+                BigDecimal gst = brokerage.add(transactionCharges).add(sebiCharges).multiply(gstRate).divide(HUNDRED, 2,
                                 RoundingMode.HALF_EVEN);
 
                 BigDecimal totalCharges = brokerage.add(stt).add(transactionCharges).add(gst).add(sebiCharges)

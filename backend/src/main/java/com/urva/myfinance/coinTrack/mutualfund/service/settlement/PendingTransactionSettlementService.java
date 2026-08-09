@@ -1,6 +1,6 @@
 package com.urva.myfinance.coinTrack.mutualfund.service.settlement;
 
-import com.urva.myfinance.coinTrack.mutualfund.config.MfChargesConfig;
+import com.urva.myfinance.coinTrack.config.StatutoryChargesConfig;
 import com.urva.myfinance.coinTrack.mutualfund.model.*;
 import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
@@ -40,7 +40,7 @@ public class PendingTransactionSettlementService {
     @Autowired
     private PortfolioHoldingService portfolioHoldingService;
     @Autowired
-    private MfChargesConfig mfChargesConfig;
+    private StatutoryChargesConfig mfChargesConfig;
     @Autowired
     private MfFifoEngine fifoEngine;
 
@@ -152,7 +152,7 @@ public class PendingTransactionSettlementService {
 
                 if (t.getRedemptionValue() != null) {
                     if (MfCategoryHelper.isEquityOriented(scheme.getMfCategory())) {
-                        BigDecimal sttRate = mfChargesConfig.getSttRateForDate(t.getApplicableDate());
+                        BigDecimal sttRate = mfChargesConfig.getMfSttRateForDate(t.getApplicableDate());
                         if (sttRate != null && sttRate.compareTo(BigDecimal.ZERO) > 0) {
                             BigDecimal stt = t.getRedemptionValue().multiply(sttRate).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
                             t.setSttAmount(stt);

@@ -39,22 +39,6 @@ brokerage:
     currency: 20
     commodity: 20
 
-  charges:
-    stt:
-      delivery: 0.1             # 0.1% on buy and sell
-      intraday: 0.025           # 0.025% on sell side
-      futuresSell: 0.0125
-      optionsSell: 0.0625
-    transactionCharges:
-      nse: 0.00297              # NSE
-      bse: 0.00375              # BSE
-    gst: 18                     # 18% on brokerage + transaction charges
-    sebiCharges: 0.0001         # Rs 10 per crore
-    stampDuty:
-      delivery: 0.015           # 0.015% on buy side
-      intraday: 0.003
-      futures: 0.002
-      options: 0.003
 
 # Margin Calculation
 margin:
@@ -67,21 +51,6 @@ margin:
   varMargin: 12.5               # Typical VAR margin %
   elmMargin: 5.0                # Extreme Loss Margin %
   additionalMargin: 0           # Exchange-specific
-
-# GST Rates
-gst:
-  rates:
-    - rate: 0
-      description: "Essential goods"
-    - rate: 5
-      description: "Basic necessities"
-    - rate: 12
-      description: "Standard goods"
-    - rate: 18
-      description: "Most services and goods"
-    - rate: 28
-      description: "Luxury goods"
-  defaultRate: 18
 
 # TDS Rates
 tds:

@@ -1,6 +1,6 @@
 package com.urva.myfinance.coinTrack.mutualfund.service;
 
-import com.urva.myfinance.coinTrack.mutualfund.config.MfChargesConfig;
+import com.urva.myfinance.coinTrack.config.StatutoryChargesConfig;
 import com.urva.myfinance.coinTrack.mutualfund.model.LumpsumTransaction;
 import com.urva.myfinance.coinTrack.mutualfund.model.TransactionStatus;
 import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
@@ -37,7 +37,7 @@ public class LumpsumTransactionService {
     @Autowired
     private MfNavService mfNavService;
     @Autowired
-    private MfChargesConfig mfChargesConfig;
+    private StatutoryChargesConfig mfChargesConfig;
     @Autowired
     private SettlementDateCalculator settlementDateCalculator;
     @Autowired
@@ -103,7 +103,7 @@ public class LumpsumTransactionService {
             if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().isEmpty()) {
                 // Pre-deduct stamp duty
                 if (transaction.getLumpsumInvestment() != null) {
-                    BigDecimal stampDutyRate = mfChargesConfig.getStampDutyForDate(applicableDate);
+                    BigDecimal stampDutyRate = mfChargesConfig.getMfStampDutyForDate(applicableDate);
                     BigDecimal stampDutyAmount = transaction.getLumpsumInvestment()
                             .multiply(stampDutyRate)
                             .divide(new BigDecimal("100"), MfRoundingHelper.FIAT_PRECISION, RoundingMode.HALF_UP);
@@ -180,7 +180,7 @@ public class LumpsumTransactionService {
             if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().isEmpty()) {
                 // Force recalculation of net amount and stamp duty on every update
                 if (existing.getLumpsumInvestment() != null) {
-                    BigDecimal stampDutyRate = mfChargesConfig.getStampDutyForDate(applicableDate);
+                    BigDecimal stampDutyRate = mfChargesConfig.getMfStampDutyForDate(applicableDate);
                     BigDecimal stampDutyAmount = existing.getLumpsumInvestment()
                             .multiply(stampDutyRate)
                             .divide(new BigDecimal("100"), MfRoundingHelper.FIAT_PRECISION, RoundingMode.HALF_UP);

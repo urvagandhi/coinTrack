@@ -7,11 +7,12 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import com.urva.myfinance.coinTrack.config.YamlPropertySourceFactory;
 
 import lombok.Data;
 
 @Configuration
-@PropertySource("classpath:epf-rates.properties")
+@PropertySource(value = "classpath:configs/epf-rates.yml", factory = YamlPropertySourceFactory.class)
 @ConfigurationProperties(prefix = "epf")
 @Data
 public class EpfInterestRateConfig {

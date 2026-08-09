@@ -1,6 +1,6 @@
 package com.urva.myfinance.coinTrack.mutualfund.service;
 
-import com.urva.myfinance.coinTrack.mutualfund.config.MfChargesConfig;
+import com.urva.myfinance.coinTrack.config.StatutoryChargesConfig;
 import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
 import com.urva.myfinance.coinTrack.mutualfund.model.SipContribution;
 import com.urva.myfinance.coinTrack.mutualfund.model.SipMandate;
@@ -39,7 +39,7 @@ public class SipContributionService {
     @Autowired
     private MfNavService mfNavService;
     @Autowired
-    private MfChargesConfig mfChargesConfig;
+    private StatutoryChargesConfig mfChargesConfig;
     @Autowired
     private SettlementDateCalculator settlementDateCalculator;
     @Autowired
@@ -115,7 +115,7 @@ public class SipContributionService {
 
             if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().isEmpty()) {
                 if (contribution.getAmount() != null) {
-                    BigDecimal stampDutyRate = mfChargesConfig.getStampDutyForDate(applicableDate);
+                    BigDecimal stampDutyRate = mfChargesConfig.getMfStampDutyForDate(applicableDate);
                     BigDecimal stampDutyAmount = contribution.getAmount()
                             .multiply(stampDutyRate)
                             .divide(new BigDecimal("100"), MfRoundingHelper.FIAT_PRECISION, RoundingMode.HALF_UP);
@@ -179,7 +179,7 @@ public class SipContributionService {
 
             if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().isEmpty()) {
                 if (updatedContribution.getAmount() != null) {
-                    BigDecimal stampDutyRate = mfChargesConfig.getStampDutyForDate(applicableDate);
+                    BigDecimal stampDutyRate = mfChargesConfig.getMfStampDutyForDate(applicableDate);
                     BigDecimal stampDutyAmount = existing.getAmount()
                             .multiply(stampDutyRate)
                             .divide(new BigDecimal("100"), MfRoundingHelper.FIAT_PRECISION, RoundingMode.HALF_UP);
@@ -295,7 +295,7 @@ public class SipContributionService {
 
                     if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().isEmpty()) {
                         if (contribution.getAmount() != null) {
-                            BigDecimal stampDutyRate = mfChargesConfig.getStampDutyForDate(applicableDate);
+                            BigDecimal stampDutyRate = mfChargesConfig.getMfStampDutyForDate(applicableDate);
                             BigDecimal stampDutyAmount = contribution.getAmount()
                                     .multiply(stampDutyRate).divide(new BigDecimal("100"),
                                             MfRoundingHelper.FIAT_PRECISION, RoundingMode.HALF_UP);

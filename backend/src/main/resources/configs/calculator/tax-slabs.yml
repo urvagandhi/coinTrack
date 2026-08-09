@@ -2,8 +2,8 @@
 # Includes both FY 2024-25 and FY 2025-26 (Union Budget 2025)
 # Reference: Finance Act 2025
 
-assessmentYear: "2026-27"
-financialYear: "2025-26"
+assessmentYear: "2027-28"
+financialYear: "2026-27"
 
 regimes:
   NEW:
@@ -64,14 +64,26 @@ regimes:
 
 # Other taxes
 surcharge:
-  - limit: 5000000
-    rate: 0
-  - limit: 10000000
-    rate: 10
-  - limit: 20000000
-    rate: 15
-  - limit: null # Above 2cr
-    rate: 25 # Reduced from 37% in New Regime
+  NEW:
+    - limit: 5000000
+      rate: 0
+    - limit: 10000000
+      rate: 10
+    - limit: 20000000
+      rate: 15
+    - limit: null
+      rate: 25
+  OLD:
+    - limit: 5000000
+      rate: 0
+    - limit: 10000000
+      rate: 10
+    - limit: 20000000
+      rate: 15
+    - limit: 50000000
+      rate: 25
+    - limit: null
+      rate: 37
 
 cess: 4 # Health & Education Cess (4% on tax + surcharge)
 

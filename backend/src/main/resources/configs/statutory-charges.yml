@@ -1,0 +1,89 @@
+statutory:
+  stt:
+    mutualFunds:
+      equityRedemption:
+        - ratePercent: 0.001
+          effectiveDate: "2004-10-01"
+    trading:
+      delivery:
+        - ratePercent: 0.1
+          effectiveDate: "2004-10-01"
+      intraday:
+        - ratePercent: 0.025
+          effectiveDate: "2004-10-01"
+      futuresSell:
+        - ratePercent: 0.0125
+          effectiveDate: "2004-10-01"
+        - ratePercent: 0.02
+          effectiveDate: "2024-10-01"
+        - ratePercent: 0.05
+          effectiveDate: "2026-04-01"
+      optionsSell:
+        - ratePercent: 0.0625
+          effectiveDate: "2004-10-01"
+        - ratePercent: 0.1
+          effectiveDate: "2024-10-01"
+        - ratePercent: 0.15
+          effectiveDate: "2026-04-01"
+
+  stampDuty:
+    mutualFunds:
+      purchase:
+        - ratePercent: 0.000
+          effectiveDate: "2000-01-01"
+        - ratePercent: 0.005
+          effectiveDate: "2020-07-01"
+      dematTransfer:
+        - ratePercent: 0.015
+          effectiveDate: "2020-07-01"
+    trading:
+      delivery:
+        - ratePercent: 0.015
+          effectiveDate: "2020-07-01"
+      intraday:
+        - ratePercent: 0.003
+          effectiveDate: "2020-07-01"
+      futures:
+        - ratePercent: 0.002
+          effectiveDate: "2020-07-01"
+      options:
+        - ratePercent: 0.003
+          effectiveDate: "2020-07-01"
+
+  gst:
+    rates:
+      - rate: 0
+        description: "Essential goods"
+      - rate: 5
+        description: "Basic necessities"
+      - rate: 18
+        description: "Most services and goods"
+      - rate: 40
+        description: "Luxury goods (GST 2.0)"
+    defaultRate: 18
+
+  sebiCharges:
+    - ratePercent: 0.0001
+      effectiveDate: "2020-07-01"
+
+  transactionCharges:
+    nse:
+      cash:
+        - ratePercent: 0.00297
+          effectiveDate: "2024-10-01"
+      futures:
+        - ratePercent: 0.00173
+          effectiveDate: "2024-10-01"
+      options:
+        - ratePercent: 0.03503
+          effectiveDate: "2024-10-01"
+    bse:
+      cash:
+        - ratePercent: 0.00375
+          effectiveDate: "2024-10-01"
+      futures:
+        - ratePercent: 0.00000
+          effectiveDate: "2024-10-01"
+      options:
+        - ratePercent: 0.03250
+          effectiveDate: "2024-10-01"

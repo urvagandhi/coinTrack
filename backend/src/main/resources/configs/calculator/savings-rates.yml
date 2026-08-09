@@ -2,8 +2,8 @@
 # Last updated: Q3 FY 2024-25
 # These rates are updated quarterly by the government
 
-lastUpdated: "2024-10-01"
-quarter: "Q3 FY2024-25"
+lastUpdated: "2026-07-01"
+quarter: "Q2 FY2026-27"
 
 schemes:
   PPF:
@@ -118,10 +118,10 @@ fdRates:
       rate: 6.0
     - tenure: 366
       maxTenure: 730
-      rate: 6.5
+      rate: 6.45
     - tenure: 731
       maxTenure: 1825
-      rate: 6.25
+      rate: 6.20
 
 # Default RD rates
 rdRates:

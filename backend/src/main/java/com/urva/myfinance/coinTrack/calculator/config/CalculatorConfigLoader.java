@@ -33,9 +33,9 @@ public class CalculatorConfigLoader {
     public void loadConfigurations() {
         logger.info("Loading calculator configurations from resources...");
         try {
-            this.taxSlabs = loadYaml("calculator-config/tax-slabs.yml");
-            this.savingsRates = loadYaml("calculator-config/savings-rates.yml");
-            this.defaultAssumptions = loadYaml("calculator-config/default-assumptions.yml");
+            this.taxSlabs = loadYaml("configs/calculator/tax-slabs.yml");
+            this.savingsRates = loadYaml("configs/calculator/savings-rates.yml");
+            this.defaultAssumptions = loadYaml("configs/calculator/default-assumptions.yml");
             logger.info("Successfully loaded all calculator configurations");
         } catch (Exception e) {
             logger.error("Failed to load calculator configurations", e);

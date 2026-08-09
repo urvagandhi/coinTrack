@@ -10,7 +10,7 @@ import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipContributionRepository;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
 import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
-import com.urva.myfinance.coinTrack.mutualfund.config.MfChargesConfig;
+import com.urva.myfinance.coinTrack.config.StatutoryChargesConfig;
 import com.urva.myfinance.coinTrack.mutualfund.util.MfCategoryHelper;
 import com.urva.myfinance.coinTrack.mutualfund.service.settlement.SettlementDateCalculator;
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ public class RedemptionTransactionService {
     @Autowired
     private MfNavService mfNavService;
     @Autowired
-    private MfChargesConfig mfChargesConfig;
+    private StatutoryChargesConfig mfChargesConfig;
     @Autowired
     private MfFifoEngine fifoEngine;
     @Autowired
@@ -118,7 +118,7 @@ public class RedemptionTransactionService {
                     if (transaction.getRedemptionValue() != null) {
                         BigDecimal exitLoad = transaction.getExitLoadDeducted() != null ? transaction.getExitLoadDeducted() : BigDecimal.ZERO;
                         if (MfCategoryHelper.isEquityOriented(scheme.getMfCategory())) {
-                            BigDecimal sttRate = mfChargesConfig.getSttRateForDate(applicableDate);
+                            BigDecimal sttRate = mfChargesConfig.getMfSttRateForDate(applicableDate);
                             if (sttRate != null && sttRate.compareTo(BigDecimal.ZERO) > 0) {
                                 BigDecimal stt = transaction.getRedemptionValue().multiply(sttRate).divide(
                                         new BigDecimal("100"), MfRoundingHelper.FIAT_PRECISION,
@@ -260,7 +260,7 @@ public class RedemptionTransactionService {
                     if (existing.getRedemptionValue() != null) {
                         BigDecimal exitLoad = existing.getExitLoadDeducted() != null ? existing.getExitLoadDeducted() : BigDecimal.ZERO;
                         if (MfCategoryHelper.isEquityOriented(scheme.getMfCategory())) {
-                            BigDecimal sttRate = mfChargesConfig.getSttRateForDate(applicableDate);
+                            BigDecimal sttRate = mfChargesConfig.getMfSttRateForDate(applicableDate);
                             if (sttRate != null && sttRate.compareTo(BigDecimal.ZERO) > 0) {
                                 BigDecimal stt = existing.getRedemptionValue().multiply(sttRate).divide(
                                         new BigDecimal("100"), MfRoundingHelper.FIAT_PRECISION,

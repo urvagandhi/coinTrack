@@ -1,0 +1,32 @@
+epf:
+  interest-rates:
+    - financialYear: "2016-2017"
+      ratePercent: 8.65
+      effectiveDate: "2016-04-01"
+    - financialYear: "2017-2018"
+      ratePercent: 8.55
+      effectiveDate: "2017-04-01"
+    - financialYear: "2018-2019"
+      ratePercent: 8.65
+      effectiveDate: "2018-04-01"
+    - financialYear: "2019-2020"
+      ratePercent: 8.50
+      effectiveDate: "2019-04-01"
+    - financialYear: "2020-2021"
+      ratePercent: 8.50
+      effectiveDate: "2020-04-01"
+    - financialYear: "2021-2022"
+      ratePercent: 8.10
+      effectiveDate: "2021-04-01"
+    - financialYear: "2022-2023"
+      ratePercent: 8.15
+      effectiveDate: "2022-04-01"
+    - financialYear: "2023-2024"
+      ratePercent: 8.25
+      effectiveDate: "2023-04-01"
+    - financialYear: "2024-2025"
+      ratePercent: 8.25
+      effectiveDate: "2024-04-01"
+    - financialYear: "2025-2026"
+      ratePercent: 8.25
+      effectiveDate: "2025-04-01"
