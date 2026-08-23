@@ -269,7 +269,9 @@ public class UserAuthenticationService {
     public boolean isTokenValid(String token) {
         try {
             String username = jwtService.extractUsername(token);
-            return username != null && !jwtService.isTokenExpired(token);
+            // Delegate to JWTService so the invalidated-token blacklist check is applied
+            // identically on every path (closes the resolveUser step-3 fallback gap).
+            return username != null && jwtService.validateToken(token, username);
         } catch (Exception e) {
             return false;
         }
@@ -389,7 +391,9 @@ public class UserAuthenticationService {
         }
 
         String normalizedPhone = normalizePhoneNumber(request.getPhoneNumber());
-        if (userRepository.existsByPhoneNumber(normalizedPhone)) {
+        // Null/empty phone can never be "taken" (also guards existsByPhoneNumber(null)
+        // matching documents with a null phone field); pending registrations included.
+        if (userService.isPhoneNumberRegistered(normalizedPhone)) {
             throw new RuntimeException("Phone number is already registered.");
         }
 
@@ -428,13 +432,14 @@ public class UserAuthenticationService {
     private User findUserByUsernameEmailOrMobile(String identifier) {
         if (identifier == null || identifier.trim().isEmpty()) return null;
 
-        User user = userRepository.findByUsername(identifier);
+        String clean = identifier.trim();
+        User user = userRepository.findByUsername(clean);
         if (user != null) return user;
 
-        user = userRepository.findByEmail(identifier);
+        user = userRepository.findByEmail(clean.toLowerCase());
         if (user != null) return user;
 
-        String normalized = normalizePhoneNumber(identifier);
+        String normalized = normalizePhoneNumber(clean);
         if (normalized != null) {
             user = userRepository.findByPhoneNumber(normalized);
         }

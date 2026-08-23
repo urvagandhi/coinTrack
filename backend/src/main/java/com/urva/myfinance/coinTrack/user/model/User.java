@@ -33,7 +33,10 @@ public class User {
     private String username;
     private String name;
     private LocalDate dateOfBirth;
+    @Indexed(unique = true, sparse = true)
     private String email;
+
+    @Indexed(sparse = true)
     private String phoneNumber;
     private String bio;
     private String location;
@@ -89,6 +92,7 @@ public class User {
     private AuthProvider authProvider = AuthProvider.LOCAL;
 
     @JsonIgnore
+    @Indexed(unique = true, sparse = true)
     private String googleId;
 
     // ── Embedded Settings (replaces 3 separate collections) ─────────

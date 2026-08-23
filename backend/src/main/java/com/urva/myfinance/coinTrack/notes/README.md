@@ -675,3 +675,12 @@ import remarkGfm from 'remark-gfm';
 |---------|------|---------|
 | 2.0.0 | 2025-12-17 | Comprehensive rewrite with accurate code analysis |
 | 1.0.0 | 2025-12-14 | Initial documentation |
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/NotesUserDataCleanupListener.java` listens for common's `UserDeletedEvent` and
+deletes **all** notes owned by the deleted account via the newly added derived query
+`NoteRepository.deleteByUserId(String userId)`. Failures are logged and never abort the
+broader cleanup sweep.

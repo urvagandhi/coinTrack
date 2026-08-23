@@ -2,7 +2,7 @@
 
 > **Version**: 3.1.0
 > **Status**: Production-Ready
-> **Tech Stack**: Java 21, Spring Boot 3.5.5, MongoDB Atlas, Spring Security (JWT + TOTP 2FA)
+> **Tech Stack**: Java 21, Spring Boot 3.5.5, MongoDB Atlas, Spring Security (JWT + MFA MFA)
 > **Last Updated**: 2026-07-25
 
 ---
@@ -16,7 +16,7 @@
 5. [Folder Structure](#5-folder-structure)
 6. [Request Lifecycle](#6-request-lifecycle)
 7. [Authentication & Authorization](#7-authentication--authorization)
-8. [TOTP 2FA System](#8-totp-2fa-system)
+8. [MFA MFA System](#8-totp-2fa-system)
 9. [Broker Integration (Hexagonal)](#9-broker-integration-hexagonal)
 10. [Portfolio & Sync Architecture](#10-portfolio--sync-architecture)
 11. [Email System](#11-email-system)
@@ -56,7 +56,7 @@ CoinTrack solves this by acting as a **secure, normalizing middleware** between 
 | Feature | Description |
 |---------|-------------|
 | **Multi-Broker Support** | Zerodha, Upstox, AngelOne with unified API |
-| **TOTP 2FA** | Mandatory two-factor authentication for all users |
+| **MFA MFA** | Mandatory two-factor authentication for all users |
 | **Portfolio Aggregation** | Cross-broker holdings with unified P&L |
 | **Holdings-Only Summary** | Positions excluded for mathematical consistency |
 | **Encrypted Secrets** | AES-256-GCM encryption for all sensitive data |
@@ -104,7 +104,7 @@ graph TB
 
     subgraph CORE["Backend Core (13 Modules)"]
         direction TB
-        USER["USER<br/>Auth, Profile, TOTP"]
+        USER["USER<br/>Auth, Profile, MFA"]
         SECURITY["SECURITY<br/>JWT, Filters"]
         BROKER["BROKER<br/>Hexagonal Adapters"]
         PORTFOLIO["PORTFOLIO<br/>Aggregation, Sync"]
@@ -130,7 +130,7 @@ graph TB
 ```mermaid
 graph TD
     COMMON["common/<br/>utils, exceptions, config"] --> SECURITY["security/<br/>JWT, filters, config"]
-    COMMON --> USER["user/<br/>auth, profile, TOTP"]
+    COMMON --> USER["user/<br/>auth, profile, MFA"]
     COMMON --> EMAIL["email/<br/>Brevo, templates"]
     COMMON --> CALC["calculator/<br/>33 financial tools"]
 
@@ -169,7 +169,7 @@ Each module has its own comprehensive README documentation.
 | **goldsilver** | Gold & Silver investments, status scheduler, manual ledger | 800+ lines | [goldsilver/README.md](src/main/java/com/urva/myfinance/coinTrack/goldsilver/README.md) |
 | **mutualfund** | MF schemes, lumpsum/SIP/redemption ledgers, FIFO capital gains, aggregation | 500+ lines | [mutualfund/README.md](src/main/java/com/urva/myfinance/coinTrack/mutualfund/README.md) |
 | **security** | JWT auth, filter chain, token blacklist | 628 lines | [security/README.md](src/main/java/com/urva/myfinance/coinTrack/security/README.md) |
-| **user** | Registration, profile, TOTP 2FA, refresh tokens | 750+ lines | [user/README.md](src/main/java/com/urva/myfinance/coinTrack/user/README.md) |
+| **user** | Registration, profile, MFA MFA, refresh tokens | 750+ lines | [user/README.md](src/main/java/com/urva/myfinance/coinTrack/user/README.md) |
 
 ---
 
@@ -260,13 +260,13 @@ backend/src/main/java/com/urva/myfinance/coinTrack/
 │
 └── user/                            # User Management (750+ lines)
     ├── controller/
-    │   ├── AuthController.java      #   Login, register, TOTP, refresh
-    │   ├── TotpController.java      #   2FA setup, verify, reset
+    │   ├── AuthController.java      #   Login, register, MFA, refresh
+    │   ├── TotpController.java      #   MFA setup, verify, reset
     │   └── UserController.java      #   Profile, password, email change
-    ├── dto/                         #   9 DTOs (Login, Register, TOTP, etc.)
+    ├── dto/                         #   9 DTOs (Login, Register, MFA, etc.)
     ├── model/
-    │   ├── User.java                #   16+ fields incl. TOTP + rate limiting
-    │   ├── BackupCode.java          #   One-time 2FA recovery codes
+    │   ├── User.java                #   16+ fields incl. MFA + rate limiting
+    │   ├── BackupCode.java          #   One-time MFA recovery codes
     │   ├── PendingRegistration.java #   Email verification queue
     │   └── RefreshToken.java        #   JWT refresh token persistence
     ├── repository/                  #   4 repositories (User, BackupCode, Pending, Refresh)
@@ -312,7 +312,7 @@ sequenceDiagram
 
 ## 7. Authentication & Authorization
 
-Security is stateless and JWT-based with mandatory TOTP 2FA.
+Security is stateless and JWT-based with mandatory MFA MFA.
 
 ### Components
 
@@ -329,7 +329,7 @@ Security is stateless and JWT-based with mandatory TOTP 2FA.
 ```mermaid
 stateDiagram-v2
     [*] --> Unauthenticated
-    Unauthenticated --> Active: Login + 2FA verified
+    Unauthenticated --> Active: Login + MFA verified
     Active --> Expired: Token TTL expires
     Active --> Blacklisted: POST /api/auth/logout
     Expired --> Active: POST /api/auth/refresh
@@ -347,37 +347,37 @@ stateDiagram-v2
 
 ---
 
-## 8. TOTP 2FA System
+## 8. MFA MFA System
 
-CoinTrack enforces **mandatory TOTP 2FA** for all users.
+CoinTrack enforces **mandatory MFA MFA** for all users.
 
 ### Components
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| **AuthController** | `user/controller/AuthController.java` | Registration + login TOTP flows |
-| **TotpController** | `user/controller/TotpController.java` | 2FA setup, verify, reset |
+| **AuthController** | `user/controller/AuthController.java` | Registration + login MFA flows |
+| **TotpController** | `user/controller/TotpController.java` | MFA setup, verify, reset |
 | **TotpService** | `user/service/TotpService.java` | 361 lines, 14 methods |
 | **BackupCode** | `user/model/BackupCode.java` | One-time recovery codes |
 
-### TOTP Flow
+### MFA Flow
 
 ```mermaid
 flowchart TD
     subgraph REG["Registration (New Users)"]
-        R1["1. POST /api/auth/register"] -->|"tempToken"| R2["2. POST /api/auth/2fa/register/setup"]
+        R1["1. POST /api/auth/register"] -->|"tempToken"| R2["2. POST /api/auth/mfa/register/setup"]
         R2 -->|"qrCode, secret"| R3["3. User scans QR in authenticator"]
-        R3 --> R4["4. POST /api/auth/2fa/register/verify"]
+        R3 --> R4["4. POST /api/auth/mfa/register/verify"]
         R4 -->|"JWT + backupCodes"| R5["5. User saved, authenticated"]
     end
 
     subgraph LOGIN["Login (Existing Users)"]
-        L1["1. POST /api/auth/login"] -->|"requiresOtp: true, tempToken"| L2["2. POST /api/auth/login/totp"]
+        L1["1. POST /api/auth/login"] -->|"requiresOtp: true, tempToken"| L2["2. POST /api/auth/mfa/login"]
         L2 -->|"JWT + refreshToken"| L3["Authenticated"]
     end
 
     subgraph REC["Recovery (Lost Authenticator)"]
-        RC1["1. POST /api/auth/login"] -->|"tempToken"| RC2["2. POST /api/auth/login/recovery"]
+        RC1["1. POST /api/auth/login"] -->|"tempToken"| RC2["2. POST /api/auth/mfa/email-recovery"]
         RC2 -->|"uses one-time backup code"| RC3["Authenticated"]
     end
 
@@ -393,7 +393,7 @@ flowchart TD
 | **Secret Encryption** | AES-256-GCM via `EncryptionUtil` |
 | **Backup Codes** | 10 codes, BCrypt hashed, one-time use |
 | **Rate Limiting** | 5 failed attempts → 15-minute lockout |
-| **Temp Tokens** | 5-minute expiry for TOTP verification |
+| **Temp Tokens** | 5-minute expiry for MFA verification |
 | **Refresh Tokens** | Persisted in MongoDB, rotated on use |
 
 ---
@@ -599,7 +599,7 @@ graph TD
 graph TD
     subgraph Callers["Calling Modules"]
         USER["User Module<br/>(registration, profile)"]
-        SEC["Security Module<br/>(password reset, 2FA recovery)"]
+        SEC["Security Module<br/>(password reset, MFA recovery)"]
     end
 
     subgraph Email["Email Module"]
@@ -626,7 +626,7 @@ graph TD
 | `reset-password.html` | Forgot password | Yes (10 min expiry) |
 | `change-email.html` | Email update | Yes (10 min expiry) |
 | `2fa-recovery.html` | Lost authenticator | Yes (10 min expiry) |
-| `security-alert.html` | Password/2FA/email change | No |
+| `security-alert.html` | Password/MFA/email change | No |
 | `contact-form.html` | Public contact form | No |
 
 ### Controllers (6)
@@ -865,7 +865,7 @@ graph LR
 | `PortfolioSummaryServiceImpl.java` | P&L calculation, LTP enrichment | 1,500+ |
 | `ZerodhaBrokerAdapter.java` | Complete Zerodha integration | 400+ |
 | `PortfolioSyncServiceImpl.java` | Sync orchestration | 500+ |
-| `TotpService.java` | 2FA logic, 14 methods | 361 |
+| `TotpService.java` | MFA logic, 14 methods | 361 |
 | `UserAuthenticationService.java` | Login, token management | 300+ |
 | `FinancialMath.java` | Calculator math facade | 500+ |
 
@@ -874,7 +874,7 @@ graph LR
 | Collection | Module | Purpose |
 |-----------|--------|---------|
 | `users` | user | User accounts (incl. **embedded** `EpfSettingsEmbed`, `PpfSettingsEmbed`, `MetalRateSettingsEmbed`) |
-| `backup_codes` | user | 2FA recovery codes |
+| `backup_codes` | user | MFA recovery codes |
 | `pending_registrations` | user | Email verification queue |
 | `refresh_tokens` | user | JWT refresh sessions |
 | `broker_accounts` | broker | Broker connection state |

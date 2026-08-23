@@ -13,4 +13,6 @@ import com.urva.myfinance.coinTrack.epf.model.EpfTransaction;
 public interface EpfTransactionRepository extends MongoRepository<EpfTransaction, String> {
     List<EpfTransaction> findByUserId(String userId, Sort sort);
     Optional<EpfTransaction> findByIdAndUserId(String id, String userId);
+
+    void deleteByUserId(String userId);
 }

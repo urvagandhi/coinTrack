@@ -63,3 +63,12 @@ Base path: `/api/epf` (JWT authenticated)
 | GET / PUT / DELETE | `/api/epf/transactions/{id}` | Single transaction operations (edits/deletes trigger balance recalculation) |
 | GET | `/api/epf/summary` | Dashboard summary metrics (EPF & EPS balances, totals, live accrued interest, tax flag) |
 | GET | `/api/epf/export` | Export filtered transactions to styled Excel (XLSX) with perfect UI-parity |
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/EpfUserDataCleanupListener.java` listens for common's `UserDeletedEvent` and
+deletes **all** EPF ledger transactions via the newly added
+`EpfTransactionRepository.deleteByUserId(String)`. EPF settings are embedded in the user
+document and are removed with the account itself.

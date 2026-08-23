@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
 import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
+import com.urva.myfinance.coinTrack.user.dto.UpdateProfileRequest;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.service.UserService;
 
@@ -110,27 +111,25 @@ class UserControllerTest {
     @DisplayName("updateCurrentUser: valid updates → 200")
     void updateCurrentUser_valid_returns200() {
         when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        User updates = new User();
-        updates.setName("Updated Name");
-        updates.setBio("New bio");
-        updates.setLocation("Mumbai");
+        UpdateProfileRequest updates = new UpdateProfileRequest(null, "Updated Name", null, null, null, "New bio", "Mumbai");
         User updated = User.builder()
                 .id("u1").name("Updated Name").bio("New bio").location("Mumbai")
                 .password("encoded").build();
-        when(userService.updateUser("u1", updates)).thenReturn(updated);
+        when(userService.updateUser(org.mockito.ArgumentMatchers.eq("u1"), org.mockito.ArgumentMatchers.any(User.class)))
+                .thenReturn(updated);
 
         ResponseEntity<?> response = userController.updateCurrentUser(authentication, updates);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNull(updated.getPassword());
     }
 
     @Test
     @DisplayName("updateCurrentUser: user not found → 404")
     void updateCurrentUser_notFound_returns404() {
         when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        User updates = new User();
-        when(userService.updateUser("u1", updates)).thenReturn(null);
+        UpdateProfileRequest updates = new UpdateProfileRequest(null, null, null, null, null, null, null);
+        when(userService.updateUser(org.mockito.ArgumentMatchers.eq("u1"), org.mockito.ArgumentMatchers.any(User.class)))
+                .thenReturn(null);
 
         ResponseEntity<?> response = userController.updateCurrentUser(authentication, updates);
 
@@ -141,8 +140,9 @@ class UserControllerTest {
     @DisplayName("updateCurrentUser: illegal arg → 400")
     void updateCurrentUser_illegalArg_returns400() {
         when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        User updates = new User();
-        when(userService.updateUser("u1", updates)).thenThrow(new IllegalArgumentException("Invalid data"));
+        UpdateProfileRequest updates = new UpdateProfileRequest(null, null, null, null, null, null, null);
+        when(userService.updateUser(org.mockito.ArgumentMatchers.eq("u1"), org.mockito.ArgumentMatchers.any(User.class)))
+                .thenThrow(new IllegalArgumentException("Invalid data"));
 
         ResponseEntity<?> response = userController.updateCurrentUser(authentication, updates);
 

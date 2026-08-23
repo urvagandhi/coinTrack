@@ -20,4 +20,6 @@ public interface CanonicalPositionRepository extends MongoRepository<CanonicalPo
         String userId, String brokerAccountId, String symbol, InstrumentType instrumentType);
 
     void deleteByUserIdAndBrokerType(String userId, Broker brokerType);
+
+    void deleteByUserId(String userId);
 }

@@ -518,7 +518,7 @@ class UserAuthenticationServiceTest {
     @DisplayName("isTokenValid: valid token → true")
     void isTokenValid_validToken_true() {
         when(jwtService.extractUsername("tok")).thenReturn("user");
-        when(jwtService.isTokenExpired("tok")).thenReturn(false);
+        when(jwtService.validateToken("tok", "user")).thenReturn(true);
         assertTrue(authService.isTokenValid("tok"));
     }
 

@@ -58,16 +58,29 @@ public class TotpService {
     @Value("${totp.encryption-key}")
     private String totpEncryptionKey;
 
+    /** Allowed adjacent-period drift when verifying codes (default 1). */
+    @Value("${totp.window:1}")
+    private int totpWindow;
+
+    /** Backup codes generated per secret version (default 10). */
+    @Value("${totp.max-backup-codes:10}")
+    private int maxBackupCodes;
+
     private final SecretGenerator secretGenerator = new DefaultSecretGenerator();
     private final TimeProvider timeProvider = new SystemTimeProvider();
     private final CodeGenerator codeGenerator = new DefaultCodeGenerator();
-    private final CodeVerifier codeVerifier = new DefaultCodeVerifier(codeGenerator, timeProvider);
+    private final DefaultCodeVerifier codeVerifier = new DefaultCodeVerifier(codeGenerator, timeProvider);
     private final QrGenerator qrGenerator = new ZxingPngQrGenerator();
     private final SecureRandom secureRandom = new SecureRandom();
 
     public TotpService(UserRepository userRepository, BackupCodeRepository backupCodeRepository) {
         this.userRepository = userRepository;
         this.backupCodeRepository = backupCodeRepository;
+    }
+
+    @jakarta.annotation.PostConstruct
+    void applyTotpSettings() {
+        codeVerifier.setAllowedTimePeriodDiscrepancy(totpWindow);
     }
 
     // ── Encrypt / Decrypt helpers using shared EncryptionUtil ────────
@@ -116,6 +129,10 @@ public class TotpService {
 
         int newVersion = user.getTotpSecretVersion() + 1;
         user.setTotpSecretVersion(newVersion);
+
+        // Rotation: fully remove the previous generation's codes (Part 1 contract:
+        // "ROTATED (old backup codes deleted)") instead of leaving inert rows.
+        backupCodeRepository.deleteByUserIdAndGeneration(user.getId(), newVersion - 1);
 
         userRepository.save(user);
 
@@ -279,7 +296,7 @@ public class TotpService {
         List<String> plainCodes = new ArrayList<>();
         List<BackupCode> hashedCodes = new ArrayList<>();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < maxBackupCodes; i++) {
             String code = String.format("%08d", secureRandom.nextInt(100000000));
             plainCodes.add(code);
 
@@ -298,7 +315,7 @@ public class TotpService {
 
     private List<String> generatePlaintextBackupCodes() {
         List<String> codes = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < maxBackupCodes; i++) {
             codes.add(String.format("%08d", secureRandom.nextInt(100000000)));
         }
         return codes;

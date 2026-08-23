@@ -46,6 +46,9 @@ class TotpServiceTest {
     void setUp() {
         ReflectionTestUtils.setField(totpService, "issuer", "CoinTrack");
         ReflectionTestUtils.setField(totpService, "totpEncryptionKey", "12345678901234567890123456789012");
+        ReflectionTestUtils.setField(totpService, "totpWindow", 1);
+        ReflectionTestUtils.setField(totpService, "maxBackupCodes", 10);
+        totpService.applyTotpSettings();
 
         sampleUser = User.builder()
                 .id("u1")
@@ -116,6 +119,8 @@ class TotpServiceTest {
         assertEquals(0, sampleUser.getTotpFailedAttempts());
         assertNull(sampleUser.getTotpLockedUntil());
         verify(backupCodeRepository).saveAll(anyList());
+        // Rotation must purge the previous generation's codes entirely
+        verify(backupCodeRepository).deleteByUserIdAndGeneration("u1", 1);
     }
 
     // ── verifyLogin ────────────────────────────────────────────────

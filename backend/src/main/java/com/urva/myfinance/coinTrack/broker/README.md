@@ -36,7 +36,7 @@
 The Broker module handles all integrations with external trading platforms. It serves as the **Data Transport Layer** that:
 
 - Connects to broker APIs (Zerodha, Angel One, Upstox)
-- Handles authentication (OAuth 2.0, TOTP)
+- Handles authentication (OAuth 2.0, MFA)
 - Fetches financial data without altering its truth
 - Provides uniform DTO outputs regardless of broker
 
@@ -81,7 +81,7 @@ The Broker module handles all integrations with external trading platforms. It s
 | Broker | Status | OAuth Type | Implementation |
 |--------|--------|------------|----------------|
 | **Zerodha Kite** | ✅ Production | OAuth 2.0 (3-legged) | `adapters/zerodha/ZerodhaBrokerAdapter` |
-| **Angel One** | ✅ Complete (no MF API) | API key + TOTP (no OAuth redirect) | `adapters/angelone/AngelOneBrokerAdapter` |
+| **Angel One** | ✅ Complete (no MF API) | API key + MFA (no OAuth redirect) | `adapters/angelone/AngelOneBrokerAdapter` |
 | **Upstox** | ✅ Complete (no MF API) | OAuth 2.0 (per-user redirectUri) | `adapters/upstox/UpstoxBrokerAdapter` |
 
 ---
@@ -244,7 +244,7 @@ broker/
 | `/zerodha/credentials` | POST | Save Zerodha API key/secret |
 | `/upstox/credentials` | POST | Save Upstox apiKey/secret/redirectUri |
 | `/angelone/credentials` | POST | Save Angel One credentials |
-| `/angelone/connect` | POST | Angel One connect (no OAuth redirect — TOTP-based) |
+| `/angelone/connect` | POST | Angel One connect (no OAuth redirect — MFA-based) |
 | `/angelone/disconnect` | POST | Remove Angel One connection |
 | `/callback` | POST | Exchange request_token for access_token |
 | `/zerodha/callback` | GET | Zerodha callback handler |
@@ -402,7 +402,7 @@ Before calling any fetch, `BrokerCapabilityChecker` verifies the adapter declare
 | Adapter | Notes |
 |---|---|
 | `adapters/zerodha/ZerodhaBrokerAdapter.java` | Full Kite Connect integration via WebClient: holdings, positions (intraday/F&O/overnight), funds, orders/trades, MF holdings/orders/SIPs, live quotes. Token exchange at `/session/token`. |
-| `adapters/angelone/AngelOneBrokerAdapter.java` | SmartAPI: holdings, positions, funds, order/trade history. No OAuth redirect — credentials + TOTP based. |
+| `adapters/angelone/AngelOneBrokerAdapter.java` | SmartAPI: holdings, positions, funds, order/trade history. No OAuth redirect — credentials + MFA based. |
 | `adapters/upstox/UpstoxBrokerAdapter.java` | Upstox v2 OAuth with per-user stored `redirectUri`: holdings, positions, funds, order/trade history. |
 
 ### 7.5 Connection Services
@@ -481,7 +481,7 @@ Before calling any fetch, `BrokerCapabilityChecker` verifies the adapter declare
 │                                                                         │
 │  STEP 3: User logs in at Zerodha (in browser)                          │
 │  ───────────────────────────────────────────                            │
-│  User enters credentials + TOTP at Zerodha                              │
+│  User enters credentials + MFA at Zerodha                              │
 │  Zerodha redirects to callback URL with request_token                   │
 │                                                                         │
 │  STEP 4: Callback redirect                                              │
@@ -658,3 +658,11 @@ String decrypted = encryptionUtil.decrypt(account.getEncryptedZerodhaApiSecret()
 |---------|------|---------|
 | 2.0.0 | 2025-12-17 | Comprehensive rewrite with accurate structure |
 | 1.0.0 | 2025-12-14 | Initial documentation |
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/BrokerUserDataCleanupListener.java` listens for common's `UserDeletedEvent` and
+deletes **all** broker accounts — including stored API credentials and encrypted access
+tokens — via the newly added derived query `BrokerAccountRepository.deleteByUserId(String)`.

@@ -22,4 +22,6 @@ public interface RefreshTokenRepository extends MongoRepository<RefreshToken, St
     @Query("{ 'userId': ?0, 'revoked': false }")
     @Update("{ '$set': { 'revoked': true } }")
     void revokeAllByUserId(String userId);
+
+    void deleteByUserId(String userId);
 }

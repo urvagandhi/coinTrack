@@ -47,6 +47,7 @@ class UserServiceTest {
     @Mock private EmailService emailService;
     @Mock private EmailTokenService emailTokenService;
     @Mock private EmailConfigProperties emailConfig;
+    @Mock private com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository invalidatedTokenRepository;
 
     @InjectMocks private UserService userService;
 
@@ -221,15 +222,6 @@ class UserServiceTest {
         verify(noteService).createDefaultNotesIfNoneExist("u1");
     }
 
-    // ── getAllUsers ─────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("getAllUsers: delegates to repository")
-    void getAllUsers_delegates() {
-        when(userRepository.findAll()).thenReturn(List.of(sampleUser));
-        assertEquals(1, userService.getAllUsers().size());
-    }
-
     // ── getUserById ────────────────────────────────────────────────
 
     @Test
@@ -349,7 +341,7 @@ class UserServiceTest {
         when(userRepository.findById("u1")).thenReturn(Optional.of(sampleUser));
         User updates = new User();
         updates.setPhoneNumber("9999999999");
-        when(userRepository.findByPhoneNumber("+919999999999")).thenReturn(User.builder().build());
+        when(userRepository.existsByPhoneNumber("+919999999999")).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () -> userService.updateUser("u1", updates));
     }
 

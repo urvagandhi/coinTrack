@@ -14,10 +14,12 @@ import javax.crypto.SecretKey;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.urva.myfinance.coinTrack.common.util.HashUtil;
+import com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository;
 import com.urva.myfinance.coinTrack.user.model.RefreshToken;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.RefreshTokenRepository;
@@ -51,14 +53,17 @@ public class JWTService {
     private final String secretKey;
     private final Key cachedKey;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final InvalidatedTokenRepository invalidatedTokenRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public record TokenPair(String accessToken, String refreshToken) {}
 
     public JWTService(@Value("${jwt.secret}") String secret,
-                      RefreshTokenRepository refreshTokenRepository) {
+                      RefreshTokenRepository refreshTokenRepository,
+                      @Autowired(required = false) InvalidatedTokenRepository invalidatedTokenRepository) {
         this.secretKey = Base64.getEncoder().encodeToString(secret.getBytes());
         this.refreshTokenRepository = refreshTokenRepository;
+        this.invalidatedTokenRepository = invalidatedTokenRepository;
         this.cachedKey = computeKey();
     }
 
@@ -202,6 +207,12 @@ public class JWTService {
 
     public boolean isValidTempToken(String token, String expectedPurpose) {
         try {
+            if (invalidatedTokenRepository != null && token != null) {
+                String tokenHash = HashUtil.sha256(token);
+                if (invalidatedTokenRepository.existsByTokenHash(tokenHash)) {
+                    return false;
+                }
+            }
             String purpose = extractPurpose(token);
             String username = extractUsername(token);
             return purpose != null && purpose.equals(expectedPurpose)
@@ -233,6 +244,12 @@ public class JWTService {
 
     public boolean validateToken(String token, String expectedUsername) {
         try {
+            if (invalidatedTokenRepository != null && token != null) {
+                String tokenHash = HashUtil.sha256(token);
+                if (invalidatedTokenRepository.existsByTokenHash(tokenHash)) {
+                    return false;
+                }
+            }
             String username = extractUsername(token);
             return username.equals(expectedUsername) && !isTokenExpired(token);
         } catch (Exception e) {

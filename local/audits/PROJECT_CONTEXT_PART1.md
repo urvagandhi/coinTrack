@@ -355,16 +355,18 @@ ppf, epf, goldsilver, security, user, mutualfund — **all 13 found, no mismatch
     verify-recovery / reset / verify-reset / setup-registration / verify-registration;
     GET `/api/auth/totp/status`
   - LoginController (simple login)
-- **Registration flow (mandatory TOTP)**: register → pendingRegistrations Map +
-  TOTP_REGISTRATION temp token → setup-registration returns QR (base64 PNG) + secret →
+- **Registration flow (mandatory TOTP)**: register → MongoDB `pending_registrations`
+  (TTL 15 min — restart-safe, multi-instance safe) + TOTP_REGISTRATION temp token →
+  setup-registration returns QR (base64 PNG) + secret →
   verify-registration verifies code, encrypts+saves secret, generates 10 backup codes, saves
   user, returns JWT + backupCodes.
 - **Login flow**: identifier (username/email/phone) + password → if TOTP on: `{requiresOtp,
   tempToken}` → verify via TOTP or backup code → JWT.
 - **TOTP config**: SHA1, 6 digits, 30s period, lib dev.samstevens.totp. Secret lifecycle
-  PENDING → ACTIVE → ROTATION (version++) → ROTATED (old backup codes deleted). Lockout:
-  5 failed attempts → 15-min lock, reset on success.
-- **Backup codes**: 10/user/version, XXXX-XXXX format, BCrypt hashed, one-time use.
+  PENDING → ACTIVE → ROTATION (version++) → ROTATED (old backup codes deleted).
+  Dual lockout ladders — MFA codes: 5 failed → 10-min lock, 10 failed → 24-h lock;
+  passwords: 5 failed → 15-min lock, 10 failed → 1-h lock; counters reset on success.
+- **Backup codes**: 10/user/version, 8-digit numeric format, BCrypt hashed, one-time use.
 - **Pitfalls**: never return User entity (hash exposure); lowercase-normalize usernames;
   verify old password before change; clear pending secrets on failure.
 - **Drift flag**: backend README v3.1 flow uses `/api/auth/2fa/register/setup`,
@@ -515,7 +517,8 @@ ppf, epf, goldsilver, security, user, mutualfund — **all 13 found, no mismatch
 | GOOGLE_REDIRECT_URI | Google OAuth redirect | Google login | For SSO | Yes |
 
 Non-secret properties of note: auto-index-creation=true; totp.issuer=CoinTrack,
-totp.window=1, totp.max-backup-codes=10; magic link expiry 10 min; Thymeleaf cache off in
+totp.window=1 (wired to TotpService code-verification drift), totp.max-backup-codes=10
+(wired to backup-code generation); magic link expiry 10 min; Thymeleaf cache off in
 dev/on in prod; actuator exposure `*` in base properties but narrowed to `health` in prod
 profile; throw-exception-if-no-handler-found=true.
 
@@ -713,4 +716,34 @@ resolved** by verifying each against actual module source (controllers, models, 
 configs) and fixing the docs/configs accordingly — including the previously deferred
 D3 (broker architecture) and D4 (portfolio storage naming). No discrepancies remain open;
 Part 2 (per-module deep source review) can proceed with a clean baseline.
+
+---
+
+## ADDENDUM (2026-08-23, post-snapshot — Part 2 supersedes where they differ)
+
+This file is a point-in-time Phase-1 record; later fix rounds changed reality after it was
+written. Key evolutions tracked authoritatively in PROJECT_CONTEXT_PART2.md:
+
+- **MFA route rename (post-user-module-audit)**: all TOTP/2FA HTTP endpoints moved twice —
+  `/api/auth/2fa/*` + `/login/totp|recovery` → `/api/auth/totp/*` → final
+  **`/api/auth/mfa/*`** (setup, verify, login, **login-recovery**, reset, reset/verify,
+  status(GET), register/setup, register/verify). Email module's TwoFactorRecoveryController
+  moved to `/api/auth/mfa/email-recovery(+/verify)`.
+  ⚠→✅ **Collision found and FIXED**: round 4 briefly mapped POST `/api/auth/mfa/recovery` in
+  BOTH TotpController (`base /api/auth/mfa` + `@PostMapping("/recovery")`) and
+  TwoFactorRecoveryController (`base /api/auth` + `@PostMapping("/mfa/recovery")`) — an
+  ambiguous Spring mapping that `mvn compile` cannot catch and that would have failed
+  context startup. Round 5 split it semantically: TotpController backup-code login =
+  `POST /api/auth/mfa/login-recovery`; email magic-link reset =
+  `POST /api/auth/mfa/email-recovery(+/verify)`; SecurityConfig whitelist matches exactly;
+  frontend api.js realigned; compile re-verified clean. No conflict remains.
+- **JWT purpose claims UNCHANGED in code**: still `TOTP_LOGIN`, `TOTP_SETUP`,
+  `TOTP_REGISTRATION`, `PROFILE_COMPLETION` (grep-verified). Any doc saying `MFA_LOGIN`
+  etc. describes aspiration, not code. Field names (`totpEnabled`, `totpSecretVersion`, …),
+  class names (TotpController, TotpService), properties (`totp.*`) also unchanged.
+  Known residual gap: `UserAuthenticationService.isTokenValid` (separate copy used by
+  TotpController.resolveUser's access-token fallback) still skips the blacklist check —
+  see Part 2 user-card discrepancy #11.
+- D7's "final" resolution flipped direction twice during these rounds; see Part 2 user-card
+  discrepancy #2 for the full trail.
 

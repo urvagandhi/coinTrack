@@ -12,4 +12,6 @@ public interface PortfolioHoldingRepository extends MongoRepository<PortfolioHol
     List<PortfolioHolding> findByUserId(String userId);
 
     Optional<PortfolioHolding> findByUserIdAndSchemeId(String userId, String schemeId);
+
+    void deleteByUserId(String userId);
 }

@@ -22,4 +22,6 @@ public interface LumpsumTransactionRepository extends MongoRepository<LumpsumTra
     Page<LumpsumTransaction> findByUserId(String userId, Pageable pageable);
 
     List<LumpsumTransaction> findByStatus(TransactionStatus status);
+
+    void deleteByUserId(String userId);
 }

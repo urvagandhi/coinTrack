@@ -16,4 +16,6 @@ public interface CanonicalMfHoldingRepository extends MongoRepository<CanonicalM
     List<CanonicalMfHolding> findByUserIdAndBrokerType(String userId, Broker brokerType);
 
     Optional<CanonicalMfHolding> findByUserIdAndBrokerAccountIdAndIsin(String userId, String brokerAccountId, String isin);
+
+    void deleteByUserId(String userId);
 }

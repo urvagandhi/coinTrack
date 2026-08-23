@@ -23,4 +23,6 @@ public interface SipContributionRepository extends MongoRepository<SipContributi
     void deleteBySipMandateId(String sipMandateId);
 
     List<SipContribution> findByStatus(TransactionStatus status);
+
+    void deleteByUserId(String userId);
 }

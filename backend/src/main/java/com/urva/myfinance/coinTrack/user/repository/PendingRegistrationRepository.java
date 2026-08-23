@@ -23,4 +23,6 @@ public interface PendingRegistrationRepository extends MongoRepository<PendingRe
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
+
+    boolean existsByPhoneNumber(String phoneNumber);
 }

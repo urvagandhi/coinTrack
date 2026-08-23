@@ -17,7 +17,7 @@
 6. [JWT Filter](#6-jwt-filter)
 7. [User Details Service](#7-user-details-service)
 8. [User Principal Model](#8-user-principal-model)
-9. [TOTP & Credential Encryption](#9-totp--credential-encryption)
+9. [MFA & Credential Encryption](#9-totp--credential-encryption)
 10. [Authentication Flow](#10-authentication-flow)
 11. [Authorization Flow](#11-authorization-flow)
 12. [Temporary Tokens](#12-temporary-tokens)
@@ -51,7 +51,7 @@ The Security module guards every API endpoint in CoinTrack. It employs a **state
 
 > **Refresh tokens** are persisted by the `user` module (`refresh_tokens` collection, rotated on every `POST /api/auth/refresh`). Logout invalidates tokens by storing their SHA-256 hash in MongoDB (`invalidated_tokens`).
 >
-> **TOTP Encryption**: `TotpEncryptionUtil` has been refactored into `common`'s unified `EncryptionUtil` (AES-256-GCM with `${totp.encryption-key}` hex key support).
+> **MFA Encryption**: `TotpEncryptionUtil` has been refactored into `common`'s unified `EncryptionUtil` (AES-256-GCM with `${totp.encryption-key}` hex key support).
 
 ### 1.3 Key Features
 
@@ -60,8 +60,8 @@ The Security module guards every API endpoint in CoinTrack. It employs a **state
 | **Stateless Auth** | No server-side session state; JWT bearer token validated on every request |
 | **HMAC-SHA256** | Industry-standard 256-bit signed access tokens |
 | **Google OIDC SSO** | OpenID Connect login code exchange & JWKS RSA key validation |
-| **TOTP Support** | Time-based One-Time Password for 2FA |
-| **Temp Tokens** | Purpose-scoped short-lived tokens (`TOTP_LOGIN`, `TOTP_SETUP`, `TOTP_REGISTRATION`, `PROFILE_COMPLETION`) |
+| **MFA Support** | Time-based One-Time Password for MFA |
+| **Temp Tokens** | Purpose-scoped short-lived tokens (`MFA_LOGIN`, `MFA_SETUP`, `MFA_REGISTRATION`, `PROFILE_COMPLETION`) |
 | **AES-256-GCM Encryption** | TOTP secrets & broker credentials encrypted at rest |
 | **MDC Integration** | User ID & request ID added to logging context per request |
 
@@ -192,9 +192,9 @@ security/
     // Auth endpoints (public)
     .requestMatchers(
         "/api/auth/login", "/api/auth/register", "/api/auth/verify-token",
-        "/api/auth/check-username/*", "/api/auth/login/totp", "/api/auth/login/recovery",
-        "/api/auth/2fa/setup", "/api/auth/2fa/verify", "/api/auth/2fa/register/setup",
-        "/api/auth/2fa/register/verify", "/api/auth/refresh", "/api/auth/oauth2/**",
+        "/api/auth/check-username/*", "/api/auth/mfa/login", "/api/auth/mfa/email-recovery",
+        "/api/auth/mfa/setup", "/api/auth/mfa/verify", "/api/auth/mfa/register/setup",
+        "/api/auth/mfa/register/verify", "/api/auth/refresh", "/api/auth/oauth2/**",
         "/api/auth/email/verify", "/api/auth/email/change/verify",
         "/api/auth/forgot-password", "/api/auth/forgot-password/verify", "/api/auth/reset-password"
     ).permitAll()
@@ -237,7 +237,7 @@ security/
 | `/`, `/index.html`, `/favicon.ico`, `/static/**`, `/logo/**` | Static web app assets |
 | `/api/health/**`, `/health`, `/actuator/**` | Health checks & metrics |
 | `/api/auth/login`, `/register`, `/verify-token`, `/check-username/*` | Core authentication & registration |
-| `/api/auth/login/totp`, `/login/recovery`, `/2fa/*` | 2FA / TOTP authentication flows |
+| `/api/auth/mfa/login`, `/login/recovery`, `/2fa/*` | MFA / MFA authentication flows |
 | `/api/auth/refresh`, `/api/auth/oauth2/**` | Refresh token rotation & Google OAuth2 |
 | `/api/auth/email/**`, `/forgot-password*`, `/reset-password` | Email verification & password resets |
 | `/api/contact` | Public contact submission |
@@ -249,7 +249,7 @@ security/
 **Protected (JWT Required)**:
 | Pattern | Description |
 |---------|-------------|
-| Everything else under `/api/**` (enforced via `.anyRequest().authenticated()`) | e.g. `/api/portfolio/**`, `/api/mutual-fund/**`, `/api/brokers/accounts/**`, `/api/users/**`, `/api/notes/**`, `/api/auth/logout`, `/api/auth/2fa/reset` |
+| Everything else under `/api/**` (enforced via `.anyRequest().authenticated()`) | e.g. `/api/portfolio/**`, `/api/mutual-fund/**`, `/api/brokers/accounts/**`, `/api/users/**`, `/api/notes/**`, `/api/auth/logout`, `/api/auth/mfa/reset` |
 
 ### 4.3 AsyncConfig
 
@@ -284,8 +284,8 @@ Annotated with `@Configuration` and `@EnableAsync`. Enables Spring's asynchronou
 | `extractUserId(token)` | Extract `userId` claim | String |
 | `extractEmail(token)` | Extract `email` claim | String |
 | `extractPurpose(token)` | Extract `purpose` claim | String |
-| `validateToken(token, username)` | Verify signature, username match, & non-expiration | boolean |
-| `isValidTempToken(token, purpose)` | Validate token & check matching purpose | boolean |
+| `validateToken(token, username)` | Verify signature, username match, non-expiration, & MongoDB token blacklist (`invalidated_tokens`) | boolean |
+| `isValidTempToken(token, purpose)` | Validate token, check matching purpose, non-expiration, & MongoDB token blacklist (`invalidated_tokens`) | boolean |
 
 ### 5.2 Token Structure
 
@@ -300,11 +300,11 @@ Annotated with `@Configuration` and `@EnableAsync`. Enables Spring's asynchronou
 }
 ```
 
-**Temporary Token** (for TOTP / Onboarding):
+**Temporary Token** (for MFA / Onboarding):
 ```json
 {
   "sub": "john_doe",
-  "purpose": "TOTP_LOGIN",
+  "purpose": "MFA_LOGIN",
   "userId": "66bc1234567890abcdef1234",
   "iat": 1702800000,
   "exp": 1702800600
@@ -415,7 +415,7 @@ flowchart TD
 
 ---
 
-## 9. TOTP & Credential Encryption
+## 9. MFA & Credential Encryption
 
 TOTP secrets and external API credentials are encrypted at rest using `common`'s unified `EncryptionUtil`.
 
@@ -431,7 +431,7 @@ TOTP secrets and external API credentials are encrypted at rest using `common`'s
 
 ## 10. Authentication Flow
 
-### 10.1 Login Flow (with 2FA / TOTP)
+### 10.1 Login Flow (with MFA / MFA)
 
 ```mermaid
 sequenceDiagram
@@ -443,17 +443,17 @@ sequenceDiagram
 
     Client->>Auth: POST /api/auth/login { username, password }
     Auth->>DB: Fetch user & verify BCrypt password
-    alt TOTP Enabled
-        Auth->>JWT: generateTempToken(user, "TOTP_LOGIN", 10)
+    alt MFA Enabled
+        Auth->>JWT: generateTempToken(user, "MFA_LOGIN", 10)
         JWT-->>Auth: Return 10-min temp token
         Auth-->>Client: 200 OK { requiresTotp: true, tempToken: "..." }
-        Client->>Auth: POST /api/auth/login/totp { tempToken, totpCode }
-        Auth->>JWT: isValidTempToken(tempToken, "TOTP_LOGIN")
-        Auth->>Auth: Verify TOTP code against decrypted secret
+        Client->>Auth: POST /api/auth/mfa/login { tempToken, totpCode }
+        Auth->>JWT: isValidTempToken(tempToken, "MFA_LOGIN")
+        Auth->>Auth: Verify MFA code against decrypted secret
         Auth->>JWT: generateToken(user) + generateRefreshToken()
         JWT-->>Auth: TokenPair (access + refresh)
         Auth-->>Client: 200 OK { accessToken, refreshToken }
-    else TOTP Disabled
+    else MFA Disabled
         Auth->>JWT: generateToken(user) + generateRefreshToken()
         JWT-->>Auth: TokenPair (access + refresh)
         Auth-->>Client: 200 OK { accessToken, refreshToken }
@@ -474,26 +474,26 @@ sequenceDiagram
 │           ▼                                                             │
 │     ┌─────────────────────────────────┐                                │
 │     │ Verify password (BCrypt)        │                                │
-│     │ Check TOTP enabled              │                                │
+│     │ Check MFA enabled              │                                │
 │     └─────────────────────────────────┘                                │
 │           │                                                             │
 │     ┌─────┴─────┐                                                      │
 │     │           │                                                       │
 │     ▼           ▼                                                       │
-│  TOTP OFF    TOTP ON                                                   │
+│  MFA OFF    MFA ON                                                   │
 │     │           │                                                       │
 │     ▼           ▼                                                       │
 │  Return     Return 10-min tempToken                                    │
 │  TokenPair  { requiresTotp: true, tempToken: "eyJ..." }                │
 │                 │                                                       │
 │                 ▼                                                       │
-│  2. POST /api/auth/login/totp                                          │
+│  2. POST /api/auth/mfa/login                                          │
 │     Body: { tempToken, totpCode }                                      │
 │           │                                                             │
 │           ▼                                                             │
 │     ┌─────────────────────────────────┐                                │
 │     │ Validate tempToken purpose      │                                │
-│     │ Verify TOTP code against secret │                                │
+│     │ Verify MFA code against secret │                                │
 │     └─────────────────────────────────┘                                │
 │           │                                                             │
 │           ▼                                                             │
@@ -579,9 +579,9 @@ Temporary tokens are short-lived JWTs issued for multi-step onboarding and authe
 
 | Purpose | Description / Flow | Expiry | Method Called |
 |---------|-------------------|--------|---------------|
-| `TOTP_LOGIN` | Issued after valid password check when 2FA is enabled | **10 minutes** | `JWTService.generateTempToken(user, "TOTP_LOGIN", 10)` |
-| `TOTP_SETUP` | Issued during initial 2FA setup for existing user | **30 minutes** | `JWTService.generateTempToken(user, "TOTP_SETUP", 30)` |
-| `TOTP_REGISTRATION` | Issued during initial signup 2FA registration | **15 minutes** | `JWTService.generateTempToken(username, "TOTP_REGISTRATION")` |
+| `MFA_LOGIN` | Issued after valid password check when MFA is enabled | **10 minutes** | `JWTService.generateTempToken(user, "MFA_LOGIN", 10)` |
+| `MFA_SETUP` | Issued during initial MFA setup for existing user | **30 minutes** | `JWTService.generateTempToken(user, "MFA_SETUP", 30)` |
+| `MFA_REGISTRATION` | Issued during initial signup MFA registration | **15 minutes** | `JWTService.generateTempToken(username, "MFA_REGISTRATION")` |
 | `PROFILE_COMPLETION` | Issued after Google SSO for new users requiring username selection | **15 minutes** | `JWTService.generateTempToken(user, "PROFILE_COMPLETION", 15)` |
 
 ---
@@ -596,7 +596,7 @@ Temporary tokens are short-lived JWTs issued for multi-step onboarding and authe
 | Session Management | Stateless (`SessionCreationPolicy.STATELESS`) |
 | Token Signing | HMAC-SHA256 (JJWT) |
 | Token Expiry | 30 minutes for access tokens; 30 days for refresh tokens |
-| 2FA Support | TOTP with AES-256-GCM encrypted secrets |
+| MFA Support | MFA with AES-256-GCM encrypted secrets |
 
 ### 13.2 Authorization Security
 
@@ -611,7 +611,7 @@ Temporary tokens are short-lived JWTs issued for multi-step onboarding and authe
 
 | Requirement | Implementation |
 |-------------|----------------|
-| TOTP & API Secrets | AES-256-GCM encrypted at rest via `EncryptionUtil` |
+| MFA & API Secrets | AES-256-GCM encrypted at rest via `EncryptionUtil` |
 | Refresh Tokens | Only SHA-256 hashes stored in MongoDB (`refresh_tokens`) |
 | Log Safety | MDC logging sanitizes tokens; credentials never logged |
 
@@ -633,7 +633,7 @@ Temporary tokens are short-lived JWTs issued for multi-step onboarding and authe
 # Generate JWT secret (32+ characters)
 openssl rand -base64 32
 
-# Generate TOTP encryption key (64 hex characters)
+# Generate MFA encryption key (64 hex characters)
 openssl rand -hex 32
 ```
 
@@ -678,5 +678,14 @@ openssl rand -hex 32
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 3.1.0 | 2026-08-23 | Comprehensive rewrite & code audit: added Mermaid & ASCII diagrams, `GoogleOAuthService`, `@Profile("dev")` guards, dynamic temp tokens, direct MongoDB invalidation, and restored full appendices & checklists. |
+| 3.1.0 | 2026-08-23 | Comprehensive rewrite & code audit: added Mermaid & ASCII diagrams, `GoogleOAuthService`, `@Profile("dev")` guards, dynamic temp tokens, direct MongoDB invalidation in `JWTService` for temp & access tokens, and restored full appendices & checklists. |
 | 2.0.0 | 2025-12-17 | Updated stateless JWT architecture documentation |
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/SecurityUserDataCleanupListener.java` listens for common's `UserDeletedEvent`
+and deletes the deleted user's blacklisted-token rows via the newly added
+`InvalidatedTokenRepository.deleteByUserId(String)`. The TTL index would clean them up
+eventually regardless; immediate removal avoids orphaned rows lingering post-deletion.

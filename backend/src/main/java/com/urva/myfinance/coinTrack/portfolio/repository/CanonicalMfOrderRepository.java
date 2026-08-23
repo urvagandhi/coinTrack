@@ -16,4 +16,6 @@ public interface CanonicalMfOrderRepository extends MongoRepository<CanonicalMfO
     List<CanonicalMfOrder> findByUserIdAndBrokerType(String userId, Broker brokerType);
 
     Optional<CanonicalMfOrder> findByUserIdAndBrokerAccountIdAndOrderId(String userId, String brokerAccountId, String orderId);
+
+    void deleteByUserId(String userId);
 }

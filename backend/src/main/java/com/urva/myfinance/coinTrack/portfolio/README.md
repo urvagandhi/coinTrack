@@ -704,3 +704,14 @@ portfolioSummaryService.getPortfolioSummary(user.getId());
 |---------|------|---------|
 | 2.0.0 | 2025-12-17 | Comprehensive rewrite with accurate structure |
 | 1.0.0 | 2025-12-14 | Initial documentation |
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/PortfolioUserDataCleanupListener.java` listens for common's `UserDeletedEvent`
+and purges every user-keyed collection via new derived `deleteByUserId(String)` methods on:
+`CanonicalHoldingRepository`, `CanonicalPositionRepository`, `CanonicalFundsRepository`,
+`CanonicalMfOrderRepository`, `CanonicalMfHoldingRepository`, `SyncLogRepository`,
+`SyncCooldownRepository`. Shared deployment-wide data in `market_prices` is deliberately
+kept.

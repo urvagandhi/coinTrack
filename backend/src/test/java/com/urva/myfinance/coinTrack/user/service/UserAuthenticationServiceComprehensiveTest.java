@@ -371,9 +371,18 @@ class UserAuthenticationServiceComprehensiveTest {
     @DisplayName("isTokenValid: valid → true")
     void isTokenValid_valid_returnsTrue() {
         when(jwtService.extractUsername("tok")).thenReturn("user");
-        when(jwtService.isTokenExpired("tok")).thenReturn(false);
+        when(jwtService.validateToken("tok", "user")).thenReturn(true);
 
         assertTrue(authService.isTokenValid("tok"));
+    }
+
+    @Test
+    @DisplayName("isTokenValid: blacklisted → false")
+    void isTokenValid_blacklisted_returnsFalse() {
+        when(jwtService.extractUsername("tok")).thenReturn("user");
+        when(jwtService.validateToken("tok", "user")).thenReturn(false);
+
+        assertFalse(authService.isTokenValid("tok"));
     }
 
     @Test

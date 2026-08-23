@@ -612,7 +612,7 @@ TIMESTAMP LEVEL [logger] - [Context] Message   (requestId via MDC pattern)
 ```mermaid
 flowchart TD
     Input["User input (API secret)"] --> Enc["EncryptionUtil.encrypt()<br/>AES-256-GCM + random 12-byte IV"]
-    Enc --> Store["Base64(IV || ciphertext || tag)<br/>Stored in broker_accounts / user TOTP fields"]
+    Enc --> Store["Base64(IV || ciphertext || tag)<br/>Stored in broker_accounts / user MFA fields"]
     Store --> Dec["EncryptionUtil.decrypt() / decryptSafe()<br/>(at call time)"]
     Dec --> Call["Plaintext secret used for outbound broker API call"]
 ```
@@ -627,7 +627,7 @@ User input (API secret)
 EncryptionUtil.encrypt()      AES-256-GCM + random 12-byte IV
         |
         v
-Base64(IV || ciphertext || tag) stored in broker_accounts / user TOTP fields
+Base64(IV || ciphertext || tag) stored in broker_accounts / user MFA fields
         |
         v  (at call time)
 EncryptionUtil.decrypt()/decryptSafe()
@@ -736,3 +736,16 @@ return ResponseEntity.ok(ApiResponse.success(data, "Operation successful"));
 Provides standardized styling, header formatting, and fast auto-sizing logic for Excel
 exports across modules (FD, PPF, EPF, MutualFund, GoldSilver each add their own styled
 exporters on top of this shared base).
+
+---
+
+## Cross-Module Events
+
+### `UserDeletedEvent` (`common/event/UserDeletedEvent.java`, added 2026-08-23)
+
+Record `{userId, username}` published by `user/UserService.deleteUser()` after the account
+document is removed and refresh tokens are revoked. Each domain module owns a
+`UserDataCleanupListener` that reacts to this event and purges its own user-keyed
+collections — keeping the dependency direction clean (modules depend on common only,
+never on each other). Consumed today by: notes, broker, portfolio, mutualfund, ppf,
+epf, fixeddeposit, goldsilver, security.

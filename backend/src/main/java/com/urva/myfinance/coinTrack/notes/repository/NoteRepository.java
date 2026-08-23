@@ -29,4 +29,6 @@ public interface NoteRepository extends MongoRepository<Note, String> {
      * Filter notes by tag (exact match within tags array).
      */
     Page<Note> findByUserIdAndTagsContaining(String userId, String tag, Pageable pageable);
+
+    void deleteByUserId(String userId);
 }

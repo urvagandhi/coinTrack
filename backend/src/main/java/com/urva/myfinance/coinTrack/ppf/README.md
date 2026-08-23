@@ -229,3 +229,12 @@ Authorization: Bearer <jwt>
 > **Settings storage note:** PPF account details / Post-Maturity Extension Mode settings
 > (`PpfSettingsEmbed`) are **embedded in the `users` document**, not a separate
 > `ppf_settings` collection (verified against source 2026-08-23).
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/PpfUserDataCleanupListener.java` listens for common's `UserDeletedEvent` and
+deletes **all** PPF ledger transactions via the newly added
+`PpfTransactionRepository.deleteByUserId(String)`. PPF settings are embedded in the user
+document and are removed with the account itself.

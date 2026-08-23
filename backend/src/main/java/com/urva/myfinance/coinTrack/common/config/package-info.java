@@ -32,7 +32,7 @@
  * │ └── service/ (JWTService, MyUserDetailsService)
  * │
  * ├── user/
- * │ ├── controller/ (UserController, LoginController)
+ * │ ├── controller/ (UserController)
  * │ ├── dto/ (LoginRequest, LoginResponse, etc.)
  * │ ├── model/ (User)
  * │ ├── repository/ (UserRepository)

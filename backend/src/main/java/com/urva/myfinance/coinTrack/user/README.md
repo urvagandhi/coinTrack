@@ -1,9 +1,9 @@
 # User Module – CoinTrack
 
-> **Domain**: User management, authentication, TOTP 2FA, and profile operations
-> **Responsibility**: Registration, login, TOTP verification, backup codes, and profile CRUD
-> **Version**: 2.0.0
-> **Last Updated**: 2025-12-17
+> **Domain**: User identity, registration, authentication, MFA/MFA management, and profile settings
+> **Responsibility**: Manages user accounts, authentication workflows, security lockouts, and embedded preferences
+> **Version**: 3.1.0
+> **Last Updated**: 2026-08-23
 
 ---
 
@@ -11,18 +11,23 @@
 
 1. [Overview](#1-overview)
 2. [Architecture](#2-architecture)
-3. [Directory Structure](#3-directory-structure)
-4. [Controllers](#4-controllers)
-5. [DTOs](#5-dtos)
-6. [Models](#6-models)
-7. [Repositories](#7-repositories)
-8. [Services](#8-services)
-9. [Authentication Flows](#9-authentication-flows)
-10. [TOTP 2FA System](#10-totp-2fa-system)
+3. [Authentication &amp; Login Flow](#3-authentication--login-flow)
+4. [Directory Structure](#4-directory-structure)
+5. [Domain Models](#5-domain-models)
+6. [Repositories](#6-repositories)
+7. [Services](#7-services)
+8. [Controllers](#8-controllers)
+9. [Lockout &amp; Security Ladders](#9-lockout--security-ladders)
+10. [MFA / MFA Architecture](#10-2fa--totp-architecture)
 11. [Backup Codes](#11-backup-codes)
-12. [API Reference](#12-api-reference)
-13. [Security](#13-security)
-14. [Common Pitfalls](#14-common-pitfalls)
+12. [OAuth2 / Google SSO Integration](#12-oauth2--google-sso-integration)
+13. [API Reference](#13-api-reference)
+14. [Security Checklist](#14-security-checklist)
+15. [Environment Variables](#15-environment-variables)
+16. [Common Pitfalls](#16-common-pitfalls)
+17. [Appendix A: File Size Reference](#appendix-a-file-size-reference)
+18. [Appendix B: Related Documentation](#appendix-b-related-documentation)
+19. [Appendix C: Changelog](#appendix-c-changelog)
 
 ---
 
@@ -30,528 +35,358 @@
 
 ### 1.1 Purpose
 
-The User module handles all user lifecycle operations including registration, login with TOTP 2FA, profile management, and password changes. It follows the **Single Responsibility Principle**, splitting logic into focused services.
+The User module handles core identity operations in CoinTrack. It manages user registration, password verification, MFA/MFA setup and verification, Google OpenID Connect SSO, refresh token rotation, and profile preferences.
 
-### 1.2 Core Features
+### 1.2 Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **Registration** | Username/email/phone validation, mandatory TOTP setup |
-| **Login** | Password + optional TOTP verification + Google SSO |
-| **TOTP 2FA** | Time-based One-Time Password with encrypted secrets |
-| **Backup Codes** | 10 recovery codes per user per TOTP version |
-| **Profile Management** | Update name, bio, contact details |
-| **Password Change** | Verify old password before update |
+| Feature                                                  | Description                                                                                      |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Multi-Identifier Login**                         | Users log in using username, email (lowercased), or mobile phone number                          |
+| **Stateless MFA / MFA**                           | Mandatory MFA using Google Authenticator / MFA with 8-digit numeric backup codes                |
+| **Google OIDC SSO**                                | OAuth2 single sign-on with strict`email_verified` validation before account linking            |
+| **Pending Signup Persistence**                     | Multi-instance restart-safe signup state stored in MongoDB`pending_registrations` (TTL 15 min) |
+| **Dual Lockout Ladders**                           | Progressive time-based locks for failed passwords (15m/1h) and failed MFA codes (10m/24h)        |
+| **Token Invalidation on Password Change / Delete** | Revokes all active refresh tokens immediately on password change or account deletion             |
 
 ### 1.3 System Position
 
+```mermaid
+graph TD
+    Client["Client App / Browser"] --> Controllers["User Controllers<br/>(AuthController, TotpController, UserController)"]
+    Controllers --> Services["User Services<br/>(UserAuthenticationService, UserService, TotpService)"]
+    Services --> SecurityModule["Security Module<br/>(JWTService, GoogleOAuthService, InvalidatedTokenRepository)"]
+    Services --> CommonModule["Common Module<br/>(EncryptionUtil, HashUtil, ApiResponse)"]
+    Services --> Repositories["Repositories<br/>(UserRepository, PendingRegistrationRepository, RefreshTokenRepository)"]
+    Repositories --> MongoDB["MongoDB Database<br/>(users, pending_registrations, refresh_tokens)"]
 ```
+
+<details>
+<summary>Click to view ASCII Diagram</summary>
+
+```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                           COINTRACK SYSTEM                               │
+│                           CLIENT APP / BROWSER                           │
+└─────────────────────────────────┬────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                              USER MODULE                                 │
 ├──────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  ┌─────────────────┐                                                    │
-│  │  Frontend       │                                                    │
-│  │  (Auth UI)      │                                                    │
-│  └────────┬────────┘                                                    │
-│           │ REST API                                                     │
-│           ▼                                                              │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                      USER MODULE                                │   │
-│  │  ┌───────────────┬───────────────┬───────────────────────────┐ │   │
-│  │  │  Controllers  │   Services    │      TOTP System          │ │   │
-│  │  │  (User,       │  (Auth,       │  (Secrets, Codes,         │ │   │
-│  │  │   Login,      │   Profile,    │   Backup Codes)           │ │   │
-│  │  │   TOTP)       │   TOTP)       │                           │ │   │
-│  │  └───────────────┴───────────────┴───────────────────────────┘ │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│           │                     │                                       │
-│           ▼                     ▼                                       │
-│  ┌─────────────────┐   ┌─────────────────┐                             │
-│  │  Security       │   │   MongoDB       │                             │
-│  │  Module         │   │   (users,       │                             │
-│  │  (JWT, Encrypt) │   │   backup_codes) │                             │
-│  └─────────────────┘   └─────────────────┘                             │
-│                                                                          │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │  CONTROLLERS                                                      │  │
+│  │  AuthController · TotpController · UserController                 │  │
+│  └──────────────────────────────┬────────────────────────────────────┘  │
+│                                 │                                        │
+│                                 ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │  SERVICES                                                         │  │
+│  │  UserAuthenticationService · UserService · TotpService            │  │
+│  └──────────────┬───────────────────────────────┬────────────────────┘  │
+│                 │                               │                        │
+│                 ▼                               ▼                        │
+│  ┌──────────────────────────────┐    ┌───────────────────────────────┐  │
+│  │  REPOSITORIES                │    │  EXTERNAL DEPENDENCIES        │  │
+│  │  UserRepository              │    │  JWTService (security)        │  │
+│  │  PendingRegistrationRepo     │    │  EncryptionUtil (common)      │  │
+│  │  RefreshTokenRepository      │    │  HashUtil (common)            │  │
+│  └──────────────┬───────────────┘    └───────────────────────────────┘  │
+│                 │                                                        │
+└─────────────────┼────────────────────────────────────────────────────────┘
+                  │
+                  ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                            MONGODB DATABASE                              │
+│       collections: users, pending_registrations, refresh_tokens          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
+
+</details>
 
 ---
 
 ## 2. Architecture
 
-### 2.1 Component Overview
+```mermaid
+flowchart TD
+    Req["Incoming Request"] --> AuthCtrl["AuthController / TotpController / UserController"]
+    AuthCtrl --> AuthSvc["UserAuthenticationService / UserService / TotpService"]
+    AuthSvc --> UserRepo["UserRepository / PendingRegistrationRepository"]
+    AuthSvc --> JwtSvc["JWTService (Security Module)"]
+    AuthSvc --> EncUtil["EncryptionUtil (Common Module)"]
+    UserRepo --> Mongo["MongoDB (users, pending_registrations, refresh_tokens)"]
+```
 
+<details>
+<summary>Click to view ASCII Diagram</summary>
+
+```text
+Incoming Request ──► Auth/Totp/UserController ──► UserAuth/User/TotpService
+                                                        │
+                      ┌─────────────────────────────────┼────────────────────────────────┐
+                      ▼                                 ▼                                ▼
+              UserRepository               JWTService (Security)               EncryptionUtil (Common)
+                      │
+                      ▼
+         MongoDB (users, pending_reg, refresh_tokens)
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                      USER MODULE LAYERS                                │
-├────────────────────────────────────────────────────────────────────────┤
-│                                                                        │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │  CONTROLLER LAYER (3 files)                                     │  │
-│  │  ├── UserController.java          (14KB, 330 lines, 11 endpoints)│  │
-│  │  ├── TotpController.java          (14.8KB, 329 lines, 9 endpoints)│  │
-│  │  └── LoginController.java         (2.6KB, 65 lines)             │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                              │                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │  DTO LAYER (5 files)                                            │  │
-│  │  ├── LoginRequest.java            (3KB, credentials)            │  │
-│  │  ├── LoginResponse.java           (5.9KB, token + user)         │  │
-│  │  ├── TotpSetupResponse.java       (QR code + secret)            │  │
-│  │  ├── TotpVerifyRequest.java       (TOTP code input)             │  │
-│  │  └── VerifyOtpRequest.java        (legacy OTP input)            │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                              │                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │  SERVICE LAYER (4 files)                                        │  │
-│  │  ├── TotpService.java             (14KB, 361 lines, TOTP logic) │  │
-│  │  ├── UserService.java             (15.4KB, main facade)         │  │
-│  │  ├── UserAuthenticationService.java (12KB, login logic)         │  │
-│  │  └── UserProfileService.java      (4.8KB, profile CRUD)         │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                              │                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │  MODEL LAYER (2 files)                                          │  │
-│  │  ├── User.java                    (1.6KB, 63 lines)             │  │
-│  │  └── BackupCode.java              (1KB, recovery codes)         │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                              │                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │  REPOSITORY LAYER (2 files)                                     │  │
-│  │  ├── UserRepository.java          (user queries)                │  │
-│  │  └── BackupCodeRepository.java    (backup code queries)         │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                                                                        │
-└────────────────────────────────────────────────────────────────────────┘
-```
+
+</details>
 
 ---
 
-## 3. Directory Structure
+## 3. Authentication & Login Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Client App
+    participant Ctrl as AuthController
+    participant AuthSvc as UserAuthenticationService
+    participant TotpSvc as TotpService
+    participant JwtSvc as JWTService
+    participant DB as MongoDB (users)
+
+    Client->>Ctrl: POST /api/auth/login {identifier, password}
+    Ctrl->>AuthSvc: authenticate(identifier, password)
+    AuthSvc->>DB: findByUsername / findByEmail / findByPhoneNumber
+    DB-->>AuthSvc: User document
+    AuthSvc->>AuthSvc: Check Password Lockout (5 failed -> 15m, 10 failed -> 1h)
+    AuthSvc->>AuthSvc: Verify BCrypt password match
+    alt Password invalid
+        AuthSvc->>DB: Increment passwordFailedAttempts
+        AuthSvc-->>Client: 401 Unauthorized / AuthenticationException
+    else Password valid & MFA Enabled
+        AuthSvc->>JwtSvc: generateTempToken(user, "MFA_LOGIN", 10 min)
+        JwtSvc-->>AuthSvc: tempToken
+        AuthSvc-->>Client: LoginResponse { requireTotp: true, tempToken }
+        Client->>Ctrl: POST /api/auth/mfa/login { tempToken, code }
+        Ctrl->>TotpSvc: verifyLoginTotp(tempToken, code)
+        TotpSvc->>DB: Check MFA Lockout (5 failed -> 10m, 10 failed -> 24h)
+        TotpSvc->>TotpSvc: Validate 6-digit MFA code
+        TotpSvc->>JwtSvc: generateTokenPair(user)
+        JwtSvc-->>TotpSvc: TokenPair (access + refresh)
+        TotpSvc-->>Client: 200 OK TokenPair
+    else Password valid & MFA Disabled
+        AuthSvc->>JwtSvc: generateTokenPair(user)
+        JwtSvc-->>AuthSvc: TokenPair
+        AuthSvc-->>Client: 200 OK TokenPair
+    end
+```
+
+<details>
+<summary>Click to view ASCII Diagram</summary>
+
+```text
+┌──────────┐            ┌────────────────┐            ┌─────────────────────────┐            ┌────────────┐            ┌─────────┐
+│  Client  │            │ AuthController │            │ UserAuthService / Totp  │            │ JWTService │            │ MongoDB │
+└────┬─────┘            └───────┬────────┘            └────────────┬────────────┘            └─────┬──────┘            └────┬────┘
+     │                          │                                  │                               │                    │
+     │ 1. POST /login           │                                  │                               │                    │
+     ├─────────────────────────►│                                  │                               │                    │
+     │                          │ 2. authenticate(id, pass)        │                               │                    │
+     │                          ├─────────────────────────────────►│                               │                    │
+     │                          │                                  │ 3. findUser                   │                    │
+     │                          │                                  ├───────────────────────────────────────────────────►│
+     │                          │                                  │◄───────────────────────────────────────────────────┤
+     │                          │                                  │                               │                    │
+     │                          │                                  │ 4. Verify BCrypt & Lockouts   │                    │
+     │                          │                                  │                               │                    │
+     │                          │                                  │ 5. If MFA -> TempToken (10m) │                    │
+     │                          │                                  ├──────────────────────────────►│                    │
+     │                          │                                  │◄──────────────────────────────┤                    │
+     │                          │◄─────────────────────────────────┤                               │                    │
+     │◄─────────────────────────┤                                  │                               │                    │
+     │ 6. Response (tempToken)  │                                  │                               │                    │
+     │                          │                                  │                               │                    │
+     │ 7. POST /api/auth/mfa/login      │                                  │                               │                    │
+     ├─────────────────────────►│                                  │                               │                    │
+     │                          │ 8. verifyLoginTotp(code)         │                               │                    │
+     │                          ├─────────────────────────────────►│                               │                    │
+     │                          │                                  │ 9. Issue Access + Refresh     │                    │
+     │                          │                                  ├──────────────────────────────►│                    │
+     │                          │◄─────────────────────────────────┤                               │                    │
+     │                          │◄─────────────────────────────────┤                               │                    │
+     │◄─────────────────────────┤                                  │                               │                    │
+     │ 10. Return TokenPair     │                                  │                               │                    │
+```
+
+</details>
+
+---
+
+## 4. Directory Structure
 
 ```
 user/
-├── README.md                              # This file
-│
-├── controller/                            # REST Controllers (3 files)
-│   ├── UserController.java                # User CRUD, login, registration
-│   │   └── 330 lines, 14KB, 11 endpoints
-│   ├── TotpController.java                # TOTP setup, verify, reset
-│   │   └── 329 lines, 14.8KB, 9 endpoints
-│   └── LoginController.java               # Simple login endpoint
-│       └── 65 lines, 2.6KB
-│
-├── dto/                                   # Data Transfer Objects (5 files)
-│   ├── LoginRequest.java                  # Login credentials
-│   │   └── 3KB, with validation annotations
-│   ├── LoginResponse.java                 # Token, user info, TOTP flags
-│   │   └── 5.9KB
-│   ├── TotpSetupResponse.java             # QR code, secret for setup
-│   │   └── 0.4KB
-│   ├── TotpVerifyRequest.java             # TOTP code submission
-│   │   └── 0.4KB
-│   └── VerifyOtpRequest.java              # Legacy OTP verification
-│       └── 0.3KB
-│
-├── model/                                 # MongoDB Entities (2 files)
-│   ├── User.java                          # User entity with TOTP fields
-│   │   └── 63 lines, 1.6KB, 16 fields
-│   └── BackupCode.java                    # Recovery code entity
-│       └── 1KB
-│
-├── repository/                            # Data Access (2 files)
-│   ├── UserRepository.java                # User queries
-│   │   └── 0.5KB
-│   └── BackupCodeRepository.java          # Backup code queries
-│       └── 1KB
-│
-└── service/                               # Business Logic (4 files)
-    ├── TotpService.java                   # TOTP setup, verify, reset
-    │   └── 361 lines, 14KB, 14 methods
-    ├── UserService.java                   # Main user operations facade
-    │   └── 15.4KB
-    ├── UserAuthenticationService.java    # Login logic
-    │   └── 12KB
-    └── UserProfileService.java           # Profile updates
-        └── 4.8KB
-
-Total: 16 files
+├── controller/
+│   ├── AuthController.java             # Login, register, token verify, check username, Google SSO
+│   ├── TotpController.java             # MFA setup, verify, login-MFA, recovery codes
+│   └── UserController.java             # Authenticated /api/users/me profile GET, PUT, password, DELETE
+├── dto/
+│   ├── ChangePasswordRequest.java
+│   ├── LoginRequest.java
+│   ├── LoginResponse.java
+│   ├── RegisterRequest.java
+│   └── TotpVerificationRequest.java
+├── model/
+│   ├── AuthProvider.java               # Enum: LOCAL, GOOGLE
+│   ├── EpfSettingsEmbed.java           # Embedded EPF settings inside User
+│   ├── MetalRateSettingsEmbed.java     # Embedded Metal Rate settings inside User
+│   ├── PendingRegistration.java        # Temporary MongoDB document during onboarding (TTL 15 min)
+│   ├── PpfSettingsEmbed.java           # Embedded PPF settings inside User
+│   ├── RefreshToken.java               # MongoDB collection for refresh token hashes
+│   ├── User.java                       # Main User document (@Indexed email, phone, googleId)
+│   └── UserStatus.java                 # Enum: ACTIVE, INACTIVE, PENDING
+├── repository/
+│   ├── PendingRegistrationRepository.java
+│   ├── RefreshTokenRepository.java
+│   └── UserRepository.java
+└── service/
+    ├── TotpService.java                # MFA generation, validation, & 8-digit backup code management
+    ├── UserAuthenticationService.java  # Login, Google SSO, password lockout, onboarding completion
+    └── UserService.java                 # Profile updates, password changes, account deletion, token validation
 ```
 
 ---
 
-## 4. Controllers
+## 5. Domain Models
 
-### 4.1 UserController
+### 5.1 User Document (`users`)
 
-**Location**: `controller/UserController.java`
-**Base Path**: `/api/users`
+* **MongoDB Indexes**:
+  * `username`: Unique index (`@Indexed(unique = true)`)
+  * `email`: Unique sparse index (`@Indexed(unique = true, sparse = true)`), lowercased on save & lookup
+  * `phoneNumber`: Sparse index (`@Indexed(sparse = true)`)
+  * `googleId`: Unique sparse index (`@Indexed(unique = true, sparse = true)`)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `GET /api/users/me` | GET | Get current user profile |
-| `PUT /api/users/me` | PUT | Update current user profile |
-| `PUT /api/users/me/password` | PUT | Change password |
-| `DELETE /api/users/me` | DELETE | Delete current user |
+### 5.2 Embedded Settings Models
 
-### 4.2 AuthController
+Rather than scattering user configuration into multiple collections, settings are embedded directly inside the `User` document:
 
-**Location**: `controller/AuthController.java`
-**Base Path**: `/api/auth`
+* `EpfSettingsEmbed`: EPF UAN, establishment ID, member ID, default interest rate.
+* `PpfSettingsEmbed`: PPF account number, bank name, opening date.
+* `MetalRateSettingsEmbed`: Gold/silver local spread premiums.
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/login` | POST | Login with username/password (+ optional TOTP) |
-| `/register` | POST | Register new user |
-| `/verify-token` | GET | Validate JWT token |
-| `/check-username/{username}` | GET | Check username availability |
-| `/refresh` | POST | Rotate refresh token → new JWT + refresh token |
-| `/logout` | POST | Blacklist current JWT (invalidated_tokens) |
-| `/oauth2/google` | POST | Google SSO login/registration |
-| `/oauth2/complete-profile` | POST | Complete Google SSO profile |
+### 5.3 Pending Registration (`pending_registrations`)
 
-### 4.3 TotpController
-
-**Location**: `controller/TotpController.java`
-**Base Path**: `/api/auth`
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/2fa/setup` | POST | Get QR code for TOTP setup |
-| `/2fa/verify` | POST | Verify initial TOTP setup |
-| `/login/totp` | POST | Complete login with TOTP |
-| `/login/recovery` | POST | Login with backup code |
-| `/2fa/reset` | POST | Initiate TOTP reset |
-| `/2fa/reset/verify` | POST | Complete TOTP reset |
-| `/2fa/status` | GET | Get 2FA status |
-| `/2fa/register/setup` | POST | Setup TOTP during registration |
-| `/2fa/register/verify` | POST | Verify TOTP & complete registration |
-
-> **Note:** older revisions of this document showed `/api/auth/totp/*` paths — these are
-> stale. The live mappings are the `/2fa/*` and `/login/totp`-style paths above
-> (verified against source 2026-08-23).
+Stores intermediate signup state during multi-step MFA onboarding. Configured with a TTL index (`expiresAt`) in MongoDB so pending registrations automatically expire after 15 minutes if incomplete. Multi-instance & restart safe.
 
 ---
 
-## 5. DTOs
+## 6. Repositories
 
-### 5.1 LoginRequest
-
-**Location**: `dto/LoginRequest.java`
-**Size**: 3KB
-
-| Field | Type | Validation | Description |
-|-------|------|------------|-------------|
-| `identifier` | String | `@NotBlank` | Username, email, or phone |
-| `password` | String | `@NotBlank` | User password |
-
-### 5.2 LoginResponse
-
-**Location**: `dto/LoginResponse.java`
-**Size**: 5.9KB
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `token` | String | JWT access token (null if TOTP required) |
-| `tempToken` | String | Temporary token for TOTP verification |
-| `user` | UserDTO | User information |
-| `requiresOtp` | boolean | True if TOTP verification needed |
-| `message` | String | Status message |
-| `backupCodes` | List\<String\> | Recovery codes (on setup only) |
-
-### 5.3 TotpSetupResponse
-
-**Location**: `dto/TotpSetupResponse.java`
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `qrCode` | String | Base64 PNG QR code |
-| `secret` | String | TOTP secret for manual entry |
-
-### 5.4 TotpVerifyRequest
-
-**Location**: `dto/TotpVerifyRequest.java`
-
-| Field | Type | Validation | Description |
-|-------|------|------------|-------------|
-| `code` | String | `@NotBlank` | 6-digit TOTP code |
+| Repository                        | Entity                  | Key Methods                                                                                                                                      |
+| --------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `UserRepository`                | `User`                | `findByUsername`, `findByEmail`, `findByPhoneNumber`, `findByGoogleId`, `existsByUsername`, `existsByEmail`, `existsByPhoneNumber` |
+| `PendingRegistrationRepository` | `PendingRegistration` | `findByUsername`, `findByEmail`, `deleteByUsername`                                                                                        |
+| `RefreshTokenRepository`        | `RefreshToken`        | `findByTokenHash`, `revokeAllByUserId`, `deleteByExpiresAtBefore`                                                                          |
 
 ---
 
-## 6. Models
+## 7. Services
 
-### 6.1 User Entity
-
-**Location**: `model/User.java`
-**Size**: 63 lines, 1.6KB
-**Collection**: `users`
-
-**Standard Fields**:
-
-| Field | Type | Constraints | Description |
-|-------|------|-------------|-------------|
-| `id` | String | `@Id` | MongoDB ObjectId |
-| `username` | String | `@Indexed(unique=true)` | Login identifier |
-| `name` | String | - | Display name |
-| `email` | String | - | Email address |
-| `phoneNumber` | String | - | Phone number |
-| `password` | String | - | BCrypt hashed |
-| `provider` | AuthProvider | - | LOCAL or GOOGLE |
-| `bio` | String | - | User bio |
-| `location` | String | - | User location |
-| `dateOfBirth` | LocalDate | - | Birth date |
-| `createdAt` | LocalDate | `@CreatedDate` | Registration date |
-| `updatedAt` | LocalDate | `@LastModifiedDate` | Last update |
-
-**TOTP 2FA Fields**:
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `totpEnabled` | boolean | `false` | Is 2FA active? |
-| `totpVerified` | boolean | `false` | Has user completed setup? |
-| `totpSecretEncrypted` | String | - | AES-GCM encrypted TOTP secret |
-| `totpSecretPending` | String | - | Staged secret awaiting verification |
-| `totpSecretVersion` | int | `1` | Version for backup codes |
-| `totpSetupAt` | LocalDateTime | - | When 2FA was enabled |
-| `totpLastUsedAt` | LocalDateTime | - | Last TOTP verification |
-| `totpFailedAttempts` | int | `0` | Failed verification count |
-| `totpLockedUntil` | LocalDateTime | - | Lockout expiry (if locked) |
-
-### 6.2 BackupCode Entity
-
-**Location**: `model/BackupCode.java`
-**Size**: 1KB
-**Collection**: `backup_codes`
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | String | MongoDB ObjectId |
-| `userId` | String | Owner user ID |
-| `codeHash` | String | BCrypt hashed code |
-| `version` | int | TOTP secret version |
-| `usedAt` | LocalDateTime | When code was used (null = unused) |
-| `createdAt` | LocalDateTime | Creation timestamp |
-
-### 6.3 RefreshToken Entity (v2.1+)
-
-**Location**: `model/RefreshToken.java`
-**Collection**: `refresh_tokens`
-
-Persisted JWT refresh sessions. Rotated on every use via `POST /api/auth/refresh`
-(old token invalidated, new pair issued). Logout blacklists the access token in
-`security`'s `invalidated_tokens` collection.
-
-### 6.4 PendingRegistration Entity
-
-**Location**: `model/PendingRegistration.java`
-**Collection**: `pending_registrations`
-
-Email-verification queue for registrations pending TOTP setup / email verification.
-
----
-
-## 7. Repositories
-
-### 7.1 UserRepository
-
-**Location**: `repository/UserRepository.java`
-
-| Method | Description |
-|--------|-------------|
-| `findByUsername(String username)` | Find user by username |
-| `findByEmail(String email)` | Find user by email |
-| `existsByUsername(String username)` | Check username exists |
-
-### 7.2 BackupCodeRepository
-
-**Location**: `repository/BackupCodeRepository.java`
-
-| Method | Description |
-|--------|-------------|
-| `findByUserIdAndVersion(String userId, int version)` | Get user's backup codes |
-| `findByUserIdAndVersionAndUsedAtIsNull(...)` | Get unused codes |
-| `deleteByUserIdAndVersion(String userId, int version)` | Delete old codes on rotation |
-
----
-
-## 8. Services
-
-### 8.1 TotpService
-
-**Location**: `service/TotpService.java`
-**Size**: 14KB, 361 lines
-
-**Core Methods**:
-
-| Method | Purpose |
-|--------|---------|
-| `generateSetup(User)` | Generate QR code + secret for existing user |
-| `verifySetup(User, code)` | Verify initial setup & enable 2FA |
-| `verifyLogin(User, code)` | Verify TOTP during login |
-| `verifyBackupCode(User, code)` | Verify backup code for recovery |
-| `generateSetupForPendingUser(User)` | Setup during registration |
-| `verifySetupForPendingUser(User, code)` | Verify during registration |
-| `generateBackupCodesForPendingUser(User, version)` | Create backup codes |
-| `initiateReset(User)` | Start TOTP rotation |
-| `generateBackupCodes(User, version)` | Generate 10 recovery codes |
-| `handleFailedAttempt(User)` | Track & enforce lockout |
-| `isLocked(User)` | Check if user is locked out |
-
-### 8.2 UserService
-
-**Location**: `service/UserService.java`
-**Size**: 15.4KB
-
-Main facade for user operations, coordinating other services.
-
-### 8.3 UserAuthenticationService
+### 7.1 UserAuthenticationService
 
 **Location**: `service/UserAuthenticationService.java`
-**Size**: 12KB
 
-| Method | Purpose |
-|--------|---------|
-| `authenticate(identifier, password)` | Verify credentials, return token or TOTP required |
-| `verifyLoginTotp(tempToken, code)` | Complete TOTP login |
-| `verifyBackupCode(tempToken, code)` | Recovery login |
+* **`authenticate(identifier, password)`**: Verifies username/email/mobile & BCrypt password. Evaluates password lockout ladder. Returns 10-min `MFA_LOGIN` tempToken if MFA active, or TokenPair if MFA disabled.
+* **`authenticateGoogle(idToken, deviceInfo, ip)`**: Exchanges Google OIDC token. Checks `email_verified == true` before linking existing email accounts.
+* **`completeGoogleProfile(tempToken, username, name, phone)`**: Completes Google SSO profile for new users requiring a chosen username.
 
-### 8.4 UserProfileService
+### 7.2 UserService
 
-**Location**: `service/UserProfileService.java`
-**Size**: 4.8KB
+**Location**: `service/UserService.java`
 
-| Method | Purpose |
-|--------|---------|
-| `updateProfile(userId, updateDto)` | Update user profile fields |
-| `changePassword(userId, oldPwd, newPwd)` | Verify old pwd, update |
+* **`updateUser(userId, user)`**: Updates whitelisted profile fields (`name`, `dateOfBirth`, `bio`, `location`, `phoneNumber`, `email`). Phone uniqueness checked against users **and** pending registrations via `isPhoneNumberRegistered`.
+* **`changePassword(userId, oldPassword, newPassword)`**: Verifies current password, updates BCrypt hash, and **revokes all active refresh tokens**.
+* **`deleteUser(userId)`**: Deletes user document, revokes all active refresh tokens, purges stale pending registrations, and **publishes `UserDeletedEvent`** so every module cascades its own user-keyed collections.
+* **`isTokenValid(token)`**: Validates JWT signature, expiration, AND checks MongoDB `invalidated_tokens` blacklist (`HashUtil.sha256(token)`).
+* **`isPhoneNumberRegistered(normalizedPhone)`**: Null-safe uniqueness check across `users` + `pending_registrations`.
 
----
+### 7.3 TotpService
 
-## 9. Authentication Flows
+**Location**: `service/TotpService.java`
 
-### 9.1 Registration Flow (with Mandatory TOTP)
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                      REGISTRATION FLOW                                 │
-├────────────────────────────────────────────────────────────────────────┤
-│                                                                        │
-│  1. POST /api/auth/register                                           │
-│     Body: { username, email, password, name, ... }                    │
-│           │                                                            │
-│           ▼                                                            │
-│     ┌─────────────────────────────────────────────────────────────┐   │
-│     │ UserService.initiateRegistration()                          │   │
-│     │ ├── Validate unique username/email                          │   │
-│     │ ├── Hash password (BCrypt)                                  │   │
-│     │ ├── Store in pendingRegistrations Map                       │   │
-│     │ └── Return TOTP_REGISTRATION temp token                     │   │
-│     └─────────────────────────────────────────────────────────────┘   │
-│           │                                                            │
-│           ▼                                                            │
-│  Response: { tempToken: "eyJ...", message: "TOTP setup required" }    │
-│                                                                        │
-│  2. POST /api/auth/2fa/register/setup                            │
-│     Body: { tempToken }                                               │
-│           │                                                            │
-│           ▼                                                            │
-│     ┌─────────────────────────────────────────────────────────────┐   │
-│     │ TotpService.generateSetupForPendingUser()                   │   │
-│     │ ├── Generate TOTP secret                                    │   │
-│     │ ├── Store in pending user object                            │   │
-│     │ └── Generate QR code                                        │   │
-│     └─────────────────────────────────────────────────────────────┘   │
-│           │                                                            │
-│           ▼                                                            │
-│  Response: { qrCode: "data:image/png;base64,...", secret: "ABC..." }  │
-│                                                                        │
-│  3. POST /api/auth/2fa/register/verify                           │
-│     Body: { tempToken, code: "123456" }                               │
-│           │                                                            │
-│           ▼                                                            │
-│     ┌─────────────────────────────────────────────────────────────┐   │
-│     │ TotpService.verifySetupForPendingUser()                     │   │
-│     │ ├── Verify TOTP code                                        │   │
-│     │ ├── Encrypt & save secret                                   │   │
-│     │ ├── Generate backup codes                                   │   │
-│     │ ├── Save user to MongoDB                                    │   │
-│     │ ├── Save backup codes to MongoDB                            │   │
-│     │ └── Generate JWT token                                      │   │
-│     └─────────────────────────────────────────────────────────────┘   │
-│           │                                                            │
-│           ▼                                                            │
-│  Response: { token: "eyJ...", backupCodes: ["xxxx-xxxx", ...] }       │
-│                                                                        │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-### 9.2 Login Flow (with TOTP)
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                         LOGIN FLOW                                     │
-├────────────────────────────────────────────────────────────────────────┤
-│                                                                        │
-│  1. POST /api/auth/login                                              │
-│     Body: { identifier: "john", password: "secret" }                  │
-│           │                                                            │
-│           ▼                                                            │
-│     ┌─────────────────────────────────────────────────────────────┐   │
-│     │ UserAuthenticationService.authenticate()                    │   │
-│     │ ├── Find user by username/email/phone                       │   │
-│     │ ├── Verify password (BCrypt)                                │   │
-│     │ └── Check totpEnabled flag                                  │   │
-│     └─────────────────────────────────────────────────────────────┘   │
-│           │                                                            │
-│     ┌─────┴─────┐                                                     │
-│     │           │                                                      │
-│     ▼           ▼                                                      │
-│  TOTP OFF    TOTP ON                                                  │
-│     │           │                                                      │
-│     ▼           ▼                                                      │
-│  Return      Return tempToken                                         │
-│  JWT Token   { requiresOtp: true, tempToken: "eyJ..." }              │
-│                 │                                                      │
-│                 ▼                                                      │
-│  2. POST /api/auth/login/totp                                        │
-│     Body: { tempToken, code: "123456" }                               │
-│           │                                                            │
-│           ▼                                                            │
-│     ┌─────────────────────────────────────────────────────────────┐   │
-│     │ TotpService.verifyLogin()                                   │   │
-│     │ ├── Validate temp token purpose = TOTP_LOGIN                │   │
-│     │ ├── Decrypt TOTP secret                                     │   │
-│     │ ├── Verify 6-digit code                                     │   │
-│     │ ├── Reset failed attempts on success                        │   │
-│     │ └── Generate JWT token                                      │   │
-│     └─────────────────────────────────────────────────────────────┘   │
-│           │                                                            │
-│           ▼                                                            │
-│  Response: { token: "eyJ...", user: {...} }                           │
-│                                                                        │
-└────────────────────────────────────────────────────────────────────────┘
-```
+* **`generateSecret()`**: Generates 160-bit SecretKey using `SecureRandom` Base32 encoding.
+* **`verifyCode(secret, code)`**: Validates 6-digit MFA code using time window of 30 seconds. Evaluates MFA lockout ladder.
+* **`generateBackupCodes(userId, version)`**: Generates configurable count of plain 8-digit numeric backup codes (`00000000` to `99999999`, default `totp.max-backup-codes=10`) and persists BCrypt hashes.
+* **Rotation purge (`verifySetup`)**: on every secret rotation the previous generation's backup codes are **fully deleted** via `deleteByUserIdAndGeneration`, and code-verification drift is driven by `totp.window` (default 1).
 
 ---
 
-## 10. TOTP 2FA System
+## 8. Controllers
 
-### 10.1 TOTP Configuration
+### 8.1 AuthController (`/api/auth`)
 
-| Setting | Value |
-|---------|-------|
-| Algorithm | SHA1 |
-| Digits | 6 |
-| Period | 30 seconds |
-| Secrets | Encrypted with AES-256-GCM |
-| Library | `dev.samstevens.totp` |
+| Method   | Path                                    | Access | Description                                                                 |
+| -------- | --------------------------------------- | ------ | --------------------------------------------------------------------------- |
+| `POST` | `/api/auth/login`                     | Public | Password authentication; returns`LoginResponse` (tempToken if MFA active) |
+| `POST` | `/api/auth/register`                  | Public | Initiate registration; returns 15-min`MFA_REGISTRATION` tempToken        |
+| `POST` | `/api/auth/refresh`                   | Public | Rotates refresh token & issues new access token                             |
+| `POST` | `/api/auth/oauth2/google`             | Public | Google SSO code exchange & account resolution                               |
+| `GET`  | `/api/auth/verify-token`              | Public | Validates access token (checks signature, expiration, & MongoDB blacklist)  |
+| `GET`  | `/api/auth/check-username/{username}` | Public | Checks username availability                                                |
 
-### 10.2 Secret Lifecycle
+### 8.2 TotpController (`/api/auth`)
 
+| Method   | Path                              | Access | Description                                                      |
+| -------- | --------------------------------- | ------ | ---------------------------------------------------------------- |
+| `POST` | `/api/auth/mfa/login`          | Public | Complete MFA login with`MFA_LOGIN` tempToken & 6-digit code   |
+| `POST` | `/api/auth/mfa/login-recovery`      | Public | MFA recovery login using an 8-digit numeric backup code          |
+| `POST` | `/api/auth/mfa/setup`           | Public | Generate QR code URI & secret for initial MFA setup             |
+| `POST` | `/api/auth/mfa/verify`          | Public | Verify initial MFA setup code & receive 10 numeric backup codes |
+| `POST` | `/api/auth/mfa/register/setup`  | Public | MFA setup during onboarding                                      |
+| `POST` | `/api/auth/mfa/register/verify` | Public | Finalize onboarding, persist`User` document, return TokenPair  |
+
+### 8.3 UserController (`/api/users`)
+
+| Method     | Path                       | Access    | Description                                                                                |
+| ---------- | -------------------------- | --------- | ------------------------------------------------------------------------------------------ |
+| `GET`    | `/api/users/me`          | Protected | Fetch current user's profile as `UserProfileResponse` DTO (whitelisted fields only)        |
+| `PUT`    | `/api/users/me`          | Protected | Update profile via `UpdateProfileRequest` DTO (`username`, `name`, `email`, `phoneNumber`, `dateOfBirth`, `bio`, `location`) — no raw entity binding |
+| `POST`   | `/api/users/me/password` | Protected | Change password (verifies current password, revokes all refresh tokens)                    |
+| `DELETE` | `/api/users/me`          | Protected | Delete account, revoke refresh tokens & publish `UserDeletedEvent` — every module cascades its own user-keyed collections (notes, broker accounts, portfolio canonical data, MF schemes/ledgers, PPF/EPF/FD/Gold-Silver ledgers, invalidated tokens) |
+
+---
+
+## 9. Lockout & Security Ladders
+
+To defend against brute-force attacks, the User module enforces two separate progressive lockout ladders:
+
+### 9.1 Password Lockout Ladder (`UserAuthenticationService`)
+
+| Failed Password Attempts     | Lockout Duration                                           |
+| ---------------------------- | ---------------------------------------------------------- |
+| 1 to 4 attempts              | Allowed (increment`passwordFailedAttempts`)              |
+| **5 failed attempts**  | **15 minutes lockout** (`passwordLockedUntil` set) |
+| **10 failed attempts** | **1 hour lockout**                                   |
+
+### 9.2 MFA / MFA Lockout Ladder (`TotpService`)
+
+| Failed MFA Attempts         | Lockout Duration                                       |
+| ---------------------------- | ------------------------------------------------------ |
+| 1 to 4 attempts              | Allowed (increment`totpFailedAttempts`)              |
+| **5 failed attempts**  | **10 minutes lockout** (`totpLockedUntil` set) |
+| **10 failed attempts** | **24 hours lockout**                             |
+
+---
+
+## 10. MFA / MFA Architecture
+
+```mermaid
+flowchart TD
+    Stage1["Stage 1: PENDING<br/>Generated during setup<br/>Stored in totpSecretPending (encrypted)<br/>Not yet active"] -->|User scans QR & verifies code| Stage2["Stage 2: ACTIVE<br/>Moved to totpSecretEncrypted<br/>totpEnabled = true, totpVerified = true<br/>totpSecretPending = null<br/>10 8-digit numeric backup codes generated"]
+    Stage2 -->|User requests reset / rotation| Stage3["Stage 3: ROTATION<br/>New secret in totpSecretPending<br/>Old secret still active<br/>totpSecretVersion incremented"]
+    Stage3 -->|User verifies new code| Stage4["Stage 4: ROTATED<br/>New secret moved to totpSecretEncrypted<br/>Old backup codes deleted (purged by generation)<br/>New backup codes generated"]
 ```
+
+<details>
+<summary>Click to view ASCII Diagram</summary>
+
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│                    TOTP SECRET LIFECYCLE                               │
+│                    MFA SECRET LIFECYCLE                               │
 ├────────────────────────────────────────────────────────────────────────┤
 │                                                                        │
 │  Stage 1: PENDING                                                     │
@@ -563,68 +398,84 @@ Main facade for user operations, coordinating other services.
 │           ▼                                                            │
 │  Stage 2: ACTIVE                                                      │
 │  ├── Moved to totpSecretEncrypted                                    │
-│  ├── totpEnabled = true                                              │
-│  ├── totpVerified = true                                             │
-│  ├── totpSecretPending = null                                        │
-│  └── Backup codes generated                                          │
+│  ├── totpEnabled = true, totpVerified = true                          │
+│  ├── totpSecretPending = null                                         │
+│  └── 10 8-digit numeric backup codes generated                         │
 │           │                                                            │
-│           │ User requests reset                                        │
+│           │ User requests reset / rotation                             │
 │           ▼                                                            │
 │  Stage 3: ROTATION                                                    │
 │  ├── New secret in totpSecretPending                                 │
 │  ├── Old secret still active                                          │
-│  └── totpSecretVersion incremented                                   │
+│  └── totpSecretVersion incremented                                    │
 │           │                                                            │
 │           │ User verifies new code                                     │
 │           ▼                                                            │
 │  Stage 4: ROTATED                                                     │
 │  ├── New secret moved to totpSecretEncrypted                         │
-│  ├── Old backup codes deleted                                        │
-│  └── New backup codes generated                                      │
+│  ├── Old backup codes deleted (purged by generation)                 │
+│  └── New 8-digit numeric backup codes generated                       │
 │                                                                        │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 10.3 Lockout Protection
-
-| Setting | Value |
-|---------|-------|
-| Max Failed Attempts | 5 |
-| Lockout Duration | 15 minutes |
-| Reset on Success | Yes |
+</details>
 
 ---
 
 ## 11. Backup Codes
 
-### 11.1 Configuration
+### 11.1 Configuration & Format
 
-| Setting | Value |
-|---------|-------|
-| Count | 10 codes per user |
-| Format | `XXXX-XXXX` (8 alphanumeric chars) |
-| Storage | BCrypt hashed |
-| Usage | One-time only |
-| Version | Tied to TOTP secret version |
+| Setting           | Value                                                           |
+| ----------------- | --------------------------------------------------------------- |
+| **Count**   | 10 codes per user                                               |
+| **Format**  | **Plain 8-digit numerics** (`00000000` to `99999999`) |
+| **Storage** | BCrypt hashed in`users.backupCodes`                           |
+| **Usage**   | One-time recovery use only                                      |
+| **Version** | Guarded by`totpSecretVersion`                                 |
 
 ### 11.2 Recovery Flow
 
+```mermaid
+flowchart TD
+    Req["POST /api/auth/mfa/login-recovery<br/>{ tempToken, code: '12345678' }"] --> ValTemp["1. Validate temp token purpose == MFA_LOGIN"]
+    ValTemp --> CheckLock["2. Extract user & check MFA lockout ladder"]
+    CheckLock --> CheckCode["3. Compare 8-digit input against BCrypt hashed codes"]
+    CheckCode -->|Match| MarkUsed["4. Mark code as used (usedAt set)"]
+    MarkUsed --> IssueToken["5. Issue TokenPair (access + refresh)"]
+    CheckCode -->|Mismatch| Lockout["Increment totpFailedAttempts -> Check 10m/24h lockout"]
 ```
-POST /api/auth/login/recovery
-Body: { tempToken, code: "ABCD-1234" }
 
-1. Validate temp token purpose = TOTP_LOGIN
+<details>
+<summary>Click to view ASCII Diagram</summary>
+
+```text
+POST /api/auth/mfa/login-recovery
+Body: { tempToken, code: "12345678" }
+
+1. Validate temp token purpose = MFA_LOGIN
 2. Find unused backup codes for user's current version
-3. Compare input against hashed codes (BCrypt)
+3. Compare 8-digit input against hashed codes (BCrypt)
 4. Mark matching code as used (set usedAt)
-5. Generate JWT token
+5. Generate TokenPair (access + refresh tokens)
 ```
+
+</details>
 
 ---
 
-## 12. API Reference
+## 12. OAuth2 / Google SSO Integration
 
-### 12.1 Authentication Endpoints
+* **OIDC Token Verification**: Handled via `GoogleOAuthService` in `security`.
+* **Account Linking Safeguard**:
+  If a user attempts Google SSO with an email matching an existing account, linking is **only allowed if Google asserts `email_verified == true`**. Unverified Google emails trigger an `AuthenticationException`.
+
+---
+
+## 13. API Reference
+
+### 13.1 Authentication Endpoints
 
 ```http
 # Login
@@ -636,36 +487,37 @@ Content-Type: application/json
   "password": "secret123"
 }
 
-# Response (TOTP enabled)
+# Response (MFA enabled)
 {
-  "requiresOtp": true,
+  "requireTotp": true,
   "tempToken": "eyJhbGciOiJIUzI1NiIs...",
-  "message": "TOTP verification required"
+  "message": "MFA verification required"
 }
 
-# Response (TOTP disabled)
+# Response (MFA disabled)
 {
-  "token": "eyJhbGciOiJIUzI1NiIs...",
-  "user": { "id": "...", "username": "john_doe", ... }
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "4f9a8b...",
+  "user": { "id": "66bc1234...", "username": "john_doe", "email": "john@example.com" }
 }
 ```
 
-### 12.2 TOTP Endpoints
+### 13.2 MFA Endpoints
 
 ```http
-# Setup TOTP
-POST /api/auth/2fa/setup
-Authorization: Bearer <token>
+# Setup MFA
+POST /api/auth/mfa/setup
+Authorization: Bearer <tempToken_or_accessToken>
 
 # Response
 {
-  "qrCode": "data:image/png;base64,iVBORw0KGgo...",
+  "qrCodeUrl": "data:image/png;base64,iVBORw0KGgo...",
   "secret": "JBSWY3DPEHPK3PXP"
 }
 
-# Verify TOTP Setup
-POST /api/auth/2fa/verify
-Authorization: Bearer <token>
+# Verify MFA Setup
+POST /api/auth/mfa/verify
+Authorization: Bearer <tempToken_or_accessToken>
 Content-Type: application/json
 
 {
@@ -675,20 +527,20 @@ Content-Type: application/json
 # Response
 {
   "success": true,
-  "backupCodes": ["ABCD-1234", "EFGH-5678", ...]
+  "backupCodes": ["12345678", "87654321", ...]
 }
 ```
 
-### 12.3 Profile Endpoints
+### 13.3 Profile Endpoints
 
 ```http
-# Get current user
+# Get current user profile
 GET /api/users/me
-Authorization: Bearer <token>
+Authorization: Bearer <accessToken>
 
 # Update profile
-PUT /api/users/{id}
-Authorization: Bearer <token>
+PUT /api/users/me
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -698,8 +550,8 @@ Content-Type: application/json
 }
 
 # Change password
-PUT /api/users/{id}/password
-Authorization: Bearer <token>
+POST /api/users/me/password
+Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
@@ -710,77 +562,74 @@ Content-Type: application/json
 
 ---
 
-## 13. Security
+## 14. Security Checklist
 
-### 13.1 Password Security
+### 14.1 Password Security
 
-| Aspect | Implementation |
-|--------|----------------|
-| Algorithm | BCrypt |
-| Storage | Never plaintext |
-| Transmission | HTTPS only |
-| Validation | Verify old password before change |
+| Aspect         | Implementation                                                              |
+| -------------- | --------------------------------------------------------------------------- |
+| Algorithm      | BCrypt via Spring Security`PasswordEncoder`                               |
+| Lockout Ladder | 5 failed attempts$\rightarrow$ 15m; 10 failed attempts $\rightarrow$ 1h |
+| Storage        | Password hashes set to`null` before sending `User` in response DTOs     |
+| Transmission   | HTTPS only; passwords never logged                                          |
 
-### 13.2 TOTP Secret Security
+### 14.2 MFA Secret Security
 
-| Aspect | Implementation |
-|--------|----------------|
-| Encryption | AES-256-GCM |
-| Key Source | Environment variable |
-| Storage | Encrypted at rest |
-| Transmission | Never sent after setup |
-
-### 13.3 Token Security
-
-| Token Type | Expiry | Purpose |
-|------------|--------|---------|
-| JWT Access | 30 min | Full API access |
-| TOTP_LOGIN | 5 min | Complete TOTP login |
-| TOTP_SETUP | 15 min | Initial 2FA setup |
-| TOTP_REGISTRATION | 15 min | Registration completion |
+| Aspect         | Implementation                                                               |
+| -------------- | ---------------------------------------------------------------------------- |
+| Encryption     | AES-256-GCM via`EncryptionUtil`                                            |
+| Key Source     | `${totp.encryption-key}` (64 hex chars = 32 bytes)                         |
+| Lockout Ladder | 5 failed attempts$\rightarrow$ 10m; 10 failed attempts $\rightarrow$ 24h |
+| Backup Codes   | 10 8-digit numeric codes, BCrypt hashed at rest                              |
 
 ---
 
-## 14. Common Pitfalls
+## 15. Environment Variables
 
-| Pitfall | Impact | Prevention |
-|---------|--------|------------|
-| Returning User entity | Exposes password hash | Always map to UserDTO |
-| Case sensitivity | Duplicate users (John vs john) | Normalize to lowercase |
-| Logging passwords | Security breach | Never log credentials |
-| Long-lived temp tokens | Token hijacking | 5-15 min expiry |
-| Missing lockout | Brute force attacks | 5 attempts → 15 min lockout |
-| Plain backup codes | Database leak exposure | BCrypt hash all codes |
-| Skipping old password check | Unauthorized password change | Always verify old password |
-| Not clearing pending secrets | Stale setup data | Clear on failure/timeout |
+| Variable                | Type   | Description                         | Example                                  |
+| ----------------------- | ------ | ----------------------------------- | ---------------------------------------- |
+| `jwt.secret`          | String | JWT signing secret (min 32 bytes)   | `my-super-secret-jwt-key-32chars-long` |
+| `totp.encryption-key` | Hex    | 32-byte AES key (64 hex characters) | `0123456789abcdef0123456789abcdef...`  |
+
+---
+
+## 16. Common Pitfalls
+
+| Pitfall                                  | Impact                                         | Prevention                                                                              |
+| ---------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Returning raw password hash              | Security leak                                  | Explicitly set`user.setPassword(null)` before returning response                      |
+| Case sensitivity on email                | Duplicate user registrations                   | Always trim and lowercase email (`email.trim().toLowerCase()`)                        |
+| Unverified Google email linking          | Account takeover                               | Check`email_verified == true` before linking Google accounts                          |
+| Password change without token revocation | Stolen active sessions survive password change | Invoke`jwtService.revokeAllRefreshTokens(userId)` on password change & account delete |
 
 ---
 
 ## Appendix A: File Size Reference
 
-| File | Size | Lines | Notes |
-|------|------|-------|-------|
-| UserService.java | 15.4KB | ~450 | Main user operations |
-| TotpController.java | 14.8KB | 329 | 9 TOTP endpoints |
-| TotpService.java | 14KB | 361 | TOTP logic |
-| UserController.java | 14KB | 330 | 11 user endpoints |
-| UserAuthenticationService.java | 12KB | ~350 | Login logic |
-| LoginResponse.java | 5.9KB | ~150 | Response DTO |
-| UserProfileService.java | 4.8KB | ~140 | Profile CRUD |
+| File                               | Size    | Lines | Description                                          |
+| ---------------------------------- | ------- | ----- | ---------------------------------------------------- |
+| `UserAuthenticationService.java` | ~19.3KB | 451   | Authentication, Google SSO, password lockout ladders |
+| `UserService.java`               | ~16.4KB | 403   | User CRUD, email verification, token invalidation    |
+| `TotpService.java`               | ~14KB   | 361   | MFA generation, validation, & 8-digit backup codes  |
+| `AuthController.java`            | ~14.2KB | 301   | Auth REST endpoints                                  |
+| `TotpController.java`            | ~14.8KB | 329   | MFA REST endpoints                                   |
+| `UserController.java`            | ~8KB    | 185   | `/api/users/me` REST endpoints                     |
+| `User.java`                      | ~3.5KB  | 114   | Main MongoDB document model                          |
 
 ---
 
 ## Appendix B: Related Documentation
 
-- [Security Module README](../security/README.md) - JWT, TotpEncryptionUtil
-- [Common Module README](../common/README.md) - ApiResponse, exceptions
-- [Notes Module README](../notes/README.md) - Default notes seeding
+- [Security Module README](../security/README.md) - JWTService, SecurityConfig & JwtFilter
+- [Common Module README](../common/README.md) - EncryptionUtil, HashUtil, ApiResponse
+- [Notes Module README](../notes/README.md) - NoteService default notes seeding
 
 ---
 
 ## Appendix C: Changelog
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 2.0.0 | 2025-12-17 | Comprehensive rewrite with TOTP 2FA documentation |
-| 1.0.0 | 2025-12-14 | Initial documentation |
+| Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1.0   | 2026-08-23 | Complete alignment with codebase: added Authentication & Login Flow sequence diagram, removed dead `UserProfileService` & `LoginController`, documented MongoDB `@Indexed` fields on `User`, updated 8-digit numeric backup code format, documented dual lockout ladders (15m/1h password, 10m/24h MFA), `pending_registrations` TTL storage, token revocation on password change/delete, enforced registration email lowercasing + startup DB migration (`migrateMixedCaseEmailsToLowerCase`), centralized blacklist check in `JWTService` for temp & access tokens, and added collapsible ASCII diagram toggles across all Mermaid diagrams. |
+| 3.2.0   | 2026-08-23 | DTO-only profile contract (`UserProfileResponse` out, validated `UpdateProfileRequest` in — no raw entity binding); account-deletion cascade via `UserDeletedEvent` (all modules purge their user-keyed data); phone uniqueness now includes pending registrations + null-safe (`isPhoneNumberRegistered`); rotation fully deletes previous-generation backup codes; `totp.window` & `totp.max-backup-codes` properties wired into TotpService; dead code removed (3 legacy DTOs, `getAllUsers`); `isTokenValid` delegates to blacklist-enforcing `JWTService.validateToken`. |
+| 2.0.0   | 2025-12-17 | Refactored MFA MFA architecture and embedded user settings                                                                                                                                                                                                                                                                                                                                                                                                                                                    |

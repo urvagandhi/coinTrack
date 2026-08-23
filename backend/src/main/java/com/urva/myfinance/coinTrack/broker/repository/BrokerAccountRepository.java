@@ -21,4 +21,6 @@ public interface BrokerAccountRepository extends MongoRepository<BrokerAccount, 
 
     org.springframework.data.domain.Page<BrokerAccount> findByIsActiveTrue(
             org.springframework.data.domain.Pageable pageable);
+
+    void deleteByUserId(String userId);
 }

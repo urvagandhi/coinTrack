@@ -19,4 +19,6 @@ public interface MfSchemeRepository extends MongoRepository<MfScheme, String> {
     List<MfScheme> findByUserIdAndBank(String userId, String bank);
 
     List<MfScheme> findByUserIdAndSchemeNameContainingIgnoreCase(String userId, String schemeName);
+
+    void deleteByUserId(String userId);
 }

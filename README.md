@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Multi-broker portfolio tracker for the Indian stock market</strong><br/>
-  Aggregate holdings across Zerodha, Angel One & Upstox — with mandatory 2FA, encrypted credential storage, and 33 financial calculators.
+  Aggregate holdings across Zerodha, Angel One & Upstox — with mandatory MFA, encrypted credential storage, and 33 financial calculators.
 </p>
 
 <p align="center">
@@ -88,7 +88,7 @@ graph TB
             PS["Portfolio<br/>Summary"]
             PA["Portfolio<br/>Aggregation"]
             SS["Sync<br/>Scheduler"]
-            TS["TOTP<br/>Service"]
+            TS["MFA<br/>Service"]
             JS["JWT<br/>Service"]
         end
 
@@ -133,7 +133,7 @@ graph TD
     COMMON["common/<br/>utils, exceptions, config"]
 
     COMMON --> SECURITY["security/<br/>JWT, filters, config"]
-    COMMON --> USER["user/<br/>auth, profile, TOTP"]
+    COMMON --> USER["user/<br/>auth, profile, MFA"]
     COMMON --> EMAIL["email/<br/>Brevo, templates"]
     COMMON --> CALC["calculator/<br/>33 financial tools"]
 
@@ -175,13 +175,13 @@ sequenceDiagram
     B->>DB: Move to users collection
     B-->>C: 200 "Email verified"
 
-    Note over C,E: Login (2FA Mandatory)
+    Note over C,E: Login (MFA Mandatory)
     C->>B: POST /api/auth/login {email, password}
     B->>DB: Verify credentials
     B-->>C: 200 {totpRequired: true}
 
     C->>B: POST /api/auth/login {email, password, totpCode}
-    B->>B: Verify TOTP code
+    B->>B: Verify MFA code
     B->>DB: Create refresh token
     B-->>C: 200 {accessToken, refreshToken}
 
@@ -295,11 +295,11 @@ flowchart LR
 | Spring WebFlux        | 6.x      | Non-blocking HTTP client (broker APIs)       |
 | SpringDoc OpenAPI     | 2.x      | **Swagger UI** — interactive API docs |
 | JJWT                  | 0.12.5   | JWT token signing & validation               |
-| TOTP (dev.samstevens) | 1.7.1    | Time-based One-Time Password                 |
+| MFA (dev.samstevens) | 1.7.1    | Time-based One-Time Password                 |
 | BouncyCastle          | 1.78     | AES-256-GCM encryption                       |
 | Bucket4j              | 8.x      | Rate limiting                                |
 | Caffeine              | 3.x      | In-memory cache (JWT blacklist)              |
-| ZXing                 | 3.5.3    | QR code generation for 2FA setup             |
+| ZXing                 | 3.5.3    | QR code generation for MFA setup             |
 | Brevo API             | REST     | Transactional email delivery                 |
 | Maven                 | 3.9.9    | Build & dependency management                |
 
@@ -392,7 +392,7 @@ graph LR
 
 ### Security
 
-- **Mandatory 2FA** — TOTP-based (Google Authenticator, Authy)
+- **Mandatory MFA** — MFA-based (Google Authenticator, Authy)
 - **Google SSO** — One-click login and registration with Google OAuth2
 - **10 backup codes** — One-time recovery codes generated at setup
 - **AES-256-GCM encryption** — All broker API secrets and access tokens encrypted at rest
@@ -482,14 +482,14 @@ coinTrack/
 │
 ├── frontend/                                   # Next.js 16 App
 │   ├── src/app/
-│   │   ├── (access)/                           # Public: login, register, forgot-password, 2FA
+│   │   ├── (access)/                           # Public: login, register, forgot-password, MFA
 │   │   ├── (main)/                             # Protected: dashboard, portfolio, brokers, notes
 │   │   │   ├── dashboard/                      #   Portfolio overview with P&L cards
 │   │   │   ├── portfolio/                      #   Tabbed view: holdings, positions, MF, orders
 │   │   │   ├── brokers/                        #   Zerodha, AngelOne, Upstox setup & dashboards
 │   │   │   ├── notes/                          #   Investment journal
 │   │   │   ├── profile/                        #   User profile
-│   │   │   └── settings/                       #   2FA settings
+│   │   │   └── settings/                       #   MFA settings
 │   │   └── calculators/                        # 32 calculator pages (public, no auth)
 │   │       ├── investment/                     #   SIP, lumpsum, CAGR, XIRR, etc.
 │   │       ├── loans/                          #   EMI, compound interest, etc.
@@ -616,7 +616,7 @@ openssl rand -hex 32
 # Encryption Key (32 characters)
 openssl rand -base64 24
 
-# TOTP Encryption Key (64 hex characters)
+# MFA Encryption Key (64 hex characters)
 openssl rand -hex 32
 ```
 
@@ -632,7 +632,7 @@ openssl rand -hex 32
 | `MONGODB_DB`            | No       | Database name (default:`Finance`) | `Finance`                          |
 | `JWT_SECRET`            | Yes      | 256-bit signing key (hex)           | `a1b2c3d4...` (64 chars)           |
 | `ENCRYPTION_SECRET_KEY` | Yes      | AES-256 key (exactly 32 chars)      | `mySecretKey12345678901234567890`  |
-| `TOTP_ENCRYPTION_KEY`   | Yes      | TOTP encryption key (64 hex chars)  | `a1b2c3...`                        |
+| `TOTP_ENCRYPTION_KEY`   | Yes      | MFA encryption key (64 hex chars)  | `a1b2c3...`                        |
 | `EMAIL_MAGIC_LINK_SECRET` | Yes    | JWT secret for email magic links    | (random 32+ chars)                 |
 | `BREVO_API_KEY`         | Yes      | Brevo email API key                 | `xkeysib-...`                      |
 | `GOLDAPI_KEY`           | For live metal rates | GoldAPI.io API key (alias: `GOLD_API_KEY`) | `goldapi-...` |
@@ -762,23 +762,23 @@ graph LR
 | `POST` | `/api/auth/register`        | Public | Register new user                  |
 | `POST` | `/api/auth/google`          | Public | Google SSO Login/Registration      |
 | `GET`  | `/api/auth/verify`          | Public | Verify email token                 |
-| `POST` | `/api/auth/login`           | Public | Login (returns JWT or TOTP prompt) |
+| `POST` | `/api/auth/login`           | Public | Login (returns JWT or MFA prompt) |
 | `POST` | `/api/auth/refresh`         | Public | Refresh JWT token                  |
 | `POST` | `/api/auth/logout`          | JWT    | Invalidate token                   |
 | `POST` | `/api/auth/forgot-password` | Public | Send reset email                   |
 | `POST` | `/api/auth/reset-password`  | Public | Reset with token                   |
 
-### User & 2FA
+### User & MFA
 
 | Method   | Endpoint                          | Auth | Description                    |
 | -------- | --------------------------------- | ---- | ------------------------------ |
 | `GET`  | `/api/users/me`                 | JWT  | Get user profile               |
 | `PUT`  | `/api/users/me`                 | JWT  | Update profile                 |
-| `POST` | `/api/auth/2fa/setup`           | JWT  | Generate TOTP secret + QR code |
-| `POST` | `/api/auth/2fa/verify`          | JWT  | Verify TOTP code (setup)       |
-| `POST` | `/api/auth/login/totp`          | JWT  | Complete login with TOTP       |
+| `POST` | `/api/auth/mfa/setup`           | JWT  | Generate TOTP secret + QR code |
+| `POST` | `/api/auth/mfa/verify`          | JWT  | Verify MFA code (setup)       |
+| `POST` | `/api/auth/api/auth/mfa/login`          | JWT  | Complete login with MFA       |
 | `POST` | `/api/auth/login/recovery`      | JWT  | Login with backup code         |
-| `GET`  | `/api/auth/2fa/status`          | JWT  | Get 2FA status                 |
+| `GET`  | `/api/auth/mfa/status`          | JWT  | Get MFA status                 |
 
 ### Broker
 
@@ -946,7 +946,7 @@ graph LR
 ```mermaid
 stateDiagram-v2
     [*] --> Unauthenticated
-    Unauthenticated --> Active: Login + 2FA
+    Unauthenticated --> Active: Login + MFA
     Active --> Expired: Token TTL expires
     Active --> Blacklisted: Logout
     Expired --> Active: Refresh token

@@ -25,4 +25,6 @@ public interface RedemptionTransactionRepository extends MongoRepository<Redempt
             LocalDate endDate);
 
     List<RedemptionTransaction> findByStatus(TransactionStatus status);
+
+    void deleteByUserId(String userId);
 }

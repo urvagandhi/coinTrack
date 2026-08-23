@@ -32,4 +32,11 @@ public interface BackupCodeRepository extends MongoRepository<BackupCode, String
      * Used during cleanup or when user is deleted.
      */
     void deleteByUserId(String userId);
+
+    /**
+     * Delete every code of a specific generation (used and unused).
+     * Called during secret rotation so the previous version's codes are
+     * fully removed instead of lingering as inert rows.
+     */
+    void deleteByUserIdAndGeneration(String userId, int generation);
 }

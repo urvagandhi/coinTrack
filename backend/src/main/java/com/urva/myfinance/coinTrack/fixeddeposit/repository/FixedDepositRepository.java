@@ -17,4 +17,6 @@ public interface FixedDepositRepository extends MongoRepository<FixedDeposit, St
     List<FixedDeposit> findByUserId(String userId);
 
     List<FixedDeposit> findByStatusNot(FdStatus status);
+
+    void deleteByUserId(String userId);
 }

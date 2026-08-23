@@ -9,4 +9,6 @@ import com.urva.myfinance.coinTrack.security.model.InvalidatedToken;
 public interface InvalidatedTokenRepository extends MongoRepository<InvalidatedToken, String> {
 
     boolean existsByTokenHash(String tokenHash);
+
+    void deleteByUserId(String userId);
 }

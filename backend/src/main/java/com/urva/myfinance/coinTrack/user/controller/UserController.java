@@ -20,6 +20,8 @@ import com.urva.myfinance.coinTrack.common.service.NotificationService;
 import com.urva.myfinance.coinTrack.common.util.RequestUtils;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
+import com.urva.myfinance.coinTrack.user.dto.UpdateProfileRequest;
+import com.urva.myfinance.coinTrack.user.dto.UserProfileResponse;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.service.UserService;
 
@@ -72,7 +74,7 @@ public class UserController {
 
             if (user != null) {
                 user.setPassword(null);
-                return ResponseEntity.ok(ApiResponse.success(user));
+                return ResponseEntity.ok(ApiResponse.success(UserProfileResponse.from(user)));
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
         } catch (Exception e) {
@@ -85,15 +87,28 @@ public class UserController {
     @Operation(summary = "Update current user profile")
     @PutMapping("/me")
     public ResponseEntity<?> updateCurrentUser(Authentication authentication,
-                                                @Valid @RequestBody User updates) {
+                                                @Valid @RequestBody UpdateProfileRequest request) {
         try {
             UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
             String userId = principal.getUserId();
 
+            // Map the validated DTO onto a transient entity — service whitelist unchanged,
+            // but the request surface is now exactly these fields (no mass assignment).
+            User updates = new User();
+            updates.setUsername(request.username());
+            updates.setName(request.name());
+            updates.setEmail(request.email());
+            updates.setPhoneNumber(request.phoneNumber());
+            updates.setDateOfBirth(request.dateOfBirth());
+            updates.setBio(request.bio());
+            updates.setLocation(request.location());
+            if (request.email() != null) {
+                updates.setEmail(request.email().trim().toLowerCase());
+            }
+
             User updated = userService.updateUser(userId, updates);
             if (updated != null) {
-                updated.setPassword(null);
-                return ResponseEntity.ok(ApiResponse.success(updated));
+                return ResponseEntity.ok(ApiResponse.success(UserProfileResponse.from(updated)));
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
         } catch (IllegalArgumentException e) {

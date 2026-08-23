@@ -28,21 +28,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Controller for Lost 2FA Recovery flow.
+ * Controller for Lost MFA Recovery flow.
  *
  * Flow:
- * 1. POST /auth/2fa/recovery - Request 2FA recovery (email/username/mobile)
- * 2. POST /auth/2fa/recovery/verify - Verify recovery token, disable 2FA
+ * 1. POST /auth/mfa/email-recovery - Request MFA recovery (email/username/mobile)
+ * 2. POST /auth/mfa/email-recovery/verify - Verify recovery token, disable MFA
  *
  * Security:
  * - Only works if user has verified email
  * - Token is single-use and short-lived
- * - Security alert sent after 2FA is disabled
+ * - Security alert sent after MFA is disabled
  */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "2FA Recovery", description = "Recover 2FA via email magic link")
+@Tag(name = "MFA Recovery", description = "Recover MFA via email magic link")
 public class TwoFactorRecoveryController {
 
     private static final Logger logger = LoggerFactory.getLogger(TwoFactorRecoveryController.class);
@@ -54,12 +54,12 @@ public class TwoFactorRecoveryController {
     private final TotpService totpService;
 
     /**
-     * Request 2FA recovery.
+     * Request MFA recovery.
      * Sends magic link to the user's verified email.
-     * Only works if user has 2FA enabled and email is verified.
+     * Only works if user has MFA enabled and email is verified.
      */
-    @Operation(summary = "Request 2FA recovery via email")
-    @PostMapping("/2fa/recovery")
+    @Operation(summary = "Request MFA recovery via email")
+    @PostMapping("/mfa/email-recovery")
     public ResponseEntity<?> request2FARecovery(
             @RequestBody Map<String, String> request,
             HttpServletRequest httpRequest) {
@@ -119,11 +119,11 @@ public class TwoFactorRecoveryController {
     }
 
     /**
-     * Verify 2FA recovery token and disable 2FA.
+     * Verify MFA recovery token and disable MFA.
      * Returns a temporary JWT to allow completing the reset.
      */
-    @Operation(summary = "Verify 2FA recovery token and disable 2FA")
-    @PostMapping("/2fa/recovery/verify")
+    @Operation(summary = "Verify MFA recovery token and disable MFA")
+    @PostMapping("/mfa/email-recovery/verify")
     public ResponseEntity<?> verify2FARecovery(@RequestBody Map<String, String> request) {
         String token = request.get("token");
 

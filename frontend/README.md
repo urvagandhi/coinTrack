@@ -36,7 +36,7 @@ Next.js App Router application providing:
 - Multi-broker connection management with OAuth callbacks
 - Detailed portfolio views (holdings, positions, orders, mutual funds)
 - 32 financial calculators (33 backend endpoints) (public, no auth required)
-- Secure 2FA (TOTP) setup and management
+- Secure MFA (MFA) setup and management
 - Notes system for personal finance tracking
 - Dark/light theme support
 
@@ -202,7 +202,7 @@ frontend/
 Connect multiple Indian stockbrokers through OAuth and view consolidated data:
 
 - **Zerodha** -- KiteConnect API (API key + secret)
-- **AngelOne** -- SmartAPI (client ID + password + TOTP)
+- **AngelOne** -- SmartAPI (client ID + password + MFA)
 - **Upstox** -- Upstox API v2 (API key + secret)
 
 Each broker follows a consistent pattern: setup page, OAuth callback handler,
@@ -251,10 +251,10 @@ a common framework in `components/calculators/framework/CalculatorComponents`.
 ### Authentication and Security
 
 - JWT + Refresh token with automatic silent refresh
-- Mandatory 2FA (TOTP) setup after registration
+- Mandatory MFA (MFA) setup after registration
 - Password reset flow with email verification
 - Google SSO integration for fast onboarding and login
-- 2FA recovery flow
+- MFA recovery flow
 - AuthGuard component wraps all (main) routes
 - Token race condition prevention via refresh queue
 
@@ -281,8 +281,8 @@ a common framework in `components/calculators/framework/CalculatorComponents`.
 /forgot-password                    Request password reset
 /reset-password                     Set new password (via email link)
 /verify-email                       Email verification
-/setup-2fa                          TOTP setup (post-registration)
-/reset-2fa                          2FA recovery
+/setup-2fa                          MFA setup (post-registration)
+/reset-2fa                          MFA recovery
 
 /dashboard                          Portfolio overview [auth]
 /portfolio                          Detailed portfolio tabs [auth]
@@ -292,7 +292,7 @@ a common framework in `components/calculators/framework/CalculatorComponents`.
 /brokers/{broker}/dashboard         Broker-specific dashboard [auth]
 /notes                              Personal notes [auth]
 /profile                            User profile [auth]
-/settings/2fa-settings              2FA management [auth]
+/settings/2fa-settings              MFA management [auth]
 ```
 
 Where `{broker}` is one of: `zerodha`, `angelone`, `upstox`.

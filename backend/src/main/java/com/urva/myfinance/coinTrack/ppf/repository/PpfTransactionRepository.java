@@ -15,4 +15,6 @@ public interface PpfTransactionRepository extends MongoRepository<PpfTransaction
     Optional<PpfTransaction> findByIdAndUserId(String id, String userId);
 
     List<PpfTransaction> findByUserId(String userId, Sort sort);
+
+    void deleteByUserId(String userId);
 }

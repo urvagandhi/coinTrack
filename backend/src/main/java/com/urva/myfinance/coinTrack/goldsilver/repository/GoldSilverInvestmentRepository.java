@@ -18,4 +18,6 @@ public interface GoldSilverInvestmentRepository extends MongoRepository<GoldSilv
     List<GoldSilverInvestment> findByUserId(String userId);
 
     List<GoldSilverInvestment> findByStatusNot(GsStatus status);
+
+    void deleteByUserId(String userId);
 }

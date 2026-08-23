@@ -36,8 +36,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/auth")
-@Tag(name = "Two-Factor Auth", description = "TOTP 2FA setup, verification, and recovery")
+@RequestMapping("/api/auth/mfa")
+@Tag(name = "Multi-Factor Auth", description = "MFA setup, verification, and recovery")
 public class TotpController {
 
     private static final Logger logger = LoggerFactory.getLogger(TotpController.class);
@@ -71,7 +71,7 @@ public class TotpController {
      * Requires: Access Token OR Temp Token (Purpose: TOTP_SETUP)
      */
     @Operation(summary = "Initiate TOTP 2FA setup")
-    @PostMapping("/2fa/setup")
+    @PostMapping("/setup")
     public ResponseEntity<?> setupTotp(
             @RequestHeader(name = "Authorization", required = false) String authHeader) {
 
@@ -89,7 +89,7 @@ public class TotpController {
      * Requires: Access Token OR Temp Token (Purpose: TOTP_SETUP)
      */
     @Operation(summary = "Verify TOTP setup and enable 2FA")
-    @PostMapping("/2fa/verify")
+    @PostMapping("/verify")
     public ResponseEntity<?> verifySetup(
             @RequestHeader(name = "Authorization", required = false) String authHeader,
             @Valid @RequestBody TotpVerifyRequest requestBody,
@@ -124,7 +124,7 @@ public class TotpController {
      * Requires: Temp Token (Purpose: TOTP_LOGIN) in Body
      */
     @Operation(summary = "Complete login with TOTP code")
-    @PostMapping("/login/totp")
+    @PostMapping("/login")
     public ResponseEntity<?> completeLoginTotp(@RequestBody Map<String, String> body,
                                                 HttpServletRequest request) {
         String tempToken = body.get("tempToken");
@@ -148,7 +148,7 @@ public class TotpController {
      * Requires: Temp Token (Purpose: TOTP_LOGIN) in Body
      */
     @Operation(summary = "Complete login with backup recovery code")
-    @PostMapping("/login/recovery")
+    @PostMapping("/login-recovery")
     public ResponseEntity<?> completeLoginRecovery(@RequestBody Map<String, String> body,
                                                     HttpServletRequest request) {
         String tempToken = body.get("tempToken");
@@ -176,7 +176,7 @@ public class TotpController {
      * Here we interpret "Reset" as: User is logged in, wants to rotate key.
      */
     @Operation(summary = "Initiate TOTP 2FA reset")
-    @PostMapping("/2fa/reset")
+    @PostMapping("/reset")
     public ResponseEntity<?> resetTotp(@AuthenticationPrincipal UserDetails userDetails,
             @RequestBody Map<String, String> body) {
         if (userDetails == null)
@@ -242,7 +242,7 @@ public class TotpController {
      * Sends security alert and invalidates all email tokens.
      */
     @Operation(summary = "Verify TOTP reset and finalize key rotation")
-    @PostMapping("/2fa/reset/verify")
+    @PostMapping("/reset/verify")
     public ResponseEntity<?> verifyReset(@AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody TotpVerifyRequest request) {
         if (userDetails == null)
@@ -282,7 +282,7 @@ public class TotpController {
      * Requires: Access Token
      */
     @Operation(summary = "Get current 2FA status")
-    @GetMapping("/2fa/status")
+    @GetMapping("/status")
     public ResponseEntity<?> getTotpStatus(@AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -303,7 +303,7 @@ public class TotpController {
      * For NEW users who are completing registration - not yet in DB
      */
     @Operation(summary = "Initiate TOTP setup during registration")
-    @PostMapping("/2fa/register/setup")
+    @PostMapping("/register/setup")
     public ResponseEntity<?> setupRegistrationTotp(@RequestBody Map<String, String> body) {
         String tempToken = body.get("tempToken");
         if (tempToken == null) {
@@ -341,7 +341,7 @@ public class TotpController {
      * On success: Save user to DB, return JWT token and backup codes
      */
     @Operation(summary = "Verify TOTP and complete registration")
-    @PostMapping("/2fa/register/verify")
+    @PostMapping("/register/verify")
     public ResponseEntity<?> verifyRegistrationTotp(@RequestBody Map<String, String> body,
                                                      HttpServletRequest request) {
         String tempToken = body.get("tempToken");

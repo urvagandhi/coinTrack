@@ -493,3 +493,14 @@ Authorization: Bearer <jwt>
 | Treating `ValuationSnapshot` as ledger data | Snapshots are independently entered cross-checks; never merged with or derived from the ledger |
 | Expecting `FULLY_REDEEMED` schemes in default list | Use `?includeRedeemed=true` to surface them |
 | `capitalGain` edited directly | It is auto-computed on every save (`redemptionValue - tradeInvestmentValue`); manual edits are overwritten |
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/MutualFundUserDataCleanupListener.java` listens for common's `UserDeletedEvent`
+and purges all user-owned MF data via new derived `deleteByUserId(String)` methods on:
+`LumpsumTransactionRepository`, `SipContributionRepository`, `SipMandateRepository`,
+`RedemptionTransactionRepository`, `ValuationSnapshotRepository`, `PortfolioHoldingRepository`,
+`MfPortfolioMetricsRepository`, then `MfSchemeRepository` **last** (FK parent). Shared NAV
+cache and LTP repositories are kept.

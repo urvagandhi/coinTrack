@@ -56,8 +56,8 @@ Thymeleaf HTML templates and sends them via the Brevo (Sendinblue) REST API over
 | Verify Email | Registration, email change | Yes (10 min expiry) |
 | Reset Password | Forgot password flow | Yes (10 min expiry) |
 | Change Email | Email update request | Yes (10 min expiry) |
-| 2FA Recovery | Lost authenticator + backup codes | Yes (10 min expiry) |
-| Security Alert | Password/2FA/email/username change | No |
+| MFA Recovery | Lost authenticator + backup codes | Yes (10 min expiry) |
+| Security Alert | Password/MFA/email/username change | No |
 | Contact Form | Public contact form submission | No |
 
 ### 1.5 System Position
@@ -65,7 +65,7 @@ Thymeleaf HTML templates and sends them via the Brevo (Sendinblue) REST API over
 ```mermaid
 graph TD
     UM["User Module<br/>(registration, profile)"] --> EM["Email Module"]
-    SM["Security Module<br/>(password reset, 2FA recovery)"] --> EM
+    SM["Security Module<br/>(password reset, MFA recovery)"] --> EM
 
     subgraph EM["Email Module"]
         ES["EmailService<br/>(orchestrator)"] -->|"Thymeleaf"| HTML["HTML Rendering"]
@@ -247,7 +247,7 @@ are annotated `@Async` so email dispatch never blocks the calling thread.
 | `sendEmailVerification(user, link)` | `verify-email` | UserService (registration) |
 | `sendPasswordResetLink(user, link)` | `reset-password` | AuthController (forgot password) |
 | `sendEmailChangeVerification(user, newEmail, link)` | `change-email` | ProfileService |
-| `send2FARecoveryLink(user, link)` | `2fa-recovery` | TwoFactorService |
+| `sendMFARecoveryLink(user, link)` | `2fa-recovery` | TwoFactorService |
 | `sendSecurityAlert(user, event, metadata)` | `security-alert` | Various security flows |
 | `sendSecurityAlert(user, event)` | `security-alert` | Convenience (no metadata) |
 | `sendSecurityAlertWithIP(user, event, ip)` | `security-alert` | Convenience (with IP) |

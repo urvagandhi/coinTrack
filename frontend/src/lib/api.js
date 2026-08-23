@@ -262,15 +262,15 @@ export const endpoints = {
         register: '/api/auth/register',
         logout: '/api/auth/logout',
         totp: {
-            setup: '/api/auth/2fa/setup',
-            verify: '/api/auth/2fa/verify',
-            loginTotp: '/api/auth/login/totp',
-            loginRecovery: '/api/auth/login/recovery',
-            initiateReset: '/api/auth/2fa/reset',
-            verifyReset: '/api/auth/2fa/reset/verify',
-            getStatus: '/api/auth/2fa/status',
-            registerSetup: '/api/auth/2fa/register/setup',
-            registerVerify: '/api/auth/2fa/register/verify',
+            setup: '/api/auth/mfa/setup',
+            verify: '/api/auth/mfa/verify',
+            loginTotp: '/api/auth/mfa/login',
+            loginRecovery: '/api/auth/mfa/login-recovery',
+            initiateReset: '/api/auth/mfa/reset',
+            verifyReset: '/api/auth/mfa/reset/verify',
+            getStatus: '/api/auth/mfa/status',
+            registerSetup: '/api/auth/mfa/register/setup',
+            registerVerify: '/api/auth/mfa/register/verify',
         },
     },
     users: {
@@ -321,8 +321,8 @@ export const endpoints = {
         changeVerify: '/api/auth/email/change/verify',
     },
     twofa: {
-        recovery: '/api/auth/2fa/recovery',
-        recoveryVerify: '/api/auth/2fa/recovery/verify',
+        recovery: '/api/auth/mfa/email-recovery',
+        recoveryVerify: '/api/auth/mfa/email-recovery/verify',
     },
     password: {
         forgot: '/api/auth/forgot-password',
@@ -388,10 +388,6 @@ export const endpoints = {
         schemes: '/api/mutual-fund/schemes',
         schemeSummary: '/api/mutual-fund/scheme-summary',
         schemeDropdown: '/api/mutual-fund/schemes/dropdown',
-        schemeSearch: '/api/mutual-fund/schemes/search',
-        schemeCategory: (cat) => `/api/mutual-fund/schemes/category/${cat}`,
-        schemePlatform: (plat) => `/api/mutual-fund/schemes/platform/${plat}`,
-        schemeBank: (bank) => `/api/mutual-fund/schemes/bank/${bank}`,
         updateScheme: (id) => `/api/mutual-fund/schemes/${id}`,
         deleteScheme: (id) => `/api/mutual-fund/schemes/${id}`,
         schemeNavForDate: (id) => `/api/mutual-fund/schemes/${id}/nav`,
@@ -423,6 +419,10 @@ export const endpoints = {
         redemptionFinYear: (year) => `/api/mutual-fund/redemption/financial-year/${year}`,
         updateRedemption: (id) => `/api/mutual-fund/redemption/${id}`,
         deleteRedemption: (id) => `/api/mutual-fund/redemption/${id}`,
+
+        valuation: '/api/mutual-fund/valuation',
+        updateValuation: (id) => `/api/mutual-fund/valuation/${id}`,
+        deleteValuation: (id) => `/api/mutual-fund/valuation/${id}`,
     },
 };
 
@@ -1179,20 +1179,16 @@ export const mutualFundAPI = {
         return unwrapResponse(data);
     },
 
-    getValuations: async (params = {}) => {
-        const searchParams = new URLSearchParams();
-        if (params.holderName) searchParams.set('holderName', params.holderName);
-        if (params.platform) searchParams.set('platform', params.platform);
-        const qs = searchParams.toString();
-        const { data } = await api.get(`${endpoints.mutualFund.valuation}${qs ? '?' + qs : ''}`);
+    getValuations: async () => {
+        const { data } = await api.get(endpoints.mutualFund.valuation);
         return unwrapResponse(data) || [];
     },
-    createValuation: async (valData) => {
-        const { data } = await api.post(endpoints.mutualFund.valuation, valData);
+    createValuation: async (payload) => {
+        const { data } = await api.post(endpoints.mutualFund.valuation, payload);
         return unwrapResponse(data);
     },
-    updateValuation: async (id, valData) => {
-        const { data } = await api.put(endpoints.mutualFund.updateValuation(id), valData);
+    updateValuation: async (id, payload) => {
+        const { data } = await api.put(endpoints.mutualFund.updateValuation(id), payload);
         return unwrapResponse(data);
     },
     deleteValuation: async (id) => {

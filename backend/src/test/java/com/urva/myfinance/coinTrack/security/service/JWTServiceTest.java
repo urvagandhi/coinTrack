@@ -30,13 +30,15 @@ class JWTServiceTest {
 
     @Mock private RefreshTokenRepository refreshTokenRepository;
 
+    @Mock private com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository invalidatedTokenRepository;
+
     private JWTService jwtService;
 
     private User sampleUser;
 
     @BeforeEach
     void setUp() {
-        jwtService = new JWTService("a]valid32charSecretKeyForJwtSigning1!", refreshTokenRepository);
+        jwtService = new JWTService("a]valid32charSecretKeyForJwtSigning1!", refreshTokenRepository, invalidatedTokenRepository);
         sampleUser = User.builder()
                 .id("u1").username("testuser").email("test@example.com")
                 .build();

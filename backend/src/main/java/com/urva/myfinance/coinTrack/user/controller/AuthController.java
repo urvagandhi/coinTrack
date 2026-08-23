@@ -141,7 +141,7 @@ public class AuthController {
             User user = userService.getUserByToken(token);
             if (user != null) {
                 user.setPassword(null);
-                return ResponseEntity.ok(user);
+                return ResponseEntity.ok(com.urva.myfinance.coinTrack.user.dto.UserProfileResponse.from(user));
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
         } catch (Exception e) {

@@ -27,6 +27,8 @@ import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.model.AuthProvider;
 import com.urva.myfinance.coinTrack.user.model.PendingRegistration;
 import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.common.util.HashUtil;
+import com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository;
 import com.urva.myfinance.coinTrack.user.repository.PendingRegistrationRepository;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
@@ -49,6 +51,27 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JWTService jwtService;
     private final NoteService noteService;
+    private final InvalidatedTokenRepository invalidatedTokenRepository;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    public UserService(UserRepository userRepository,
+                       PendingRegistrationRepository pendingRegistrationRepository,
+                       MongoTemplate mongoTemplate,
+                       PasswordEncoder passwordEncoder,
+                       JWTService jwtService,
+                       NoteService noteService,
+                       InvalidatedTokenRepository invalidatedTokenRepository,
+                       org.springframework.context.ApplicationEventPublisher eventPublisher) {
+        this.userRepository = userRepository;
+        this.pendingRegistrationRepository = pendingRegistrationRepository;
+        this.mongoTemplate = mongoTemplate;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+        this.noteService = noteService;
+        this.invalidatedTokenRepository = invalidatedTokenRepository;
+        this.eventPublisher = eventPublisher;
+    }
 
     private EmailService emailService;
     private EmailTokenService emailTokenService;
@@ -69,19 +92,7 @@ public class UserService {
         this.emailConfig = emailConfig;
     }
 
-    public UserService(UserRepository userRepository,
-            PendingRegistrationRepository pendingRegistrationRepository,
-            MongoTemplate mongoTemplate,
-            PasswordEncoder passwordEncoder,
-            JWTService jwtService,
-            NoteService noteService) {
-        this.userRepository = userRepository;
-        this.pendingRegistrationRepository = pendingRegistrationRepository;
-        this.mongoTemplate = mongoTemplate;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.noteService = noteService;
-    }
+
 
     // ── Registration ────────────────────────────────────────────────
 
@@ -95,18 +106,20 @@ public class UserService {
             throw new RuntimeException("Username and Password are required");
         }
 
+        String cleanEmail = user.getEmail() != null ? user.getEmail().trim().toLowerCase() : null;
+
         if (userRepository.existsByUsername(user.getUsername())
                 || pendingRegistrationRepository.existsByUsername(user.getUsername())) {
             throw new RuntimeException("Username already exists. Please choose a different username.");
         }
 
-        if (userRepository.existsByEmail(user.getEmail())
-                || pendingRegistrationRepository.existsByEmail(user.getEmail())) {
+        if (cleanEmail != null && (userRepository.existsByEmail(cleanEmail)
+                || pendingRegistrationRepository.existsByEmail(cleanEmail))) {
             throw new RuntimeException("Email already exists. Please use a different email.");
         }
 
         String normalizedPhone = normalizePhoneNumber(user.getPhoneNumber());
-        if (normalizedPhone != null && userRepository.existsByPhoneNumber(normalizedPhone)) {
+        if (isPhoneNumberRegistered(normalizedPhone)) {
             throw new RuntimeException("Phone number already exists. Please use a different number.");
         }
 
@@ -117,7 +130,7 @@ public class UserService {
         PendingRegistration pending = PendingRegistration.builder()
                 .tempToken(tempToken)
                 .username(user.getUsername())
-                .email(user.getEmail())
+                .email(cleanEmail)
                 .phoneNumber(normalizedPhone)
                 .name(user.getName())
                 .passwordHash(passwordEncoder.encode(user.getPassword()))
@@ -214,10 +227,6 @@ public class UserService {
 
     // ── User queries ────────────────────────────────────────────────
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
     public User getUserById(String id) {
         return userRepository.findById(id).orElse(null);
     }
@@ -230,6 +239,19 @@ public class UserService {
 
     public boolean isUsernameAvailable(String username) {
         return !userRepository.existsByUsername(username);
+    }
+
+    /**
+     * True when the normalized phone is held by an existing user OR a pending
+     * registration (closes the race where a pending signup later claims it).
+     * Null-safe: a missing phone is never "taken".
+     */
+    public boolean isPhoneNumberRegistered(String normalizedPhone) {
+        if (normalizedPhone == null || normalizedPhone.isEmpty()) {
+            return false;
+        }
+        return userRepository.existsByPhoneNumber(normalizedPhone)
+                || pendingRegistrationRepository.existsByPhoneNumber(normalizedPhone);
     }
 
     // ── Profile updates ─────────────────────────────────────────────
@@ -270,7 +292,7 @@ public class UserService {
             String newPhone = normalizePhoneNumber(user.getPhoneNumber());
             if (newPhone != null && !newPhone.isEmpty()) {
                 if (existing.getPhoneNumber() == null || !newPhone.equals(existing.getPhoneNumber())) {
-                    if (userRepository.findByPhoneNumber(newPhone) != null) {
+                    if (isPhoneNumberRegistered(newPhone)) {
                         throw new IllegalArgumentException("Mobile number is already registered with another account");
                     }
                 }
@@ -299,12 +321,25 @@ public class UserService {
         }
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+
+        // Revoke all active refresh tokens on password change
+        jwtService.revokeAllRefreshTokens(userId);
     }
 
     @SuppressWarnings("null")
     public boolean deleteUser(String id) {
         if (userRepository.existsById(id)) {
+            User user = userRepository.findById(id).orElse(null);
             userRepository.deleteById(id);
+            // Revoke all active refresh tokens on account deletion
+            jwtService.revokeAllRefreshTokens(id);
+            if (user != null) {
+                // Purge any stale pending-registration docs tied to this account
+                pendingRegistrationRepository.deleteByUsername(user.getUsername());
+                // Fan out cascade cleanup — each module listens and deletes its own data
+                eventPublisher.publishEvent(
+                        new com.urva.myfinance.coinTrack.common.event.UserDeletedEvent(id, user.getUsername()));
+            }
             return true;
         }
         return false;
@@ -319,6 +354,10 @@ public class UserService {
 
     public boolean isTokenValid(String token) {
         try {
+            String tokenHash = HashUtil.sha256(token);
+            if (invalidatedTokenRepository.existsByTokenHash(tokenHash)) {
+                return false;
+            }
             String username = jwtService.extractUsername(token);
             return username != null && !jwtService.isTokenExpired(token);
         } catch (Exception e) {
@@ -328,12 +367,36 @@ public class UserService {
 
     // ── Internal helpers ────────────────────────────────────────────
 
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    public void migrateMixedCaseEmailsToLowerCase() {
+        try {
+            List<User> users = userRepository.findAll();
+            int count = 0;
+            for (User u : users) {
+                if (u.getEmail() != null) {
+                    String lower = u.getEmail().trim().toLowerCase();
+                    if (!u.getEmail().equals(lower)) {
+                        u.setEmail(lower);
+                        userRepository.save(u);
+                        count++;
+                    }
+                }
+            }
+            if (count > 0) {
+                logger.info("Migrated {} existing user email(s) to lower-case in MongoDB.", count);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to run email lower-case migration: {}", e.getMessage());
+        }
+    }
+
     private User toTransientUser(PendingRegistration pending) {
         AuthProvider provider = pending.getAuthProvider() != null ? pending.getAuthProvider() : AuthProvider.LOCAL;
         boolean isGoogle = provider == AuthProvider.GOOGLE;
+        String cleanEmail = pending.getEmail() != null ? pending.getEmail().trim().toLowerCase() : null;
         return User.builder()
                 .username(pending.getUsername())
-                .email(pending.getEmail())
+                .email(cleanEmail)
                 .phoneNumber(pending.getPhoneNumber())
                 .name(pending.getName())
                 .password(pending.getPasswordHash())

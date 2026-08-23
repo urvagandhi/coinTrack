@@ -10,4 +10,6 @@ import java.util.List;
 public interface ValuationSnapshotRepository extends MongoRepository<ValuationSnapshot, String> {
     List<ValuationSnapshot> findByUserIdAndHolderNameAndPlatform(String userId, String holderName, String platform);
     List<ValuationSnapshot> findByUserId(String userId);
+
+    void deleteByUserId(String userId);
 }

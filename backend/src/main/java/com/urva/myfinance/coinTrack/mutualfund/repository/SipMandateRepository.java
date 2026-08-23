@@ -13,4 +13,6 @@ public interface SipMandateRepository extends MongoRepository<SipMandate, String
     List<SipMandate> findByUserIdAndSchemeId(String userId, String schemeId);
 
     List<SipMandate> findByUserIdAndSchemeIdAndActiveTrue(String userId, String schemeId);
+
+    void deleteByUserId(String userId);
 }

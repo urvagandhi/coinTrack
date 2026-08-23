@@ -104,7 +104,7 @@ public class UserAuthenticationServiceGoogleTest {
 
         when(userRepository.existsByUsername("new_username")).thenReturn(false);
         when(userService.getPendingRegistrationUser("new_username")).thenReturn(null);
-        when(userRepository.existsByPhoneNumber(anyString())).thenReturn(false);
+        when(userService.isPhoneNumberRegistered(any())).thenReturn(false);
         when(passwordEncoder.encode("Password123!")).thenReturn("hashed-pwd");
 
         when(jwtService.generateTempToken("new_username", "TOTP_REGISTRATION")).thenReturn("totp-token-123");

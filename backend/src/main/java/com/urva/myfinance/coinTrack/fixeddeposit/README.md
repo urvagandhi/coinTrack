@@ -258,3 +258,11 @@ Authorization: Bearer <jwt>
 | Closed state reset | Stored `CLOSED` status acts as sticky override against date calculation |
 | Malformed date range | Service validates `maturityDate` strictly after `issueDate` |
 | UI/DTO Mismatches | Synchronized `totalEstimatedReturns` (originally mismatched as `totalEstReturns`) to prevent frontend reporting zero returns |
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/FixedDepositUserDataCleanupListener.java` listens for common's `UserDeletedEvent`
+and deletes **all** fixed deposits via the newly added
+`FixedDepositRepository.deleteByUserId(String)`.
