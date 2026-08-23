@@ -33,7 +33,7 @@ public class HomeController {
         sb.append("<h1>CoinTrack API is running!</h1>");
         sb.append(
                 "<div class='description'>CoinTrack is a comprehensive multi-broker portfolio tracking and personal finance management platform designed to help you monitor and optimize your investments across different brokers in one unified dashboard.</div>");
-        sb.append("<p>Version: 3.0.0</p>");
+        sb.append("<p>Version: 3.1.0</p>");
         sb.append("<div>");
         sb.append("<a href='/api/health' class='btn'>Detailed Health Check</a>");
         sb.append("<a href='/actuator' class='btn'>Actuator Endpoints</a>");

@@ -20,7 +20,7 @@
  * TARGET STRUCTURE:
  * com.urva.myfinance.coinTrack/
  * ├── common/
- * │ ├── config/ (RestTemplateConfig, CorsConfig, EncryptionConfig)
+ * │ ├── config/ (WebClientConfig, CorsConfig, EncryptionConfig, MongoConfig, OpenApiConfig, StartupLogger)
  * │ ├── exception/ (DomainException hierarchy)
  * │ ├── filter/ (RequestIdFilter)
  * │ ├── response/ (ApiResponse, ApiErrorResponse)

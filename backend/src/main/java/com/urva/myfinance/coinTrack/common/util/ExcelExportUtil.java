@@ -31,7 +31,8 @@ public class ExcelExportUtil {
         private List<? extends Function<T, ?>> extractors;
         private Set<Integer> rightAlignedIndices;
 
-        public SheetConfig(String sheetName, String[] headers, List<T> data, List<? extends Function<T, ?>> extractors, Set<Integer> rightAlignedIndices) {
+        public SheetConfig(String sheetName, String[] headers, List<T> data, List<? extends Function<T, ?>> extractors,
+                Set<Integer> rightAlignedIndices) {
             this.sheetName = sheetName;
             this.headers = headers;
             this.data = data;
@@ -39,11 +40,25 @@ public class ExcelExportUtil {
             this.rightAlignedIndices = rightAlignedIndices;
         }
 
-        public String getSheetName() { return sheetName; }
-        public String[] getHeaders() { return headers; }
-        public List<T> getData() { return data; }
-        public List<? extends Function<T, ?>> getExtractors() { return extractors; }
-        public Set<Integer> getRightAlignedIndices() { return rightAlignedIndices; }
+        public String getSheetName() {
+            return sheetName;
+        }
+
+        public String[] getHeaders() {
+            return headers;
+        }
+
+        public List<T> getData() {
+            return data;
+        }
+
+        public List<? extends Function<T, ?>> getExtractors() {
+            return extractors;
+        }
+
+        public Set<Integer> getRightAlignedIndices() {
+            return rightAlignedIndices;
+        }
     }
 
     private ExcelExportUtil() {
@@ -77,20 +92,12 @@ public class ExcelExportUtil {
             headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             headerStyle.setAlignment(HorizontalAlignment.LEFT);
 
-            // 2. FD No (Column 0) Style: Bold Text, Right Aligned
-            CellStyle fdNoStyle = workbook.createCellStyle();
-            Font boldFont = workbook.createFont();
-            boldFont.setBold(true);
-            fdNoStyle.setFont(boldFont);
-            fdNoStyle.setAlignment(HorizontalAlignment.RIGHT);
-            fdNoStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-
-            // 3. Right-Aligned Data Cell Style
+            // 2. Right-Aligned Data Cell Style
             CellStyle dataStyleRight = workbook.createCellStyle();
             dataStyleRight.setAlignment(HorizontalAlignment.RIGHT);
             dataStyleRight.setVerticalAlignment(VerticalAlignment.CENTER);
 
-            // 4. Left-Aligned Data Cell Style
+            // 3. Left-Aligned Data Cell Style
             CellStyle dataStyleLeft = workbook.createCellStyle();
             dataStyleLeft.setAlignment(HorizontalAlignment.LEFT);
             dataStyleLeft.setVerticalAlignment(VerticalAlignment.CENTER);
@@ -125,8 +132,6 @@ public class ExcelExportUtil {
 
                     if (rightAlignedIndices != null && rightAlignedIndices.contains(c)) {
                         cell.setCellStyle(dataStyleRight);
-                    } else if (c == 0) {
-                        cell.setCellStyle(fdNoStyle);
                     } else {
                         cell.setCellStyle(dataStyleLeft);
                     }
@@ -187,13 +192,6 @@ public class ExcelExportUtil {
             headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             headerStyle.setAlignment(HorizontalAlignment.LEFT);
 
-            CellStyle fdNoStyle = workbook.createCellStyle();
-            Font boldFont = workbook.createFont();
-            boldFont.setBold(true);
-            fdNoStyle.setFont(boldFont);
-            fdNoStyle.setAlignment(HorizontalAlignment.RIGHT);
-            fdNoStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-
             CellStyle dataStyleRight = workbook.createCellStyle();
             dataStyleRight.setAlignment(HorizontalAlignment.RIGHT);
             dataStyleRight.setVerticalAlignment(VerticalAlignment.CENTER);
@@ -241,8 +239,6 @@ public class ExcelExportUtil {
 
                         if (rightAlignedIndices != null && rightAlignedIndices.contains(c)) {
                             cell.setCellStyle(dataStyleRight);
-                        } else if (c == 0) {
-                            cell.setCellStyle(fdNoStyle);
                         } else {
                             cell.setCellStyle(dataStyleLeft);
                         }
@@ -294,10 +290,12 @@ public class ExcelExportUtil {
             int maxLen = 0;
             for (int r = 0; r <= sheet.getLastRowNum(); r++) {
                 Row row = sheet.getRow(r);
-                if (row == null) continue;
+                if (row == null)
+                    continue;
                 Cell cell = row.getCell(i);
-                if (cell == null) continue;
-                
+                if (cell == null)
+                    continue;
+
                 String val = formatter.formatCellValue(cell);
                 if (val != null && !val.isEmpty()) {
                     for (String line : val.split("\n")) {

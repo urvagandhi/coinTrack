@@ -1,9 +1,9 @@
 # Common Module – CoinTrack
 
 > **Domain**: Cross-cutting infrastructure and shared utilities
-> **Responsibility**: Configuration, exception handling, logging, response wrappers, security utilities
-> **Version**: 2.0.0
-> **Last Updated**: 2025-12-17
+> **Responsibility**: Configuration, exception handling, request tracing, response wrappers, sequence generation, encryption utilities
+> **Version**: 2.1.1
+> **Last Updated**: 2026-08-23 *(every claim below verified against source on this date)*
 
 ---
 
@@ -15,13 +15,14 @@
 4. [Configuration](#4-configuration)
 5. [Exception Handling](#5-exception-handling)
 6. [Request Filtering](#6-request-filtering)
-7. [Health Checks](#7-health-checks)
+7. [Health Checks &amp; Home Page](#7-health-checks--home-page)
 8. [Response Wrappers](#8-response-wrappers)
-9. [Utility Classes](#9-utility-classes)
-10. [Logging Standards](#10-logging-standards)
-11. [Security Utilities](#11-security-utilities)
-12. [Usage Guidelines](#12-usage-guidelines)
-13. [Common Pitfalls](#13-common-pitfalls)
+9. [Services](#9-services)
+10. [Utility Classes](#10-utility-classes)
+11. [Logging Standards](#11-logging-standards)
+12. [Security Utilities](#12-security-utilities)
+13. [Usage Guidelines](#13-usage-guidelines)
+14. [Common Pitfalls](#14-common-pitfalls)
 
 ---
 
@@ -29,41 +30,74 @@
 
 ### 1.1 Purpose
 
-The Common module provides foundational infrastructure shared across **all domain modules**. It contains **no business logic**—only cross-cutting concerns that every other module depends on.
+The Common module provides foundational infrastructure shared across all domain modules.
+It owns exactly **one MongoDB collection (`counters`)**; everything else is stateless
+cross-cutting code.
 
 ### 1.2 Core Responsibilities
 
-| Area | Components | Purpose |
-|------|------------|---------|
-| **Configuration** | CORS, Encryption, RestTemplate | Application-wide settings |
-| **Exception Handling** | GlobalExceptionHandler, DomainException hierarchy | Consistent error responses |
-| **Filtering** | RequestIdFilter | Request tracing via MDC |
-| **Health Monitoring** | HealthController, HomeController | System status endpoints |
-| **Response Wrappers** | ApiResponse, ApiErrorResponse | Standardized API responses |
-| **Utilities** | Encryption, Hashing, Logging, Sequences | Reusable helper functions |
+| Area                         | Components                                                                                                                                     | Purpose                                    |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **Configuration**      | CorsConfig, EncryptionConfig, WebClientConfig, MongoConfig, OpenApiConfig, StartupLogger                                                       | Application-wide settings                  |
+| **Exception Handling** | DomainException hierarchy + GlobalExceptionHandler + 3 module-specific exceptions                                                              | Consistent error responses                 |
+| **Request Tracing**    | RequestIdFilter                                                                                                                                | Correlation ID via SLF4J MDC               |
+| **Health Monitoring**  | HealthController, HomeController                                                                                                               | System status endpoints + landing page     |
+| **Response Wrappers**  | ApiResponse, ApiErrorResponse                                                                                                                  | Standardized API responses                 |
+| **Sequences**          | Counter model, SequenceGeneratorService, TransactionSequenceService                                                                            | Auto-increment numbers + ledger reordering |
+| **Notifications**      | NotificationService + NotificationServiceImpl                                                                                                  | Security-alert / welcome email delegation  |
+| **Utilities**          | EncryptionUtil, HashUtil, FinancialYearUtil, MarketHoursUtil, RequestUtils, UrlResolverUtil, UserLookupUtil, ExcelExportUtil, LoggingConstants | Reusable helpers                           |
 
 ### 1.3 System Position
 
+```mermaid
+graph TD
+    User["User Module"]
+    Broker["Broker Module"]
+    Portfolio["Portfolio Module"]
+    Notes["Notes Module"]
+    Security["Security Module"]
+
+    User --> Common["COMMON MODULE<br/>(exception, response, filter, config, util, service, model, health)"]
+    Broker --> Common
+    Portfolio --> Common
+    Notes --> Common
+    Security --> Common
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         ALL DOMAIN MODULES                              │
-│   ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐    │
-│   │   User   │ │  Broker  │ │Portfolio │ │  Notes   │ │ Security │    │
-│   └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘    │
-│        │            │            │            │            │           │
-│        └────────────┴────────────┴────────────┴────────────┘           │
-│                                  │                                      │
-│                           depends on                                    │
-│                                  ▼                                      │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                       COMMON MODULE                             │   │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────┐ ┌────────────────┐   │   │
-│  │  │ Exception  │ │  Response  │ │ Config │ │     Util       │   │   │
-│  │  │ Handling   │ │  Wrappers  │ │        │ │ (Encrypt/Hash) │   │   │
-│  │  └────────────┘ └────────────┘ └────────┘ └────────────────┘   │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────┘
+
+<details>
+<summary>Click to view ASCII Diagram</summary>
+
+```text
+        ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+        │   User   │ │  Broker  │ │Portfolio │ │  Notes   │ │ Security │ ...
+        └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘
+             └────────────┴────────────┴────────────┴────────────┘
+                                      │ depends on
+                                      ▼
+        ┌─────────────────────────────────────────────────────────────┐
+        │                       COMMON MODULE                          │
+        │  exception/ · response/ · filter/ · config/ · util/          │
+        │  service/ (sequences, notifications) · model/ · health/      │
+        └─────────────────────────────────────────────────────────────┘
 ```
+
+</details>
+
+**ARCHITECTURAL NOTE — common is NOT a pure leaf module.**
+While every other module imports common (mutualfund 11 files, broker 7, epf 7,
+user 7, email 5, goldsilver 5, portfolio 5, ppf 5, fixeddeposit 3, notes 2,
+security 2), common itself holds **five outbound dependency edges**:
+
+1. `TransactionSequenceService` -> repositories/models of **mutualfund, fixeddeposit,
+   goldsilver, ppf, epf** (async ledger reordering).
+2. `GlobalExceptionHandler` -> `broker.service.exception.BrokerException`.
+3. `NotificationService`(+Impl) -> **user.model.User** and **email.service.EmailService**.
+4. `UserLookupUtil` -> **user.model.User + UserRepository**.
+5. `MongoConfig` -> **mutualfund.model.GainType** converters.
+
+Also: the **calculator module imports zero common classes** - it is fully
+self-contained (own math facades, response envelope, and rate limiter), and its
+README documents this explicitly.
 
 ---
 
@@ -71,104 +105,113 @@ The Common module provides foundational infrastructure shared across **all domai
 
 ### 2.1 Request Processing Flow
 
+```mermaid
+flowchart TD
+    Req["Incoming HTTP Request"] --> RF["RequestIdFilter<br/>(HIGHEST_PRECEDENCE)<br/>Reuse inbound X-Request-ID / X-Correlation-ID if valid UUID,<br/>else generate 8-char id. MDC['requestId'] set."]
+    RF --> JF["JwtFilter<br/>(Security Module)<br/>Validates Bearer token; adds userId -> MDC"]
+    JF --> CL["Controller / Service / Repository<br/>Business logic; throws DomainException subclasses"]
+    CL -->|SUCCESS| Resp["ApiResponse<br/>Carries requestId resolved from MDC"]
+    CL -->|EXCEPTION| GEH["GlobalExceptionHandler<br/>Maps Exception -> ResponseEntity<ApiErrorResponse>"]
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                      REQUEST PROCESSING PIPELINE                         │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  Incoming HTTP Request                                                   │
-│           │                                                              │
-│           ▼                                                              │
-│  ┌────────────────────┐                                                 │
-│  │  RequestIdFilter   │  Generate UUID → Store in MDC                   │
-│  │  (Correlation ID)  │  [requestId=550e8400-e29b-...]                  │
-│  └────────────────────┘                                                 │
-│           │                                                              │
-│           ▼                                                              │
-│  ┌────────────────────┐                                                 │
-│  │    JwtFilter       │  Validate Bearer token                          │
-│  │  (Security Module) │  Extract userId → Store in MDC                  │
-│  └────────────────────┘                                                 │
-│           │                                                              │
-│           ▼                                                              │
-│  ┌────────────────────┐                                                 │
-│  │    Controller      │  Handle business request                        │
-│  │    → Service       │                                                  │
-│  │    → Repository    │                                                  │
-│  └────────────────────┘                                                 │
-│           │                                                              │
-│    ┌──────┴──────┐                                                      │
-│    │             │                                                       │
-│    ▼             ▼                                                       │
-│ SUCCESS       EXCEPTION                                                  │
-│    │             │                                                       │
-│    ▼             ▼                                                       │
-│ ┌────────┐  ┌────────────────────┐                                      │
-│ │ApiResp │  │GlobalException-    │                                      │
-│ │  onse  │  │Handler             │                                      │
-│ └────────┘  └────────────────────┘                                      │
-│    │             │                                                       │
-│    └──────┬──────┘                                                      │
-│           ▼                                                              │
-│  ┌────────────────────┐                                                 │
-│  │    JSON Response   │  Includes requestId from MDC                    │
-│  └────────────────────┘                                                 │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
+
+<details>
+<summary>Click to view ASCII Diagram</summary>
+
+```text
+Incoming HTTP Request
+        |
+        v
++----------------------+  Reuse inbound X-Request-ID / X-Correlation-ID
+|  RequestIdFilter     |  if valid UUID, else generate 8-char id.
+| (HIGHEST_PRECEDENCE) |  MDC["requestId"] set; cleared in finally block.
++----------------------+
+        |
+        v
++----------------------+
+|     JwtFilter        |  Validates Bearer token (security module);
+|                      |  adds userId -> MDC.
++----------------------+
+        |
+        v
++----------------------+
+| Controller / Service |  Business logic; throws DomainException subclasses.
+|    / Repository      |
++----------------------+
+        |
+   +----+-----+
+   v          v
+SUCCESS    EXCEPTION
+   |          |
+   v          v
+ApiResponse  GlobalExceptionHandler -> ApiErrorResponse
+   |          |
+   +----+-----+
+        v
+JSON response carries requestId resolved from MDC
 ```
+
+</details>
 
 ---
 
 ## 3. Directory Structure
 
+Verified tree: **37 Java files, ~2,800 LOC**.
+
 ```
 common/
-├── README.md                              # This file
-│
-├── config/                                # Application Configuration (4 files)
-│   ├── CorsConfig.java                    # CORS policy for frontend origins
-│   ├── EncryptionConfig.java              # AES encryption beans
-│   ├── RestTemplateConfig.java            # HTTP client with timeouts
-│   └── package-info.java                  # Package documentation
-│
-├── exception/                             # Exception Handling (6 files)
-│   ├── DomainException.java               # Base exception class
-│   ├── AuthenticationException.java       # 401 Unauthorized
-│   ├── AuthorizationException.java        # 403 Forbidden
-│   ├── ValidationException.java           # 400 Bad Request
-│   ├── ExternalServiceException.java      # 502 Bad Gateway
-│   └── GlobalExceptionHandler.java        # @RestControllerAdvice (5.5KB)
-│
-├── filter/                                # Request Filters (1 file)
-│   └── RequestIdFilter.java               # MDC correlation ID generation
-│
-├── health/                                # Health Monitoring (2 files)
-│   ├── HealthController.java              # /api/health endpoint (7.4KB)
-│   └── HomeController.java                # Root redirect
-│
-├── response/                              # Response DTOs (2 files + subdirs)
-│   ├── ApiResponse.java                   # Standard success wrapper
-│   ├── ApiErrorResponse.java              # Standard error wrapper
-│   │
-│   ├── user/                              # Shared User DTOs (4 files)
-│   │   ├── UserDTO.java                   # User response DTO
-│   │   ├── RegisterUserDTO.java           # Registration request
-│   │   ├── UpdateUserDTO.java             # Update request
-│   │   └── PasswordChangeDTO.java         # Password change request
-│   │
-│   ├── zerodha/                           # Zerodha-specific DTOs
-│   ├── angelone/                          # Angel One-specific DTOs
-│   └── upstox/                            # Upstox-specific DTOs
-│
-└── util/                                  # Utility Classes (7 files)
-    ├── LoggingConstants.java              # Centralized log message patterns
-    ├── EncryptionUtil.java                # AES-256 encryption (5.9KB)
-    ├── HashUtil.java                      # SHA-256 hashing
-    ├── FnoUtils.java                      # F&O symbol parsing (4.7KB)
-    ├── DatabaseSequence.java              # MongoDB sequence entity
-    ├── SequenceGeneratorService.java      # Auto-increment ID generator
-    └── NotificationService.java           # Notification interface
+|-- config/                              # 7 files
+|   |-- CorsConfig.java                  # property-driven CORS source bean (60 ln)
+|   |-- EncryptionConfig.java            # fail-fast AES key validation (42 ln)
+|   |-- MongoConfig.java                 # YearMonth + GainType converters (63 ln)
+|   |-- OpenApiConfig.java               # Swagger UI bearerAuth scheme (47 ln)
+|   |-- StartupLogger.java               # startup banner + DB/email status (137 ln)
+|   |-- WebClientConfig.java             # outbound HTTP timeouts (43 ln)
+|   +-- package-info.java                # historical reorg plan doc, stale (73 ln)
+|-- exception/                           # 10 files
+|   |-- DomainException.java             # base: errorCode + httpStatus (41 ln)
+|   |-- AuthenticationException.java     # 401 AUTH_FAILED (16 ln)
+|   |-- AuthorizationException.java      # 403 ACCESS_DENIED (16 ln)
+|   |-- ValidationException.java         # 400 VALIDATION_FAILED (+field) (24 ln)
+|   |-- ExternalServiceException.java    # 502 EXTERNAL_SERVICE_FAILED (24 ln)
+|   |-- InsufficientEpfBalanceException.java # 400 (12 ln)
+|   |-- InsufficientPpfBalanceException.java # 400 (12 ln)
+|   |-- InvalidFdDateRangeException.java # 400 maturity<=issueDate (12 ln)
+|   |-- MissingCostBasisException.java   # 400 FIFO lot w/o cost basis (12 ln)
+|   +-- GlobalExceptionHandler.java      # @RestControllerAdvice (208 ln)
+|-- filter/
+|   +-- RequestIdFilter.java             # MDC correlation ID (100 ln)
+|-- health/
+|   |-- HealthController.java            # /api/health + ping + /health (357 ln)
+|   +-- HomeController.java              # / landing page + /favicon.ico (55 ln)
+|-- model/
+|   +-- Counter.java                     # @Document("counters"): {id, seq} (20 ln)
+|-- response/
+|   |-- ApiResponse.java                 # success envelope w/ MDC requestId (99 ln)
+|   +-- ApiErrorResponse.java            # error envelope w/ fieldErrors (104 ln)
+|-- service/
+|   |-- SequenceGeneratorService.java    # atomic findAndModify inc (31 ln)
+|   |-- TransactionSequenceService.java  # @Async ledger reordering x7 (120 ln)
+|   |-- NotificationService.java         # interface taking user.model.User (49 ln)
+|   +-- impl/
+|       +-- NotificationServiceImpl.java # delegates to email module (73 ln)
++-- util/                                # 9 files
+    |-- EncryptionUtil.java              # AES-256-GCM (265 ln)
+    |-- ExcelExportUtil.java             # XLSX builder + SheetConfig (313 ln)
+    |-- FinancialYearUtil.java           # Indian FY math (53 ln)
+    |-- HashUtil.java                    # SHA-256 hex (37 ln)
+    |-- LoggingConstants.java            # log message patterns + MDC keys (69 ln)
+    |-- MarketHoursUtil.java             # NSE/BSE window check (31 ln)
+    |-- RequestUtils.java                # client IP / user-agent extraction (89 ln)
+    |-- UrlResolverUtil.java             # Origin/Referer/Host URL matching (63 ln)
+    +-- UserLookupUtil.java              # identifier-to-user lookup (30 ln)
 ```
+
+> **Historical note:** earlier revisions of this README listed `RestTemplateConfig`,
+> `FnoUtils`, `DatabaseSequence`, and a `response/user/` DTO folder here. None of those
+> exist in this module: RestTemplate was replaced by WebClientConfig; FnoUtils lives in
+> `portfolio/util/FnoUtils.java`; the sequence entity is `model/Counter.java`; shared
+> user DTOs live in the user module.
 
 ---
 
@@ -176,129 +219,169 @@ common/
 
 ### 4.1 CorsConfig
 
-**Location**: `config/CorsConfig.java`
-**Size**: ~3.2KB
+Origins are read exclusively from property `app.cors.allowed-origins`
+(env `CORS_ALLOWED_ORIGINS`; dev fallback `http://localhost:3000,http://127.0.0.1:3000`)
+via `setAllowedOriginPatterns`. Registered as a `CorsConfigurationSource` bean consumed
+by Spring Security's filter chain for `/api/**` only - deliberately no duplicate
+WebMvcConfigurer CORS handling.
 
-Configures Cross-Origin Resource Sharing for frontend integration. Allowed origins are
-read from the `app.cors.allowed-origins` property (comma-separated), which is wired from
-the `CORS_ALLOWED_ORIGINS` environment variable — a single source of truth per environment.
-
-**Configuration (verified against source 2026-08-23)**:
 ```java
-@Value("${app.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000}")
-private List<String> allowedOrigins;
+private static final List<String> ALLOWED_METHODS  =
+        List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS");
+private static final List<String> ALLOWED_HEADERS  =
+        List.of("Authorization", "Content-Type", "X-Request-ID");   // explicit, not "*"
+private static final List<String> EXPOSED_HEADERS  =
+        List.of("Authorization", "Content-Type", "X-Request-ID", "X-Correlation-ID");
+private static final long MAX_AGE_SECONDS = 3600L;
 
-@Bean
-public CorsFilter corsFilter() {
-    CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOriginPatterns(allowedOrigins);
-    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    config.setAllowedHeaders(List.of("*"));
-    config.setAllowCredentials(true);
-    // ...
-}
+configuration.setAllowCredentials(true);
+source.registerCorsConfiguration("/api/**", configuration);
 ```
 
-> Earlier revisions showed hardcoded origins (`http://localhost:3000`, `https://cointrack.app`)
-> inside the bean — that is no longer how it works; origins come exclusively from
-> `CORS_ALLOWED_ORIGINS` (dev defaults apply only when the env var is absent).
+Note: `/health`, `/`, and `/zerodha/callback` are outside `/api/**` and therefore
+have no CORS config (harmless for non-browser callers).
 
 ### 4.2 EncryptionConfig
 
-**Location**: `config/EncryptionConfig.java`
-**Size**: ~1.3KB
+Fail-fast AES key validation at startup (`@PostConstruct`):
 
-Provides the AES-256-GCM encryption secret used for sensitive data (broker API secrets,
-TOTP-related material).
+| Variable                  | Required | Description                                                                                                                                                |
+| ------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ENCRYPTION_SECRET_KEY` | Yes      | Exactly 32 characters; wired to`app.encryption.secret-key`. Startup throws `IllegalStateException` if left at the default placeholder or wrong length. |
 
-**Environment Variables**:
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `ENCRYPTION_SECRET_KEY` | Yes | Exactly 32 characters (256 bits); wired to property `app.encryption.secret-key`. Startup fails fast if missing or wrong length. |
+### 4.3 WebClientConfig (replaces legacy RestTemplate)
 
-### 4.3 RestTemplateConfig
+Provides the pre-configured outbound HTTP client used by broker/external API calls:
 
-**Location**: `config/RestTemplateConfig.java`
-**Size**: ~0.9KB
+| Setting              | Value                                          |
+| -------------------- | ---------------------------------------------- |
+| Connect timeout      | **10 s**                                 |
+| Response timeout     | **15 s**                                 |
+| Max in-memory buffer | **2 MB** (OOM guard)                     |
+| Bean                 | `WebClient.Builder brokerWebClientBuilder()` |
 
-Configures HTTP client for external API calls.
+**Verified consumers (inherit these settings via builder injection):**
+`ZerodhaBrokerAdapter`, `UpstoxBrokerAdapter`, `AngelOneBrokerAdapter`,
+`ZerodhaLiveDataService` (broker) · `MarketDataServiceImpl` (portfolio) ·
+`GoogleOAuthService` (security, injected by type as `WebClient.Builder`).
 
-**Timeouts**:
-- Connection timeout: 5 seconds
-- Read timeout: 30 seconds
+Known exception: `email/service/BrevoEmailService.java:38` builds a raw
+`WebClient.create()`, bypassing this bean — it does NOT inherit these timeouts.
+
+> Earlier README revisions documented a RestTemplateConfig with 5s connect / 30s read
+> timeouts - that class no longer exists.
+
+### 4.4 MongoConfig
+
+Registers four custom Mongo converters:
+
+- `YearMonth` <-> `String`
+- `GainType` <-> `String`, including special stored forms `"STCG/LTCG"` and `"STCL/LTCL"`
+
+Note the inverted edge: these converters import `mutualfund.model.GainType`.
+
+### 4.5 OpenApiConfig
+
+Swagger UI at `/swagger-ui.html`; defines the `bearerAuth` HTTP scheme
+(JWT from `/api/auth/login`).
+
+### 4.6 StartupLogger
+
+Prints an ASCII banner on `ApplicationReadyEvent`: active profiles, port, URL
+(`RENDER_EXTERNAL_URL` when set), DB status (verified via `mongoTemplate.executeCommand(ping)` network round-trip), email-configured flag
+(via `brevo.api-key` presence).
 
 ---
 
 ## 5. Exception Handling
 
-### 5.1 Exception Hierarchy
+### 5.1 Exception Hierarchy (complete)
 
-```
-java.lang.RuntimeException
-    └── DomainException (base)
-            │
-            ├── AuthenticationException  → HTTP 401 Unauthorized
-            │       └── Error Code: AUTH_FAILED
-            │
-            ├── AuthorizationException   → HTTP 403 Forbidden
-            │       └── Error Code: ACCESS_DENIED
-            │
-            ├── ValidationException      → HTTP 400 Bad Request
-            │       └── Error Code: VALIDATION_FAILED
-            │
-            └── ExternalServiceException → HTTP 502 Bad Gateway
-                    └── Error Code: EXTERNAL_SERVICE_FAILED
+```mermaid
+graph TD
+    RE["RuntimeException"] --> DE["DomainException<br/>(statusCode, errorCode)"]
+    DE --> AuthE["AuthenticationException<br/>(401, AUTH_FAILED)"]
+    DE --> AuthzE["AuthorizationException<br/>(403, ACCESS_DENIED)"]
+    DE --> VE["ValidationException<br/>(400, VALIDATION_FAILED)"]
+    DE --> ExtE["ExternalServiceException<br/>(502, EXTERNAL_SERVICE_FAILED)"]
+    DE --> EPF["InsufficientEpfBalanceException<br/>(400, INSUFFICIENT_EPF_BALANCE)"]
+    DE --> PPF["InsufficientPpfBalanceException<br/>(400, INSUFFICIENT_PPF_BALANCE)"]
+    DE --> IFD["InvalidFdDateRangeException<br/>(400, INVALID_FD_DATE_RANGE)"]
+    DE --> MCB["MissingCostBasisException<br/>(400, MISSING_COST_BASIS)"]
 ```
 
-### 5.2 DomainException (Base Class)
+<details>
+<summary>Click to view ASCII Diagram</summary>
 
-**Location**: `exception/DomainException.java`
-**Size**: ~1.2KB
+```text
+RuntimeException
+ +-- DomainException (base: errorCode + httpStatus; default 400 / DOMAIN_ERROR)
+      |-- AuthenticationException          401 AUTH_FAILED
+      |-- AuthorizationException           403 ACCESS_DENIED
+      |-- ValidationException              400 VALIDATION_FAILED (+ optional field name)
+      |-- ExternalServiceException         502 EXTERNAL_SERVICE_FAILED (+ serviceName)
+      |-- InsufficientEpfBalanceException  400 INSUFFICIENT_EPF_BALANCE   (used by epf)
+      |-- InsufficientPpfBalanceException  400 INSUFFICIENT_PPF_BALANCE   (used by ppf)
+      |-- InvalidFdDateRangeException      400 INVALID_FD_DATE_RANGE?     (used by fixeddeposit)
+      +-- MissingCostBasisException        400 MISSING_COST_BASIS         (FIFO lots)
+
+broker.service.exception.BrokerException is handled by common's GlobalExceptionHandler
+but lives in the broker module.
+```
+
+</details>
+
+### 5.2 DomainException (Base Class) - exact constructor order
 
 ```java
 public class DomainException extends RuntimeException {
-    private final int httpStatus;
     private final String errorCode;
+    private final int httpStatus;
 
-    public DomainException(String message, int httpStatus, String errorCode) {
-        super(message);
-        this.httpStatus = httpStatus;
-        this.errorCode = errorCode;
-    }
+    public DomainException(String message)                          // -> DOMAIN_ERROR, 400
+    public DomainException(String message, String errorCode, int httpStatus)
+    public DomainException(String message, String errorCode, int httpStatus, Throwable cause)
 }
 ```
 
-### 5.3 GlobalExceptionHandler
+WARNING: the argument order is `(message, errorCode, httpStatus)` - an earlier README
+revision showed `(message, httpStatus, errorCode)` which would compile but swap values.
 
-**Location**: `exception/GlobalExceptionHandler.java`
-**Size**: ~5.5KB
-**Annotation**: `@RestControllerAdvice`
+### 5.3 GlobalExceptionHandler - full handler table
 
-Converts exceptions into standardized JSON error responses.
+| Exception Type                                   | HTTP     | Error Code                  | Notes                                             |
+| ------------------------------------------------ | -------- | --------------------------- | ------------------------------------------------- |
+| AuthenticationException                          | 401      | `AUTH_FAILED`             | WARN log                                          |
+| AuthorizationException                           | 403      | `ACCESS_DENIED`           | WARN log                                          |
+| ExternalServiceException                         | 502      | `EXTERNAL_SERVICE_FAILED` | message masked to service name                    |
+| DomainException (other)                          | from ex. | from ex.                    | unresolved status falls back to 400               |
+| BrokerException                                  | 503      | `BROKER_ERROR`            | ERROR log w/ broker name                          |
+| MethodArgumentNotValidException                  | 400      | `VALIDATION_FAILED`       | returns per-field`fieldErrors[]`                |
+| ConstraintViolationException                     | 400      | `VALIDATION_FAILED`       | per-field`fieldErrors[]`                        |
+| HttpMessageNotReadableException                  | 400      | `MALFORMED_REQUEST`       | unparseable JSON body                             |
+| IllegalArgumentException / IllegalStateException | 400      | `VALIDATION_FAILED`       | business validation                               |
+| NoHandlerFoundException                          | 404      | `NOT_FOUND`               | requires throw-exception-if-no-handler-found=true |
+| Exception (catch-all)                            | 500      | `INTERNAL_ERROR`          | generic message only, never leaks ex              |
 
-**Handler Methods**:
+Logging policy: 4xx -> WARN (message only); 5xx -> ERROR (full stack trace);
+stack traces NEVER appear in responses.
 
-| Exception Type | HTTP Status | Error Code | Handler Method |
-|----------------|-------------|------------|----------------|
-| `DomainException` | From exception | From exception | `handleDomainException` |
-| `AuthenticationException` | 401 | `AUTH_FAILED` | `handleAuthenticationException` |
-| `AuthorizationException` | 403 | `ACCESS_DENIED` | `handleAuthorizationException` |
-| `ExternalServiceException` | 502 | `EXTERNAL_SERVICE_FAILED` | `handleExternalServiceException` |
-| `BrokerException` | 503 | `BROKER_ERROR` | `handleBrokerException` |
-| `MethodArgumentNotValidException` | 400 | `VALIDATION_FAILED` | `handleValidationExceptions` |
-| `RuntimeException` (catch-all) | 500 | N/A | `handleRuntimeException` |
+### 5.4 Actual Error Response Shape
 
-**Example Error Response**:
 ```json
 {
-  "success": false,
+  "timestamp": "2026-08-23T10:30:00Z",
   "status": 401,
-  "code": "AUTH_FAILED",
+  "errorCode": "AUTH_FAILED",
   "message": "Invalid credentials",
-  "timestamp": "2025-12-17T10:30:00Z",
-  "requestId": "550e8400-e29b-41d4-a716-446655440000"
+  "path": "/api/auth/login",
+  "requestId": "a1b2c3d4"
 }
 ```
+
+Fields are null-stripped (`@JsonInclude(NON_NULL)`); `fieldErrors` appears only for
+bean-validation failures. NOTE: there is no `success` field and no `code` field -
+the error envelope differs from ApiResponse (see section 8).
 
 ---
 
@@ -306,460 +389,350 @@ Converts exceptions into standardized JSON error responses.
 
 ### 6.1 RequestIdFilter
 
-**Location**: `filter/RequestIdFilter.java`
-**Size**: ~2.6KB
-**Order**: `Ordered.HIGHEST_PRECEDENCE` (executes first)
-
-**Purpose**: Generate unique correlation ID for every request for log tracing.
-
-**Mechanism**:
-1. Generate UUID for incoming request
-2. Store in MDC (Mapped Diagnostic Context) as `requestId`
-3. Include in all log messages automatically
-4. Return to client in response headers
-
-**MDC Keys Set**:
-| Key | Value | Purpose |
-|-----|-------|---------|
-| `requestId` | UUID | Trace requests across logs |
-| `userId` | From JWT | Identify user in logs |
-
-**Log Output Example**:
-```
-2025-12-17 10:30:00 [requestId=550e8400-e29b-41d4-a716-446655440000] INFO  c.u.m.c.user.service.UserService - [User] Login successful for user: john
-```
+- Order: `Ordered.HIGHEST_PRECEDENCE` (runs before every other filter).
+- Resolution order: inbound `X-Request-ID` -> `X-Correlation-ID` -> generated.
+  Inbound values are reused only if they match a strict UUID pattern; the
+  generated fallback is a short 8-char UUID prefix for log readability.
+- Sets BOTH `X-Request-ID` and `X-Correlation-ID` response headers so frontend
+  and infra can read either. CORS exposes both to browsers.
+- MDC key set by THIS filter: only `requestId`. (`userId` is added later by the
+  security module's JwtFilter - an earlier README revision wrongly attributed it here.)
+- `MDC.clear()` in a finally block prevents leakage into pooled threads.
 
 ---
 
-## 7. Health Checks
+## 7. Health Checks & Home Page
 
-### 7.1 HealthController
+### 7.1 HealthController endpoints
 
-**Location**: `health/HealthController.java`
-**Size**: ~7.4KB
-**Base Path**: `/api`
+| Endpoint             | Method | Behavior                                                                                                                                                                                                                                                                                            |
+| -------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/health`      | GET    | Full check: DB connectivity + users-collection access probe, JVM version/memory/processors, uptime.**503 when DB is down**; otherwise 200. Content-negotiated: `Accept: text/html` returns an auto-refreshing HTML status dashboard (3s poll), else JSON. Hardcodes `"version": "3.0.0"`. |
+| `/api/health/ping` | GET    | Always 200, minimal`{status, service, timestamp}`.                                                                                                                                                                                                                                                |
+| `/health`          | GET    | Render keep-alive: returns just`{status:"UP"}` with `Cache-Control: no-store`. NOT an alias of the full check.                                                                                                                                                                                  |
 
-Provides comprehensive health monitoring for deployment platforms (Render, AWS, etc.).
+Actuator is also exposed (`/actuator/**`; prod profile narrows to health) - this is what
+the Docker HEALTHCHECK and render.yaml healthCheckPath use.
 
-**Endpoints**:
-
-| Endpoint | Method | Description | Response |
-|----------|--------|-------------|----------|
-| `/api/health` | GET | Full health check | Detailed status with DB, JVM, uptime |
-| `/api/health/ping` | GET | Simple ping | Minimal "UP" response |
-| `/health` | GET | Alias of the full check (used by keep-alive cron) | Same as `/api/health` |
-
-> Spring Boot Actuator is also exposed at `/actuator/**` (prod profile limits it to `health`),
-> which is what the Docker HEALTHCHECK and Render healthCheckPath use. All three paths are
-> whitelisted in SecurityConfig (verified against source 2026-08-23).
-
-**Full Health Response Example**:
-```json
-{
-  "service": "coinTrack",
-  "version": "1.0.0",
-  "status": "UP",
-  "timestamp": "2025-12-17T10:30:00Z",
-  "uptime": 86400000,
-  "checks": {
-    "database": {
-      "status": "UP",
-      "database": "cointrack",
-      "responseTime": "5ms",
-      "collections": "accessible"
-    },
-    "system": {
-      "jvm": {
-        "version": "17.0.1",
-        "vendor": "Eclipse Adoptium"
-      },
-      "memory": {
-        "total": "512 MB",
-        "used": "256 MB",
-        "free": "256 MB",
-        "usage": "50%"
-      },
-      "processors": 4
-    },
-    "application": {
-      "startTime": "2025-12-16T10:30:00",
-      "uptime": "1d 00h 00m",
-      "environment": "production"
-    }
-  }
-}
-```
-
-**Status Codes**:
-- `200 OK` - All systems healthy
-- `503 Service Unavailable` - Critical component down (e.g., database)
+None of these endpoints have a frontend caller; they are infrastructure-only.
 
 ### 7.2 HomeController
 
-**Location**: `health/HomeController.java`
-**Size**: ~0.3KB
-
-Simple redirect from root `/` to health endpoint.
+NOT a redirect: serves a styled HTML landing page at `/` ("CoinTrack API is running!",
+links to /api/health and /actuator) plus `/favicon.ico`, which streams
+`classpath:static/logo/coinTrack.png` as image/png.
 
 ---
 
 ## 8. Response Wrappers
 
-### 8.1 ApiResponse
-
-**Location**: `response/ApiResponse.java`
-**Size**: ~2.5KB
-
-Standard wrapper for successful API responses.
+### 8.1 ApiResponse (success envelope) - exact fields
 
 ```java
-public class ApiResponse<T> {
-    private boolean success = true;
-    private int status;
-    private String message;
-    private T data;
-    private String timestamp;
-    private String requestId;  // From MDC
-}
+boolean success;      // true
+T data;               // payload (null for message-only success)
+String message;       // "Success" default or custom
+Instant timestamp;
+String requestId;     // from MDC at construction time
 ```
 
-**Usage**:
-```java
-return ResponseEntity.ok(
-    ApiResponse.success(userDTO, "User created successfully")
-);
-```
+Factories: `success(data)`, `success(data, message)`, `success(message)` (void endpoints),
+`error(message)` (success=false). Nulls stripped via `@JsonInclude(NON_NULL)`.
 
-**JSON Output**:
 ```json
 {
   "success": true,
-  "status": 200,
   "message": "User created successfully",
-  "data": { ... },
-  "timestamp": "2025-12-17T10:30:00Z",
-  "requestId": "550e8400-e29b-..."
+  "data": { },
+  "timestamp": "...",
+  "requestId": "a1b2c3d4"
 }
 ```
 
-### 8.2 ApiErrorResponse
+There is NO `status` field on ApiResponse.
 
-**Location**: `response/ApiErrorResponse.java`
-**Size**: ~2KB
-
-Standard wrapper for error responses.
+### 8.2 ApiErrorResponse (error envelope) - exact fields
 
 ```java
-public class ApiErrorResponse {
-    private boolean success = false;
-    private int status;
-    private String code;      // Error code like "AUTH_FAILED"
-    private String message;
-    private String timestamp;
-    private String requestId;
-}
+Instant timestamp; int status; String errorCode; String message;
+String path; String requestId; List<FieldError> fieldErrors;   // FieldError(field, message)
 ```
 
-### 8.3 User DTOs
+No `success` boolean, no `code` field (it is `errorCode`). The two envelopes are
+structurally different - frontend code must branch on HTTP status rather than
+assuming one shape.
 
-**Location**: `response/user/`
-
-| DTO | Size | Purpose |
-|-----|------|---------|
-| `UserDTO.java` | 4.8KB | User response (no password) |
-| `RegisterUserDTO.java` | 4.2KB | Registration request with validation |
-| `UpdateUserDTO.java` | 3KB | Profile update request |
-| `PasswordChangeDTO.java` | 2.5KB | Password change request |
+> Earlier README revisions showed a shared `user/` DTO folder under response/.
+> User DTOs live in the user module; common/response contains exactly these two classes.
 
 ---
 
-## 9. Utility Classes
+## 9. Services
 
-### 9.1 LoggingConstants
+### 9.1 SequenceGeneratorService
 
-**Location**: `util/LoggingConstants.java`
-**Size**: ~4.5KB
+Atomic Mongo auto-increment via `findAndModify` upsert:
 
-Centralized log message patterns for consistency.
-
-**Categories**:
-
-| Category | Example Constant | Pattern |
-|----------|------------------|---------|
-| **Authentication** | `AUTH_LOGIN_SUCCESS` | `[Auth] Login successful for user: {}` |
-| **User Operations** | `USER_CREATED` | `[User] Created user: {}` |
-| **Broker Operations** | `BROKER_CONNECT_SUCCESS` | `[Broker] Connected successfully to {} - user: {}` |
-| **Portfolio Sync** | `SYNC_COMPLETED` | `[Sync] Portfolio sync completed - holdings: {}, positions: {}` |
-| **Request Lifecycle** | `REQUEST_COMPLETED` | `[Request] {} {} completed in {}ms` |
-
-**MDC Keys**:
 ```java
-public static final String MDC_REQUEST_ID = "requestId";
-public static final String MDC_USER_ID = "userId";
-public static final String MDC_BROKER = "broker";
+long next = sequenceGeneratorService.getNextSequence("ppf_txn_no_<userId>");
+// Query {_id: seqName}, Update {$inc: {seq: 1}}, returnNew + upsert, fallback 1
 ```
 
-**Usage**:
-```java
-import static com.urva.myfinance.coinTrack.common.util.LoggingConstants.*;
+Backs `transactionNo` / `fdNo` / `itemNo` sequences across modules via MongoTemplate.
+(The former CounterRepository interface was removed on 2026-08-23 — audit confirmed
+zero consumers; it was dead code.)
 
-logger.info(AUTH_LOGIN_SUCCESS, username);
-logger.info(SYNC_COMPLETED, userId, holdingsCount, positionsCount);
-```
+### 9.2 TransactionSequenceService (the big inverted dependency)
 
-### 9.2 EncryptionUtil
+Seven `@Async` reorder methods, one per ledger. After any create/update/delete, the
+owning module calls its reorder to keep human-facing sequence numbers contiguous in
+chronological order:
 
-**Location**: `util/EncryptionUtil.java`
-**Size**: ~5.9KB
+| Method                        | Sorts by                   | Rewrites                            |
+| ----------------------------- | -------------------------- | ----------------------------------- |
+| reorderLumpsumTransactions    | investmentDate, createdAt  | LumpsumTransaction.transactionNo    |
+| reorderRedemptionTransactions | redemptionDate, createdAt  | RedemptionTransaction.transactionNo |
+| reorderSipContributions       | contributionDate, id       | SipContribution.transactionNo       |
+| reorderFixedDeposits          | issueDate, createdAt       | FixedDeposit.fdNo                   |
+| reorderGoldSilverInvestments  | purchaseDate, createdAt    | GoldSilverInvestment.itemNo         |
+| reorderPpfTransactions        | transactionDate, createdAt | PpfTransaction.transactionNo        |
+| reorderEpfTransactions        | transactionDate, createdAt | EpfTransaction.transactionNo        |
 
-AES-256 encryption for sensitive data (API secrets).
+All sorts are ascending with nulls-last tiebreaks; each loads ALL of a user's rows,
+re-numbers 1..N in memory, then `saveAll`. This is orchestration logic living in the
+shared layer - it imports six other modules' models AND repositories.
 
-**Methods**:
-```java
-// Encrypt plaintext
-String encrypted = encryptionUtil.encrypt("my-api-secret");
+### 9.3 NotificationService / NotificationServiceImpl
 
-// Decrypt ciphertext
-String decrypted = encryptionUtil.decrypt(encrypted);
-```
+NOT a placeholder. The interface (which takes `user.model.User`) exposes:
+`sendSecurityAlert(user, event, metadata)`, `sendSecurityAlertWithIP(user, event, ip)`,
+`sendWelcomeNotification(user)`, `notifySessionExpiry(accountId, brokerName)`,
+`isEmailEnabled()`.
 
-**Configuration**:
-- Algorithm: **AES-256-GCM** (`AES/GCM/NoPadding`)
-- IV: 12 bytes (96-bit), random per encryption
-- Auth tag: 128 bits
-- Key: derived from `app.encryption.secret-key` (exactly 32 chars, validated at startup)
-
-### 9.3 HashUtil
-
-**Location**: `util/HashUtil.java`
-**Size**: ~1.2KB
-
-SHA-256 hashing for checksums (e.g., Zerodha login flow).
-
-**Methods**:
-```java
-// Generate SHA-256 hash
-String checksum = HashUtil.sha256(apiKey + requestToken + apiSecret);
-```
-
-### 9.4 FnoUtils
-
-**Location**: `util/FnoUtils.java`
-**Size**: ~4.7KB
-
-Utilities for parsing F&O (Futures & Options) trading symbols.
-
-**Capabilities**:
-- Parse expiry date from symbol
-- Extract strike price
-- Identify option type (CE/PE)
-- Determine if symbol is futures or options
-
-**Example**:
-```java
-FnoUtils.getExpiryDate("NIFTY23DEC21500CE");  // 2023-12-21
-FnoUtils.getStrikePrice("NIFTY23DEC21500CE"); // 21500
-FnoUtils.getOptionType("NIFTY23DEC21500CE");  // "CE"
-FnoUtils.isFutures("NIFTY23DECFUT");          // true
-```
-
-### 9.5 SequenceGeneratorService
-
-**Location**: `util/SequenceGeneratorService.java`
-**Size**: ~1.3KB
-
-MongoDB auto-increment ID generator.
-
-**Usage**:
-```java
-long nextId = sequenceGenerator.generateSequence("notes_sequence");
-```
-
-### 9.6 DatabaseSequence
-
-**Location**: `util/DatabaseSequence.java`
-**Size**: ~0.6KB
-
-MongoDB entity for storing sequence counters.
-
-### 9.7 NotificationService
-
-**Location**: `util/NotificationService.java`
-**Size**: ~0.3KB
-
-Interface for notification sending (email, SMS - placeholder).
+The impl optionally injects email module's EmailService (`@Autowired(required=false)`)
+and degrades to WARN logs when absent. Only `notifySessionExpiry` is a stub
+(log-only, "Future: send email/push").
 
 ---
 
-## 10. Logging Standards
+## 10. Utility Classes
 
-### 10.1 Log Format
+### 10.1 EncryptionUtil - AES-256-GCM (verified)
+
+- Algorithm `AES/GCM/NoPadding`; 12-byte random IV per encryption (SecureRandom);
+  128-bit auth tag; output format `Base64(IV || ciphertext || tag)`.
+- **Key handling**: the 32-char secret's raw UTF-8 bytes are used directly as the AES
+  key - there is NO PBKDF2/KDF step. Static override variants accept a 32-char raw key
+  OR a 64-char hex string (decoded to 32 bytes); anything else throws.
+- Migration helpers: `isEncrypted(data)` (base64 length heuristic) and
+  `decryptSafe(data)` (returns input as-is when it does not look encrypted; on
+  decrypt failure of ciphertext-shaped input it logs a warning and returns the
+  ciphertext unchanged - callers must handle possibly-still-encrypted values).
+
+### 10.2 HashUtil
+
+`HashUtil.sha256(String)` -> lowercase hex SHA-256; null-safe input returns null.
+Used for Zerodha checksum: `sha256(apiKey + requestToken + apiSecret)`.
+
+### 10.3 FinancialYearUtil
+
+- `getFinancialYear(LocalDate)` -> `"YYYY-YY"` (Indian FY: Apr 1 - Mar 31).
+- `resolveFinancialYear("2025-26")` -> `[2025-04-01, 2026-03-31]`; validates format
+  and that end year == start year + 1; throws IllegalArgumentException otherwise.
+
+### 10.4 MarketHoursUtil
+
+`isMarketOpen()` - Mon-Fri, 09:15-15:30 Asia/Kolkata. No holiday calendar here
+(NSE holidays live in mutualfund's NSEHolidayService).
+
+### 10.5 RequestUtils
+
+`extractIpAddress(HttpServletRequest)`: X-Forwarded-For first entry -> X-Real-IP ->
+remoteAddr; normalizes IPv6/IPv4 loopback to `127.0.0.1 (localhost)`.
+Also `extractUserAgent`.
+
+### 10.6 UrlResolverUtil
+
+`resolveUrl(commaSeparatedUrls)` picks the right URL for multi-env deployments:
+match request Origin/Referer first, then Host localhost-vs-prod classification;
+falls back to the first entry. Used for OAuth redirect building.
+
+### 10.7 UserLookupUtil
+
+`findByIdentifier(UserRepository, identifier)` tries email -> username -> phone.
+Static helper importing user module types.
+
+### 10.8 ExcelExportUtil
+
+Static XLSX builder on Apache POI:
+
+- Single-sheet `exportToExcel(filename, sheetName, headers, data, extractors, rightAlignedIndices)`
+- Multi-sheet `exportToExcelMultiSheet(filename, List<SheetConfig<T>>)`
+- Generic column extractors as functions; fast width computation (no POI autoSize)
+  clamped 14-45 chars; header style bold/gray-fill; column 0 gets a special bold
+  right-aligned style ("FD No" legacy).
+- Returns `ResponseEntity<byte[]>` with proper xlsx content type + attachment filename.
+
+---
+
+## 11. Logging Standards
+
+### 11.1 Log Format
 
 All logs automatically include MDC context:
-```
-TIMESTAMP [requestId=UUID] LEVEL LOGGER - [Context] Message
-```
 
-**Example**:
 ```
-2025-12-17 10:30:00 [requestId=550e8400-e29b-41d4] INFO  c.u.m.c.broker.service.ZerodhaBrokerService - [Broker] Connected successfully to ZERODHA - user: user123
+TIMESTAMP LEVEL [logger] - [Context] Message   (requestId via MDC pattern)
 ```
 
-### 10.2 Log Levels
+### 11.2 Log Levels
 
-| Level | When to Use |
-|-------|-------------|
-| `ERROR` | Unrecoverable errors, exceptions |
-| `WARN` | Recoverable issues, deprecations |
-| `INFO` | Key business events (login, sync, etc.) |
-| `DEBUG` | Detailed flow for troubleshooting |
-| `TRACE` | Very detailed (raw API responses) |
+| Level     | When to Use                                                           |
+| --------- | --------------------------------------------------------------------- |
+| `ERROR` | Unrecoverable errors, 5xx responses, external service failures        |
+| `WARN`  | Recoverable issues, validation failures (4xx), degraded notifications |
+| `INFO`  | Key business events (login, sync, emails sent)                        |
+| `DEBUG` | Detailed flow for troubleshooting                                     |
 
-### 10.3 What NOT to Log
+### 11.3 What NOT to Log
 
-| Never Log | Why |
-|-----------|-----|
-| Passwords | Security |
-| API Secrets | Security |
-| Access Tokens | Security |
-| Full Credit Card Numbers | PCI Compliance |
-| Raw Request/Response Bodies (production) | Performance + Security |
+| Never Log                           | Why                    |
+| ----------------------------------- | ---------------------- |
+| Passwords / OTPs                    | Security               |
+| API secrets / access tokens         | Security               |
+| Email HTML content or Brevo key     | Security               |
+| Raw request/response bodies in prod | Performance + Security |
 
 ---
 
-## 11. Security Utilities
+## 12. Security Utilities
 
-### 11.1 Encryption Flow
+### 12.1 Encryption Flow
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                     SECRET ENCRYPTION FLOW                               │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  User Input                                                              │
-│  (API Secret)                                                            │
-│       │                                                                  │
-│       ▼                                                                  │
-│  ┌────────────────┐                                                     │
-│  │ EncryptionUtil │  AES-256 + Random IV                                │
-│  │   .encrypt()   │                                                      │
-│  └────────────────┘                                                     │
-│       │                                                                  │
-│       ▼                                                                  │
-│  Encrypted String                                                        │
-│  (Base64 encoded)                                                        │
-│       │                                                                  │
-│       ▼                                                                  │
-│  ┌────────────────┐                                                     │
-│  │   MongoDB      │  Stored in broker_accounts collection               │
-│  └────────────────┘                                                     │
-│       │                                                                  │
-│       ▼ (At API call time)                                               │
-│  ┌────────────────┐                                                     │
-│  │ EncryptionUtil │  Decrypt just-in-time                               │
-│  │   .decrypt()   │                                                      │
-│  └────────────────┘                                                     │
-│       │                                                                  │
-│       ▼                                                                  │
-│  Plaintext Secret                                                        │
-│  (Used in Zerodha API call)                                              │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Input["User input (API secret)"] --> Enc["EncryptionUtil.encrypt()<br/>AES-256-GCM + random 12-byte IV"]
+    Enc --> Store["Base64(IV || ciphertext || tag)<br/>Stored in broker_accounts / user TOTP fields"]
+    Store --> Dec["EncryptionUtil.decrypt() / decryptSafe()<br/>(at call time)"]
+    Dec --> Call["Plaintext secret used for outbound broker API call"]
 ```
 
-### 11.2 Checksum Calculation
+<details>
+<summary>Click to view ASCII Diagram</summary>
 
-Used for Zerodha token exchange:
+```text
+User input (API secret)
+        |
+        v
+EncryptionUtil.encrypt()      AES-256-GCM + random 12-byte IV
+        |
+        v
+Base64(IV || ciphertext || tag) stored in broker_accounts / user TOTP fields
+        |
+        v  (at call time)
+EncryptionUtil.decrypt()/decryptSafe()
+        |
+        v
+Plaintext secret used for the outbound broker API call
+```
+
+</details>
+
+Key source: `app.encryption.secret-key` (32 chars) validated by EncryptionConfig at
+startup; raw bytes are the AES key (no KDF). See section 10.1.
+
+### 12.2 Checksum Calculation
+
 ```java
 String checksum = HashUtil.sha256(apiKey + requestToken + apiSecret);
 ```
 
+Used for the Zerodha `/session/token` exchange inside the broker module.
+
 ---
 
-## 12. Usage Guidelines
+## 13. Usage Guidelines
 
-### 12.1 Throwing Exceptions
-
-**Always** throw domain exceptions, never raw `RuntimeException`:
+### 13.1 Throwing Exceptions
 
 ```java
-// ❌ BAD
+// BAD - bypasses error taxonomy
 throw new RuntimeException("User not found");
 
-// ✅ GOOD
-throw new AuthenticationException("User not found");
+// GOOD
+throw new AuthenticationException("Invalid credentials");
 
-// ✅ GOOD (with custom HTTP status)
-throw new DomainException("Invalid data", HttpStatus.BAD_REQUEST.value(), "INVALID_DATA");
+// GOOD - custom code/status; NOTE constructor order: (message, errorCode, httpStatus)
+throw new DomainException("Invalid data", "INVALID_DATA", 400);
 ```
 
-### 12.2 Using Log Constants
+### 13.2 Using Log Constants
 
 ```java
 import static com.urva.myfinance.coinTrack.common.util.LoggingConstants.*;
 
-// ❌ BAD - Inconsistent format
-logger.info("User logged in: " + username);
-
-// ✅ GOOD - Consistent, structured
-logger.info(AUTH_LOGIN_SUCCESS, username);
+logger.info(AUTH_LOGIN_SUCCESS, username);          // structured + consistent
 ```
 
-### 12.3 Wrapping Responses
+### 13.3 Wrapping Responses
 
 ```java
-// Success response
-return ResponseEntity.ok(
-    ApiResponse.success(data, "Operation successful")
-);
-
-// The GlobalExceptionHandler handles errors automatically
+return ResponseEntity.ok(ApiResponse.success(data, "Operation successful"));
+// Errors: just throw a DomainException subclass; GlobalExceptionHandler formats them.
 ```
 
 ---
 
-## 13. Common Pitfalls
+## 14. Common Pitfalls
 
-| Pitfall | Why It's Bad | Prevention |
-|---------|--------------|------------|
-| Throwing `RuntimeException` | Bypasses standard error codes | Always throw `DomainException` subclasses |
-| Logging Secrets | Security breach | Never log raw API keys/secrets |
-| Business Logic in Common | Circular dependencies | Keep `common` stateless and logic-free |
-| Hardcoding Configurations | Environment drift | Use `@Value` or `AppConfig` beans |
-| Ignoring RequestId | Hard to trace issues | Always include `requestId` in responses |
-| Inconsistent Log Format | Hard to parse logs | Use `LoggingConstants` patterns |
-| Skipping Encryption | Security violation | Always use `EncryptionUtil` for secrets |
-
----
-
-## Appendix A: File Size Reference
-
-| File | Size | Lines | Notes |
-|------|------|-------|-------|
-| HealthController.java | 7.4KB | 206 | Full system health monitoring |
-| EncryptionUtil.java | 5.9KB | ~180 | AES-256 implementation |
-| GlobalExceptionHandler.java | 5.5KB | 134 | All exception handling |
-| UserDTO.java | 4.8KB | ~120 | User response DTO |
-| FnoUtils.java | 4.7KB | ~140 | F&O symbol parsing |
-| LoggingConstants.java | 4.5KB | 70 | All log message patterns |
+| Pitfall                                             | Why It's Bad                                       | Prevention                                              |
+| --------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| Throwing raw RuntimeException                       | Loses error codes -> generic 500 shape             | Always throw DomainException subclasses                 |
+| Logging secrets                                     | Security breach                                    | Never log keys/tokens/OTPs                              |
+| Adding business logic to common                     | Creates inverted deps (already happened - see 1.3) | Keep new common additions stateless and dependency-free |
+| Hardcoding config                                   | Environment drift                                  | Use @Value properties / env vars                        |
+| Ignoring requestId                                  | Untraceable support issues                         | Return envelopes include it automatically               |
+| Inconsistent log format                             | Unparsable logs                                    | Use LoggingConstants patterns                           |
+| Storing secrets plaintext                           | Security violation                                 | Always route through EncryptionUtil                     |
+| Assuming one response envelope                      | ApiResponse and ApiErrorResponse differ            | Branch on HTTP status, not body shape                   |
+| Treating decryptSafe output as definitely-plaintext | Sends ciphertext downstream (e.g., broker 403s)    | Check isEncrypted/log-warning path                      |
 
 ---
+
+## Appendix A: File Reference (verified line counts)
+
+| File                            | Lines | Notes                                            |
+| ------------------------------- | ----- | ------------------------------------------------ |
+| ExcelExportUtil.java            | 313   | XLSX single/multi-sheet builder                  |
+| HealthController.java           | 357   | full health + HTML dashboard + ping + keep-alive |
+| EncryptionUtil.java             | 265   | AES-256-GCM + migration helpers                  |
+| GlobalExceptionHandler.java     | 208   | 11 handler methods                               |
+| StartupLogger.java              | 137   | startup banner                                   |
+| TransactionSequenceService.java | 120   | 7 @Async ledger reorders                         |
+| ApiErrorResponse.java           | 104   | error envelope                                   |
+| RequestIdFilter.java            | 100   | correlation ID filter                            |
+| ApiResponse.java                | 99    | success envelope                                 |
+| RequestUtils.java               | 89    | IP/user-agent extraction                         |
+
+(All other files <= 73 lines.)
 
 ## Appendix B: Related Documentation
 
-- [Zerodha Master Integration Guide](../../docs/zerodha/Zerodha_Master_Integration_Guide.md)
 - [Broker Module README](../broker/README.md)
 - [Security Module README](../security/README.md)
-
----
+- ~~docs/zerodha/Zerodha_Master_Integration_Guide.md~~ - no longer exists (docs/ removed)
 
 ## Appendix C: Changelog
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 2.0.0 | 2025-12-17 | Comprehensive rewrite with accurate structure |
-| 1.0.0 | 2025-12-14 | Initial documentation |
-
+| Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.1.1   | 2026-08-23 | Post-audit cleanup: removed dead`repository/CounterRepository.java` (zero consumers, confirmed by repo-wide grep); documented verified `brokerWebClientBuilder` consumers (6 classes) and the BrevoEmailService raw-WebClient exception.                                                                                                                                                                                                              |
+| 2.1.0   | 2026-08-23 | Full source verification pass: corrected directory tree (removed phantom RestTemplateConfig/FnoUtils/DatabaseSequence/response-user-DTOs), documented WebClientConfig/MongoConfig/OpenApiConfig/StartupLogger, exact DomainException ctor order, complete handler table incl. 404/catch-all, real envelope JSON shapes, TransactionSequenceService + NotificationServiceImpl details, all 9 utils, honest outbound-dependency note, verified line counts. |
+| 2.0.0   | 2025-12-17 | Comprehensive rewrite with accurate structure (partially stale).                                                                                                                                                                                                                                                                                                                                                                                          |
+| 1.0.0   | 2025-12-14 | Initial documentation.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### Excel Export Utilities
-Provides standardized styling, header formatting, and auto-sizing logic for Excel exports across modules.
+
+Provides standardized styling, header formatting, and fast auto-sizing logic for Excel
+exports across modules (FD, PPF, EPF, MutualFund, GoldSilver each add their own styled
+exporters on top of this shared base).

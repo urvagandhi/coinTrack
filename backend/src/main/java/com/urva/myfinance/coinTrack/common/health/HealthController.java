@@ -55,7 +55,7 @@ public class HealthController {
         try {
             // Basic service info
             response.put("service", "coinTrack");
-            response.put("version", "3.0.0");
+            response.put("version", "3.1.0");
             response.put("timestamp", Instant.now().toString());
             response.put("uptime", System.currentTimeMillis() - startTime);
 

@@ -60,3 +60,4 @@ migrate-userid.js
 .claude/
 .fuse_hidden*
 
+graphify-out/

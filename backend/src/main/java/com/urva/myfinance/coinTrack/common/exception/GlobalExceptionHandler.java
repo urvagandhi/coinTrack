@@ -68,6 +68,24 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles custom validation exceptions (400) and retains field details if available.
+     */
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ApiErrorResponse> handleValidationException(
+            ValidationException ex, HttpServletRequest request) {
+        logger.warn("Validation exception: field={} message={}", ex.getField(), ex.getMessage());
+        ApiErrorResponse error = new ApiErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getErrorCode() != null ? ex.getErrorCode() : "VALIDATION_FAILED",
+                ex.getMessage(),
+                request.getRequestURI());
+        if (ex.getField() != null && !ex.getField().isBlank()) {
+            error.setFieldErrors(List.of(new ApiErrorResponse.FieldError(ex.getField(), ex.getMessage())));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
      * Catches any other DomainException subclass not handled above.
      */
     @ExceptionHandler(DomainException.class)

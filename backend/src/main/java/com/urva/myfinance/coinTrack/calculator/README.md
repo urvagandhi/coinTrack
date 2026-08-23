@@ -553,10 +553,11 @@ credentials. They are pure mathematical functions.
 
 ---
 
-## Appendix B: Related Documentation
+## Appendix B: Architecture Note & Related Documentation
 
-- [Common Module README](../common/README.md) -- Shared utilities and error handling
-- [Security Module README](../security/README.md) -- SecurityConfig (calculator endpoints excluded from auth)
+> **Self-Contained Architecture Note**: The `calculator` module is completely stateless and self-contained. It imports **0 files from `common` or any other domain module**, maintaining its own math facades (`FinancialMath`), response envelopes (`CalculatorResponse<T>`), and Bucket4j rate limiter (`RateLimitFilter`).
+
+- [Security Module README](../security/README.md) -- SecurityConfig (calculator endpoints excluded from JWT auth)
 
 ---
 

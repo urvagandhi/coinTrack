@@ -108,8 +108,8 @@ public class StartupLogger {
 
     private String checkDatabaseConnection() {
         try {
-            // Test MongoDB connection by running a simple command
-            mongoTemplate.getDb().getName();
+            // Execute ping command to perform an actual network round-trip check
+            mongoTemplate.executeCommand(new org.bson.Document("ping", 1));
             return "[OK] Connected (MongoDB Atlas)";
         } catch (Exception e) {
             log.error("Database connection failed: {}", e.getMessage());

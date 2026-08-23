@@ -33,6 +33,7 @@ import lombok.RequiredArgsConstructor;
  * /admin/emails/preview?template=security-alert&username=TestUser&event=Password+Changed
  */
 @RestController
+@org.springframework.context.annotation.Profile("dev")
 @RequestMapping("/admin/emails")
 @RequiredArgsConstructor
 @Tag(name = "Admin Email Preview", description = "Preview email templates (dev only)")

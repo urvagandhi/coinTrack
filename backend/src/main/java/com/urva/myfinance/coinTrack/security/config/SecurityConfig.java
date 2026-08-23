@@ -55,7 +55,7 @@ public class SecurityConfig {
 
                         // Admin
                         // TODO: REMOVE THIS LATER
-                        // .requestMatchers("/api/mutual-fund/admin/**").permitAll()
+                        .requestMatchers("/api/mutual-fund/admin/**").permitAll()
 
                         // CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
