@@ -72,10 +72,23 @@ export async function GET(request) {
 
     return NextResponse.json(results);
   } catch (error) {
-    console.error('Failed to search AMFI NAVAll.txt:', error);
-    return NextResponse.json(
-      { error: 'Failed to search mutual funds' },
-      { status: 500 }
-    );
+    console.error('Failed to search AMFI NAVAll.txt, falling back to mfapi.in:', error.message);
+    try {
+      const fallbackRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(q)}`, {
+        headers: {
+          'Accept': 'application/json'
+        },
+        cache: 'no-store'
+      });
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        if (Array.isArray(fallbackData)) {
+          return NextResponse.json(fallbackData);
+        }
+      }
+    } catch (fallbackError) {
+      console.error('Fallback mfapi.in search failed:', fallbackError.message);
+    }
+    return NextResponse.json([]);
   }
 }

@@ -32,6 +32,8 @@ public class MfSchemeAggregationService {
     private SipMandateRepository sipMandateRepository;
     @Autowired
     private ValuationSnapshotRepository valuationSnapshotRepository;
+    @Autowired
+    private PortfolioHoldingRepository portfolioHoldingRepository;
 
     public SchemeSummaryDto calculateSummary(String userId, String schemeId) {
         MfScheme scheme = schemeRepository.findById(schemeId)
@@ -97,9 +99,8 @@ public class MfSchemeAggregationService {
         }
         
         BigDecimal totalPurchasedUnits = lumpsumUnits.add(sipUnits);
-        if (scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
-            totalPurchasedUnits = scheme.getManualTotalUnits();
-        }
+        // Do not override totalPurchasedUnits with manualTotalUnits (which represents current balance)
+        // to keep historical average Nav calculation accurate.
         BigDecimal averageNav = scheme.getAverageNav();
         if ((averageNav == null || averageNav.compareTo(BigDecimal.ZERO) == 0) && totalPurchasedUnits.compareTo(BigDecimal.ZERO) > 0) {
             averageNav = totalInvestment.divide(totalPurchasedUnits, 8, java.math.RoundingMode.HALF_UP);
@@ -164,6 +165,14 @@ public class MfSchemeAggregationService {
         dto.setTotalTradedValue(totalTradedValue);
         dto.setCurrentInvestment(currentInvestment);
         dto.setAverageNav(averageNav);
+        
+        PortfolioHolding holding = portfolioHoldingRepository.findByUserIdAndSchemeId(scheme.getUserId(), schemeId).orElse(null);
+        if (holding != null && holding.getCurrentValue() != null) {
+            dto.setCurrentValue(holding.getCurrentValue());
+        } else {
+            dto.setCurrentValue(BigDecimal.ZERO);
+        }
+        
         dto.setStatuses(statuses);
 
         return dto;

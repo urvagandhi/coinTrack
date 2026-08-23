@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Multi-broker portfolio tracker for the Indian stock market</strong><br/>
-  Aggregate holdings across Zerodha, Angel One & Upstox — with mandatory 2FA, encrypted credential storage, and 41+ financial calculators.
+  Aggregate holdings across Zerodha, Angel One & Upstox — with mandatory 2FA, encrypted credential storage, and 33 financial calculators.
 </p>
 
 <p align="center">
@@ -53,7 +53,7 @@ coinTrack is a production-grade personal finance platform built for Indian retai
 | Broker sessions expire daily              | Auto-detection + one-click reconnect flow                       |
 | No free tool for MF + equity in one view  | Holdings, positions, mutual funds, SIPs — all in one screen    |
 | Manual P&L tracking in spreadsheets       | Real-time day gain, unrealized P&L, cost basis from broker APIs |
-| Financial planning scattered across sites | 41 built-in calculators (SIP, EMI, tax, NPS, retirement, etc.)  |
+| Financial planning scattered across sites | 33 built-in calculators (SIP, EMI, tax, NPS, retirement, etc.)  |
 
 ---
 
@@ -135,7 +135,7 @@ graph TD
     COMMON --> SECURITY["security/<br/>JWT, filters, config"]
     COMMON --> USER["user/<br/>auth, profile, TOTP"]
     COMMON --> EMAIL["email/<br/>Brevo, templates"]
-    COMMON --> CALC["calculator/<br/>41 financial tools"]
+    COMMON --> CALC["calculator/<br/>33 financial tools"]
 
     SECURITY --> BROKER["broker/<br/>hexagonal adapters"]
     USER --> NOTES["notes/<br/>journal CRUD"]
@@ -206,19 +206,19 @@ sequenceDiagram
     participant DB as MongoDB
 
     Note over C,DB: Step 1 — Save Credentials
-    C->>B: POST /api/broker/zerodha/credentials<br/>{apiKey, apiSecret}
+    C->>B: POST /api/brokers/zerodha/credentials<br/>{apiKey, apiSecret}
     B->>B: encrypt(apiSecret) with AES-256-GCM
     B->>DB: Save BrokerAccount
     B-->>C: 200 "Credentials saved"
 
     Note over C,DB: Step 2 — OAuth Connect
-    C->>B: GET /api/broker/zerodha/connect
+    C->>B: GET /api/brokers/zerodha/connect
     B-->>C: 302 Redirect to kite.zerodha.com/connect/login
 
     C->>Z: User logs in on Zerodha
     Z-->>C: Redirect to callback?request_token=xxx
 
-    C->>B: POST /api/broker/callback {requestToken}
+    C->>B: POST /api/brokers/callback {requestToken}
     B->>Z: POST /session/token (exchange)
     Z-->>B: {access_token}
     B->>B: encrypt(access_token)
@@ -400,7 +400,7 @@ graph LR
 - **Rate limiting** — Brute-force protection on login and sensitive endpoints
 - **Request correlation** — Every request tagged with a unique ID (MDC logging)
 
-### Financial Calculators (41 tools)
+### Financial Calculators (33 backend endpoints · 32 UI pages)
 
 | Category             | Calculators                                                                    |
 | -------------------- | ------------------------------------------------------------------------------ |
@@ -468,7 +468,7 @@ coinTrack/
 │   │   ├── epf/                                # Employees' Provident Fund (EPF) Ledger module
 │   │   ├── goldsilver/                         # Gold & Silver module
 │   │   ├── mutualfund/                         # Mutual Fund module
-│   │   ├── calculator/                         # 41 financial calculators (6 controllers)
+│   │   ├── calculator/                         # 33 financial calculators (6 controllers)
 │   │   └── common/                             # Shared: EncryptionUtil, GlobalExceptionHandler, SequenceGeneratorService, CsvExportUtil
 │   │
 │   ├── src/main/resources/
@@ -490,7 +490,7 @@ coinTrack/
 │   │   │   ├── notes/                          #   Investment journal
 │   │   │   ├── profile/                        #   User profile
 │   │   │   └── settings/                       #   2FA settings
-│   │   └── calculators/                        # 41 calculator pages (public, no auth)
+│   │   └── calculators/                        # 32 calculator pages (public, no auth)
 │   │       ├── investment/                     #   SIP, lumpsum, CAGR, XIRR, etc.
 │   │       ├── loans/                          #   EMI, compound interest, etc.
 │   │       ├── savings/                        #   PPF, NPS, FD, RD, SSY, etc.
@@ -547,7 +547,6 @@ totp.encryption-key=<64-character-hex-key>
 
 brevo.api-key=<your-brevo-api-key>
 
-zerodha.redirect.url=http://localhost:3000/brokers/zerodha/callback
 frontend.url=http://localhost:3000
 app.cors.allowed-origins=http://localhost:3000
 EOF
@@ -634,12 +633,18 @@ openssl rand -hex 32
 | `JWT_SECRET`            | Yes      | 256-bit signing key (hex)           | `a1b2c3d4...` (64 chars)           |
 | `ENCRYPTION_SECRET_KEY` | Yes      | AES-256 key (exactly 32 chars)      | `mySecretKey12345678901234567890`  |
 | `TOTP_ENCRYPTION_KEY`   | Yes      | TOTP encryption key (64 hex chars)  | `a1b2c3...`                        |
+| `EMAIL_MAGIC_LINK_SECRET` | Yes    | JWT secret for email magic links    | (random 32+ chars)                 |
 | `BREVO_API_KEY`         | Yes      | Brevo email API key                 | `xkeysib-...`                      |
+| `GOLDAPI_KEY`           | For live metal rates | GoldAPI.io API key (alias: `GOLD_API_KEY`) | `goldapi-...` |
 | `FRONTEND_URL`          | Yes      | Frontend origin for emails/links    | `http://localhost:3000`            |
 | `CORS_ALLOWED_ORIGINS`  | Yes      | Allowed CORS origins                | `http://localhost:3000`            |
-| `ZERODHA_REDIRECT_URL`  | No       | Zerodha OAuth callback              | `.../brokers/zerodha/callback`     |
-| `ANGELONE_REDIRECT_URL` | No       | Angel One OAuth callback            | `.../brokers/angelone/callback`    |
-| `UPSTOX_REDIRECT_URL`   | No       | Upstox OAuth callback               | `.../brokers/upstox/callback`      |
+| `GOOGLE_CLIENT_ID`      | For Google SSO | Google OAuth client ID         | `...apps.googleusercontent.com`    |
+| `GOOGLE_CLIENT_SECRET`  | For Google SSO | Google OAuth client secret     | `GOCSPX-...`                       |
+| `GOOGLE_REDIRECT_URI`   | For Google SSO | Google OAuth redirect          | `http://localhost:3000/login`      |
+
+> The legacy `ZERODHA_REDIRECT_URL` / `ANGELONE_REDIRECT_URL` / `UPSTOX_REDIRECT_URL`
+> variables were removed — no code reads them. Zerodha's OAuth callback goes to the backend
+> bridge at `/zerodha/callback`; Upstox uses a per-user redirectUri saved with credentials.
 
 ### Frontend (`.env.local`)
 
@@ -767,22 +772,23 @@ graph LR
 
 | Method   | Endpoint                          | Auth | Description                    |
 | -------- | --------------------------------- | ---- | ------------------------------ |
-| `GET`  | `/api/user/profile`             | JWT  | Get user profile               |
-| `PUT`  | `/api/user/profile`             | JWT  | Update profile                 |
-| `POST` | `/api/totp/setup`               | JWT  | Generate TOTP secret + QR code |
-| `POST` | `/api/totp/verify`              | JWT  | Verify TOTP code               |
-| `POST` | `/api/totp/backup-codes/verify` | JWT  | Verify backup code             |
-| `GET`  | `/api/totp/backup-codes`        | JWT  | Get remaining backup codes     |
+| `GET`  | `/api/users/me`                 | JWT  | Get user profile               |
+| `PUT`  | `/api/users/me`                 | JWT  | Update profile                 |
+| `POST` | `/api/auth/2fa/setup`           | JWT  | Generate TOTP secret + QR code |
+| `POST` | `/api/auth/2fa/verify`          | JWT  | Verify TOTP code (setup)       |
+| `POST` | `/api/auth/login/totp`          | JWT  | Complete login with TOTP       |
+| `POST` | `/api/auth/login/recovery`      | JWT  | Login with backup code         |
+| `GET`  | `/api/auth/2fa/status`          | JWT  | Get 2FA status                 |
 
 ### Broker
 
 | Method     | Endpoint                             | Auth | Description           |
 | ---------- | ------------------------------------ | ---- | --------------------- |
-| `POST`   | `/api/broker/{broker}/credentials` | JWT  | Save API key/secret   |
-| `GET`    | `/api/broker/{broker}/connect`     | JWT  | Get OAuth login URL   |
-| `POST`   | `/api/broker/callback`             | JWT  | Handle OAuth callback |
-| `GET`    | `/api/broker/status`               | JWT  | All broker statuses   |
-| `DELETE` | `/api/broker/{broker}/disconnect`  | JWT  | Disconnect broker     |
+| `POST`   | `/api/brokers/{broker}/credentials` | JWT  | Save API key/secret   |
+| `GET`    | `/api/brokers/{broker}/connect`     | JWT  | Get OAuth login URL   |
+| `POST`   | `/api/brokers/callback`             | JWT  | Handle OAuth callback |
+| `GET`    | `/api/brokers/{broker}/status`      | JWT  | Broker status         |
+| `POST`   | `/api/brokers/angelone/disconnect`  | JWT  | Disconnect Angel One  |
 
 ### Portfolio
 
@@ -896,7 +902,7 @@ graph LR
 | `POST` | `/api/calculators/savings/ppf`        | PPF maturity                   |
 | `POST` | `/api/calculators/savings/nps`        | NPS projection                 |
 | `POST` | `/api/calculators/tax/income-tax`     | Income tax estimator           |
-| ...      | `/api/calculators/**`                 | **41 calculators total** |
+| ...      | `/api/calculators/**`                 | **33 calculators total** |
 
 > Full interactive docs with request/response schemas available at **[Swagger UI](#api-documentation-swagger)**.
 
@@ -1035,7 +1041,7 @@ graph TD
 
 ## Calculator Suite
 
-All 41 calculators are **publicly accessible** (no login required) and **rate-limited** to prevent abuse.
+All 33 calculators are **publicly accessible** (no login required) and **rate-limited** to prevent abuse.
 
 ### Investment Calculators
 

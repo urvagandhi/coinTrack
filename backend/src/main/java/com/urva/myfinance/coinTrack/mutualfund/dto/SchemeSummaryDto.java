@@ -22,6 +22,7 @@ public class SchemeSummaryDto {
     private BigDecimal totalTradedValue;
     private BigDecimal currentInvestment;
     private BigDecimal averageNav;
+    private BigDecimal currentValue;
     private Set<FundStatus> statuses;
 
     public SchemeSummaryDto() {
@@ -137,6 +138,14 @@ public class SchemeSummaryDto {
 
     public void setAverageNav(BigDecimal averageNav) {
         this.averageNav = averageNav;
+    }
+
+    public BigDecimal getCurrentValue() {
+        return currentValue;
+    }
+
+    public void setCurrentValue(BigDecimal currentValue) {
+        this.currentValue = currentValue;
     }
 
     public Set<FundStatus> getStatuses() {

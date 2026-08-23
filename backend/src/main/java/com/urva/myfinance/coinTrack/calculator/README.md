@@ -112,7 +112,7 @@ graph TD
     end
 
     subgraph DTO["DTO Layer"]
-        REQ["dto/request/<br/>30 request records"]
+        REQ["dto/request/<br/>29 request records"]
         RES["dto/response/<br/>30 response records"]
     end
 
@@ -172,7 +172,7 @@ calculator/
 |       +-- PlanningCalculatorServiceImpl.java
 |
 +-- dto/
-|   +-- request/                           # 30 request records
+|   +-- request/                           # 29 request records
 |   |   +-- SipRequest.java, EmiRequest.java, IncomeTaxRequest.java, ...
 |   +-- response/                          # 30 response records
 |       +-- SipResponse.java, EmiResponse.java, CalculatorResponse.java, ...
@@ -549,7 +549,7 @@ credentials. They are pure mathematical functions.
 | Tax | 6 | 6 | 6 |
 | Trading | 2 | 2 | 2 |
 | Planning | 1 | 1 | 1 |
-| **Total** | **33** | **30** | **31** |
+| **Total** | **33** | **29** | **30** |
 
 ---
 

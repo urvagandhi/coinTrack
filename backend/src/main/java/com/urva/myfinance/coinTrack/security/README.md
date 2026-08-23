@@ -37,12 +37,18 @@ The Security module guards every API endpoint in CoinTrack. It employs a **state
 
 | Component | Responsibility |
 |-----------|----------------|
-| **JwtFilter** | Intercepts requests, extracts Bearer token |
+| **JwtFilter** | Intercepts requests, extracts Bearer token, checks blacklist |
 | **JWTService** | Token generation, validation, claim extraction |
 | **SecurityConfig** | Spring Security filter chain, endpoint permissions |
 | **CustomerUserDetailService** | Load user from database |
 | **UserPrincipal** | Adapter between User entity and Spring Security |
+| **InvalidatedToken** | JWT blacklist collection (`invalidated_tokens`, TTL-indexed) for logout support |
 | **TotpEncryptionUtil** | AES-256-GCM encryption for TOTP secrets |
+
+> **Refresh tokens** are persisted by the `user` module (`refresh_tokens` collection,
+> rotated on every `POST /api/auth/refresh`). Logout inserts the access token's JTI into
+> `invalidated_tokens`; Caffeine provides an in-memory first-pass check before hitting MongoDB.
+> See backend README §7 for the full token lifecycle.
 
 ### 1.3 Key Features
 
@@ -190,19 +196,32 @@ Total: 6 files, ~628 lines, ~27.5KB
 
 ```java
 http.authorizeHttpRequests(auth -> auth
-    // Public endpoints (no auth required)
-    .requestMatchers("/", "/api/health/**").permitAll()
-    .requestMatchers("/api/auth/**").permitAll()
-    .requestMatchers("/api/broker/*/callback").permitAll()
-    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+    // Health & actuator
+    .requestMatchers("/api/health", "/api/health/**", "/actuator", "/actuator/**",
+                     "/health").permitAll()
+    // Auth (public): login, register, TOTP flows, refresh, OAuth2
+    .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify-token",
+                     "/api/auth/check-username/*", "/api/auth/login/totp",
+                     "/api/auth/login/recovery", "/api/auth/2fa/setup", "/api/auth/2fa/verify",
+                     "/api/auth/2fa/register/setup", "/api/auth/2fa/register/verify",
+                     "/api/auth/refresh", "/api/auth/oauth2/**").permitAll()
+    // Email verification / password reset / contact
+    .requestMatchers("/api/auth/email/**", "/api/auth/forgot-password",
+                     "/api/auth/forgot-password/verify", "/api/auth/reset-password",
+                     "/api/contact").permitAll()
+    // Swagger, static resources, dev-only admin email preview,
+    // broker connect/callback whitelists, Zerodha bridge (/zerodha/callback),
+    // calculators (rate-limited)
+    // ... see SecurityConfig.java for the full list ...
+    .requestMatchers("/api/calculators/**").permitAll()
 
-    // Protected endpoints (JWT required)
-    .requestMatchers("/api/**").authenticated()
-
-    // Deny all others
-    .anyRequest().denyAll()
+    // Everything else requires JWT
+    .anyRequest().authenticated()
 );
 ```
+
+> Verified against `SecurityConfig.java` on 2026-08-23. Note: broker routes live under
+> `/api/brokers` (plural), and the Zerodha redirect bridge is at root `/zerodha/callback`.
 
 **Security Features**:
 
@@ -218,19 +237,22 @@ http.authorizeHttpRequests(auth -> auth
 **Public (No Authentication)**:
 | Pattern | Description |
 |---------|-------------|
-| `/` | Root redirect |
-| `/api/health/**` | Health checks |
-| `/api/auth/**` | Login, register, TOTP verify |
-| `/api/broker/*/callback` | OAuth callbacks |
+| `/`, `/index.html`, `/favicon.ico`, static/logo paths | Root & static resources |
+| `/api/health/**`, `/health`, `/actuator/**` | Health checks & actuator (prod: health only) |
+| `/api/auth/login`, `/register`, `/verify-token`, `/check-username/*` | Core auth |
+| `/api/auth/login/totp`, `/login/recovery`, `/2fa/*` | TOTP flows |
+| `/api/auth/refresh`, `/api/auth/oauth2/**` | Token refresh, Google SSO |
+| `/api/auth/email/**`, `/forgot-password*`, `/reset-password` | Email verification / reset |
+| `/api/contact` | Contact form |
+| `/api/brokers/{BROKER}/callback|connect|login-url`, `/zerodha/callback` | Broker connect flows |
+| `/swagger-ui/**`, `/v3/api-docs/**` | API docs |
+| `/admin/emails/**` | Dev-only email template preview |
 | `OPTIONS /**` | CORS preflight |
 
 **Protected (JWT Required)**:
 | Pattern | Description |
 |---------|-------------|
-| `/api/portfolio/**` | Portfolio data |
-| `/api/broker/**` (non-callback) | Broker management |
-| `/api/notes/**` | User notes |
-| `/api/user/**` | User profile |
+| Everything else under `/api/**` (deny-by-default via `anyRequest().authenticated()`) | e.g. `/api/portfolio/**`, non-whitelisted `/api/brokers/**`, `/api/users/**`, `/api/notes/**` |
 
 ---
 

@@ -1,4 +1,4 @@
-# Gold & Silver Investment Management Module (v2.0.0 — Live Purity-Based Rates)
+# Gold & Silver Investment Management Module (v3.0.0 — Live Purity-Based Rates)
 
 ## Overview
 The Gold & Silver module provides a robust, user-scoped tracking system for physical and scheme-based precious metal investments. Version 2 supersedes flat rate entry by introducing **live market rate fetching computed per-purity**, enabling 22K gold or 925 silver holdings to be priced off their purity-adjusted live market rates rather than a single flat spot rate.
@@ -42,19 +42,35 @@ Purities are structured reference options rather than free-text strings:
 
 ## API Endpoints
 
+All endpoints under `/api/gold-silver` (JWT required), verified against
+`GoldSilverController`:
+
 | Method | Path | Description |
 |---|---|---|
+| POST | `/api/gold-silver` | Create investment entry |
+| GET | `/api/gold-silver` | List investments (filtered, paginated) |
+| GET | `/api/gold-silver/{id}` | Get single investment |
+| PUT | `/api/gold-silver/{id}` | Update investment |
+| DELETE | `/api/gold-silver/{id}` | Delete investment |
+| GET | `/api/gold-silver/summary` | Dashboard metrics (invested, live value, P&L, return %) |
 | GET | `/api/gold-silver/rates/current` | Get latest cached metal rate snapshots & staleness status |
 | POST | `/api/gold-silver/rates/refresh` | Manual force refresh (quota-guarded + health-checked) |
 | GET | `/api/gold-silver/rates/usage` | Get GoldAPI quota usage stats (today, month, remaining) |
 | GET | `/api/gold-silver/rates/health` | Check GoldAPI service health status |
 | GET / PUT | `/api/gold-silver/rate-settings` | Get / update user's local premium settings |
 | PATCH | `/api/gold-silver/{id}/rate-mode` | Switch holding between `LIVE` and `MANUAL` rate modes |
-| GET / POST | `/api/gold-silver/purity-options` | Fetch available purities or create custom purity option |
+| GET | `/api/gold-silver/purity-options` | Fetch available purity options (system defaults + custom) |
 | PATCH | `/api/gold-silver/market-rate` | Bulk update rate for `MANUAL`-mode records only |
+| GET | `/api/gold-silver/export` | Export investments to Excel (.xlsx) |
+
+> Note: earlier revisions listed `POST /purity-options` for creating custom purities —
+> current controller exposes only `GET`. Custom purity creation is not currently wired.
 
 ## Collections
 - `gold_silver_investments`: Investment records
-- `metal_purity_options`: Purity reference data
 - `metal_rate_snapshots`: Global cached rate history
-- `metal_rate_settings`: User local premium settings
+
+> **Not separate collections:** `metal_purity_options` is an in-memory seeded bean list
+> (`PurityOptionConfig`), and per-user local premium settings (`MetalRateSettingsEmbed`) are
+> **embedded in the `users` document** — both were separate collections in earlier designs
+> but are not today (verified against source 2026-08-23).

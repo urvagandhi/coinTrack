@@ -38,9 +38,15 @@ Interest is accrued independently for the **EPF Balance** and the **EPS Balance*
 
 ## Database Collections
 
-1. **`epf_settings`**: Per-user configuration (`defaultBasicDA`, `employeeContributionRate`, `useActualSalaryForEps`, `monthlyVpfAmount`).
-2. **`epf_transactions`**: Individual monthly or ad-hoc ledger entries.
-3. **`epf_interest_rates`**: Reference table mapping financial years (e.g. `2025-26`) to interest percentage rates.
+1. **`epf_transactions`**: Individual monthly or ad-hoc ledger entries.
+2. **User-embedded settings**: Per-user configuration (`defaultBasicDA`,
+   `employeeContributionRate`, `useActualSalaryForEps`, `monthlyVpfAmount`) lives in an
+   `EpfSettingsEmbed` object **embedded in the `users` document** — not a separate
+   `epf_settings` collection.
+3. **Interest rates**: FY reference rates load from YAML config (`configs/epf-rates.yml`
+   via `EpfInterestRateConfig`) — **not** a database collection. Earlier revisions
+   describing `epf_settings` / `epf_interest_rates` collections are outdated
+   (verified against source 2026-08-23).
 
 ---
 

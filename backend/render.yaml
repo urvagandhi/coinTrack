@@ -10,7 +10,9 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    region: oregon  # or singapore for Asia
+    # Region: singapore is the closest Render region to MongoDB Atlas AP_SOUTH_1
+    # (Mumbai). The earlier `oregon` value caused cross-continent DB↔API latency.
+    region: singapore
     plan: free      # or starter, standard, etc.
 
     # Health check configuration
@@ -22,14 +24,24 @@ services:
         value: prod
       - key: MONGODB_URI
         sync: false  # Set in dashboard - sensitive
+      - key: MONGODB_DB
+        value: Finance
       - key: JWT_SECRET
         sync: false  # Set in dashboard - sensitive
       - key: ENCRYPTION_SECRET_KEY
         sync: false  # Set in dashboard - AES-256 key (exactly 32 chars)
       - key: TOTP_ENCRYPTION_KEY
         sync: false  # Set in dashboard - 64 hex chars
+      - key: EMAIL_MAGIC_LINK_SECRET
+        sync: false  # Set in dashboard - JWT secret for email magic links
       - key: BREVO_API_KEY
         sync: false  # Set in dashboard - Brevo transactional email
+      - key: GOLDAPI_KEY
+        sync: false  # Set in dashboard - GoldAPI.io metal price provider
+      - key: GOLDAPI_MONTHLY_LIMIT
+        value: "100"
+      - key: GOLDAPI_SAFETY_BUFFER
+        value: "5"
       - key: FRONTEND_URL
         value: http://localhost:3000, https://cointrack-finance.vercel.app
       - key: EMAIL_BASE_URL

@@ -83,6 +83,19 @@ function calculateDuration(start, end) {
   return result.join(', ');
 }
 
+function formatContributionDuration(contributionCount) {
+  if (!contributionCount || contributionCount <= 0) return '< 1 mo';
+  
+  const years = Math.floor(contributionCount / 12);
+  const remainingMonths = contributionCount % 12;
+  
+  let result = [];
+  if (years > 0) result.push(`${years} yr${years > 1 ? 's' : ''}`);
+  if (remainingMonths > 0) result.push(`${remainingMonths} mo${remainingMonths > 1 ? 's' : ''}`);
+  
+  return result.join(', ');
+}
+
 export default function SipTab() {
   const [isContributionModalOpen, setIsContributionModalOpen] = React.useState(false);
   const [isMandateModalOpen, setIsMandateModalOpen] = React.useState(false);
@@ -166,22 +179,12 @@ export default function SipTab() {
 
     // Group SIP Contributions by Mandate and Month
     const contributionsByMandate = {};
-    let minYear = new Date().getFullYear();
-    let minMonth = new Date().getMonth() + 1;
+    // Initialize min/max from actual contribution dates only (not mandate start/end).
+    // This prevents phantom columns for months before the first real contribution.
+    let minYear = null;
+    let minMonth = null;
     let maxYear = new Date().getFullYear();
     let maxMonth = new Date().getMonth() + 1;
-
-    // Track min dates from mandates
-    enrichedMandates.forEach(m => {
-        if (m.startDate) {
-            const y = Array.isArray(m.startDate) ? m.startDate[0] : new Date(m.startDate).getFullYear();
-            const mo = Array.isArray(m.startDate) ? m.startDate[1] : new Date(m.startDate).getMonth() + 1;
-            if (y < minYear || (y === minYear && mo < minMonth)) {
-                minYear = y;
-                minMonth = mo;
-            }
-        }
-    });
 
     sips.forEach(sip => {
         const mandateId = sip.sipMandateId;
@@ -194,12 +197,24 @@ export default function SipTab() {
         if (sip.contributionDate) {
             const y = Array.isArray(sip.contributionDate) ? sip.contributionDate[0] : new Date(sip.contributionDate).getFullYear();
             const mo = Array.isArray(sip.contributionDate) ? sip.contributionDate[1] : new Date(sip.contributionDate).getMonth() + 1;
+            // Track min from actual contributions
+            if (minYear === null || y < minYear || (y === minYear && mo < minMonth)) {
+                minYear = y;
+                minMonth = mo;
+            }
+            // Track max
             if (y > maxYear || (y === maxYear && mo > maxMonth)) {
                 maxYear = y;
                 maxMonth = mo;
             }
         }
     });
+
+    // Fallback if there are no contributions yet (mandates exist but no entries)
+    if (minYear === null) {
+        minYear = maxYear;
+        minMonth = maxMonth;
+    }
 
     const monthColumns = [];
     let currY = minYear;
@@ -367,12 +382,12 @@ export default function SipTab() {
                <>
                  <div>S: {formatDate(m.startDate)}</div>
                  {m.endDate && <div className="text-[11px] text-muted-foreground mt-0.5">E: {formatDate(m.endDate)}</div>}
-                 <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">({calculateDuration(m.startDate, m.endDate)})</div>
+                 <div className="text-[11px] text-muted-foreground mt-0.5 font-medium">({formatContributionDuration(Object.keys(data.contributionsByMandate[m.id] || {}).length)})</div>
                </>
             ) : (
                <>
                  <div>{formatDate(m.startDate)}</div>
-                 <div className="text-[11px] text-muted-foreground mt-0.5">({calculateDuration(m.startDate, null)})</div>
+                 <div className="text-[11px] text-muted-foreground mt-0.5">({formatContributionDuration(Object.keys(data.contributionsByMandate[m.id] || {}).length)})</div>
                </>
             )}
           </td>

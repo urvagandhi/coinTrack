@@ -179,18 +179,19 @@ common/
 **Location**: `config/CorsConfig.java`
 **Size**: ~3.2KB
 
-Configures Cross-Origin Resource Sharing for frontend integration.
+Configures Cross-Origin Resource Sharing for frontend integration. Allowed origins are
+read from the `app.cors.allowed-origins` property (comma-separated), which is wired from
+the `CORS_ALLOWED_ORIGINS` environment variable — a single source of truth per environment.
 
-**Allowed Origins**:
-- `http://localhost:3000` (Development)
-- `https://cointrack.app` (Production)
-
-**Configuration**:
+**Configuration (verified against source 2026-08-23)**:
 ```java
+@Value("${app.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000}")
+private List<String> allowedOrigins;
+
 @Bean
 public CorsFilter corsFilter() {
     CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOrigins(List.of("http://localhost:3000"));
+    config.setAllowedOriginPatterns(allowedOrigins);
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(List.of("*"));
     config.setAllowCredentials(true);
@@ -198,18 +199,22 @@ public CorsFilter corsFilter() {
 }
 ```
 
+> Earlier revisions showed hardcoded origins (`http://localhost:3000`, `https://cointrack.app`)
+> inside the bean — that is no longer how it works; origins come exclusively from
+> `CORS_ALLOWED_ORIGINS` (dev defaults apply only when the env var is absent).
+
 ### 4.2 EncryptionConfig
 
 **Location**: `config/EncryptionConfig.java`
 **Size**: ~1.3KB
 
-Provides beans for AES encryption.
+Provides the AES-256-GCM encryption secret used for sensitive data (broker API secrets,
+TOTP-related material).
 
 **Environment Variables**:
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `ENCRYPTION_KEY` | Yes | 32-char AES-256 key |
-| `ENCRYPTION_SALT` | Yes | Salt for key derivation |
+| `ENCRYPTION_SECRET_KEY` | Yes | Exactly 32 characters (256 bits); wired to property `app.encryption.secret-key`. Startup fails fast if missing or wrong length. |
 
 ### 4.3 RestTemplateConfig
 
@@ -342,6 +347,11 @@ Provides comprehensive health monitoring for deployment platforms (Render, AWS, 
 |----------|--------|-------------|----------|
 | `/api/health` | GET | Full health check | Detailed status with DB, JVM, uptime |
 | `/api/health/ping` | GET | Simple ping | Minimal "UP" response |
+| `/health` | GET | Alias of the full check (used by keep-alive cron) | Same as `/api/health` |
+
+> Spring Boot Actuator is also exposed at `/actuator/**` (prod profile limits it to `health`),
+> which is what the Docker HEALTHCHECK and Render healthCheckPath use. All three paths are
+> whitelisted in SecurityConfig (verified against source 2026-08-23).
 
 **Full Health Response Example**:
 ```json
@@ -514,9 +524,10 @@ String decrypted = encryptionUtil.decrypt(encrypted);
 ```
 
 **Configuration**:
-- Algorithm: AES-256-CBC
-- Key derivation: PBKDF2WithHmacSHA256
-- IV: Random per encryption
+- Algorithm: **AES-256-GCM** (`AES/GCM/NoPadding`)
+- IV: 12 bytes (96-bit), random per encryption
+- Auth tag: 128 bits
+- Key: derived from `app.encryption.secret-key` (exactly 32 chars, validated at startup)
 
 ### 9.3 HashUtil
 

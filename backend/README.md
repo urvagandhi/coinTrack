@@ -62,7 +62,7 @@ CoinTrack solves this by acting as a **secure, normalizing middleware** between 
 | **Encrypted Secrets** | AES-256-GCM encryption for all sensitive data |
 | **Background Sync** | Scheduled portfolio synchronization |
 | **EmailSender Interface** | Strategy pattern for email dispatch (Brevo prod) |
-| **41 Financial Calculators** | Stateless, public, rate-limited computation suite |
+| **33 Financial Calculators** | Stateless, public, rate-limited computation suite |
 | **Alternative Assets** | Manual tracking for Mutual Funds, Gold & Silver, EPF, PPF, and FD with live rates & FIFO |
 
 ---
@@ -86,7 +86,7 @@ We strictly adhere to **Domain-Driven Design (DDD)** and **Separation of Concern
 
 ## 3. High-Level System Architecture
 
-CoinTrack follows a **Layered Hexagonal Architecture** with 8 domain modules.
+CoinTrack follows a **Layered Hexagonal Architecture** with 13 domain modules.
 
 ```mermaid
 graph TB
@@ -102,19 +102,19 @@ graph TB
 
     SEC --> CORE
 
-    subgraph CORE["Backend Core (8 Modules)"]
+    subgraph CORE["Backend Core (13 Modules)"]
         direction TB
         USER["USER<br/>Auth, Profile, TOTP"]
         SECURITY["SECURITY<br/>JWT, Filters"]
         BROKER["BROKER<br/>Hexagonal Adapters"]
         PORTFOLIO["PORTFOLIO<br/>Aggregation, Sync"]
         EMAIL["EMAIL<br/>Brevo Sender"]
-        CALCULATOR["CALCULATOR<br/>41 Financial Tools"]
+        CALCULATOR["CALCULATOR<br/>33 Financial Tools"]
         NOTES["NOTES<br/>Personal Journal"]
         COMMON["COMMON<br/>Utils, Exceptions"]
     end
 
-    CORE --> DB[("MongoDB Atlas<br/>17+ Collections")]
+    CORE --> DB[("MongoDB Atlas<br/>32 Collections")]
     BROKER --> APIS["External Broker APIs<br/>Zerodha | AngelOne | Upstox"]
     EMAIL --> BREVO["Brevo<br/>Email API"]
 
@@ -132,7 +132,7 @@ graph TD
     COMMON["common/<br/>utils, exceptions, config"] --> SECURITY["security/<br/>JWT, filters, config"]
     COMMON --> USER["user/<br/>auth, profile, TOTP"]
     COMMON --> EMAIL["email/<br/>Brevo, templates"]
-    COMMON --> CALC["calculator/<br/>41 financial tools"]
+    COMMON --> CALC["calculator/<br/>33 financial tools"]
 
     SECURITY --> BROKER["broker/<br/>hexagonal adapters"]
     USER --> NOTES["notes/<br/>journal CRUD"]
@@ -158,7 +158,7 @@ Each module has its own comprehensive README documentation.
 | Module | Purpose | Size | README |
 |--------|---------|------|--------|
 | **broker** | Hexagonal multi-broker adapters, OAuth, canonical models | 2000+ lines | [broker/README.md](src/main/java/com/urva/myfinance/coinTrack/broker/README.md) |
-| **calculator** | 41 financial calculators, config-driven, rate-limited | 1500+ lines | [calculator/README.md](src/main/java/com/urva/myfinance/coinTrack/calculator/README.md) |
+| **calculator** | 33 financial calculators, config-driven, rate-limited | 1500+ lines | [calculator/README.md](src/main/java/com/urva/myfinance/coinTrack/calculator/README.md) |
 | **common** | Shared infrastructure, exceptions, encryption utils | 400+ lines | [common/README.md](src/main/java/com/urva/myfinance/coinTrack/common/README.md) |
 | **email** | Brevo transactional email, strategy-based sender | 300+ lines | [email/README.md](src/main/java/com/urva/myfinance/coinTrack/email/README.md) |
 | **fixeddeposit** | Fixed Deposit manual ledger & Excel exports | 1000+ lines | [fixeddeposit/README.md](src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/README.md) |
@@ -167,6 +167,7 @@ Each module has its own comprehensive README documentation.
 | **ppf** | PPF transactions, ledger balance recalculating, withdrawal validation | 800+ lines | [ppf/README.md](src/main/java/com/urva/myfinance/coinTrack/ppf/README.md) |
 | **epf** | EPF & EPS dual-balance ledger, statutory split & interest engine | 1000+ lines | [epf/README.md](src/main/java/com/urva/myfinance/coinTrack/epf/README.md) |
 | **goldsilver** | Gold & Silver investments, status scheduler, manual ledger | 800+ lines | [goldsilver/README.md](src/main/java/com/urva/myfinance/coinTrack/goldsilver/README.md) |
+| **mutualfund** | MF schemes, lumpsum/SIP/redemption ledgers, FIFO capital gains, aggregation | 500+ lines | [mutualfund/README.md](src/main/java/com/urva/myfinance/coinTrack/mutualfund/README.md) |
 | **security** | JWT auth, filter chain, token blacklist | 628 lines | [security/README.md](src/main/java/com/urva/myfinance/coinTrack/security/README.md) |
 | **user** | Registration, profile, TOTP 2FA, refresh tokens | 750+ lines | [user/README.md](src/main/java/com/urva/myfinance/coinTrack/user/README.md) |
 
@@ -210,8 +211,8 @@ backend/src/main/java/com/urva/myfinance/coinTrack/
 ├── calculator/                      # Financial Calculators (1500+ lines)
 │   ├── config/                      #   CalculatorConfigLoader, RateLimitFilter
 │   ├── controller/                  #   6 category controllers
-│   ├── dto/request/                 #   37 request DTOs (Java records)
-│   ├── dto/response/                #   37 response DTOs
+│   ├── dto/request/                 #   29 request DTOs (Java records)
+│   ├── dto/response/                #   30 response DTOs
 │   ├── service/                     #   6 interfaces + 6 implementations
 │   └── util/                        #   FinancialMath facade, 7 math classes
 │
@@ -636,7 +637,7 @@ graph TD
 
 ## 12. Calculator Suite
 
-41 financial calculators organized into 6 categories. All **public** (no authentication) and **rate-limited** (60 req/min/IP via Bucket4j).
+33 financial calculators organized into 6 categories. All **public** (no authentication) and **rate-limited** (60 req/min/IP via Bucket4j).
 
 ### Architecture
 
@@ -848,14 +849,14 @@ graph LR
 
 | Metric | Value |
 |--------|-------|
-| **Total Modules** | 8 |
+| **Total Modules** | 13 |
 | **Total Source Files** | ~200+ |
 | **Total Lines of Code** | ~15,000+ |
 | **API Endpoints** | ~50+ |
-| **MongoDB Collections** | 17+ |
+| **MongoDB Collections** | 32 |
 | **DTOs** | 80+ |
 | **Broker Adapters** | 3 |
-| **Financial Calculators** | 41 |
+| **Financial Calculators** | 33 |
 
 ### Key Files by Size
 
@@ -872,20 +873,21 @@ graph LR
 
 | Collection | Module | Purpose |
 |-----------|--------|---------|
-| `users` | user | User accounts |
+| `users` | user | User accounts (incl. **embedded** `EpfSettingsEmbed`, `PpfSettingsEmbed`, `MetalRateSettingsEmbed`) |
 | `backup_codes` | user | 2FA recovery codes |
 | `pending_registrations` | user | Email verification queue |
 | `refresh_tokens` | user | JWT refresh sessions |
 | `broker_accounts` | broker | Broker connection state |
-| `canonical_holdings` | portfolio | Equity holdings (cross-broker) |
-| `canonical_positions` | portfolio | Open positions |
-| `canonical_funds` | portfolio | Cash balances |
-| `canonical_mf_holdings` | portfolio | Mutual fund holdings |
-| `canonical_mf_orders` | portfolio | MF order history |
+| `canonical_holdings` | broker | Equity holdings (cross-broker canonical) |
+| `canonical_positions` | broker | Open positions |
+| `canonical_funds` | broker | Cash balances |
+| `canonical_mf_holdings` | broker | Mutual fund holdings |
+| `canonical_mf_orders` | broker | MF order history |
 | `market_prices` | portfolio | Cached LTP data |
-| `sync_cooldown` | portfolio | Rate limit cooldown |
-| `sync_log` | portfolio | Sync audit trail |
-| `invalidated_tokens` | security | JWT blacklist |
+| `sync_cooldowns` | portfolio | Rate limit cooldown |
+| `sync_logs` | portfolio | Sync audit trail |
+| `invalidated_tokens` | security | JWT blacklist (TTL-indexed) |
+| `counters` | common | Shared sequence generators (`DatabaseSequence`) |
 | `email_tokens` | email | Verification/reset tokens |
 | `notes` | notes | User notes (text indexed) |
 | `fixed_deposits` | fixeddeposit | Manual fixed deposits |
@@ -895,11 +897,18 @@ graph LR
 | `mf_sip_contributions` | mutualfund | Monthly SIP ledgers |
 | `mf_redemption_transactions` | mutualfund | Mutual fund redemptions |
 | `mf_valuation_snapshots` | mutualfund | Periodic P&L snapshots |
+| `mf_portfolio_holdings` | mutualfund | Computed per-scheme holdings view |
+| `mf_portfolio_metrics` | mutualfund | Aggregated portfolio metrics |
+| `mf_latest_prices` | mutualfund | Latest NAV/LTP per scheme |
+| `mf_historical_nav_cache` | mutualfund | Historical NAV cache |
 | `ppf_transactions` | ppf | Public Provident Fund ledger |
-| `epf_settings` | epf | EPF per-user calculation settings |
 | `epf_transactions` | epf | EPF/EPS dual-balance transaction ledger |
-| `epf_interest_rates` | epf | User-maintained FY interest rate table |
 | `gold_silver_investments` | goldsilver | Gold & Silver investments ledger |
+| `metal_rate_snapshots` | goldsilver | Global cached metal rate history |
+
+> Purity options are an in-memory seeded list; EPF interest rates load from
+> `configs/epf-rates.yml`; EPF/PPF/metal settings are embedded in `users`.
+> Verified against `@Document(collection = ...)` annotations on 2026-08-23.
 
 ---
 
@@ -919,6 +928,7 @@ graph LR
 | PPF | [ppf/README.md](src/main/java/com/urva/myfinance/coinTrack/ppf/README.md) | 220+ |
 | EPF | [epf/README.md](src/main/java/com/urva/myfinance/coinTrack/epf/README.md) | 100+ |
 | Gold & Silver | [goldsilver/README.md](src/main/java/com/urva/myfinance/coinTrack/goldsilver/README.md) | 100+ |
+| Mutual Fund | [mutualfund/README.md](src/main/java/com/urva/myfinance/coinTrack/mutualfund/README.md) | 500+ |
 | Security | [security/README.md](src/main/java/com/urva/myfinance/coinTrack/security/README.md) | 660+ |
 | User | [user/README.md](src/main/java/com/urva/myfinance/coinTrack/user/README.md) | 760+ |
 

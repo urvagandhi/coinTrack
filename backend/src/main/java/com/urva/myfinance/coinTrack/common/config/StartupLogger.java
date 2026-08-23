@@ -48,9 +48,15 @@ public class StartupLogger {
         String line = "=".repeat(64);
         String thinLine = "-".repeat(64);
 
-        // Detect environment
-        boolean isProduction = isRender || (renderExternalUrl != null && !renderExternalUrl.isBlank());
-        String envType = isProduction ? "PRODUCTION (Render)" : "LOCAL";
+        // Profile Info
+        String[] activeProfiles = environment.getActiveProfiles();
+        String profileStr = activeProfiles.length > 0 ? String.join(", ", activeProfiles) : "default";
+
+        // Detect environment based on profiles and Render env vars
+        boolean isProduction = java.util.Arrays.asList(activeProfiles).contains("prod") || isRender || (renderExternalUrl != null && !renderExternalUrl.isBlank());
+        boolean isDevelopment = java.util.Arrays.asList(activeProfiles).contains("dev");
+        
+        String envType = isProduction ? "PRODUCTION" : (isDevelopment ? "DEVELOPMENT" : "LOCAL");
         String serverUrl = isProduction && renderExternalUrl != null && !renderExternalUrl.isBlank()
                 ? renderExternalUrl
                 : "http://localhost:" + serverPort;
@@ -63,7 +69,7 @@ public class StartupLogger {
 
         // Environment Info
         banner.append("|").append(center("", 64)).append("|\n");
-        String envColor = isProduction ? "[PROD]" : "[DEV]";
+        String envColor = isProduction ? "[PROD]" : (isDevelopment ? "[DEV]" : "[DEFAULT]");
         banner.append("|  ").append(padRight("[ENVIRONMENT]", 18)).append(padRight(envColor + " " + envType, 42))
                 .append("  |\n");
         banner.append("|  ").append(padRight("[SERVER]", 18)).append(padRight("Running on port " + serverPort, 42))
@@ -83,8 +89,6 @@ public class StartupLogger {
         banner.append("|  ").append(padRight("[ACTUATOR]", 18)).append(padRight("GET /actuator", 42)).append("  |\n");
 
         // Profile Info
-        String[] activeProfiles = environment.getActiveProfiles();
-        String profileStr = activeProfiles.length > 0 ? String.join(", ", activeProfiles) : "default";
         banner.append("|").append(thinLine).append("|\n");
         banner.append("|  ").append(padRight("[PROFILE]", 18)).append(padRight(profileStr, 42)).append("  |\n");
 
@@ -95,7 +99,7 @@ public class StartupLogger {
 
         banner.append("|").append(center("", 64)).append("|\n");
         banner.append("+").append(line).append("+\n");
-        String readyMsg = isProduction ? "Production server ready!" : "Development server ready!";
+        String readyMsg = isProduction ? "Production server ready!" : (isDevelopment ? "Development server ready!" : "Local server ready!");
         banner.append("|").append(center(readyMsg, 64)).append("|\n");
         banner.append("+").append(line).append("+\n");
 

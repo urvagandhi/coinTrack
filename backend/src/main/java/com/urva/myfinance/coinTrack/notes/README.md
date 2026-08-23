@@ -171,10 +171,15 @@ Total: 4 files, ~221 lines, ~7.7KB
 
 | Method | Endpoint | Description | Request Body | Response |
 |--------|----------|-------------|--------------|----------|
-| GET | `/api/notes` | Get all user's notes (sorted) | None | `List<Note>` |
+| GET | `/api/notes` | Get user's notes — **paginated** (`?page=&size=&search=&tag=`) | None | `Page<Note>` |
 | POST | `/api/notes` | Create a new note | `Note` object | Created `Note` |
 | PUT | `/api/notes/{id}` | Update existing note | `Note` object | Updated `Note` |
 | DELETE | `/api/notes/{id}` | Delete a note | None | Success message |
+
+> Verified against source 2026-08-23: the list endpoint returns `Page<Note>` via
+> `NoteService.getNotesPaginated(userId, page, size, search, tag)` and supports text search
+> (`searchByUserIdAndText`) and tag filtering. Earlier revisions describing an unpaginated
+> list are outdated.
 
 **Key Features**:
 - Extracts `userId` from `Principal` (SecurityContext)
@@ -599,7 +604,9 @@ const colorOptions = [
 
 ### 12.3 Markdown Rendering
 
-Content supports Markdown. Use a library like `react-markdown` with sanitization:
+Content is stored as Markdown. If you render it as HTML in the frontend, use a
+sanitizing parser — e.g. `react-markdown` + `remark-gfm`:
+
 ```jsx
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -608,6 +615,9 @@ import remarkGfm from 'remark-gfm';
   {note.content}
 </ReactMarkdown>
 ```
+
+> ⚠️ Neither `react-markdown` nor `remark-gfm` is currently a dependency in
+> `frontend/package.json` (verified 2026-08-23) — add them before using this pattern.
 
 ---
 
@@ -642,8 +652,8 @@ import remarkGfm from 'remark-gfm';
 
 | Enhancement | Priority | Description |
 |-------------|----------|-------------|
-| Pagination | High | Limit notes per page for performance |
-| Search | Medium | Full-text search on title/content |
+| ~~Pagination~~ | ~~High~~ | ✅ Implemented (`Page<Note>` with page/size/search/tag) |
+| Search | Medium | ✅ Text search implemented via `searchByUserIdAndText` |
 | Attachments | Medium | Image/file attachments |
 | Sharing | Low | Share notes with other users |
 | Reminders | Low | Set reminder dates for notes |

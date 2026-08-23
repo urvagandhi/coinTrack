@@ -135,17 +135,17 @@ The Portfolio module is the **core** of CoinTrack. It aggregates disparate asset
 │                              │                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐  │
 │  │  REPOSITORY LAYER (6 repositories)                              │  │
-│  │  ├── CachedHoldingRepository                                   │  │
-│  │  ├── CachedPositionRepository                                  │  │
-│  │  ├── CachedFundsRepository                                     │  │
-│  │  ├── CachedMfOrderRepository                                   │  │
+│  │  ├── CanonicalHoldingRepository                                   │  │
+│  │  ├── CanonicalPositionRepository                                  │  │
+│  │  ├── CanonicalFundsRepository                                     │  │
+│  │  ├── CanonicalMfOrderRepository                                   │  │
 │  │  ├── MarketPriceRepository                                     │  │
 │  │  └── SyncLogRepository                                         │  │
 │  └─────────────────────────────────────────────────────────────────┘  │
 │                              │                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐  │
 │  │  MODEL LAYER (8 entities + 2 enums)                             │  │
-│  │  ├── CachedHolding, CachedPosition, CachedFunds, CachedMfOrder │  │
+│  │  ├── CanonicalHolding, CanonicalPosition, CanonicalFunds, CanonicalMfOrder │  │
 │  │  ├── MarketPrice, SyncLog, SyncStatus, PositionType            │  │
 │  │  └── enums/: AssetType, OrderStatus                            │  │
 │  └─────────────────────────────────────────────────────────────────┘  │
@@ -159,7 +159,7 @@ The Portfolio module is the **core** of CoinTrack. It aggregates disparate asset
 |-----------|-------|------------|--------------|
 | **Controllers** | 2 | ~10KB | PortfolioController.java (8KB) |
 | **DTOs** | 21 | ~25KB | MutualFundOrderDTO (2.6KB) |
-| **Models** | 10 | ~9KB | CachedPosition.java (2.1KB) |
+| **Models** | 10 | ~9KB | CanonicalPosition.java (2.1KB) |
 | **Repositories** | 6 | ~4KB | - |
 | **Services** | 8 | ~90KB | PortfolioSummaryServiceImpl (55KB) |
 | **Sync** | 4 | ~20KB | PortfolioSyncServiceImpl (18KB) |
@@ -206,10 +206,10 @@ portfolio/
 │       └── ZerodhaPositionRaw.java        # Raw position wrapper
 │
 ├── model/                                 # MongoDB Entities
-│   ├── CachedHolding.java                 # Equity holding (1.6KB)
-│   ├── CachedPosition.java                # F&O position (2.1KB)
-│   ├── CachedFunds.java                   # Margin data (1KB)
-│   ├── CachedMfOrder.java                 # MF order (1KB)
+│   ├── CanonicalHolding.java                 # Equity holding (1.6KB)
+│   ├── CanonicalPosition.java                # F&O position (2.1KB)
+│   ├── CanonicalFunds.java                   # Margin data (1KB)
+│   ├── CanonicalMfOrder.java                 # MF order (1KB)
 │   ├── MarketPrice.java                   # Live price cache
 │   ├── SyncLog.java                       # Audit trail
 │   ├── SyncStatus.java                    # Enum: sync result
@@ -219,10 +219,10 @@ portfolio/
 │       └── OrderStatus.java
 │
 ├── repository/                            # Spring Data Repositories (6)
-│   ├── CachedHoldingRepository.java
-│   ├── CachedPositionRepository.java
-│   ├── CachedFundsRepository.java
-│   ├── CachedMfOrderRepository.java
+│   ├── CanonicalHoldingRepository.java
+│   ├── CanonicalPositionRepository.java
+│   ├── CanonicalFundsRepository.java
+│   ├── CanonicalMfOrderRepository.java
 │   ├── MarketPriceRepository.java
 │   └── SyncLogRepository.java
 │
@@ -328,17 +328,23 @@ portfolio/
 
 ## 6. Models
 
-### 6.1 Cached Entities
+### 6.1 Canonical (Cached) Entities
 
 All cached entities store the **complete original broker response** in a `raw` field.
 
+> **Location note:** the canonical entity classes live in `broker/core/canonical/`
+> (`CanonicalHolding`, `CanonicalPosition`, `CanonicalFunds`, `CanonicalMfHolding`,
+> `CanonicalMfOrder`); this module owns their repositories and sync logic.
+
 | Entity | Collection | Key Fields | Purpose |
 |--------|------------|------------|---------|
-| `CachedHolding` | `cached_holdings` | `userId`, `broker`, `symbol`, `quantity`, `avgPrice`, `pnl`, `raw` | Equity holdings |
-| `CachedPosition` | `cached_positions` | `userId`, `broker`, `symbol`, `quantity`, `pnl`, `m2m`, `raw` | F&O positions |
-| `CachedFunds` | `cached_funds` | `userId`, `broker`, `equity`, `commodity`, `raw` | Margin data |
-| `CachedMfOrder` | `cached_mf_orders` | `userId`, `broker`, `orderId`, `status`, `raw` | MF orders |
+| `CanonicalHolding` | `canonical_holdings` | `userId`, `broker`, `symbol`, `quantity`, `avgPrice`, `pnl`, `raw` | Equity holdings |
+| `CanonicalPosition` | `canonical_positions` | `userId`, `broker`, `symbol`, `quantity`, `pnl`, `m2m`, `raw` | F&O positions |
+| `CanonicalFunds` | `canonical_funds` | `userId`, `broker`, `equity`, `commodity`, `raw` | Margin data |
+| `CanonicalMfHolding` | `canonical_mf_holdings` | `userId`, `broker`, scheme/folio fields, `raw` | MF holdings |
+| `CanonicalMfOrder` | `canonical_mf_orders` | `userId`, `broker`, `orderId`, `status`, `raw` | MF orders |
 | `MarketPrice` | `market_prices` | `symbol`, `ltp`, `updatedAt` | Live price cache |
+| `SyncCooldown` | `sync_cooldowns` | per user/broker cooldown timestamps | Sync rate limiting |
 | `SyncLog` | `sync_logs` | `userId`, `broker`, `status`, `timestamp`, `details` | Audit trail |
 
 ### 6.2 Enums
@@ -358,10 +364,10 @@ All repositories extend `MongoRepository` with user-scoped queries.
 
 | Repository | Key Methods |
 |------------|-------------|
-| `CachedHoldingRepository` | `findByUserId()`, `findByUserIdAndBroker()`, `deleteByUserIdAndBroker()` |
-| `CachedPositionRepository` | `findByUserId()`, `findByUserIdAndBroker()`, `deleteByUserIdAndBroker()` |
-| `CachedFundsRepository` | `findByUserId()`, `findFirstByUserId()` |
-| `CachedMfOrderRepository` | `findByUserId()`, `findByUserIdOrderByOrderDateDesc()` |
+| `CanonicalHoldingRepository` | `findByUserId()`, `findByUserIdAndBroker()`, `deleteByUserIdAndBroker()` |
+| `CanonicalPositionRepository` | `findByUserId()`, `findByUserIdAndBroker()`, `deleteByUserIdAndBroker()` |
+| `CanonicalFundsRepository` | `findByUserId()`, `findFirstByUserId()` |
+| `CanonicalMfOrderRepository` | `findByUserId()`, `findByUserIdOrderByOrderDateDesc()` |
 | `MarketPriceRepository` | `findBySymbol()`, `findBySymbolIn()` |
 | `SyncLogRepository` | `findByUserId()`, `findTopByUserIdOrderByTimestampDesc()` |
 
@@ -660,7 +666,7 @@ portfolioSummaryService.getPortfolioSummary(user.getId());
 
 | Pitfall | Impact | Prevention |
 |---------|--------|------------|
-| Including Positions in Summary | Wrong "Total Portfolio" value | Explicitly exclude `CachedPosition` from summary loop |
+| Including Positions in Summary | Wrong "Total Portfolio" value | Explicitly exclude `CanonicalPosition` from summary loop |
 | Re-calculating Broker P&L | Mismatch with Kite app | Always prefer `raw.pnl` over local math |
 | Missing Sync Rate Limit | Broker API Ban (429) | Use `SyncSafetyService` |
 | Floating Point Math | Rounding errors | Use `BigDecimal` for everything |
@@ -684,11 +690,11 @@ portfolioSummaryService.getPortfolioSummary(user.getId());
 
 ## Appendix B: Related Documentation
 
-- [Portfolio Summary Architecture](../../docs/Portfolio_Summary_Architecture.md)
-- [Zerodha Master Integration Guide](../../docs/zerodha/Zerodha_Master_Integration_Guide.md)
+- ~~Portfolio Summary Architecture~~ (file no longer exists in the repo)
+- ~~Zerodha Master Integration Guide~~ (file no longer exists in the repo)
 - [Broker Module README](../broker/README.md)
-- [Zerodha Holdings Architecture](../../docs/zerodha/Zerodha_Holdings_Architecture.md)
-- [Zerodha MF Orders Architecture](../../docs/zerodha/Zerodha_MF_Orders_Architecture.md)
+- ~~Zerodha Holdings Architecture~~ (file no longer exists in the repo)
+- ~~Zerodha MF Orders Architecture~~ (file no longer exists in the repo)
 
 ---
 

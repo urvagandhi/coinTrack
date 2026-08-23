@@ -186,48 +186,51 @@ Total: 16 files
 ### 4.1 UserController
 
 **Location**: `controller/UserController.java`
-**Size**: 14KB, 330 lines
-**Base Path**: `/api/users` and `/api/auth`
+**Base Path**: `/api/users`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `POST /api/auth/login` | POST | Login with username/password |
-| `POST /api/auth/google` | POST | Google SSO Login/Registration |
-| `POST /api/auth/register` | POST | Register new user |
-| `POST /api/auth/verify-token` | POST | Validate JWT token |
-| `GET /api/users/check/{username}` | GET | Check username availability |
-| `GET /api/users` | GET | List all users (admin) |
-| `GET /api/users/{id}` | GET | Get user by ID |
 | `GET /api/users/me` | GET | Get current user profile |
-| `PUT /api/users/{id}` | PUT | Update user |
-| `PUT /api/users/{id}/password` | PUT | Change password |
-| `DELETE /api/users/{id}` | DELETE | Delete user |
+| `PUT /api/users/me` | PUT | Update current user profile |
+| `PUT /api/users/me/password` | PUT | Change password |
+| `DELETE /api/users/me` | DELETE | Delete current user |
 
-### 4.2 TotpController
+### 4.2 AuthController
 
-**Location**: `controller/TotpController.java`
-**Size**: 14.8KB, 329 lines
-**Base Path**: `/api/auth/totp`
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `GET /api/auth/totp/setup` | GET | Get QR code for TOTP setup |
-| `POST /api/auth/totp/verify-setup` | POST | Verify initial TOTP setup |
-| `POST /api/auth/totp/verify` | POST | Complete login with TOTP |
-| `POST /api/auth/totp/verify-recovery` | POST | Login with backup code |
-| `POST /api/auth/totp/reset` | POST | Initiate TOTP reset |
-| `POST /api/auth/totp/verify-reset` | POST | Complete TOTP reset |
-| `GET /api/auth/totp/status` | GET | Get 2FA status |
-| `POST /api/auth/totp/setup-registration` | POST | Setup TOTP during registration |
-| `POST /api/auth/totp/verify-registration` | POST | Verify TOTP & complete registration |
-
-### 4.3 LoginController
-
-**Location**: `controller/LoginController.java`
-**Size**: 2.6KB
+**Location**: `controller/AuthController.java`
 **Base Path**: `/api/auth`
 
-Simple controller for basic login operations.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/login` | POST | Login with username/password (+ optional TOTP) |
+| `/register` | POST | Register new user |
+| `/verify-token` | GET | Validate JWT token |
+| `/check-username/{username}` | GET | Check username availability |
+| `/refresh` | POST | Rotate refresh token → new JWT + refresh token |
+| `/logout` | POST | Blacklist current JWT (invalidated_tokens) |
+| `/oauth2/google` | POST | Google SSO login/registration |
+| `/oauth2/complete-profile` | POST | Complete Google SSO profile |
+
+### 4.3 TotpController
+
+**Location**: `controller/TotpController.java`
+**Base Path**: `/api/auth`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/2fa/setup` | POST | Get QR code for TOTP setup |
+| `/2fa/verify` | POST | Verify initial TOTP setup |
+| `/login/totp` | POST | Complete login with TOTP |
+| `/login/recovery` | POST | Login with backup code |
+| `/2fa/reset` | POST | Initiate TOTP reset |
+| `/2fa/reset/verify` | POST | Complete TOTP reset |
+| `/2fa/status` | GET | Get 2FA status |
+| `/2fa/register/setup` | POST | Setup TOTP during registration |
+| `/2fa/register/verify` | POST | Verify TOTP & complete registration |
+
+> **Note:** older revisions of this document showed `/api/auth/totp/*` paths — these are
+> stale. The live mappings are the `/2fa/*` and `/login/totp`-style paths above
+> (verified against source 2026-08-23).
 
 ---
 
@@ -329,6 +332,22 @@ Simple controller for basic login operations.
 | `version` | int | TOTP secret version |
 | `usedAt` | LocalDateTime | When code was used (null = unused) |
 | `createdAt` | LocalDateTime | Creation timestamp |
+
+### 6.3 RefreshToken Entity (v2.1+)
+
+**Location**: `model/RefreshToken.java`
+**Collection**: `refresh_tokens`
+
+Persisted JWT refresh sessions. Rotated on every use via `POST /api/auth/refresh`
+(old token invalidated, new pair issued). Logout blacklists the access token in
+`security`'s `invalidated_tokens` collection.
+
+### 6.4 PendingRegistration Entity
+
+**Location**: `model/PendingRegistration.java`
+**Collection**: `pending_registrations`
+
+Email-verification queue for registrations pending TOTP setup / email verification.
 
 ---
 
@@ -433,7 +452,7 @@ Main facade for user operations, coordinating other services.
 │           ▼                                                            │
 │  Response: { tempToken: "eyJ...", message: "TOTP setup required" }    │
 │                                                                        │
-│  2. POST /api/auth/totp/setup-registration                            │
+│  2. POST /api/auth/2fa/register/setup                            │
 │     Body: { tempToken }                                               │
 │           │                                                            │
 │           ▼                                                            │
@@ -447,7 +466,7 @@ Main facade for user operations, coordinating other services.
 │           ▼                                                            │
 │  Response: { qrCode: "data:image/png;base64,...", secret: "ABC..." }  │
 │                                                                        │
-│  3. POST /api/auth/totp/verify-registration                           │
+│  3. POST /api/auth/2fa/register/verify                           │
 │     Body: { tempToken, code: "123456" }                               │
 │           │                                                            │
 │           ▼                                                            │
@@ -495,7 +514,7 @@ Main facade for user operations, coordinating other services.
 │  JWT Token   { requiresOtp: true, tempToken: "eyJ..." }              │
 │                 │                                                      │
 │                 ▼                                                      │
-│  2. POST /api/auth/totp/verify                                        │
+│  2. POST /api/auth/login/totp                                        │
 │     Body: { tempToken, code: "123456" }                               │
 │           │                                                            │
 │           ▼                                                            │
@@ -591,7 +610,7 @@ Main facade for user operations, coordinating other services.
 ### 11.2 Recovery Flow
 
 ```
-POST /api/auth/totp/verify-recovery
+POST /api/auth/login/recovery
 Body: { tempToken, code: "ABCD-1234" }
 
 1. Validate temp token purpose = TOTP_LOGIN
@@ -635,7 +654,7 @@ Content-Type: application/json
 
 ```http
 # Setup TOTP
-GET /api/auth/totp/setup
+POST /api/auth/2fa/setup
 Authorization: Bearer <token>
 
 # Response
@@ -645,7 +664,7 @@ Authorization: Bearer <token>
 }
 
 # Verify TOTP Setup
-POST /api/auth/totp/verify-setup
+POST /api/auth/2fa/verify
 Authorization: Bearer <token>
 Content-Type: application/json
 

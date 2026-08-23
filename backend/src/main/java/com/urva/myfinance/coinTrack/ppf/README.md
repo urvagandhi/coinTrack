@@ -225,3 +225,7 @@ Authorization: Bearer <jwt>
 | Client-provided balances | The `balance` field in `PpfTransactionRequestDTO` is rejected |
 | Aggregation pipeline mismatch | Summary metrics are calculated programmatically from transactions, guaranteeing correct balance reconciliation |
 | Concurrent modifications | Handled via single-threaded recalculation in Mongo `@Transactional` |
+
+> **Settings storage note:** PPF account details / Post-Maturity Extension Mode settings
+> (`PpfSettingsEmbed`) are **embedded in the `users` document**, not a separate
+> `ppf_settings` collection (verified against source 2026-08-23).

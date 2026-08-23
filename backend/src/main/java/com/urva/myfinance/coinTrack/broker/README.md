@@ -2,8 +2,12 @@
 
 > **Domain**: External broker integrations (Zerodha, Angel One, Upstox)
 > **Responsibility**: Connect, authenticate, and fetch portfolio data with "Raw Fidelity"
-> **Version**: 2.0.0
-> **Last Updated**: 2025-12-17
+> **Version**: 3.0.0 (Hexagonal Architecture)
+> **Last Updated**: 2026-08-23
+>
+> ⚠️ v3.0.0: The legacy `BrokerService` interface + `BrokerServiceFactory` described in earlier
+> versions has been REPLACED by the hexagonal `BrokerAdapter` port + `BrokerAdapterRegistry`.
+> This README now documents the current architecture, verified against source.
 
 ---
 
@@ -76,9 +80,9 @@ The Broker module handles all integrations with external trading platforms. It s
 
 | Broker | Status | OAuth Type | Implementation |
 |--------|--------|------------|----------------|
-| **Zerodha Kite** | ✅ Production | OAuth 2.0 (3-legged) | `ZerodhaBrokerService` |
-| **Angel One** | 🚧 Partial | OAuth + TOTP | `AngelOneBrokerService` |
-| **Upstox** | 🚧 Partial | OAuth 2.0 | `UpstoxBrokerService` |
+| **Zerodha Kite** | ✅ Production | OAuth 2.0 (3-legged) | `adapters/zerodha/ZerodhaBrokerAdapter` |
+| **Angel One** | ✅ Complete (no MF API) | API key + TOTP (no OAuth redirect) | `adapters/angelone/AngelOneBrokerAdapter` |
+| **Upstox** | ✅ Complete (no MF API) | OAuth 2.0 (per-user redirectUri) | `adapters/upstox/UpstoxBrokerAdapter` |
 
 ---
 
@@ -93,35 +97,44 @@ The Broker module handles all integrations with external trading platforms. It s
 │                                                                        │
 │  ┌─────────────────────────────────────────────────────────────────┐  │
 │  │  CONTROLLER LAYER                                               │  │
-│  │  ├── BrokerConnectController    (Credentials, OAuth init)      │  │
-│  │  ├── BrokerStatusController     (Connection status)            │  │
-│  │  └── ZerodhaBridgeController    (OAuth callback redirect)      │  │
+│  │  ├── BrokerConnectController    (/api/brokers — connect flows)  │  │
+│  │  ├── BrokerStatusController     (/api/brokers — status)         │  │
+│  │  └── ZerodhaBridgeController    (/zerodha/callback — redirect)  │  │
 │  └─────────────────────────────────────────────────────────────────┘  │
 │                              │                                         │
 │                              ▼                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐  │
 │  │  SERVICE LAYER                                                  │  │
-│  │  ├── BrokerService (Interface)   ◄─── Factory Pattern           │  │
-│  │  │   ├── ZerodhaBrokerService    (40KB, full implementation)   │  │
-│  │  │   ├── AngelOneBrokerService   (partial)                     │  │
-│  │  │   └── UpstoxBrokerService     (partial)                     │  │
-│  │  ├── BrokerConnectService        (OAuth flow orchestration)    │  │
-│  │  ├── BrokerStatusService         (Token validity checks)       │  │
-│  │  └── BrokerServiceFactory        (Service selection)           │  │
+│  │  ├── BrokerConnectService        (OAuth flow orchestration)     │  │
+│  │  ├── BrokerStatusService         (Token validity checks)        │  │
+│  │  └── ZerodhaLiveDataService      (Live quotes via Kite)         │  │
 │  └─────────────────────────────────────────────────────────────────┘  │
 │                              │                                         │
 │                              ▼                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │  REPOSITORY LAYER                                               │  │
-│  │  └── BrokerAccountRepository     (MongoDB CRUD)                │  │
+│  │  PORT & REGISTRY (hexagonal core)                               │  │
+│  │  ├── core/port/BrokerAdapter       (THE PORT)                   │  │
+│  │  ├── registry/BrokerAdapterRegistry (auto-discovery, O(1))      │  │
+│  │  ├── core/capability/BrokerCapability + checker                 │  │
+│  │  └── adapters/{zerodha|angelone|upstox}/                        │  │
+│  │        ├── *BrokerAdapter.java                                  │  │
+│  │        ├── mapper/   (broker → Canonical* mappers)              │  │
+│  │        └── raw/      (broker raw API DTOs)                      │  │
 │  └─────────────────────────────────────────────────────────────────┘  │
 │                              │                                         │
 │                              ▼                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │  MODEL LAYER                                                    │  │
-│  │  ├── BrokerAccount     (Entity: connection credentials)        │  │
-│  │  ├── Broker            (Enum: ZERODHA, ANGELONE, UPSTOX)       │  │
-│  │  └── ExpiryReason      (Enum: token expiry reasons)            │  │
+│  │  CANONICAL MODELS (core/canonical/)                             │  │
+│  │  CanonicalHolding · CanonicalPosition · CanonicalFunds ·        │  │
+│  │  CanonicalMfHolding · CanonicalMfOrder (+ DataSource,           │  │
+│  │  DataConfidence, Exchange, InstrumentType enums)                │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                              │                                         │
+│                              ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  REPOSITORY / MODEL                                             │  │
+│  │  ├── BrokerAccountRepository → broker_accounts                  │  │
+│  │  └── normalization/ (Symbol, Exchange, Price, Date normalizers) │  │
 │  └─────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 └────────────────────────────────────────────────────────────────────────┘
@@ -171,46 +184,49 @@ The Broker module handles all integrations with external trading platforms. It s
 
 ```
 broker/
-├── README.md                          # This file
+├── README.md
 │
-├── controller/                        # REST Controllers (3 files)
-│   ├── BrokerConnectController.java   # OAuth flows, credential management
-│   ├── BrokerStatusController.java    # Connection status endpoints
-│   └── ZerodhaBridgeController.java   # Zerodha OAuth callback redirect
+├── adapters/                        # Hexagonal adapter implementations
+│   ├── zerodha/
+│   │   ├── ZerodhaBrokerAdapter.java
+│   │   ├── mapper/                  # Zerodha → Canonical* mappers
+│   │   └── raw/                     # Zerodha raw API DTOs (13 files)
+│   ├── angelone/
+│   │   ├── AngelOneBrokerAdapter.java
+│   │   ├── mapper/                  # 3 mappers (Holding, Position, Funds)
+│   │   └── raw/                     # 3 raw DTOs
+│   └── upstox/
+│       ├── UpstoxBrokerAdapter.java
+│       ├── mapper/                  # 3 mappers
+│       └── raw/                     # 3 raw DTOs
 │
-├── dto/                               # Data Transfer Objects (5 files)
-│   ├── BrokerAccountDTO.java          # Account summary response
-│   ├── BrokerStatusResponse.java      # Connection status response
-│   ├── AngelOneCredentialsDTO.java    # Angel One API credentials
-│   ├── UpstoxCredentialsDTO.java      # Upstox API credentials
-│   └── ZerodhaCredentialsDTO.java     # Zerodha API key/secret input
+├── core/                            # Ports & domain
+│   ├── canonical/                   # CanonicalHolding, CanonicalPosition,
+│   │                                #   CanonicalFunds, CanonicalMf*,
+│   │                                #   DataSource, DataConfidence, Exchange…
+│   ├── capability/                  # BrokerCapability enum + checker
+│   ├── exception/                   # Broker-specific exceptions
+│   ├── port/                        # BrokerAdapter interface (THE PORT)
+│   └── session/                     # BrokerSession, per-broker credentials
 │
-├── model/                             # Domain Entities (3 files)
-│   ├── Broker.java                    # Enum: ZERODHA, ANGELONE, UPSTOX
-│   ├── BrokerAccount.java             # Entity: user's broker connection
-│   └── ExpiryReason.java              # Enum: token expiry reasons
+├── controller/
+│   ├── BrokerConnectController.java # /api/brokers connect flows
+│   ├── BrokerStatusController.java  # /api/brokers status
+│   └── ZerodhaBridgeController.java # /zerodha/callback redirect bridge
 │
-├── repository/                        # Data Access (1 file)
-│   └── BrokerAccountRepository.java   # MongoDB repository
-│
-├── service/                           # Business Logic (5 interfaces + 1 package-info)
-│   ├── BrokerService.java             # Core interface (16 methods)
-│   ├── BrokerConnectService.java      # Connection flow interface
-│   ├── BrokerStatusService.java       # Status check interface
-│   ├── BrokerServiceFactory.java      # Factory for broker selection
-│   ├── package-info.java              # Package documentation
-│   │
-│   ├── exception/                     # Custom Exceptions
-│   │   └── BrokerException.java       # Broker-specific errors
-│   │
-│   └── impl/                          # Service Implementations (5 files)
-│       ├── ZerodhaBrokerService.java      # Zerodha Kite (40KB, production)
-│       ├── AngelOneBrokerService.java     # Angel One (partial)
-│       ├── UpstoxBrokerService.java       # Upstox (partial)
-│       ├── BrokerConnectServiceImpl.java  # OAuth orchestration
-│       └── BrokerStatusServiceImpl.java   # Token validation
-│
-└── provider/                          # (Reserved for future use)
+├── dto/                             # BrokerAccountDTO, credential DTOs
+├── model/                           # BrokerAccount, Broker enum, ExpiryReason
+├── normalization/                   # Symbol, Exchange, Price, Date normalizers
+├── registry/                        # BrokerAdapterRegistry (auto-discovery)
+├── repository/                      # BrokerAccountRepository
+└── service/
+    ├── BrokerConnectService.java    # Connection flow interface
+    ├── BrokerStatusService.java     # Status check interface
+    ├── ZerodhaLiveDataService.java  # Live quotes via Kite WebSocket/API
+    ├── exception/                   # BrokerException
+    └── impl/
+        ├── BrokerConnectServiceImpl.java
+        └── BrokerStatusServiceImpl.java
 ```
 
 ---
@@ -220,33 +236,27 @@ broker/
 ### 4.1 BrokerConnectController
 
 **Location**: `controller/BrokerConnectController.java`
-**Size**: ~11KB
 **Base Path**: `/api/brokers`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/{broker}/credentials` | POST | Save API key/secret for broker |
-| `/{broker}/credentials` | GET | Get stored credentials (masked) |
-| `/{broker}/connect` | GET | Get OAuth login URL |
+| `/{broker}/connect` | GET | Get OAuth login URL (Zerodha; Upstox needs saved credentials) |
+| `/zerodha/credentials` | POST | Save Zerodha API key/secret |
+| `/upstox/credentials` | POST | Save Upstox apiKey/secret/redirectUri |
+| `/angelone/credentials` | POST | Save Angel One credentials |
+| `/angelone/connect` | POST | Angel One connect (no OAuth redirect — TOTP-based) |
+| `/angelone/disconnect` | POST | Remove Angel One connection |
 | `/callback` | POST | Exchange request_token for access_token |
-| `/{broker}/disconnect` | DELETE | Remove broker connection |
-
-**Key Responsibilities**:
-- Accept and validate credential DTOs
-- Initiate OAuth flows
-- Handle token exchange callbacks
-- Encrypt secrets before storage
+| `/zerodha/callback` | GET | Zerodha callback handler |
 
 ### 4.2 BrokerStatusController
 
 **Location**: `controller/BrokerStatusController.java`
-**Size**: ~2.6KB
 **Base Path**: `/api/brokers`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/{broker}/status` | GET | Get connection status |
-| `/connected` | GET | List all connected brokers |
 
 **Key Responsibilities**:
 - Return connection status (CONNECTED, DISCONNECTED, TOKEN_EXPIRED)
@@ -256,14 +266,16 @@ broker/
 ### 4.3 ZerodhaBridgeController
 
 **Location**: `controller/ZerodhaBridgeController.java`
-**Size**: ~0.8KB
-**Base Path**: `/api/zerodha`
+**Base Path**: `/zerodha/callback` (root-level — no `/api` prefix)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/callback` | GET | Redirect OAuth callback to frontend |
+| `/zerodha/callback` | GET | Redirect OAuth callback to frontend |
 
-**Purpose**: Zerodha OAuth redirects to this endpoint. It extracts the `request_token` and redirects to the frontend (`http://localhost:3000/broker/callback?...`) with the token, where the frontend can then POST to `/api/brokers/callback`.
+**Purpose**: Zerodha redirects here with `request_token`. The controller resolves the
+frontend URL from the `frontend.url` property (via `UrlResolverUtil`) and 302-redirects to
+`{frontend.url}/brokers/zerodha/callback?request_token=...`, where the frontend then POSTs
+`/api/brokers/callback` to exchange the token.
 
 ---
 
@@ -342,99 +354,64 @@ public enum ExpiryReason {
 
 ## 7. Services
 
-### 7.1 BrokerService Interface
+### 7.1 BrokerAdapter Port
 
-**Location**: `service/BrokerService.java`
-**Size**: ~2KB
-**Methods**: 16
+**Location**: `core/port/BrokerAdapter.java`
 
-This is the **core interface** that all broker implementations must implement.
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getBrokerName()` | String | Return broker name constant |
-| `validateCredentials()` | boolean | Check if credentials are valid |
-| `fetchHoldings()` | List\<CachedHolding\> | Fetch equity holdings |
-| `fetchPositions()` | List\<CachedPosition\> | Fetch F&O positions |
-| `fetchOrders()` | List\<OrderDTO\> | Fetch order history |
-| `fetchTrades()` | List\<TradeDTO\> | Fetch trade history |
-| `fetchFunds()` | FundsDTO | Fetch margin/funds data |
-| `fetchMfHoldings()` | List\<MutualFundDTO\> | Fetch MF holdings |
-| `fetchMfOrders()` | List\<MutualFundOrderDTO\> | Fetch MF order history |
-| `fetchMfSips()` | List\<MfSipDTO\> | Fetch SIP list |
-| `fetchMfInstruments()` | List\<MfInstrumentDTO\> | Fetch MF scheme catalog |
-| `fetchProfile()` | UserProfileDTO | Fetch user profile |
-| `testConnection()` | boolean | Verify connection works |
-| `extractTokenExpiry()` | LocalDateTime | Get token expiry time |
-| `getLoginUrl()` | Optional\<String\> | Get OAuth login URL |
-| `refreshToken()` | Optional\<String\> | Refresh access token |
-| `detectExpiry()` | ExpiryReason | Detect why token expired |
-
-### 7.2 BrokerServiceFactory
-
-**Pattern**: Factory Pattern
-**Purpose**: Return correct `BrokerService` implementation based on broker enum.
+This is the **hexagonal port** that all broker adapters implement. Methods return
+`CompletableFuture<Canonical*>`:
 
 ```java
-@Service
-public class BrokerServiceFactory {
+public interface BrokerAdapter {
+    Broker getBrokerType();
+    Set<BrokerCapability> getCapabilities();
 
-    public BrokerService getService(Broker broker) {
-        return switch (broker) {
-            case ZERODHA -> zerodhaBrokerService;
-            case ANGELONE -> angelOneBrokerService;
-            case UPSTOX -> upstoxBrokerService;
-        };
-    }
+    CompletableFuture<List<CanonicalHolding>> fetchHoldings(BrokerSession session);
+    CompletableFuture<List<CanonicalPosition>> fetchPositions(BrokerSession session);
+    CompletableFuture<CanonicalFunds> fetchFunds(BrokerSession session);
+
+    // MF operations (default: throw UnsupportedBrokerOperationException)
+    CompletableFuture<List<CanonicalMfHolding>> fetchMfHoldings(BrokerSession session);
+    CompletableFuture<List<CanonicalMfOrder>> fetchMfOrders(BrokerSession session);
 }
 ```
 
-### 7.3 Implementation: ZerodhaBrokerService
+### 7.2 Verified Capability Matrix (from each adapter's `getCapabilities()`)
 
-**Location**: `service/impl/ZerodhaBrokerService.java`
-**Size**: ~40KB (largest file in module)
-**Status**: Production-ready
+| Capability | Zerodha | Angel One | Upstox |
+|---|---|---|---|
+| EQUITY_HOLDINGS | ✅ | ✅ | ✅ |
+| INTRADAY / FNO / OVERNIGHT_POSITIONS | ✅ | ✅ | ✅ |
+| FUNDS | ✅ | ✅ | ✅ |
+| ORDER_HISTORY / TRADE_HISTORY | ✅ | ✅ | ✅ |
+| MF_HOLDINGS / MF_ORDERS / MF_SIPS | ✅ | ❌ (no MF API) | ❌ (no MF API) |
+| LIVE_QUOTES | ✅ | ❌ | ❌ |
 
-**Key Features**:
-- Full Kite Connect API integration
-- Holdings with P&L, Day Change from Zerodha
-- Positions with MTM values
-- Mutual Fund holdings, orders, SIPs
-- MF Instruments CSV parsing
-- Funds/Margins with segment breakdown
-- Raw JSON preservation in all DTOs
+### 7.3 BrokerAdapterRegistry (Auto-Discovery)
 
-**API Endpoints Used**:
-| Purpose | Kite Endpoint |
-|---------|---------------|
-| Holdings | GET /portfolio/holdings |
-| Positions | GET /portfolio/positions |
-| Orders | GET /orders |
-| Trades | GET /trades |
-| Margins | GET /user/margins |
-| Profile | GET /user/profile |
-| MF Holdings | GET /mf/holdings |
-| MF Orders | GET /mf/orders |
-| MF SIPs | GET /mf/sips |
-| MF Instruments | GET /mf/instruments (CSV) |
+Collects all `BrokerAdapter` beans at startup; O(1) lookup by broker type:
 
-### 7.4 Implementation: BrokerConnectServiceImpl
+```java
+BrokerAdapter adapter = registry.getAdapter(Broker.ZERODHA);
+```
 
-**Purpose**: Orchestrate OAuth connection flows
+Before calling any fetch, `BrokerCapabilityChecker` verifies the adapter declares support.
 
-**Key Methods**:
-- `initiateConnection()` - Generate login URL
-- `completeConnection()` - Exchange token and save
-- `disconnectBroker()` - Remove connection
+### 7.4 Adapter Implementations
 
-### 7.5 Implementation: BrokerStatusServiceImpl
+| Adapter | Notes |
+|---|---|
+| `adapters/zerodha/ZerodhaBrokerAdapter.java` | Full Kite Connect integration via WebClient: holdings, positions (intraday/F&O/overnight), funds, orders/trades, MF holdings/orders/SIPs, live quotes. Token exchange at `/session/token`. |
+| `adapters/angelone/AngelOneBrokerAdapter.java` | SmartAPI: holdings, positions, funds, order/trade history. No OAuth redirect — credentials + TOTP based. |
+| `adapters/upstox/UpstoxBrokerAdapter.java` | Upstox v2 OAuth with per-user stored `redirectUri`: holdings, positions, funds, order/trade history. |
 
-**Purpose**: Token validity checks
+### 7.5 Connection Services
 
-**Key Logic**:
-- Zerodha tokens expire daily at 6:00 AM IST
-- Check `zerodhaTokenExpiresAt` field
-- Return appropriate status enum
+- `BrokerConnectServiceImpl` — orchestrates connect flows (login URLs, token exchange,
+  disconnect). Angel One has no OAuth redirect (clients POST `/api/brokers/angelone/connect`);
+  Upstox requires per-user apiKey/secret/redirectUri saved first.
+- `BrokerStatusServiceImpl` — token validity checks; Zerodha tokens expire daily ~6 AM IST.
+- `ZerodhaLiveDataService` — live market data for Zerodha-connected accounts.
 
 ---
 
@@ -459,24 +436,26 @@ public class BrokerServiceFactory {
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| POST | `/api/brokers/zerodha/credentials` | JWT | Save Zerodha API credentials |
-| GET | `/api/brokers/zerodha/credentials` | JWT | Get credentials (secret masked) |
-| GET | `/api/brokers/zerodha/connect` | JWT | Get Zerodha login URL |
+| POST | `/api/brokers/{broker}/credentials` | JWT | Save API credentials (per-broker DTOs) |
+| GET | `/api/brokers/{broker}/connect` | JWT/public* | Get OAuth login URL |
+| POST | `/api/brokers/angelone/connect` | Public (whitelisted) | Angel One connect |
+| POST | `/api/brokers/angelone/disconnect` | Public (whitelisted) | Angel One disconnect |
 | POST | `/api/brokers/callback` | JWT | Exchange token (body: `{broker, requestToken}`) |
-| DELETE | `/api/brokers/zerodha/disconnect` | JWT | Remove Zerodha connection |
+| GET | `/api/brokers/zerodha/callback` | Public (whitelisted) | Zerodha callback handler |
+
+\* Zerodha/AngelOne `connect` and `login-url` routes are explicitly whitelisted in SecurityConfig.
 
 ### 9.2 Status
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/api/brokers/zerodha/status` | JWT | Get connection status |
-| GET | `/api/brokers/connected` | JWT | List all connected brokers |
+| GET | `/api/brokers/{broker}/status` | JWT | Get connection status |
 
-### 9.3 OAuth Callback
+### 9.3 OAuth Callback Bridge
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/api/zerodha/callback` | None | Redirect from Zerodha → Frontend |
+| GET | `/zerodha/callback` | None | Redirect from Zerodha → Frontend (`frontend.url` based) |
 
 ---
 
@@ -507,9 +486,9 @@ public class BrokerServiceFactory {
 │                                                                         │
 │  STEP 4: Callback redirect                                              │
 │  ─────────────────────                                                  │
-│  GET /api/zerodha/callback?request_token=xxx&status=success             │
+│  GET /zerodha/callback?request_token=xxx&status=success (backend, root path)             │
 │  → ZerodhaBridgeController redirects to:                                │
-│    http://localhost:3000/broker/callback?broker=zerodha&token=xxx       │
+│    {frontend.url}/brokers/zerodha/callback?request_token=xxx       │
 │                                                                         │
 │  STEP 5: Frontend exchanges token                                       │
 │  ──────────────────────────────                                         │
@@ -666,10 +645,10 @@ String decrypted = encryptionUtil.decrypt(account.getEncryptedZerodhaApiSecret()
 
 ## Appendix B: Related Documentation
 
-- [Zerodha Master Integration Guide](../../docs/zerodha/Zerodha_Master_Integration_Guide.md)
-- [Portfolio Summary Architecture](../../docs/Portfolio_Summary_Architecture.md)
-- [Zerodha Holdings Architecture](../../docs/zerodha/Zerodha_Holdings_Architecture.md)
-- [Zerodha MF Orders Architecture](../../docs/zerodha/Zerodha_MF_Orders_Architecture.md)
+- ~~Zerodha Master Integration Guide~~ (file no longer exists in the repo)
+- ~~Portfolio Summary Architecture~~ (file no longer exists in the repo)
+- ~~Zerodha Holdings Architecture~~ (file no longer exists in the repo)
+- ~~Zerodha MF Orders Architecture~~ (file no longer exists in the repo)
 
 ---
 

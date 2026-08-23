@@ -94,8 +94,7 @@ public class PortfolioHoldingService {
 
         BigDecimal currentUnits = totalPurchasedUnits.subtract(totalRedeemedUnits);
         if (scheme != null && scheme.getManualTotalUnits() != null && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
-            totalPurchasedUnits = scheme.getManualTotalUnits();
-            currentUnits = totalPurchasedUnits.subtract(totalRedeemedUnits);
+            currentUnits = scheme.getManualTotalUnits();
         }
 
         holding.setCurrentUnits(currentUnits);
@@ -117,7 +116,14 @@ public class PortfolioHoldingService {
         if (totalRedeemedUnits.compareTo(BigDecimal.ZERO) == 0) {
             currentInvestment = totalInvestedAmount;
         } else {
-            currentInvestment = currentUnits.multiply(averageCost);
+            BigDecimal totalTradedValue = redemptions.stream()
+                    .map(RedemptionTransaction::getTradeInvestmentValue)
+                    .filter(java.util.Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            currentInvestment = totalInvestedAmount.subtract(totalTradedValue);
+            if (currentInvestment.compareTo(BigDecimal.ZERO) < 0) {
+                currentInvestment = BigDecimal.ZERO;
+            }
         }
         holding.setCurrentInvestment(currentInvestment);
         holding.setRealizedGain(realizedGain);

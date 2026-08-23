@@ -1,0 +1,667 @@
+
+
+Welcome to the MFapi.in documentation. This API provides comprehensive access to Indian mutual fund data including scheme information, NAV history, and search capabilities.
+Base URL
+Production: https://api.mfapi.in
+Response Format
+
+All API responses are returned in JSON format with appropriate HTTP status codes.
+Quick Start Example
+
+Get the latest NAV for a mutual fund scheme:
+
+curl https://api.mfapi.in/mf/125497/latest
+
+Rate Limiting
+
+The API implements rate limiting to ensure fair usage. Please cache responses when appropriate to minimize API calls.
+No Authentication Required
+
+This is a free, open API. No authentication or API keys are required.
+
+
+
+
+AVAILABLE ENDPOINTS :
+GET /mf/search - Search mutual fund schemes by name
+GET /mf - List all mutual fund schemes with pagination
+GET /mf/{scheme_code} - Get NAV history for a specific scheme
+GET /mf/{scheme_code}/latest - Get latest NAV for a specific scheme 
+
+
+
+
+Example Request :
+Search for HDFC schemes
+GET https://api.mfapi.in/mf/search?q=HDFC
+
+Get scheme NAV history with date range
+GET https://api.mfapi.in/mf/125497?startDate=2023-01-01&endDate=2023-12-31
+
+Get latest NAV
+GET https://api.mfapi.in/mf/125497/latest
+
+List schemes with pagination
+GET https://api.mfapi.in/mf?limit=100&offset=0
+
+
+
+Response Example :
+Latest NAV Response
+{
+  "meta": {
+    "fund_house": "HDFC Mutual Fund",
+    "scheme_type": "Open Ended Schemes",
+    "scheme_category": "Equity Scheme - Large Cap Fund",
+    "scheme_code": 125497,
+    "scheme_name": "HDFC Top 100 Fund - Direct Plan - Growth",
+    "isin_growth": "INF179K01BB2",
+    "isin_div_reinvestment": null
+  },
+  "data": [
+    {
+      "date": "26-10-2024",
+      "nav": "892.45600"
+    }
+  ],
+  "status": "SUCCESS"
+}
+
+Search Response
+[
+  {
+    "schemeCode": 125497,
+    "schemeName": "HDFC Top 100 Fund - Direct Plan - Growth"
+  },
+  {
+    "schemeCode": 125498,
+    "schemeName": "HDFC Top 100 Fund - Regular Plan - Growth"
+  }
+]
+
+
+API :
+1. /mf/search
+Responses
+Curl
+
+curl -X 'GET' \
+  'https://api.mfapi.in/mf/search?q=HDFC' \
+  -H 'accept: application/json'
+
+Request URL
+
+https://api.mfapi.in/mf/search?q=HDFC
+
+Server response
+Code	Details
+200	
+Response body
+
+[
+  {
+    "schemeCode": 100121,
+    "schemeName": "HDFC Balanced Fund - Dividend Option"
+  },
+  {
+    "schemeCode": 100122,
+    "schemeName": "HDFC Balanced Fund - Growth Option"
+  },
+  {
+    "schemeCode": 100282,
+    "schemeName": "HDFC FMP 3M MAY 2006(1)-INSTITUTIONAL PLAN-Growth"
+  },
+  {
+    "schemeCode": 100283,
+    "schemeName": "HDFC FMP 3M MAY 2006(1)-INSTITUTIONAL PLAN-Dividend"
+  },
+  {
+    "schemeCode": 100284,
+    "schemeName": "HDFC FMP 3M MAY 2006(1)-RETAIL-Growth"
+  },
+  {
+    "schemeCode": 100285,
+    "schemeName": "HDFC FMP 3M MAY 2006(1)-RETAIL-Dividend"
+  },
+  {
+    "schemeCode": 100119,
+    "schemeName": "HDFC Balanced Advantage Fund - Regular Plan - Growth Option"
+  },
+  {
+    "schemeCode": 100120,
+    "schemeName": "HDFC Balanced Advantage Fund - Regular Plan - IDCW Option"
+  },
+  {
+    "schemeCode": 100123,
+    "schemeName": "HDFC Income Fund - Regular Plan - Quarterly IDCW Option"
+  },
+  {
+    "schemeCode": 100124,
+    "schemeName": "HDFC Income Fund - Regular Plan - Growth Option"
+  },
+  {
+    "schemeCode": 100869,
+    "schemeName": "HDFC Liquid Fund-DIVIDEND"
+  },
+  {
+    "schemeCode": 100870,
+    "schemeName": "HDFC Liquid Fund-PREMIUM- Dividend"
+  },
+  {
+    "schemeCode": 100871,
+    "schemeName": "HDFC Liquid Fund-PREMIUM PLUS- Dividend"
+  },
+  {
+    "schemeCode": 100872,
+    "schemeName": "HDFC Liquid Fund-PREMIUM PLUS- Growth"
+  },
+  {
+    "schemeCode": 100873,
+    "schemeName": "HDFC Liquid Fund-PREMIUM- Growth"
+  }
+]
+
+Response headers
+
+ access-control-allow-origin: * 
+ access-control-expose-headers: * 
+ access-control-max-age: 86400 
+ content-encoding: gzip 
+ content-type: application/json 
+ date: Sun,23 Aug 2026 03:23:41 GMT 
+ server: nginx/1.24.0 
+ vary: Accept-Encoding 
+ x-firefox-spdy: h2 
+ x-served-by-header: hl 
+
+Responses
+Code	Description	Links
+200	
+
+Successful response with matching schemes
+Media type
+Controls Accept header.
+
+[
+  {
+    "schemeCode": 100119,
+    "schemeName": "HDFC Balanced Advantage Fund - Direct Plan - Growth"
+  },
+  {
+    "schemeCode": 100120,
+    "schemeName": "HDFC Banking and PSU Debt Fund - Direct Plan - Growth"
+  }
+]
+
+	No links
+400	
+
+Bad request - missing search query
+	No links
+
+
+
+
+
+
+
+2. /mf/{scheme_code}
+GET
+/mf/{scheme_code}
+Get NAV history for a scheme
+
+Retrieve historical NAV data for a specific mutual fund scheme within a date range
+Parameters
+Name	Description
+scheme_code *
+integer
+(path)
+	
+
+Unique scheme code
+startDate
+string($date)
+(query)
+	
+
+Start date for NAV history (ISO 8601 format)
+endDate
+string($date)
+(query)
+	
+
+End date for NAV history (ISO 8601 format)
+Responses
+Curl
+
+curl -X 'GET' \
+  'https://api.mfapi.in/mf/125497?startDate=2023-01-01&endDate=2023-12-31' \
+  -H 'accept: application/json'
+
+Request URL
+
+https://api.mfapi.in/mf/125497?startDate=2023-01-01&endDate=2023-12-31
+
+Server response
+Code	Details
+200	
+Response body
+
+{
+  "meta": {
+    "fund_house": "SBI Mutual Fund",
+    "scheme_type": "Open Ended Schemes",
+    "scheme_category": "Equity Scheme - Small Cap Fund",
+    "scheme_code": 125497,
+    "scheme_name": "SBI SMALL CAP FUND - Direct Plan - Growth",
+    "isin_growth": "INF200K01T51",
+    "isin_div_reinvestment": null
+  },
+  "data": [
+    {
+      "date": "29-12-2023",
+      "nav": "161.23570"
+    },
+    {
+      "date": "28-12-2023",
+      "nav": "159.96250"
+    },
+    {
+      "date": "27-12-2023",
+      "nav": "159.80290"
+    },
+    {
+      "date": "26-12-2023",
+      "nav": "159.32410"
+    },
+    {
+      "date": "22-12-2023",
+      "nav": "159.20230"
+    },
+    {
+      "date": "21-12-2023",
+      "nav": "158.63270"
+    },
+    {
+      "date": "20-12-2023",
+      "nav": "157.12700"
+    },
+    {
+      "date": "19-12-2023",
+      "nav": "161.06180"
+    },
+    {
+      "date": "18-12-2023",
+      "nav": "161.43560"
+    },
+    {
+      "date": "15-12-2023",
+      "nav": "161.54280"
+    },
+    {
+      "date": "14-12-2023",
+      "nav": "161.06090"
+    },
+    {
+      "date": "13-12-2023",
+      "nav": "159.94020"
+    },
+    {
+      "date": "12-12-2023",
+      "nav": "159.44360"
+    },
+    {
+      "date": "11-12-2023",
+      "nav": "159.79540"
+    },
+    {
+      "date": "08-12-2023",
+      "nav": "159.55530"
+    },
+    {
+      "date": "07-12-2023",
+      "nav": "159.95680"
+    },
+    {
+      "date": "06-12-2023",
+      "nav": "159.48490"
+    },
+    {
+      "date": "05-12-2023",
+      "nav": "159.50410"
+    },
+    {
+      "date": "04-12-2023",
+      "nav": "158.81010"
+    },
+    {
+      "date": "01-12-2023",
+      "nav": "157.41760"
+    },
+    {
+      "date": "30-11-2023",
+      "nav": "157.43140"
+    },
+    {
+      "date": "29-11-2023",
+      "nav": "155.71050"
+    },
+    {
+      "date": "28-11-2023",
+      "nav": "155.64510"
+    },
+    {
+      "date": "24-11-2023",
+      "nav": "154.68300"
+    },
+    {
+      "date": "23-11-2023",
+      "nav": "154.39260"
+    },
+    {
+      "date": "22-11-2023",
+      "nav": "154.43410"
+    },
+    {
+      "date": "21-11-2023",
+      "nav": "154.97010"
+    },
+    {
+      "date": "20-11-2023",
+      "nav": "153.98730"
+    },
+  ],
+  "status": "SUCCESS"
+}
+
+Response headers
+
+ access-control-allow-origin: * 
+ access-control-expose-headers: * 
+ access-control-max-age: 86400 
+ content-encoding: gzip 
+ content-type: application/json 
+ date: Sun,23 Aug 2026 03:24:09 GMT 
+ server: nginx/1.24.0 
+ vary: Accept-Encoding 
+ x-firefox-spdy: h2 
+ x-served-by-header: hl 
+
+Responses
+Code	Description	Links
+200	
+
+Successful response with NAV history
+Media type
+Controls Accept header.
+
+{
+  "meta": {
+    "fund_house": "HDFC Mutual Fund",
+    "scheme_type": "Open Ended Schemes",
+    "scheme_category": "Balanced Advantage Fund",
+    "scheme_code": 125497,
+    "scheme_name": "HDFC Balanced Advantage Fund - Direct Plan - Growth",
+    "isin_growth": "INF179K01BB2",
+    "isin_div_reinvestment": "INF179K01BC0"
+  },
+  "data": [
+    {
+      "date": "31-12-2023",
+      "nav": "45.12300"
+    },
+    {
+      "date": "30-12-2023",
+      "nav": "45.00100"
+    }
+  ],
+  "status": "SUCCESS"
+}
+
+	No links
+404	
+
+Scheme not found
+	No links
+
+
+
+
+
+
+3. /mf/{scheme_code}/latest
+GET
+/mf/{scheme_code}/latest
+Get latest NAV for a scheme
+
+Retrieve the most recent NAV data for a specific mutual fund scheme
+Parameters
+Name	Description
+scheme_code *
+integer
+(path)
+	
+
+Unique scheme code
+Responses
+Curl
+
+curl -X 'GET' \
+  'https://api.mfapi.in/mf/125497/latest' \
+  -H 'accept: application/json'
+
+Request URL
+
+https://api.mfapi.in/mf/125497/latest
+
+Server response
+Code	Details
+200	
+Response body
+
+{
+  "meta": {
+    "fund_house": "SBI Mutual Fund",
+    "scheme_type": "Open Ended Schemes",
+    "scheme_category": "Equity Scheme - Small Cap Fund",
+    "scheme_code": 125497,
+    "scheme_name": "SBI SMALL CAP FUND - Direct Plan - Growth",
+    "isin_growth": "INF200K01T51",
+    "isin_div_reinvestment": null
+  },
+  "data": [
+    {
+      "date": "21-08-2026",
+      "nav": "215.41370"
+    }
+  ],
+  "status": "SUCCESS"
+}
+
+Response headers
+
+ access-control-allow-origin: * 
+ access-control-expose-headers: * 
+ access-control-max-age: 86400 
+ content-encoding: gzip 
+ content-type: application/json 
+ date: Sun,23 Aug 2026 03:24:39 GMT 
+ server: nginx/1.24.0 
+ vary: Accept-Encoding 
+ x-firefox-spdy: h2 
+ x-served-by-header: hl 
+
+Responses
+Code	Description	Links
+200	
+
+Successful response with latest NAV
+Media type
+Controls Accept header.
+
+{
+  "meta": {
+    "fund_house": "HDFC Mutual Fund",
+    "scheme_type": "Open Ended Schemes",
+    "scheme_category": "Balanced Advantage Fund",
+    "scheme_code": 125497,
+    "scheme_name": "HDFC Balanced Advantage Fund - Direct Plan - Growth",
+    "isin_growth": "INF179K01BB2",
+    "isin_div_reinvestment": "INF179K01BC0"
+  },
+  "data": [
+    {
+      "date": "26-10-2024",
+      "nav": "48.56700"
+    }
+  ],
+  "status": "SUCCESS"
+}
+
+	No links
+404	
+
+Scheme not found
+	No links
+
+
+
+
+this are their schemas :
+Schemas
+SchemeSearchResult{
+schemeCode*	integer
+
+Unique identifier for the scheme
+schemeName*	string
+
+Full name of the mutual fund scheme
+ 
+}
+SchemeListItem{
+schemeCode*	integer
+
+Unique identifier for the scheme
+schemeName*	string
+
+Full name of the mutual fund scheme
+isinGrowth	string
+nullable: true
+
+ISIN code for growth option
+isinDivReinvestment	string
+nullable: true
+
+ISIN code for dividend reinvestment option
+ 
+}
+NAVData{
+date*	string
+
+Date in DD-MM-YYYY format
+nav*	string
+
+Net Asset Value with 5 decimal precision
+ 
+}
+SchemeMeta{
+fund_house	string
+
+Name of the fund house
+scheme_type	string
+
+Type of the scheme (e.g., Open Ended Schemes)
+scheme_category	string
+
+Category of the scheme
+scheme_code*	integer
+
+Unique identifier for the scheme
+scheme_name*	string
+
+Full name of the mutual fund scheme
+isin_growth	string
+nullable: true
+
+ISIN code for growth option
+isin_div_reinvestment	string
+nullable: true
+
+ISIN code for dividend reinvestment option
+ 
+}
+NAVHistoryResponse{
+meta*	SchemeMeta{
+fund_house	string
+
+Name of the fund house
+scheme_type	string
+
+Type of the scheme (e.g., Open Ended Schemes)
+scheme_category	string
+
+Category of the scheme
+scheme_code*	integer
+
+Unique identifier for the scheme
+scheme_name*	string
+
+Full name of the mutual fund scheme
+isin_growth	string
+nullable: true
+
+ISIN code for growth option
+isin_div_reinvestment	string
+nullable: true
+
+ISIN code for dividend reinvestment option
+ 
+}
+data*	[NAVData{
+date*	string
+
+Date in DD-MM-YYYY format
+nav*	string
+
+Net Asset Value with 5 decimal precision
+ 
+}]
+status*	string
+
+Response status
+Enum:
+[ SUCCESS, ERROR ]
+ 
+}
+LatestNAVItem{
+schemeCode*	integer
+
+Unique identifier for the scheme
+schemeName*	string
+
+Full name of the mutual fund scheme
+fundHouse	string
+
+Name of the fund house
+schemeType	string
+
+Type of the scheme (e.g., Open Ended Schemes)
+schemeCategory	string
+
+Category of the scheme
+isinGrowth	string
+nullable: true
+
+ISIN code for growth option
+isinDivReinvestment	string
+nullable: true
+
+ISIN code for dividend reinvestment option
+nav*	string
+
+Latest Net Asset Value with 5 decimal precision
+date*	string
+
+NAV date in DD-MM-YYYY format
+ 
+}

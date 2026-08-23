@@ -35,7 +35,7 @@ Next.js App Router application providing:
 - Authenticated dashboard with real-time portfolio summaries
 - Multi-broker connection management with OAuth callbacks
 - Detailed portfolio views (holdings, positions, orders, mutual funds)
-- 32+ financial calculators (public, no auth required)
+- 32 financial calculators (33 backend endpoints) (public, no auth required)
 - Secure 2FA (TOTP) setup and management
 - Notes system for personal finance tracking
 - Dark/light theme support
@@ -234,7 +234,7 @@ Track non-broker assets with comprehensive ledger UI and dedicated dashboards:
 - **Provident Funds** — Dedicated EPF and PPF ledgers with interest simulation
 - **Fixed Deposits** — Track FDs across banks with live maturity status and Excel export
 
-### Financial Calculators (32+)
+### Financial Calculators (32 pages)
 
 All calculators are publicly accessible (no authentication required) and share
 a common framework in `components/calculators/framework/CalculatorComponents`.
@@ -470,6 +470,15 @@ parallel refresh token race conditions.
 |-------------------------|----------|--------------------------------------|
 | `NEXT_PUBLIC_API_BASE`  | Yes      | Backend API base URL                 |
 | `NEXT_PUBLIC_APP_URL`   | Yes      | Frontend public URL (for callbacks)  |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | For Google SSO | Google OAuth client ID (public by design) |
+| `IFSC_API_KEY`          | For bank/IFSC lookup | Bank name & IFSC provider API key (server-side usage) |
+| `NEXT_PUBLIC_APP_NAME`  | No       | Display app name (default: CoinTrack) |
+| `NEXT_PUBLIC_APP_VERSION` | No     | Displayed version metadata           |
+| `NEXT_PUBLIC_ENABLE_WEBSOCKETS` | No | Feature flag for live data websockets |
+| `NEXT_PUBLIC_ENABLE_NOTIFICATIONS` | No | Feature flag for in-app notifications |
+| `NEXT_PUBLIC_DEBUG`     | No       | Enables debug logging in the client  |
+
+> Note: `IFSC_API_KEY` has no `NEXT_PUBLIC_` prefix — it is not exposed to the browser bundle.
 
 Create a `.env.local` file in the `frontend/` directory:
 
@@ -588,22 +597,25 @@ Vercel Analytics and Speed Insights are integrated via `@vercel/analytics` and
 
 | Library                    | Version   | Purpose                          |
 |----------------------------|-----------|----------------------------------|
-| Next.js                    | 16.0.10   | React framework (App Router)     |
+| Next.js                    | ^16.2.6   | React framework (App Router)     |
 | React                      | 18.3.1    | UI library                       |
 | Tailwind CSS               | 3.4.14    | Utility-first CSS                |
-| @tanstack/react-query      | 5.90.12   | Server state management          |
-| Axios                      | 1.7.0     | HTTP client                      |
-| Framer Motion              | 11.0.0    | Animations and transitions       |
-| React Hook Form            | 7.52.0    | Form state management            |
-| Yup                        | 1.3.0     | Schema validation                |
-| Recharts                   | 2.9.0     | Charting library                 |
-| Lucide React               | 0.545.0   | Icon library                     |
-| date-fns                   | 3.6.0     | Date utilities                   |
-| class-variance-authority   | 0.7.1     | Component variant styling        |
+| @tanstack/react-query      | ^5.90.12  | Server state management          |
+| Axios                      | ^1.7.0    | HTTP client                      |
+| Framer Motion              | ^11.0.0   | Animations and transitions       |
+| React Hook Form            | ^7.52.0   | Form state management            |
+| Yup                        | —         | Not currently a dependency       |
+| Recharts                   | ^3.8.0    | Charting library                 |
+| Lucide React               | ^0.545.0  | Icon library                     |
+| date-fns                   | ^3.6.0    | Date utilities                   |
+| class-variance-authority   | ^0.7.1    | Component variant styling        |
 | @radix-ui/*                | various   | Accessible UI primitives         |
-| Cypress                    | 13.7.0    | E2E testing                      |
-| Jest                       | 29.7.0    | Unit testing                     |
-| @testing-library/react     | 14.2.0    | Component testing utilities      |
-| ESLint                     | 9.0.0     | Code linting                     |
-| Prettier                   | 3.3.3     | Code formatting                  |
-| Husky                      | 9.1.7     | Git hooks                        |
+| Cypress                    | ^13.7.0   | E2E testing                      |
+| Jest                       | ^29.7.0   | Unit testing                     |
+| @testing-library/react     | ^14.2.0   | Component testing utilities      |
+| ESLint                     | ^8.57.0   | Code linting                     |
+| Prettier                   | ^3.3.3    | Code formatting                  |
+| Husky                      | ^9.1.7    | Git hooks                        |
+
+> Versions above reflect `package.json` (verified 2026-08-23). Earlier revisions listed
+> Next 16.0.10 / Recharts 2.9.0 / ESLint 9.0.0 / Yup 1.3.0 — those were stale.
