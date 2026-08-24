@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
 import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
+import com.urva.myfinance.coinTrack.user.dto.DeleteAccountRequest;
 import com.urva.myfinance.coinTrack.user.dto.UpdateProfileRequest;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.service.UserService;
@@ -204,20 +205,36 @@ class UserControllerTest {
     @DisplayName("deleteCurrentUser: success → 200")
     void deleteCurrentUser_success_returns200() {
         when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        when(userService.deleteUser("u1")).thenReturn(true);
+        when(userService.getUserById("u1")).thenReturn(sampleUser);
+        when(userService.deleteAccount(eq("u1"), isNull(), any(), any())).thenReturn(true);
 
-        ResponseEntity<?> response = userController.deleteCurrentUser(authentication);
+        ResponseEntity<?> response = userController.deleteCurrentUser(authentication, null, httpRequest);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("deleteCurrentUser: wrong password → 401, account intact")
+    void deleteCurrentUser_wrongPassword_returns401() {
+        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+        when(userService.getUserById("u1")).thenReturn(sampleUser);
+        when(userService.deleteAccount(eq("u1"), eq("bad"), any(), any()))
+                .thenThrow(new IllegalArgumentException("Password confirmation failed — account not deleted"));
+
+        ResponseEntity<?> response = userController.deleteCurrentUser(
+                authentication, new DeleteAccountRequest("bad"), httpRequest);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     }
 
     @Test
     @DisplayName("deleteCurrentUser: user not found → 404")
     void deleteCurrentUser_notFound_returns404() {
         when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        when(userService.deleteUser("u1")).thenReturn(false);
+        when(userService.getUserById("u1")).thenReturn(null);
+        when(userService.deleteAccount(eq("u1"), isNull(), any(), any())).thenReturn(false);
 
-        ResponseEntity<?> response = userController.deleteCurrentUser(authentication);
+        ResponseEntity<?> response = userController.deleteCurrentUser(authentication, null, httpRequest);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
@@ -226,9 +243,10 @@ class UserControllerTest {
     @DisplayName("deleteCurrentUser: exception → 500")
     void deleteCurrentUser_exception_returns500() {
         when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        when(userService.deleteUser("u1")).thenThrow(new RuntimeException("db error"));
+        when(userService.getUserById("u1")).thenReturn(sampleUser);
+        when(userService.deleteAccount(eq("u1"), isNull(), any(), any())).thenThrow(new RuntimeException("db error"));
 
-        ResponseEntity<?> response = userController.deleteCurrentUser(authentication);
+        ResponseEntity<?> response = userController.deleteCurrentUser(authentication, null, httpRequest);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }

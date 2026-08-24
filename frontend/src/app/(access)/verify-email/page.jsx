@@ -2,8 +2,8 @@
 'use client';
 
 import { AuthPageShell } from '@/components/auth/AuthPageShell';
-import { emailAPI } from '@/lib/api';
-import { CheckCircle2, MailCheck, XCircle } from 'lucide-react';
+import { emailAPI, tokenManager } from '@/lib/api';
+import { CheckCircle2, Loader2, MailCheck, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
@@ -14,6 +14,34 @@ function VerifyEmailContent() {
     const [message, setMessage] = useState('');
     const [isChange, setIsChange] = useState(false);
     const verificationStarted = useRef(false);
+    const [isResending, setIsResending] = useState(false);
+    const [resent, setResent] = useState(false);
+    // /resend requires an authenticated session — only offer it if a live token exists
+    const [canResend] = useState(() => {
+        try {
+            const token = tokenManager.getToken();
+            return !!token && !tokenManager.isTokenExpired(token);
+        } catch {
+            return false;
+        }
+    });
+
+    const handleResend = async () => {
+        setIsResending(true);
+        try {
+            const result = await emailAPI.resend();
+            setResent(true);
+            setMessage(
+                result?.alreadyVerified
+                    ? 'This email is already verified — you can simply log in.'
+                    : 'A fresh verification link has been sent to your registered email address.'
+            );
+        } catch (err) {
+            setMessage(err.message || 'Could not resend right now. Please log in and try again.');
+        } finally {
+            setIsResending(false);
+        }
+    };
 
     useEffect(() => {
         const token = searchParams.get('token');
@@ -111,6 +139,24 @@ function VerifyEmailContent() {
                             <p className="text-[13px] text-foreground leading-snug">{message}</p>
                         </div>
                     </div>
+
+                    {canResend ? (
+                        <button
+                            type="button"
+                            onClick={handleResend}
+                            disabled={isResending || resent}
+                            className="ed-btn ed-btn-primary w-full h-11 disabled:opacity-60 disabled:pointer-events-none"
+                        >
+                            {isResending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            {resent ? 'Link Sent — Check Your Inbox' : 'Resend Verification Email'}
+                        </button>
+                    ) : (
+                        <Link href="/login" className="block">
+                            <button type="button" className="ed-btn ed-btn-primary w-full h-11">
+                                Log in to request a new link
+                            </button>
+                        </Link>
+                    )}
 
                     <Link href="/dashboard" className="block">
                         <button type="button" className="ed-btn ed-btn-ghost w-full h-11">

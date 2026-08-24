@@ -16,26 +16,35 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import com.urva.myfinance.coinTrack.email.config.BrevoConfigProperties;
 
-import lombok.RequiredArgsConstructor;
 import reactor.util.retry.Retry;
 
 /**
  * Service for sending emails via Brevo (Sendinblue) Transactional Email API.
  *
- * Active in all profiles EXCEPT dev (dev uses DevNoOpEmailService).
- * If BREVO_API_KEY is missing in prod, startup will log ERROR and emails will fail-safe.
+ * Active in ALL profiles. Without BREVO_API_KEY, isConfigured() is false and sends are
+ * skipped with a warning (relevant in dev); if the key is missing in prod, startup logs
+ * ERROR and emails fail-safe.
  *
  * Retry: 3 attempts with exponential backoff (1s, 2s, 4s) for 5xx/network errors.
  * Non-retryable: 400 (bad payload), 401 (bad API key).
  */
 @Service
-@RequiredArgsConstructor
 public class BrevoEmailService implements EmailSender {
 
     private static final Logger log = LoggerFactory.getLogger(BrevoEmailService.class);
 
     private final BrevoConfigProperties config;
-    private final WebClient webClient = WebClient.create();
+    private final WebClient webClient;
+
+    /**
+     * Builds the WebClient from the shared {@link WebClientConfig} builder
+     * (10 s connect timeout, 15 s response timeout, 2 MB in-memory codec limit)
+     * instead of a bare {@code WebClient.create()}.
+     */
+    public BrevoEmailService(BrevoConfigProperties config, WebClient.Builder webClientBuilder) {
+        this.config = config;
+        this.webClient = webClientBuilder.build();
+    }
 
     /**
      * Send an email using Brevo Transactional Email API.

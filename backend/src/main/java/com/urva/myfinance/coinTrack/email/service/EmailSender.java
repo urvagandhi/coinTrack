@@ -2,8 +2,8 @@ package com.urva.myfinance.coinTrack.email.service;
 
 /**
  * Abstraction for sending transactional emails.
- * - BrevoEmailService: production (profile != dev) — sends via Brevo REST API
- * - DevNoOpEmailService: development (profile == dev) — logs only, never sends
+ * BrevoEmailService is the sole implementation, active in ALL profiles.
+ * In dev without BREVO_API_KEY, isConfigured() returns false and sends are skipped with a warning.
  */
 public interface EmailSender {
 

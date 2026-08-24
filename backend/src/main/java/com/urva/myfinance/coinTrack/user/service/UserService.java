@@ -27,9 +27,12 @@ import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.model.AuthProvider;
 import com.urva.myfinance.coinTrack.user.model.PendingRegistration;
 import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.model.UserDeletionAudit;
 import com.urva.myfinance.coinTrack.common.util.HashUtil;
 import com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository;
+import com.urva.myfinance.coinTrack.user.repository.BackupCodeRepository;
 import com.urva.myfinance.coinTrack.user.repository.PendingRegistrationRepository;
+import com.urva.myfinance.coinTrack.user.repository.UserDeletionAuditRepository;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
 /**
@@ -47,6 +50,8 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PendingRegistrationRepository pendingRegistrationRepository;
+    private final BackupCodeRepository backupCodeRepository;
+    private final UserDeletionAuditRepository userDeletionAuditRepository;
     private final MongoTemplate mongoTemplate;
     private final PasswordEncoder passwordEncoder;
     private final JWTService jwtService;
@@ -57,6 +62,8 @@ public class UserService {
     @Autowired
     public UserService(UserRepository userRepository,
                        PendingRegistrationRepository pendingRegistrationRepository,
+                       BackupCodeRepository backupCodeRepository,
+                       UserDeletionAuditRepository userDeletionAuditRepository,
                        MongoTemplate mongoTemplate,
                        PasswordEncoder passwordEncoder,
                        JWTService jwtService,
@@ -65,6 +72,8 @@ public class UserService {
                        org.springframework.context.ApplicationEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.pendingRegistrationRepository = pendingRegistrationRepository;
+        this.backupCodeRepository = backupCodeRepository;
+        this.userDeletionAuditRepository = userDeletionAuditRepository;
         this.mongoTemplate = mongoTemplate;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -326,23 +335,66 @@ public class UserService {
         jwtService.revokeAllRefreshTokens(userId);
     }
 
-    @SuppressWarnings("null")
-    public boolean deleteUser(String id) {
-        if (userRepository.existsById(id)) {
-            User user = userRepository.findById(id).orElse(null);
-            userRepository.deleteById(id);
-            // Revoke all active refresh tokens on account deletion
-            jwtService.revokeAllRefreshTokens(id);
-            if (user != null) {
-                // Purge any stale pending-registration docs tied to this account
-                pendingRegistrationRepository.deleteByUsername(user.getUsername());
-                // Fan out cascade cleanup — each module listens and deletes its own data
-                eventPublisher.publishEvent(
-                        new com.urva.myfinance.coinTrack.common.event.UserDeletedEvent(id, user.getUsername()));
-            }
-            return true;
+    /**
+     * Industry-standard self-service account deletion.
+     *
+     * 1. Re-authentication — accounts with a local password MUST confirm it;
+     *    a stolen session alone can never destroy an account. Google-only
+     *    accounts (no local secret) are exempt since there is nothing to match.
+     * 2. Audit snapshot written BEFORE any destruction — the only surviving
+     *    identity evidence, kept for compliance/fraud/dispute resolution.
+     * 3. Own-module leftovers purged (backup codes, pending registrations).
+     * 4. User document removed, all refresh tokens revoked.
+     * 5. UserDeletedEvent fans out — every owning module deletes its own
+     *    user-keyed data; the email module listener purges magic-link tokens.
+     */
+    public boolean deleteAccount(String userId, String rawPassword, String ipAddress, String userAgent) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return false;
         }
-        return false;
+
+        boolean hasLocalPassword = user.getPassword() != null && !user.getPassword().isBlank();
+        if (hasLocalPassword
+                && (rawPassword == null || rawPassword.isBlank()
+                        || !passwordEncoder.matches(rawPassword, user.getPassword()))) {
+            throw new IllegalArgumentException("Password confirmation failed — account not deleted");
+        }
+
+        // Immutable audit trail BEFORE anything is destroyed
+        UserDeletionAudit audit = UserDeletionAudit.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .name(user.getName())
+                .phoneNumber(user.getPhoneNumber())
+                .authProvider(user.getAuthProvider() != null ? user.getAuthProvider().name() : null)
+                .emailVerified(user.isEmailVerified())
+                .totpEnabled(user.isTotpEnabled())
+                .accountCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null)
+                .deletionRequestedAt(java.time.Instant.now())
+                .deletedByUserId(userId)
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .reason("USER_REQUESTED")
+                .status("IN_PROGRESS")
+                .build();
+        userDeletionAuditRepository.save(audit);
+
+        // Own-module leftovers with no dedicated listener
+        backupCodeRepository.deleteByUserId(userId);
+        pendingRegistrationRepository.deleteByUsername(user.getUsername());
+
+        userRepository.deleteById(userId);
+        jwtService.revokeAllRefreshTokens(userId);
+
+        eventPublisher.publishEvent(
+                new com.urva.myfinance.coinTrack.common.event.UserDeletedEvent(userId, user.getUsername()));
+
+        audit.setStatus("COMPLETED");
+        audit.setCompletedAt(java.time.Instant.now());
+        userDeletionAuditRepository.save(audit);
+        return true;
     }
 
     // ── Token helpers (kept for backward compat) ────────────────────

@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.email.controller;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.MediaType;
@@ -21,23 +22,20 @@ import lombok.RequiredArgsConstructor;
  *
  * DEV-ONLY: This controller is only available in dev profile.
  *
- * Usage:
+ * Usage Examples:
  * GET /admin/emails/preview?template=welcome&username=TestUser
- * GET
- * /admin/emails/preview?template=verify-email&username=TestUser&magicLink=https://example.com
- * GET
- * /admin/emails/preview?template=reset-password&username=TestUser&magicLink=https://example.com
- * GET
- * /admin/emails/preview?template=change-email&username=TestUser&oldEmail=old@email.com&newEmail=new@email.com
- * GET
- * /admin/emails/preview?template=security-alert&username=TestUser&event=Password+Changed
+ * GET /admin/emails/preview?template=verify-email&username=TestUser&magicLink=https://example.com
+ * GET /admin/emails/preview?template=reset-password&username=TestUser&magicLink=https://example.com
+ * GET /admin/emails/preview?template=change-email&oldEmail=old@example.com&newEmail=new@example.com
+ * GET /admin/emails/preview?template=2fa-recovery&username=TestUser
+ * GET /admin/emails/preview?template=security-alert&username=TestUser&event=Password+Changed
+ * GET /admin/emails/preview?template=contact-form
  */
 @RestController
 @org.springframework.context.annotation.Profile("dev")
 @RequestMapping("/admin/emails")
 @RequiredArgsConstructor
 @Tag(name = "Admin Email Preview", description = "Preview email templates (dev only)")
-// Note: Endpoint is secured by SecurityConfig, accessible for development
 public class AdminEmailPreviewController {
 
     private final EmailService emailService;
@@ -102,19 +100,61 @@ public class AdminEmailPreviewController {
     }
 
     /**
-     * List available templates.
+     * List available templates with sample preview URLs.
      */
-    @Operation(summary = "List available email templates")
+    @Operation(summary = "List available email templates with sample preview URLs")
     @GetMapping("/templates")
     public ResponseEntity<?> listTemplates() {
+        List<Map<String, String>> templateDetails = List.of(
+                Map.of(
+                        "name", "welcome",
+                        "description", "Welcome email for newly registered users",
+                        "previewUrl", "/admin/emails/preview?template=welcome&username=TestUser"
+                ),
+                Map.of(
+                        "name", "verify-email",
+                        "description", "Email address verification link",
+                        "previewUrl", "/admin/emails/preview?template=verify-email&username=TestUser"
+                ),
+                Map.of(
+                        "name", "reset-password",
+                        "description", "Password reset link",
+                        "previewUrl", "/admin/emails/preview?template=reset-password&username=TestUser"
+                ),
+                Map.of(
+                        "name", "change-email",
+                        "description", "Email change confirmation",
+                        "previewUrl", "/admin/emails/preview?template=change-email&oldEmail=old@example.com&newEmail=new@example.com"
+                ),
+                Map.of(
+                        "name", "2fa-recovery",
+                        "description", "Two-factor authentication email recovery link",
+                        "previewUrl", "/admin/emails/preview?template=2fa-recovery"
+                ),
+                Map.of(
+                        "name", "security-alert",
+                        "description", "Security notification alert",
+                        "previewUrl", "/admin/emails/preview?template=security-alert&event=Password+Changed"
+                ),
+                Map.of(
+                        "name", "contact-form",
+                        "description", "Support contact form notification",
+                        "previewUrl", "/admin/emails/preview?template=contact-form"
+                )
+        );
+
         return ResponseEntity.ok(Map.of(
+                "usage", "/admin/emails/preview?template=<name>",
                 "templates", new String[] {
                         "welcome",
                         "verify-email",
                         "reset-password",
                         "change-email",
-                        "security-alert"
+                        "2fa-recovery",
+                        "security-alert",
+                        "contact-form"
                 },
-                "usage", "/admin/emails/preview?template=<name>&username=<user>"));
+                "previews", templateDetails
+        ));
     }
 }

@@ -158,75 +158,77 @@ class AuthControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
-    @Test
-    @DisplayName("verifyToken: missing Authorization header → 401")
-    void verifyToken_missingHeader_returns401() {
-        when(httpRequest.getHeader("Authorization")).thenReturn(null);
-
-        ResponseEntity<?> response = authController.verifyToken(httpRequest);
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-    }
-
-    @Test
-    @DisplayName("verifyToken: invalid token → 401")
-    void verifyToken_invalidToken_returns401() {
-        when(httpRequest.getHeader("Authorization")).thenReturn("Bearer invalid-token");
-        when(userService.isTokenValid("invalid-token")).thenReturn(false);
-
-        ResponseEntity<?> response = authController.verifyToken(httpRequest);
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-    }
-
-    @Test
-    @DisplayName("verifyToken: valid token → 200 with user")
-    void verifyToken_validToken_returns200() {
-        when(httpRequest.getHeader("Authorization")).thenReturn("Bearer valid-token");
-        when(userService.isTokenValid("valid-token")).thenReturn(true);
-        when(userService.getUserByToken("valid-token")).thenReturn(sampleUser);
-
-        ResponseEntity<?> response = authController.verifyToken(httpRequest);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-
-    @Test
-    @DisplayName("verifyToken: user not found → 404")
-    void verifyToken_userNotFound_returns404() {
-        when(httpRequest.getHeader("Authorization")).thenReturn("Bearer valid-token");
-        when(userService.isTokenValid("valid-token")).thenReturn(true);
-        when(userService.getUserByToken("valid-token")).thenReturn(null);
-
-        ResponseEntity<?> response = authController.verifyToken(httpRequest);
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-    }
-
-    @Test
-    @DisplayName("checkUsernameAvailability: available → returns true")
-    void checkUsernameAvailability_available() {
-        when(userService.isUsernameAvailable("freeuser")).thenReturn(true);
-
-        ResponseEntity<?> response = authController.checkUsernameAvailability("freeuser");
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        @SuppressWarnings("unchecked")
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertTrue((Boolean) body.get("available"));
-    }
-
-    @Test
-    @DisplayName("checkUsernameAvailability: taken → returns false")
-    void checkUsernameAvailability_taken() {
-        when(userService.isUsernameAvailable("taken")).thenReturn(false);
-
-        ResponseEntity<?> response = authController.checkUsernameAvailability("taken");
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertFalse((Boolean) body.get("available"));
-    }
+    // ── Disabled 2026-08-24 with the AuthController endpoints — uncomment when restoring. ──
+    // @Test
+    // @DisplayName("verifyToken: missing Authorization header → 401")
+    // void verifyToken_missingHeader_returns401() {
+    //     when(httpRequest.getHeader("Authorization")).thenReturn(null);
+    //
+    //     ResponseEntity<?> response = authController.verifyToken(httpRequest);
+    //
+    //     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    // }
+    //
+    // @Test
+    // @DisplayName("verifyToken: invalid token → 401")
+    // void verifyToken_invalidToken_returns401() {
+    //     when(httpRequest.getHeader("Authorization")).thenReturn("Bearer invalid-token");
+    //     when(userService.isTokenValid("invalid-token")).thenReturn(false);
+    //
+    //     ResponseEntity<?> response = authController.verifyToken(httpRequest);
+    //
+    //     assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    // }
+    //
+    // @Test
+    // @DisplayName("verifyToken: valid token → 200 with user")
+    // void verifyToken_validToken_returns200() {
+    //     when(httpRequest.getHeader("Authorization")).thenReturn("Bearer valid-token");
+    //     when(userService.isTokenValid("valid-token")).thenReturn(true);
+    //     when(userService.getUserByToken("valid-token")).thenReturn(sampleUser);
+    //
+    //     ResponseEntity<?> response = authController.verifyToken(httpRequest);
+    //
+    //     assertEquals(HttpStatus.OK, response.getStatusCode());
+    // }
+    //
+    // @Test
+    // @DisplayName("verifyToken: user not found → 404")
+    // void verifyToken_userNotFound_returns404() {
+    //     when(httpRequest.getHeader("Authorization")).thenReturn("Bearer valid-token");
+    //     when(userService.isTokenValid("valid-token")).thenReturn(true);
+    //     when(userService.getUserByToken("valid-token")).thenReturn(null);
+    //
+    //     ResponseEntity<?> response = authController.verifyToken(httpRequest);
+    //
+    //     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    // }
+    //
+    // @Test
+    // @DisplayName("checkUsernameAvailability: available → returns true")
+    // void checkUsernameAvailability_available() {
+    //     when(userService.isUsernameAvailable("freeuser")).thenReturn(true);
+    //
+    //     ResponseEntity<?> response = authController.checkUsernameAvailability("freeuser");
+    //
+    //     assertEquals(HttpStatus.OK, response.getStatusCode());
+    //     @SuppressWarnings("unchecked")
+    //     Map<String, Object> body = (Map<String, Object>) response.getBody();
+    //     assertTrue((Boolean) body.get("available"));
+    // }
+    //
+    // @Test
+    // @DisplayName("checkUsernameAvailability: taken → returns false")
+    // void checkUsernameAvailability_taken() {
+    //     when(userService.isUsernameAvailable("taken")).thenReturn(false);
+    //
+    //     ResponseEntity<?> response = authController.checkUsernameAvailability("taken");
+    //
+    //     @SuppressWarnings("unchecked")
+    //     Map<String, Object> body = (Map<String, Object>) response.getBody();
+    //     assertFalse((Boolean) body.get("available"));
+    // }
+    // ── End disabled tests ─────────────────────────────────────────────────────────────────
 
     @Test
     @DisplayName("refresh: missing refreshToken → 400")

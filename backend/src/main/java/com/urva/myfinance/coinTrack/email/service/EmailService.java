@@ -60,7 +60,7 @@ public class EmailService {
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     // ============================================================================
-    // Email sender — BrevoEmailService (prod) or DevNoOpEmailService (dev)
+    // Email sender — BrevoEmailService is the sole EmailSender implementation (all profiles)
     // ============================================================================
     private final EmailSender brevoEmailService;
     private final TemplateEngine templateEngine;
@@ -206,6 +206,33 @@ public class EmailService {
      */
     @Async
     public void sendSecurityAlert(User user, String event, Map<String, String> metadata) {
+        doSendSecurityAlert(user, event, metadata);
+    }
+
+    /**
+     * Convenience method for sending security alert without metadata.
+     */
+    @Async
+    public void sendSecurityAlert(User user, String event) {
+        doSendSecurityAlert(user, event, null);
+    }
+
+    /**
+     * Send security alert with IP address.
+     */
+    @Async
+    public void sendSecurityAlertWithIP(User user, String event, String ipAddress) {
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("IP Address", ipAddress);
+        doSendSecurityAlert(user, event, metadata);
+    }
+
+    /**
+     * Internal worker shared by all security-alert overloads. Kept private and
+     * non-@Async so every public entry point is independently proxied — no
+     * {@code this.} call can bypass the async executor.
+     */
+    private void doSendSecurityAlert(User user, String event, Map<String, String> metadata) {
         Context context = new Context();
         context.setVariable("username", user.getUsername());
         context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
@@ -220,24 +247,6 @@ public class EmailService {
                 "Security Alert: " + event + " - CoinTrack",
                 "email/security-alert",
                 context);
-    }
-
-    /**
-     * Convenience method for sending security alert without metadata.
-     */
-    @Async
-    public void sendSecurityAlert(User user, String event) {
-        sendSecurityAlert(user, event, null);
-    }
-
-    /**
-     * Send security alert with IP address.
-     */
-    @Async
-    public void sendSecurityAlertWithIP(User user, String event, String ipAddress) {
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("IP Address", ipAddress);
-        sendSecurityAlert(user, event, metadata);
     }
 
     /**

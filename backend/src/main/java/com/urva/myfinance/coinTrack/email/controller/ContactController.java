@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,9 +27,9 @@ public class ContactController {
 
     @Operation(summary = "Submit a public contact form message")
     @PostMapping("/contact")
-    public ResponseEntity<String> sendContactMessage(@Valid @RequestBody ContactFormRequest request) {
+    public ResponseEntity<ApiResponse<Void>> sendContactMessage(@Valid @RequestBody ContactFormRequest request) {
         emailService.sendContactFormEmail(request.getName(), request.getEmail(), request.getMessage());
-        return ResponseEntity.ok("Message sent successfully");
+        return ResponseEntity.ok(ApiResponse.success("Message sent successfully"));
     }
 
     @Data

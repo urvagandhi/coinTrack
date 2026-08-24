@@ -2,7 +2,7 @@
 
 > **Domain**: Authentication, authorization, and access control
 > **Responsibility**: Gatekeeper ensuring identity verification (JWT) and protecting resources
-> **Version**: 3.1.0
+> **Version**: 3.1.1
 > **Last Updated**: 2026-08-23
 
 ---
@@ -195,12 +195,14 @@ security/
         "/api/auth/check-username/*", "/api/auth/mfa/login", "/api/auth/mfa/email-recovery",
         "/api/auth/mfa/setup", "/api/auth/mfa/verify", "/api/auth/mfa/register/setup",
         "/api/auth/mfa/register/verify", "/api/auth/refresh", "/api/auth/oauth2/**",
-        "/api/auth/email/verify", "/api/auth/email/change/verify",
+        // Note: change-verification rides /api/auth/email/verify?type=change;
+        // the old /api/auth/email/change/verify route never existed server-side
+        "/api/auth/email/verify",
         "/api/auth/forgot-password", "/api/auth/forgot-password/verify", "/api/auth/reset-password"
     ).permitAll()
 
-    // Contact & static resources
-    .requestMatchers("/api/contact", "/", "/index.html", "/favicon.ico", "/static/**", "/public/**", "/api/public/**", "/logo/**").permitAll()
+    // Static resources (contact lives under /api/public/contact, covered below)
+    .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**", "/public/**", "/api/public/**", "/logo/**").permitAll()
 
     // OpenAPI / Swagger UI
     .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**").permitAll()
@@ -239,8 +241,7 @@ security/
 | `/api/auth/login`, `/register`, `/verify-token`, `/check-username/*` | Core authentication & registration |
 | `/api/auth/mfa/login`, `/login/recovery`, `/2fa/*` | MFA / MFA authentication flows |
 | `/api/auth/refresh`, `/api/auth/oauth2/**` | Refresh token rotation & Google OAuth2 |
-| `/api/auth/email/**`, `/forgot-password*`, `/reset-password` | Email verification & password resets |
-| `/api/contact` | Public contact submission |
+| `/api/auth/email/**`, `/forgot-password*`, `/reset-password` | Email verification & password resets (contact form lives under `/api/public/contact`) |
 | `/api/brokers/{BROKER}/callback|connect|login-url`, `/zerodha/callback` | OAuth redirect callbacks & login URLs |
 | `/swagger-ui/**`, `/v3/api-docs/**` | OpenAPI documentation |
 | `/admin/emails/**`, `/api/mutual-fund/admin/**` | Dev-only admin previews (guarded by `@Profile("dev")`) |
@@ -678,6 +679,7 @@ openssl rand -hex 32
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3.1.1 | 2026-08-23 | Removed dead whitelist entries: `/api/contact` (no controller maps it — real route is `/api/public/contact`, already covered by `/api/public/**`) and `/api/auth/email/change/verify` (route never existed server-side; change-verification rides `/api/auth/email/verify?type=change`) |
 | 3.1.0 | 2026-08-23 | Comprehensive rewrite & code audit: added Mermaid & ASCII diagrams, `GoogleOAuthService`, `@Profile("dev")` guards, dynamic temp tokens, direct MongoDB invalidation in `JWTService` for temp & access tokens, and restored full appendices & checklists. |
 | 2.0.0 | 2025-12-17 | Updated stateless JWT architecture documentation |
 

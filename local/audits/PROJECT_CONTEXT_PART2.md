@@ -2,7 +2,7 @@
 
 > Produced by the audit defined in `rules/02-per-module-deep-dive-and-synthesis.md`.
 > One synthesis card per module, appended in processing order. Build on PROJECT_CONTEXT_PART1.md.
-> Generated: 2026-08-23 · Modules completed so far: 3/13 (common, security, user)
+> Generated: 2026-08-23 · Modules completed so far: 4/13 (common, security, user, email)
 > Convention: every synthesis card contains an **End-to-end (E2E) flow** section — per endpoint/journey: what the UI collects from the user → client-side processing → exact HTTP call (method/path/body/headers) → what the backend receives (DTO/validation) → backend processing steps → response shape → how the frontend consumes/stores it.
 
 ---
@@ -135,7 +135,7 @@ Files (9): `config/{AsyncConfig, SecurityConfig}` · `filter/JwtFilter` · `mode
 | POST`/api/auth/oauth2/google`   | `authAPI.google({code, redirectUri})` — contract matches GoogleOAuthService (redirectUri must equal backend-configured)                                                                                                                                        |
 | Temp tokens (purpose claim)       | sent in request BODY to MFA endpoints: loginTotp/loginRecovery/registerSetup/registerVerify                                                                                                                                                                       |
 | Bearer temp-token pattern         | `passwordAPI.reset(tempToken)` sends temp token AS Authorization header to public `/api/auth/reset-password` — works only because route is permitAll'd AND JwtFilter refuses to authenticate purpose-bearing tokens; server parses it manually (user module) |
-| GET`/api/auth/verify-token`     | **NO frontend caller** (backend-only); reset pages use `passwordAPI.forgotVerify` instead                                                                                                                                                                 |
+| GET`/api/auth/verify-token`     | **DISABLED 2026-08-24** — redundant with JWT filter + `/users/me`; endpoint, whitelist entry, and tests commented out (code retained per owner)                                                                                                                              |
 | `/api/auth/mfa/reset(+/verify)` | totpAPI.initiateReset/verifyReset — correctly hit AUTHENTICATED routes (logged-in reset flow)                                                                                                                                                                    |
 | Client-side guard                 | `AuthGuard.jsx` PUBLIC_ROUTES mirror permitAll loosely (/, login, register, forgot-password, reset-password, verify-email, setup-2fa, reset-2fa, calculators/*); wraps `(main)/layout.js`                                                                     |
 
@@ -199,7 +199,7 @@ Remaining residue (cosmetic, non-blocking): §4.2 summary-table omissions (`test
 
 ## Synthesis Card — `user`
 
-Files: `controller/{AuthController, TotpController, UserController}` (NO LoginController — Part 1's claim was stale) · `dto/` 7 live files (3 dead DTOs deleted in round 6) · `model/` 8 files · `repository/` 4 files · `service/{UserService, UserAuthenticationService, TotpService}` — UserProfileService DELETED in fix round (see Resolution status). **No config/.** 21 endpoints total.
+Files: `controller/{AuthController, TotpController, UserController}` (NO LoginController — Part 1's claim was stale) · `dto/` 8 live files (3 dead DTOs deleted in round 6; DeleteAccountRequest added round 10) · `model/` 9 files (UserDeletionAudit added round 10) · `repository/` 5 files (BackupCodeRepository was silently missing from this card's old count of 4; UserDeletionAuditRepository added round 10) · `service/{UserService, UserAuthenticationService, TotpService}` — UserProfileService DELETED in fix round (see Resolution status). **No config/.** 19 live endpoints total (verify-token + check-username disabled/commented round 10 — code retained, not registered).
 
 ### Owns collections
 
@@ -210,7 +210,7 @@ Files: `controller/{AuthController, TotpController, UserController}` (NO LoginCo
 
 ### Real dependency edges (from actual imports)
 
-**Outbound:** UserService → security.JWTService + **security.InvalidatedTokenRepository** (constructor-injected since fix round: blacklist check in isTokenValid, revokeAllRefreshTokens in changePassword/deleteUser), notes.NoteService (`createDefaultNotesIfNoneExist`), email.EmailService + EmailTokenService + EmailConfigProperties (all optional-injected); UserAuthenticationService → security.JWTService + GoogleOAuthService, Spring AuthenticationManager (→ security CustomerUserDetailService), notes.NoteService; TotpService → common EncryptionUtil static overloads with separate `${totp.encryption-key}`; AuthController → security.JWTService + **security.InvalidatedTokenRepository** (writes blacklist rows directly from user module); TotpController/UserController → email.EmailTokenService + common.NotificationService (both optional).
+**Outbound:** UserService → security.JWTService + **security.InvalidatedTokenRepository** (constructor-injected since fix round: blacklist check in isTokenValid, revokeAllRefreshTokens in changePassword/deleteAccount), notes.NoteService (`createDefaultNotesIfNoneExist`), email.EmailService + EmailTokenService + EmailConfigProperties (all optional-injected); UserAuthenticationService → security.JWTService + GoogleOAuthService, Spring AuthenticationManager (→ security CustomerUserDetailService), notes.NoteService; TotpService → common EncryptionUtil static overloads with separate `${totp.encryption-key}`; AuthController → security.JWTService + **security.InvalidatedTokenRepository** (writes blacklist rows directly from user module); TotpController/UserController → email.EmailTokenService + common.NotificationService (both optional).
 **Inbound:** `email/controller/TwoFactorRecoveryController.java:148` calls `TotpService.disable2FA(user)` (email→user edge, defer detail to email pass; method name unchanged despite route rename); common.UserLookupUtil + NotificationServiceImpl reference user.model.User/UserRepository; security module depends on user model/repos (per security card).
 
 ### Endpoint-to-frontend map (21 endpoints)
@@ -221,14 +221,14 @@ Files: `controller/{AuthController, TotpController, UserController}` (NO LoginCo
 | POST`/api/auth/register`                             | AuthContext.register ←`(access)/register/page.jsx`                                                                                            |
 | POST`/api/auth/refresh`                              | api.js interceptor single-flight + AuthContext:86                                                                                                |
 | POST`/api/auth/logout`                               | AuthContext.logout:309 (navbar/menu)                                                                                                             |
-| GET`/api/auth/check-username/{username}`             | **unused in frontend** (moved from old /api/users/check path; UI never checks availability live)                                           |
-| GET`/api/auth/verify-token`                          | **unused in frontend** (matches security card)                                                                                             |
+| GET`/api/auth/check-username/{username}`             | **DISABLED 2026-08-24** (zero UI callers ever; endpoint + SecurityConfig entry commented out, code retained per owner)                                      |
+| GET`/api/auth/verify-token`                          | **DISABLED 2026-08-24** (redundant — JWT filter validates every request; `/users/me` returns same profile with same Bearer; code commented, not deleted) |
 | POST`/api/auth/oauth2/google`                        | AuthContext.googleLogin ← login page OAuth callback                                                                                             |
 | POST`/api/auth/oauth2/complete-profile`              | `(access)/complete-profile/page.jsx`                                                                                                           |
 | GET`/api/users/me`                                   | userAPI.getProfile ←`(main)/profile/page.jsx` + `(main)/epf/page.jsx`                                                                       |
 | PUT`/api/users/me`                                   | userAPI.updateProfile ← profile page                                                                                                            |
 | PUT`/api/users/me/password`                          | userAPI.changePassword ← profile page (body keys`{password, oldPassword}` match controller Map)                                               |
-| DELETE`/api/users/me`                                | **unused in frontend** — no deleteAccount anywhere in UI                                                                                  |
+| DELETE`/api/users/me`                                | **WIRED 2026-08-24** — `userAPI.deleteAccount` (api.js) ← profile-page Danger Zone (password re-auth panel, Loader2, hard redirect on success; Google-only accounts leave password blank)                                  |
 | POST`/api/auth/mfa/setup` + `/api/auth/mfa/verify`   | AuthContext.setupTotp/verifyTotpSetup ← `TotpSetup.jsx` default fallbacks — existing-user forced-setup mode of `(access)/setup-2fa/page.jsx` (login with MFA disabled/reset; see Open question 2) |
 | POST`/api/auth/mfa/login`                            | AuthContext.verifyTotpLogin ← login page (api.js key still`loginTotp`)                                                                        |
 | POST`/api/auth/mfa/login-recovery`                   | AuthContext.verifyRecoveryLogin ← login page (api.js key`loginRecovery`) — backup-code LOGIN completion (user module)                        |
@@ -304,7 +304,7 @@ Frontend transformations: login response mapped firstName+lastName→name, mobil
 - **GET `/api/users/me`**: profile page `useQuery(['profile'])` → backend resolves `authentication.getName()` → findByUsername → `UserProfileResponse.from(user)` (DTO-only) → ApiResponse(profile). epf page also consumes it. **DB:** read-only.
 - **PUT `/api/users/me`**: edit form collects name/email/phone/bio/location; client validates email regex, strips `+91` prefix from mobile; PUT body = validated `UpdateProfileRequest` record (7 editable fields — raw-entity binding removed in round 7) → controller maps DTO → transient User → service whitelist + per-field uniqueness (username/email/lowercased email/normalized phone), saves, returns `UserProfileResponse` → queryClient.setQueryData + success toast; errors surfaced as toasts. **DB:** UPDATE `users` (whitelisted fields only).
 - **PUT `/api/users/me/password`**: modal collects currentPassword/newPassword/confirmPassword (client checks match + ≥8) → `userAPI.changePassword` maps to `{password: newPassword, oldPassword}` → backend rejects missing-old/<8/same-as-old → service BCrypt-matches old, encodes new → **`jwtService.revokeAllRefreshTokens(userId)` (fix round — all refresh sessions killed)** → sends security-alert email with IP + invalidates all email magic-link tokens → toast. Access tokens still valid ≤30 min by design. **DB:** UPDATE `users.password` (BCrypt) + bulk UPDATE `refresh_tokens.revoked=true` for the user.
-- **DELETE `/api/users/me`**: no UI anywhere. Backend deletes the user doc, revokes all refresh tokens, purges stale pending registrations, and publishes `UserDeletedEvent` → nine module listeners cascade-clean their own user-keyed collections (round 7). **DB:** DELETE `users` doc + bulk revoke `refresh_tokens` + cascade deletes across notes/broker/portfolio/MF/ppf/epf/fd/goldsilver/invalidated_tokens.
+- **DELETE `/api/users/me`**: NOW WIRED (profile Danger Zone). Backend `deleteAccount(userId, rawPassword, ip, userAgent)`: password re-authentication → immutable `UserDeletionAudit` snapshot (`user_deletion_audits`, IN_PROGRESS→COMPLETED) written BEFORE destruction → backup codes + pending registrations purged → user doc deleted → all refresh tokens revoked → goodbye security alert → `UserDeletedEvent` → TEN module listeners cascade-clean their own user-keyed collections (email listener added 2026-08-24 purging magic-link tokens; was TTL-only before). **DB:** DELETE `users` doc + INSERT `user_deletion_audits` + bulk revoke `refresh_tokens` + cascade deletes across notes/broker/portfolio/MF/ppf/epf/fd/goldsilver/invalidated_tokens/email_tokens.
 
 **FLOW 6 — MFA settings management (authenticated)**
 
@@ -368,3 +368,172 @@ Round 7 (2026-08-23): discrepancies **#7 and #9 closed in code**. #7: new `UserP
 Remaining residue (non-blocking): **ZERO.** The last item (`UserAuthenticationService.isTokenValid` blacklist gap on public MFA routes) was closed in round 8 — all isTokenValid paths now delegate to the blacklist-enforcing JWTService code path.
 Round 8 (2026-08-23): **#11 residual + #12 minor gaps closed in code**. (a) `UserAuthenticationService.isTokenValid` now delegates to `jwtService.validateToken(token, username)` — blacklist enforced on the resolveUser step-3 fallback for public `/api/auth/mfa/setup|verify`; (b) `UserService.isPhoneNumberRegistered(phone)` (null-safe, users OR pending) replaces three scattered checks — registration, Google profile completion (kills the `existsByPhoneNumber(null)` edge), and profile-update uniqueness; `PendingRegistrationRepository.existsByPhoneNumber` added; (c) rotation purge: `BackupCodeRepository.deleteByUserIdAndGeneration` invoked in `verifySetup` so old-generation codes are fully deleted per Part 1's ROTATED contract, with a new test assertion locking it in. Stale tests updated (UAS valid/blacklisted stubs, UserServiceTest taken-phone stub, GoogleTest phone stub). **214/214 tests green across nine affected classes.**
 Round 9 (2026-08-23): **documentation sync** — user README bumped to **v3.2.0** (DTO contract, cascade, phone uniqueness, rotation purge, wired properties, dead-code removal); cascade/listener sections appended to **10 more READMEs** (common: `UserDeletedEvent` reference; notes/broker/portfolio/mutualfund/ppf/epf/fixeddeposit/goldsilver/security: their cleanup listener + new repo methods). Open questions answered: DELETE /me confirmed intentionally backend-only; `/mfa/setup|verify` confirmed LIVE (not orphans — TotpSetup fallback serves existing-user forced-setup after MFA reset; earlier zero-callers finding corrected).
+Round 10 (2026-08-24, owner-directed): **endpoint hygiene + industry-standard deletion** — supersedes round 9's "DELETE /me intentionally backend-only" answer per owner's new direction. (a) DISABLED `GET /api/auth/verify-token` + `GET /api/auth/check-username/{username}` — owner chose comment-out over deletion: endpoints, their two SecurityConfig permitAll entries, and 6 stale controller tests all retained as commented blocks with restore instructions; AuthController README table completed with previously-missing logout & oauth2/complete-profile rows. (b) REWROTE `DELETE /api/users/me`: `UserService.deleteUser(id)` → `deleteAccount(userId, rawPassword, ip, userAgent)` with password re-authentication (IllegalArgumentException → 401; Google-only accounts exempt), NEW `user/model/UserDeletionAudit` + repo (`user_deletion_audits`) written BEFORE destruction with full identity snapshot + IP/UA/reason/status, backup-codes purge (previously leaked on delete!), goodbye `sendSecurityAlertWithIP`, audit IN_PROGRESS→COMPLETED after cascade. (c) NEW `email/listener/EmailUserDataCleanupListener` → `email_tokens` purge on cascade (was TTL-only). (d) Frontend: `endpoints.users.deleteMe` + `userAPI.deleteAccount(password)` (axios DELETE body via `{ data }`) + profile-page Danger Zone following recovery-confirm visual language. Tests: UserServiceTest 5 new deleteAccount cases (+2 new mocks incl. ApplicationEventPublisher), UserControllerTest 4 updated delete cases; **79/79 green** across the three user-module test classes; `mvn compile` EXIT 0. User README → **v3.3.0**.
+
+---
+
+## Synthesis Card — `email`
+
+Files (14): `model/EmailToken` · `repository/EmailTokenRepository` · `service/{EmailSender, BrevoEmailService, EmailTokenService, EmailService}` · `controller/{ForgotPasswordController, EmailVerificationController, EmailChangeController, TwoFactorRecoveryController, ContactController, AdminEmailPreviewController}` · `config/{BrevoConfigProperties, EmailConfigProperties}`. **10 endpoints (9 runtime + 2 dev-preview GETs).** Templates: 7 Thymeleaf files in `resources/templates/email/` (welcome, verify-email, reset-password, change-email, 2fa-recovery, security-alert, contact-form — all present on disk).
+
+### Owns collections
+
+- **`email_tokens`**: `{_id = UUID tokenId (NOT a Mongo ObjectId — the magic-link JWT's jti is the document _id), userId @Indexed, purpose (EMAIL_VERIFY | PASSWORD_RESET | EMAIL_CHANGE_VERIFY | 2FA_RECOVERY), newEmail (EMAIL_CHANGE_VERIFY only), expiresAt (@Indexed expireAfterSeconds=0 → TTL self-clean at 10 min), used=false, ipAddress, userAgent ("Unknown" when no request context), createdAt @CreatedDate}`. Token model = **two-layer credential**: signed JWT (HMAC from `email.magic-link-secret`, claims jti/sub=userId/purpose/exp) whose `jti` MUST also exist in Mongo with `used=false`. Part 1 listed NO collections for email — backend README v3.1's `email_tokens` row was right (D8 confirmed again).
+
+### Real dependency edges (from actual imports)
+
+**Outbound:** every controller/service → user.model.User + UserRepository; TwoFactorRecoveryController.java:148 → user TotpService.disable2FA (the known email→user edge); ForgotPasswordController + TwoFactorRecoveryController → common UserLookupUtil.findByIdentifier; EmailTokenService → common RequestUtils (IP/UA extraction, null-safe "Unknown"); EmailConfigProperties → common UrlResolverUtil.resolveUrl for logo/verify/reset/change/recovery URL builders.
+**Inbound (who calls email):** user.UserService.sendRegistrationEmails (sendWelcomeEmail + createToken("EMAIL_VERIFY") + sendEmailVerification — LOCAL users only, skipped for Google; welcome FIRST, verification SECOND per never-combine rule) · user.UserController.java:161 + user.TotpController.java:268 → EmailTokenService.invalidateAllForUser (password change / MFA reset+disable kill outstanding magic links) · common.NotificationServiceImpl → EmailService.sendSecurityAlert/sendSecurityAlertWithIP/sendWelcomeEmail (the common→email delegate). Part 1's caller list ("AuthController, ProfileService, TwoFactorService") is stale on all three names.
+
+### Endpoint-to-frontend map
+
+| Endpoint | Frontend caller |
+| --- | --- |
+| POST`/api/auth/forgot-password` {identifier} | passwordAPI.forgot ←`(access)/forgot-password/page.jsx`:35 (4xx still shown as "submitted" — mirrors anti-enumeration) |
+| POST`/api/auth/forgot-password/verify` {token} | passwordAPI.forgotVerify ←`(access)/reset-password/page.jsx`:47 (?token= URL param) → stores returned tempToken |
+| POST`/api/auth/reset-password` Bearer tempJWT + {newPassword} | passwordAPI.reset(tempToken,newPassword) — temp token sent AS Authorization header ← reset-password page:73 |
+| POST`/api/auth/email/verify` {token,type?} | emailAPI.verify(token,type) ←`(access)/verify-email/page.jsx`:36 (?token&type from magic link; handles alreadyVerified branch) |
+| POST`/api/auth/email/resend` | **WIRED (was dormant)**: backend fully functional (EmailVerificationController ~L157, covered by EmailVerificationControllerTest's 13 @Test cases); `emailAPI.resend` (api.js:319 + :658, noRetry). UI callers since 2026-08-23: profile page "Resend Verification Email" button (`!isEmailVerified`, dashed-border callout row) + verify-email error state (session-aware: live token → authenticated resend; else login nudge) | |
+| POST`/api/auth/email/change` {newEmail} | emailAPI.change ←`(main)/profile/page.jsx`:146 — client trims+lowercases newEmail before sending |
+| POST`/api/auth/mfa/email-recovery` {identifier} | twofaAPI.requestRecovery(user.email) ← profile page:506 (logged-in lost-device flow sends own email) |
+| POST`/api/auth/mfa/email-recovery/verify` {token} | twofaAPI.verifyRecovery(token) ←`(access)/reset-2fa/page.jsx`:33 |
+| POST`/api/public/contact` {name,email,message} | contactAPI.sendMessage ←`components/modals/ContactModal.jsx`:51 (react-hook-form; opened via ModalManager) |
+| GET`/admin/emails/preview` · GET`/admin/emails/templates` | none — dev-browser template tooling only |
+
+Shared frontend infra: shared axios instance + unwrapResponse + noRetry flag; toast notifications; AuthGuard PUBLIC_ROUTES cover forgot-password/reset-password/verify-email/reset-2fa. Frontend transformation of note: profile page lowercases newEmail before POST — and since fix round 4 the SERVER also normalizes `trim().toLowerCase()` (belt-and-braces parity with registration/users unique index).
+
+### End-to-end flows — UI → client → HTTP → backend receive → backend process → response → frontend consume → Mongo writes
+
+**FLOW A — Forgot password → verify → reset (3 calls, all public)**
+
+1. **Request reset link**
+   - **UI collects**: single identifier field (email / username / mobile) on `(access)/forgot-password/page.jsx`; submit → loading state.
+   - **Client processing**: none beyond trim — identifier sent verbatim (`passwordAPI.forgot`, api.js).
+   - **HTTP**: `POST /api/auth/forgot-password` JSON `{identifier}`, no Authorization header, permitAll'd.
+   - **Backend receives**: `Map<String,String>` body; blank identifier → 400 `ApiResponse.error`.
+   - **Backend processing**: `UserLookupUtil.findByIdentifier` (email → username → mobile). Found → `emailTokenService.createToken(user, PASSWORD_RESET)` capturing IP+UA → async `sendPasswordResetLink` (link = `${baseUrl}/reset-password?token=<JWT>`). Unknown → log-only branch. BOTH paths fall through to the identical response (anti-enumeration).
+   - **Response 200**: `{success:true, data:{message:"If an account exists with this identifier, you will receive a password reset link"}}`.
+   - **Frontend consume**: `unwrapResponse` → toast the generic message regardless of outcome (even surfaced 4xx render as "submitted"); page switches to check-your-inbox state. tempToken NOT involved yet.
+   - **Mongo writes**: found-case only → INSERT `email_tokens {_id:UUID(jti), userId, purpose:PASSWORD_RESET, expiresAt(TTL), used:false, ipAddress, userAgent}`.
+2. **Verify token (auto on page load)**
+   - **UI collects**: nothing typed — reset-password page reads `?token=` URL param on mount and auto-submits ("verifying…" state).
+   - **Client processing**: extracts query param; calls `passwordAPI.forgotVerify(token)`.
+   - **HTTP**: `POST /api/auth/forgot-password/verify` JSON `{token}`.
+   - **Backend receives**: Map body; blank token → 400.
+   - **Backend processing**: `validateToken(token, PASSWORD_RESET)` — JWT signature (magic-link secret) → purpose claim → `findByIdAndUsedFalse` → DB purpose re-check → expiry double-check → load User → `markUsed` → mint **PASSWORD_RESET_TEMP JWT** (5 min, same secret — third token family, invisible to JwtFilter).
+   - **Response 200**: `{data:{verified:true, tempToken, message}}`; invalid/expired/used → 400 with reason.
+   - **Frontend consume**: page stores tempToken in React state ONLY (never localStorage); flips form into "choose new password" mode. 400 → dead-token screen with re-request link.
+   - **Mongo writes**: UPDATE `email_tokens.used=true`.
+3. **Reset password**
+   - **UI collects**: newPassword + confirm (client checks MATCH ONLY — strength is enforced server-side).
+   - **Client processing**: `passwordAPI.reset(tempToken, newPassword)` puts the temp JWT in the **Authorization: Bearer header**, newPassword in body (the app's only bearer-temp-token route).
+   - **HTTP**: `POST /api/auth/reset-password` — permitAll'd; JwtFilter cannot parse this secret so SecurityContext stays empty; controller parses manually.
+   - **Backend receives**: optional Authorization header + `{newPassword}`; blank → 400; policy regex fail (≥8, upper/lower/digit/special `@$!%*?&#`) → 400; missing Bearer → 401.
+   - **Backend processing**: parse temp JWT (signature, purpose==PASSWORD_RESET_TEMP, exp) → load user by `sub` → BCrypt encode + save → **`jwtService.revokeAllRefreshTokens(userId)` (fix round 4 — stolen sessions can no longer outlive a reset)** → `invalidateAllForUser(userId)` → async security alert with client IP.
+   - **Response 200**: `{data:{message:"Password reset successfully. Please login with your new password."}}`; bad temp token → 401/400.
+   - **Frontend consume**: success toast → redirect `/login`.
+   - **Mongo writes**: UPDATE `users.password` · bulk UPDATE `refresh_tokens SET revoked=true WHERE userId` (user-owned collection, written via security's JWTService) · DELETE all user's `email_tokens`.
+
+**FLOW B — Registration verification (+ wired resend)**
+
+- Trigger lives in user module: registration completion → `UserService.sendRegistrationEmails` → async welcome email + SEPARATE EMAIL_VERIFY magic link (`/verify-email?token=`).
+- **UI collects**: nothing — verify-email page reads `?token=` on mount and auto-posts.
+- **Client**: `emailAPI.verify(token, undefined)` → `POST /api/auth/email/verify {token}` (public).
+- **Backend processing**: validateToken(EMAIL_VERIFY) → repeat-click branch returns `{alreadyVerified:true}` gracefully → else set `emailVerified=true, emailVerifiedAt=now` → markUsed.
+- **Response/Frontend**: success screen with login CTA; alreadyVerified renders informational state.
+- **Mongo**: UPDATE `users{emailVerified,emailVerifiedAt}` + UPDATE token `used=true`.
+- **Resend leg (WIRED 2026-08-23)**: `POST /api/auth/email/resend` (Bearer required) re-issues a fresh EMAIL_VERIFY token for an unverified principal or returns alreadyVerified. Backend complete + unit-tested; SDK method existed unused until now — both wire-up points implemented: (1) profile page callout row with "Resend Verification Email" button when `!isEmailVerified` (toast + profile invalidation on alreadyVerified), (2) verify-email error state session-aware resend (`tokenManager.getToken()` live → authenticated resend w/ Loader2 spinner; expired/no token → "Log in to request a new link" nudge to `/login`). INSERT `email_tokens` on every fired resend.
+
+**FLOW C — Email change (authenticated start → public finish)**
+
+1. **Request change**
+   - **UI collects**: new address in profile-page edit flow; page pre-lowercases before sending.
+   - **Client**: `emailAPI.change(newEmail)` with Bearer access token → `POST /api/auth/email/change {newEmail}`.
+   - **Backend receives**: `@AuthenticationPrincipal UserDetails` + body; no principal → 401; blank/format-fail → 400.
+   - **Backend processing**: normalize `trim().toLowerCase()` (fix round 4, mirrors UserService.java:109) → load user → strict-equals current → 400 → `findByEmail` collision → **neutral 200** (no enumeration) → else `pendingEmail` saved + EMAIL_CHANGE_VERIFY token bound to newEmail + async change-email template sent to the NEW inbox (link `/verify-email?token=..&type=change`).
+   - **Response 200**: `{data:{message:"Verification link sent to new email address"}}` (identical shape whether taken or not).
+   - **Frontend consume**: toast; UI keeps displaying old email until swap completes.
+   - **Mongo**: UPDATE `users.pendingEmail` + INSERT `email_tokens(purpose:EMAIL_CHANGE_VERIFY,newEmail)`.
+2. **Confirm via magic link**
+   - Verify-email page sees `type=change` → same endpoint with `{token, type:"change"}` → backend validates against EMAIL_CHANGE_VERIFY purpose instead → swaps `email ← token.newEmail`, sets verified flags, clears pendingEmail → markUsed → **invalidateAllForUser** → async alert to the OLD address.
+   - **Mongo**: UPDATE `users{email, emailVerified, emailVerifiedAt, pendingEmail:null}` + token used + DELETE remaining tokens.
+
+**FLOW D — Lost-MFA recovery (public pair)**
+
+1. **Request recovery**
+   - **UI collects**: logged-in profile "lost device" flow passes own email (`twofaAPI.requestRecovery(user.email)`); login-page variant collects an identifier field.
+   - **HTTP**: `POST /api/auth/mfa/email-recovery {identifier}` (public).
+   - **Backend processing**: lookup → require `totpEnabled && emailVerified`. EVERY non-issuing case — unknown identifier, 2FA-disabled, or exists-but-email-unverified (**neutral 200 since fix round 4; formerly a leaky explicit 400**) — returns the SAME `{message:"If an account exists…has 2FA enabled…"}`. Issue case → 2FA_RECOVERY token + `/reset-2fa?token=` link.
+   - **Frontend consume**: generic toast either way; reset-2fa page only reached via real mail link.
+   - **Mongo**: INSERT `email_tokens(purpose:2FA_RECOVERY)` issue-case only.
+2. **Verify + disable**
+   - **UI**: `(access)/reset-2fa/page.jsx` reads `?token=` → auto-post `twofaAPI.verifyRecovery(token)`.
+   - **Backend processing**: validateToken(2FA_RECOVERY) → markUsed → **`TotpService.disable2FA(user)`** (clears MFA enablement in the users doc) → invalidateAllForUser → alert "2-Factor Authentication Disabled via Recovery".
+   - **Response/Frontend**: `{verified:true, message}` → success screen instructing password-only login; next login hits forced TOTP_SETUP (user card FLOW 2).
+   - **Mongo**: token used + DELETE tokens + UPDATE users MFA block (via TotpService).
+
+**FLOW E — Contact form**
+
+- **UI collects**: name/email/message in ContactModal (react-hook-form mirrors @Valid).
+- **Client**: `contactAPI.sendMessage(data)` → `POST /api/public/contact` (no auth).
+- **Backend receives**: `@Valid ContactFormRequest` (@NotBlank ×3, @Email) → violations → 400.
+- **Backend processing**: async contact-form template → support inbox (`email.support`); no persistence.
+- **Response 200**: `ApiResponse` envelope `{success:true, message:"Message sent successfully", data:null}` (**envelope restored in fix round 3** — was the app's only bare-string endpoint).
+- **Frontend consume**: hardcoded success toast; return value ignored (envelope-safe).
+- **Mongo writes**: NONE.
+
+**FLOW F — Dev-only preview (non-app client)**
+
+- Browser GET `/admin/emails/preview?template=<name>&…` / `/templates` → controller bean exists ONLY under `dev` profile (`@Profile("dev")` → 404 elsewhere) → `previewEmailTemplate` renders Thymeleaf with sample variables → raw `text/html`. **No Mongo involvement.**
+
+**Database persistence summary:** the module writes ONLY `email_tokens` — INSERT per issued link, UPDATE `used=true` on consume, bulk DELETE on invalidate-all (plus embedded TTL sweeper on `expiresAt`). All `users` mutations above run through user-owned repositories called directly by these controllers; `refresh_tokens` revocation in FLOW A.3 is delegated to security's JWTService.
+
+### Discrepancies found (Part 1/README vs code)
+
+1. ~~"Controllers: dev-only AdminEmailPreviewController (2 GETs)"~~ → ✅ **FULLY RESOLVED (2026-08-23)**: email README rewritten to **v3.1.0** — §6 now documents all **6 controllers / 10 endpoints** with per-endpoint request/response tables and frontend callers (ForgotPassword ×3 incl. `PASSWORD_RESET_TEMP` mechanics, EmailVerification verify/resend, EmailChange, TwoFactorRecovery ×2 incl. `TotpService.disable2FA` hand-off, Contact, AdminPreview); §2.1 layer diagram rebuilt around the real controller+token+service layers; §1.5 system-position diagram corrected (Security Module edge removed — those flows live HERE; Common NotificationService + Frontend edges added); §3 directory tree corrected to **14 Java files**; new **§5.4 Token Subsystem** documenting EmailTokenService's two-layer model and the `email_tokens` collection; §5.3 method table fixed (`sendMFARecoveryLink` → actual **`send2FARecoveryLink`**; stale callers AuthController/ProfileService/TwoFactorService replaced with ForgotPasswordController/EmailChangeController/TwoFactorRecoveryController/NotificationServiceImpl). The same rewrite closed the documentation side of **#2** (`email_tokens` now §5.4) and **#3** (real caller list now §5.3), and noted the unused `email.from` property (#6) plus the `/templates` list gap (#9) inline.
+2. ~~Part 1: no collections owned~~ → ✅ **FULLY RESOLVED (2026-08-23)**: module owns **`email_tokens`** — now documented in email README v3.1.0 §5.4 (full field list, TTL, four purposes, two-layer validation contract).
+3. ~~Caller list "UserService, AuthController, ProfileService, TwoFactorService, ContactController"~~ → ✅ **FULLY RESOLVED (2026-08-23)**: real inbound edges verified by grep and now documented in README v3.1.0 §5.3 (send methods) + §5.4 (invalidateAllForUser call-ins) — UserService ✓, UserController.java:161, TotpController.java:268, common NotificationServiceImpl; AuthController no longer touches email (ForgotPasswordController absorbed that role INTO email); ProfileService deleted (user round 2); TwoFactorService never existed (TotpService is the user-module service; the recovery controller lives in email itself).
+4. ~~DevNoOpEmailService referenced as dev impl~~ → ✅ **FULLY RESOLVED (2026-08-23)**: class was removed from code in v3.0.0; all 3 stale comments corrected (EmailSender.java javadoc, BrevoEmailService.java:25, EmailService.java:63) to state BrevoEmailService is the SOLE EmailSender in ALL profiles — dev without BREVO_API_KEY degrades via isConfigured()→false skip-and-warn, dev WITH key sends real email. README §5.1 profile-swap claim also corrected; changelog row kept as historical record. `mvn compile` exit 0. Repo-wide grep: zero DevNoOp references outside the changelog history line.
+5. ~~BrevoEmailService.java:38 uses raw `WebClient.create()`~~ → ✅ **FULLY RESOLVED (2026-08-23)**: BrevoEmailService now takes `WebClient.Builder` via constructor and builds from the shared `common/config/WebClientConfig` bean — inherits 10s connect timeout, 15s response timeout, 2MB codec limit; per-call `.timeout(10s)` kept as overall cap. Common card's "flagged exception" is now moot (bean still named brokerWebClientBuilder despite generic purpose — noted for common module, injection is by-type so no breakage).
+6. ~~EMAIL_FROM env var / `email.from` property DEAD~~ → ✅ **FULLY RESOLVED (2026-08-23)**: dead config deleted — `from` field removed from EmailConfigProperties, `email.from` line removed from application.properties (with explanatory comment); From identity documented as solely `brevo.sender-email`. Repo-wide grep: zero remaining EMAIL_FROM/email.from references outside audit docs.
+7. Defaults drift → ✅ **RESOLVED VIA DOCUMENTATION (2026-08-23)**: behavior intentionally NOT changed — application.properties' gmail values win because Brevo only delivers from senders verified in the Brevo account; changing them would silently break delivery. Email README §4.2 now carries an explicit "Defaults vs deployed values" callout naming the effective gmail sender/support.
+8. ~~Dead routes on BOTH sides~~ → ✅ **FULLY RESOLVED (2026-08-23)**: SecurityConfig dropped `/api/contact` permitAll (no controller maps it; `/api/public/**` already covers the real route) and `/api/auth/email/change/verify` (never existed server-side); api.js `endpoints.email.changeVerify` constant removed. Greps confirm zero remaining references on either side. This also answers former open question #2 → cleanup chosen.
+9. ~/templates lists only 5 of 7~ → ✅ **FULLY RESOLVED (2026-08-23)**: AdminEmailPreviewController.listTemplates now returns all 7 templates (added 2fa-recovery, contact-form); README §8.2 sample updated.
+10. ~~ContactController returns bare String~~ → ✅ **FULLY RESOLVED (2026-08-23)**: now returns `ResponseEntity<ApiResponse<Void>>` via `ApiResponse.success("Message sent successfully")` — envelope convention restored; verified frontend ContactModal ignores the return value (hardcoded toast) so no client impact.
+11. ~~Config wiring asymmetry~~ → ✅ **FULLY RESOLVED (2026-08-23)**: EmailConfigProperties stripped of self-registration (`@Configuration` removed), both email properties classes now registered uniformly via `@EnableConfigurationProperties({BrevoConfigProperties.class, EmailConfigProperties.class})` on FinanceDashboardApplication.
+
+### Formulas/business rules confirmed correct
+
+- Retry policy exactly as documented: reactor `Retry.backoff(3, 1s)` capped maxBackoff 10s, filter retries ONLY 5xx + network (WebClientRequestException/IOException); 400/401 fail immediately; distinct ERROR logs for invalid-API-key (401).
+- Fail-safe contract: doSend catches everything → boolean, NEVER throws; every caller additionally try/catches — email failure cannot block registration/login/reset flows.
+- Magic-link security model: 10-min TTL enforced THREE ways (JWT exp, DB expiresAt, Mongo TTL sweeper); single-use mandatory (DB used-flag — class doc explicitly states JWT validation alone insufficient); purpose bound in BOTH JWT claim and DB row and compared twice; invalidate-all on every sensitive account change (password reset, email-change verify, MFA recovery, plus user-module changePassword/MFA-reset call-ins).
+- Anti-enumeration: identical neutral responses for unknown identifiers on forgot-password AND mfa/email-recovery.
+- Never-combine rule honored in code: sendRegistrationEmails sends welcome first, then a SEPARATE verification email (LOCAL only; Google skips — pre-verified).
+- Password reset strength regex identical to registration policy (≥8, upper/lower/digit/special `@$!%*?&#`).
+- Logging policy holds: success/failure logs carry recipient + subject (+status) only; no HTML bodies, no API key, no tokens in logs.
+- Logo handling: primary = base64 data URI loaded once @PostConstruct from `classpath:static/logo/coinTrack.png` (Part 1 correct), fallback = absolute URL `apiBaseUrl + /logo/coinTrack.png`; keep-logo-small guidance remains relevant since data URI ships in every email.
+
+### Suspicious / watch-list — ALL RESOLVED (2026-08-23)
+
+1. ~~Forgot-password reset does NOT revoke refresh tokens~~ → ✅ **FIXED**: `ForgotPasswordController.resetPassword` now calls `jwtService.revokeAllRefreshTokens(userId)` right after the password save (parity with `UserService.changePassword`) — a stolen refresh token can no longer survive a reset. Note: the controller's class javadoc ALREADY claimed "All sessions invalidated on password reset" — code now matches its own documentation. Email→security dependency precedented (user module already injects JWTService).
+2. ~~Temp-token secret coupling~~ → ✅ **MITIGATED + GUARDED**: new `email/config/MagicLinkSecretGuard` (`ApplicationListener<ApplicationReadyEvent>`) compares `email.magic-link-secret` vs `jwt.secret` at startup and logs a loud SECURITY ERROR on equality, so accidental secret reuse (the Part 1 Phase-2 failure mode) can never slip in silently. The two-tier rule (purpose claim) was already safe; now the drift is detected operationally.
+3. ~~MFA email-recovery enumeration oracle~~ → ✅ **FIXED**: the explicit 400 "Email must be verified…" replaced with the identical neutral 200 used for unknown identifiers and MFA-disabled accounts; the server-side log line still records the real reason for debugging. Endpoint no longer leaks existence/2FA/verification state.
+4. ~~newEmail not normalized server-side~~ → ✅ **FIXED**: `EmailChangeController.requestEmailChange` now applies `newEmail.trim().toLowerCase()` immediately after the blank check (exact same normalization as `UserService.java:109`), before regex validation, same-as-current check (`equalsIgnoreCase` → strict `equals`, now equivalent), `findByEmail` duplicate guard, pendingEmail storage, and token binding — case-variant collisions are closed at the source.
+5. ~~@Async self-invocation in security-alert overloads~~ → ✅ **FIXED BY STRUCTURE**: all three public overloads (`sendSecurityAlert` ×2, `sendSecurityAlertWithIP`) are independently @Async-proxied and delegate to a single private non-async worker `doSendSecurityAlert(user,event,metadata)` — zero `this.`→@Async calls remain, so the hazard cannot resurface regardless of internal call patterns.
+
+Fix round 2026-08-23 #4 verification: `mvn -q compile` exit 0 after all five changes; email README bumped to **v3.3.0** (§6.2 session revocation, §6.4 normalization note, §6.5 fully-neutral recovery table, §10.2 two new mitigation rows, directory tree 15 files, changelog).
+
+### Open questions
+
+1. ~~Should the forgot-password path revoke refresh tokens?~~ → **ANSWERED by owner direction + FIXED (2026-08-23)**: revocation added to resetPassword — see watch-list #1.
+2. ~~Dead whitelist entries + dead api.js constant: cleanup or keep?~~ → **ANSWERED by owner (2026-08-23): cleanup chosen and executed** — see resolved discrepancy #8.
+
+### Resolution status
+
+Audit-only pass (read-only per rules/02): no code fixes applied. All 11 discrepancies newly documented against Part 1/README v3.0.0; watch-list #1–#5 and both open questions carried forward for the owner. Note: security-card fix #6 verified live in source — AdminEmailPreviewController.java:36 carries `@Profile("dev")`.
+Fix round 2026-08-23 (post-deep-dive): **discrepancy #1 closed via documentation** — email README rewritten to **v3.1.0** (full §6 controller inventory with request/response shapes + frontend callers, new §5.4 Token Subsystem documenting EmailTokenService's two-layer model and `email_tokens`, corrected architecture diagrams, directory tree at 14 files, fixed §5.3 method/caller table incl. the actual `send2FARecoveryLink` name). The same rewrite closed the doc-side of **#2** and **#3**; **#6** (unused email.from) and **#9** (/templates list gap) flagged inline in the README itself.
+Fix round 2026-08-23 #2: **discrepancies #2/#3 marked FULLY RESOLVED** (doc-side complete per above); **discrepancy #4 resolved in code** — all 3 stale DevNoOpEmailService comments corrected (EmailSender.java javadoc, BrevoEmailService.java:25, EmailService.java:63) plus README §5.1 "swapping implementations by profile" claim fixed; `mvn -q compile` exit 0.
+Fix round 2026-08-23 #3: **ALL REMAINING DISCREPANCIES RESOLVED (#5–#11)** — #5 WebClient built from shared common builder (timeouts + 2MB codec); #6 dead `email.from` property deleted (EmailConfigProperties + application.properties); #7 drift documented in README §4.2 (gmail sender kept deliberately — Brevo verified-sender constraint); #8 dead routes removed from SecurityConfig AND api.js changeVerify constant (open question #2 → answered: cleanup); #9 /templates lists all 7 templates; #10 contact returns ApiResponse envelope (frontend unaffected — return value ignored); #11 properties registration unified via @EnableConfigurationProperties. Security README synced (§4.1 whitelist snippet, §4.2 table, changelog 3.1.1). Email README bumped to v3.2.0 with full changelog entry. `mvn -q compile` exit 0 after all edits.
+Fix round 2026-08-23 #4: **ALL 5 WATCH-LIST ITEMS RESOLVED** — details in the watch-list section above; open question #1 closed by the same round. Email README v3.3.0.
+
+**Module `email`: 11 discrepancies found — ALL 11 RESOLVED (#5–#11 in fix round 3: WebClient hardening, dead-config/route removal ×3, template list completion, envelope parity, wiring unification; #7 documented-not-changed by design) · ALL 5 watch-list items RESOLVED (fix round 4: refresh-token revocation on reset, secret-equality startup guard, neutral MFA-recovery response, server-side email normalization, @Async restructure) · BOTH open questions answered/closed. Email module audit is COMPLETE — nothing outstanding.**

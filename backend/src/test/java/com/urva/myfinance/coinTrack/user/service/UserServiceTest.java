@@ -40,6 +40,8 @@ class UserServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private PendingRegistrationRepository pendingRegistrationRepository;
+    @Mock private com.urva.myfinance.coinTrack.user.repository.BackupCodeRepository backupCodeRepository;
+    @Mock private com.urva.myfinance.coinTrack.user.repository.UserDeletionAuditRepository userDeletionAuditRepository;
     @Mock private MongoTemplate mongoTemplate;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JWTService jwtService;
@@ -48,6 +50,7 @@ class UserServiceTest {
     @Mock private EmailTokenService emailTokenService;
     @Mock private EmailConfigProperties emailConfig;
     @Mock private com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository invalidatedTokenRepository;
+    @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private UserService userService;
 
@@ -374,21 +377,64 @@ class UserServiceTest {
         verify(userRepository).save(argThat(u -> "newEncoded".equals(u.getPassword())));
     }
 
-    // ── deleteUser ─────────────────────────────────────────────────
+    // ── deleteAccount ──────────────────────────────────────────────
 
     @Test
-    @DisplayName("deleteUser: exists → true")
-    void deleteUser_exists_true() {
-        when(userRepository.existsById("u1")).thenReturn(true);
-        assertTrue(userService.deleteUser("u1"));
+    @DisplayName("deleteAccount: local user + correct password → true, cascade fired")
+    void deleteAccount_localUser_correctPassword_true() {
+        when(userRepository.findById("u1")).thenReturn(Optional.of(sampleUser));
+        when(passwordEncoder.matches("raw", "encoded")).thenReturn(true);
+
+        assertTrue(userService.deleteAccount("u1", "raw", "127.0.0.1", "ua"));
+
+        // audit written twice: IN_PROGRESS before destruction, COMPLETED after cascade
+        verify(userDeletionAuditRepository, times(2)).save(any());
+        verify(backupCodeRepository).deleteByUserId("u1");
+        verify(userRepository).deleteById("u1");
+        verify(jwtService).revokeAllRefreshTokens("u1");
+    }
+
+    @Test
+    @DisplayName("deleteAccount: wrong password → throws, nothing deleted")
+    void deleteAccount_wrongPassword_throws() {
+        when(userRepository.findById("u1")).thenReturn(Optional.of(sampleUser));
+        when(passwordEncoder.matches("bad", "encoded")).thenReturn(false);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> userService.deleteAccount("u1", "bad", "127.0.0.1", "ua"));
+
+        verify(userRepository, never()).deleteById(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("deleteAccount: missing password on local account → throws")
+    void deleteAccount_missingPassword_throws() {
+        when(userRepository.findById("u1")).thenReturn(Optional.of(sampleUser));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> userService.deleteAccount("u1", null, "127.0.0.1", "ua"));
+
+        verify(userRepository, never()).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("deleteAccount: Google-only account (no password) → succeeds without password")
+    void deleteAccount_oauthOnly_noPassword_succeeds() {
+        sampleUser.setPassword(null);
+        when(userRepository.findById("u1")).thenReturn(Optional.of(sampleUser));
+
+        assertTrue(userService.deleteAccount("u1", null, "127.0.0.1", "ua"));
+
         verify(userRepository).deleteById("u1");
     }
 
     @Test
-    @DisplayName("deleteUser: not exists → false")
-    void deleteUser_notExists_false() {
-        when(userRepository.existsById("x")).thenReturn(false);
-        assertFalse(userService.deleteUser("x"));
+    @DisplayName("deleteAccount: not exists → false")
+    void deleteAccount_notExists_false() {
+        when(userRepository.findById("x")).thenReturn(Optional.empty());
+
+        assertFalse(userService.deleteAccount("x", null, "127.0.0.1", "ua"));
     }
 
     // ── isTokenValid ───────────────────────────────────────────────

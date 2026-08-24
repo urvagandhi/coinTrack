@@ -2,7 +2,7 @@
 
 > **Domain**: User identity, registration, authentication, MFA/MFA management, and profile settings
 > **Responsibility**: Manages user accounts, authentication workflows, security lockouts, and embedded preferences
-> **Version**: 3.1.0
+> **Version**: 3.3.0
 > **Last Updated**: 2026-08-23
 
 ---
@@ -220,11 +220,12 @@ sequenceDiagram
 ```
 user/
 ├── controller/
-│   ├── AuthController.java             # Login, register, token verify, check username, Google SSO
+│   ├── AuthController.java             # Login, register, refresh, logout, Google SSO (verify-token & check-username disabled/commented 2026-08-24)
 │   ├── TotpController.java             # MFA setup, verify, login-MFA, recovery codes
-│   └── UserController.java             # Authenticated /api/users/me profile GET, PUT, password, DELETE
+│   └── UserController.java             # Authenticated /api/users/me profile GET, PUT, password, audited DELETE
 ├── dto/
 │   ├── ChangePasswordRequest.java
+│   ├── DeleteAccountRequest.java       # DELETE /me body — password re-authentication
 │   ├── LoginRequest.java
 │   ├── LoginResponse.java
 │   ├── RegisterRequest.java
@@ -237,10 +238,13 @@ user/
 │   ├── PpfSettingsEmbed.java           # Embedded PPF settings inside User
 │   ├── RefreshToken.java               # MongoDB collection for refresh token hashes
 │   ├── User.java                       # Main User document (@Indexed email, phone, googleId)
+│   ├── UserDeletionAudit.java          # Immutable pre-deletion compliance snapshot (user_deletion_audits)
 │   └── UserStatus.java                 # Enum: ACTIVE, INACTIVE, PENDING
 ├── repository/
+│   ├── BackupCodeRepository.java
 │   ├── PendingRegistrationRepository.java
 │   ├── RefreshTokenRepository.java
+│   ├── UserDeletionAuditRepository.java
 │   └── UserRepository.java
 └── service/
     ├── TotpService.java                # MFA generation, validation, & 8-digit backup code management
@@ -255,10 +259,15 @@ user/
 ### 5.1 User Document (`users`)
 
 * **MongoDB Indexes**:
-  * `username`: Unique index (`@Indexed(unique = true)`)
+  * `username`: Unique sparse index (`@Indexed(unique = true, sparse = true)`)
   * `email`: Unique sparse index (`@Indexed(unique = true, sparse = true)`), lowercased on save & lookup
-  * `phoneNumber`: Sparse index (`@Indexed(sparse = true)`)
+  * `phoneNumber`: Unique sparse index (`@Indexed(unique = true, sparse = true)`) — uniqueness enforced app-side via `isPhoneNumberRegistered` (users + pending registrations)
   * `googleId`: Unique sparse index (`@Indexed(unique = true, sparse = true)`)
+
+  All four are reconciled at startup by `migration/IndexMigration` (`!prod` profiles): misnamed or
+  non-conforming single-field indexes on these fields are dropped and recreated with the exact
+  Spring Data name (`<fieldName>`, unique + sparse). Compound indexes containing these fields are
+  never touched.
 
 ### 5.2 Embedded Settings Models
 
@@ -300,7 +309,7 @@ Stores intermediate signup state during multi-step MFA onboarding. Configured wi
 
 * **`updateUser(userId, user)`**: Updates whitelisted profile fields (`name`, `dateOfBirth`, `bio`, `location`, `phoneNumber`, `email`). Phone uniqueness checked against users **and** pending registrations via `isPhoneNumberRegistered`.
 * **`changePassword(userId, oldPassword, newPassword)`**: Verifies current password, updates BCrypt hash, and **revokes all active refresh tokens**.
-* **`deleteUser(userId)`**: Deletes user document, revokes all active refresh tokens, purges stale pending registrations, and **publishes `UserDeletedEvent`** so every module cascades its own user-keyed collections.
+* **`deleteAccount(userId, rawPassword, ip, userAgent)`**: Industry-standard self-service deletion — password re-authentication first (Google-only accounts exempt); writes an immutable `UserDeletionAudit` snapshot (`user_deletion_audits`) BEFORE destroying anything; purges backup codes + stale pending registrations; deletes the user document; revokes all active refresh tokens; and **publishes `UserDeletedEvent`** so every module cascades its own user-keyed collections (the email module listener additionally purges magic-link tokens). Audit rows flip `IN_PROGRESS → COMPLETED` once the cascade fires.
 * **`isTokenValid(token)`**: Validates JWT signature, expiration, AND checks MongoDB `invalidated_tokens` blacklist (`HashUtil.sha256(token)`).
 * **`isPhoneNumberRegistered(normalizedPhone)`**: Null-safe uniqueness check across `users` + `pending_registrations`.
 
@@ -324,9 +333,15 @@ Stores intermediate signup state during multi-step MFA onboarding. Configured wi
 | `POST` | `/api/auth/login`                     | Public | Password authentication; returns`LoginResponse` (tempToken if MFA active) |
 | `POST` | `/api/auth/register`                  | Public | Initiate registration; returns 15-min`MFA_REGISTRATION` tempToken        |
 | `POST` | `/api/auth/refresh`                   | Public | Rotates refresh token & issues new access token                             |
+| `POST` | `/api/auth/logout`                    | Protected | Blacklists the access token & revokes the presented refresh token       |
 | `POST` | `/api/auth/oauth2/google`             | Public | Google SSO code exchange & account resolution                               |
-| `GET`  | `/api/auth/verify-token`              | Public | Validates access token (checks signature, expiration, & MongoDB blacklist)  |
-| `GET`  | `/api/auth/check-username/{username}` | Public | Checks username availability                                                |
+| `POST` | `/api/auth/oauth2/complete-profile`   | Public | Completes onboarding for new Google accounts (username claim)               |
+
+> Disabled 2026-08-24 (code retained, commented out in AuthController): `GET /api/auth/verify-token`
+> (redundant — the JWT filter already validates every request and `GET /api/users/me` returns the
+> same profile with the same Bearer) and `GET /api/auth/check-username/{username}` (zero UI callers
+> ever wired). SecurityConfig whitelist entries and their controller tests are commented out
+> alongside — uncomment all three sites together to restore.
 
 ### 8.2 TotpController (`/api/auth`)
 
@@ -346,7 +361,7 @@ Stores intermediate signup state during multi-step MFA onboarding. Configured wi
 | `GET`    | `/api/users/me`          | Protected | Fetch current user's profile as `UserProfileResponse` DTO (whitelisted fields only)        |
 | `PUT`    | `/api/users/me`          | Protected | Update profile via `UpdateProfileRequest` DTO (`username`, `name`, `email`, `phoneNumber`, `dateOfBirth`, `bio`, `location`) — no raw entity binding |
 | `POST`   | `/api/users/me/password` | Protected | Change password (verifies current password, revokes all refresh tokens)                    |
-| `DELETE` | `/api/users/me`          | Protected | Delete account, revoke refresh tokens & publish `UserDeletedEvent` — every module cascades its own user-keyed collections (notes, broker accounts, portfolio canonical data, MF schemes/ledgers, PPF/EPF/FD/Gold-Silver ledgers, invalidated tokens) |
+| `DELETE` | `/api/users/me`          | Protected | **Industry-standard self-service deletion**: body `{password}` re-authentication (Google-only accounts exempt); immutable `UserDeletionAudit` snapshot written BEFORE destruction; backup codes + pending registrations purged; user doc removed; all refresh tokens revoked; goodbye security alert queued; `UserDeletedEvent` fans out so every module cascades its own user-keyed collections (notes, broker accounts, portfolio canonical data, MF schemes/ledgers, PPF/EPF/FD/Gold-Silver ledgers, invalidated tokens, email magic-link tokens). Wrong password → 401, account intact. UI: profile page Danger Zone |
 
 ---
 
@@ -632,4 +647,6 @@ Content-Type: application/json
 | ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 3.1.0   | 2026-08-23 | Complete alignment with codebase: added Authentication & Login Flow sequence diagram, removed dead `UserProfileService` & `LoginController`, documented MongoDB `@Indexed` fields on `User`, updated 8-digit numeric backup code format, documented dual lockout ladders (15m/1h password, 10m/24h MFA), `pending_registrations` TTL storage, token revocation on password change/delete, enforced registration email lowercasing + startup DB migration (`migrateMixedCaseEmailsToLowerCase`), centralized blacklist check in `JWTService` for temp & access tokens, and added collapsible ASCII diagram toggles across all Mermaid diagrams. |
 | 3.2.0   | 2026-08-23 | DTO-only profile contract (`UserProfileResponse` out, validated `UpdateProfileRequest` in — no raw entity binding); account-deletion cascade via `UserDeletedEvent` (all modules purge their user-keyed data); phone uniqueness now includes pending registrations + null-safe (`isPhoneNumberRegistered`); rotation fully deletes previous-generation backup codes; `totp.window` & `totp.max-backup-codes` properties wired into TotpService; dead code removed (3 legacy DTOs, `getAllUsers`); `isTokenValid` delegates to blacklist-enforcing `JWTService.validateToken`. |
+| 3.2.1   | 2026-08-23 | Index spec aligned with `migration/IndexMigration`: `username` and `phoneNumber` now `unique + sparse` (matching app-level uniqueness semantics); migration extended to reconcile `email` alongside googleId/phoneNumber/username; only single-field indexes are dropped (compound indexes preserved); index list materialized before dropping; `!prod` gate documented (dev/prod share the same database). |
+| 3.3.0   | 2026-08-24 | Endpoint hygiene + industry-standard deletion. DISABLED (commented out, code retained per owner decision): `GET /api/auth/verify-token` (redundant — JWT filter validates every request, `/users/me` returns same profile) and `GET /api/auth/check-username/{username}` (zero UI callers ever); matching SecurityConfig whitelist entries + 6 controller tests commented alongside; AuthController table completed with previously-missing logout & oauth2/complete-profile rows. REWRITTEN: `DELETE /api/users/me` → `deleteAccount(userId, rawPassword, ip, userAgent)` with password re-authentication (401 on mismatch, Google-only accounts exempt), immutable `UserDeletionAudit` compliance snapshot (`user_deletion_audits`) written before destruction, backup-codes purge (previously leaked), goodbye security alert, audit status IN_PROGRESS→COMPLETED. NEW: email-module `EmailUserDataCleanupListener` purges magic-link tokens on cascade (was TTL-only). FRONTEND: `userAPI.deleteAccount` + profile-page Danger Zone (password confirm panel, Loader2, hard redirect on success). |
 | 2.0.0   | 2025-12-17 | Refactored MFA MFA architecture and embedded user settings                                                                                                                                                                                                                                                                                                                                                                                                                                                    |

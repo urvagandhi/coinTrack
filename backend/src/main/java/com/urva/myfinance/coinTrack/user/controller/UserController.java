@@ -20,6 +20,7 @@ import com.urva.myfinance.coinTrack.common.service.NotificationService;
 import com.urva.myfinance.coinTrack.common.util.RequestUtils;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
+import com.urva.myfinance.coinTrack.user.dto.DeleteAccountRequest;
 import com.urva.myfinance.coinTrack.user.dto.UpdateProfileRequest;
 import com.urva.myfinance.coinTrack.user.dto.UserProfileResponse;
 import com.urva.myfinance.coinTrack.user.model.User;
@@ -170,16 +171,36 @@ public class UserController {
         }
     }
 
-    @Operation(summary = "Delete current user account")
+    @Operation(summary = "Delete current user account (password re-authentication + audit trail)")
     @DeleteMapping("/me")
-    public ResponseEntity<?> deleteCurrentUser(Authentication authentication) {
+    public ResponseEntity<?> deleteCurrentUser(Authentication authentication,
+                                               @RequestBody(required = false) DeleteAccountRequest request,
+                                               HttpServletRequest httpRequest) {
         try {
             UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-            boolean deleted = userService.deleteUser(principal.getUserId());
-            if (deleted) {
-                return ResponseEntity.ok(ApiResponse.success("Account deleted successfully"));
+            String userId = principal.getUserId();
+
+            // Fetched while the account is still alive so a goodbye alert can be queued after success
+            User user = userService.getUserById(userId);
+            String ip = RequestUtils.extractIpAddress(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+
+            boolean deleted = userService.deleteAccount(userId, request != null ? request.password() : null, ip, userAgent);
+            if (!deleted) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
             }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
+
+            try {
+                if (notificationService != null && user != null) {
+                    notificationService.sendSecurityAlertWithIP(user, "Account Deleted", ip);
+                }
+            } catch (Exception ex) {
+                logger.warn("Failed to send account-deletion alert: {}", ex.getMessage());
+            }
+
+            return ResponseEntity.ok(ApiResponse.success("Account deleted successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             logger.error("Error deleting user: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

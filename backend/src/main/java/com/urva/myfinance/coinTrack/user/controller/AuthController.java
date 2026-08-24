@@ -10,12 +10,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+// Disabled 2026-08-24 together with the endpoints below — re-enable both when restoring.
+// import org.springframework.web.bind.annotation.GetMapping;
+// import org.springframework.web.bind.annotation.PathVariable;
 
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.common.util.HashUtil;
@@ -122,48 +124,56 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Verify JWT access token validity")
-    @GetMapping("/verify-token")
-    public ResponseEntity<?> verifyToken(HttpServletRequest request) {
-        try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Missing or invalid Authorization header"));
-            }
-
-            String token = authHeader.substring(7);
-            if (!userService.isTokenValid(token)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Invalid or expired token"));
-            }
-
-            User user = userService.getUserByToken(token);
-            if (user != null) {
-                user.setPassword(null);
-                return ResponseEntity.ok(com.urva.myfinance.coinTrack.user.dto.UserProfileResponse.from(user));
-            }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Token verification failed"));
-        }
-    }
-
-    @Operation(summary = "Check if a username is available")
-    @GetMapping("/check-username/{username}")
-    public ResponseEntity<?> checkUsernameAvailability(@PathVariable String username) {
-        try {
-            boolean isAvailable = userService.isUsernameAvailable(username);
-            Map<String, Object> response = new HashMap<>();
-            response.put("username", username);
-            response.put("available", isAvailable);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to check username availability"));
-        }
-    }
+    // ── Disabled 2026-08-24 (owner decision: retain code, don't delete) ──────────
+    // verify-token is redundant — the JWT filter already validates every request and
+    // GET /api/users/me returns the same profile with the same Bearer token.
+    // check-username never had a UI caller. To restore: uncomment here AND the two
+    // SecurityConfig whitelist entries AND the matching AuthControllerTest block,
+    // plus the GetMapping/PathVariable imports above.
+    //
+    // @Operation(summary = "Verify JWT access token validity")
+    // @GetMapping("/verify-token")
+    // public ResponseEntity<?> verifyToken(HttpServletRequest request) {
+    //     try {
+    //         String authHeader = request.getHeader("Authorization");
+    //         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+    //             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+    //                     .body(ApiResponse.error("Missing or invalid Authorization header"));
+    //         }
+    //
+    //         String token = authHeader.substring(7);
+    //         if (!userService.isTokenValid(token)) {
+    //             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+    //                     .body(ApiResponse.error("Invalid or expired token"));
+    //         }
+    //
+    //         User user = userService.getUserByToken(token);
+    //         if (user != null) {
+    //             user.setPassword(null);
+    //             return ResponseEntity.ok(com.urva.myfinance.coinTrack.user.dto.UserProfileResponse.from(user));
+    //         }
+    //         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
+    //     } catch (Exception e) {
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    //                 .body(ApiResponse.error("Token verification failed"));
+    //     }
+    // }
+    //
+    // @Operation(summary = "Check if a username is available")
+    // @GetMapping("/check-username/{username}")
+    // public ResponseEntity<?> checkUsernameAvailability(@PathVariable String username) {
+    //     try {
+    //         boolean isAvailable = userService.isUsernameAvailable(username);
+    //         Map<String, Object> response = new HashMap<>();
+    //         response.put("username", username);
+    //         response.put("available", isAvailable);
+    //         return ResponseEntity.ok(response);
+    //     } catch (Exception e) {
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    //                 .body(ApiResponse.error("Failed to check username availability"));
+    //     }
+    // }
+    // ── End disabled endpoints ───────────────────────────────────────────────────
 
     /**
      * Refresh access token using a refresh token.

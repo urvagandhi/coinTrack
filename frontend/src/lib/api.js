@@ -277,6 +277,7 @@ export const endpoints = {
         me: '/api/users/me',
         update: '/api/users/me',
         changePassword: '/api/users/me/password',
+        deleteMe: '/api/users/me',
     },
     portfolio: {
         summary: '/api/portfolio/summary',
@@ -318,7 +319,6 @@ export const endpoints = {
         verify: '/api/auth/email/verify',
         resend: '/api/auth/email/resend',
         change: '/api/auth/email/change',
-        changeVerify: '/api/auth/email/change/verify',
     },
     twofa: {
         recovery: '/api/auth/mfa/email-recovery',
@@ -495,6 +495,10 @@ export const userAPI = {
             password: newPassword,
             oldPassword,
         });
+        return unwrapResponse(data);
+    },
+    deleteAccount: async (password) => {
+        const { data } = await api.delete(endpoints.users.deleteMe, { data: { password } });
         return unwrapResponse(data);
     },
 };

@@ -72,6 +72,11 @@ public class EmailChangeController {
                                         .body(ApiResponse.error("New email is required"));
                 }
 
+                // Server-side normalization (parity with registration + the users
+                // unique index): prevents case-variant collisions slipping past
+                // the exact-match findByEmail guard
+                newEmail = newEmail.trim().toLowerCase();
+
                 // Basic email validation
                 if (!newEmail.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
                         return ResponseEntity.badRequest()
@@ -87,7 +92,7 @@ public class EmailChangeController {
                 }
 
                 // Check if new email is same as current
-                if (newEmail.equalsIgnoreCase(user.getEmail())) {
+                if (newEmail.equals(user.getEmail())) {
                         return ResponseEntity.badRequest()
                                         .body(ApiResponse.error("New email must be different from current email"));
                 }

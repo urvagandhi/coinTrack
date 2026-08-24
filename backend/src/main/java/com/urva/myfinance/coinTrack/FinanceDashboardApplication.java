@@ -8,11 +8,12 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 import com.urva.myfinance.coinTrack.email.config.BrevoConfigProperties;
+import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
 
 @SpringBootApplication
 @EnableAsync
 @EnableMongoAuditing
-@EnableConfigurationProperties(BrevoConfigProperties.class)
+@EnableConfigurationProperties({ BrevoConfigProperties.class, EmailConfigProperties.class })
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class FinanceDashboardApplication {
 

@@ -45,7 +45,7 @@ export default function SchemeSearchCombobox({ value, onChange, onSelectScheme }
         // If query is a 5-6 digit number, try direct lookup first (very robust for AMFI codes)
         if (/^\d{5,6}$/.test(debouncedQuery)) {
             try {
-                const directRes = await fetch(`https://api.mfapi.in/mf/${debouncedQuery}`, {
+                const directRes = await fetch(`https://api.mfapi.in/mf/${debouncedQuery}/latest`, {
                     signal: abortController.signal
                 });
                 const directData = await directRes.json();
@@ -63,19 +63,36 @@ export default function SchemeSearchCombobox({ value, onChange, onSelectScheme }
             }
         }
 
-        let res = await fetch(`/api/mf-search?q=${encodeURIComponent(debouncedQuery)}`, {
-          signal: abortController.signal
-        });
-        
-        // If our custom AMFI route fails for any reason (e.g., 500 error from AMFI timeout), fallback to mfapi.in
-        if (!res.ok) {
-            res = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(debouncedQuery)}`, {
+        let data = [];
+        try {
+          // Primary: Hit mfapi.in directly for text search
+          const res = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(debouncedQuery)}`, {
+            signal: abortController.signal
+          });
+          if (res.ok) {
+            const parsed = await res.json();
+            if (Array.isArray(parsed)) data = parsed;
+          }
+        } catch (e) {
+          // Ignore error and try fallback
+        }
+
+        // Fallback: If mfapi.in fails or returns empty, try local AMFI scraping route
+        if (data.length === 0) {
+          try {
+            const fallbackRes = await fetch(`/api/mf-search?q=${encodeURIComponent(debouncedQuery)}`, {
               signal: abortController.signal
             });
+            if (fallbackRes.ok) {
+              const fallbackParsed = await fallbackRes.json();
+              if (Array.isArray(fallbackParsed)) data = fallbackParsed;
+            }
+          } catch (e) {
+            // Ignore fallback error
+          }
         }
         
-        const data = await res.json();
-        setResults(data || []);
+        setResults(data);
         setOpen(true);
       } catch (err) {
         if (err.name === 'AbortError') {

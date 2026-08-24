@@ -24,6 +24,7 @@ import com.urva.myfinance.coinTrack.email.model.EmailToken;
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmailTokenException;
+import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
@@ -63,6 +64,7 @@ public class ForgotPasswordController {
     private final EmailConfigProperties emailConfig;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JWTService jwtService;
 
     /**
      * Request password reset.
@@ -200,6 +202,10 @@ public class ForgotPasswordController {
             // Update password
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
+
+            // Revoke ALL refresh tokens — a stolen session must not survive a password
+            // reset (parity with UserService.changePassword)
+            jwtService.revokeAllRefreshTokens(userId);
 
             // Invalidate all email tokens
             emailTokenService.invalidateAllForUser(userId);

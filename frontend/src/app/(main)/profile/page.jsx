@@ -66,6 +66,10 @@ export default function ProfilePage() {
     const [is2FALoading, setIs2FALoading] = useState(false);
     const [isSendingRecovery, setIsSendingRecovery] = useState(false);
     const [showRecoveryConfirm, setShowRecoveryConfirm] = useState(false);
+    const [isResendingVerification, setIsResendingVerification] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deletePassword, setDeletePassword] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [profileData, setProfileData] = useState({
         name: apiUser?.name || '',
@@ -97,6 +101,38 @@ export default function ProfilePage() {
     const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
 
     const handleChange = (f, v) => setProfileData(p => ({ ...p, [f]: v }));
+
+    const handleResendVerification = async () => {
+        setIsResendingVerification(true);
+        try {
+            const result = await emailAPI.resend();
+            if (result?.alreadyVerified) {
+                toast({ title: "Already verified", description: "Your email is already verified — refresh to see the update.", variant: "success" });
+                queryClient.invalidateQueries({ queryKey: ['profile'] });
+            } else {
+                toast({ title: "Verification email sent", description: `A fresh link is on its way to ${profileData.email}.`, variant: "success" });
+            }
+        } catch (err) {
+            toast({ title: "Couldn't resend", description: err.message || "Please try again in a moment.", variant: "destructive" });
+        } finally {
+            setIsResendingVerification(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        setIsDeleting(true);
+        try {
+            await userAPI.deleteAccount(deletePassword);
+            setShowDeleteConfirm(false);
+            setDeletePassword('');
+            toast({ title: "Account deleted", description: "All your data has been permanently removed.", variant: "success" });
+            queryClient.clear();
+            window.location.assign('/');
+        } catch (err) {
+            toast({ title: "Couldn't delete account", description: err.message || "Please try again.", variant: "destructive" });
+            setIsDeleting(false);
+        }
+    };
     const handleNotif = (f, v) => setProfileData(p => ({ ...p, notifications: { ...p.notifications, [f]: v } }));
     const handlePwd = (f, v) => setPasswords(p => ({ ...p, [f]: v }));
     const togglePwdVisibility = (f) => setShowPasswords(p => ({ ...p, [f]: !p[f] }));
@@ -367,6 +403,23 @@ export default function ProfilePage() {
                                 onChange={(v) => handleChange('email', v)}
                                 badge={apiUser?.isEmailVerified ? 'Verified' : null}
                             />
+                            {!isEditing && apiUser && !apiUser.isEmailVerified && (
+                                <div className="md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-dashed border-border/60 rounded-md px-4 py-3">
+                                    <p className="text-[12px] text-muted-foreground leading-snug">
+                                        Your email <span className="font-mono text-foreground">{profileData.email}</span> isn&apos;t verified yet.
+                                        Some security emails may be restricted until it is.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={handleResendVerification}
+                                        disabled={isResendingVerification}
+                                        className="ed-btn ed-btn-info h-8 px-3 text-[11px] whitespace-nowrap shrink-0 disabled:opacity-60 disabled:pointer-events-none"
+                                    >
+                                        {isResendingVerification && <Loader2 className="h-3 w-3 animate-spin" />}
+                                        Resend Verification Email
+                                    </button>
+                                </div>
+                            )}
                             <ProfileField
                                 label="Mobile"
                                 editing={isEditing}
@@ -379,6 +432,67 @@ export default function ProfilePage() {
                             <ProfileField label="Location" editing={isEditing} value={profileData.location} onChange={(v) => handleChange('location', v)} />
                             <ProfileField label="Bio" editing={isEditing} value={profileData.bio} onChange={(v) => handleChange('bio', v)} className="md:col-span-2" multiline />
                         </div>
+
+                        {/* Danger Zone — account deletion */}
+                        {!isEditing && apiUser && (
+                            <div className="px-6 pb-6">
+                                <div className="border-t border-hairline pt-4">
+                                    {!showDeleteConfirm ? (
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div>
+                                                <p className="eyebrow mb-1 text-[hsl(var(--loss))]">Danger Zone</p>
+                                                <p className="text-[12px] text-muted-foreground leading-snug">
+                                                    Permanently delete your account and every record across all modules. This cannot be undone.
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setShowDeleteConfirm(true); setDeletePassword(''); }}
+                                                className="ed-btn ed-btn-accent h-8 px-3 text-[11px] bg-[hsl(var(--loss))] border-[hsl(var(--loss))] hover:bg-[hsl(var(--loss))]/90 shrink-0"
+                                            >
+                                                Delete Account
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss))]/8 p-4 space-y-3">
+                                            <p className="text-[11px] font-semibold text-[hsl(var(--loss))] uppercase tracking-[0.14em]">
+                                                This action is permanent
+                                            </p>
+                                            <p className="text-[12px] text-muted-foreground leading-snug">
+                                                Your profile, portfolio, ledgers (FD · PPF · EPF · Gold/Silver · Mutual Funds), notes, broker links
+                                                and 2FA will be erased immediately. A deletion audit record is retained for compliance — nothing else survives.
+                                            </p>
+                                            <input
+                                                type="password"
+                                                value={deletePassword}
+                                                onChange={(e) => setDeletePassword(e.target.value)}
+                                                autoComplete="current-password"
+                                                placeholder={apiUser?.authProvider === 'GOOGLE' ? 'Google account — leave blank' : 'Confirm your password to enable deletion'}
+                                                className="w-full h-10 px-3 bg-background border border-input text-[13px] text-foreground rounded-sm focus:outline-none focus:border-[hsl(var(--loss))]"
+                                            />
+                                            <div className="flex items-center justify-end gap-2 pt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); }}
+                                                    className="ed-btn ed-btn-ghost h-8 px-3 text-[11px]"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDeleteAccount}
+                                                    disabled={isDeleting || (!deletePassword && apiUser?.authProvider !== 'GOOGLE')}
+                                                    className="ed-btn ed-btn-accent h-8 px-3 text-[11px] bg-[hsl(var(--loss))] border-[hsl(var(--loss))] hover:bg-[hsl(var(--loss))]/90 disabled:opacity-60 disabled:pointer-events-none"
+                                                >
+                                                    {isDeleting && <Loader2 className="h-3 w-3 animate-spin" />}
+                                                    Permanently Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {isEditing && (
                             <div className="flex justify-end gap-2 px-6 py-4 border-t border-hairline">

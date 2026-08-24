@@ -11,21 +11,16 @@ import lombok.Data;
  * Properties are loaded from application.properties with prefix "email."
  *
  * Required environment variables for production:
- * - EMAIL_FROM: Sender email address
  * - EMAIL_SUPPORT: Support email address
  * - EMAIL_BASE_URL: Frontend base URL for magic links
  * - EMAIL_MAGIC_LINK_SECRET: Secret key for signing magic link tokens
+ *
+ * Note: the From identity for outgoing mail comes solely from
+ * BrevoConfigProperties (brevo.sender-email / BREVO_SENDER_EMAIL).
  */
-@Configuration
 @ConfigurationProperties(prefix = "email")
 @Data
 public class EmailConfigProperties {
-
-    /**
-     * Sender email address (From header)
-     * Default: noreply@cointrack.app
-     */
-    private String from = "noreply@cointrack.app";
 
     /**
      * Support email address for user assistance

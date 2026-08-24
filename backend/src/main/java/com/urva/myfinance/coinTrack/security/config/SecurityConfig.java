@@ -64,8 +64,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
-                                "/api/auth/verify-token",
-                                "/api/auth/check-username/*",
+                                // Disabled 2026-08-24 with the AuthController endpoints — uncomment both when restoring.
+                                // "/api/auth/verify-token",
+                                // "/api/auth/check-username/*",
                                 "/api/auth/mfa/login",
                                 "/api/auth/mfa/login-recovery",
                                 "/api/auth/mfa/email-recovery",
@@ -79,16 +80,14 @@ public class SecurityConfig {
                         .permitAll()
 
                         // Email verification / password reset (public)
+                        // Note: change-verification rides /api/auth/email/verify?type=change;
+                        // the old /api/auth/email/change/verify route never existed server-side
                         .requestMatchers(
                                 "/api/auth/email/verify",
-                                "/api/auth/email/change/verify",
                                 "/api/auth/forgot-password",
                                 "/api/auth/forgot-password/verify",
                                 "/api/auth/reset-password")
                         .permitAll()
-
-                        // Contact form (public)
-                        .requestMatchers("/api/contact").permitAll()
 
                         // OpenAPI / Swagger UI (public)
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**",

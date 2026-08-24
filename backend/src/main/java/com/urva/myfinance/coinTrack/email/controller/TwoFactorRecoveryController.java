@@ -88,10 +88,12 @@ public class TwoFactorRecoveryController {
 
             // Check if email is verified
             if (!user.isEmailVerified()) {
-                // For security, we require verified email
+                // Recovery requires a verified inbox — but respond neutrally so the
+                // endpoint does not leak account existence / 2FA / verification state
                 logger.info("2FA recovery requested but email not verified: userId={}", user.getId());
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Email must be verified before 2FA recovery. Please contact support."));
+                return ResponseEntity.ok(ApiResponse.success(Map.of(
+                        "message",
+                        "If an account exists with this identifier and has 2FA enabled, you will receive a recovery link")));
             }
 
             // Create token and send email

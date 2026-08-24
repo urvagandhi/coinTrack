@@ -29,14 +29,15 @@ import lombok.NoArgsConstructor;
 public class User {
     @Id
     private String id;
-    @Indexed(unique = true)
+    @Indexed(unique = true, sparse = true)
     private String username;
     private String name;
     private LocalDate dateOfBirth;
+
     @Indexed(unique = true, sparse = true)
     private String email;
 
-    @Indexed(sparse = true)
+    @Indexed(unique = true, sparse = true)
     private String phoneNumber;
     private String bio;
     private String location;
