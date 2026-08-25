@@ -25,6 +25,7 @@ import com.urva.myfinance.coinTrack.email.model.EmailToken;
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmailTokenException;
+import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
@@ -43,6 +44,7 @@ class ForgotPasswordControllerTest {
     @Mock private UserRepository userRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private HttpServletRequest httpRequest;
+    @Mock private JWTService jwtService;
 
     @InjectMocks private ForgotPasswordController controller;
 

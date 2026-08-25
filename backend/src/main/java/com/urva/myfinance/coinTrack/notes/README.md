@@ -2,8 +2,8 @@
 
 > **Domain**: User notes and personal annotations
 > **Responsibility**: Secure CRUD operations for personal investment notes
-> **Version**: 2.0.0
-> **Last Updated**: 2025-12-17
+> **Version**: 2.1.0
+> **Last Updated**: 2026-08-24
 
 ---
 
@@ -145,15 +145,19 @@ notes/
 │   └── Note.java                      # MongoDB document
 │       └── 45 lines, 1KB
 │
+├── dto/                               # Request DTOs (1 file)
+│   └── NoteRequest.java               # Validated create/update payload
+│       └── 30 lines, 1KB
+│
 ├── repository/                        # Data Access (1 file)
 │   └── NoteRepository.java            # Spring Data queries
 │       └── 16 lines, 0.5KB
 │
 └── service/                           # Business Logic (1 file)
     └── NoteService.java               # CRUD + authorization
-        └── 95 lines, 3.5KB
+        └── 110 lines, 4.2KB
 
-Total: 4 files, ~221 lines, ~7.7KB
+Total: 5 files, ~266 lines, ~9.4KB
 ```
 
 ---
@@ -172,32 +176,33 @@ Total: 4 files, ~221 lines, ~7.7KB
 | Method | Endpoint | Description | Request Body | Response |
 |--------|----------|-------------|--------------|----------|
 | GET | `/api/notes` | Get user's notes — **paginated** (`?page=&size=&search=&tag=`) | None | `Page<Note>` |
-| POST | `/api/notes` | Create a new note | `Note` object | Created `Note` |
-| PUT | `/api/notes/{id}` | Update existing note | `Note` object | Updated `Note` |
+| POST | `/api/notes` | Create a new note | `NoteRequest` DTO | Created `Note` |
+| PUT | `/api/notes/{id}` | Update existing note | `NoteRequest` DTO | Updated `Note` |
 | DELETE | `/api/notes/{id}` | Delete a note | None | Success message |
 
-> Verified against source 2026-08-23: the list endpoint returns `Page<Note>` via
+> Verified against source 2026-08-24: the list endpoint returns `Page<Note>` via
 > `NoteService.getNotesPaginated(userId, page, size, search, tag)` and supports text search
-> (`searchByUserIdAndText`) and tag filtering. Earlier revisions describing an unpaginated
-> list are outdated.
+> (`searchByUserIdAndTerm`) and tag filtering. Request bodies for POST/PUT are now
+> `NoteRequest` DTOs validated via `@Valid` — the client can never supply `id` or `userId`,
+> closing the mass-assignment vector present in v2.0.0.
 
 **Key Features**:
-- Extracts `userId` from `Principal` (SecurityContext)
+- Extracts `userId` from `UserPrincipal` (SecurityContext via `@AuthenticationPrincipal`)
 - Uses `ApiResponse` wrapper for consistent responses
 - Logs operations with note ID (never content)
+- `@Valid` on DTO enforces: non-blank title ≤200 chars, content ≤100k chars, each tag ≤50 chars, color ≤100 chars
 
 **Code Highlights**:
 ```java
 @GetMapping
-public ResponseEntity<?> getAllNotes(Principal principal) {
-    List<Note> notes = noteService.getNotesByUserId(principal.getName());
-    return ResponseEntity.ok(ApiResponse.success(notes));
+public ResponseEntity<?> getAllNotes(@AuthenticationPrincipal UserPrincipal principal) {
+    Page<Note> page = noteService.getNotesPaginated(principal.getUserId(), 0, 20, null, null);
+    return ResponseEntity.ok(ApiResponse.success(page));
 }
 
 @PostMapping
-public ResponseEntity<?> createNote(@RequestBody Note note, Principal principal) {
-    note.setUserId(principal.getName());  // Always set from JWT, not request
-    Note createdNote = noteService.createNote(note);
+public ResponseEntity<?> createNote(@Valid @RequestBody NoteRequest request, @AuthenticationPrincipal UserPrincipal principal) {
+    Note createdNote = noteService.createNote(request, principal.getUserId());
     return ResponseEntity.ok(ApiResponse.success(createdNote));
 }
 ```
@@ -209,46 +214,52 @@ public ResponseEntity<?> createNote(@RequestBody Note note, Principal principal)
 ### 5.1 NoteService
 
 **Location**: `service/NoteService.java`
-**Size**: 95 lines, 3.5KB
+**Size**: 110 lines, 4.2KB
 **Annotation**: `@Service`
 
 **Methods**:
 
 | Method | Purpose | Authorization |
 |--------|---------|---------------|
-| `getNotesByUserId(userId)` | Fetch all notes for user | User isolation via query |
-| `createNote(note)` | Create new note with timestamps | N/A (userId set by controller) |
-| `updateNote(id, note, userId)` | Update note if owner | Explicit ownership check |
-| `deleteNote(id, userId)` | Delete note if owner | Explicit ownership check |
-| `createDefaultNotesIfNoneExist(userId)` | Seed welcome notes | N/A (internal call) |
+| `getNotesPaginated(userId, page, size, search, tag)` | Fetch paginated notes with optional search/tag filter | User isolation via query |
+| `createNote(NoteRequest, userId)` | Create new note with timestamps from validated DTO | N/A (userId passed explicitly) |
+| `updateNote(id, NoteRequest, userId)` | Update note if owner | Explicit ownership check (throws `AuthorizationException`) |
+| `deleteNote(id, userId)` | Delete note if owner | Explicit ownership check (throws `AuthorizationException`) |
+| `createDefaultNotesIfNoneExist(userId)` | Seed welcome notes for new users | N/A (internal call) |
 
 **Authorization Pattern**:
 ```java
-public Note updateNote(String id, Note noteDetails, String userId) {
+public Note updateNote(String id, NoteRequest request, String userId) {
     Note note = noteRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Note not found"));
+            .orElseThrow(() -> new NoSuchElementException("Note not found"));
 
     // CRITICAL: Ownership verification
     if (!note.getUserId().equals(userId)) {
-        throw new RuntimeException("Unauthorized");
+        throw new AuthorizationException("You do not have permission to modify this note");
     }
 
-    // Update fields
-    note.setTitle(noteDetails.getTitle());
-    note.setContent(noteDetails.getContent());
-    note.setTags(noteDetails.getTags());
-    note.setColor(noteDetails.getColor());
-    note.setPinned(noteDetails.isPinned());
+    // Update fields from validated DTO
+    note.setTitle(request.title());
+    note.setContent(request.content());
+    note.setTags(request.tags() != null ? request.tags() : List.of());
+    note.setColor(request.color());
+    note.setPinned(request.pinned());
     note.setUpdatedAt(LocalDateTime.now());
 
     return noteRepository.save(note);
 }
 ```
 
+**Search Implementation**:
+Search terms are `Pattern.quote()`-escaped before the `$regex` query so metacharacters are matched literally — this prevents `PatternSyntaxException` crashes and regex injection. The repository method `searchByUserIdAndTerm` performs case-insensitive substring matching on both `title` and `content`.
+
 **Sorting Logic**:
 Notes are always returned sorted by:
 1. **Pinned** (DESC) - Pinned notes first
 2. **UpdatedAt** (DESC) - Most recently updated first
+
+**Missing Entity Handling**:
+`findById` misses now throw `NoSuchElementException`, which is mapped to **HTTP 404 NOT_FOUND** by `GlobalExceptionHandler` (previously fell through to 500).
 
 ---
 
@@ -259,7 +270,7 @@ Notes are always returned sorted by:
 **Location**: `model/Note.java`
 **Size**: 45 lines, 1KB
 **Collection**: `notes`
-**Annotations**: `@Document`, `@Data`, `@Builder`
+**Annotations**: `@Document`, `@Data`, `@Builder`, `@CompoundIndex`
 
 **Schema**:
 
@@ -268,15 +279,18 @@ Notes are always returned sorted by:
 | `id` | String | MongoDB ObjectId | `@Id`, auto-generated |
 | `userId` | String | Owner's user ID | `@Indexed`, required |
 | `title` | String | Note title | Optional (can be empty) |
-| `content` | String | Note body (Markdown) | Optional, no size limit |
+| `content` | String | Note body (plain text, not Markdown — see §12.3) | Optional, no server-side size limit (validated at 100k via DTO) |
 | `tags` | List\<String\> | Categorization tags | Default: empty list |
-| `color` | String | Tailwind CSS class | e.g., `"bg-blue-50"` |
+| `color` | String | Tailwind CSS class | e.g., `"bg-blue-50 dark:bg-blue-900/10"` |
 | `pinned` | boolean | Priority flag | Default: `false` |
 | `createdAt` | LocalDateTime | Creation timestamp | `@CreatedDate` |
 | `updatedAt` | LocalDateTime | Last update timestamp | `@LastModifiedDate` |
 
-**MongoDB Index**:
+**MongoDB Indexes**:
 - `userId` - Indexed for fast user-based queries
+- Compound index `idx_note_user_sort` on `{userId: 1, pinned: -1, updatedAt: -1}` — serves the paginated list query directly
+
+> **Note**: The `@TextIndexed` annotations (weight 2 on title, 1 on content) present in v2.0.0 were **removed in v2.1.0** because search uses `$regex` substring matching, not MongoDB `$text` indexes. The annotations were dead code.
 
 **Example Document**:
 ```json
@@ -309,6 +323,7 @@ Notes are always returned sorted by:
 |--------|-------------|---------|
 | `findByUserId(userId)` | Get all notes for user (unsorted) | Default note seeding check |
 | `findByUserIdOrderByPinnedDescUpdatedAtDesc(userId)` | Get sorted notes | Main list endpoint |
+| `searchByUserIdAndTerm(userId, searchTerm, Pageable)` | **Case-insensitive substring search** via `$regex` on title & content; caller must pass `Pattern.quote(term)` | `NoteService.getNotesPaginated` |
 
 **Spring Data Query Derivation**:
 ```java
@@ -317,6 +332,13 @@ Notes are always returned sorted by:
 List<Note> findByUserIdOrderByPinnedDescUpdatedAtDesc(String userId);
 ```
 
+**Custom @Query for Search**:
+```java
+@Query("{'userId': ?0, '$or': [{'title': {$regex: ?1, $options: 'i'}}, {'content': {$regex: ?1, $options: 'i'}}]}")
+Page<Note> searchByUserIdAndTerm(String userId, String searchTerm, Pageable pageable);
+```
+> The `searchTerm` is expected to be pre-escaped with `Pattern.quote()` — the raw value is interpolated directly into the `$regex`.
+
 ---
 
 ## 8. API Reference
@@ -324,7 +346,7 @@ List<Note> findByUserIdOrderByPinnedDescUpdatedAtDesc(String userId);
 ### 8.1 Get All Notes
 
 ```http
-GET /api/notes
+GET /api/notes?page=0&size=20&search=keyword&tag=Strategy
 Authorization: Bearer <jwt_token>
 ```
 
@@ -332,20 +354,31 @@ Authorization: Bearer <jwt_token>
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": "64a1b2c3d4e5f67890abcdef",
-      "userId": "user_12345",
-      "title": "Buy Tata Motors",
-      "content": "Target: ₹1000",
-      "tags": ["Auto", "EV"],
-      "color": "bg-green-50",
-      "pinned": true,
-      "createdAt": "2025-12-17T10:30:00",
-      "updatedAt": "2025-12-17T14:45:00"
-    },
-    // ... more notes (sorted by pinned, then updatedAt)
-  ]
+  "data": {
+    "content": [
+      {
+        "id": "64a1b2c3d4e5f67890abcdef",
+        "userId": "user_12345",
+        "title": "Buy Tata Motors",
+        "content": "Target: ₹1000",
+        "tags": ["Auto", "EV"],
+        "color": "bg-green-50 dark:bg-green-900/10",
+        "pinned": true,
+        "createdAt": "2025-12-17T10:30:00",
+        "updatedAt": "2025-12-17T14:45:00"
+      }
+    ],
+    "pageable": { "pageNumber": 0, "pageSize": 20, "sort": {...} },
+    "totalPages": 1,
+    "totalElements": 1,
+    "last": true,
+    "size": 20,
+    "number": 0,
+    "sort": { "empty": false, "sorted": true, "unsorted": false },
+    "numberOfElements": 1,
+    "first": true,
+    "empty": false
+  }
 }
 ```
 
@@ -358,14 +391,28 @@ Content-Type: application/json
 
 {
   "title": "New Investment Idea",
-  "content": "## Research\n- Point 1\n- Point 2",
+  "content": "Research notes here",
   "tags": ["Research"],
-  "color": "bg-yellow-50",
+  "color": "bg-yellow-50 dark:bg-yellow-900/10",
   "pinned": false
 }
 ```
 
-**Response**: Created note object with `id`, `createdAt`, `updatedAt`
+**Request Body** (`NoteRequest` DTO — validated via `@Valid`):
+
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| `title` | String | ✅ Yes | `@NotBlank`, max 200 chars |
+| `content` | String | No | Max 100,000 chars |
+| `tags` | List\<String\> | No | Each tag max 50 chars |
+| `color` | String | No | Max 100 chars (Tailwind class) |
+| `pinned` | boolean | No | Default: `false` |
+
+**Response**: Created `Note` object with server-generated `id`, `userId`, `createdAt`, `updatedAt`
+
+**Errors**:
+- `400 VALIDATION_FAILED` — validation errors with per-field messages
+- `401 AUTH_FAILED` — invalid/missing JWT
 
 ### 8.3 Update Note
 
@@ -378,16 +425,19 @@ Content-Type: application/json
   "title": "Updated Title",
   "content": "Updated content",
   "tags": ["Research", "Updated"],
-  "color": "bg-blue-50",
+  "color": "bg-blue-50 dark:bg-blue-900/10",
   "pinned": true
 }
 ```
 
-**Response**: Updated note object
+**Request Body**: Same `NoteRequest` DTO as create.
+
+**Response**: Updated `Note` object
 
 **Errors**:
-- `404 Note not found` - Note with ID doesn't exist
-- `403 Unauthorized` - User doesn't own the note
+- `400 VALIDATION_FAILED` — validation errors
+- `403 ACCESS_DENIED` — user doesn't own the note
+- `404 NOT_FOUND` — note with ID doesn't exist (new in v2.1.0)
 
 ### 8.4 Delete Note
 
@@ -403,6 +453,10 @@ Authorization: Bearer <jwt_token>
   "data": "Note deleted successfully"
 }
 ```
+
+**Errors**:
+- `403 ACCESS_DENIED` — user doesn't own the note
+- `404 NOT_FOUND` — note with ID doesn't exist (new in v2.1.0)
 
 ---
 
@@ -495,17 +549,19 @@ Notes are **strictly personal**. There is no concept of public or shared notes.
 | Layer | Isolation Mechanism |
 |-------|---------------------|
 | **Read** | `findByUserId(userId)` query filter |
-| **Write** | Controller sets `userId` from JWT, not from request |
-| **Update** | Service verifies `existingNote.userId == userId` |
-| **Delete** | Service verifies `existingNote.userId == userId` |
+| **Write** | Controller sets `userId` from `UserPrincipal.getUserId()`, not from request |
+| **Update** | Service verifies `existingNote.userId == userId` (throws `AuthorizationException`) |
+| **Delete** | Service verifies `existingNote.userId == userId` (throws `AuthorizationException`) |
 
-### 10.2 Input Handling
+### 10.2 Input Handling & Hardening
 
 | Concern | Backend Policy | Frontend Responsibility |
 |---------|---------------|------------------------|
-| **XSS** | Stores raw content | Must sanitize when rendering HTML |
-| **Size** | No limit enforced | Should limit content length |
-| **Markdown** | Stored as-is | Parse for display only |
+| **XSS** | Stores raw plain text | Must sanitize if rendering as HTML |
+| **Size** | DTO enforces caps (title ≤200, content ≤100k, tag ≤50, color ≤100) | Should respect same limits for UX |
+| **Markdown** | Not parsed — stored as plain text | Parse for display only (see §12.3) |
+| **Regex Injection** | `Pattern.quote()` escapes search terms | N/A (backend hardening) |
+| **Mass Assignment** | DTO excludes `id`/`userId` — client cannot supply | N/A (backend hardening) |
 
 ### 10.3 Logging Policy
 
@@ -515,6 +571,17 @@ Notes are **strictly personal**. There is no concept of public or shared notes.
 | User ID | ✅ Yes | `"Creating note for user: user_12345"` |
 | Title | ❌ No | Privacy concern |
 | Content | ❌ No | Privacy concern |
+| Search Term | ❌ No | Privacy concern |
+
+### 10.4 Error Response Mapping (v2.1.0)
+
+| Scenario | HTTP | Error Code | Notes |
+|----------|------|------------|-------|
+| Missing note (PUT/DELETE) | 404 | `NOT_FOUND` | Mapped via `NoSuchElementException` in `GlobalExceptionHandler` |
+| Validation failure | 400 | `VALIDATION_FAILED` | Per-field errors from `@Valid` on `NoteRequest` |
+| Unauthorized (ownership) | 403 | `ACCESS_DENIED` | `AuthorizationException` from service |
+| Auth failure | 401 | `AUTH_FAILED` | Invalid/missing JWT |
+| Internal error | 500 | `INTERNAL_ERROR` | Catch-all, no stack trace leaked |
 
 ---
 
@@ -559,36 +626,40 @@ public void createDefaultNotesIfNoneExist(String userId) {
 
 ## 12. Frontend Integration
 
-### 12.1 React Query Integration
+### 12.1 React Query Integration (v2.1.0)
 
 ```javascript
-// Fetch notes
-const { data: notes } = useQuery({
-  queryKey: ['notes'],
-  queryFn: () => api.get('/api/notes')
+// Fetch notes with pagination, search, tag filter
+const { data } = useQuery({
+  queryKey: ['notes', { page, search: committedSearch, tag: activeTag }],
+  queryFn: () => notesAPI.getAll({ page, size: PAGE_SIZE, search: committedSearch, tag: activeTag !== 'all' ? activeTag : undefined }),
+  staleTime: 30 * 1000,
+  keepPreviousData: true,  // smooth pagination transitions
 });
+
+// Debounced search (300ms) — input state drives UI immediately, committedSearch drives queries
+const [search, setSearch] = useState('');
+const [committedSearch, setCommittedSearch] = useState('');
+useEffect(() => {
+  const timer = setTimeout(() => setCommittedSearch(search), 300);
+  return () => clearTimeout(timer);
+}, [search]);
 
 // Create note with optimistic update
 const createMutation = useMutation({
-  mutationFn: (note) => api.post('/api/notes', note),
+  mutationFn: notesAPI.create,
   onMutate: async (newNote) => {
-    await queryClient.cancelQueries(['notes']);
-    const previous = queryClient.getQueryData(['notes']);
-    queryClient.setQueryData(['notes'], (old) => [...old, tempNote]);
-    return { previous };
+    await queryClient.cancelQueries({ queryKey: ['notes'] });
+    const prev = queryClient.getQueryData(['notes', { page, search: committedSearch, tag: activeTag }]);
+    // ... optimistic insert
   },
-  onError: (err, newNote, context) => {
-    queryClient.setQueryData(['notes'], context.previous);
-  },
-  onSettled: () => {
-    queryClient.invalidateQueries(['notes']);
-  }
+  onError: onErr, onSettled: invalidate,
 });
 ```
 
-### 12.2 Color Classes
+### 12.2 Color Classes (Standardized to `/10` opacity)
 
-The `color` field stores Tailwind CSS classes for light/dark mode:
+The `color` field stores Tailwind CSS classes for light/dark mode. **All seeded notes and dialog-generated notes now use `/10` dark-mode opacity** for visual consistency.
 
 ```javascript
 const colorOptions = [
@@ -602,22 +673,13 @@ const colorOptions = [
 ];
 ```
 
-### 12.3 Markdown Rendering
+> The dialog builds the dark-mode class as `` `bg-${key}-50 dark:bg-${key}-900/10` `` (was `/20` in v2.0.0).
 
-Content is stored as Markdown. If you render it as HTML in the frontend, use a
-sanitizing parser — e.g. `react-markdown` + `remark-gfm`:
+### 12.3 Markdown Rendering — Not Supported (Plain Text)
 
-```jsx
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+Content is stored as **plain text**, not Markdown. The frontend renders it escaped inside `<p>` tags (see `NoteCard.jsx` line 88-90). If Markdown rendering is desired in the future, add `react-markdown` + `remark-gfm` to `frontend/package.json` and update the render logic.
 
-<ReactMarkdown remarkPlugins={[remarkGfm]}>
-  {note.content}
-</ReactMarkdown>
-```
-
-> ⚠️ Neither `react-markdown` nor `remark-gfm` is currently a dependency in
-> `frontend/package.json` (verified 2026-08-23) — add them before using this pattern.
+> ⚠️ Neither `react-markdown` nor `remark-gfm` is a dependency (verified 2026-08-24). The v2.0.0 claim "Supports Markdown formatting" (§1.3) was aspirational — the actual implementation is plain text.
 
 ---
 
@@ -625,13 +687,15 @@ import remarkGfm from 'remark-gfm';
 
 | Pitfall | Impact | Prevention |
 |---------|--------|------------|
-| Missing `userId` check on Update/Delete | One user can modify another's notes | Always verify `existingNote.userId == userId` |
-| Setting `userId` from request body | User can spoof another's ID | Always set from `principal.getName()` |
-| Returning all notes without filter | Privacy breach | Always filter by `userId` |
-| Logging note content | Privacy violation | Log only note IDs |
-| No pagination | Performance issues with many notes | Implement pagination (future) |
-| Content size unlimited | Storage abuse | Add size limits (future) |
-| Rendering unsanitized HTML | XSS vulnerability | Use Markdown parser with sanitization |
+| Missing `userId` check on Update/Delete | One user can modify another's notes | Always verify `existingNote.userId == userId` (throws `AuthorizationException`) |
+| Setting `userId` from request body | User can spoof another's ID | Always set from `principal.getUserId()` via `UserPrincipal` |
+| Returning all notes without filter | Privacy breach | Always filter by `userId` in repository queries |
+| Logging note content/title/search | Privacy violation | Log only note IDs |
+| ~~No pagination~~ | ~~Performance issues~~ | ✅ Implemented (`Page<Note>` with page/size/search/tag) |
+| Content size unlimited | Storage abuse | DTO enforces caps (title ≤200, content ≤100k, tag ≤50, color ≤100) |
+| Rendering unsanitized HTML | XSS vulnerability | Content is plain text; sanitize if HTML rendering added later |
+| Regex metacharacters in search | `PatternSyntaxException` → 500 | Backend: `Pattern.quote()`; Frontend: debounce |
+| Client supplies `id` on create | Upsert/replacement attack (IDOR) | DTO excludes `id`/`userId` — server generates |
 
 ---
 
@@ -639,12 +703,13 @@ import remarkGfm from 'remark-gfm';
 
 | File | Size | Lines | Purpose |
 |------|------|-------|---------|
-| NoteService.java | 3.5KB | 95 | Business logic + authorization |
+| NoteService.java | 4.2KB | 110 | Business logic + authorization |
 | NoteController.java | 2.7KB | 65 | REST endpoints |
 | Note.java | 1KB | 45 | Entity model |
 | NoteRepository.java | 0.5KB | 16 | Data access |
+| NoteRequest.java | 1KB | 30 | Validated request DTO |
 
-**Total**: ~7.7KB, ~221 lines
+**Total**: ~9.4KB, ~266 lines
 
 ---
 
@@ -653,11 +718,12 @@ import remarkGfm from 'remark-gfm';
 | Enhancement | Priority | Description |
 |-------------|----------|-------------|
 | ~~Pagination~~ | ~~High~~ | ✅ Implemented (`Page<Note>` with page/size/search/tag) |
-| Search | Medium | ✅ Text search implemented via `searchByUserIdAndText` |
+| ~~Search~~ | ~~Medium~~ | ✅ Implemented via `searchByUserIdAndTerm` ($regex, case-insensitive) |
 | Attachments | Medium | Image/file attachments |
 | Sharing | Low | Share notes with other users |
 | Reminders | Low | Set reminder dates for notes |
 | Archive | Low | Archive instead of delete |
+| Markdown Rendering | Low | Add `react-markdown` + `remark-gfm` for rich content display |
 
 ---
 
@@ -673,6 +739,7 @@ import remarkGfm from 'remark-gfm';
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **2.1.0** | **2026-08-24** | **Audit fix round**: DTO-only request bodies (`NoteRequest`) with `@Valid` — kills mass-assignment (client can't supply `id`/`userId`); validation caps (title ≤200, content ≤100k, tag ≤50, color ≤100); `Pattern.quote()` on search terms prevents regex injection/500; `NoSuchElementException` → 404 NOT_FOUND (was 500); removed dead `@TextIndexed` annotations; renamed `searchByUserIdAndText` → `searchByUserIdAndTerm` with accurate javadoc; frontend search debounce (300ms); standardized dark-mode color opacity to `/10` (was `/20` mismatch vs seeds); corrected "Markdown" claim to plain text; removed dead `NoteService` injection from `UserAuthenticationService`; added `dto/` directory; test cleanups. |
 | 2.0.0 | 2025-12-17 | Comprehensive rewrite with accurate code analysis |
 | 1.0.0 | 2025-12-14 | Initial documentation |
 

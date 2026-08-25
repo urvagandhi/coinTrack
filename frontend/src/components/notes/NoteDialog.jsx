@@ -59,7 +59,7 @@ export default function NoteDialog({ isOpen, onClose, onSave, onDelete, initialD
         if (!title.trim()) return;
         const colorBg = selectedColor === 'default'
             ? 'bg-white dark:bg-gray-800'
-            : `bg-${selectedColor}-50 dark:bg-${selectedColor}-900/20`;
+            : `bg-${selectedColor}-50 dark:bg-${selectedColor}-900/10`;
 
         onSave({
             ...(initialData || {}),

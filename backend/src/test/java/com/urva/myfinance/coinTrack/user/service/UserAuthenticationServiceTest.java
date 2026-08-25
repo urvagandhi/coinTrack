@@ -28,7 +28,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.urva.myfinance.coinTrack.common.exception.AuthenticationException;
 import com.urva.myfinance.coinTrack.security.service.GoogleOAuthService;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
-import com.urva.myfinance.coinTrack.notes.service.NoteService;
 import com.urva.myfinance.coinTrack.user.dto.CompleteProfileRequest;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.model.AuthProvider;
@@ -48,7 +47,6 @@ class UserAuthenticationServiceTest {
     @Mock private TotpService totpService;
     @Mock private UserService userService;
     @Mock private GoogleOAuthService googleOAuthService;
-    @Mock private NoteService noteService;
 
     @InjectMocks
     private UserAuthenticationService authService;

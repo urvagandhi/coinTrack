@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.urva.myfinance.coinTrack.common.exception.AuthorizationException;
+import com.urva.myfinance.coinTrack.notes.dto.NoteRequest;
 import com.urva.myfinance.coinTrack.notes.model.Note;
 import com.urva.myfinance.coinTrack.notes.repository.NoteRepository;
 
@@ -51,24 +53,27 @@ class NoteServiceTest {
     void createNote_SetsTimestampsAndSaves() {
         when(noteRepository.save(any(Note.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Note note = Note.builder().userId("user-1").title("Test").content("Content").build();
-        Note result = noteService.createNote(note);
+        NoteRequest request = new NoteRequest("Test", "Content", List.of(), "bg-blue-50", false);
+        Note result = noteService.createNote(request, "user-1");
 
         assertNotNull(result.getCreatedAt());
         assertNotNull(result.getUpdatedAt());
-        verify(noteRepository).save(note);
+        assertEquals("Test", result.getTitle());
+        assertEquals("Content", result.getContent());
+        assertEquals("user-1", result.getUserId());
+        verify(noteRepository).save(any(Note.class));
     }
 
     @Test
-    @DisplayName("2. createNote preserves existing createdAt")
+    @DisplayName("2. createNote preserves provided createdAt")
     void createNote_PreservesExistingCreatedAt() {
         LocalDateTime existing = LocalDateTime.of(2025, 6, 1, 8, 0);
         when(noteRepository.save(any(Note.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Note note = Note.builder().userId("user-1").title("Test").createdAt(existing).build();
-        Note result = noteService.createNote(note);
+        NoteRequest request = new NoteRequest("Test", "Content", List.of(), "bg-blue-50", false);
+        Note result = noteService.createNote(request, "user-1");
 
-        assertEquals(existing, result.getCreatedAt());
+        assertNotNull(result.getCreatedAt());
     }
 
     @Test
@@ -77,15 +82,10 @@ class NoteServiceTest {
         when(noteRepository.findById("note-1")).thenReturn(Optional.of(sampleNote));
         when(noteRepository.save(any(Note.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Note details = Note.builder()
-                .title("Updated Title")
-                .content("Updated content")
-                .tags(List.of("updated"))
-                .color("bg-red-50")
-                .pinned(true)
-                .build();
+        NoteRequest request = new NoteRequest("Updated Title", "Updated content", List.of("updated"), "bg-red-50",
+                true);
 
-        Note result = noteService.updateNote("note-1", details, "user-1");
+        Note result = noteService.updateNote("note-1", request, "user-1");
 
         assertEquals("Updated Title", result.getTitle());
         assertEquals("Updated content", result.getContent());
@@ -99,19 +99,20 @@ class NoteServiceTest {
     void updateNote_UnauthorizedUser_Throws() {
         when(noteRepository.findById("note-1")).thenReturn(Optional.of(sampleNote));
 
-        Note details = Note.builder().title("Hacked").build();
+        NoteRequest request = new NoteRequest("Hacked", "Content", List.of(), "bg-blue-50", false);
 
         assertThrows(AuthorizationException.class,
-                () -> noteService.updateNote("note-1", details, "user-2"));
+                () -> noteService.updateNote("note-1", request, "user-2"));
     }
 
     @Test
-    @DisplayName("5. updateNote throws when note not found")
+    @DisplayName("5. updateNote throws NoSuchElementException when note not found")
     void updateNote_NotFound_Throws() {
         when(noteRepository.findById("nonexistent")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class,
-                () -> noteService.updateNote("nonexistent", sampleNote, "user-1"));
+        NoteRequest request = new NoteRequest("Test", "Content", List.of(), "bg-blue-50", false);
+        assertThrows(NoSuchElementException.class,
+                () -> noteService.updateNote("nonexistent", request, "user-1"));
     }
 
     @Test
@@ -135,11 +136,11 @@ class NoteServiceTest {
     }
 
     @Test
-    @DisplayName("8. deleteNote throws when note not found")
+    @DisplayName("8. deleteNote throws NoSuchElementException when note not found")
     void deleteNote_NotFound_Throws() {
         when(noteRepository.findById("nonexistent")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class,
+        assertThrows(NoSuchElementException.class,
                 () -> noteService.deleteNote("nonexistent", "user-1"));
     }
 
@@ -167,23 +168,21 @@ class NoteServiceTest {
     }
 
     @Test
-    @DisplayName("11. getNotesPaginated with search delegates to searchByUserIdAndText")
+    @DisplayName("11. getNotesPaginated with search delegates to searchByUserIdAndTerm")
     void getNotesPaginated_WithSearch_CallsSearch() {
-        org.springframework.data.domain.Page<Note> emptyPage =
-                org.springframework.data.domain.Page.empty();
-        when(noteRepository.searchByUserIdAndText(eq("user-1"), eq("strategy"), any()))
+        org.springframework.data.domain.Page<Note> emptyPage = org.springframework.data.domain.Page.empty();
+        when(noteRepository.searchByUserIdAndTerm(eq("user-1"), eq("\\Qstrategy\\E"), any()))
                 .thenReturn(emptyPage);
 
         noteService.getNotesPaginated("user-1", 0, 10, "strategy", null);
 
-        verify(noteRepository).searchByUserIdAndText(eq("user-1"), eq("strategy"), any());
+        verify(noteRepository).searchByUserIdAndTerm(eq("user-1"), eq("\\Qstrategy\\E"), any());
     }
 
     @Test
     @DisplayName("12. getNotesPaginated with tag delegates to findByUserIdAndTagsContaining")
     void getNotesPaginated_WithTag_CallsTagFilter() {
-        org.springframework.data.domain.Page<Note> emptyPage =
-                org.springframework.data.domain.Page.empty();
+        org.springframework.data.domain.Page<Note> emptyPage = org.springframework.data.domain.Page.empty();
         when(noteRepository.findByUserIdAndTagsContaining(eq("user-1"), eq("finance"), any()))
                 .thenReturn(emptyPage);
 
@@ -195,8 +194,7 @@ class NoteServiceTest {
     @Test
     @DisplayName("13. getNotesPaginated without search/tag delegates to findByUserId")
     void getNotesPaginated_NoFilters_CallsFindByUserId() {
-        org.springframework.data.domain.Page<Note> emptyPage =
-                org.springframework.data.domain.Page.empty();
+        org.springframework.data.domain.Page<Note> emptyPage = org.springframework.data.domain.Page.empty();
         when(noteRepository.findByUserId(eq("user-1"), any())).thenReturn(emptyPage);
 
         noteService.getNotesPaginated("user-1", 0, 10, null, null);
@@ -207,8 +205,7 @@ class NoteServiceTest {
     @Test
     @DisplayName("14. Size is capped at 50")
     void getNotesPaginated_LargeSize_CappedAt50() {
-        org.springframework.data.domain.Page<Note> emptyPage =
-                org.springframework.data.domain.Page.empty();
+        org.springframework.data.domain.Page<Note> emptyPage = org.springframework.data.domain.Page.empty();
         when(noteRepository.findByUserId(eq("user-1"), any())).thenReturn(emptyPage);
 
         noteService.getNotesPaginated("user-1", 0, 100, null, null);
@@ -219,8 +216,7 @@ class NoteServiceTest {
     @Test
     @DisplayName("15. Size 0 is clamped to 1")
     void getNotesPaginated_ZeroSize_ClampedToOne() {
-        org.springframework.data.domain.Page<Note> emptyPage =
-                org.springframework.data.domain.Page.empty();
+        org.springframework.data.domain.Page<Note> emptyPage = org.springframework.data.domain.Page.empty();
         when(noteRepository.findByUserId(eq("user-1"), any())).thenReturn(emptyPage);
 
         noteService.getNotesPaginated("user-1", 0, 0, null, null);

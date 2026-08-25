@@ -7,7 +7,7 @@ import { notesAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Pin, Plus, Search, StickyNote, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const PAGE_SIZE = 20;
 
@@ -157,6 +157,7 @@ function NoteCardSkeleton() {
 
 export default function NotesPage() {
     const [search, setSearch] = useState('');
+    const [committedSearch, setCommittedSearch] = useState('');
     const [activeTag, setActiveTag] = useState('all');
     const [page, setPage] = useState(0);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -164,11 +165,17 @@ export default function NotesPage() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
+    // Debounce search input (300ms) to avoid firing per keystroke
+    useEffect(() => {
+        const timer = setTimeout(() => setCommittedSearch(search), 300);
+        return () => clearTimeout(timer);
+    }, [search]);
+
     const { data, isLoading } = useQuery({
-        queryKey: ['notes', { page, search, tag: activeTag }],
+        queryKey: ['notes', { page, search: committedSearch, tag: activeTag }],
         queryFn: () => notesAPI.getAll({
             page, size: PAGE_SIZE,
-            search: search || undefined,
+            search: committedSearch || undefined,
             tag: activeTag !== 'all' ? activeTag : undefined,
         }),
         staleTime: 30 * 1000,
@@ -184,15 +191,15 @@ export default function NotesPage() {
 
     const invalidate = () => queryClient.invalidateQueries({ queryKey: ['notes'] });
     const optimistic = async (updateFn) => {
-        await queryClient.cancelQueries({ queryKey: ['notes'] });
-        const prev = queryClient.getQueryData(['notes', { page, search, tag: activeTag }]);
+        await queryClient.cancelQueries({ queryKey: ['notes', { page, search: committedSearch, tag: activeTag }] });
+        const prev = queryClient.getQueryData(['notes', { page, search: committedSearch, tag: activeTag }]);
         const old = Array.isArray(prev) ? prev : (prev?.content ?? []);
         const updated = updateFn(old);
-        queryClient.setQueryData(['notes', { page, search, tag: activeTag }], Array.isArray(prev) ? updated : { ...prev, content: updated });
+        queryClient.setQueryData(['notes', { page, search: committedSearch, tag: activeTag }], Array.isArray(prev) ? updated : { ...prev, content: updated });
         return { prev };
     };
     const onErr = (err, _, ctx) => {
-        queryClient.setQueryData(['notes', { page, search, tag: activeTag }], ctx.prev);
+        queryClient.setQueryData(['notes', { page, search: committedSearch, tag: activeTag }], ctx.prev);
         toast({ title: 'Operation Failed', description: err?.message || 'Please try again.', variant: 'destructive' });
     };
 

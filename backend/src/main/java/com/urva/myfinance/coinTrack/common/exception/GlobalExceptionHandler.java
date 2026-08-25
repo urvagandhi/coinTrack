@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.common.exception;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,6 +189,18 @@ public class GlobalExceptionHandler {
     }
 
     // ── 404 ─────────────────────────────────────────────────────────────
+
+    /**
+     * Missing-entity lookups (e.g. NoteService findById) map to 404
+     * instead of falling through to the 500 catch-all.
+     */
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<ApiErrorResponse> handleNoSuchElement(
+            NoSuchElementException ex, HttpServletRequest request) {
+        logger.warn("Resource not found: {}", ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, "NOT_FOUND",
+                "The requested resource was not found", request);
+    }
 
     /**
      * No handler matched the request path.

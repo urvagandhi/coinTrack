@@ -2,6 +2,8 @@ package com.urva.myfinance.coinTrack.notes.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.urva.myfinance.coinTrack.common.exception.AuthorizationException;
+import com.urva.myfinance.coinTrack.notes.dto.NoteRequest;
 import com.urva.myfinance.coinTrack.notes.model.Note;
 import com.urva.myfinance.coinTrack.notes.repository.NoteRepository;
 
@@ -22,14 +25,9 @@ public class NoteService {
     private NoteRepository noteRepository;
 
     /**
-     * Get all notes for a user (unpaginated — backward compatibility).
-     */
-    // public List<Note> getNotesByUserId(String userId) {
-    // return noteRepository.findByUserIdOrderByPinnedDescUpdatedAtDesc(userId);
-    // }
-
-    /**
      * Get paginated notes with optional search/tag filter.
+     * Search terms are Pattern.quote-escaped before hitting the $regex query so
+     * metacharacters are matched literally instead of crashing or broadening.
      */
     public Page<Note> getNotesPaginated(String userId, int page, int size, String search, String tag) {
         int safeSize = Math.min(Math.max(size, 1), 50);
@@ -37,7 +35,7 @@ public class NoteService {
                 Sort.by(Sort.Direction.DESC, "pinned").and(Sort.by(Sort.Direction.DESC, "updatedAt")));
 
         if (search != null && !search.isBlank()) {
-            return noteRepository.searchByUserIdAndText(userId, search.trim(), pageable);
+            return noteRepository.searchByUserIdAndTerm(userId, Pattern.quote(search.trim()), pageable);
         }
         if (tag != null && !tag.isBlank()) {
             return noteRepository.findByUserIdAndTagsContaining(userId, tag.trim(), pageable);
@@ -45,37 +43,42 @@ public class NoteService {
         return noteRepository.findByUserId(userId, pageable);
     }
 
-    public Note createNote(Note note) {
-        if (note.getCreatedAt() == null) {
-            note.setCreatedAt(LocalDateTime.now());
-        }
-        note.setUpdatedAt(LocalDateTime.now());
+    public Note createNote(NoteRequest request, String userId) {
+        LocalDateTime now = LocalDateTime.now();
+        Note note = Note.builder()
+                .userId(userId)
+                .title(request.title())
+                .content(request.content())
+                .tags(request.tags() != null ? request.tags() : List.of())
+                .color(request.color())
+                .pinned(request.pinned())
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
         return noteRepository.save(note);
     }
 
-    public Note updateNote(String id, Note noteDetails, String userId) {
-        @SuppressWarnings("null")
+    public Note updateNote(String id, NoteRequest request, String userId) {
         Note note = noteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Note not found"));
+                .orElseThrow(() -> new NoSuchElementException("Note not found"));
 
         if (!note.getUserId().equals(userId)) {
             throw new AuthorizationException("You do not have permission to modify this note");
         }
 
-        note.setTitle(noteDetails.getTitle());
-        note.setContent(noteDetails.getContent());
-        note.setTags(noteDetails.getTags());
-        note.setColor(noteDetails.getColor());
-        note.setPinned(noteDetails.isPinned());
+        note.setTitle(request.title());
+        note.setContent(request.content());
+        note.setTags(request.tags() != null ? request.tags() : List.of());
+        note.setColor(request.color());
+        note.setPinned(request.pinned());
         note.setUpdatedAt(LocalDateTime.now());
 
         return noteRepository.save(note);
     }
 
     public void deleteNote(String id, String userId) {
-        @SuppressWarnings("null")
         Note note = noteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Note not found"));
+                .orElseThrow(() -> new NoSuchElementException("Note not found"));
 
         if (!note.getUserId().equals(userId)) {
             throw new AuthorizationException("You do not have permission to delete this note");
@@ -84,7 +87,6 @@ public class NoteService {
         noteRepository.delete(note);
     }
 
-    @SuppressWarnings("null")
     @Transactional
     public void createDefaultNotesIfNoneExist(String userId) {
         List<Note> existingNotes = noteRepository.findByUserId(userId);

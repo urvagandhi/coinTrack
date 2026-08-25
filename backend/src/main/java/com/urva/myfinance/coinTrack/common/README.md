@@ -360,6 +360,7 @@ revision showed `(message, httpStatus, errorCode)` which would compile but swap 
 | ConstraintViolationException                     | 400      | `VALIDATION_FAILED`       | per-field`fieldErrors[]`                        |
 | HttpMessageNotReadableException                  | 400      | `MALFORMED_REQUEST`       | unparseable JSON body                             |
 | IllegalArgumentException / IllegalStateException | 400      | `VALIDATION_FAILED`       | business validation                               |
+| NoSuchElementException                           | 404      | `NOT_FOUND`               | missing entity lookups (e.g. Note by id)          |
 | NoHandlerFoundException                          | 404      | `NOT_FOUND`               | requires throw-exception-if-no-handler-found=true |
 | Exception (catch-all)                            | 500      | `INTERNAL_ERROR`          | generic message only, never leaks ex              |
 

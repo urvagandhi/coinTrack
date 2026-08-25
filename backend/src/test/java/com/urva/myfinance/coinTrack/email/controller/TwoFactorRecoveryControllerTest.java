@@ -87,15 +87,15 @@ class TwoFactorRecoveryControllerTest {
     }
 
     @Test
-    @DisplayName("request2FARecovery: user found, 2FA enabled, email not verified → 400")
-    void request2FARecovery_emailNotVerified_400() {
+    @DisplayName("request2FARecovery: user found, 2FA enabled, email not verified → 200 (no enumeration)")
+    void request2FARecovery_emailNotVerified_200() {
         User user = User.builder().id("u1").totpEnabled(true).emailVerified(false).build();
         when(userRepository.findByEmail("test@example.com")).thenReturn(user);
         when(userRepository.findByUsername("test@example.com")).thenReturn(null);
         when(userRepository.findByPhoneNumber("test@example.com")).thenReturn(null);
 
         ResponseEntity<?> resp = controller.request2FARecovery(Map.of("identifier", "test@example.com"), httpRequest);
-        assertEquals(HttpStatus.BAD_REQUEST, resp.getStatusCode());
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
     }
 
     @Test

@@ -22,7 +22,6 @@ import com.urva.myfinance.coinTrack.user.dto.CompleteProfileRequest;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.model.AuthProvider;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
-import com.urva.myfinance.coinTrack.notes.service.NoteService;
 import java.time.LocalDateTime;
 
 /**
@@ -49,7 +48,6 @@ public class UserAuthenticationService {
     private final TotpService totpService;
     private final UserService userService;
     private final GoogleOAuthService googleOAuthService;
-    private final NoteService noteService;
 
     public UserAuthenticationService(
             UserRepository userRepository,
@@ -58,8 +56,7 @@ public class UserAuthenticationService {
             JWTService jwtService,
             TotpService totpService,
             UserService userService,
-            GoogleOAuthService googleOAuthService,
-            NoteService noteService) {
+            GoogleOAuthService googleOAuthService) {
         this.userRepository = userRepository;
         this.authManager = authManager;
         this.passwordEncoder = passwordEncoder;
@@ -67,7 +64,6 @@ public class UserAuthenticationService {
         this.totpService = totpService;
         this.userService = userService;
         this.googleOAuthService = googleOAuthService;
-        this.noteService = noteService;
     }
 
     /**

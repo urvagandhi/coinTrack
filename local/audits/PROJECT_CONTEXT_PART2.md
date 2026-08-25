@@ -2,7 +2,7 @@
 
 > Produced by the audit defined in `rules/02-per-module-deep-dive-and-synthesis.md`.
 > One synthesis card per module, appended in processing order. Build on PROJECT_CONTEXT_PART1.md.
-> Generated: 2026-08-23 · Modules completed so far: 4/13 (common, security, user, email)
+> Generated: 2026-08-23 · Modules completed so far: 5/13 (common, security, user, email, notes)
 > Convention: every synthesis card contains an **End-to-end (E2E) flow** section — per endpoint/journey: what the UI collects from the user → client-side processing → exact HTTP call (method/path/body/headers) → what the backend receives (DTO/validation) → backend processing steps → response shape → how the frontend consumes/stores it.
 
 ---
@@ -537,3 +537,123 @@ Fix round 2026-08-23 #3: **ALL REMAINING DISCREPANCIES RESOLVED (#5–#11)** —
 Fix round 2026-08-23 #4: **ALL 5 WATCH-LIST ITEMS RESOLVED** — details in the watch-list section above; open question #1 closed by the same round. Email README v3.3.0.
 
 **Module `email`: 11 discrepancies found — ALL 11 RESOLVED (#5–#11 in fix round 3: WebClient hardening, dead-config/route removal ×3, template list completion, envelope parity, wiring unification; #7 documented-not-changed by design) · ALL 5 watch-list items RESOLVED (fix round 4: refresh-token revocation on reset, secret-equality startup guard, neutral MFA-recovery response, server-side email normalization, @Async restructure) · BOTH open questions answered/closed. Email module audit is COMPLETE — nothing outstanding.**
+
+---
+
+## Synthesis Card — `notes`
+
+Files (6): `model/Note` · `repository/NoteRepository` · `service/NoteService` · `controller/NoteController` · `listener/NotesUserDataCleanupListener` (added user-round-7 cascade) · **`dto/NoteRequest`** (NEW v2.1.0 — validated request DTO). 4 endpoints, one collection, ~270 LOC total.
+
+### Owns collections
+
+- **`notes`**: `{id (@Id ObjectId string), title, content, tags List<String> @Builder.Default = List.of(), color String (Tailwind class e.g. "bg-blue-50 dark:bg-blue-900/10"), userId @Indexed, pinned boolean, createdAt @CreatedDate, updatedAt @LastModifiedDate}`. Compound index **`idx_note_user_sort` = {userId:1, pinned:-1, updatedAt:-1}** exactly matches the list query's sort (equality on userId + sort on pinned/updatedAt → full index serve, no in-memory sort). ✅ v2.1.0: **@TextIndexed annotations (weight 2/1) REMOVED** — search uses `$regex` substring matching, not `$text`; Part 1's field list now matches code.
+
+### Real dependency edges (from actual imports)
+
+**Outbound:** NoteController → security.model.UserPrincipal (`@AuthenticationPrincipal`, uses **getUserId()**) + common ApiResponse; NoteService → common AuthorizationException (cross-user → 403 ACCESS_DENIED); NotesUserDataCleanupListener → common.event.UserDeletedEvent.
+**Inbound:** user.`UserService.java:218` calls `createDefaultNotesIfNoneExist(savedUser.getId())` post-registration-completion (the FLOW-1 "INSERT 2 default notes" write). ✅ v2.1.0: **Dead injection REMOVED** — `UserAuthenticationService` no longer constructor-injects NoteService (removed import, field, ctor param, assignment; 3 test files cleaned of unused @Mock NoteService).
+
+### Endpoint-to-frontend map (4 endpoints — all wired)
+
+| Endpoint | Frontend caller |
+| --- | --- |
+| GET`/api/notes?page&size&search&tag` → ApiResponse(`Page<Note>`) | notesAPI.getAll ← `(main)/notes/page.jsx`:169 useQuery `['notes',{page,search:committedSearch,tag}]`, staleTime 30s, keepPreviousData; PAGE_SIZE=20; **search debounced 300ms via committedSearch state** |
+| POST`/api/notes` body **`NoteRequest` DTO @Valid** | notesAPI.create ← page createMutation (optimistic prepend w/ temp id) via NoteDialog onSave |
+| PUT`/api/notes/{id}` body **`NoteRequest` DTO @Valid** | notesAPI.update ← page updateMutation (optimistic merge; also pin toggle handlePin sends full note with flipped pinned) |
+| DELETE`/api/notes/{id}` | notesAPI.delete ← page deleteMutation (toast-action confirm, optimistic filter) |
+
+Shared infra: React Query + queryClient invalidation, useToast, Skeleton, cn util, NoteDialog component (`components/notes/NoteDialog.jsx`), AuthGuard via `(main)/layout.js`. No dedicated hook file. Defensive legacy compat in page: accepts both bare-array and Page-shaped responses (`Array.isArray(data) ? data : data?.content`). **Frontend: search debounced via `committedSearch` state (300ms useEffect); NoteDialog color template standardized to `-900/10` dark opacity (was `/20` mismatch vs seeds).**
+
+### End-to-end flows — UI → client → HTTP → backend receive → backend process → response → frontend consume → Mongo writes
+
+**FLOW 1 — Browse / search / tag-filter / paginate (GET `/api/notes`)**
+
+- **UI collects**: free-text search input, tag chips (single-select incl. `all`), page number via windowed pager (≤5 buttons).
+- **Client processing**: search input state updates immediately; **debounced 300ms** via `useEffect` → `committedSearch` state drives `queryKey`/`queryFn`; tag/page held in React state; useQuery key `['notes',{page,search:committedSearch,tag}]`, staleTime 30s, keepPreviousData.
+- **HTTP**: GET `/api/notes?page=<n>&size=20&search=<committedSearch>&tag=<t>` (search/tag omitted when blank/`all`) with Bearer access token.
+- **Backend receives**: UserPrincipal + 4 optional params (defaults page=0, size=20).
+- **Backend processing**: clamp size to [1,50] → Pageable sorted pinned DESC → updatedAt DESC → branch: search non-blank ⇒ `$or` case-insensitive `$regex` over title+content scoped by userId; **search term pre-escaped via `Pattern.quote()`** (regex injection hardened); else tag non-blank ⇒ exact `tags` array contains-match; else plain `findByUserId` page.
+- **Response 200**: `ApiResponse.success(Page<Note>)` → unwrapped `{content[], totalPages, totalElements, …}`.
+- **Frontend consume**: splits the page into Pinned / Archive sections; derives №-indexing (`№ 001`), relativeTime ("3h ago"), ≤3-tag chips + overflow counter client-side; defensive legacy branch accepts a bare-array shape too.
+- **DB:** single READ per request; the unfiltered path is fully served by `idx_note_user_sort` (equality userId + sort prefix) — no in-memory sort.
+
+**FLOW 2 — Create note (POST `/api/notes`)**
+
+- **UI collects**: NoteDialog — title (Save disabled until trim-nonempty), content textarea (7 rows, free text), tag chips (Enter/comma add, Backspace pop, blur-commit, dup-guard), tone picker (10 named colors), pinned toggle in dialog header.
+- **Client processing**: builds color string `` `bg-${key}-50 dark:bg-${key}-900/10` `` (default → `bg-white dark:bg-gray-800`); payload spreads `...(initialData || {})`.
+- **HTTP**: POST JSON `{title, content, tags[], color, pinned}` w/ Bearer.
+- **Backend receives**: **`NoteRequest` DTO @Valid** — server validates: non-blank title ≤200, content ≤100k, each tag ≤50, color ≤100; **client can never supply `id` or `userId`** (DTO excludes them, mass-assignment vector closed).
+- **Backend processing**: controller passes DTO + `principal.getUserId()` → service builds `Note` from DTO fields (id never set → server generates) → `createdAt=now`, `updatedAt=now` → `save()`.
+- **Response 200**: saved `Note` in ApiResponse envelope.
+- **Frontend consume**: optimistic prepend with temp id → success toast → `invalidateQueries(['notes'])` replaces temp row with server truth.
+- **DB:** INSERT `notes`.
+
+**FLOW 3 — Update note / pin toggle (PUT `/api/notes/{id}`)**
+
+- **UI collects**: same dialog pre-filled from clicked card; card pin button reuses update with `pinned` flipped on the full note object.
+- **Client processing**: optimistic merge `{...n, ...d}` + local updatedAt stamp.
+- **HTTP**: PUT JSON `{title, content, tags[], color, pinned}` w/ Bearer.
+- **Backend receives**: path id + **`NoteRequest` DTO @Valid** + principal.
+- **Backend processing**: findById (miss ⇒ **`NoSuchElementException` → GlobalExceptionHandler maps to 404 NOT_FOUND**) → ownership gate (!userId.equals ⇒ AuthorizationException → 403 ACCESS_DENIED) → copies ONLY title/content/tags/color/pinned from DTO + `updatedAt=now`; original userId/createdAt preserved.
+- **Response 200**: updated `Note`.
+- **Frontend consume**: optimistic state superseded by invalidateQueries.
+- **DB:** field-replace on the existing doc.
+
+**FLOW 4 — Delete note (DELETE `/api/notes/{id}`)**
+
+- **UI collects**: trash icon → warning toast with inline "Delete" action button (confirm-by-action, no modal).
+- **Client processing**: optimistic filter-out before server confirms.
+- **HTTP**: DELETE `/api/notes/{id}` w/ Bearer.
+- **Backend receives**: path id + principal → same find + ownership gate as FLOW 3.
+- **Backend processing**: findById (miss ⇒ **NoSuchElementException → 404 NOT_FOUND**) → ownership gate → `noteRepository.delete(note)` after check.
+- **Response 200**: `{message:"Note deleted successfully"}`.
+- **Frontend consume**: toast "Note Deleted" → invalidateQueries.
+- **DB:** DELETE the doc.
+
+**FLOW 5 — Default-notes seeding (side-channel; no HTTP)**
+
+- Trigger: registration completion (user card FLOW 1 step 3) → `UserService.java:218` → `createDefaultNotesIfNoneExist(userId)` (@Transactional).
+- Guard: returns early unless user currently has ZERO notes (idempotent).
+- **DB:** INSERT 2 docs — "Welcome to My Notes" (pinned=true, tags [Welcome, Guide], color `bg-blue-50 dark:bg-blue-900/10`) and "Investment Strategy" (tags [Strategy], color `bg-orange-50 dark:bg-orange-900/10`). ✅ v2.1.0: seeded colors use `/10` dark opacity, matching dialog template standardization.
+
+**FLOW 6 — Account-deletion cascade (side-channel; no HTTP)**
+
+- Trigger: DELETE `/api/users/me` (user card FLOW 5) publishes common `UserDeletedEvent` → `NotesUserDataCleanupListener.onUserDeleted` → `deleteByUserId(userId)` bulk DELETE; own try/catch so one listener failure cannot abort the cascade.
+
+### Discrepancies found (Part 1/README vs code) — **ALL RESOLVED v2.1.0 fix round (2026-08-24)**
+
+1. ~~Pagination contradiction~~ ✅ CONFIRMED RESOLVED at code level (D11): `getNotesPaginated` returns `Page<Note>` with search + tag params; README §4 documents it. Root README was right.
+2. **README self-contradiction residue**: §13 pitfall table listed "No pagination … Implement pagination (future)" while its own §4 documents shipped pagination — **✅ DELETED stale row in v2.1.0**.
+3. **Dead text index**: Note carried `@TextIndexed(weight=2/1)` on title/content but NO query used the `$text` operator — search runs `$or:[title $regex i, content $regex i]`; the auto-created text index was never consulted and method name `searchByUserIdAndText` was misleading. **✅ REMOVED @TextIndexed annotations; renamed method → `searchByUserIdAndTerm` with accurate javadoc ("case-insensitive substring regex")**.
+4. **Unescaped regex injection into search**: raw user input interpolated as `$regex` value — metacharacters threw PatternSyntaxException → 500 INTERNAL_ERROR. **✅ FIXED: `Pattern.quote(searchTerm)` applied in NoteService before repository call**.
+5. **POST binds raw entity incl. `id`** (mass-assignment surface inconsistent with DTO-only philosophy): crafted POST with known/existing id would upsert-REPLACE that document; also no @Valid so blank title/null content persisted server-side. **✅ FIXED: new `NoteRequest` DTO @Valid on POST/PUT; DTO excludes `id`/`userId`; server generates id; validation caps enforce size limits**.
+6. **404 vs 500**: missing note on PUT/DELETE threw bare RuntimeException → GlobalExceptionHandler catch-all → 500 INTERNAL_ERROR instead of NOT_FOUND 404. **✅ FIXED: `NoSuchElementException` thrown by service → dedicated handler in GlobalExceptionHandler → 404 NOT_FOUND**.
+7. **Part 1 detail wrong**: userId set from `principal.getUserId()` (Mongo _id, per backend critical rule), not `principal.getName()` as Part 1 recorded. **✅ PART1 corrected with dated marker 2026-08-24**.
+8. **"Markdown content" claim**: no markdown pipeline exists — card renders content as escaped plain text `<p>{note.content}</p>`; react-markdown/remark-gfm deliberately NOT installed. **✅ DOCS CORRECTED: README §1.3 "Markdown" → "plain text"; §12.3 flag retained as decision record**.
+9. **Dead injection**: UserAuthenticationService injected NoteService with zero call sites. **✅ REMOVED: import, field, ctor param, assignment; 3 UAS test files cleaned of unused @Mock NoteService**.
+10. Cosmetic: seeded colors used `-900/10` opacity while dialog-generated used `-900/20` (both parsed fine via substring matching). **✅ STANDARDIZED: NoteDialog template → `/10` (matches seeds); README color examples updated**.
+11. ~~Part 1 collection description incomplete~~ ✅ **FIXED (2026-08-24)**: PART1's `notes` §Collection line omitted the two `@TextIndexed` annotations and compound index `idx_note_user_sort`. PART1 snapshot corrected in place with a dated correction note; card "Owns collections" updated to match.
+
+### Formulas/business rules confirmed correct
+
+- userId ALWAYS from principal (controller overwrites any client value before service call); update/delete enforce per-note ownership (AuthorizationException → 403 ACCESS_DENIED, matching FD pattern).
+- Sort contract pinned DESC → updatedAt DESC implemented three ways consistently: pageable sort, derived method name, compound index definition.
+- Pagination guards: size clamped [1,50], defaults page=0/size=20 matching frontend PAGE_SIZE=20.
+- Seeding idempotency (only when zero notes exist) verified; called exactly once from registration completion path.
+- XSS posture: raw content stored but only ever rendered through JSX text nodes (auto-escaped); zero dangerouslySetInnerHTML in module files — frontend-responsibility model holds under current rendering.
+- Logging policy holds: IDs + username logged; title/content never logged (search term appears at DEBUG only).
+- Cascade cleanup listener present and matches user-card round-7 description (deleteByUserId, fail-independent).
+
+### Suspicious / watch-list — **ALL RESOLVED v2.1.0**
+
+1. **createNote id-upsert replacement** (was discrepancy #5) — **✅ FIXED: `NoteRequest` DTO excludes `id`/`userId`; server generates id**.
+2. **Regex search hardening** (was #4) — **✅ FIXED: `Pattern.quote(searchTerm)` one-liner in NoteService**.
+3. **Dead text index** (was #3) — **✅ FIXED: @TextIndexed annotations dropped; repo method renamed + javadoc corrected**.
+4. Minor API hygiene bundle: 404 mapping (#6), README §13 stale row (#2), dead UAS injection (#9) — **✅ ALL FIXED**.
+
+### Open questions — **ALL RESOLVED v2.1.0**
+
+1. Was `@TextIndexed` scaffolding for a planned `$text` migration (weights imply relevance ranking intent), or leftover? **Resolved: LEFTOVER — dropped annotations; search stays `$regex` with `Pattern.quote` hardening.**
+2. Should frontend debounce the search input (or switch to submit-on-Enter)? Currently every keystroke hits Atlas. **Resolved: DEBOUNCED 300ms via `committedSearch` state + useEffect in `page.jsx`.**
+
+**Module `notes`: 11 discrepancies found (#1 pre-resolved D11 confirmed at code level; #11 FIXED same-day — PART1 snapshot corrected) · 4 watch-list items carried · 2 open questions carried. **ALL 11 discrepancies + 4 watch-list + 2 open questions RESOLVED in v2.1.0 fix round (2026-08-24)** — code + docs updated, verified by `mvn -q compile`. Module CLOSED.**

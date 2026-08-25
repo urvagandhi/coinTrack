@@ -20,8 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.notes.dto.NoteRequest;
 import com.urva.myfinance.coinTrack.notes.model.Note;
 import com.urva.myfinance.coinTrack.notes.service.NoteService;
 
@@ -61,18 +63,17 @@ public class NoteController {
 
     @Operation(summary = "Create a new note")
     @PostMapping
-    public ResponseEntity<?> createNote(@RequestBody Note note, @AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<?> createNote(@Valid @RequestBody NoteRequest request, @AuthenticationPrincipal UserPrincipal principal) {
         logger.info("Creating note for user: {}", principal.getUsername());
-        note.setUserId(principal.getUserId());
-        Note createdNote = noteService.createNote(note);
+        Note createdNote = noteService.createNote(request, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(createdNote));
     }
 
     @Operation(summary = "Update an existing note")
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateNote(@PathVariable String id, @RequestBody Note note, @AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<?> updateNote(@PathVariable String id, @Valid @RequestBody NoteRequest request, @AuthenticationPrincipal UserPrincipal principal) {
         logger.info("Updating note {} for user: {}", id, principal.getUsername());
-        Note updatedNote = noteService.updateNote(id, note, principal.getUserId());
+        Note updatedNote = noteService.updateNote(id, request, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(updatedNote));
     }
 

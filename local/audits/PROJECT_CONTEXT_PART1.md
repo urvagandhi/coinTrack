@@ -228,23 +228,29 @@ ppf, epf, goldsilver, security, user, mutualfund — **all 13 found, no mismatch
 - **Drift flag**: this README (v2.0.0) does NOT mention refresh tokens or JWT blacklist, while
   backend README v3.1 describes InvalidatedToken blacklist + refresh-token rotation. See D8/D9.
 
-### notes (v2.0.0, 2025-12-17)
-- **Responsibility**: personal notes CRUD (Markdown content, tags, Tailwind color classes, pinning).
+### notes (v2.1.0, 2026-08-24)
+- **Responsibility**: personal notes CRUD (plain text content, tags, Tailwind color classes, pinning).
 - **Collection**: `notes` (userId @Indexed, title, content no size limit, tags List<String>,
-  color e.g. `bg-blue-50`, pinned bool, createdAt, updatedAt LocalDateTime).
-- **Endpoints** (base `/api/notes`, JWT): GET list (sorted pinned DESC then updatedAt DESC),
-  POST create, PUT `/{id}`, DELETE `/{id}`. userId ALWAYS set from `principal.getName()`,
-  never request body.
+  color e.g. `bg-blue-50 dark:bg-blue-900/10`, pinned bool, createdAt, updatedAt LocalDateTime).
+  ✅ Corrected 2026-08-24 (notes deep-dive): title/content **no longer carry `@TextIndexed`**
+  (dead annotations removed in v2.1.0), and the collection defines compound index
+  `idx_note_user_sort` = `{userId: 1, pinned: -1, updatedAt: -1}` backing the
+  pinned→updatedAt list sort.
+- **Endpoints** (base `/api/notes`, JWT): GET list (paginated, sorted pinned DESC then updatedAt DESC,
+  supports `?search=` substring regex + `?tag=` filter), POST create, PUT `/{id}`, DELETE `/{id}`.
+  userId ALWAYS set from `principal.getUserId()` (✅ Corrected 2026-08-24: was `getName()`),
+  never request body. Request bodies for POST/PUT are `NoteRequest` DTOs validated via `@Valid`
+  — client can never supply `id` or `userId`.
 - **Default seeding**: on registration UserService calls
   `noteService.createDefaultNotesIfNoneExist(userId)` — seeds 2 welcome notes idempotently
   (only if user has zero notes).
-- **Security posture**: raw content stored (XSS sanitization is frontend responsibility);
-  log note IDs only, never title/content.
-- **TODOs (Appendix B)**: pagination (High priority — currently unpaginated), search,
+- **Security posture**: plain text content stored (XSS sanitization is frontend responsibility);
+  log note IDs only, never title/content/search.
+- **TODOs (Appendix B)**: ~~pagination (High priority — currently unpaginated)~~, search,
   attachments, sharing, reminders, archive.
-- **Drift flags**: root README says notes list is "(paginated)" — module README says no
-  pagination yet (D11). Backend README mentions Note has text search indexes — module README
-  doesn't mention them (minor).
+  ✅ Corrected 2026-08-24: pagination + search are IMPLEMENTED (`Page<Note>` + `searchByUserIdAndTerm`).
+- **Drift flags**: root README says notes list is "(paginated)" — module README now matches;
+  backend README mentions Note had text search indexes — module README updated: removed.
 
 ### broker (v2.0.0, 2025-12-17)
 - **Responsibility**: external broker integrations (Zerodha Kite production-ready; Angel One &

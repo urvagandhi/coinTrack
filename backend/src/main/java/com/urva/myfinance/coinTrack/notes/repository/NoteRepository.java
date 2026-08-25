@@ -20,10 +20,12 @@ public interface NoteRepository extends MongoRepository<Note, String> {
     Page<Note> findByUserId(String userId, Pageable pageable);
 
     /**
-     * Search notes by title or content (case-insensitive partial match).
+     * Case-insensitive substring search over title and content, scoped to one user.
+     * Implemented with $regex (NOT $text) so partial words match; callers MUST pass
+     * the term through Pattern.quote — the raw value is interpolated into the regex.
      */
     @Query("{'userId': ?0, '$or': [{'title': {$regex: ?1, $options: 'i'}}, {'content': {$regex: ?1, $options: 'i'}}]}")
-    Page<Note> searchByUserIdAndText(String userId, String searchTerm, Pageable pageable);
+    Page<Note> searchByUserIdAndTerm(String userId, String searchTerm, Pageable pageable);
 
     /**
      * Filter notes by tag (exact match within tags array).
