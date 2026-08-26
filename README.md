@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs" alt="Next.js" />
   <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb" alt="MongoDB" />
   <img src="https://img.shields.io/badge/Swagger-OpenAPI_3-85EA2D?logo=swagger" alt="Swagger" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker" alt="Docker Ready" />
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="License" />
 </p>
 
@@ -28,7 +29,9 @@
 - [Tech Stack](#tech-stack)
 - [Features](#features)
 - [Project Structure](#project-structure)
+- [Docker Containerization](#docker-containerization)
 - [Getting Started](#getting-started)
+
 - [Environment Variables](#environment-variables)
 - [Deployment](#deployment)
 - [API Documentation (Swagger)](#api-documentation-swagger)
@@ -510,7 +513,32 @@ coinTrack/
 
 ---
 
+## Docker Containerization
+
+The fastest way to spin up the entire **coinTrack** application stack (MongoDB + Spring Boot Backend + Next.js Frontend) is using Docker Compose.
+
+```bash
+# 1. Clone repo & navigate to directory
+git clone https://github.com/urvagandhi/coinTrack.git
+cd coinTrack
+
+# 2. Copy docker environment template
+cp .env.docker.example .env
+
+# 3. Launch full stack containers
+docker compose up -d --build
+```
+
+- **Frontend Dashboard:** [http://localhost:3000](http://localhost:3000)
+- **Backend API:** [http://localhost:8080](http://localhost:8080)
+- **Backend Health Check:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+
+📖 **For complete production deployment guides, security hardening, environment matrices, and troubleshooting, see [DOCKER.md](file:///media/urva/Personal/Technical/Projects%20&%20Hackathons/Urva/coinTrack/DOCKER.md).**
+
+---
+
 ## Getting Started
+
 
 ### Prerequisites
 

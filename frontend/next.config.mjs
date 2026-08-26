@@ -16,6 +16,8 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
+
   /**
    * Disable Turbopack to avoid compatibility issues with custom Webpack config
    * Turbopack is Next.js’ default from v16+, but does not yet support:
