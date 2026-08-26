@@ -33,14 +33,16 @@ public interface PpfTransactionService {
 
     PpfSummaryDTO getSummary(String userId);
 
+    PpfSummaryDTO getSummary(String userId, String financialYear);
+
+    List<String> getFinancialYears(String userId);
+
     List<PpfTransactionResponseDTO> getAllForExport(
             String userId,
             String dateFrom,
             String dateTo,
             String financialYear,
-            String particulars,
-            String sortBy,
-            String sortDir);
+            String particulars);
 
     PpfSettingsResponseDTO getSettings(String userId);
 

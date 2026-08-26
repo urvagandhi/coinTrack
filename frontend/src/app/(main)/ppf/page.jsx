@@ -6,7 +6,6 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import FilterDropdown from '@/components/ui/FilterDropdown';
 import { ppfAPI } from '@/lib/api';
-import { generateFinancialYearOptions } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -77,19 +76,15 @@ export default function PpfPage() {
         keepPreviousData: true,
     });
 
-    const { data: allTxnData } = useQuery({
-        queryKey: ['ppfAllTxns'],
-        queryFn: () => ppfAPI.getAll({
-            page: 0, size: 1000,
-            sortBy: 'transactionDate',
-            sortDir: 'desc',
-        }),
-        staleTime: 30 * 1000,
+    const { data: fyData } = useQuery({
+        queryKey: ['ppfFiscalYears'],
+        queryFn: () => ppfAPI.getFiscalYears(),
+        staleTime: 60 * 1000,
     });
 
     const { data: summaryData } = useQuery({
-        queryKey: ['ppfSummary'],
-        queryFn: () => ppfAPI.getSummary(),
+        queryKey: ['ppfSummary', financialYear],
+        queryFn: () => ppfAPI.getSummary(financialYear || undefined),
         staleTime: 30 * 1000,
     });
 
@@ -100,51 +95,20 @@ export default function PpfPage() {
     });
 
     const transactions = Array.isArray(txnData) ? txnData : (txnData?.content ?? []);
-    const allTransactions = Array.isArray(allTxnData) ? allTxnData : (allTxnData?.content ?? []);
     const totalPages = txnData?.totalPages ?? txnData?.page?.totalPages ?? (Array.isArray(txnData) ? 1 : 0);
     const totalElements = txnData?.totalElements ?? txnData?.page?.totalElements ?? transactions.length;
 
-    // Dynamic Summary calculation based on FY selection
-    const computedSummary = useMemo(() => {
-        if (!financialYear) {
-            return {
-                label: 'All Time Total',
-                currentBalance: summaryData?.currentBalance || 0,
-                totalDeposits: summaryData?.totalDeposits || 0,
-                totalInterestCredited: summaryData?.totalInterestCredited || 0,
-            };
-        }
-
-        let deposits = 0;
-        let interest = 0;
-        let endingBalance = 0;
-
-        if (transactions.length > 0) {
-            const sorted = [...transactions].sort((a, b) => a.transactionDate.localeCompare(b.transactionDate));
-            endingBalance = sorted[sorted.length - 1]?.balance || 0;
-
-            for (const txn of transactions) {
-                if (txn.creditAmount) {
-                    if (txn.particularType === 'INTEREST_CREDIT') {
-                        interest += txn.creditAmount;
-                    } else {
-                        deposits += txn.creditAmount;
-                    }
-                }
-            }
-        }
-
-        return {
-            label: `FY ${financialYear} Total`,
-            currentBalance: endingBalance || summaryData?.currentBalance || 0,
-            totalDeposits: deposits,
-            totalInterestCredited: interest,
-        };
-    }, [financialYear, summaryData, transactions]);
+    // Summary is computed server-side over ALL matching transactions (not just the visible page)
+    const computedSummary = useMemo(() => ({
+        label: financialYear ? `FY ${financialYear} Total` : 'All Time Total',
+        currentBalance: summaryData?.currentBalance || 0,
+        totalDeposits: summaryData?.totalDeposits || 0,
+        totalInterestCredited: summaryData?.totalInterestCredited || 0,
+    }), [financialYear, summaryData]);
 
     const invalidate = () => {
         queryClient.invalidateQueries({ queryKey: ['ppf'] });
-        queryClient.invalidateQueries({ queryKey: ['ppfAllTxns'] });
+        queryClient.invalidateQueries({ queryKey: ['ppfFiscalYears'] });
         queryClient.invalidateQueries({ queryKey: ['ppfSummary'] });
         queryClient.invalidateQueries({ queryKey: ['ppfSettings'] });
     };
@@ -204,7 +168,13 @@ export default function PpfPage() {
     const openCreate = () => { setEditingTxn(null); setIsDialogOpen(true); };
     const openEdit = (txn) => { setEditingTxn(txn); setIsDialogOpen(true); };
 
-    const fyOptions = useMemo(() => generateFinancialYearOptions(allTransactions), [allTransactions]);
+    const fyOptions = useMemo(() => {
+        const years = Array.isArray(fyData) ? fyData : (fyData?.data ?? []);
+        return [
+            { value: '', label: 'All Financial Years' },
+            ...years.map((fy) => ({ value: fy, label: `FY ${fy}` })),
+        ];
+    }, [fyData]);
 
     return (
         <div className="space-y-8">
@@ -220,7 +190,7 @@ export default function PpfPage() {
                     </h1>
 
                     {/* Account info strip */}
-                    {(settingsData?.accountNumber || settingsData?.dateOfIssue) && (
+                    {settingsData?.configured && (
                         <div className="flex flex-wrap gap-x-8 gap-y-1 mt-1">
                             {settingsData?.accountNumber && (
                                 <div className="flex items-center gap-2">
@@ -275,10 +245,8 @@ export default function PpfPage() {
                         onClick={async () => {
                             setIsExporting(true);
                             try {
-                                const params = {
-                                    sortBy: 'transactionDate',
-                                    sortDir: 'asc',
-                                };
+                                // Backend always exports chronological ascending; only filters are sent
+                                const params = {};
                                 if (financialYear) params.financialYear = financialYear;
                                 const blobData = await ppfAPI.exportCSV(params);
                                 const url = window.URL.createObjectURL(new Blob([blobData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));

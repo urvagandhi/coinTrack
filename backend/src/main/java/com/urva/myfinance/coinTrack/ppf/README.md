@@ -2,7 +2,7 @@
 
 > **Domain**: User Public Provident Fund (PPF) Ledger  
 > **Responsibility**: Transaction CRUD, ledger balance recalculation, and Excel (XLSX) export  
-> **Version**: 1.3.0  
+> **Version**: 1.4.1  
 > **Last Updated**: 2026-08-26  
 
 ---
@@ -133,13 +133,14 @@ ppf/
 Endpoints:
 - `POST /api/ppf/transactions` — Create Transaction (Triggers Recalculation)
 - `GET /api/ppf/transactions` — Paginated list with filtering (including `financialYear`)
-- `GET /api/ppf/summary` — Aggregate metrics computed programmatically
-- `GET /api/ppf/export` — Stream styled Excel (XLSX) sheet in chronological ascending order
+- `GET /api/ppf/summary` — Aggregate metrics computed programmatically; optional `?financialYear=YYYY-YY` scopes all metrics to that FY server-side
+- `GET /api/ppf/fiscal-years` — Distinct financial years present in the ledger (derived from earliest transaction → current FY) for filter dropdowns, without fetching full transactions
+- `GET /api/ppf/export` — Stream styled Excel (XLSX) sheet; **always chronological ascending** (enforced in service; no client sort parameters accepted)
 - `GET /api/ppf/withdrawal-status` — Fetch live statutory eligibility for withdrawals and max cap calculations
-- `GET /api/ppf/transactions/{id}` — Fetch single record
+- `GET /api/ppf/transactions/{id}` — Fetch single record (API-first; no UI caller)
 - `PUT /api/ppf/transactions/{id}` — Update record (Triggers Recalculation)
 - `DELETE /api/ppf/transactions/{id}` — Delete record (Triggers Recalculation)
-- `GET / PUT /api/ppf/settings` — Update PPF account details and Post-Maturity Extension Mode
+- `GET / PUT /api/ppf/settings` — Update PPF account details and Post-Maturity Extension Mode. GET returns `configured: false` when the user has never saved settings (all other fields null); `configured: true` once an embed exists. PUT body is `@Valid`: `accountNumber ≤30 chars alphanumeric/dash/space`, `dateOfIssue` must be past-or-present, `extensionMode` must be `WITHOUT_CONTRIBUTION` or `WITH_CONTRIBUTION`
 
 ---
 
@@ -156,11 +157,11 @@ Since users can insert entries out of order (e.g., adding a missed deposit from 
 
 ### 5.2 Statutory Withdrawal Validation
 Encapsulated in `PpfWithdrawalValidationService.java`, the system strictly validates withdrawals based on:
-1. **Initial Lock-in**: No partial withdrawal before the 7th financial year (i.e. 6 complete FYs after opening).
+1. **Initial Lock-in**: No partial withdrawal before the 7th financial year (i.e. after 6 completed FYs; the first 5 FYs after the opening year are fully locked).
 2. **Frequency**: Strict limit of 1 withdrawal per financial year.
 3. **Pre-Maturity Limit**: Maximum withdrawal capped at 50% of the lower of the balance at the end of the 4th preceding FY and the previous FY.
 4. **Post-Maturity Extension**: Supports `WITH_CONTRIBUTION` mode which dynamically limits aggregate withdrawals over a 5-year block to 60% of the block's opening balance.
-5. **Loan Eligibility**: Available from the 3rd to 7th financial year (completed 3 to 7 FYs).
+5. **Loan Eligibility**: Available from the 3rd to 6th financial year (completed 2 to 5 FYs).
 
 ---
 

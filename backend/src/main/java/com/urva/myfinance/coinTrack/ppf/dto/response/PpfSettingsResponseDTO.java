@@ -18,6 +18,8 @@ public class PpfSettingsResponseDTO {
 
     private String userId;
 
+    private Boolean configured;
+
     private String accountNumber;
 
     private LocalDate dateOfIssue;

@@ -776,10 +776,13 @@ written. Key evolutions tracked authoritatively in PROJECT_CONTEXT_PART2.md:
   Settings (`PpfSettingsEmbed`) are embedded in the `users` document — no separate
   `PpfSettingsRepository` exists (the README §3 directory tree listed a phantom file that
   was corrected in README v1.3.0).
-- **PPF off-by-one FIX applied** (2026-08-26): `PpfWithdrawalValidationService` previously
-  computed `completedFYs = currentFyStartYear - openingFyEndYear` which undercounted by 1.
-  Fixed to `currentFyStartYear - openingFyStartYear`. Lock-in check updated from
-  `completedFYs < 6` to `completedFYs < 7`. Loan eligibility updated from
-  `completedFYs >= 2 && <= 5` to `completedFYs >= 3 && <= 7`. See Part 2 ppf-card
-  discrepancy D4 for the full analysis.
+- **PPF off-by-one FIX applied** (2026-08-26, final state after round-3 repair):
+  `PpfWithdrawalValidationService` previously computed
+  `completedFYs = currentFyStartYear - openingFyEndYear` which undercounted by 1.
+  Fixed to `currentFyStartYear - openingFyStartYear`. An intermediate round also bumped the
+  gates (`< 7`, loan `[3,7]`) but 2026 web re-verification proved that under the CORRECTED
+  count `completedFYs=6` IS the 7th FY and `[2,5]` IS the 3rd–6th FY — so the original gate
+  constants were already statutory-correct and were RESTORED. Final: lock-in `< 6`,
+  loan `>= 2 && <= 5`. Only the count formula was ever wrong. See Part 2 ppf-card
+  discrepancy D4 + `local/TODOs/PPF_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md` §GAP 1.
 

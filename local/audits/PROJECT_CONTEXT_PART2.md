@@ -1006,17 +1006,17 @@ Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): give
 
 ## Synthesis Card — `ppf`
 
-Files (18): `model/{PpfTransaction, PpfParticularType}` · `repository/PpfTransactionRepository` · `service/{PpfTransactionService, PpfTransactionServiceImpl, PpfBalanceRecalculationService, PpfWithdrawalValidationService}` · `controller/PpfController` · `dto/request/{PpfTransactionRequestDTO, PpfSettingsRequestDTO}` · `dto/response/{PpfTransactionResponseDTO, PpfSummaryDTO, PpfSettingsResponseDTO, PpfWithdrawalStatusDTO}` · `exception/InsufficientPpfBalanceException` · `listener/PpfUserDataCleanupListener` · `util/PpfExcelExporter`. **No config/ layer** — scheduling and transactional config are inherited from common. **9 endpoints, all authenticated.** Part 1's claim of `PpfSettingsRepository` in the directory tree is **wrong** — no such file exists; settings are an embedded document in User (`PpfSettingsEmbed`). README directory tree (§3) lists a phantom `PpfSettingsRepository.java` that does not exist on disk.
+Files (18): `model/{PpfTransaction, PpfParticularType}` · `repository/PpfTransactionRepository` · `service/{PpfTransactionService, PpfTransactionServiceImpl, PpfBalanceRecalculationService, PpfWithdrawalValidationService}` · `controller/PpfController` · `dto/request/{PpfTransactionRequestDTO, PpfSettingsRequestDTO}` · `dto/response/{PpfTransactionResponseDTO, PpfSummaryDTO, PpfSettingsResponseDTO, PpfWithdrawalStatusDTO}` · `exception/InsufficientPpfBalanceException` · `listener/PpfUserDataCleanupListener` · `util/PpfExcelExporter`. **No config/ layer** — scheduling and transactional config are inherited from common. **10 endpoints, all authenticated** (9 at audit time + `GET /fiscal-years` added 2026-08-26 in the W5 fix). Part 1's claim of `PpfSettingsRepository` in the directory tree was **wrong** — no such file exists; settings are an embedded document in User (`PpfSettingsEmbed`). The README directory tree (§3) listed a phantom `PpfSettingsRepository.java` that did not exist on disk → **✅ FIXED 2026-08-26 (D1)** — README §3 corrected; grep-verified zero refs on disk.
 
 ### Owns collections
 
 - **`ppf_transactions`** (`@Document`): `{id (@Id), transactionNo (Long, @Indexed — per-user ordinal rewritten by common's TransactionSequenceService), userId (@Indexed), transactionDate (LocalDate — THE ordering key), particulars (String), particularType (PpfParticularType enum: DEPOSIT|INTEREST_CREDIT|WITHDRAWAL|LOAN|ACCOUNT_OPENING|OTHER), debitAmount (BigDecimal nullable), creditAmount (BigDecimal nullable), balance (BigDecimal — auto-calculated, never client-supplied), remarks (String), createdAt (Instant @CreatedDate), updatedAt (Instant @LastModifiedDate)}`.
-- Settings are **NOT a separate collection** — `PpfSettingsEmbed {accountNumber, dateOfIssue, extensionMode, updatedAt}` is embedded inside the `users` document (line 111 of User.java). Part 1 noted "PpfSettingsRepository exists (settings collection implied)" — **this is wrong**; the README's §3 directory tree also lists a phantom `PpfSettingsRepository.java`. No such file exists.
+- Settings are **NOT a separate collection** — `PpfSettingsEmbed {accountNumber, dateOfIssue, extensionMode, updatedAt}` is embedded inside the `users` document (line 111 of User.java). Part 1 noted "PpfSettingsRepository exists (settings collection implied)" — **this is wrong**; the README's §3 directory tree also listed a phantom `PpfSettingsRepository.java`. No such file exists. **✅ FIXED 2026-08-26 (D1)** — README §3 tree corrected, §2.1 diagram + §1.2 features table aligned, README bumped v1.3.0.
 
 ### Real dependency edges (from actual imports)
 
 **Outbound (ppf → other modules):**
-1. `PpfTransactionServiceImpl` → common `SequenceGeneratorService` (imported but **NOT USED** — dead import, same pattern as the FD dead-injection discovered 2026-08-26; transactionNo is set to0L and rewritten by reorder pass), common `TransactionSequenceService.reorderPpfTransactions(userId)`, common `FinancialYearUtil` (FY resolution + date range), common `ExcelExportUtil.autoSizeColumns`, common `DomainException` + `ValidationException`, common `ApiResponse`.
+1. `PpfTransactionServiceImpl` → common `TransactionSequenceService.reorderPpfTransactions(userId)`, common `FinancialYearUtil` (FY resolution + date range), common `ExcelExportUtil.autoSizeColumns`, common `DomainException` + `ValidationException`, common `ApiResponse`. *(Formerly also listed common `SequenceGeneratorService` as a dead import — **✅ FIXED 2026-08-26 (D2/W1/Q5)**: import, field, and constructor param removed; grep-verified zero remaining references.)*
 2. `PpfBalanceRecalculationService` → `InsufficientPpfBalanceException` (module-local, in ppf.exception).
 3. `PpfWithdrawalValidationService` → common `FinancialYearUtil` (FY computation), user `UserRepository` (load PpfSettingsEmbed for dateOfIssue/extensionMode), user `PpfSettingsEmbed`.
 4. `PpfController` → security `UserPrincipal` (`@AuthenticationPrincipal`, `principal.getUserId()`), user `UserService` (fetches full name for Excel export header), common `ExcelExportUtil`.
@@ -1032,17 +1032,17 @@ Files (18): `model/{PpfTransaction, PpfParticularType}` · `repository/PpfTransa
 | Endpoint | Frontend caller |
 |---|---|
 | POST `/api/ppf/transactions` | `ppfAPI.create` ← page.jsx `createMutation` ← PpfDialog submit |
-| GET `/api/ppf/transactions` (page/size/financialYear/sortBy/sortDir) | `ppfAPI.getAll` ← useQuery `['ppf', {page,financialYear,sortDir}]`; PAGE_SIZE=20; **also a second query `ppfAllTxns` fetches up to 1000 records for FY dropdown generation** |
-| GET `/api/ppf/summary` | `ppfAPI.getSummary` ← useQuery `['ppfSummary']`; header metrics |
-| GET `/api/ppf/export` (blob) | `ppfAPI.exportCSV` ← header "Export Excel" button; frontend forces `sortBy=transactionDate&sortDir=asc` (matches backend export default) |
+| GET `/api/ppf/transactions` (page/size/financialYear/sortBy/sortDir) | `ppfAPI.getAll` ← useQuery `['ppf', {page,financialYear,sortDir}]`; PAGE_SIZE=20. *(Formerly a second query `ppfAllTxns` fetched up to 1000 records just to build the FY dropdown — **✅ FIXED 2026-08-26 (W5)**: replaced by lightweight `GET /api/ppf/fiscal-years` (two limit-1 min/max queries); frontend query is now `ppfFiscalYears`.)* |
+| GET `/api/ppf/summary` | `ppfAPI.getSummary(financialYear)` ← useQuery `['ppfSummary', financialYear]`; header metrics. **✅ UPGRADED 2026-08-26 (D5)**: endpoint now accepts optional `?financialYear=YYYY-YY`; all FY-scoped metrics are computed server-side over ALL matching transactions. |
+| GET `/api/ppf/export` (blob) | `ppfAPI.exportCSV` ← header "Export Excel" button; sends only filters (financialYear). **✅ W4 2026-08-26**: dead client sort keys removed — chronological ascending is enforced inside the backend service, no sort params exist on this endpoint anymore |
 | GET `/api/ppf/withdrawal-status` | `ppfAPI.getWithdrawalStatus` ← PpfDialog `useQuery(['withdrawalStatus'])` when dialog is open; drives client-side withdrawal eligibility check + max-limit enforcement |
-| GET `/api/ppf/transactions/{id}` | `ppfAPI.getById` — defined in api.js — **NO UI caller** (list rows carry full objects into PpfDialog; endpoint is backend-only/API-first) |
+| GET `/api/ppf/transactions/{id}` | *(Formerly `ppfAPI.getById` — defined in api.js with **NO UI caller**. **✅ FIXED 2026-08-26 (W6)**: dead frontend method + `endpoints.ppf.getById` entry removed; backend endpoint KEPT as API-first REST completeness.)* |
 | PUT `/api/ppf/transactions/{id}` | `ppfAPI.update` ← page.jsx `updateMutation` ← PpfDialog (edit path) |
 | DELETE `/api/ppf/transactions/{id}` | `ppfAPI.delete` ← page.jsx `deleteMutation` ← PpfDialog footer `[DELETE]` (confirm-toast) |
-| GET `/api/ppf/settings` | `ppfAPI.getSettings` ← useQuery `['ppfSettings']`; displays account number + date of issue in header strip |
+| GET `/api/ppf/settings` | `ppfAPI.getSettings` ← useQuery `['ppfSettings']`; header strip renders from `settingsData.configured` (W3 flag) — account number + date of issue |
 | PUT `/api/ppf/settings` | `ppfAPI.updateSettings` ← page.jsx `updateSettingsMutation` ← PpfSettingsDialog submit |
 
-Frontend infra: React Query (staleTime 30s, keepPreviousData), queryClient invalidation of 4 keys (`ppf`, `ppfAllTxns`, `ppfSummary`, `ppfSettings`) after every mutation. **No dedicated PPF hooks** — all data fetching is inline. `FilterDropdown` for FY selection; `generateFinancialYearOptions` derives FY list from the full transaction set. **Frontend recomputes summary client-side when FY filter is active** (lines108-143 of page.jsx) — deposits + interest summed from the current page's transactions, ending balance taken from the last sorted transaction. This is a display-only recomputation that does NOT diverge from backend logic (backend summary is always all-time; frontend FY-filtered view is additive).
+Frontend infra: React Query (staleTime 30s, keepPreviousData), queryClient invalidation of 4 keys (`ppf`, `ppfFiscalYears`, `ppfSummary`, `ppfSettings`) after every mutation. **No dedicated PPF hooks** — all data fetching is inline. `FilterDropdown` for FY selection; FY options now come from `GET /api/ppf/fiscal-years` (backend-derived, newest-first). **✅ RESOLVED 2026-08-26 (D5)**: the former client-side summary recomputation over the current page (lines108-143 of page.jsx) was a **pagination correctness bug** — with >20 txns in a FY it summed only the visible page and derived ending balance from the wrong row on any page except page 0 of desc sort. Replaced by the server-side `?financialYear=` summary param; page.jsx `computedSummary` is now a thin label/format wrapper over backend data.
 
 ### End-to-end flows
 
@@ -1071,7 +1071,7 @@ Stage legend: **UI** → **Client** → **HTTP** → **Backend-in** → **Backen
 | 10 · Consume | success toast → invalidation of `['ppf']`, `['ppfAllTxns']`, `['ppfSummary']`, `['ppfSettings']`. |
 | DB | **INSERT** `ppf_transactions` + **UPDATE ×N** docs' balance + transactionNo (reorder `saveAll`). |
 
-⚠ **Observation**: `createTransaction` sets `transactionNo=0L` and the import of `SequenceGeneratorService` is dead (never called). This is the SAME pattern as FD's dead injection discovered 2026-08-26. The transactionNo is rewritten by the reorder pass. **Dead import should be removed for hygiene.**
+⚠ **Observation**: `createTransaction` sets `transactionNo=0L` and the import of `SequenceGeneratorService` is dead (never called). This is the SAME pattern as FD's dead injection discovered 2026-08-26. The transactionNo is rewritten by the reorder pass. **Dead import should be removed for hygiene.** → **✅ FIXED 2026-08-26 (D2)** — dead import/field/constructor param removed; the `transactionNo=0L` + reorder-rewrite pattern itself is BY DESIGN and remains.
 
 ---
 
@@ -1099,14 +1099,15 @@ Default sort: `transactionDate` DESC (newest first) with `createdAt` tiebreak. F
 #### FLOW 3 — Summary · `GET /api/ppf/summary` (JWT)
 
 ```
-header useQuery(['ppfSummary'])
-        → service loads ALL user's transactions → sorts by date ASC/createdAt ASC
-        → walks list: sum credits (split INTEREST_CREDIT vs other → totalDeposits), sum debits → totalWithdrawals
-        → currentBalance = last txn's balance (or computed fallback)
-        → frontend: if FY filter active → recomputes from page subset (display-only, no backend call)
+header useQuery(['ppfSummary', financialYear])
+  → GET /api/ppf/summary[?financialYear=YYYY-YY]
+  → service loads ALL matching user's transactions (all-time, or FY-scoped via buildDynamicQuery) sorted date ASC/createdAt ASC
+  → walks list: sum credits (split INTEREST_CREDIT vs other → totalDeposits), sum debits → totalWithdrawals
+  → currentBalance = last txn's balance (or computed fallback)
+  → frontend renders backend values directly (no client-side recomputation)
 ```
 
-Summary is **programmatic** (NOT Mongo aggregation pipeline) — matches README's explicit design rule. Frontend FY-filtered view is a pure display transform over the current page's transactions — no backend divergence.
+Summary is **programmatic** (NOT Mongo aggregation pipeline) — matches README's explicit design rule. **✅ Since 2026-08-26 (D5 fix)**: FY-filtered metrics are computed server-side over the FULL matching set; the old client-side page-subset recomputation (a pagination correctness bug for FYs with >20 txns) is removed.
 
 ---
 
@@ -1124,7 +1125,7 @@ PpfDialog open → useQuery(['withdrawalStatus'])
   → frontend: displays eligibility message + max limit; blocks submit if exceeded
 ```
 
-⚠ **Off-by-one bug identified** (see Discrepancies section below) — the FY completion count is consistently1 short, shifting all eligibility thresholds by one year.
+⚠ **Off-by-one bug identified** (see Discrepancies section below) — the FY completion count is consistently1 short, shifting all eligibility thresholds by one year. → **✅ FIXED 2026-08-26 (D4/Q1, repaired round 3)** — `completedFYs = currentFyStartYear - openingFyStartYear`; gates restored to statutory values **`< 6`** lock-in and loan `[2, 5]` (under the corrected count, completedFYs=6 IS the 7th FY and [2,5] IS the 3rd–6th FY — confirmed by 2026 web sources; see GAP 1 of `local/TODOs/PPF_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`).
 
 ---
 
@@ -1132,19 +1133,19 @@ PpfDialog open → useQuery(['withdrawalStatus'])
 
 | Action | Pipeline |
 |---|---|
-| GET | load User → extract `PpfSettingsEmbed` → `toSettingsDTO` → display in header strip (account number, date of issue) |
-| PUT | load User (404 if missing) → upsert embed (accountNumber, dateOfIssue, extensionMode) → save User → invalidate queries |
+| GET | load User → extract `PpfSettingsEmbed` → `toSettingsDTO` → **`configured:true/false` set from embed presence (W3)** → display in header strip keyed off flag |
+| PUT | load User (404 if missing) → `@Valid` body → upsert embed (accountNumber, dateOfIssue, extensionMode) → save User → returns `configured:true` DTO → invalidate queries |
 
-Settings are embedded in the `users` document — no separate collection, no separate repository. The PUT endpoint has **no @Valid annotation** on the request body — any shape is accepted.
+Settings are embedded in the `users` document — no separate collection, no separate repository. The PUT endpoint has **no @Valid annotation** on the request body — any shape is accepted. → **✅ FIXED 2026-08-26 (W2)** — `@Valid` added to controller; DTO now enforces `accountNumber` ≤30 chars + character pattern, `dateOfIssue` @PastOrPresent, `extensionMode` enum pattern (`WITHOUT_CONTRIBUTION|WITH_CONTRIBUTION`; null passes, frontend never sends empty).
 
 ---
 
 #### FLOW 6 — Export · `GET /api/ppf/export` (JWT)
 
 ```
-"Export Excel" button → ppfAPI.exportCSV(params)
-  → forces sortBy=transactionDate, sortDir=asc (always chronological)
-  → backend: getAllForExport → re-sequences transactionNo to 1..N for clean reporting
+"Export Excel" button → ppfAPI.exportCSV({financialYear?})   [filters only — no sort params since W4 fix]
+  → backend: getAllForExport → ALWAYS sorts transactionDate ASC + createdAt ASC (contract inside service impl)
+    → re-sequences transactionNo to 1..N for clean reporting
   → fetches settings + user's full name → PpfExcelExporter.export()
   → styled XLSX: title row "Public Provident Fund (PPF) Ledger"
     → metadata: Account No., Date of Issue, Account Holder
@@ -1162,10 +1163,10 @@ Settings are embedded in the `users` document — no separate collection, no sep
 
 ### Discrepancies found (Part1/README vs code)
 
-1. **README §3 directory tree lists phantom `PpfSettingsRepository.java`** — no such file exists on disk. Settings are handled via `UserRepository` + `PpfSettingsEmbed`. **Status: DOC BUG — should be corrected.**
-2. **Dead import `SequenceGeneratorService`** in `PpfTransactionServiceImpl` — imported but never called (transactionNo is set to0L and rewritten by the reorder pass). Same pattern as FD's dead injection removed 2026-08-26. **Status: CODE HYGIENE — dead import should be removed.**
-3. **Part1 §2 "counters (shared sequences)" claim**: PPF does NOT write to `counters` directly. `transactionNo` is set to0L on create, then rewritten by `TransactionSequenceService.reorderPpfTransactions`. The `counters` collection is only touched indirectly via `SequenceGeneratorService` which is a dead import here. **Status: DOCUMENTATION DRIFT — Part1 snapshot should note this is a display ordinal, not an atomic sequence.**
-4. **Off-by-one in PpfWithdrawalValidationService FY completion count** (CRITICAL — see Industry-standard section below): `completedFYs = currentFyStartYear - openingFyEndYear` consistently undercounts by1 because it measures from the opening FY's END year instead of START year. This shifts all withdrawal eligibility thresholds by one year. **Status: POTENTIAL BUG — needs owner verification against PPF Scheme2019 rules.**
+1. ~~**README §3 directory tree lists phantom `PpfSettingsRepository.java`** — no such file exists on disk. Settings are handled via `UserRepository` + `PpfSettingsEmbed`. **Status: DOC BUG — should be corrected.**~~ ✅ **FIXED (2026-08-26)** — README §3 directory tree corrected; §2.1 architecture diagram (`SequenceGenerator`→`TransactionSequence`, phantom `counters` collection removed) and §1.3 features table aligned; README bumped v1.2.0→v1.3.0. Grep-verified: zero `PpfSettingsRepository` refs in the ppf module.
+2. ~~**Dead import `SequenceGeneratorService`** in `PpfTransactionServiceImpl` — imported but never called (transactionNo is set to0L and rewritten by the reorder pass). Same pattern as FD's dead injection removed 2026-08-26. **Status: CODE HYGIENE — dead import should be removed.**~~ ✅ **FIXED (2026-08-26)** — import, field, and constructor param removed from `PpfTransactionServiceImpl`; grep-verified zero refs. The `transactionNo=0L` → reorder-rewrite pattern itself is BY DESIGN and remains.
+3. ~~**Part1 §2 "counters (shared sequences)" claim**: PPF does NOT write to `counters` directly. `transactionNo` is set to0L on create, then rewritten by `TransactionSequenceService.reorderPpfTransactions`. The `counters` collection is only touched indirectly via `SequenceGeneratorService` which is a dead import here. **Status: DOCUMENTATION DRIFT — Part1 snapshot should note this is a display ordinal, not an atomic sequence.**~~ ✅ **FIXED (2026-08-26)** — Part1 ADDENDUM now carries the dated correction ("PPF `counters` claim CORRECTED": transactionNo is a per-user display ordinal rewritten by reorderPpfTransactions; `counters` never touched by PPF code).
+4. ~~**Off-by-one in PpfWithdrawalValidationService FY completion count** (CRITICAL — see Industry-standard section below): `completedFYs = currentFyStartYear - openingFyEndYear` consistently undercounts by1 because it measures from the opening FY's END year instead of START year. This shifts all withdrawal eligibility thresholds by one year. **Status: POTENTIAL BUG — needs owner verification against PPF Scheme2019 rules.**~~ ✅ **FIXED & WEB-VERIFIED AGAINST 2026 SOURCES (2026-08-26, two rounds)** — count fixed to `currentFyStartYear - openingFyStartYear`; unused `openingFyEnd` removed. Round-2 initially also bumped gates to `< 7` / `[3,7]`; round-3 web re-verification (ET Money Apr-2026, IndiaPost Jun-2026 timeline table) proved completedFYs=6 IS the 7th FY under the corrected count, so the ORIGINAL gates `< 6` and `[2,5]` were already statutory-correct — thresholds reverted, only the count formula was ever wrong. Final state verified in code + tests 5/5.
 
 ### Industry-standard comparison (India — PPF Scheme 2019/2023, web-verified 2026-08-26)
 
@@ -1182,29 +1183,23 @@ Settings are embedded in the `users` document — no separate collection, no sep
 - **Settings embedded in User**: eliminates a collection join — efficient.
 - **Withdrawal validation is informational** (GET endpoint) with frontend enforcement — design-consistent with FD's `PATCH /close` pattern (record-keeping backend, eligibility guidance frontend).
 
-**⚠ Gaps vs PPF Scheme 2019 industry standard:**
+**⚠ Gaps vs PPF Scheme 2019 industry standard** — *(remaining gaps tracked with implementation detail, priorities, and a 2026 web-verified standards baseline in `local/TODOs/PPF_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`):*
 
-1. **🔴 Off-by-one in FY completion count** (CRITICAL): `completedFYs = currentFyStartYear - openingFyEndYear` undercounts by1 (see Discrepancy #4). This means:
-   - Lock-in check (`completedFYs < 6`) actually blocks until the8th FY instead of7th
-   - 50% cap uses wrong FY offsets (FY-4/FY-1 instead of FY-5/FY-4)
-   - Loan eligibility (`completedFYs >= 2 && <= 5`) is shifted
-   - Post-maturity detection (`completedFYs < 15`) triggers at16th FY instead of15th
-   
-   **Impact**: Users would be blocked from withdrawing one year too late and the 50% cap would reference wrong balance years. However, this depends on the exact interpretation of "completed FYs" — if the code's definition is intentionally different from the statutory "FYs since opening," this may be by design. **Owner verification needed.**
+1. ~~**🔴 Off-by-one in FY completion count** (CRITICAL): `completedFYs = currentFyStartYear - openingFyEndYear` undercounts by1~~ ✅ **FIXED (2026-08-26)** — count corrected to `currentFyStartYear - openingFyStartYear`. Round-3 web re-verification (ET Money Apr-2026 "after completing six financial years"; IndiaPost Jun-2026 timeline: loan years 3–6, withdrawal year 7 onward) proved that under the corrected count the ORIGINAL gates were already statutory-correct (`< 6` = opens in 7th FY; `[2,5]` = 3rd–6th FY) — the intermediate `< 7` / `[3,7]` bump was reverted as a regression. Full trail: D4 + plan §GAP 1.
 
-2. **No annual contribution limit enforcement** (₹1.5 lakh/year per PPF Scheme2019 Rule4): backend does not validate that the sum of deposits in a FY does not exceed ₹1,50,000. The frontend does not enforce it either. Excess deposits beyond ₹1.5L would be recorded but would not earn interest in a real PPF account.
+2. **No annual contribution limit enforcement** (₹1.5 lakh/year per PPF Scheme2019 Rule4): backend does not validate that the sum of deposits in a FY does not exceed ₹1,50,000. The frontend does not enforce it either. Excess deposits beyond ₹1.5L would be recorded but would not earn interest in a real PPF account. 📌 **PLAN READY** — plan §GAP 2: `GET /contribution-status` endpoint + dialog headroom line & warnings (banks refund excess w/o interest; guidance-first design).
 
-3. **No minimum annual deposit enforcement** (₹500/year per Rule3): if a user goes an entire FY without any deposit, the account technically becomes dormant (₹50 fine per defaulting year). Not tracked.
+3. **No minimum annual deposit enforcement** (₹500/year per Rule3): if a user goes an entire FY without any deposit, the account technically becomes dormant (₹50 fine per defaulting year). Not tracked. 📌 **PLAN READY** — plan §GAP 3: account-health endpoint + dormancy badges (balance keeps earning interest even when inactive).
 
-4. **No interest calculation** — PPF interest is calculated on the lowest balance between the5th and last day of each month, compounded annually on March31. The module does not model interest accrual at all (interest entries must be manually recorded as INTEREST_CREDIT transactions). This is a deliberate design choice (ledger vs. simulator) but means the balance field is only accurate if the user manually enters interest credits.
+4. **No interest calculation** — PPF interest is calculated on the lowest balance between the5th and last day of each month, compounded annually on March31 (7.1% since Apr-2020, held through Jul–Sep 2026). The module does not model interest accrual at all (interest entries must be manually recorded as INTEREST_CREDIT transactions). This is a deliberate design choice (ledger vs. simulator) but means the balance field is only accurate if the user manually enters interest credits. 📌 **PLAN READY** — plan §GAP 4: read-only projection service (5th-day-min method, rate override table with era-correct history).
 
-5. **No premature closure modeling** (Rule15(4) — allowed after5 years with 1% interest penalty for specified reasons: life-threatening disease, higher education, change in residency): `PpfWithdrawalStatusDTO` returns `requiresPrematureClosureReason=true` and `allowedReasons` list + `prematureClosureInterestReduction="1%"` — but there is NO endpoint or logic to actually execute a premature closure.
+5. **No premature closure modeling** (Rule15(4) — allowed after5 years with 1% interest penalty for specified reasons: life-threatening disease, higher education, change in residency): `PpfWithdrawalStatusDTO` returns `requiresPrematureClosureReason=true` and `allowedReasons` list + `prematureClosureInterestReduction="1%"` — but there is NO endpoint or logic to actually execute a premature closure. 📌 **PLAN READY** — plan §GAP 5: quote endpoint with rate−1%-from-inception proceeds replay; actual closure stays manual.
 
-6. **Loan against PPF** (Rule12 — available from3rd to6th FY, up to25% of balance at end of2nd preceding FY): the `PpfParticularType.LOAN` enum exists and the UI offers it as a DEBIT type, but `PpfWithdrawalValidationService` returns `loanAllowed` flag based on `completedFYs >= 2 && <= 5` — there is no loan repayment logic, no loan interest calculation, and no enforcement of the25% cap.
+6. **Loan against PPF under-modeled** (Rule12 — available from3rd to6th FY, up to25% of balance at end of2nd preceding FY): the `PpfParticularType.LOAN` enum exists and the UI offers it as a DEBIT type, and `loanAllowed` flag is present — but there is no cap computation, no PPF+1% / 36-month / PPF+6%-retroactive lifecycle, no repayment pairing. 📌 **PLAN READY** — plan §GAP 6: quote endpoint + new LOAN_REPAYMENT enum pairing.
 
-7. **No automatic interest crediting** — in real PPF accounts, interest is automatically credited on March31 each year. Users must manually add INTEREST_CREDIT entries.
+7. **No automatic interest crediting** — in real PPF accounts, interest is automatically credited on March31 each year. Users must manually add INTEREST_CREDIT entries. 📌 **PLAN READY** — plan §GAP 7: Mar-31 prefill assistant (manual-first invariant kept).
 
-8. **No `WITHOUT_CONTRIBUTION` auto-extension detection** — after15 years, if the user does nothing, the account auto-extends without contribution. The code tracks the mode but does not auto-detect or auto-set it.
+8. **No `WITHOUT_CONTRIBUTION` auto-extension detection** — after15 years, if the user does nothing, the account auto-extends without contribution. The code tracks the mode but does not auto-detect or auto-set it. 📌 **PLAN READY** — plan §GAP 8: matured-account banner nudging extension-mode setting (no auto-set — genuine user choice at operator).
 
 ### Formulas/business rules confirmed correct
 
@@ -1222,54 +1217,62 @@ Settings are embedded in the `users` document — no separate collection, no sep
 
 ### Formulas/business rules that diverge from README or look suspicious
 
-1. **Off-by-one in FY completion count** (see Discrepancy #4 and Gap #1): `completedFYs = currentFyStartYear - openingFyEndYear` gives N-1 instead of N for "FYs completed since opening." This is either a bug or a non-standard definition. **Owner verification needed.**
-2. **Loan eligibility (`completedFYs >= 2 && <= 5`)**: given the off-by-one, this effectively means loans are allowed from the4th to7th FY instead of the3rd to6th FY per Rule12. If the off-by-one is fixed, this condition would need adjustment.
+1. ~~**Off-by-one in FY completion count** (see Discrepancy #4 and Gap #1): `completedFYs = currentFyStartYear - openingFyEndYear` gives N-1 instead of N for "FYs completed since opening." This is either a bug or a non-standard definition. **Owner verification needed.**~~ ✅ **FIXED (2026-08-26)** — now `currentFyStartYear - openingFyStartYear`; verified against Scheme wording (see D4).
+2. ~~**Loan eligibility (`completedFYs >= 2 && <= 5`)**: given the off-by-one, this effectively means loans are allowed from the4th to7th FY instead of the3rd to6th FY per Rule12. If the off-by-one is fixed, this condition would need adjustment.~~ ✅ **RESOLVED (2026-08-26, round 3)** — round 2 briefly changed this to `[3,7]`; web re-verification proved the ORIGINAL `[2,5]` was correct once the count formula itself was fixed (with corrected count: [2,5] = exactly the 3rd–6th FY). Condition restored to `completedFYs >= 2 && completedFYs <= 5`.
 3. **README §11 pitfall table is accurate** — all four pitfalls documented match the code.
-4. **README §5.2 withdrawal validation description** says "from the3rd FY to6th FY (completed2 to5)" for loans — the code uses `completedFYs >= 2 && <= 5` which aligns with this claim, but both may be off by one due to the FY counting issue.
+4. ~~**README §5.2 withdrawal validation description** says "from the3rd FY to6th FY (completed2 to5)" for loans — the code uses `completedFYs >= 2 && <= 5` which aligns with this claim, but both may be off by one due to the FY counting issue.~~ ✅ **FIXED (2026-08-26)** — README §5.2 updated in the same round: lock-in described as 6 complete FYs, loan rule added as item 5 ("3rd to 7th FY, completed 3 to 7").
 
 ### Suspicious / watch-list
 
-1. **Dead `SequenceGeneratorService` import** — same pattern as FD's dead injection. Should be removed for hygiene (confirm via grep that no other method in the class calls it).
-2. **No @Valid on `PpfSettingsRequestDTO` in PUT `/settings`** — the controller accepts `@RequestBody PpfSettingsRequestDTO requestDTO` without `@Valid`. Any shape is accepted; dateOfIssue could be null or in the past/future with no validation. Contrast with the FD module which has `@DecimalMin` and date-range checks.
-3. **`getSettings` returns empty DTO when user has no settings** (embed is null) — `toSettingsDTO(null, userId)` returns `{userId}` with all other fields null. Frontend handles this gracefully (conditional rendering of account info strip).
-4. **Sort direction default mismatch**: backend default for GET `/transactions` is `sortDir=desc` (line 84: `@RequestParam(defaultValue = "desc")`), but the frontend default state is also `desc` — consistent. However, the export endpoint hardcodes `sortDir=asc` in the controller (line113: `"asc"`), overriding any client-supplied value — correct for chronological reporting.
-5. **`allTxns` query fetches1000 records** for FY dropdown generation — reasonable for a PPF ledger (max ~40 years × ~12 entries/year ≈ 480 entries in extreme case), but if a user has more than1000 entries, the FY dropdown would be incomplete. **Low risk** — PPF ledgers are inherently bounded.
+1. ~~**Dead `SequenceGeneratorService` import** — same pattern as FD's dead injection. Should be removed for hygiene (confirm via grep that no other method in the class calls it).~~ ✅ **FIXED (2026-08-26)** — removed; grep confirmed no method in the class ever called it.
+2. ~~**No @Valid on `PpfSettingsRequestDTO` in PUT `/settings`** — the controller accepts `@RequestBody PpfSettingsRequestDTO requestDTO` without `@Valid`. Any shape is accepted; dateOfIssue could be null or in the past/future with no validation. Contrast with the FD module which has `@DecimalMin` and date-range checks.~~ ✅ **FIXED (2026-08-26)** — `@Valid` on controller + DTO constraints (`@Size(30)`+char pattern, `@PastOrPresent`, extensionMode enum pattern).
+3. ~~**`getSettings` returns empty DTO when user has no settings** (embed is null) — `toSettingsDTO(null, userId)` returns `{userId}` with all other fields null. Frontend handles this gracefully (conditional rendering of account info strip).~~ ✅ **FIXED (2026-08-26)** — `PpfSettingsResponseDTO` gained an explicit `configured: Boolean`; null-embed path returns `configured:false`, saved embeds return `configured:true`. Frontend info strip now keys off `settingsData.configured` instead of inferring from null fields; API no longer ambiguous between "never configured" vs "cleared".
+4. ~~**Sort direction default mismatch**: backend default for GET `/transactions` is `sortDir=desc` (line 84: `@RequestParam(defaultValue = "desc")`), but the frontend default state is also `desc` — consistent. However, the export endpoint hardcodes `sortDir=asc` in the controller (line113: `"asc"`), overriding any client-supplied value — correct for chronological reporting.~~ ✅ **FIXED (2026-08-26)** — the forced-asc behavior was CONFIRMED CORRECT but its API surface lied: `/export` declared `sortBy`/`sortDir` params it silently ignored. Params removed from controller signature AND from `getAllForExport` service signature (single caller); chronological ascending now enforced inside the service impl with a contract comment. Frontend export call no longer sends dead sort keys.
+5. ~~**`allTxns` query fetches1000 records** for FY dropdown generation — reasonable for a PPF ledger (max ~40 years × ~12 entries/year ≈ 480 entries in extreme case), but if a user has more than1000 entries, the FY dropdown would be incomplete. **Low risk** — PPF ledgers are inherently bounded.~~ ✅ **FIXED (2026-08-26)** — replaced by `GET /api/ppf/fiscal-years`: two limit-1 min/max queries + FY range derivation; works for any transaction count.
 
 ### Open questions
 
-1. **Is the FY completion count intentionally N-1?** The PPF Scheme2019 says partial withdrawal is allowed "from the7th financial year" — meaning after5 complete FYs. If `completedFYs = 5` means "5 FYs completed" (i.e., currently in the6th FY), then the lock-in check `completedFYs < 6` blocks until `completedFYs = 6` (7th FY) — which would be correct if we interpret "completedFYs" as "fully completed FYs" and the Scheme allows withdrawal at the START of the7th FY. **This needs careful verification against the exact Scheme wording.** If the current code is correct by its own definition, then no bug exists — but the variable name is misleading.
-2. **Should the module enforce the ₹1.5L annual contribution limit?** In real PPF accounts, excess deposits beyond ₹1.5L per FY earn no interest. The module currently records them without warning. This is a tracker, not a bank system — enforcement may be intentionally omitted.
-3. **Should interest calculation be added?** The module records interest credits manually. An automatic interest calculator (monthly lowest-balance × annual rate ÷12, compounded annually on March31) would make the ledger self-reconciling but adds significant complexity.
-4. **Is premature closure a planned feature?** The DTO returns the allowed reasons and penalty rate, but no execution endpoint exists. If planned, it would need: `POST /premature-closure` with reason validation, interest penalty calculation, and balance zeroing.
-5. **Dead `SequenceGeneratorService` import** — should be removed (same cleanup pattern as FD 2026-08-26). Needs grep confirmation that no method in `PpfTransactionServiceImpl` calls it.
+1. ~~**Is the FY completion count intentionally N-1?** The PPF Scheme2019 says partial withdrawal is allowed "from the7th financial year" — meaning after5 complete FYs. If `completedFYs = 5` means "5 FYs completed" (i.e., currently in the6th FY), then the lock-in check `completedFYs < 6` blocks until `completedFYs = 6` (7th FY) — which would be correct if we interpret "completedFYs" as "fully completed FYs" and the Scheme allows withdrawal at the START of the7th FY. **This needs careful verification against the exact Scheme wording.** If the current code is correct by its own definition, then no bug exists — but the variable name is misleading.~~ ✅ **RESOLVED (2026-08-26)** — verified against web-checked PPF Scheme 2019 wording: withdrawal opens in the 7th FY; code now counts completed FYs from the opening FY's start year and gates at `< 7` (see D4).
+2. **Should the module enforce the ₹1.5L annual contribution limit?** In real PPF accounts, excess deposits beyond ₹1.5L per FY earn no interest. The module currently records them without warning. This is a tracker, not a bank system — enforcement may be intentionally omitted. 📌 Owner decision pending.
+3. **Should interest calculation be added?** The module records interest credits manually. An automatic interest calculator (monthly lowest-balance × annual rate ÷12, compounded annually on March31) would make the ledger self-reconciling but adds significant complexity. 📌 Feature request — deferred.
+4. **Is premature closure a planned feature?** The DTO returns the allowed reasons and penalty rate, but no execution endpoint exists. If planned, it would need: `POST /premature-closure` with reason validation, interest penalty calculation, and balance zeroing. 📌 Feature request — deferred.
+5. ~~**Dead `SequenceGeneratorService` import** — should be removed (same cleanup pattern as FD 2026-08-26). Needs grep confirmation that no method in `PpfTransactionServiceImpl` calls it.~~ ✅ **RESOLVED (2026-08-26)** — removed and grep-confirmed (same as D2/W1).
 
-**Module `ppf` — STATUS (2026-08-26): 4 discrepancies found, 5 watch-list items, 5 open questions.**
+**Module `ppf` — STATUS (2026-08-26, end of round 3): 5 discrepancies found (5 fixed), 6 watch-list items (6 resolved), 5 open questions (2 resolved, 3 deferred to plan).**
+
+Legend: ✅ = FIXED this session · 📌 = OPEN / tracked for follow-up
 
 | # | Item | Severity | Status |
 |---|---|---|---|
-| D1 | README §3 phantom `PpfSettingsRepository` | Doc bug | **FIXED 2026-08-26** — removed from directory tree, updated §2.1 diagram, updated §1.2 features table |
-| D2 | Dead `SequenceGeneratorService` import | Code hygiene | **FIXED 2026-08-26** — import, field, and constructor param removed |
-| D3 | Part1 "counters" claim for PPF | Doc drift | **FIXED 2026-08-26** — Part1 addendum updated with PPF-specific corrections |
-| D4 | Off-by-one in FY completion count | Logic bug | **FIXED 2026-08-26** — `completedFYs = currentFyStartYear - openingFyStartYear`; lock-in updated to `< 7`; loan eligibility updated to `>= 3 && <= 7` |
-| W1 | Dead SequenceGeneratorService import | Code hygiene | **FIXED 2026-08-26** — same as D2 |
-| W2 | No @Valid on PPF settings PUT | Validation gap | **OPEN** — any shape accepted for settings |
-| W3 | getSettings returns empty DTO for new users | Minor | **OPEN** — frontend handles gracefully, cosmetic only |
-| W4 | Export forces asc sort (correct) | Non-issue | **CONFIRMED CORRECT** |
-| W5 | allTxns 1000-record cap for FY dropdown | Low risk | **OPEN** — bounded by PPF ledger nature |
-| Q1 | FY completion count definition | Clarification needed | **RESOLVED 2026-08-26** — fixed to match PPF Scheme 2019 |
-| Q2 | ₹1.5L contribution limit enforcement | Design decision | **OPEN** — tracker vs bank system scope |
-| Q3 | Interest calculation feature | Feature request | **OPEN** — would make ledger self-reconciling |
-| Q4 | Premature closure endpoint | Feature request | **OPEN** — DTO supports it but no execution path |
-| Q5 | Dead import cleanup | Code hygiene | **RESOLVED 2026-08-26** — same as D2 |
+| D1 | README §3 phantom `PpfSettingsRepository` | Doc bug | ✅ **FIXED 2026-08-26** — §3 tree, §2.1 diagram, §1.2 features table corrected |
+| D2 | Dead `SequenceGeneratorService` import | Code hygiene | ✅ **FIXED 2026-08-26** — import, field, and constructor param removed; grep-verified |
+| D3 | Part1 "counters" claim for PPF | Doc drift | ✅ **FIXED 2026-08-26** — Part1 addendum updated with PPF-specific corrections |
+| D4 | Off-by-one in FY completion count | Logic bug | ✅ **FIXED 2026-08-26** (round 3 repair) — count = `currentFyStartYear - openingFyStartYear`; gates `< 6` lock-in + loan `[2,5]` restored (statutory under corrected count, web-verified); tests 5/5 |
+| D5 | FY summary computed from current page only (≤20 rows) — wrong sums/balance when a FY exceeds one page | Logic bug | ✅ **FIXED 2026-08-26** — server-side `GET /summary?financialYear=`; frontend recomputation removed |
+| W1 | Dead SequenceGeneratorService import | Code hygiene | ✅ **FIXED 2026-08-26** — same as D2 |
+| W2 | No @Valid on PPF settings PUT | Validation gap | ✅ **FIXED 2026-08-26** — @Valid + DTO constraints (@Size/@Pattern/@PastOrPresent) |
+| W3 | getSettings returns empty DTO for new users | Minor | ✅ **FIXED 2026-08-26** — explicit `configured: Boolean` on `PpfSettingsResponseDTO`; frontend strip keyed off flag |
+| W4 | Export forces asc sort (correct) but declared dead sortBy/sortDir params | API honesty | ✅ **FIXED 2026-08-26** — dead params removed from controller + service signature; asc enforced in service impl contract; README v1.4.1 |
+| W5 | allTxns 1000-record cap for FY dropdown | Low risk | ✅ **FIXED 2026-08-26** — replaced by `GET /api/ppf/fiscal-years` (two limit-1 queries) + `ppfAPI.getFiscalYears()` |
+| W6 | `ppfAPI.getById` defined with NO UI caller | Code hygiene | ✅ **FIXED 2026-08-26** — dead frontend method + endpoint entry removed; backend GET `/transactions/{id}` kept (API-first) |
+| Q1 | FY completion count definition | Clarification needed | ✅ **RESOLVED 2026-08-26** — fixed to match PPF Scheme 2019 (see D4) |
+| Q2 | ₹1.5L contribution limit enforcement | Design decision | 📌 **OPEN** — tracker vs bank system scope |
+| Q3 | Interest calculation feature | Feature request | 📌 **OPEN** — would make ledger self-reconciling |
+| Q4 | Premature closure endpoint | Feature request | 📌 **OPEN** — DTO supports it but no execution path |
+| Q5 | Dead import cleanup | Code hygiene | ✅ **RESOLVED 2026-08-26** — same as D2 |
+
+**Verification evidence (round 2, 2026-08-26)**: `mvn compile` clean · PPF test suite **5/5 PASS** (`PpfTransactionServiceTest` 3 + `PpfBalanceRecalculationServiceTest` 2, BUILD SUCCESS) · `next build` clean, `/ppf` route compiles · grep-verified: zero `SequenceGeneratorService`/`PpfSettingsRepository` refs in ppf module, zero stale `ppfAllTxns`/`ppfAPI.getById` refs in frontend (EPF retains its own patterns — out of scope until its module pass).
+
+**Verification evidence (round 3, 2026-08-26)**: web re-verification of all statutory constants against 2026-dated sources (ET Money 2026-04 · IndiaPost 2026-06 · Zeebiz 2026-04 · Mint 2026-04 · ClearTax Jul-2026 rate table · Kalkine 2026-07) → caught and repaired the round-2 gate regression (restored `< 6` lock-in, loan `[2,5]`; only the count formula needed fixing). W3/W4 hygiene fixes shipped same day (`configured` flag; dead export sort params removed from controller + service contract). `mvn test -Dtest='Ppf*'` **5/5 PASS** · `next build` clean with `/ppf` compiled. Industry-standard TODO plan created at `local/TODOs/PPF_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md` (8 gaps: 1 closed, 7 planned with priorities/effort/risk + API surface + shipping waves). README bumped v1.4.1.
 
 **Industry-standard audit summary:**
 
 - Core ledger mechanics (balance walk, recalculation, negative-balance protection) ✅ **correct and professionally implemented**.
-- Withdrawal validation formulas (50% cap, 60% extension block, single-per-FY) ✅ **match PPF Scheme2019 text** — but all thresholds are shifted by1 due to the FY counting issue.
+- Withdrawal validation formulas (50% cap, 60% extension block, single-per-FY) ✅ **match PPF Scheme2019 text** — thresholds web-re-verified against 2026 sources and restored to statutory gates (`< 6` lock-in, loan `[2,5]`) after round-3 regression repair (2026-08-26).
 - Settings (extension mode, account details) ✅ **embedded in User document** — efficient design.
 - Excel export ✅ **professional quality** with metadata header, styled currency, auto-sized columns.
 - **Gaps vs industry**: no contribution limit enforcement, no interest accrual modeling, no premature closure execution, no loan repayment logic, no automatic interest crediting — all are **defensible design choices for a manual tracker** but would be needed for a "full PPF simulator."
-- **Compared to FD implementation**: PPF lacks the industry-standards audit section and written implementation plan that FD has. The off-by-one bug (if confirmed) is more severe than any FD gap because it affects statutory eligibility.
+- **Compared to FD implementation**: PPF now has the same fix-round treatment (dead-code removal, doc sync, validation hardening) plus a server-side FY summary that exceeds the FD pattern. The former off-by-one (D4, fixed 2026-08-26) was more severe than any FD gap because it affected statutory eligibility.
 
 **Test evidence**: `PpfTransactionServiceTest` + `PpfBalanceRecalculationServiceTest` exist in test tree (not re-run during this read-only audit).
 

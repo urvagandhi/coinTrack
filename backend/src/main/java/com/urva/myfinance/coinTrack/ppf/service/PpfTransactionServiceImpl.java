@@ -172,9 +172,24 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
 
     @Override
     public PpfSummaryDTO getSummary(String userId) {
-        List<PpfTransaction> list = ppfTransactionRepository.findByUserId(
-                userId, Sort.by(Sort.Direction.ASC, "transactionDate").and(Sort.by(Sort.Direction.ASC, "createdAt")));
+        return getSummary(userId, null);
+    }
 
+    @Override
+    public PpfSummaryDTO getSummary(String userId, String financialYear) {
+        List<PpfTransaction> list;
+        if (financialYear == null || financialYear.isBlank()) {
+            list = ppfTransactionRepository.findByUserId(
+                    userId, Sort.by(Sort.Direction.ASC, "transactionDate").and(Sort.by(Sort.Direction.ASC, "createdAt")));
+        } else {
+            Query query = buildDynamicQuery(userId, null, null, financialYear.trim(), null);
+            query.with(Sort.by(Sort.Direction.ASC, "transactionDate").and(Sort.by(Sort.Direction.ASC, "createdAt")));
+            list = mongoTemplate.find(query, PpfTransaction.class);
+        }
+        return buildSummary(list);
+    }
+
+    private PpfSummaryDTO buildSummary(List<PpfTransaction> list) {
         if (list == null || list.isEmpty()) {
             return PpfSummaryDTO.builder()
                     .currentBalance(BigDecimal.ZERO)
@@ -217,24 +232,39 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
     }
 
     @Override
+    public List<String> getFinancialYears(String userId) {
+        Query base = new Query(Criteria.where("userId").is(userId));
+        PpfTransaction earliest = mongoTemplate.findOne(
+                base.with(Sort.by(Sort.Direction.ASC, "transactionDate")).limit(1), PpfTransaction.class);
+        if (earliest == null || earliest.getTransactionDate() == null) {
+            return List.of();
+        }
+
+        String minFy = FinancialYearUtil.getFinancialYear(earliest.getTransactionDate());
+        int startYear = Integer.parseInt(minFy.substring(0, 4));
+
+        LocalDate today = LocalDate.now();
+        int currentStartYear = today.getMonthValue() < 4 ? today.getYear() - 1 : today.getYear();
+
+        List<String> years = new java.util.ArrayList<>();
+        for (int y = startYear; y <= currentStartYear; y++) {
+            years.add(String.format("%d-%02d", y, (y + 1) % 100));
+        }
+        java.util.Collections.reverse(years);
+        return years;
+    }
+
+    @Override
     public List<PpfTransactionResponseDTO> getAllForExport(
             String userId,
             String dateFrom,
             String dateTo,
             String financialYear,
-            String particulars,
-            String sortBy,
-            String sortDir) {
+            String particulars) {
         Query query = buildDynamicQuery(userId, dateFrom, dateTo, financialYear, particulars);
 
-        String sortProperty = (sortBy == null || sortBy.trim().isEmpty()) ? "transactionDate" : sortBy;
-        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        
-        Sort sort = Sort.by(direction, sortProperty);
-        if ("transactionDate".equals(sortProperty)) {
-            sort = sort.and(Sort.by(direction, "createdAt"));
-        }
-        
+        // Exports are ALWAYS chronological ascending (oldest first) for clean reporting
+        Sort sort = Sort.by(Sort.Direction.ASC, "transactionDate").and(Sort.by(Sort.Direction.ASC, "createdAt"));
         query.with(sort);
 
         List<PpfTransaction> transactions = mongoTemplate.find(query, PpfTransaction.class);
@@ -358,10 +388,12 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
         if (embed == null) {
             return PpfSettingsResponseDTO.builder()
                     .userId(userId)
+                    .configured(false)
                     .build();
         }
         return PpfSettingsResponseDTO.builder()
                 .userId(userId)
+                .configured(true)
                 .accountNumber(embed.getAccountNumber())
                 .dateOfIssue(embed.getDateOfIssue())
                 .extensionMode(embed.getExtensionMode())

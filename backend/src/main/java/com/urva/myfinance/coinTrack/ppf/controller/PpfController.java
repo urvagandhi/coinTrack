@@ -88,29 +88,36 @@ public class PpfController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
-    @Operation(summary = "Get PPF summary metrics for dashboard")
+    @Operation(summary = "Get PPF summary metrics for dashboard (optionally scoped to a financial year)")
     @GetMapping("/summary")
-    public ResponseEntity<ApiResponse<PpfSummaryDTO>> getSummary(@AuthenticationPrincipal UserPrincipal principal) {
-        logger.debug("Fetching PPF summary for user: {}", principal.getUsername());
-        PpfSummaryDTO summary = ppfTransactionService.getSummary(principal.getUserId());
+    public ResponseEntity<ApiResponse<PpfSummaryDTO>> getSummary(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) String financialYear) {
+        logger.debug("Fetching PPF summary for user: {}, financialYear={}", principal.getUsername(), financialYear);
+        PpfSummaryDTO summary = ppfTransactionService.getSummary(principal.getUserId(), financialYear);
         return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
-    @Operation(summary = "Export PPF transactions to Excel respecting active filters")
+    @Operation(summary = "Get distinct financial years present in the ledger (for filter dropdowns)")
+    @GetMapping("/fiscal-years")
+    public ResponseEntity<ApiResponse<List<String>>> getFinancialYears(@AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching PPF financial years for user: {}", principal.getUsername());
+        return ResponseEntity.ok(ApiResponse.success(ppfTransactionService.getFinancialYears(principal.getUserId())));
+    }
+
+    @Operation(summary = "Export PPF transactions to Excel (always chronological ascending, respecting active filters)")
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportTransactions(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String dateFrom,
             @RequestParam(required = false) String dateTo,
             @RequestParam(required = false) String financialYear,
-            @RequestParam(required = false) String particulars,
-            @RequestParam(defaultValue = "transactionDate") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
+            @RequestParam(required = false) String particulars) {
         logger.info("Exporting PPF transactions to XLSX for user: {}", principal.getUsername());
 
-        // Force sort to chronological ascending (oldest first)
+        // Chronological ascending is enforced inside the service — no client sort override
         List<PpfTransactionResponseDTO> list = ppfTransactionService.getAllForExport(
-                principal.getUserId(), dateFrom, dateTo, financialYear, particulars, "transactionDate", "asc");
+                principal.getUserId(), dateFrom, dateTo, financialYear, particulars);
 
         // Re-sequence the transaction number sequentially for clean reporting
         for (int i = 0; i < list.size(); i++) {
@@ -175,7 +182,7 @@ public class PpfController {
     @Operation(summary = "Update PPF account settings (account number, date of issue)")
     @PutMapping("/settings")
     public ResponseEntity<ApiResponse<PpfSettingsResponseDTO>> updateSettings(
-            @RequestBody PpfSettingsRequestDTO requestDTO,
+            @Valid @RequestBody PpfSettingsRequestDTO requestDTO,
             @AuthenticationPrincipal UserPrincipal principal) {
         logger.info("Updating PPF settings for user: {}", principal.getUsername());
         PpfSettingsResponseDTO settings = ppfTransactionService.updateSettings(requestDTO, principal.getUserId());

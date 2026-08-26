@@ -349,7 +349,7 @@ export const endpoints = {
         delete: (id) => `/api/ppf/transactions/${id}`,
         summary: '/api/ppf/summary',
         export: '/api/ppf/export',
-        getById: (id) => `/api/ppf/transactions/${id}`,
+        fiscalYears: '/api/ppf/fiscal-years',
         settings: '/api/ppf/settings',
         withdrawalStatus: '/api/ppf/withdrawal-status',
     },
@@ -833,12 +833,9 @@ export const ppfAPI = {
         const { data } = await api.get(`${endpoints.ppf.list}${qs ? '?' + qs : ''}`);
         return unwrapResponse(data) || {};
     },
-    getSummary: async () => {
-        const { data } = await api.get(endpoints.ppf.summary);
-        return unwrapResponse(data);
-    },
-    getById: async (id) => {
-        const { data } = await api.get(endpoints.ppf.getById(id));
+    getSummary: async (financialYear) => {
+        const params = financialYear ? `?financialYear=${encodeURIComponent(financialYear)}` : '';
+        const { data } = await api.get(`${endpoints.ppf.summary}${params}`);
         return unwrapResponse(data);
     },
     create: async (txnData) => {
@@ -863,6 +860,10 @@ export const ppfAPI = {
     },
     getWithdrawalStatus: async () => {
         const { data } = await api.get(endpoints.ppf.withdrawalStatus);
+        return unwrapResponse(data);
+    },
+    getFiscalYears: async () => {
+        const { data } = await api.get(endpoints.ppf.fiscalYears);
         return unwrapResponse(data);
     },
     exportCSV: async (params = {}) => {

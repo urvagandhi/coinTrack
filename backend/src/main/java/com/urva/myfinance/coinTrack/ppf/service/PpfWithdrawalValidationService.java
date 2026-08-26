@@ -43,17 +43,16 @@ public class PpfWithdrawalValidationService {
 
         // Compute FYs
         String openingFyStr = FinancialYearUtil.getFinancialYear(settings.getDateOfIssue());
-        LocalDate openingFyEnd = FinancialYearUtil.resolveFinancialYear(openingFyStr)[1];
+        int openingFyStartYear = Integer.parseInt(openingFyStr.substring(0, 4));
         
         String currentFyStr = FinancialYearUtil.getFinancialYear(currentDate);
         LocalDate currentFyStart = FinancialYearUtil.resolveFinancialYear(currentFyStr)[0];
         LocalDate currentFyEnd = FinancialYearUtil.resolveFinancialYear(currentFyStr)[1];
         
         int completedFYs = 0;
-        int fyEndYear = openingFyEnd.getYear();
         int currentFyStartYear = currentFyStart.getYear();
-        if (currentFyStartYear > fyEndYear) {
-            completedFYs = currentFyStartYear - fyEndYear;
+        if (currentFyStartYear > openingFyStartYear) {
+            completedFYs = currentFyStartYear - openingFyStartYear;
         }
 
         // Fetch transactions
@@ -73,7 +72,7 @@ public class PpfWithdrawalValidationService {
                 .allowedReasons(List.of("LIFE_THREATENING_DISEASE", "HIGHER_EDUCATION", "CHANGE_IN_RESIDENCY"))
                 .minimumYearsForPrematureClosure(5)
                 .prematureClosureInterestReduction("1%")
-                .loanAllowed(completedFYs >= 2 && completedFYs <= 5) // from 3rd FY to 6th FY (completed 2 to 5)
+                .loanAllowed(completedFYs >= 2 && completedFYs <= 5) // 3rd to 6th FY (completed 2 to 5)
                 .loanIsWithdrawal(false)
                 .balanceCheckRequired(true)
                 .build();
@@ -93,9 +92,9 @@ public class PpfWithdrawalValidationService {
 
         // Pre-Maturity
         if (completedFYs < 15) {
-            status.setEligibleFinancialYear(String.format("%d-%02d", fyEndYear + 5, (fyEndYear + 6) % 100)); // 7th FY
+            status.setEligibleFinancialYear(String.format("%d-%02d", openingFyStartYear + 6, (openingFyStartYear + 7) % 100)); // 7th FY
             
-            if (completedFYs < 6) {
+            if (completedFYs < 6) { // withdrawal opens in the 7th FY (6 FYs completed)
                 status.setErrorCode("LOCK_IN");
                 status.setErrorMessage("Partial withdrawal is not permitted before the eligible financial year.");
                 return status;
@@ -147,7 +146,7 @@ public class PpfWithdrawalValidationService {
                 int blockIndex = (completedFYs - 15) / 5;
                 int blockStartFYsCompleted = 15 + blockIndex * 5;
                 
-                String blockStartFyStr = String.format("%d-%02d", fyEndYear + blockStartFYsCompleted - 1, (fyEndYear + blockStartFYsCompleted) % 100);
+                String blockStartFyStr = String.format("%d-%02d", openingFyStartYear + blockStartFYsCompleted - 1, (openingFyStartYear + blockStartFYsCompleted) % 100);
                 BigDecimal extensionBlockStartBalance = getBalanceAtEndOfFy(transactions, blockStartFyStr);
                 
                 status.setExtensionBlockStartBalance(extensionBlockStartBalance);
