@@ -2,8 +2,8 @@
 
 > **Domain**: User Fixed Deposit (FD) Tracking & Analytics  
 > **Responsibility**: Secure manual CRUD, live status computation, risk highlighting, metrics aggregation, and Excel (XLSX) export  
-> **Version**: 1.2.0  
-> **Last Updated**: 2026-07-25  
+> **Version**: 1.2.3  
+> **Last Updated**: 2026-08-26  
 
 ---
 
@@ -44,11 +44,11 @@ Retail investors often hold FDs across multiple banks (HDFC, SBI, ICICI, Post Of
 
 | Feature | Description |
 |---|---|
-| **Sequential `fdNo`** | Server-generated atomic counter using shared `counters` collection |
+| **Sequential `fdNo`** | Per-user display ordinal: new deposits are saved with a `fdNo = 0` placeholder, then common's `TransactionSequenceService.reorderFixedDeposits(userId)` re-sorts the user's ledger (issueDate ASC, createdAt tiebreak) and rewrites `fdNo` as `1..N` after every create/update. **The shared `counters` collection is NOT used by this module.** Because fdNo is renumbered on re-dating/editing, treat it as an unstable display index — the document `id` is the stable identifier. |
 | **Dual Status Strategy** | Live calculation on read + daily cron job for persisted DB state |
-| **Smart Relative Sorting** | `maturityDate:asc` (Nearest First) evaluates relative to `today` (`LocalDate.now()`) placing upcoming maturities first and past/matured ones at the bottom |
+| **Smart Relative Sorting** | `maturityDate:asc` (Nearest First) evaluates relative to `today` (`LocalDate.now()`) placing upcoming maturities first and past/matured ones at the bottom — **computed server-side via MongoDB aggregation with a computed sort key, so pagination happens at DB level (no full-ledger load)** |
 | **6-Mode Sorting Engine** | Supports sorting by maturity date (nearest/farthest), issue date (oldest/newest), and invested amount (highest/lowest) |
-| **Excel (XLSX) Export Formatting** | 14-column spreadsheet using `ExcelExportUtil` with auto-column width calculations, BOLD headers, and right-aligned text cell styling. Defaults to `issueDate:asc` |
+| **Excel (XLSX) Export Formatting** | Multi-tab workbook (All/Active/Due/Matured/Closed) with 14-column sheets, styled totals row (₹), auto-column widths, BOLD headers, and right-aligned numerics via `ExcelExportUtil`. Defaults to `issueDate:asc` |
 | **Dual View Frontend** | Seamlessly toggle between Card Grid View (`FdCard`) and Financial Table View (`FdTable`) |
 | **Monetary Rigor** | Strict `BigDecimal` usage for all amounts and interest rates |
 | **Strict Date Validation** | `maturityDate` must be strictly after `issueDate` (`InvalidFdDateRangeException`) |
@@ -80,11 +80,13 @@ Retail investors often hold FDs across multiple banks (HDFC, SBI, ICICI, Post Of
 │                              │                                         │
 │              ┌───────────────┴───────────────┐                         │
 │              ▼                               ▼                         │
-│  ┌───────────────────────┐       ┌──────────────────────────────┐     │
-│  │  SHARED COMMON LAYER   │       │  REPOSITORY LAYER            │     │
-│  │  ├── SequenceGenerator │       │  └── FixedDepositRepository  │     │
-│  │  └── ExcelExportUtil   │       │      (MongoRepository)       │     │
-│  └───────────────────────┘       └──────────────────────────────┘     │
+    │  ┌───────────────────────┐       ┌──────────────────────────────┐     │
+    │  │  SHARED COMMON LAYER   │       │  REPOSITORY LAYER            │     │
+    │  │  ├── TransactionSeq.   │       │  └── FixedDepositRepository  │     │
+    │  │  │   Service (fdNo     │       │      (MongoRepository)       │     │
+    │  │  │   reorder 1..N)     │       │                              │     │
+    │  │  └── ExcelExportUtil   │       │                              │     │
+    │  └───────────────────────┘       └──────────────────────────────┘     │
 │              │                               │                         │
 │              └───────────────┬───────────────┘                         │
 │                              ▼                                         │
@@ -112,11 +114,18 @@ fixeddeposit/
 │   └── response/
 │       ├── FixedDepositResponseDTO.java
 │       └── FixedDepositSummaryDTO.java
+├── exception/
+│   └── InvalidFdDateRangeException.java # 400 INVALID_FD_DATE_RANGE (extends common DomainException;
+│                                        # relocated from common.exception on 2026-08-26)
+├── listener/
+│   └── FixedDepositUserDataCleanupListener.java # UserDeletedEvent → deleteByUserId cascade
 ├── model/
 │   ├── FdStatus.java                  # Enum: ACTIVE, DUE, MATURED, CLOSED
 │   └── FixedDeposit.java              # MongoDB Document ("fixed_deposits")
 ├── repository/
 │   └── FixedDepositRepository.java    # Spring Data Mongo repository
+├── util/
+│   └── FixedDepositExcelExporter.java # Multi-tab XLSX export (All/Active/Due/Matured/Closed)
 └── service/
     ├── FixedDepositService.java       # Interface
     ├── FixedDepositServiceImpl.java   # Implementation + status calculation
@@ -165,7 +174,7 @@ The module supports 6 distinct sorting modes via `sortBy` and `sortDir` paramete
 
 | Sort Key | Direction | Label | Implementation |
 |---|---|---|---|
-| `maturityDate` | `asc` | Maturity Date (Nearest First) | Uses Java `nearestMaturityComparator` to calculate relative distance from `today` (`LocalDate.now()`). Places upcoming active/due deposits maturing today or in future first (`>= today`), and past/matured ones at the bottom. |
+| `maturityDate` | `asc` | Maturity Date (Nearest First) | Computed **server-side via MongoDB aggregation** with a computed sort key: upcoming/due FDs (maturityDate ≥ today) key = epoch-ms(maturityDate) → ascending date; past FDs key = PAST_BLOCK_BASE − epoch-ms(maturityDate) → most-recent-matured first. Skip/limit pages at DB level — no full-ledger load. |
 | `maturityDate` | `desc` | Maturity Date (Farthest First) | Standard MongoDB `Sort.by(Direction.DESC, "maturityDate")`. |
 | `issueDate` | `desc` | Issue Date (Newest First) | Standard MongoDB `Sort.by(Direction.DESC, "issueDate")`. |
 | `issueDate` | `asc` | Issue Date (Oldest First) | Standard MongoDB `Sort.by(Direction.ASC, "issueDate")`. **(Default for Excel Export)** |
@@ -175,10 +184,17 @@ The module supports 6 distinct sorting modes via `sortBy` and `sortDir` paramete
 ### 5.4 Excel Export Formatting Rules
 
 When exporting via `GET /api/fixed-deposits/export`:
-1. **14 Columns**: `FD No`, `Place`, `Holder Name`, `Nominee`, `Account Number`, `Interest Rate (%)`, `Investment Period`, `Issue Date`, `Maturity Date`, `Issue Amount`, `Maturity Amount`, `Status`, `Days To Maturity`, `Remarks`.
-2. **`Days To Maturity`**: Formatted as `-` (dash) if the deposit status is `MATURED`, `DUE`, `CLOSED`, or has `daysToMaturity <= 0`.
-3. **Default Order**: Defaults to `issueDate:asc` (oldest issued deposit first) unless an explicit sorting choice is passed.
-4. **Style**: Generates a `.xlsx` spreadsheet using `ExcelExportUtil` with bold headers and right-aligned text style.
+
+1. **Multi-tab workbook** (up to 5 sheets, status tabs omitted when empty):
+   `Fixed Deposit` (all rows) · `Active` · `Due` · `Matured` · `Closed`.
+2. **14 Columns**: `FD No`, `Place`, `Holder Name`, `Nominee`, `Account Number`, `Interest Rate (%)`, `Investment Period`, `Issue Date`, `Maturity Date`, `Issue Amount`, `Maturity Amount`, `Status`, `Days To Maturity`, `Remarks`.
+   Column 0 exports the record's actual **fdNo ordinal** (not the row position).
+3. **Totals row**: every non-empty sheet ends with a styled total row summing
+   Issue Amount and Maturity Amount (₹ en-IN currency format).
+4. **`Days To Maturity`**: Formatted as `-` (dash) if the deposit status is `MATURED`, `DUE`, `CLOSED`, or has `daysToMaturity <= 0`.
+5. **Default Order**: Defaults to `issueDate:asc` (oldest issued deposit first) unless an explicit sorting choice is passed.
+6. **Style**: `.xlsx` via Apache POI / `ExcelExportUtil` — bold headers, ₹ currency cells,
+   right-aligned numerics, auto-sized columns, grid borders.
 
 ---
 
@@ -186,7 +202,7 @@ When exporting via `GET /api/fixed-deposits/export`:
 
 **Collection**: `fixed_deposits`  
 
-Key fields: `id`, `fdNo` (indexed, unique), `userId` (indexed), `place`, `holderName`, `nominee`, `accountNumber`, `interestRate`, `investmentPeriod`, `issueDate`, `maturityDate`, `issueAmount`, `maturityAmount`, `status`, `remarks`, `createdAt`, `updatedAt`.
+Key fields: `id`, `fdNo` (indexed — **NOT unique**: it is a per-user `1..N` ordinal, so a global unique index is impossible by design), `userId` (indexed), `place`, `holderName`, `nominee`, `accountNumber`, `interestRate`, `investmentPeriod`, `issueDate`, `maturityDate`, `issueAmount`, `maturityAmount`, `status`, `remarks`, `createdAt`, `updatedAt`.
 
 ---
 
@@ -202,6 +218,11 @@ Key fields: `id`, `fdNo` (indexed, unique), `userId` (indexed), `place`, `holder
 ## 8. API Reference
 
 All responses return standard `ApiResponse<T>` envelope.
+
+> ⚠ **Sole intentional exception**: `GET /api/fixed-deposits/export` returns a bare
+> `ResponseEntity<byte[]>` (binary XLSX, `Content-Disposition: attachment`) — deliberately
+> NOT wrapped in the ApiResponse envelope, consistent with every other module's export.
+> Do NOT "fix" this to an envelope; the frontend downloads the raw blob directly.
 
 ### 8.1 Create Fixed Deposit
 ```http
@@ -230,9 +251,10 @@ Authorization: Bearer <jwt>
 
 1. **Create Request** -> `FixedDepositController` extracts user from `Principal`.
 2. **Validation** -> Service verifies `fdNo` absent in request and `maturityDate > issueDate`.
-3. **Sequence Generation** -> Atomic `$inc` on `counters` collection (`fd_no`).
-4. **Persistence** -> Saved to `fixed_deposits` collection in MongoDB Atlas.
-5. **Response** -> Derived `daysToMaturity` and `highlight` fields injected into response DTO.
+3. **Transaction Context** -> Executed inside `@Transactional` boundary (backed by common's `MongoTransactionManager`).
+4. **Ordinal Assignment** -> Saved with `fdNo = 0`, then `TransactionSequenceService.reorderFixedDeposits(userId)` re-sorts the ledger and rewrites `fdNo` as `1..N` (per-user; no `counters` write).
+5. **Persistence** -> Saved to `fixed_deposits` collection in MongoDB Atlas. If reordering or save fails, transaction rolls back atomically.
+6. **Response** -> Derived `daysToMaturity` and `highlight` fields injected into response DTO.
 
 ---
 
@@ -258,6 +280,7 @@ Authorization: Bearer <jwt>
 | Closed state reset | Stored `CLOSED` status acts as sticky override against date calculation |
 | Malformed date range | Service validates `maturityDate` strictly after `issueDate` |
 | UI/DTO Mismatches | Synchronized `totalEstimatedReturns` (originally mismatched as `totalEstReturns`) to prevent frontend reporting zero returns |
+| Non-atomic multi-write | `@Transactional` on `createFixedDeposit` & `updateFixedDeposit` ensures document save + ordinal reorder commit/rollback atomically |
 
 ---
 
@@ -266,3 +289,15 @@ Authorization: Bearer <jwt>
 `listener/FixedDepositUserDataCleanupListener.java` listens for common's `UserDeletedEvent`
 and deletes **all** fixed deposits via the newly added
 `FixedDepositRepository.deleteByUserId(String)`.
+
+---
+
+## Changelog
+
+| Version | Date | Changes |
+|---|---|---|
+| 1.2.3 | 2026-08-26 | Transaction safety: annotated `createFixedDeposit` and `updateFixedDeposit` with `@Transactional`, leveraging common's `MongoTransactionManager` for atomic save + ordinal reorder operations. |
+| 1.2.2 | 2026-08-26 | XLSX export enhancements: exported actual `fdNo` in column 0, documented multi-tab workbook + totals row. |
+| 1.2.1 | 2026-08-26 | Code cleanup: removed dead `SequenceGeneratorService` injection; corrected documentation to accurately reflect ordinal reordering mechanism. |
+| 1.2.0 | 2026-07-25 | Initial documentation release. |
+

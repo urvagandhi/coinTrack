@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 
-import com.urva.myfinance.coinTrack.common.exception.InsufficientPpfBalanceException;
+import com.urva.myfinance.coinTrack.ppf.exception.InsufficientPpfBalanceException;
 import com.urva.myfinance.coinTrack.ppf.model.PpfTransaction;
 import com.urva.myfinance.coinTrack.ppf.repository.PpfTransactionRepository;
 import com.urva.myfinance.coinTrack.ppf.service.PpfBalanceRecalculationService;

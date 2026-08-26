@@ -1,4 +1,6 @@
-package com.urva.myfinance.coinTrack.common.exception;
+package com.urva.myfinance.coinTrack.mutualfund.exception;
+
+import com.urva.myfinance.coinTrack.common.exception.DomainException;
 
 /**
  * Exception thrown when a synthesized lot or manual units are consumed without a valid cost basis.

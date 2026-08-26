@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
-import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
 import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.common.util.FinancialYearUtil;
 import com.urva.myfinance.coinTrack.ppf.dto.request.PpfSettingsRequestDTO;
@@ -49,7 +48,6 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
 
     private final PpfTransactionRepository ppfTransactionRepository;
     private final PpfBalanceRecalculationService recalculationService;
-    private final SequenceGeneratorService sequenceGeneratorService;
     private final TransactionSequenceService transactionSequenceService;
     private final MongoTemplate mongoTemplate;
     private final UserRepository userRepository;
@@ -58,13 +56,11 @@ public class PpfTransactionServiceImpl implements PpfTransactionService {
     public PpfTransactionServiceImpl(
             PpfTransactionRepository ppfTransactionRepository,
             PpfBalanceRecalculationService recalculationService,
-            SequenceGeneratorService sequenceGeneratorService,
             TransactionSequenceService transactionSequenceService,
             MongoTemplate mongoTemplate,
             UserRepository userRepository) {
         this.ppfTransactionRepository = ppfTransactionRepository;
         this.recalculationService = recalculationService;
-        this.sequenceGeneratorService = sequenceGeneratorService;
         this.transactionSequenceService = transactionSequenceService;
         this.mongoTemplate = mongoTemplate;
         this.userRepository = userRepository;

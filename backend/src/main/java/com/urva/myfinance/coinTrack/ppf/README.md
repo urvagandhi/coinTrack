@@ -2,8 +2,8 @@
 
 > **Domain**: User Public Provident Fund (PPF) Ledger  
 > **Responsibility**: Transaction CRUD, ledger balance recalculation, and Excel (XLSX) export  
-> **Version**: 1.2.0  
-> **Last Updated**: 2026-07-25  
+> **Version**: 1.3.0  
+> **Last Updated**: 2026-08-26  
 
 ---
 
@@ -46,7 +46,7 @@ PPF is a long-term investment requiring chronological tracking of deposits, inte
 | **Negative Balance Protection** | Throws `InsufficientPpfBalanceException` and aborts save if a negative balance occurs |
 | **Transaction Safety** | CRUD operations and recalculations are protected by `@Transactional` |
 | **Financial Year Filtering** | Helper utility filters dates strictly by Indian FY (April 1 - March 31) |
-| **Sequential `transactionNo`** | Uses shared `SequenceGeneratorService` (`ppf_txn_no_<userId>`) |
+| **Sequential `transactionNo`** | Uses `TransactionSequenceService.reorderPpfTransactions` (display ordinal, rewritten on every mutation) |
 | **Excel (XLSX) Export** | Stream styled spreadsheets with right-aligned columns and bold sequential numbers |
 | **Statutory Withdrawal Validation** | Full enforcement of PPF Scheme 2019/2023 rules (lock-in period, 50% max limit, single withdrawal per FY) |
 | **Post-Maturity Extension Modes** | Support for both `WITHOUT_CONTRIBUTION` and `WITH_CONTRIBUTION` (Form H) with strict 60% block cap enforcement |
@@ -80,15 +80,14 @@ PPF is a long-term investment requiring chronological tracking of deposits, inte
 │              ▼                               ▼                         │
 │  ┌───────────────────────┐       ┌──────────────────────────────┐     │
 │  │  SHARED COMMON LAYER   │       │  REPOSITORY LAYER            │     │
-│  │  ├── SequenceGenerator │       │  └── PpfTransactionRepository│     │
+│  │  ├── TransactionSequence│       │  └── PpfTransactionRepository│     │
 │  │  ├── ExcelExportUtil   │       │      (MongoRepository)       │     │
 │  │  └── FinancialYearUtil │       └──────────────────────────────┘     │
 │  └───────────────────────┘                       │                     │
 │                                                  ▼                     │
 │  ┌─────────────────────────────────────────────────────────────────┐  │
 │  │  DATA LAYER (MongoDB Atlas)                                     │  │
-│  │  ├── ppf_transactions collection                                │  │
-│  │  └── counters collection                                        │  │
+│  │  └── ppf_transactions collection                                │  │
 │  └─────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 └────────────────────────────────────────────────────────────────────────┘
@@ -109,11 +108,12 @@ ppf/
 │   └── response/
 │       ├── PpfSummaryDTO.java
 │       └── PpfTransactionResponseDTO.java
+├── exception/
+│   └── InsufficientPpfBalanceException.java
 ├── model/
 │   ├── PpfParticularType.java
 │   └── PpfTransaction.java
 ├── repository/
-│   ├── PpfSettingsRepository.java
 │   └── PpfTransactionRepository.java
 └── service/
     ├── PpfBalanceRecalculationService.java
@@ -156,10 +156,11 @@ Since users can insert entries out of order (e.g., adding a missed deposit from 
 
 ### 5.2 Statutory Withdrawal Validation
 Encapsulated in `PpfWithdrawalValidationService.java`, the system strictly validates withdrawals based on:
-1. **Initial Lock-in**: No partial withdrawal before the 7th financial year (i.e. 5 complete FYs after opening).
+1. **Initial Lock-in**: No partial withdrawal before the 7th financial year (i.e. 6 complete FYs after opening).
 2. **Frequency**: Strict limit of 1 withdrawal per financial year.
 3. **Pre-Maturity Limit**: Maximum withdrawal capped at 50% of the lower of the balance at the end of the 4th preceding FY and the previous FY.
 4. **Post-Maturity Extension**: Supports `WITH_CONTRIBUTION` mode which dynamically limits aggregate withdrawals over a 5-year block to 60% of the block's opening balance.
+5. **Loan Eligibility**: Available from the 3rd to 7th financial year (completed 3 to 7 FYs).
 
 ---
 

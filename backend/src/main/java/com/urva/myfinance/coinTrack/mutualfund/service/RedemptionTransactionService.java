@@ -85,6 +85,7 @@ public class RedemptionTransactionService {
         return repository.findByUserIdAndRedemptionDateBetween(userId, startDate, endDate);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public RedemptionTransaction createTransaction(String userId, RedemptionTransaction transaction) {
         validateSchemeOwnership(userId, transaction.getSchemeId());
         transaction.setUserId(userId);
@@ -154,7 +155,7 @@ public class RedemptionTransactionService {
             logger.info("Executing FIFO for Scheme: {}, Units: {}, Date: {}", transaction.getSchemeId(),
                     transaction.getRedemptionUnit(), applicableDate);
             MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(userId, transaction.getSchemeId(),
-                    applicableDate, transaction.getRedemptionUnit(), transaction.getId());
+                    applicableDate, transaction.getRedemptionUnit(), transaction.getId(), transaction.getTransactionNo());
             if (transaction.getTradeInvestmentValue() == null) {
                 transaction.setTradeInvestmentValue(fifoResult.totalCostValue);
             }
@@ -207,6 +208,7 @@ public class RedemptionTransactionService {
         return saved;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public RedemptionTransaction updateTransaction(String userId, String id, RedemptionTransaction updatedTransaction) {
         RedemptionTransaction existing = repository.findById(id)
                 .filter(t -> t.getUserId().equals(userId))
@@ -291,7 +293,7 @@ public class RedemptionTransactionService {
 
         if (existing.getStatus() == TransactionStatus.COMPLETED && existing.getRedemptionUnit() != null) {
             MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(userId, existing.getSchemeId(),
-                    applicableDate, existing.getRedemptionUnit(), existing.getId());
+                    applicableDate, existing.getRedemptionUnit(), existing.getId(), existing.getTransactionNo());
             if (existing.getTradeInvestmentValue() == null) {
                 existing.setTradeInvestmentValue(fifoResult.totalCostValue);
             }
@@ -341,6 +343,7 @@ public class RedemptionTransactionService {
         return saved;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void deleteTransaction(String userId, String id) {
         RedemptionTransaction existing = getTransaction(userId, id);
         repository.delete(existing);
@@ -351,7 +354,7 @@ public class RedemptionTransactionService {
     public MfFifoEngine.FifoResult previewFifo(String userId, String schemeId, LocalDate date, BigDecimal units) {
         validateSchemeOwnership(userId, schemeId);
         LocalDate applicableDate = settlementDateCalculator.calculateApplicableDate(date, false);
-        return fifoEngine.calculateRedemptionCost(userId, schemeId, applicableDate, units, null);
+        return fifoEngine.calculateRedemptionCost(userId, schemeId, applicableDate, units, null, 0L);
     }
 
     /**
@@ -377,6 +380,7 @@ public class RedemptionTransactionService {
     }
 
 
+    @org.springframework.transaction.annotation.Transactional
     public void recalculateRedemptionsAfterDate(String userId, String schemeId, LocalDate afterDate) {
         logger.info("Recalculating redemptions for scheme {} after date {}", schemeId, afterDate);
         // We use minusDays(1) so it includes redemptions on the same date as well.
@@ -389,7 +393,7 @@ public class RedemptionTransactionService {
                 logger.info("Recalculating FIFO for redemption ID: {} on date: {}", redemption.getId(),
                         redemption.getApplicableDate());
                 MfFifoEngine.FifoResult fifoResult = fifoEngine.calculateRedemptionCost(userId, schemeId,
-                        redemption.getApplicableDate(), redemption.getRedemptionUnit(), redemption.getId());
+                        redemption.getApplicableDate(), redemption.getRedemptionUnit(), redemption.getId(), redemption.getTransactionNo());
                 redemption.setTradeInvestmentValue(fifoResult.totalCostValue);
 
                 if (redemption.getRedemptionValue() != null) {

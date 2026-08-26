@@ -10,7 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.urva.myfinance.coinTrack.common.exception.InsufficientEpfBalanceException;
+import com.urva.myfinance.coinTrack.epf.exception.InsufficientEpfBalanceException;
 import com.urva.myfinance.coinTrack.epf.model.EpfTransaction;
 import com.urva.myfinance.coinTrack.epf.repository.EpfTransactionRepository;
 

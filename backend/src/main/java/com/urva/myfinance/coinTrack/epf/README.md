@@ -29,7 +29,7 @@ Interest is accrued independently for the **EPF Balance** and the **EPS Balance*
 - EPFO declares interest rates per financial year (e.g. 8.25% for FY 2025-26). Rates are stored dynamically in the `epf_interest_rates` database collection rather than hardcoded.
 
 ### 4. Recalculation Cascade (`EpfBalanceRecalculationService`)
-- Editing or deleting a past transaction automatically recomputes both running `epfBalance` and `epsBalance` ledgers. Throws `InsufficientEpfBalanceException` (400 Bad Request) if any transaction date results in a negative balance.
+- Editing or deleting a past transaction automatically recomputes both running `epfBalance` and `epsBalance` ledgers. Throws `InsufficientEpfBalanceException` (module-local `epf/exception/`, 400 Bad Request — relocated from common.exception 2026-08-26) if any transaction date results in a negative balance.
 
 ### 5. Taxability Indicator
 - Surfaces `taxableInterestFlag: boolean` on the summary DTO if total employee contributions + VPF in the current financial year exceed **₹2,50,000**.

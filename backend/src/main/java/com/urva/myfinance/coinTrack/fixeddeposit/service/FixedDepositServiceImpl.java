@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -17,19 +16,24 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Arrays;
 
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
-import com.urva.myfinance.coinTrack.common.exception.InvalidFdDateRangeException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
-import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
 import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.exception.InvalidFdDateRangeException;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FixedDeposit;
 import com.urva.myfinance.coinTrack.fixeddeposit.repository.FixedDepositRepository;
@@ -40,23 +44,21 @@ public class FixedDepositServiceImpl implements FixedDepositService {
     private static final Logger logger = LoggerFactory.getLogger(FixedDepositServiceImpl.class);
 
     private final FixedDepositRepository fixedDepositRepository;
-    private final SequenceGeneratorService sequenceGeneratorService;
     private final TransactionSequenceService transactionSequenceService;
     private final MongoTemplate mongoTemplate;
 
     @Autowired
     public FixedDepositServiceImpl(
             FixedDepositRepository fixedDepositRepository,
-            SequenceGeneratorService sequenceGeneratorService,
             TransactionSequenceService transactionSequenceService,
             MongoTemplate mongoTemplate) {
         this.fixedDepositRepository = fixedDepositRepository;
-        this.sequenceGeneratorService = sequenceGeneratorService;
         this.transactionSequenceService = transactionSequenceService;
         this.mongoTemplate = mongoTemplate;
     }
 
     @Override
+    @Transactional
     public FixedDepositResponseDTO createFixedDeposit(FixedDepositRequestDTO requestDTO, String userId) {
         logger.info("Creating fixed deposit for user: {}", userId);
         validateRequestDTO(requestDTO);
@@ -102,28 +104,22 @@ public class FixedDepositServiceImpl implements FixedDepositService {
             String sortDir,
             int page,
             int size) {
-        Query query = buildDynamicQuery(userId, place, status, nominee, maturityFrom, maturityTo);
-        long total = mongoTemplate.count(query, FixedDeposit.class);
+        Criteria criteria = buildDynamicCriteria(userId, place, status, nominee, maturityFrom, maturityTo);
+        long total = mongoTemplate.count(new Query(criteria), FixedDeposit.class);
 
         if ("maturityDate".equalsIgnoreCase(sortBy) && "asc".equalsIgnoreCase(sortDir)) {
-            List<FixedDeposit> fixedDeposits = mongoTemplate.find(query, FixedDeposit.class);
+            List<FixedDeposit> fixedDeposits = runNearestFirstAggregation(criteria, page * (long) size, size);
             List<FixedDepositResponseDTO> dtos = fixedDeposits.stream()
                     .map(this::toResponseDTO)
-                    .sorted(nearestMaturityComparator)
                     .toList();
-
-            int start = (int) Math.min((long) page * size, dtos.size());
-            int end = (int) Math.min((long) start + size, dtos.size());
-            List<FixedDepositResponseDTO> pagedList = dtos.subList(start, end);
-
-            return new PageImpl<>(pagedList, PageRequest.of(page, size), dtos.size());
+            return new PageImpl<>(dtos, PageRequest.of(page, size), total);
         }
 
         String sortProperty = (sortBy == null || sortBy.trim().isEmpty()) ? "issueDate" : sortBy;
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortProperty));
 
-        query.with(pageable);
+        Query query = new Query(criteria).with(pageable);
         List<FixedDeposit> fixedDeposits = mongoTemplate.find(query, FixedDeposit.class);
 
         List<FixedDepositResponseDTO> dtos = fixedDeposits.stream()
@@ -140,6 +136,7 @@ public class FixedDepositServiceImpl implements FixedDepositService {
     }
 
     @Override
+    @Transactional
     public FixedDepositResponseDTO updateFixedDeposit(String id, FixedDepositRequestDTO requestDTO, String userId) {
         logger.info("Updating fixed deposit {} for user: {}", id, userId);
         validateRequestDTO(requestDTO);
@@ -259,19 +256,18 @@ public class FixedDepositServiceImpl implements FixedDepositService {
             LocalDate maturityTo,
             String sortBy,
             String sortDir) {
-        Query query = buildDynamicQuery(userId, place, status, nominee, maturityFrom, maturityTo);
+        Criteria criteria = buildDynamicCriteria(userId, place, status, nominee, maturityFrom, maturityTo);
 
         if ("maturityDate".equalsIgnoreCase(sortBy) && "asc".equalsIgnoreCase(sortDir)) {
-            List<FixedDeposit> fixedDeposits = mongoTemplate.find(query, FixedDeposit.class);
+            List<FixedDeposit> fixedDeposits = runNearestFirstAggregation(criteria, null, null);
             return fixedDeposits.stream()
                     .map(this::toResponseDTO)
-                    .sorted(nearestMaturityComparator)
                     .toList();
         }
 
         String sortProperty = (sortBy == null || sortBy.trim().isEmpty()) ? "issueDate" : sortBy;
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        query.with(Sort.by(direction, sortProperty));
+        Query query = new Query(criteria).with(Sort.by(direction, sortProperty));
 
         List<FixedDeposit> fixedDeposits = mongoTemplate.find(query, FixedDeposit.class);
         return fixedDeposits.stream()
@@ -300,27 +296,56 @@ public class FixedDepositServiceImpl implements FixedDepositService {
 
     // ── Helper methods ──────────────────────────────────────────────────
 
-    private final Comparator<FixedDepositResponseDTO> nearestMaturityComparator = (a, b) -> {
-        LocalDate today = LocalDate.now();
-        LocalDate dateA = a.getMaturityDate();
-        LocalDate dateB = b.getMaturityDate();
+    /**
+     * Base epoch-ms for the nearest-first sort key's past block = 2 × epoch-ms(2100-01-01).
+     * Guarantees every past-FD key (base − epoch) exceeds any upcoming-FD key (epoch)
+     * for maturity dates before year 2100.
+     */
+    private static final long NEAREST_FIRST_PAST_BLOCK_BASE_MS = 8_204_896_000_000L;
 
-        if (dateA == null && dateB == null) return 0;
-        if (dateA == null) return 1;
-        if (dateB == null) return -1;
+    private static final String NEAREST_SORT_KEY_FIELD = "__nearestSortKey";
 
-        boolean isUpcomingA = !dateA.isBefore(today);
-        boolean isUpcomingB = !dateB.isBefore(today);
-
-        if (isUpcomingA && !isUpcomingB) return -1;
-        if (!isUpcomingA && isUpcomingB) return 1;
-
-        if (isUpcomingA && isUpcomingB) {
-            return dateA.compareTo(dateB);
-        } else {
-            return dateB.compareTo(dateA);
+    /**
+     * Nearest-first ordering computed IN MongoDB (no in-memory load of the full ledger):
+     * upcoming/due FDs (maturityDate >= today) sort ascending by date; past FDs sort
+     * descending by date immediately after — reproducing the former Java comparator's
+     * total order while letting skip/limit page server-side. Null maturityDate is
+     * coerced to 9999-12-31 so it sorts last. Secondary _id ASC makes paging stable
+     * across requests (equal dates can no longer repeat/skip between pages).
+     */
+    private List<AggregationOperation> nearestFirstAggregationStages(Criteria criteria,
+                                                                     Long skip,
+                                                                     Integer limit) {
+        List<AggregationOperation> ops = new java.util.ArrayList<>();
+        ops.add(Aggregation.match(criteria));
+        ops.add(context -> new org.bson.Document("$addFields",
+                new org.bson.Document(NEAREST_SORT_KEY_FIELD,
+                        new org.bson.Document("$cond", Arrays.asList(
+                                new org.bson.Document("$gte", Arrays.asList(
+                                        new org.bson.Document("$ifNull", Arrays.asList("$maturityDate", "9999-12-31")),
+                                        LocalDate.now().toString())),
+                                new org.bson.Document("$toLong", new org.bson.Document("$toDate",
+                                        new org.bson.Document("$ifNull", Arrays.asList("$maturityDate", "9999-12-31")))),
+                                new org.bson.Document("$subtract", Arrays.asList(
+                                        NEAREST_FIRST_PAST_BLOCK_BASE_MS,
+                                        new org.bson.Document("$toLong", new org.bson.Document("$toDate",
+                                                new org.bson.Document("$ifNull", Arrays.asList("$maturityDate", "9999-12-31")))))))))));
+        ops.add(Aggregation.sort(Sort.Direction.ASC, NEAREST_SORT_KEY_FIELD, "_id"));
+        if (skip != null) {
+            ops.add(Aggregation.skip(skip));
         }
-    };
+        if (limit != null) {
+            ops.add(Aggregation.limit(limit));
+        }
+        return ops;
+    }
+
+    private List<FixedDeposit> runNearestFirstAggregation(Criteria criteria, Long skip, Integer limit) {
+        Aggregation aggregation = Aggregation.newAggregation(nearestFirstAggregationStages(criteria, skip, limit));
+        AggregationResults<FixedDeposit> results =
+                mongoTemplate.aggregate(aggregation, FixedDeposit.class, FixedDeposit.class);
+        return results.getMappedResults();
+    }
 
     private void validateRequestDTO(FixedDepositRequestDTO requestDTO) {
         if (requestDTO.getFdNo() != null) {
@@ -405,7 +430,7 @@ public class FixedDepositServiceImpl implements FixedDepositService {
                 .build();
     }
 
-    private Query buildDynamicQuery(
+    private Criteria buildDynamicCriteria(
             String userId,
             String place,
             FdStatus status,
@@ -431,6 +456,6 @@ public class FixedDepositServiceImpl implements FixedDepositService {
             criteria.and("maturityDate").lte(maturityTo);
         }
 
-        return new Query(criteria);
+        return criteria;
     }
 }

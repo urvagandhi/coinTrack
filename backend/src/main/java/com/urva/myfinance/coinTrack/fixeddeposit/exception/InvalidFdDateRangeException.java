@@ -1,4 +1,6 @@
-package com.urva.myfinance.coinTrack.common.exception;
+package com.urva.myfinance.coinTrack.fixeddeposit.exception;
+
+import com.urva.myfinance.coinTrack.common.exception.DomainException;
 
 /**
  * Exception thrown when Fixed Deposit maturityDate is not strictly after issueDate.

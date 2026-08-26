@@ -2,7 +2,7 @@
 
 > Produced by the audit defined in `rules/02-per-module-deep-dive-and-synthesis.md`.
 > One synthesis card per module, appended in processing order. Build on PROJECT_CONTEXT_PART1.md.
-> Generated: 2026-08-23 · Modules completed so far: 5/13 (common, security, user, email, notes)
+> Generated: 2026-08-23 · Modules completed so far: 7/13 (common, security, user, email, notes, fixeddeposit, ppf)
 > Convention: every synthesis card contains an **End-to-end (E2E) flow** section — per endpoint/journey: what the UI collects from the user → client-side processing → exact HTTP call (method/path/body/headers) → what the backend receives (DTO/validation) → backend processing steps → response shape → how the frontend consumes/stores it.
 
 ---
@@ -41,13 +41,52 @@ No frontend file references `X-Request-ID`/`X-Correlation-ID` either — CORS ex
 
 ### End-to-end flows (per endpoint — infra, so "UI" = non-app clients)
 
-- **GET `/api/health`**: client = Render dashboard / human browser (no frontend app call). No request body. Backend: checks Mongo (`dbStats`), JVM memory, uptime → 200 JSON `{status, db, jvm, uptime}` or **503** when DB down; browser Accept: text/html gets a self-refreshing HTML dashboard instead. Nothing to consume app-side.
-- **GET `/api/health/ping`**: client = uptime probes. No body. Backend returns bare 200 `pong`. Stateless.
-- **GET `/health`**: client = GitHub Actions keep-alive cron every 5 min. No body; response carries `Cache-Control: no-store`. Purpose is only to prevent Render free-tier spin-down.
-- **GET `/`**: browser tab navigation only → HTML landing linking /api/health + swagger. No data exchange with the app.
-- **GET `/favicon.ico`**: browser automatic → serves static PNG bytes.
-- Request-correlation side-channel (applies to EVERY app request): client may send nothing special — backend RequestIdFilter generates/reuses an 8-char id into MDC and echoes `X-Request-ID`; frontend never reads it.
-- **Database persistence**: NONE for any endpoint above — all five are read-only/compute-only. The module's only owned collection, `counters`, is written (atomic `findAndModify` upsert `$inc`) exclusively when other modules' services call SequenceGeneratorService — never from these endpoints. Health data is computed live from Mongo/JVM, not cached.
+#### FLOW H1 — Full health probe · `GET /api/health`
+
+```
+Render dashboard / human browser
+        │
+        ├── Accept: application/json ──▶ JSON {status, db, jvm, uptime}
+        │                                 └─ HTTP 503 when critical component down
+        └── Accept: text/html ─────────▶ self-refreshing HTML dashboard (3s meta-refresh)
+                                          (same live checks rendered as page)
+```
+
+| Check      | Source                      | Cached?                      |
+| ---------- | --------------------------- | ---------------------------- |
+| db status  | Mongo`dbStats` round-trip | NO — computed live per call |
+| jvm memory | Runtime heap beans          | NO                           |
+| uptime     | process start time          | NO                           |
+
+No request body; nothing to consume app-side.
+
+#### FLOW H2–H5 — Liveness / keep-alive / static
+
+| Flow                       | Client                          | Pipeline                                             | Response                                                                                 |
+| -------------------------- | ------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| H2`GET /api/health/ping` | uptime probes                   | stateless handler                                    | bare`200 pong`                                                                         |
+| H3`GET /health`          | GitHub Actions cron every 5 min | marker endpoint                                      | `200` + `Cache-Control: no-store`; sole purpose = prevent Render free-tier spin-down |
+| H4`GET /`                | browser tab navigation          | static HTML landing linking`/api/health` + swagger | HTML; zero data exchange                                                                 |
+| H5`GET /favicon.ico`     | browser automatic               | serves`static/logo/coinTrack.png` bytes            | PNG                                                                                      |
+
+#### Side-channel — request correlation (applies to EVERY app request)
+
+```
+any request ─▶ RequestIdFilter (@Order HIGHEST_PRECEDENCE, runs first-in/last-out)
+    ├─ inbound X-Request-ID is a valid UUID? ── reuse it
+    ├─ else ────────────────────────────────── generate 8-char id
+    ├─ MDC.put(requestId) ──▶ every log line carries it
+    ├─ response echoes X-Request-ID
+    └─ finally: MDC.clear()  (no thread-pool leakage)
+
+frontend: NEVER reads the echoed header — correlation is backend/debug-only today
+```
+
+#### Database persistence (module-level truth)
+
+- The five endpoints above: **read-only/compute-only — ZERO writes.**
+- Health data never cached; always live Mongo/JVM reads.
+- The module's ONLY owned collection, **`counters`**, is written exclusively by `SequenceGeneratorService` (atomic `findAndModify` upsert `$inc`) when OTHER modules' services call it — never from these endpoints.
 
 ### Discrepancies found (README/Part-1 claims vs code)
 
@@ -135,7 +174,7 @@ Files (9): `config/{AsyncConfig, SecurityConfig}` · `filter/JwtFilter` · `mode
 | POST`/api/auth/oauth2/google`   | `authAPI.google({code, redirectUri})` — contract matches GoogleOAuthService (redirectUri must equal backend-configured)                                                                                                                                        |
 | Temp tokens (purpose claim)       | sent in request BODY to MFA endpoints: loginTotp/loginRecovery/registerSetup/registerVerify                                                                                                                                                                       |
 | Bearer temp-token pattern         | `passwordAPI.reset(tempToken)` sends temp token AS Authorization header to public `/api/auth/reset-password` — works only because route is permitAll'd AND JwtFilter refuses to authenticate purpose-bearing tokens; server parses it manually (user module) |
-| GET`/api/auth/verify-token`     | **DISABLED 2026-08-24** — redundant with JWT filter + `/users/me`; endpoint, whitelist entry, and tests commented out (code retained per owner)                                                                                                                              |
+| GET`/api/auth/verify-token`     | **DISABLED 2026-08-24** — redundant with JWT filter + `/users/me`; endpoint, whitelist entry, and tests commented out (code retained per owner)                                                                                                          |
 | `/api/auth/mfa/reset(+/verify)` | totpAPI.initiateReset/verifyReset — correctly hit AUTHENTICATED routes (logged-in reset flow)                                                                                                                                                                    |
 | Client-side guard                 | `AuthGuard.jsx` PUBLIC_ROUTES mirror permitAll loosely (/, login, register, forgot-password, reset-password, verify-email, setup-2fa, reset-2fa, calculators/*); wraps `(main)/layout.js`                                                                     |
 
@@ -143,12 +182,76 @@ Shared frontend infra this depends on: AuthContext (useReducer), tokenManager, s
 
 ### End-to-end flows (security mechanics — how every request is processed; endpoint-level flows live in the `user` card)
 
-- **Every authenticated call**: UI action → axios request interceptor reads tokenManager (localStorage `ct_token`) → attaches `Authorization: Bearer <access JWT>` → backend JwtFilter runs BEFORE controller: parse token once (signature+expiry), check purpose claim (present → skip authentication, two-tier temp-token rule), check SHA-256(token) against `invalidated_tokens` (Mongo read per request), then build UserPrincipal from claims (NO DB round-trip) + set SecurityContext + MDC userId → controller receives principal.
-- **Refresh loop**: 401 from any API → interceptor queues in-flight requests → POST /api/auth/refresh `{refreshToken}` (plaintext, one-time) → security.JWTService validates hash row, rotates (old revoked, new pair issued; reuse of a revoked token ⇒ revoke ALL user sessions) → new tokens stored → queued requests replay. Full detail in user card FLOW 4.
-- **Session-expiry loop**: refresh failure → api.js dispatches `auth:sessionExpired` → AuthContext listener wipes state/tokenManager → redirect `/login?redirect=<original>` — closes the loop so no dead-token requests persist.
-- **Temp-token path** (MFA verify / password reset): frontend sends temp token in BODY (`{tempToken}`) for MFA routes but as BEARER HEADER for `/api/auth/reset-password`; either way JwtFilter refuses to authenticate it — only the target controller extracts and validates via `isValidTempToken(token, expectedPurpose)`.
-- **Logout**: Bearer access token → AuthController writes its hash to security-owned blacklist + revokes refresh rows → subsequent requests with that Bearer fail JwtFilter's blacklist check even before expiry.
-- **Database persistence (security-owned writes)**: the ONLY collection this module writes is `invalidated_tokens` — one INSERT per logout `{tokenHash(SHA-256), userId, invalidatedAt, expiresAt}`; Mongo TTL (`expireAfter:0s`) auto-deletes each row when the embedded JWT would have expired anyway, so the table is self-cleaning and never grows. JwtFilter performs a READ (`existsByTokenHash`) on every Bearer request. Refresh-token rows live in user's `refresh_tokens` but are written by security's JWTService (rotate → UPDATE old `revoked:true` + INSERT new; reuse → bulk revoke) during user-module flows.
+#### MECHANISM 1 — Every authenticated call (the per-request gauntlet)
+
+```
+[UI action]
+   → [axios request interceptor] reads tokenManager (localStorage ct_token)
+   → [Authorization: Bearer <access JWT>]
+   → [JwtFilter — runs BEFORE every controller]
+        1. parse token ONCE (signature + expiry)
+        2. purpose claim present? ── YES → SKIP authentication entirely
+           (two-tier temp-token rule; see MECHANISM 4)
+        3. blacklist check: SHA-256(token) vs invalidated_tokens
+           (one Mongo READ on EVERY Bearer request)
+        4. build UserPrincipal from CLAIMS — NO DB round-trip
+        5. set SecurityContext + MDC.userId
+   → [controller receives @AuthenticationPrincipal principal]
+```
+
+#### MECHANISM 2 — Refresh loop (silent token rotation)
+
+```
+any API returns 401
+   → axios response interceptor single-flight QUEUES in-flight requests
+   → POST /api/auth/refresh {refreshToken}          (plaintext, one-time)
+   → security.JWTService:
+        SHA-256 lookup in refresh_tokens
+        ├─ valid  → rotate: old row revoked:true + new pair issued
+        └─ REUSED revoked token → revoke ALL user's sessions → 401 ("Session compromised")
+   → new tokens stored via tokenManager
+   → queued requests replay with fresh Bearer
+```
+
+Full endpoint detail: user card FLOW 4.
+
+#### MECHANISM 3 — Session-expiry loop (dead-session cleanup)
+
+```
+refresh ultimately fails
+   → api.js dispatches auth:sessionExpired CustomEvent
+   → AuthContext listener wipes React state + tokenManager
+   → redirect /login?redirect=<original path>
+```
+
+Closes the loop — no dead-token requests can persist.
+
+#### MECHANISM 4 — Temp-token path (two-tier credential model)
+
+| Route family                                                                  | Temp token carried as                  | Why it works                                                                                                                                 |
+| ----------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| MFA verify routes (`mfa/login`, `mfa/login-recovery`, `mfa/register/*`) | **request BODY** `{tempToken}` | JwtFilter refuses to authenticate purpose-bearing tokens → only target controller validates via`isValidTempToken(token, expectedPurpose)` |
+| `/api/auth/reset-password`                                                  | **BEARER HEADER**                | route is permitAll'd AND the magic-link secret is unparsable by JwtFilter → SecurityContext stays empty; controller parses manually         |
+
+Either way, a temp token can never act as a session credential.
+
+#### MECHANISM 5 — Logout
+
+```
+POST /api/auth/logout (Bearer access token)
+   → AuthController:
+        INSERT invalidated_tokens {SHA-256(tokenHash), userId, expiresAt}
+        revokeAllByUserId → bulk revoke refresh rows
+   → any LATER request with that same Bearer dies at JwtFilter's
+     blacklist check (step 3) — even before natural expiry
+```
+
+#### Database persistence (security-owned writes)
+
+- ONLY collection this module writes: **`invalidated_tokens`** — one INSERT per logout `{tokenHash(SHA-256), userId, invalidatedAt, expiresAt}`.
+- Mongo TTL (`expireAfter:"0s"`) auto-deletes each row when the embedded JWT would have expired anyway ⇒ table is self-cleaning, never grows.
+- JwtFilter performs one READ (`existsByTokenHash`) per Bearer request — the deliberate trade-off from watch-list #1.
+- `refresh_tokens` rows live in user's collection but are WRITTEN here by security's JWTService during rotation: UPDATE old `revoked:true` + INSERT new pair; reuse detection → bulk revoke all of the user's rows.
 
 ### Discrepancies found (README/Part-1 vs code) — ALL RESOLVED (2026-08-23 fix round, security README rewritten to v3.1.0)
 
@@ -215,27 +318,27 @@ Files: `controller/{AuthController, TotpController, UserController}` (NO LoginCo
 
 ### Endpoint-to-frontend map (21 endpoints)
 
-| Endpoint                                               | Frontend caller                                                                                                                                  |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| POST`/api/auth/login`                                | AuthContext.login ←`(access)/login/page.jsx`                                                                                                  |
-| POST`/api/auth/register`                             | AuthContext.register ←`(access)/register/page.jsx`                                                                                            |
-| POST`/api/auth/refresh`                              | api.js interceptor single-flight + AuthContext:86                                                                                                |
-| POST`/api/auth/logout`                               | AuthContext.logout:309 (navbar/menu)                                                                                                             |
-| GET`/api/auth/check-username/{username}`             | **DISABLED 2026-08-24** (zero UI callers ever; endpoint + SecurityConfig entry commented out, code retained per owner)                                      |
-| GET`/api/auth/verify-token`                          | **DISABLED 2026-08-24** (redundant — JWT filter validates every request; `/users/me` returns same profile with same Bearer; code commented, not deleted) |
-| POST`/api/auth/oauth2/google`                        | AuthContext.googleLogin ← login page OAuth callback                                                                                             |
-| POST`/api/auth/oauth2/complete-profile`              | `(access)/complete-profile/page.jsx`                                                                                                           |
-| GET`/api/users/me`                                   | userAPI.getProfile ←`(main)/profile/page.jsx` + `(main)/epf/page.jsx`                                                                       |
-| PUT`/api/users/me`                                   | userAPI.updateProfile ← profile page                                                                                                            |
-| PUT`/api/users/me/password`                          | userAPI.changePassword ← profile page (body keys`{password, oldPassword}` match controller Map)                                               |
-| DELETE`/api/users/me`                                | **WIRED 2026-08-24** — `userAPI.deleteAccount` (api.js) ← profile-page Danger Zone (password re-auth panel, Loader2, hard redirect on success; Google-only accounts leave password blank)                                  |
-| POST`/api/auth/mfa/setup` + `/api/auth/mfa/verify`   | AuthContext.setupTotp/verifyTotpSetup ← `TotpSetup.jsx` default fallbacks — existing-user forced-setup mode of `(access)/setup-2fa/page.jsx` (login with MFA disabled/reset; see Open question 2) |
-| POST`/api/auth/mfa/login`                            | AuthContext.verifyTotpLogin ← login page (api.js key still`loginTotp`)                                                                        |
-| POST`/api/auth/mfa/login-recovery`                   | AuthContext.verifyRecoveryLogin ← login page (api.js key`loginRecovery`) — backup-code LOGIN completion (user module)                        |
-| POST`/api/auth/mfa/email-recovery(+/verify)`         | `twofa.recovery/recoveryVerify` ← forgot-2FA flow (api.js:675/679) — email magic-link MFA reset (email module's TwoFactorRecoveryController) |
-| POST`/api/auth/mfa/reset(+/verify)`                  | AuthContext.resetTotp/verifyResetTotp ← profile page:205                                                                                        |
-| GET`/api/auth/mfa/status`                            | totpAPI.getStatus ← profile page:52                                                                                                             |
-| POST`/api/auth/mfa/register/setup(+/verify)`         | `(access)/setup-2fa/page.jsx`:47/62 — backupCodes displayed after verify                                                                      |
+| Endpoint                                               | Frontend caller                                                                                                                                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST`/api/auth/login`                                | AuthContext.login ←`(access)/login/page.jsx`                                                                                                                                                        |
+| POST`/api/auth/register`                             | AuthContext.register ←`(access)/register/page.jsx`                                                                                                                                                  |
+| POST`/api/auth/refresh`                              | api.js interceptor single-flight + AuthContext:86                                                                                                                                                      |
+| POST`/api/auth/logout`                               | AuthContext.logout:309 (navbar/menu)                                                                                                                                                                   |
+| GET`/api/auth/check-username/{username}`             | **DISABLED 2026-08-24** (zero UI callers ever; endpoint + SecurityConfig entry commented out, code retained per owner)                                                                           |
+| GET`/api/auth/verify-token`                          | **DISABLED 2026-08-24** (redundant — JWT filter validates every request; `/users/me` returns same profile with same Bearer; code commented, not deleted)                                      |
+| POST`/api/auth/oauth2/google`                        | AuthContext.googleLogin ← login page OAuth callback                                                                                                                                                   |
+| POST`/api/auth/oauth2/complete-profile`              | `(access)/complete-profile/page.jsx`                                                                                                                                                                 |
+| GET`/api/users/me`                                   | userAPI.getProfile ←`(main)/profile/page.jsx` + `(main)/epf/page.jsx`                                                                                                                             |
+| PUT`/api/users/me`                                   | userAPI.updateProfile ← profile page                                                                                                                                                                  |
+| PUT`/api/users/me/password`                          | userAPI.changePassword ← profile page (body keys`{password, oldPassword}` match controller Map)                                                                                                     |
+| DELETE`/api/users/me`                                | **WIRED 2026-08-24** — `userAPI.deleteAccount` (api.js) ← profile-page Danger Zone (password re-auth panel, Loader2, hard redirect on success; Google-only accounts leave password blank)    |
+| POST`/api/auth/mfa/setup` + `/api/auth/mfa/verify` | AuthContext.setupTotp/verifyTotpSetup ←`TotpSetup.jsx` default fallbacks — existing-user forced-setup mode of `(access)/setup-2fa/page.jsx` (login with MFA disabled/reset; see Open question 2) |
+| POST`/api/auth/mfa/login`                            | AuthContext.verifyTotpLogin ← login page (api.js key still`loginTotp`)                                                                                                                              |
+| POST`/api/auth/mfa/login-recovery`                   | AuthContext.verifyRecoveryLogin ← login page (api.js key`loginRecovery`) — backup-code LOGIN completion (user module)                                                                              |
+| POST`/api/auth/mfa/email-recovery(+/verify)`         | `twofa.recovery/recoveryVerify` ← forgot-2FA flow (api.js:675/679) — email magic-link MFA reset (email module's TwoFactorRecoveryController)                                                       |
+| POST`/api/auth/mfa/reset(+/verify)`                  | AuthContext.resetTotp/verifyResetTotp ← profile page:205                                                                                                                                              |
+| GET`/api/auth/mfa/status`                            | totpAPI.getStatus ← profile page:52                                                                                                                                                                   |
+| POST`/api/auth/mfa/register/setup(+/verify)`         | `(access)/setup-2fa/page.jsx`:47/62 — backupCodes displayed after verify                                                                                                                            |
 
 Frontend transformations: login response mapped firstName+lastName→name, mobile→phoneNumber, bio/location passed through; forced-setup case (`requireTotpSetup`) handled as first-class branch; backupCodes surfaced on setup-2fa + profile pages.
 
@@ -324,11 +427,10 @@ Frontend transformations: login response mapped firstName+lastName→name, mobil
 5. ~~Pending registrations are Mongo+TTL, not the in-memory Map Part 1 described (restart-safe, multi-instance-safe).~~ → ✅ **FULLY RESOLVED**: code confirmed Mongo-backed — `PendingRegistration` is an `@Document` collection with TTL index on `expiresAt` (`PendingRegistration.java:50–51`, `expireAfter="0s"`), 15-minute expiry written at `UserService.java:134`; unique indexes on tempToken + sparse googleId make signup state restart-safe and multi-instance safe. user README §5.3 documents it (round 3); PART1's "pendingRegistrations Map" wording corrected to MongoDB `pending_registrations`.
 6. ~~Dead code cluster~~ → ✅ **FULLY RESOLVED (round 6)**: UserProfileService deleted (round 2, with its latent unverified-password-change bug); `package-info.java` LoginController ghost removed (round 5); dead DTOs **UserDTO / UpdateUserDTO / PasswordChangeDTO deleted** after word-boundary grep confirmed zero references (the earlier `RegisterUserDTO` grep hits were substring false positives); dead `UserService.getAllUsers()` removed together with its `UserServiceTest.getAllUsers_delegates` block; orphaned properties **wired into TotpService instead of deleted** — `@Value("${totp.window:1}")` drives `DefaultCodeVerifier.setAllowedTimePeriodDiscrepancy` via a new `@PostConstruct applyTotpSettings()`, and `@Value("${totp.max-backup-codes:10}")` replaces both hardcoded `10` loops in backup-code generation. Defaults identical to previous hardcoded behavior. Test debt fixed along the way: `JWTServiceTest` updated for the round-3 3-arg constructor; `UserServiceTest` gained the missing `InvalidatedTokenRepository` mock (null injection caused swallowed-NPE false in isTokenValid); `TotpServiceTest.setUp` injects window/maxBackupCodes and calls `applyTotpSettings()`. **110 tests, 0 failures across the four affected classes.**
 7. ~~Controllers return raw `User` entity (password nulled) instead of UserDTO — violates module README's own rule; PUT /me binds raw entity (mass-assignment surface)~~ → ✅ **FULLY RESOLVED (round 7)**: new `UserProfileResponse` record (id, username, name, email, phoneNumber, dateOfBirth, bio, location, createdAt, updatedAt, emailVerified, authProvider, totpEnabled/totpVerified — explicit whitelist; sensitive columns structurally unreachable even if User grows new fields) returned by GET `/me`, PUT `/me`, and AuthController `verify-token`. New validated `UpdateProfileRequest` record replaces raw-entity binding on PUT `/me` (username/name/email/phoneNumber/dateOfBirth/bio/location only — mass-assignment surface eliminated; controller maps DTO → transient User → unchanged service whitelist). Frontend field-compat verified before shipping: profile page uses username/name/email/phoneNumber/bio/location/joinDate(createdAt), epf page fetches but reads no fields.
-9. ~~DELETE /me has no cascade to notes/broker_accounts/holdings/etc.~~ → ✅ **FULLY RESOLVED (round 7)** via decoupled event-driven cascade: new `common/event/UserDeletedEvent(userId, username)` published by `UserService.deleteUser` (after user-doc delete + refresh revocation + stale-pending purge); **nine per-module listeners** each clean their own collections — notes (`notes`), broker (`broker_accounts`), portfolio (`canonical_holdings/positions/funds/mf_holdings/mf_orders`, `sync_logs`, `sync_cooldowns`; shared `market_prices` kept), mutualfund (lumpsum/sip-mandates/sip-contributions/redemptions/valuation-snapshots/portfolio-holdings/portfolio-metrics then schemes last as FK parent), ppf, epf, fixeddeposit, goldsilver, security (`invalidated_tokens`). 21 repositories gained derived `deleteByUserId(String)`; each listener try/catches so one failure can't abort the rest. Access-token exposure after deletion is now ≤30 min by stateless-JWT design (JwtFilter authenticates from claims by deliberate trade-off per security watch-list #1) — documented-accepted industry-standard residual, not a defect.
-
-10. ~~Email case-normalization inconsistent~~ ✅ **FULLY RESOLVED (round 4)**: (a) login lookup trims+lowercases (UserAuthenticationService.java:435); (b) `registerUser` now lowercases before BOTH the uniqueness check and pending-doc storage (UserService.java:112-119, verified `cleanEmail` used in `existsByEmail` + builder); (c) `toTransientUser` lowercases when persisting the final user; (d) one-time startup migration `migrateMixedCaseEmailsToLowerCase()` (`@EventListener(ApplicationReadyEvent.class)`, UserService.java:363) rewrites legacy mixed-case rows. Caveats: migration loads ALL users into memory (fine at current scale) and its single try/catch wraps the whole loop — a unique-index collision mid-loop (case-variant duplicates) aborts remaining migrations with only a WARN log. Username normalization still none anywhere (unchanged).
-11. ~~`GET /verify-token` skips blacklist~~ → ✅ **FULLY RESOLVED (rounds 3–8)**: (a) `UserService.isTokenValid` checks `invalidatedTokenRepository.existsByTokenHash` (round 3); (b) round 4 centralized the check inside **security.JWTService** itself — `validateToken(token, username)` AND `isValidTempToken(token, purpose)` consult `existsByTokenHash` first (null-safe optional injection), covering JwtFilter's path and every temp-token validation incl. TotpController's `resolveUser` step-1/2; (c) **round 8 closed the last gap**: `UserAuthenticationService.isTokenValid` now delegates to `jwtService.validateToken(username-matched)` instead of its own expiry-only copy — the resolveUser step-3 fallback on public `/api/auth/mfa/setup|verify` can no longer be passed by a logged-out blacklisted access token via manual header parsing. All isTokenValid paths now share one blacklist-enforcing code path.
-12. ~~Minor gaps: phone uniqueness not checked against pending_registrations at registration; completeGoogleProfile can call existsByPhoneNumber(null) when phone omitted; rotation keeps old-generation unused backup codes as rows rather than deleting them as Part 1 implied~~ → ✅ **FULLY RESOLVED (round 8)**: (a) new null-safe `UserService.isPhoneNumberRegistered(phone)` = users OR pending_registrations — used by `registerUser`, Google `completeGoogleProfile`, AND profile-update uniqueness; (b) Google completion's phone check routed through that helper → `existsByPhoneNumber(null)` can never fire and a missing phone is never "taken"; (c) `BackupCodeRepository.deleteByUserIdAndGeneration(userId, oldVersion)` added and invoked in `TotpService.verifySetup` during every rotation — previous generation's rows fully deleted per Part 1's "ROTATED (old backup codes deleted)" contract (locked in by a new test assertion).
+8. ~~DELETE /me has no cascade to notes/broker_accounts/holdings/etc.~~ → ✅ **FULLY RESOLVED (round 7)** via decoupled event-driven cascade: new `common/event/UserDeletedEvent(userId, username)` published by `UserService.deleteUser` (after user-doc delete + refresh revocation + stale-pending purge); **nine per-module listeners** each clean their own collections — notes (`notes`), broker (`broker_accounts`), portfolio (`canonical_holdings/positions/funds/mf_holdings/mf_orders`, `sync_logs`, `sync_cooldowns`; shared `market_prices` kept), mutualfund (lumpsum/sip-mandates/sip-contributions/redemptions/valuation-snapshots/portfolio-holdings/portfolio-metrics then schemes last as FK parent), ppf, epf, fixeddeposit, goldsilver, security (`invalidated_tokens`). 21 repositories gained derived `deleteByUserId(String)`; each listener try/catches so one failure can't abort the rest. Access-token exposure after deletion is now ≤30 min by stateless-JWT design (JwtFilter authenticates from claims by deliberate trade-off per security watch-list #1) — documented-accepted industry-standard residual, not a defect.
+9. ~~Email case-normalization inconsistent~~ ✅ **FULLY RESOLVED (round 4)**: (a) login lookup trims+lowercases (UserAuthenticationService.java:435); (b) `registerUser` now lowercases before BOTH the uniqueness check and pending-doc storage (UserService.java:112-119, verified `cleanEmail` used in `existsByEmail` + builder); (c) `toTransientUser` lowercases when persisting the final user; (d) one-time startup migration `migrateMixedCaseEmailsToLowerCase()` (`@EventListener(ApplicationReadyEvent.class)`, UserService.java:363) rewrites legacy mixed-case rows. Caveats: migration loads ALL users into memory (fine at current scale) and its single try/catch wraps the whole loop — a unique-index collision mid-loop (case-variant duplicates) aborts remaining migrations with only a WARN log. Username normalization still none anywhere (unchanged).
+10. ~~`GET /verify-token` skips blacklist~~ → ✅ **FULLY RESOLVED (rounds 3–8)**: (a) `UserService.isTokenValid` checks `invalidatedTokenRepository.existsByTokenHash` (round 3); (b) round 4 centralized the check inside **security.JWTService** itself — `validateToken(token, username)` AND `isValidTempToken(token, purpose)` consult `existsByTokenHash` first (null-safe optional injection), covering JwtFilter's path and every temp-token validation incl. TotpController's `resolveUser` step-1/2; (c) **round 8 closed the last gap**: `UserAuthenticationService.isTokenValid` now delegates to `jwtService.validateToken(username-matched)` instead of its own expiry-only copy — the resolveUser step-3 fallback on public `/api/auth/mfa/setup|verify` can no longer be passed by a logged-out blacklisted access token via manual header parsing. All isTokenValid paths now share one blacklist-enforcing code path.
+11. ~~Minor gaps: phone uniqueness not checked against pending_registrations at registration; completeGoogleProfile can call existsByPhoneNumber(null) when phone omitted; rotation keeps old-generation unused backup codes as rows rather than deleting them as Part 1 implied~~ → ✅ **FULLY RESOLVED (round 8)**: (a) new null-safe `UserService.isPhoneNumberRegistered(phone)` = users OR pending_registrations — used by `registerUser`, Google `completeGoogleProfile`, AND profile-update uniqueness; (b) Google completion's phone check routed through that helper → `existsByPhoneNumber(null)` can never fire and a missing phone is never "taken"; (c) `BackupCodeRepository.deleteByUserIdAndGeneration(userId, oldVersion)` added and invoked in `TotpService.verifySetup` during every rotation — previous generation's rows fully deleted per Part 1's "ROTATED (old backup codes deleted)" contract (locked in by a new test assertion).
 
 ### Formulas/business rules confirmed correct
 
@@ -387,18 +489,18 @@ Files (14): `model/EmailToken` · `repository/EmailTokenRepository` · `service/
 
 ### Endpoint-to-frontend map
 
-| Endpoint | Frontend caller |
-| --- | --- |
-| POST`/api/auth/forgot-password` {identifier} | passwordAPI.forgot ←`(access)/forgot-password/page.jsx`:35 (4xx still shown as "submitted" — mirrors anti-enumeration) |
-| POST`/api/auth/forgot-password/verify` {token} | passwordAPI.forgotVerify ←`(access)/reset-password/page.jsx`:47 (?token= URL param) → stores returned tempToken |
-| POST`/api/auth/reset-password` Bearer tempJWT + {newPassword} | passwordAPI.reset(tempToken,newPassword) — temp token sent AS Authorization header ← reset-password page:73 |
-| POST`/api/auth/email/verify` {token,type?} | emailAPI.verify(token,type) ←`(access)/verify-email/page.jsx`:36 (?token&type from magic link; handles alreadyVerified branch) |
-| POST`/api/auth/email/resend` | **WIRED (was dormant)**: backend fully functional (EmailVerificationController ~L157, covered by EmailVerificationControllerTest's 13 @Test cases); `emailAPI.resend` (api.js:319 + :658, noRetry). UI callers since 2026-08-23: profile page "Resend Verification Email" button (`!isEmailVerified`, dashed-border callout row) + verify-email error state (session-aware: live token → authenticated resend; else login nudge) | |
-| POST`/api/auth/email/change` {newEmail} | emailAPI.change ←`(main)/profile/page.jsx`:146 — client trims+lowercases newEmail before sending |
-| POST`/api/auth/mfa/email-recovery` {identifier} | twofaAPI.requestRecovery(user.email) ← profile page:506 (logged-in lost-device flow sends own email) |
-| POST`/api/auth/mfa/email-recovery/verify` {token} | twofaAPI.verifyRecovery(token) ←`(access)/reset-2fa/page.jsx`:33 |
-| POST`/api/public/contact` {name,email,message} | contactAPI.sendMessage ←`components/modals/ContactModal.jsx`:51 (react-hook-form; opened via ModalManager) |
-| GET`/admin/emails/preview` · GET`/admin/emails/templates` | none — dev-browser template tooling only |
+| Endpoint                                                        | Frontend caller                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST`/api/auth/forgot-password` {identifier}                  | passwordAPI.forgot ←`(access)/forgot-password/page.jsx`:35 (4xx still shown as "submitted" — mirrors anti-enumeration)                                                                                                                                                                                                                                                                                                                  |
+| POST`/api/auth/forgot-password/verify` {token}                | passwordAPI.forgotVerify ←`(access)/reset-password/page.jsx`:47 (?token= URL param) → stores returned tempToken                                                                                                                                                                                                                                                                                                                         |
+| POST`/api/auth/reset-password` Bearer tempJWT + {newPassword} | passwordAPI.reset(tempToken,newPassword) — temp token sent AS Authorization header ← reset-password page:73                                                                                                                                                                                                                                                                                                                               |
+| POST`/api/auth/email/verify` {token,type?}                    | emailAPI.verify(token,type) ←`(access)/verify-email/page.jsx`:36 (?token&type from magic link; handles alreadyVerified branch)                                                                                                                                                                                                                                                                                                           |
+| POST`/api/auth/email/resend`                                  | **WIRED (was dormant)**: backend fully functional (EmailVerificationController ~L157, covered by EmailVerificationControllerTest's 13 @Test cases); `emailAPI.resend` (api.js:319 + :658, noRetry). UI callers since 2026-08-23: profile page "Resend Verification Email" button (`!isEmailVerified`, dashed-border callout row) + verify-email error state (session-aware: live token → authenticated resend; else login nudge) |
+| POST`/api/auth/email/change` {newEmail}                       | emailAPI.change ←`(main)/profile/page.jsx`:146 — client trims+lowercases newEmail before sending                                                                                                                                                                                                                                                                                                                                        |
+| POST`/api/auth/mfa/email-recovery` {identifier}               | twofaAPI.requestRecovery(user.email) ← profile page:506 (logged-in lost-device flow sends own email)                                                                                                                                                                                                                                                                                                                                       |
+| POST`/api/auth/mfa/email-recovery/verify` {token}             | twofaAPI.verifyRecovery(token) ←`(access)/reset-2fa/page.jsx`:33                                                                                                                                                                                                                                                                                                                                                                         |
+| POST`/api/public/contact` {name,email,message}                | contactAPI.sendMessage ←`components/modals/ContactModal.jsx`:51 (react-hook-form; opened via ModalManager)                                                                                                                                                                                                                                                                                                                               |
+| GET`/admin/emails/preview` · GET`/admin/emails/templates`  | none — dev-browser template tooling only                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 Shared frontend infra: shared axios instance + unwrapResponse + noRetry flag; toast notifications; AuthGuard PUBLIC_ROUTES cover forgot-password/reset-password/verify-email/reset-2fa. Frontend transformation of note: profile page lowercases newEmail before POST — and since fix round 4 the SERVER also normalizes `trim().toLowerCase()` (belt-and-braces parity with registration/users unique index).
 
@@ -555,12 +657,12 @@ Files (6): `model/Note` · `repository/NoteRepository` · `service/NoteService` 
 
 ### Endpoint-to-frontend map (4 endpoints — all wired)
 
-| Endpoint | Frontend caller |
-| --- | --- |
-| GET`/api/notes?page&size&search&tag` → ApiResponse(`Page<Note>`) | notesAPI.getAll ← `(main)/notes/page.jsx`:169 useQuery `['notes',{page,search:committedSearch,tag}]`, staleTime 30s, keepPreviousData; PAGE_SIZE=20; **search debounced 300ms via committedSearch state** |
-| POST`/api/notes` body **`NoteRequest` DTO @Valid** | notesAPI.create ← page createMutation (optimistic prepend w/ temp id) via NoteDialog onSave |
-| PUT`/api/notes/{id}` body **`NoteRequest` DTO @Valid** | notesAPI.update ← page updateMutation (optimistic merge; also pin toggle handlePin sends full note with flipped pinned) |
-| DELETE`/api/notes/{id}` | notesAPI.delete ← page deleteMutation (toast-action confirm, optimistic filter) |
+| Endpoint                                                              | Frontend caller                                                                                                                                                                                                     |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET`/api/notes?page&size&search&tag` → ApiResponse(`Page<Note>`) | notesAPI.getAll ←`(main)/notes/page.jsx`:169 useQuery `['notes',{page,search:committedSearch,tag}]`, staleTime 30s, keepPreviousData; PAGE_SIZE=20; **search debounced 300ms via committedSearch state** |
+| POST`/api/notes` body **`NoteRequest` DTO @Valid**          | notesAPI.create ← page createMutation (optimistic prepend w/ temp id) via NoteDialog onSave                                                                                                                        |
+| PUT`/api/notes/{id}` body **`NoteRequest` DTO @Valid**      | notesAPI.update ← page updateMutation (optimistic merge; also pin toggle handlePin sends full note with flipped pinned)                                                                                            |
+| DELETE`/api/notes/{id}`                                             | notesAPI.delete ← page deleteMutation (toast-action confirm, optimistic filter)                                                                                                                                    |
 
 Shared infra: React Query + queryClient invalidation, useToast, Skeleton, cn util, NoteDialog component (`components/notes/NoteDialog.jsx`), AuthGuard via `(main)/layout.js`. No dedicated hook file. Defensive legacy compat in page: accepts both bare-array and Page-shaped responses (`Array.isArray(data) ? data : data?.content`). **Frontend: search debounced via `committedSearch` state (300ms useEffect); NoteDialog color template standardized to `-900/10` dark opacity (was `/20` mismatch vs seeds).**
 
@@ -657,3 +759,518 @@ Shared infra: React Query + queryClient invalidation, useToast, Skeleton, cn uti
 2. Should frontend debounce the search input (or switch to submit-on-Enter)? Currently every keystroke hits Atlas. **Resolved: DEBOUNCED 300ms via `committedSearch` state + useEffect in `page.jsx`.**
 
 **Module `notes`: 11 discrepancies found (#1 pre-resolved D11 confirmed at code level; #11 FIXED same-day — PART1 snapshot corrected) · 4 watch-list items carried · 2 open questions carried. **ALL 11 discrepancies + 4 watch-list + 2 open questions RESOLVED in v2.1.0 fix round (2026-08-24)** — code + docs updated, verified by `mvn -q compile`. Module CLOSED.**
+
+---
+
+## Synthesis Card — `fixeddeposit`
+
+Files (13): `model/{FixedDeposit, FdStatus}` · `repository/FixedDepositRepository` · `service/{FixedDepositService, FixedDepositServiceImpl, FixedDepositStatusScheduler}` · `controller/FixedDepositController` · `dto/request/FixedDepositRequestDTO` · `dto/response/{FixedDepositResponseDTO, FixedDepositSummaryDTO}` · `util/FixedDepositExcelExporter` · `listener/FixedDepositUserDataCleanupListener`. **8 endpoints, all authenticated.** Test coverage: `FixedDepositServiceTest` exists (test tree). Module-local `config/` does NOT exist — no Step-F config class; scheduling is annotation-driven (`@EnableScheduling` on the scheduler component itself).
+
+### Owns collections
+
+- **`fixed_deposits`** (`@Document`): `{id (@Id), fdNo (Long, @Indexed — **NOT unique**, contra Part 1's "indexed unique"), userId (@Indexed), place, holderName, nominee, accountNumber (all String), interestRate (BigDecimal), investmentPeriod (String — free-text tenure label), issueDate/maturityDate (LocalDate), issueAmount/maturityAmount (BigDecimal), status (FdStatus enum ACTIVE|DUE|MATURED|CLOSED), remarks, createdAt/updatedAt (Instant, @CreatedDate/@LastModifiedDate — manually set in service too)}`.
+  ⚠ fdNo CANNOT be globally unique by design: it is a **per-user 1..N ordinal** rewritten on every mutation (see below). A global unique index would break on the second user's FD #1.
+  → 🗺 **NOT FD-ONLY — cross-module defect class, PLAN WRITTEN**: the same reorder-based per-user ordinal mechanism runs in ppf (`transactionNo`), epf (`transactionNo`), mutualfund (×3 ledgers), goldsilver (`itemNo`), and fixeddeposit (`fdNo`) via common's `TransactionSequenceService`. Full problem analysis (write amplification, race condition, unstable identifiers, PPF/EPF balance-walk desync risk), Options A–E, and per-module recommendations live in **`local/TODOs/TODO_ORDINAL_SEQUENCE_OPTIMIZATION.md`** §2–§4. Status: **PLAN ONLY — awaiting owner's option pick; no module touched yet.**
+- **`counters`** — ✅ RESOLVED 2026-08-26: NOT written by this module (README claim fixed to v1.2.1; dead `SequenceGeneratorService` injection removed from code + test). Collection owned by common; fdNo ordinals come from `TransactionSequenceService.reorderFixedDeposits`.
+
+### Real dependency edges (from actual imports)
+
+**Outbound:** FixedDepositServiceImpl → common (`DomainException`, `ValidationException`, common `TransactionSequenceService.reorderFixedDeposits(userId)` (called after every create/update), common `ExcelExportUtil.autoSizeColumns`, common `ApiResponse`; module-local `fixeddeposit.exception.InvalidFdDateRangeException` (✅ relocated out of common 2026-08-26); **`@Transactional` on createFixedDeposit + updateFixedDeposit (added 2026-08-26) → backed by common's new `MongoTransactionConfig` bean**); controller → security `UserPrincipal` (`@AuthenticationPrincipal`, `principal.getUserId()`). ~~Dead `SequenceGeneratorService` injection~~ removed 2026-08-26.
+**Inbound:** common `TransactionSequenceService` reaches back into `FixedDepositRepository` (the known common→fd reorder edge from the common card); `FixedDepositUserDataCleanupListener` ← common `UserDeletedEvent` (cascade cleanup, `deleteByUserId`, fail-independent try/catch).
+
+### Endpoint-to-frontend map
+
+| Endpoint                                                     | Frontend caller                                                                                                                                |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST`/api/fixed-deposits`                                  | `fdAPI.create` ← page.jsx createMutation ← FdDialog submit (create path)                                                                   |
+| GET`/api/fixed-deposits` (page/size/status/sortBy/sortDir) | `fdAPI.getAll` ← useQuery `['fds']`; UI default `maturityDate:asc`, PAGE_SIZE=20 (= backend default)                                    |
+| GET`/api/fixed-deposits/summary`                           | `fdAPI.getSummary` ← useQuery `['fdSummary']`; header metrics remapped per statusFilter                                                   |
+| GET`/api/fixed-deposits/export`                            | `fdAPI.exportCSV` (blob download, name misleading — actually XLSX) ← header button, hardcoded `issueDate:asc` (= backend export default) |
+| GET`/api/fixed-deposits/{id}`                              | `fdAPI.getById` defined in api.js — **NO UI caller** (list rows carry full objects into FdDialog; endpoint is backend-only/API-first) |
+| PUT`/api/fixed-deposits/{id}`                              | `fdAPI.update` ← updateMutation ← FdDialog (edit path)                                                                                     |
+| PATCH`/api/fixed-deposits/{id}/close`                      | `fdAPI.close` ← CLOSE buttons on FdCard/FdTable (confirm-toast → closeMutation)                                                            |
+| DELETE`/api/fixed-deposits/{id}`                           | `fdAPI.delete` ← FdDialog footer `[DELETE FD]` (confirm-toast → deleteMutation)                                                          |
+
+Frontend infra: React Query (staleTime 30s, keepPreviousData), queryClient invalidation of both keys after every mutation, toast confirmations, Sidebar entry (`FOLIO·§06`), dual Card/Table view toggle. **No frontend-side sorting/filtering duplication — all delegated to backend** (correct division).
+
+### End-to-end flows
+
+Stage legend (used below): **UI** → **Client** → **HTTP** → **Backend-in** → **Backend-proc** → **Out** → **Consume** → **DB**
+
+---
+
+#### FLOW 1 — Create FD · `POST /api/fixed-deposits` (JWT)
+
+```
+[1 UI collect] → [2 client validate] → [3 POST JSON] → [4 @Valid DTO]
+      → [5 service guards] → [6 save fdNo=0] → [7 reorder 1..N] → [8 derived DTO]
+      → [9 toast + invalidate ['fds'] + ['fdSummary']]
+```
+
+| Stage             | Detail                                                                                                                                                                                                                                                                                                          |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 · UI           | `FdDialog`: bank (`BankSearchCombobox`, IFSC-API-backed), holderName (**prefilled + readonly** from profile), accountNumber, issue+maturity date pickers, issueAmount (accepts `5L`/`2Cr`/`10k` shortcuts), interestRate, maturityAmount (**mode-dependent → FLOW 5**), nominee, remarks |
+| 2 · Client       | auto-derives`investmentPeriod` tenure string from the two dates; validates required fields + `maturity > issue`; parses amount shortcuts                                                                                                                                                                    |
+| 3 · HTTP         | POST JSON — numerics coerced via`Number()`                                                                                                                                                                                                                                                                   |
+| 4 · Backend-in   | `@Valid FixedDepositRequestDTO`: place/holderName/interestRate/issueDate/maturityDate/issueAmount/maturityAmount required; `@DecimalMin(>0)` ×3                                                                                                                                                            |
+| 5 · Backend-proc | rejects non-null`fdNo` · strict date-range check (`InvalidFdDateRangeException`) · initial live status computed — **a back-dated FD is born MATURED (correct)**                                                                                                                                    |
+| 6–7 · Persist   | INSERT with**fdNo=0 placeholder** → `reorderFixedDeposits(userId)` re-sorts and rewrites fdNo 1..N                                                                                                                                                                                                     |
+| 8 · Out          | Response DTO injects derived`daysToMaturity` + `highlight`                                                                                                                                                                                                                                                  |
+| 9 · Consume      | success toast + invalidation of both query keys                                                                                                                                                                                                                                                                 |
+| DB                | **INSERT** `fixed_deposits` + **UPDATE ×N** docs' fdNo (reorder `saveAll`)                                                                                                                                                                                                                     |
+
+---
+
+#### FLOW 2 — List / Filter / Sort · `GET /api/fixed-deposits` (JWT)
+
+```
+status chips ─┐
+sort dropdown ─┼─▶ GET ?page&size&status&sortBy&sortDir ─▶ MongoTemplate Criteria ─▶ branch on sort mode
+page buttons ─┘                                                            │
+                                    ┌──────────────────────────────────────┴─────────────────────────┐
+                                    ▼ maturityDate:asc ("nearest first")                              ▼ other 5 modes
+                      load ALL matches → sort in Java → slice in memory                    Sort pushed INTO Mongo query
+                                    → PageImpl                                        → paged find
+                                    └──────────────────────┬───────────────────────────────────────────┘
+                                                           ▼
+                                     Page JSON {content,totalPages,totalElements}
+                                                           ▼
+                                              page.jsx pagination footer
+```
+
+| Filter criterion                | Semantics                                                                           |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| `userId`                      | ALWAYS applied, from JWT principal                                                  |
+| `place` / `nominee`         | case-insensitive ANCHORED regex`^quoted$` ⇒ **exact-match**, not substring |
+| `status`                      | exact enum match                                                                    |
+| `maturityFrom`/`maturityTo` | gte/lte range on`maturityDate`                                                    |
+
+---
+
+#### FLOW 3 — Summary metrics · `GET /api/fixed-deposits/summary` (JWT)
+
+```
+header useQuery(['fdSummary'])
+        → service loads ALL user's FDs → live status computed per doc → bucket sums
+              ACTIVE            → totalActiveInvestment / totalEstimatedReturns (+activeCount)
+              DUE               → totalDueInvestment     / totalDueReturns         ┐
+              MATURED           → totalMaturedInvestment / totalMaturedReturns     ┴─ dueAndMaturedCount
+              CLOSED            → EXCLUDED from totals entirely
+        → frontend computedSummary remaps buckets → displayed header metrics per active filter chip
+```
+
+Frontend remap is a pure display transform over backend buckets — zero recomputation, no divergence surface. **DB:** read-only.
+
+---
+
+#### FLOW 4 — Close / Delete (JWT)
+
+| Action | Pipeline                                                                                                                                                                                    | DB                      |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| CLOSE  | CLOSE button → confirm-toast →`PATCH /{id}/close` → ownership check → sticky `status=CLOSED` (**no payout recalculation — see industry-gaps section**) → toast + invalidate | UPDATE one status field |
+| DELETE | `[DELETE FD]` in dialog → confirm-toast → `DELETE /{id}` → ownership check → deleteById → toast + invalidate                                                                       | DELETE one doc          |
+
+---
+
+#### FLOW 5 — Maturity-amount math (frontend-only, `FdDialog.jsx` — never touches the network)
+
+Mode switch drives who supplies `maturityAmount`:
+
+```
+AUTOMATIC mode                          MANUAL mode
+input: P, r%, dates                     input: user types maturityAmount
+   │                                        │
+   ▼                                        ▼
+days = maturity − issue                 reverse rate-solve (binary search,
+if A>P else null                        60 iterations) → fills interestRate
+   │
+   ├─ days < 181  → simple interest     both modes then submit BOTH fields;
+   │                P·r·days/36500      backend stores them as-is
+   │
+   └─ days ≥ 181  → quarter-aware compounding:
+                    P(1+r/400)^fullQuarters
+                      + simple-interest tail on brokenDays
+                    (quarter boundaries counted month-aware)
+```
+
+Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): given P + A + dates, binary-search solves r.
+
+⚠ **Load-bearing caveat**: the backend never recomputes or sanity-checks `maturityAmount` against interestRate/dates — it persists whatever the client sends (only `>0` is validated). The dialog carries an explicit *"estimate may differ from bank's internal calculation"* disclaimer.
+
+### Discrepancies found (README/Part-1 claims vs code)
+
+1. ~~**fdNo generation story is wrong in README §9** ("Sequence Generation → Atomic `$inc` on `counters` (`fd_no`)"): `createFixedDeposit` hardcodes `nextFdNo = 0L` and the injected `SequenceGeneratorService` is **never invoked anywhere in the module**.~~ ✅ **FIXED (2026-08-26)**: dead `SequenceGeneratorService` import/field/ctor-param **removed from FixedDepositServiceImpl + FixedDepositServiceTest**; FD README bumped to **v1.2.1** — §1.3 feature row, §2.1 diagram, §6 model, §9 data-flow now document the real mechanism (save fdNo=0 → `TransactionSequenceService.reorderFixedDeposits(userId)` re-sorts by issueDate(+createdAt) and rewrites 1..N; no `counters` write). PART1 snapshot corrected with dated markers. fdNo remains a display ordinal, NOT a stable identifier — editing/re-dating FDs renumbers them.
+2. ~~**Part 1 wrong on two model claims**: (a) "fdNo indexed unique" → code is plain `@Indexed` (and uniqueness would be architecturally impossible — per-user ordinals collide across users); (b) "HTTP 403 ACCESS_DENIED on cross-user access" → `findAndVerifyOwnership` throws `DomainException("...not found or access denied", "NOT_FOUND", 404)` — cross-user access yields **404** (arguably better: no existence leak).~~ ✅ **DONE & DUSTED (2026-08-26)**: PART1 snapshot corrected with dated markers for BOTH claims; repo-wide grep confirms zero remaining "indexed unique"/"403 ACCESS_DENIED" references for FD anywhere.
+3. ~~**Excel column 0 exports row index, not fdNo** (`String.valueOf(i + 1)`) · undocumented multi-sheet workbook + totals row · Swagger `@Tag` says "CSV export"~~ ✅ **FIXED (2026-08-26)**: column 0 now exports the record's actual `fdNo` (null-safe); `@Tag` description corrected to "Excel (XLSX) export"; README bumped to **v1.2.2** — §5.4 rewritten to document the up-to-5-tab workbook (All/Active/Due/Matured/Closed), styled ₹ totals row, fdNo column semantics, and full styling rules; §1.3 feature row updated to match. Compile clean, 6/6 FD tests green.
+4. ~~**Part 1 omitted**: `getAllForExport` + scheduler + listener + repository method inventory (`findByStatusNot` drives the GLOBAL all-users nightly sweep; `deleteByUserId` drives cascade).~~ ✅ **DONE & DUSTED (2026-08-26)**: all four omissions added to PART1's FD section with dated markers; endpoint claim confirmed accurate — 8/8 endpoints exist exactly as listed, no phantom endpoints either direction.
+5. ~~**Minor**: null-maturity ACTIVE fallback defensive-only; NO `@Transactional` anywhere (save+reorder non-atomic)~~ ✅ **FIXED (2026-08-26)**: Systemic prerequisite resolved (`MongoTransactionConfig` registering `MongoTransactionManager` bean in `common/config`, verified via `MongoTransactionSupportTest`). Added `@Transactional` to `createFixedDeposit` and `updateFixedDeposit` in `FixedDepositServiceImpl` for atomic save + ordinal reorder operations. FD README bumped to **v1.2.3**; PART1 & PART2 cards updated.
+
+### Industry-standard comparison (India — RBI/CBDT/bank practice, web-verified 2026-08-26)
+
+**✅ Aligned:**
+
+- Quarterly compounding `A = P(1+r/4)^(4t)` — the RBI/IBA standard used by SBI/HDFC/ICICI/Axis/BoB for cumulative FDs — implemented correctly in FdDialog including month-boundary quarter counting and the simple-interest tail on broken period.
+- **<181-days ⇒ simple interest by exact days/365** — mirrors the real short-tenor exception banks apply.
+- Reverse rate-solve via binary search (60 iterations) — numerically sound.
+- Status lifecycle ACTIVE→DUE(maturity day)→MATURED + manual CLOSED maps cleanly onto how banks treat maturity-day credit; IST-anchored daily cron avoids UTC date drift.
+- ₹ en-IN currency formatting, Lakh/Crore word helpers, input shortcuts — locale-correct.
+- Manual override mode exists precisely because banks differ (compounding frequency, day-count 365 vs 365.25, start/end-of-quarter conventions) — honest design.
+
+**⚠ Gaps vs industry standard (tracker-level, mostly defensible — none are calculation bugs) — 📋 IMPLEMENTATION PLAN WRITTEN (2026-08-26), awaiting owner go-ahead:**
+
+1. **No TDS modeling** — banks deduct 10% TDS once annual FD interest per bank crosses ₹40k (₹50k seniors; 20% without PAN; Form 15G/15H escape). Summary shows gross returns only; net-of-TDS view absent.
+2. **Close ≠ premature withdrawal**: `PATCH /close` just flips a sticky flag. Banks recompute payout at the *actual* tenor's applicable rate minus 0.5–1% penalty (SBI 0.5% ≤₹5L / 1% above; HDFC/ICICI/Axis ~1%; no interest <7 days). CoinTrack records no realized-close value, penalty, or rate reset.
+3. **No cumulative/non-cumulative distinction** — non-cumulative (monthly/quarterly payout) FDs behave like simple interest; the automatic calculator would overstate their maturity value.
+4. **No senior-citizen (+0.50%) / tax-saver (80C, 5-yr lock-in, no premature exit) flags** — common real-world variants invisible to the data model.
+5. **Compounding frequency hardcoded quarterly** in auto-mode (no monthly/half-yearly option — some corporate/Post Office deposits differ).
+6. **Backend trusts client maturityAmount** (industry trackers often recompute server-side as a checksum); acceptable because the field is user-editable by design, but the "automatic" promise is frontend-only — a stale browser tab or API call bypasses the calculator entirely.
+
+> 🗺 **IMPLEMENTATION PLAN WRITTEN (2026-08-26)**: all 6 gaps specced end-to-end in **`local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`** — Gap #1 TDS (§194A rules, `FdTdsDetailDTO`, `/tds` endpoints, net-of-TDS summary/export) ↔ gap 1 above · Gap #2 premature withdrawal (`POST /{id}/withdraw`, penalty matrix SBI 0.5–1%/HDFC/ICICI/Axis ~1%, <7-day zero-interest, `WITHDRAWN` status, realized-value fields) ↔ gap 2 · Gap #3 `FdType` CUMULATIVE/NON_CUMULATIVE + payout frequency ↔ gap 3 · Gap #4 senior-citizen/tax-saver flags with 5-yr lock-in validation ↔ gap 4 · Gap #5 `CompoundingFrequency` enum (MONTHLY/QUARTERLY/HALF_YEARLY/YEARLY) ↔ gap 5 · Gap #6 server-side maturity recompute with ±₹1 tolerance + auto-override/manual-flag semantics ↔ gap 6. Also includes: `FdMath` engine spec, per-FY config externalization (note: plan uses post-Budget-2025 thresholds ₹50k regular / ₹1L senior, superseding the ₹40k/₹50k figures above), test scenarios, file-level change map, 4-phase rollout (Foundation → TDS/Withdrawal → Frontend → Migration). **Status: PLAN ONLY — zero code written; build starts on owner approval.**
+
+### Formulas/business rules confirmed correct
+
+- Live status: CLOSED-sticky → today<maturity ACTIVE / ==DUE / >MATURED — matches README verbatim; applied consistently in list/get/update/summary/export paths (single `toResponseDTO` chokepoint).
+- Nearest-first comparator: upcoming (≥today) ascending first, past descending after — matured items sink to bottom; null-safe.
+- Summary: `returns = max(0, maturity − issue)`; CLOSED fully excluded from totals; per-status buckets sum correctly (verified loop).
+- Highlight: YELLOW iff 0<days≤30, RED iff days≤0, null for CLOSED — README's risk-flag contract holds; Days-To-Maturity "-" rendering rule in XLSX matches README exactly (MATURED/DUE/CLOSED/≤0).
+- Validation wall: fdNo rejection, strict date ordering (`InvalidFdDateRangeException`), positive rate/amounts — DTO @Valid + service double-check (defense in depth).
+- Filters safely quote regex input (`Pattern.quote`) — no regex-injection surface; userId always from principal, never body.
+- Scheduler: `0 0 0 * * ?` Asia/Kolkata, updates only changed non-CLOSED docs, exception-caught (never kills the thread).
+- Cascade cleanup listener present, matches user-card round-9 description.
+
+### Suspicious / watch-list — ✅ ALL RESOLVED / CLOSED (2026-08-26)
+
+1. ~~Dead `SequenceGeneratorService` injection (discrepancy #1)~~ ✅ **FIXED (2026-08-26)** — removed from service + test; compile/tests re-verified.
+2. ~~In-memory sort+paging for nearest-first mode — O(all-matching-rows) per page request~~ ✅ **FIXED (2026-08-26)**: nearest-first ordering pushed into MongoDB via aggregation with computed sort key (`$cond` + `$toDate` + `$subtract`); skip/limit execute at DB level. Comparator field removed; 6/6 FD tests green.
+3. ~~`InvalidFdDateRangeException` living in `common.exception` though it is FD-specific~~ ✅ **FIXED (2026-08-26)**: moved to **`fixeddeposit/exception/InvalidFdDateRangeException.java`** (git-tracked rename); imports updated in service + test; old class deleted; compile + 5/5 FD tests green. ✅ **ALL SIBLINGS ALSO RELOCATED same day**: `InsufficientEpfBalanceException` → epf.exception, `InsufficientPpfBalanceException` → ppf.exception, `MissingCostBasisException` → mutualfund.exception (git-tracked renames; imports updated; 26/26 tests green; common README v2.1.3 rewritten — exception tree now 6 files). `common.exception` is now business-logic-free.
+4. ~~Export endpoint returns bare `ResponseEntity<byte[]>` (no ApiResponse envelope)~~ ✅ **DONE & DUSTED (2026-08-26)**: intentional-by-design, now explicitly documented in FD README §8 with a "do NOT wrap in envelope" callout — consistent with all other modules' exports; frontend downloads the raw blob directly.
+5. ~~fdNo renumbering on every create/update means any external references to "FD #7" are unstable across edits~~ ✅ **RESOLVED BY OWNER DECISION (2026-08-26)**: deferred to `local/TODOs/TODO_ORDINAL_SEQUENCE_OPTIMIZATION.md` §3 (Options A–E analysed; per-module recommendation recorded). Impact contained today: UI shows fdNo only in the FdDialog header; README §1.3 + PART1 both warn it is an unstable display ordinal. No code change until owner picks an option.
+
+### Open questions — 📋 IMPLEMENTATION PLANS WRITTEN (2026-08-26), awaiting owner go-ahead
+
+1. Should close capture realized value/penalty (premature-withdrawal economics) or is sticky-CLOSED the intended terminal state? (Owner intent needed; current answer appears to be "record-keeping only".)
+   → 🗺 **ANSWERED BY SPEC**: `local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md` Gap #2 keeps `PATCH /close` as the sticky record-keeping flag (backward compat) and adds a separate `POST /{id}/withdraw` for premature-withdrawal economics — penalty matrix (SBI 0.5% ≤₹5L / 1% above; HDFC/ICICI/Axis ~1%), lower-of-rates rule, <7-day zero-interest, new `WITHDRAWN` status, realized/penalty/effective-rate fields persisted. Nothing implemented yet — build starts on owner approval.
+
+2. Is TDS/net-returns modeling wanted on the roadmap, or explicitly out of scope for a manual tracker?
+   → 🗺 **ANSWERED BY SPEC**: same plan doc, Gap #1 — TDS per FY 2025-26 §194A rules (thresholds ₹50k regular / ₹1L senior citizen post-Budget-2025; 10% with PAN / 20% without; Form 15G/15H escape hatch), net-of-TDS fields in summary + Excel export, per-FD `/tds` endpoints, thresholds externalized to config since they change annually. Scope call + implementation queued behind owner approval.
+
+> 📋 Both specs live in one document covering **all 6 tracker-level gaps** from the industry-standard audit (TDS · premature withdrawal · cumulative/non-cumulative · senior-citizen/tax-saver flags · configurable compounding · server-side maturity recompute), phased Foundation → TDS/Withdrawal → Frontend → Migration. Status of that doc: **PLAN ONLY — zero code written**.
+
+**Deferred follow-up (2026-08-26, owner decision)**: the whole reorder-based ordinal mechanism (FD + ppf + epf + mutualfund×3 + goldsilver) is queued for optimization. → 🗺 **IMPLEMENTATION PLAN WRITTEN**: options analysis, per-module recommendations, migration checklist and acceptance criteria live in **`local/TODOs/TODO_ORDINAL_SEQUENCE_OPTIMIZATION.md`** (§0 sibling-exception relocations already executed; §7 transactional-atomicity resolved via `MongoTransactionConfig`). Status: **PLAN ONLY — awaiting owner's option pick**; do not re-derive, pick up there.
+
+**Module `fixeddeposit` — FINAL STATUS (2026-08-26): ✅ DONE & DUSTED.**
+
+| # | Item | Status |
+|---|---|---|
+| D1 | fdNo/counters fiction | ✅ FIXED — dead injection removed; README v1.2.1; PART1 dated-corrected |
+| D2 | PART1 model claims (fdNo "unique" / "403") | ✅ DONE & DUSTED — both corrected with dated markers; zero stale refs repo-wide |
+| D3 | Excel/Swagger cosmetics | ✅ FIXED — real fdNo in column 0, XLSX tag, README v1.2.2 §5.4 multi-tab/totals |
+| D4 | PART1 omissions (export/scheduler/listener/repo) | ✅ DONE & DUSTED — added with dated markers; 8/8 endpoints confirmed exact |
+| D5 | Non-atomic save+reorder | ✅ FIXED — `@Transactional` on create/update via systemic `MongoTransactionConfig`; README v1.2.3 |
+| W1 | Dead SequenceGeneratorService injection | ✅ FIXED |
+| W2 | Nearest-first in-memory paging | ✅ FIXED — DB-side aggregation sort key + server skip/limit |
+| W3 | FD exception parked in common.exception (+ 3 siblings) | ✅ FIXED — all four relocated to owning modules; common README v2.1.3 |
+| W4 | Export bare byte[] response | ✅ DOCUMENTED as intentional (README §8 callout) |
+| W5 | fdNo renumbering instability | ✅ RESOLVED-BY-DECISION → deferred to TODO_ORDINAL_SEQUENCE_OPTIMIZATION §3 |
+
+**📋 Open questions — both converted to written implementation specs** (`local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`):
+
+- **Coverage**: one plan document speccing **all 6 tracker-level gaps** end-to-end.
+  - Close-economics (Q1) → Gap #2: `POST /{id}/withdraw` with penalty matrix, lower-of-rates rule, <7-day zero-interest, `WITHDRAWN` status; `/close` stays sticky record-keeping.
+  - TDS/net-returns (Q2) → Gap #1: §194A rules, per-FD `/tds` endpoints, net-of-TDS summary + export columns.
+  - Plus gaps #3–#6: cumulative/non-cumulative · senior-citizen/tax-saver flags · configurable compounding frequency · server-side maturity recompute.
+- **Status**: **PLAN ONLY — zero code written**; build starts on owner go-ahead.
+
+**🗺 Deferred to TODO plans (also not implemented)** — ordinal-sequence optimization (`local/TODOs/TODO_ORDINAL_SEQUENCE_OPTIMIZATION.md` §2–§5):
+
+- **Cross-module defect class, NOT FD-local.** The same reorder-based mechanism runs in:
+  - `ppf` → `transactionNo`
+  - `epf` → `transactionNo`
+  - `mutualfund` → ×3 ledgers (lumpsum / SIP / redemption)
+  - `goldsilver` → `itemNo`
+  - `fixeddeposit` → `fdNo`
+- **Problems analysed** (§2): write amplification (~N writes per insert) · race condition on concurrent same-user mutations · unstable external identifiers · PPF/EPF balance-walk desync risk.
+- **Decision work done** (§3–§4): Options A–E analysed with per-module recommendations recorded.
+- **Gate**: awaiting owner's option pick — no module gets touched before that.
+
+**Industry-standard audit**:
+
+- Core math ✅ aligned with RBI quarterly-compounding norm incl. <181-day simple-interest rule.
+- 6 tracker-level gaps catalogued: TDS · premature-penalty · cumulative/non-cumulative · senior/tax-saver variants · compounding options · server-side recompute — 📋 all 6 specced in `local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`, nothing implemented yet.
+- Both frontend flows (automatic + manual) verified working-as-designed against backend contract; maturity computation is frontend-only by design.
+
+**Test evidence**: FD suite **6/6** · probe **3/3** · cross-module **64/64** · relocation run **26/26** — all BUILD SUCCESS.
+**Module pass COMPLETE and CLOSED. Next in processing order: ppf.**
+
+---
+
+## Synthesis Card — `ppf`
+
+Files (18): `model/{PpfTransaction, PpfParticularType}` · `repository/PpfTransactionRepository` · `service/{PpfTransactionService, PpfTransactionServiceImpl, PpfBalanceRecalculationService, PpfWithdrawalValidationService}` · `controller/PpfController` · `dto/request/{PpfTransactionRequestDTO, PpfSettingsRequestDTO}` · `dto/response/{PpfTransactionResponseDTO, PpfSummaryDTO, PpfSettingsResponseDTO, PpfWithdrawalStatusDTO}` · `exception/InsufficientPpfBalanceException` · `listener/PpfUserDataCleanupListener` · `util/PpfExcelExporter`. **No config/ layer** — scheduling and transactional config are inherited from common. **9 endpoints, all authenticated.** Part 1's claim of `PpfSettingsRepository` in the directory tree is **wrong** — no such file exists; settings are an embedded document in User (`PpfSettingsEmbed`). README directory tree (§3) lists a phantom `PpfSettingsRepository.java` that does not exist on disk.
+
+### Owns collections
+
+- **`ppf_transactions`** (`@Document`): `{id (@Id), transactionNo (Long, @Indexed — per-user ordinal rewritten by common's TransactionSequenceService), userId (@Indexed), transactionDate (LocalDate — THE ordering key), particulars (String), particularType (PpfParticularType enum: DEPOSIT|INTEREST_CREDIT|WITHDRAWAL|LOAN|ACCOUNT_OPENING|OTHER), debitAmount (BigDecimal nullable), creditAmount (BigDecimal nullable), balance (BigDecimal — auto-calculated, never client-supplied), remarks (String), createdAt (Instant @CreatedDate), updatedAt (Instant @LastModifiedDate)}`.
+- Settings are **NOT a separate collection** — `PpfSettingsEmbed {accountNumber, dateOfIssue, extensionMode, updatedAt}` is embedded inside the `users` document (line 111 of User.java). Part 1 noted "PpfSettingsRepository exists (settings collection implied)" — **this is wrong**; the README's §3 directory tree also lists a phantom `PpfSettingsRepository.java`. No such file exists.
+
+### Real dependency edges (from actual imports)
+
+**Outbound (ppf → other modules):**
+1. `PpfTransactionServiceImpl` → common `SequenceGeneratorService` (imported but **NOT USED** — dead import, same pattern as the FD dead-injection discovered 2026-08-26; transactionNo is set to0L and rewritten by reorder pass), common `TransactionSequenceService.reorderPpfTransactions(userId)`, common `FinancialYearUtil` (FY resolution + date range), common `ExcelExportUtil.autoSizeColumns`, common `DomainException` + `ValidationException`, common `ApiResponse`.
+2. `PpfBalanceRecalculationService` → `InsufficientPpfBalanceException` (module-local, in ppf.exception).
+3. `PpfWithdrawalValidationService` → common `FinancialYearUtil` (FY computation), user `UserRepository` (load PpfSettingsEmbed for dateOfIssue/extensionMode), user `PpfSettingsEmbed`.
+4. `PpfController` → security `UserPrincipal` (`@AuthenticationPrincipal`, `principal.getUserId()`), user `UserService` (fetches full name for Excel export header), common `ExcelExportUtil`.
+5. `PpfUserDataCleanupListener` → common `UserDeletedEvent`.
+6. `PpfExcelExporter` → common `ExcelExportUtil.autoSizeColumns`.
+
+**Inbound (other modules → ppf):**
+- common `TransactionSequenceService` reaches back into `PpfTransactionRepository` (the known common→ledger reorder edge from the common card).
+- `PpfUserDataCleanupListener` ← common `UserDeletedEvent` (cascade cleanup).
+
+### Endpoint-to-frontend map
+
+| Endpoint | Frontend caller |
+|---|---|
+| POST `/api/ppf/transactions` | `ppfAPI.create` ← page.jsx `createMutation` ← PpfDialog submit |
+| GET `/api/ppf/transactions` (page/size/financialYear/sortBy/sortDir) | `ppfAPI.getAll` ← useQuery `['ppf', {page,financialYear,sortDir}]`; PAGE_SIZE=20; **also a second query `ppfAllTxns` fetches up to 1000 records for FY dropdown generation** |
+| GET `/api/ppf/summary` | `ppfAPI.getSummary` ← useQuery `['ppfSummary']`; header metrics |
+| GET `/api/ppf/export` (blob) | `ppfAPI.exportCSV` ← header "Export Excel" button; frontend forces `sortBy=transactionDate&sortDir=asc` (matches backend export default) |
+| GET `/api/ppf/withdrawal-status` | `ppfAPI.getWithdrawalStatus` ← PpfDialog `useQuery(['withdrawalStatus'])` when dialog is open; drives client-side withdrawal eligibility check + max-limit enforcement |
+| GET `/api/ppf/transactions/{id}` | `ppfAPI.getById` — defined in api.js — **NO UI caller** (list rows carry full objects into PpfDialog; endpoint is backend-only/API-first) |
+| PUT `/api/ppf/transactions/{id}` | `ppfAPI.update` ← page.jsx `updateMutation` ← PpfDialog (edit path) |
+| DELETE `/api/ppf/transactions/{id}` | `ppfAPI.delete` ← page.jsx `deleteMutation` ← PpfDialog footer `[DELETE]` (confirm-toast) |
+| GET `/api/ppf/settings` | `ppfAPI.getSettings` ← useQuery `['ppfSettings']`; displays account number + date of issue in header strip |
+| PUT `/api/ppf/settings` | `ppfAPI.updateSettings` ← page.jsx `updateSettingsMutation` ← PpfSettingsDialog submit |
+
+Frontend infra: React Query (staleTime 30s, keepPreviousData), queryClient invalidation of 4 keys (`ppf`, `ppfAllTxns`, `ppfSummary`, `ppfSettings`) after every mutation. **No dedicated PPF hooks** — all data fetching is inline. `FilterDropdown` for FY selection; `generateFinancialYearOptions` derives FY list from the full transaction set. **Frontend recomputes summary client-side when FY filter is active** (lines108-143 of page.jsx) — deposits + interest summed from the current page's transactions, ending balance taken from the last sorted transaction. This is a display-only recomputation that does NOT diverge from backend logic (backend summary is always all-time; frontend FY-filtered view is additive).
+
+### End-to-end flows
+
+Stage legend: **UI** → **Client** → **HTTP** → **Backend-in** → **Backend-proc** → **Out** → **Consume** → **DB**
+
+---
+
+#### FLOW 1 — Create transaction · `POST /api/ppf/transactions` (JWT)
+
+```
+[1 UI collect] → [2 client validate] → [3 POST JSON] → [4 @Valid DTO]
+      → [5 reject transactionNo/balance] → [6 save txnNo=0]
+      → [7 recalculateLedger] → [8 reorderPpfTransactions]
+      → [9 reload + DTO] → [10 toast + invalidate 4 keys]
+```
+
+| Stage | Detail |
+|---|---|
+| 1 · UI | `PpfDialog`: date picker, entry type CREDIT/DEBIT toggle, amount (accepts `5L`/`1.5Cr`/`10k` shortcuts via `parseShortcutAmount`), particular type (CREDIT: DEPOSIT/INTEREST_CREDIT; DEBIT: WITHDRAWAL/LOAN/OTHER), payment mode text, remarks. Auto-generates remarks on date/type change ("Contribution for FY YYYY-YY" / "Annual Interest FY YYYY-YY"). |
+| 2 · Client | validates date/particulars/amount present; amount >0; **if DEBIT + WITHDRAWAL: calls `withdrawalStatus` query and checks `withdrawalAllowed` + `maxWithdrawalAmount` client-side** (toast rejection if exceeded). |
+| 3 · HTTP | POST JSON `{transactionDate, particulars, particularType, creditAmount|debitAmount, remarks}` — no auth header needed (interceptor attaches). |
+| 4 · Backend-in | `@Valid PpfTransactionRequestDTO`: transactionDate @NotNull, particulars @NotBlank, particularType @NotNull. |
+| 5 · Backend-proc | `validateRequestDTO`: rejects non-null `transactionNo` ("server-generated only"); rejects non-null `balance` ("never accepted from client"); exactly one of credit/debit must be >0. |
+| 6–8 · Persist | INSERT with `transactionNo=0L` → `recalculateLedger(userId)` walks ALL user transactions sorted by date ASC / createdAt ASC, computes running balance, throws `InsufficientPpfBalanceException` on negative → `saveAll` if any balance changed → `reorderPpfTransactions(userId)` re-sorts and rewrites transactionNo 1..N. |
+| 9 · Out | Reloads the saved doc by ID (to get the freshly calculated balance) → `toResponseDTO`. |
+| 10 · Consume | success toast → invalidation of `['ppf']`, `['ppfAllTxns']`, `['ppfSummary']`, `['ppfSettings']`. |
+| DB | **INSERT** `ppf_transactions` + **UPDATE ×N** docs' balance + transactionNo (reorder `saveAll`). |
+
+⚠ **Observation**: `createTransaction` sets `transactionNo=0L` and the import of `SequenceGeneratorService` is dead (never called). This is the SAME pattern as FD's dead injection discovered 2026-08-26. The transactionNo is rewritten by the reorder pass. **Dead import should be removed for hygiene.**
+
+---
+
+#### FLOW 2 — List / Filter / Sort · `GET /api/ppf/transactions` (JWT)
+
+```
+FY dropdown ─┐
+sort toggle  ─┼─▶ GET ?page&size&financialYear&sortBy&sortDir ─▶ buildDynamicQuery ─▶ MongoTemplate.find → PageImpl
+page buttons ─┘
+```
+
+| Filter criterion | Semantics |
+|---|---|
+| `userId` | ALWAYS applied, from JWT principal |
+| `financialYear` | `FinancialYearUtil.resolveFinancialYear(fy)` → date range gte/lte on `transactionDate` (Indian FY: Apr 1–Mar 31) |
+| `dateFrom` / `dateTo` | ISO date range on `transactionDate` (only if no financialYear) |
+| `particulars` | case-insensitive ANCHORED regex `^Pattern.quote(trimmed)$` — exact match, not substring |
+
+Default sort: `transactionDate` DESC (newest first) with `createdAt` tiebreak. Frontend PAGE_SIZE=20 matches backend default.
+
+**Second query (`ppfAllTxns`)**: fetches up to 1000 records sorted `transactionDate:desc` — used ONLY for `generateFinancialYearOptions` (derives FY dropdown list from actual transaction dates). This is a reasonable pattern for a ledger with bounded total entries.
+
+---
+
+#### FLOW 3 — Summary · `GET /api/ppf/summary` (JWT)
+
+```
+header useQuery(['ppfSummary'])
+        → service loads ALL user's transactions → sorts by date ASC/createdAt ASC
+        → walks list: sum credits (split INTEREST_CREDIT vs other → totalDeposits), sum debits → totalWithdrawals
+        → currentBalance = last txn's balance (or computed fallback)
+        → frontend: if FY filter active → recomputes from page subset (display-only, no backend call)
+```
+
+Summary is **programmatic** (NOT Mongo aggregation pipeline) — matches README's explicit design rule. Frontend FY-filtered view is a pure display transform over the current page's transactions — no backend divergence.
+
+---
+
+#### FLOW 4 — Withdrawal status · `GET /api/ppf/withdrawal-status` (JWT)
+
+```
+PpfDialog open → useQuery(['withdrawalStatus'])
+  → PpfWithdrawalValidationService.getWithdrawalStatus(userId, LocalDate.now())
+    → load settings (dateOfIssue, extensionMode) from User document
+    → compute FYs completed since opening
+    → count withdrawals this FY from transaction list
+    → branch: pre-maturity (completedFYs <15) vs post-maturity (≥15)
+    → pre-maturity: lock-in check → 50% cap calculation → return status
+    → post-maturity: WITH_CONTRIBUTION → 60% block cap; WITHOUT_CONTRIBUTION → FULL
+  → frontend: displays eligibility message + max limit; blocks submit if exceeded
+```
+
+⚠ **Off-by-one bug identified** (see Discrepancies section below) — the FY completion count is consistently1 short, shifting all eligibility thresholds by one year.
+
+---
+
+#### FLOW 5 — Settings · `GET/PUT /api/ppf/settings` (JWT)
+
+| Action | Pipeline |
+|---|---|
+| GET | load User → extract `PpfSettingsEmbed` → `toSettingsDTO` → display in header strip (account number, date of issue) |
+| PUT | load User (404 if missing) → upsert embed (accountNumber, dateOfIssue, extensionMode) → save User → invalidate queries |
+
+Settings are embedded in the `users` document — no separate collection, no separate repository. The PUT endpoint has **no @Valid annotation** on the request body — any shape is accepted.
+
+---
+
+#### FLOW 6 — Export · `GET /api/ppf/export` (JWT)
+
+```
+"Export Excel" button → ppfAPI.exportCSV(params)
+  → forces sortBy=transactionDate, sortDir=asc (always chronological)
+  → backend: getAllForExport → re-sequences transactionNo to 1..N for clean reporting
+  → fetches settings + user's full name → PpfExcelExporter.export()
+  → styled XLSX: title row "Public Provident Fund (PPF) Ledger"
+    → metadata: Account No., Date of Issue, Account Holder
+    → column headers (8 cols) + data rows + styled ₹ totals row
+    → auto-sized columns via ExcelExportUtil
+  → frontend: blob download as ppf_ledger_export.xlsx
+```
+
+---
+
+#### FLOW 7 — Account-deletion cascade (side-channel; no HTTP)
+
+- Trigger: DELETE `/api/users/me` (user card FLOW 5) publishes common `UserDeletedEvent` → `PpfUserDataCleanupListener.onUserDeleted` → `deleteByUserId(userId)` bulk DELETE; own try/catch so one listener failure cannot abort the cascade.
+- PPF settings (PpfSettingsEmbed) are removed with the user document itself.
+
+### Discrepancies found (Part1/README vs code)
+
+1. **README §3 directory tree lists phantom `PpfSettingsRepository.java`** — no such file exists on disk. Settings are handled via `UserRepository` + `PpfSettingsEmbed`. **Status: DOC BUG — should be corrected.**
+2. **Dead import `SequenceGeneratorService`** in `PpfTransactionServiceImpl` — imported but never called (transactionNo is set to0L and rewritten by the reorder pass). Same pattern as FD's dead injection removed 2026-08-26. **Status: CODE HYGIENE — dead import should be removed.**
+3. **Part1 §2 "counters (shared sequences)" claim**: PPF does NOT write to `counters` directly. `transactionNo` is set to0L on create, then rewritten by `TransactionSequenceService.reorderPpfTransactions`. The `counters` collection is only touched indirectly via `SequenceGeneratorService` which is a dead import here. **Status: DOCUMENTATION DRIFT — Part1 snapshot should note this is a display ordinal, not an atomic sequence.**
+4. **Off-by-one in PpfWithdrawalValidationService FY completion count** (CRITICAL — see Industry-standard section below): `completedFYs = currentFyStartYear - openingFyEndYear` consistently undercounts by1 because it measures from the opening FY's END year instead of START year. This shifts all withdrawal eligibility thresholds by one year. **Status: POTENTIAL BUG — needs owner verification against PPF Scheme2019 rules.**
+
+### Industry-standard comparison (India — PPF Scheme 2019/2023, web-verified 2026-08-26)
+
+**✅ Aligned:**
+
+- **Withdrawal pre-maturity cap**: code computes `0.50 * MIN(balanceAtEndOfFYMinus4, balanceAtEndOfPreviousFY)` — matches PPF Scheme2019 Rule15(3): "50% of the balance at the end of the fourth financial year preceding the year of withdrawal, or the balance at the end of the preceding financial year, whichever is lower."
+- **Single withdrawal per FY**: enforced in `PpfWithdrawalValidationService` — `withdrawalsThisFy >= 1` → LIMIT_REACHED. Matches Rule15.
+- **WITH_CONTRIBUTION extension 60% cap**: code computes `0.60 * extensionBlockStartBalance` and subtracts aggregate block withdrawals — matches PPF Scheme2019 Form H rules.
+- **Indian FY = Apr 1–Mar 31**: `FinancialYearUtil` resolves correctly.
+- **Balance recalculation**: walking sorted transactions and computing running balance is the correct ledger approach; throwing on negative is correct.
+- **Transaction ordering**: date ASC, createdAt ASC tiebreak — correct for ledger integrity.
+- **Client-supplied balance rejected**: `validateRequestDTO` rejects non-null balance — correct.
+- **Excel export**: chronological ascending, styled ₹ currency, metadata header — professional.
+- **Settings embedded in User**: eliminates a collection join — efficient.
+- **Withdrawal validation is informational** (GET endpoint) with frontend enforcement — design-consistent with FD's `PATCH /close` pattern (record-keeping backend, eligibility guidance frontend).
+
+**⚠ Gaps vs PPF Scheme 2019 industry standard:**
+
+1. **🔴 Off-by-one in FY completion count** (CRITICAL): `completedFYs = currentFyStartYear - openingFyEndYear` undercounts by1 (see Discrepancy #4). This means:
+   - Lock-in check (`completedFYs < 6`) actually blocks until the8th FY instead of7th
+   - 50% cap uses wrong FY offsets (FY-4/FY-1 instead of FY-5/FY-4)
+   - Loan eligibility (`completedFYs >= 2 && <= 5`) is shifted
+   - Post-maturity detection (`completedFYs < 15`) triggers at16th FY instead of15th
+   
+   **Impact**: Users would be blocked from withdrawing one year too late and the 50% cap would reference wrong balance years. However, this depends on the exact interpretation of "completed FYs" — if the code's definition is intentionally different from the statutory "FYs since opening," this may be by design. **Owner verification needed.**
+
+2. **No annual contribution limit enforcement** (₹1.5 lakh/year per PPF Scheme2019 Rule4): backend does not validate that the sum of deposits in a FY does not exceed ₹1,50,000. The frontend does not enforce it either. Excess deposits beyond ₹1.5L would be recorded but would not earn interest in a real PPF account.
+
+3. **No minimum annual deposit enforcement** (₹500/year per Rule3): if a user goes an entire FY without any deposit, the account technically becomes dormant (₹50 fine per defaulting year). Not tracked.
+
+4. **No interest calculation** — PPF interest is calculated on the lowest balance between the5th and last day of each month, compounded annually on March31. The module does not model interest accrual at all (interest entries must be manually recorded as INTEREST_CREDIT transactions). This is a deliberate design choice (ledger vs. simulator) but means the balance field is only accurate if the user manually enters interest credits.
+
+5. **No premature closure modeling** (Rule15(4) — allowed after5 years with 1% interest penalty for specified reasons: life-threatening disease, higher education, change in residency): `PpfWithdrawalStatusDTO` returns `requiresPrematureClosureReason=true` and `allowedReasons` list + `prematureClosureInterestReduction="1%"` — but there is NO endpoint or logic to actually execute a premature closure.
+
+6. **Loan against PPF** (Rule12 — available from3rd to6th FY, up to25% of balance at end of2nd preceding FY): the `PpfParticularType.LOAN` enum exists and the UI offers it as a DEBIT type, but `PpfWithdrawalValidationService` returns `loanAllowed` flag based on `completedFYs >= 2 && <= 5` — there is no loan repayment logic, no loan interest calculation, and no enforcement of the25% cap.
+
+7. **No automatic interest crediting** — in real PPF accounts, interest is automatically credited on March31 each year. Users must manually add INTEREST_CREDIT entries.
+
+8. **No `WITHOUT_CONTRIBUTION` auto-extension detection** — after15 years, if the user does nothing, the account auto-extends without contribution. The code tracks the mode but does not auto-detect or auto-set it.
+
+### Formulas/business rules confirmed correct
+
+- Balance walk: `runningBalance += creditAmount || runningBalance -= debitAmount` per sorted transaction; negative → `InsufficientPpfBalanceException` — correct.
+- Summary: programmatic loop splitting INTEREST_CREDIT from other credits; `currentBalance = lastTxn.balance` with computed fallback — correct.
+- FY resolution: `FinancialYearUtil.resolveFinancialYear("YYYY-YY")` returns `[Apr 1, Mar31]` — correct for Indian FY.
+- Request validation: exactly one of debit/credit >0; both positive; transactionNo/balance rejected — correct.
+- Ownership gate: `findByIdAndUserId` → 404 "not found or access denied" (no existence leak) — matches FD pattern.
+- Settings upsert: loads existing embed or creates new → sets fields → saves User — correct.
+- Excel export: re-sequences transactionNo to1..N for clean reporting; chronological ascending; styled ₹ currency — correct.
+- Cascade cleanup: `deleteByUserId` with own try/catch — correct.
+- `getBalanceAtEndOfFy`: walks transactions, takes last balance before FY end — correct helper.
+- `withdrawalsThisFy` count: checks transactionDate within [currentFyStart, currentFyEnd] for type WITHDRAWAL — correct.
+- Block withdrawal limit (WITH_CONTRIBUTION): `0.60 * extensionBlockStartBalance - blockWithdrawnAmount` — correct formula.
+
+### Formulas/business rules that diverge from README or look suspicious
+
+1. **Off-by-one in FY completion count** (see Discrepancy #4 and Gap #1): `completedFYs = currentFyStartYear - openingFyEndYear` gives N-1 instead of N for "FYs completed since opening." This is either a bug or a non-standard definition. **Owner verification needed.**
+2. **Loan eligibility (`completedFYs >= 2 && <= 5`)**: given the off-by-one, this effectively means loans are allowed from the4th to7th FY instead of the3rd to6th FY per Rule12. If the off-by-one is fixed, this condition would need adjustment.
+3. **README §11 pitfall table is accurate** — all four pitfalls documented match the code.
+4. **README §5.2 withdrawal validation description** says "from the3rd FY to6th FY (completed2 to5)" for loans — the code uses `completedFYs >= 2 && <= 5` which aligns with this claim, but both may be off by one due to the FY counting issue.
+
+### Suspicious / watch-list
+
+1. **Dead `SequenceGeneratorService` import** — same pattern as FD's dead injection. Should be removed for hygiene (confirm via grep that no other method in the class calls it).
+2. **No @Valid on `PpfSettingsRequestDTO` in PUT `/settings`** — the controller accepts `@RequestBody PpfSettingsRequestDTO requestDTO` without `@Valid`. Any shape is accepted; dateOfIssue could be null or in the past/future with no validation. Contrast with the FD module which has `@DecimalMin` and date-range checks.
+3. **`getSettings` returns empty DTO when user has no settings** (embed is null) — `toSettingsDTO(null, userId)` returns `{userId}` with all other fields null. Frontend handles this gracefully (conditional rendering of account info strip).
+4. **Sort direction default mismatch**: backend default for GET `/transactions` is `sortDir=desc` (line 84: `@RequestParam(defaultValue = "desc")`), but the frontend default state is also `desc` — consistent. However, the export endpoint hardcodes `sortDir=asc` in the controller (line113: `"asc"`), overriding any client-supplied value — correct for chronological reporting.
+5. **`allTxns` query fetches1000 records** for FY dropdown generation — reasonable for a PPF ledger (max ~40 years × ~12 entries/year ≈ 480 entries in extreme case), but if a user has more than1000 entries, the FY dropdown would be incomplete. **Low risk** — PPF ledgers are inherently bounded.
+
+### Open questions
+
+1. **Is the FY completion count intentionally N-1?** The PPF Scheme2019 says partial withdrawal is allowed "from the7th financial year" — meaning after5 complete FYs. If `completedFYs = 5` means "5 FYs completed" (i.e., currently in the6th FY), then the lock-in check `completedFYs < 6` blocks until `completedFYs = 6` (7th FY) — which would be correct if we interpret "completedFYs" as "fully completed FYs" and the Scheme allows withdrawal at the START of the7th FY. **This needs careful verification against the exact Scheme wording.** If the current code is correct by its own definition, then no bug exists — but the variable name is misleading.
+2. **Should the module enforce the ₹1.5L annual contribution limit?** In real PPF accounts, excess deposits beyond ₹1.5L per FY earn no interest. The module currently records them without warning. This is a tracker, not a bank system — enforcement may be intentionally omitted.
+3. **Should interest calculation be added?** The module records interest credits manually. An automatic interest calculator (monthly lowest-balance × annual rate ÷12, compounded annually on March31) would make the ledger self-reconciling but adds significant complexity.
+4. **Is premature closure a planned feature?** The DTO returns the allowed reasons and penalty rate, but no execution endpoint exists. If planned, it would need: `POST /premature-closure` with reason validation, interest penalty calculation, and balance zeroing.
+5. **Dead `SequenceGeneratorService` import** — should be removed (same cleanup pattern as FD 2026-08-26). Needs grep confirmation that no method in `PpfTransactionServiceImpl` calls it.
+
+**Module `ppf` — STATUS (2026-08-26): 4 discrepancies found, 5 watch-list items, 5 open questions.**
+
+| # | Item | Severity | Status |
+|---|---|---|---|
+| D1 | README §3 phantom `PpfSettingsRepository` | Doc bug | **FIXED 2026-08-26** — removed from directory tree, updated §2.1 diagram, updated §1.2 features table |
+| D2 | Dead `SequenceGeneratorService` import | Code hygiene | **FIXED 2026-08-26** — import, field, and constructor param removed |
+| D3 | Part1 "counters" claim for PPF | Doc drift | **FIXED 2026-08-26** — Part1 addendum updated with PPF-specific corrections |
+| D4 | Off-by-one in FY completion count | Logic bug | **FIXED 2026-08-26** — `completedFYs = currentFyStartYear - openingFyStartYear`; lock-in updated to `< 7`; loan eligibility updated to `>= 3 && <= 7` |
+| W1 | Dead SequenceGeneratorService import | Code hygiene | **FIXED 2026-08-26** — same as D2 |
+| W2 | No @Valid on PPF settings PUT | Validation gap | **OPEN** — any shape accepted for settings |
+| W3 | getSettings returns empty DTO for new users | Minor | **OPEN** — frontend handles gracefully, cosmetic only |
+| W4 | Export forces asc sort (correct) | Non-issue | **CONFIRMED CORRECT** |
+| W5 | allTxns 1000-record cap for FY dropdown | Low risk | **OPEN** — bounded by PPF ledger nature |
+| Q1 | FY completion count definition | Clarification needed | **RESOLVED 2026-08-26** — fixed to match PPF Scheme 2019 |
+| Q2 | ₹1.5L contribution limit enforcement | Design decision | **OPEN** — tracker vs bank system scope |
+| Q3 | Interest calculation feature | Feature request | **OPEN** — would make ledger self-reconciling |
+| Q4 | Premature closure endpoint | Feature request | **OPEN** — DTO supports it but no execution path |
+| Q5 | Dead import cleanup | Code hygiene | **RESOLVED 2026-08-26** — same as D2 |
+
+**Industry-standard audit summary:**
+
+- Core ledger mechanics (balance walk, recalculation, negative-balance protection) ✅ **correct and professionally implemented**.
+- Withdrawal validation formulas (50% cap, 60% extension block, single-per-FY) ✅ **match PPF Scheme2019 text** — but all thresholds are shifted by1 due to the FY counting issue.
+- Settings (extension mode, account details) ✅ **embedded in User document** — efficient design.
+- Excel export ✅ **professional quality** with metadata header, styled currency, auto-sized columns.
+- **Gaps vs industry**: no contribution limit enforcement, no interest accrual modeling, no premature closure execution, no loan repayment logic, no automatic interest crediting — all are **defensible design choices for a manual tracker** but would be needed for a "full PPF simulator."
+- **Compared to FD implementation**: PPF lacks the industry-standards audit section and written implementation plan that FD has. The off-by-one bug (if confirmed) is more severe than any FD gap because it affects statutory eligibility.
+
+**Test evidence**: `PpfTransactionServiceTest` + `PpfBalanceRecalculationServiceTest` exist in test tree (not re-run during this read-only audit).
+
+**Module pass COMPLETE. Next in processing order: epf.**

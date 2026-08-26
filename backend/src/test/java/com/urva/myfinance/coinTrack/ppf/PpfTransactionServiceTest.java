@@ -26,7 +26,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
-import com.urva.myfinance.coinTrack.common.exception.InsufficientPpfBalanceException;
+import com.urva.myfinance.coinTrack.ppf.exception.InsufficientPpfBalanceException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
 import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
 import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;

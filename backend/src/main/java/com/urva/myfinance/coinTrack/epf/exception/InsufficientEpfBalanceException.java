@@ -1,4 +1,6 @@
-package com.urva.myfinance.coinTrack.common.exception;
+package com.urva.myfinance.coinTrack.epf.exception;
+
+import com.urva.myfinance.coinTrack.common.exception.DomainException;
 
 /**
  * Exception thrown when an EPF transaction recalculation results in a negative balance.

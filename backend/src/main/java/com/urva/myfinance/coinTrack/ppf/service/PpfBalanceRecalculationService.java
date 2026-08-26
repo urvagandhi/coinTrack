@@ -10,7 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.urva.myfinance.coinTrack.common.exception.InsufficientPpfBalanceException;
+import com.urva.myfinance.coinTrack.ppf.exception.InsufficientPpfBalanceException;
 import com.urva.myfinance.coinTrack.ppf.model.PpfTransaction;
 import com.urva.myfinance.coinTrack.ppf.repository.PpfTransactionRepository;
 

@@ -15,23 +15,29 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.bson.Document;
+
+import java.util.List;
 
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
-import com.urva.myfinance.coinTrack.common.exception.InvalidFdDateRangeException;
-import com.urva.myfinance.coinTrack.common.service.SequenceGeneratorService;
 import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FixedDeposit;
 import com.urva.myfinance.coinTrack.fixeddeposit.repository.FixedDepositRepository;
+import com.urva.myfinance.coinTrack.fixeddeposit.exception.InvalidFdDateRangeException;
 import com.urva.myfinance.coinTrack.fixeddeposit.service.FixedDepositServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,9 +45,6 @@ class FixedDepositServiceTest {
 
     @Mock
     private FixedDepositRepository fixedDepositRepository;
-
-    @Mock
-    private SequenceGeneratorService sequenceGeneratorService;
 
     @Mock
     private TransactionSequenceService transactionSequenceService;
@@ -207,5 +210,22 @@ class FixedDepositServiceTest {
 
         assertEquals(FdStatus.CLOSED, response.getStatus());
         assertNull(response.getHighlight());
+    }
+
+    @Test
+    @DisplayName("6. Nearest-first mode pages server-side via aggregation (no full-ledger load)")
+    void testNearestFirstUsesAggregationPaging() {
+        when(mongoTemplate.count(any(org.springframework.data.mongodb.core.query.Query.class), any(Class.class)))
+                .thenReturn(42L);
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq(FixedDeposit.class), eq(FixedDeposit.class)))
+                .thenReturn(new AggregationResults<>(List.of(sampleDepositUserA), new Document()));
+
+        Page<FixedDepositResponseDTO> result = fixedDepositService.getFixedDeposits(
+                "user_A", null, null, null, null, null, "maturityDate", "asc", 0, 20);
+
+        assertEquals(1, result.getContent().size());
+        assertEquals(42L, result.getTotalElements());
+        verify(mongoTemplate).aggregate(any(Aggregation.class), eq(FixedDeposit.class), eq(FixedDeposit.class));
+        verify(mongoTemplate, never()).find(any(org.springframework.data.mongodb.core.query.Query.class), eq(FixedDeposit.class));
     }
 }

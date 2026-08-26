@@ -39,7 +39,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/fixed-deposits")
-@Tag(name = "Fixed Deposits", description = "Fixed Deposit (FD) management module with status derivation, metrics, and CSV export")
+@Tag(name = "Fixed Deposits", description = "Fixed Deposit (FD) management module with status derivation, metrics, and Excel (XLSX) export")
 public class FixedDepositController {
 
     private static final Logger logger = LoggerFactory.getLogger(FixedDepositController.class);

@@ -90,7 +90,7 @@ public class FixedDepositExcelExporter {
             Row row = sheet.createRow(i + 1);
             row.setHeightInPoints(22);
 
-            createCell(row, 0, String.valueOf(i + 1), boldStyle);
+            createCell(row, 0, dto.getFdNo() != null ? String.valueOf(dto.getFdNo()) : "", boldStyle);
             createCell(row, 1, dto.getPlace(), dataStyle);
             createCell(row, 2, dto.getHolderName(), dataStyle);
             createCell(row, 3, dto.getNominee(), dataStyle);

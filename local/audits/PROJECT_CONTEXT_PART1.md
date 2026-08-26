@@ -96,21 +96,37 @@ ppf, epf, goldsilver, security, user, mutualfund — **all 13 found, no mismatch
 
 ### fixeddeposit (v1.2.0, 2026-07-25)
 - **Responsibility**: manual FD CRUD, live status derivation, risk highlighting, metrics, XLSX export.
-- **Collections**: `fixed_deposits` (fdNo indexed unique; userId indexed; place, holderName,
+- **Collections**: `fixed_deposits` (fdNo indexed — ✅ Corrected 2026-08-26 (FD deep-dive): **NOT unique**; it is a per-user `1..N` display ordinal rewritten by common's TransactionSequenceService after every create/update, so a global unique index is impossible by design; userId indexed; place, holderName,
   nominee, accountNumber, interestRate, investmentPeriod, issueDate, maturityDate, issueAmount,
-  maturityAmount, status, remarks, createdAt, updatedAt); `counters` (`fd_no`).
+  maturityAmount, status, remarks, createdAt, updatedAt). ✅ Corrected 2026-08-26: this module does
+  NOT write `counters` (the old "`counters` (`fd_no`)" claim was wrong — fdNo comes from the
+  reorder pass, not an atomic `$inc`).
 - **Endpoints** (base `/api/fixed-deposits`, JWT): POST create; GET list (MongoTemplate Criteria
   filters: place/status/nominee/maturityFrom/maturityTo); GET `/summary`; GET `/export` (XLSX,
   default sort `issueDate:asc`, 14 columns); GET/PUT/DELETE `/{id}`; PATCH `/{id}/close`.
+  ✅ Added 2026-08-26 (FD deep-dive — previously omitted): module also owns
+  `FixedDepositExcelExporter` util (multi-tab workbook All/Active/Due/Matured/Closed + ₹ totals row),
+  nightly scheduler `FixedDepositStatusScheduler` (whose `findByStatusNot(CLOSED)` sweep runs
+  GLOBALLY across ALL users — not per-user), account-deletion listener
+  `FixedDepositUserDataCleanupListener` (`UserDeletedEvent` → `deleteByUserId` cascade),
+  and full repository inventory `findByIdAndUserId` / `findByUserId` / `findByStatusNot` /
+  `deleteByUserId`.
 - **Status derivation**: stored CLOSED is sticky override → else today<maturity ACTIVE,
   ==DUE, >MATURED. Daily cron `FixedDepositStatusScheduler` `0 0 0 * * ?` Asia/Kolkata.
 - **Sorting engine**: 6 modes; `maturityDate:asc` ("Nearest First") evaluated relative to
-  `LocalDate.now()` via Java comparator (upcoming first, matured last). Excel export defaults to
-  `issueDate:asc`. `Days To Maturity` renders as `-` for MATURED/DUE/CLOSED or <=0.
-- **Pitfalls**: BigDecimal only for money/rates; userId always from JWT Principal; HTTP 403
-  ACCESS_DENIED on cross-user access; `maturityDate` strictly after `issueDate`
-  (`InvalidFdDateRangeException`); DTO field renamed `totalEstReturns`→`totalEstimatedReturns`
-  to fix frontend reporting zero returns.
+  `LocalDate.now()`. ✅ Corrected 2026-08-26: no longer a Java comparator — nearest-first ordering
+  is computed server-side via MongoDB aggregation with a computed sort key (`$cond`+`$toDate`),
+  so skip/limit page at DB level (upcoming ascending first, past descending after, `_id` tiebreak).
+  Excel export defaults to `issueDate:asc`. `Days To Maturity` renders as `-` for MATURED/DUE/CLOSED or <=0.
+- **Pitfalls**: BigDecimal only for money/rates; userId always from JWT Principal; ✅ Corrected
+  2026-08-26: cross-user access returns **404 NOT_FOUND** ("not found or access denied" — no
+  existence leak), NOT "403 ACCESS_DENIED" as originally claimed; `maturityDate` strictly after
+  `issueDate` (`InvalidFdDateRangeException` — relocated to fixeddeposit.exception same day);
+  DTO field renamed `totalEstReturns`→`totalEstimatedReturns` to fix frontend reporting zero returns.
+  ✅ Updated 2026-08-26: `@Transactional` added to `createFixedDeposit` and `updateFixedDeposit`
+  in `FixedDepositServiceImpl`, backed by `common.config.MongoTransactionConfig` (`MongoTransactionManager`),
+  guaranteeing transactional atomicity across document save + `TransactionSequenceService.reorderFixedDeposits(userId)`
+  ledger reordering operations.
 
 ### email (v3.0.0, 2026-03-19)
 - **Responsibility**: transactional email via Brevo REST API + Thymeleaf rendering.
@@ -752,4 +768,18 @@ written. Key evolutions tracked authoritatively in PROJECT_CONTEXT_PART2.md:
   see Part 2 user-card discrepancy #11.
 - D7's "final" resolution flipped direction twice during these rounds; see Part 2 user-card
   discrepancy #2 for the full trail.
+- **PPF `counters` claim CORRECTED**: Part 1 §2 "counters (shared sequences)" implied PPF
+  writes to the `counters` collection directly. It does NOT — `transactionNo` is set to `0L`
+  on create, then rewritten by `TransactionSequenceService.reorderPpfTransactions`. The
+  `counters` collection is never touched by PPF code. The dead `SequenceGeneratorService`
+  import in `PpfTransactionServiceImpl` was removed 2026-08-26 (same cleanup as FD).
+  Settings (`PpfSettingsEmbed`) are embedded in the `users` document — no separate
+  `PpfSettingsRepository` exists (the README §3 directory tree listed a phantom file that
+  was corrected in README v1.3.0).
+- **PPF off-by-one FIX applied** (2026-08-26): `PpfWithdrawalValidationService` previously
+  computed `completedFYs = currentFyStartYear - openingFyEndYear` which undercounted by 1.
+  Fixed to `currentFyStartYear - openingFyStartYear`. Lock-in check updated from
+  `completedFYs < 6` to `completedFYs < 7`. Loan eligibility updated from
+  `completedFYs >= 2 && <= 5` to `completedFYs >= 3 && <= 7`. See Part 2 ppf-card
+  discrepancy D4 for the full analysis.
 

@@ -2,8 +2,8 @@
 
 > **Domain**: Cross-cutting infrastructure and shared utilities
 > **Responsibility**: Configuration, exception handling, request tracing, response wrappers, sequence generation, encryption utilities
-> **Version**: 2.1.1
-> **Last Updated**: 2026-08-23 *(every claim below verified against source on this date)*
+> **Version**: 2.1.3
+> **Last Updated**: 2026-08-26 *(every claim below verified against source on this date)*
 
 ---
 
@@ -38,7 +38,7 @@ cross-cutting code.
 
 | Area                         | Components                                                                                                                                     | Purpose                                    |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| **Configuration**      | CorsConfig, EncryptionConfig, WebClientConfig, MongoConfig, OpenApiConfig, StartupLogger                                                       | Application-wide settings                  |
+| **Configuration**      | CorsConfig, EncryptionConfig, WebClientConfig, MongoConfig, MongoTransactionConfig, OpenApiConfig, StartupLogger | Application-wide settings                  |
 | **Exception Handling** | DomainException hierarchy + GlobalExceptionHandler + 3 module-specific exceptions                                                              | Consistent error responses                 |
 | **Request Tracing**    | RequestIdFilter                                                                                                                                | Correlation ID via SLF4J MDC               |
 | **Health Monitoring**  | HealthController, HomeController                                                                                                               | System status endpoints + landing page     |
@@ -156,29 +156,31 @@ JSON response carries requestId resolved from MDC
 
 ## 3. Directory Structure
 
-Verified tree: **37 Java files, ~2,800 LOC**.
+Verified tree: **34 Java files, ~2,819 LOC**.
 
 ```
 common/
-|-- config/                              # 7 files
+|-- config/                              # 8 files
 |   |-- CorsConfig.java                  # property-driven CORS source bean (60 ln)
 |   |-- EncryptionConfig.java            # fail-fast AES key validation (42 ln)
 |   |-- MongoConfig.java                 # YearMonth + GainType converters (63 ln)
+|   |-- MongoTransactionConfig.java      # MongoTransactionManager bean registration for @Transactional (34 ln)
 |   |-- OpenApiConfig.java               # Swagger UI bearerAuth scheme (47 ln)
 |   |-- StartupLogger.java               # startup banner + DB/email status (137 ln)
 |   |-- WebClientConfig.java             # outbound HTTP timeouts (43 ln)
 |   +-- package-info.java                # historical reorg plan doc, stale (73 ln)
-|-- exception/                           # 10 files
+|-- exception/                           # 6 files
 |   |-- DomainException.java             # base: errorCode + httpStatus (41 ln)
 |   |-- AuthenticationException.java     # 401 AUTH_FAILED (16 ln)
 |   |-- AuthorizationException.java      # 403 ACCESS_DENIED (16 ln)
 |   |-- ValidationException.java         # 400 VALIDATION_FAILED (+field) (24 ln)
 |   |-- ExternalServiceException.java    # 502 EXTERNAL_SERVICE_FAILED (24 ln)
-|   |-- InsufficientEpfBalanceException.java # 400 (12 ln)
-|   |-- InsufficientPpfBalanceException.java # 400 (12 ln)
-|   |-- InvalidFdDateRangeException.java # 400 maturity<=issueDate (12 ln)
-|   |-- MissingCostBasisException.java   # 400 FIFO lot w/o cost basis (12 ln)
 |   +-- GlobalExceptionHandler.java      # @RestControllerAdvice (208 ln)
+|   (Module-specific exceptions RELOCATED 2026-08-26 to their owning modules:
+|    InvalidFdDateRangeException → fixeddeposit/exception/,
+|    InsufficientEpfBalanceException → epf/exception/,
+|    InsufficientPpfBalanceException → ppf/exception/,
+|    MissingCostBasisException → mutualfund/exception/)
 |-- filter/
 |   +-- RequestIdFilter.java             # MDC correlation ID (100 ln)
 |-- health/
@@ -291,6 +293,19 @@ Prints an ASCII banner on `ApplicationReadyEvent`: active profiles, port, URL
 (`RENDER_EXTERNAL_URL` when set), DB status (verified via `mongoTemplate.executeCommand(ping)` network round-trip), email-configured flag
 (via `brevo.api-key` presence).
 
+### 4.7 MongoTransactionConfig (added 2026-08-26)
+
+Registers the platform `MongoTransactionManager` bean:
+
+```java
+@Bean
+public MongoTransactionManager transactionManager(MongoDatabaseFactory mongoDatabaseFactory) {
+    return new MongoTransactionManager(mongoDatabaseFactory);
+}
+```
+
+Enables Spring's `@Transactional` annotation across MongoDB multi-document write operations app-wide (used in `fixeddeposit`, `ppf`, `epf`, `notes`, `broker`, `portfolio`). Requires MongoDB deployment to be a replica set (satisfied in production by MongoDB Atlas and in integration testing by Flapdoodle `--replSet rs0`).
+
 ---
 
 ## 5. Exception Handling
@@ -304,10 +319,10 @@ graph TD
     DE --> AuthzE["AuthorizationException<br/>(403, ACCESS_DENIED)"]
     DE --> VE["ValidationException<br/>(400, VALIDATION_FAILED)"]
     DE --> ExtE["ExternalServiceException<br/>(502, EXTERNAL_SERVICE_FAILED)"]
-    DE --> EPF["InsufficientEpfBalanceException<br/>(400, INSUFFICIENT_EPF_BALANCE)"]
-    DE --> PPF["InsufficientPpfBalanceException<br/>(400, INSUFFICIENT_PPF_BALANCE)"]
-    DE --> IFD["InvalidFdDateRangeException<br/>(400, INVALID_FD_DATE_RANGE)"]
-    DE --> MCB["MissingCostBasisException<br/>(400, MISSING_COST_BASIS)"]
+    DE --> EPF["InsufficientEpfBalanceException<br/>(400, INSUFFICIENT_EPF_BALANCE)<br/>lives in epf.exception"]
+    DE --> PPF["InsufficientPpfBalanceException<br/>(400, INSUFFICIENT_PPF_BALANCE)<br/>lives in ppf.exception"]
+    DE --> IFD["InvalidFdDateRangeException<br/>(400, INVALID_FD_DATE_RANGE)<br/>lives in fixeddeposit.exception"]
+    DE --> MCB["MissingCostBasisException<br/>(400, MISSING_COST_BASIS)<br/>lives in mutualfund.exception"]
 ```
 
 <details>
@@ -320,10 +335,14 @@ RuntimeException
       |-- AuthorizationException           403 ACCESS_DENIED
       |-- ValidationException              400 VALIDATION_FAILED (+ optional field name)
       |-- ExternalServiceException         502 EXTERNAL_SERVICE_FAILED (+ serviceName)
-      |-- InsufficientEpfBalanceException  400 INSUFFICIENT_EPF_BALANCE   (used by epf)
-      |-- InsufficientPpfBalanceException  400 INSUFFICIENT_PPF_BALANCE   (used by ppf)
-      |-- InvalidFdDateRangeException      400 INVALID_FD_DATE_RANGE?     (used by fixeddeposit)
-      +-- MissingCostBasisException        400 MISSING_COST_BASIS         (FIFO lots)
+      |-- InsufficientEpfBalanceException  400 INSUFFICIENT_EPF_BALANCE   (RELOCATED 2026-08-26:
+      |                                                                   epf/exception/)
+      |-- InsufficientPpfBalanceException  400 INSUFFICIENT_PPF_BALANCE   (RELOCATED 2026-08-26:
+      |                                                                   ppf/exception/)
+      |-- InvalidFdDateRangeException      400 INVALID_FD_DATE_RANGE      (RELOCATED 2026-08-26:
+      |                                                                   fixeddeposit/exception/)
+      +-- MissingCostBasisException        400 MISSING_COST_BASIS         (RELOCATED 2026-08-26:
+                                                                          mutualfund/exception/)
 
 broker.service.exception.BrokerException is handled by common's GlobalExceptionHandler
 but lives in the broker module.
@@ -727,6 +746,8 @@ return ResponseEntity.ok(ApiResponse.success(data, "Operation successful"));
 
 | Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.1.3   | 2026-08-26 | Module-boundary cleanup: relocated the last three module-specific exceptions out of `common.exception` to their owning modules (`InsufficientEpfBalanceException` → epf, `InsufficientPpfBalanceException` → ppf, `MissingCostBasisException` → mutualfund; error codes + 400 status unchanged). Exception tree now 6 files — common is business-logic-free again. |
+| 2.1.2   | 2026-08-26 | Systemic transaction support: documented `MongoTransactionConfig` bean registration (`MongoTransactionManager`) in §4.7 & tree §3, enabling `@Transactional` across MongoDB multi-document write paths app-wide.                                                                                                                                                                                                                                          |
 | 2.1.1   | 2026-08-23 | Post-audit cleanup: removed dead`repository/CounterRepository.java` (zero consumers, confirmed by repo-wide grep); documented verified `brokerWebClientBuilder` consumers (6 classes) and the BrevoEmailService raw-WebClient exception.                                                                                                                                                                                                              |
 | 2.1.0   | 2026-08-23 | Full source verification pass: corrected directory tree (removed phantom RestTemplateConfig/FnoUtils/DatabaseSequence/response-user-DTOs), documented WebClientConfig/MongoConfig/OpenApiConfig/StartupLogger, exact DomainException ctor order, complete handler table incl. 404/catch-all, real envelope JSON shapes, TransactionSequenceService + NotificationServiceImpl details, all 9 utils, honest outbound-dependency note, verified line counts. |
 | 2.0.0   | 2025-12-17 | Comprehensive rewrite with accurate structure (partially stale).                                                                                                                                                                                                                                                                                                                                                                                          |

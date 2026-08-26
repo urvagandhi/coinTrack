@@ -145,6 +145,8 @@ mutualfund/
 ├── dto/
 │   ├── OverallSummaryDto.java       (dashboard totals + discrepancy reports)
 │   └── SchemeSummaryDto.java        (per-scheme aggregated view)
+├── exception/
+│   └── MissingCostBasisException.java (400 MISSING_COST_BASIS; thrown by MfFifoEngine when a redemption references units with no recorded purchase cost — relocated from common.exception 2026-08-26)
 ├── model/
 │   ├── FundStatus.java              (ACTIVE_SIP, LUMPSUM_ONLY, FULLY_REDEEMED)
 │   ├── GainType.java                (LTCG, STCG)
@@ -262,6 +264,7 @@ Single-responsibility service that:
 ### 5.6 `MfFifoEngine` — Accurate Capital Gains Engine
 - Simulates the chronological purchase and redemption of units using a First-In-First-Out (FIFO) queue of lots.
 - Computes Short-Term Capital Gains (STCG) vs Long-Term Capital Gains (LTCG) based on 1-year holding periods automatically upon redemption.
+- Throws `MissingCostBasisException` (module-local `exception/`, 400 MISSING_COST_BASIS) when a redemption lot has no matching purchase cost on record — surfaces as a client-facing validation error, not a 500.
 
 ### 5.7 `PortfolioHoldingService` — Advanced Metrics
 - Aggregates lumpsum, SIP, and redemption transactions to compute the user's `PortfolioHolding` per scheme.

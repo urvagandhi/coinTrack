@@ -79,6 +79,7 @@ public class LumpsumTransactionService {
         return repository.findByUserId(userId, pageable);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public LumpsumTransaction createTransaction(String userId, LumpsumTransaction transaction) {
         validateSchemeOwnership(userId, transaction.getSchemeId());
         transaction.setUserId(userId);
@@ -151,6 +152,7 @@ public class LumpsumTransactionService {
         return saved;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public LumpsumTransaction updateTransaction(String userId, String id, LumpsumTransaction transaction) {
         LumpsumTransaction existing = getTransaction(userId, id);
         String oldSchemeId = existing.getSchemeId();
@@ -249,6 +251,7 @@ public class LumpsumTransactionService {
         return saved;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void deleteTransaction(String userId, String id) {
         LumpsumTransaction existing = getTransaction(userId, id);
         repository.delete(existing);

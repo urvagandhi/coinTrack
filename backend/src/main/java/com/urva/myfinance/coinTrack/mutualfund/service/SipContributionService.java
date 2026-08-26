@@ -94,6 +94,7 @@ public class SipContributionService {
         return repository.findByUserIdAndContributionDateBetween(userId, startDate, endDate);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public SipContribution createContribution(String userId, SipContribution contribution) {
         validateFkIntegrity(userId, contribution);
         contribution.setUserId(userId);
@@ -102,7 +103,7 @@ public class SipContributionService {
         contribution.setRetryCount(0);
 
         LocalDate applicableDate = settlementDateCalculator.calculateApplicableDate(contribution.getContributionDate(),
-                true);
+                false);
         contribution.setApplicableDate(applicableDate);
 
         schemeRepository.findById(contribution.getSchemeId()).ifPresent(scheme -> {
@@ -155,6 +156,7 @@ public class SipContributionService {
         return saved;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public SipContribution updateContribution(String userId, String id, SipContribution updatedContribution) {
         SipContribution existing = repository.findById(id)
                 .filter(c -> c.getUserId().equals(userId))
@@ -222,6 +224,7 @@ public class SipContributionService {
         return saved;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void deleteContribution(String userId, String id) {
         SipContribution existing = repository.findById(id)
                 .filter(c -> c.getUserId().equals(userId))
@@ -238,6 +241,7 @@ public class SipContributionService {
         repository.deleteBySipMandateId(mandateId);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public int backfillMandate(SipMandate mandate) {
         if (mandate.getStartDate() == null) {
             return 0;
@@ -248,6 +252,7 @@ public class SipContributionService {
 
         if (mandate.getEndDate() != null) {
             repository.deleteBySipMandateIdAndContributionDateAfter(mandate.getId(), mandate.getEndDate());
+            redemptionTransactionService.recalculateRedemptionsAfterDate(mandate.getUserId(), mandate.getSchemeId(), mandate.getEndDate());
         }
 
         if (startDate.isAfter(endDate)) {
@@ -330,6 +335,9 @@ public class SipContributionService {
         }
 
         if (!newContributions.isEmpty()) {
+            for (SipContribution c : newContributions) {
+                validateFkIntegrity(mandate.getUserId(), c);
+            }
             repository.saveAll(newContributions);
             portfolioHoldingService.updateHoldingForScheme(mandate.getUserId(), mandate.getSchemeId());
             
