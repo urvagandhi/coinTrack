@@ -27,4 +27,8 @@ public class FixedDepositSummaryDTO {
 
     private long activeCount;
     private long dueAndMaturedCount;
+
+    // TDS fields
+    private BigDecimal totalTdsDeducted;
+    private BigDecimal totalNetReturns;
 }

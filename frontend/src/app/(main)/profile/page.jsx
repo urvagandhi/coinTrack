@@ -235,6 +235,46 @@ export default function ProfilePage() {
       }),
   });
 
+  // Original (saved) profile values — used to detect what actually changed so
+  // we only send edited fields and only enable Save when something is edited.
+  const originalProfile = {
+    name: apiUser?.name || apiUser?.firstName || '',
+    username: apiUser?.username || '',
+    email: (apiUser?.email || '').toLowerCase().trim(),
+    bio: apiUser?.bio || '',
+    location: apiUser?.location || '',
+    phoneNumber: (apiUser?.mobile || apiUser?.phoneNumber || '')
+      .replace(/^\+91/, '')
+      .replace(/\D/g, ''),
+  };
+
+  const cleanPhone = v => (v || '').replace(/^\+91/, '').replace(/\D/g, '');
+
+  const hasChanges =
+    profileData.name !== originalProfile.name ||
+    profileData.username !== originalProfile.username ||
+    profileData.email.trim().toLowerCase() !== originalProfile.email ||
+    (profileData.bio || '') !== originalProfile.bio ||
+    (profileData.location || '') !== originalProfile.location ||
+    cleanPhone(profileData.phoneNumber) !== originalProfile.phoneNumber;
+
+  const buildChangedPayload = (cleanedMobile = null) => {
+    const changed = {};
+    if (profileData.username !== originalProfile.username)
+      changed.username = profileData.username.trim();
+    if (profileData.email.trim().toLowerCase() !== originalProfile.email)
+      changed.email = profileData.email.trim().toLowerCase();
+    if (profileData.name !== originalProfile.name)
+      changed.name = profileData.name;
+    if ((profileData.bio || '') !== originalProfile.bio)
+      changed.bio = profileData.bio;
+    if ((profileData.location || '') !== originalProfile.location)
+      changed.location = profileData.location;
+    if (cleanPhone(profileData.phoneNumber) !== originalProfile.phoneNumber)
+      changed.phoneNumber = cleanedMobile || null;
+    return changed;
+  };
+
   const handleSaveProfile = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!profileData.email?.trim()) {
@@ -294,12 +334,7 @@ export default function ProfilePage() {
         return;
       }
     }
-    updateProfileMutation.mutate({
-      name: profileData.name,
-      bio: profileData.bio,
-      location: profileData.location,
-      phoneNumber: cleanedMobile || null,
-    });
+    updateProfileMutation.mutate(buildChangedPayload(cleanedMobile || null));
   };
 
   const handleChangePassword = async () => {
@@ -626,8 +661,9 @@ export default function ProfilePage() {
               />
               <ProfileField
                 label='Username'
-                readOnly
+                editing={isEditing}
                 value={profileData.username}
+                onChange={v => handleChange('username', v)}
               />
               <ProfileField
                 label='Email'
@@ -787,7 +823,7 @@ export default function ProfilePage() {
                 </button>
                 <button
                   onClick={handleSaveProfile}
-                  disabled={updateProfileMutation.isPending}
+                  disabled={updateProfileMutation.isPending || !hasChanges}
                   className='ed-btn ed-btn-accent'
                 >
                   {updateProfileMutation.isPending ? (

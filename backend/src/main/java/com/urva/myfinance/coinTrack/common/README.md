@@ -2,8 +2,8 @@
 
 > **Domain**: Cross-cutting infrastructure and shared utilities
 > **Responsibility**: Configuration, exception handling, request tracing, response wrappers, sequence generation, encryption utilities
-> **Version**: 2.1.3
-> **Last Updated**: 2026-08-26 *(every claim below verified against source on this date)*
+> **Version**: 2.2.0
+> **Last Updated**: 2026-08-28 *(every claim below verified against source on this date)*
 
 ---
 
@@ -45,7 +45,7 @@ cross-cutting code.
 | **Response Wrappers**  | ApiResponse, ApiErrorResponse                                                                                                                  | Standardized API responses                 |
 | **Sequences**          | Counter model, SequenceGeneratorService, TransactionSequenceService                                                                            | Auto-increment numbers + ledger reordering |
 | **Notifications**      | NotificationService + NotificationServiceImpl                                                                                                  | Security-alert / welcome email delegation  |
-| **Utilities**          | EncryptionUtil, HashUtil, FinancialYearUtil, MarketHoursUtil, RequestUtils, UrlResolverUtil, UserLookupUtil, ExcelExportUtil, LoggingConstants | Reusable helpers                           |
+| **Utilities**          | EncryptionUtil, HashUtil, FinancialYearUtil, HolderName, OwnerGrouping, MarketHoursUtil, RequestUtils, UrlResolverUtil, UserLookupUtil, ExcelExportUtil, LoggingConstants | Reusable helpers                           |
 
 ### 1.3 System Position
 
@@ -156,7 +156,7 @@ JSON response carries requestId resolved from MDC
 
 ## 3. Directory Structure
 
-Verified tree: **34 Java files, ~2,819 LOC**.
+Verified tree: **36 Java files, ~2,819 LOC**.
 
 ```
 common/
@@ -197,13 +197,15 @@ common/
 |   |-- NotificationService.java         # interface taking user.model.User (49 ln)
 |   +-- impl/
 |       +-- NotificationServiceImpl.java # delegates to email module (73 ln)
-+-- util/                                # 9 files
++-- util/                                # 11 files
     |-- EncryptionUtil.java              # AES-256-GCM (265 ln)
     |-- ExcelExportUtil.java             # XLSX builder + SheetConfig (313 ln)
     |-- FinancialYearUtil.java           # Indian FY math (53 ln)
     |-- HashUtil.java                    # SHA-256 hex (37 ln)
+    |-- HolderName.java                  # canonical holder-name normalize (64 ln)
     |-- LoggingConstants.java            # log message patterns + MDC keys (69 ln)
     |-- MarketHoursUtil.java             # NSE/BSE window check (31 ln)
+    |-- OwnerGrouping.java               # shared (place/platform, holder) groupKey (45 ln)
     |-- RequestUtils.java                # client IP / user-agent extraction (89 ln)
     |-- UrlResolverUtil.java             # Origin/Referer/Host URL matching (63 ln)
     +-- UserLookupUtil.java              # identifier-to-user lookup (30 ln)
@@ -582,7 +584,42 @@ falls back to the first entry. Used for OAuth redirect building.
 `findByIdentifier(UserRepository, identifier)` tries email -> username -> phone.
 Static helper importing user module types.
 
-### 10.8 ExcelExportUtil
+### 10.8 HolderName (added 2026-08-28)
+
+Canonical owner-name normalizer, shared by the FD and MF modules so owner grouping can
+never drift between them:
+
+```java
+public static String normalize(String raw)
+```
+
+Rule (mirrors `FixedDepositServiceImpl.normalizeHolderName`, extracted here): trim + collapse
+internal whitespace sequences to a single space + title-case each whitespace-delimited token
+(`"  RAHUL   das "` → `"Rahul Das"`). Hyphenated/apostrophe tokens (`"kumar-das"`) are treated
+as single tokens with only the first letter uppercased — deterministic and lossless-enough for
+grouping. Null/blank returns blank. This is the single source of truth for what a canonical
+`holderName` looks like at rest and in aggregation keys.
+
+### 10.9 OwnerGrouping (added 2026-08-28)
+
+Shared grouping helper that the FD/MF consumers MUST use instead of inline string concat, so
+the group key is identical across TDS summary, Excel export, MF aggregation, summaries and
+dashboards:
+
+```java
+public static String groupKey(String placeOrPlatform, String holderName)
+// = whitespaceCollapse(placeOrPlatform) + "|" + HolderName.normalize(holderName)
+```
+
+- The **place/platform keeps its original case**; only the holder passes through
+  `HolderName.normalize` (canonical key = canonical owner per place).
+- Both blank inputs fall back to `"Unknown"` so the key is never empty.
+- All six consumers route through it (`FixedDepositServiceImpl.getTdsSummary`,
+  `FixedDepositExcelExporter`, `MfSchemeAggregationService`, `MfSummaryController`,
+  `MfSchemeService`, `PortfolioDashboardService`) — see
+  `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`.
+
+### 10.10 ExcelExportUtil
 
 Static XLSX builder on Apache POI:
 
@@ -732,6 +769,8 @@ return ResponseEntity.ok(ApiResponse.success(data, "Operation successful"));
 | ApiErrorResponse.java           | 104   | error envelope                                   |
 | RequestIdFilter.java            | 100   | correlation ID filter                            |
 | ApiResponse.java                | 99    | success envelope                                 |
+| HolderName.java                 | 64    | canonical holder-name normalize (added 2026-08-28)|
+| OwnerGrouping.java              | 45    | shared (place/platform, holder) groupKey (added 2026-08-28)|
 | RequestUtils.java               | 89    | IP/user-agent extraction                         |
 
 (All other files <= 73 lines.)
@@ -746,6 +785,7 @@ return ResponseEntity.ok(ApiResponse.success(data, "Operation successful"));
 
 | Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.2.0   | 2026-08-28 | Owner-attribution normalization: added `util/HolderName.java` (canonical holder-name normalizer extracted from `FixedDepositServiceImpl.normalizeHolderName`) and `util/OwnerGrouping.java` (shared `groupKey(placeOrPlatform, holderName)`). Both modules (FD + MF) route all grouping/filter/export sites through them so owner grouping is stable and correct across FD TDS, MF aggregation/summary and exports — see `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`. Tree now 36 Java files / 11 utils. |
 | 2.1.3   | 2026-08-26 | Module-boundary cleanup: relocated the last three module-specific exceptions out of `common.exception` to their owning modules (`InsufficientEpfBalanceException` → epf, `InsufficientPpfBalanceException` → ppf, `MissingCostBasisException` → mutualfund; error codes + 400 status unchanged). Exception tree now 6 files — common is business-logic-free again. |
 | 2.1.2   | 2026-08-26 | Systemic transaction support: documented `MongoTransactionConfig` bean registration (`MongoTransactionManager`) in §4.7 & tree §3, enabling `@Transactional` across MongoDB multi-document write paths app-wide.                                                                                                                                                                                                                                          |
 | 2.1.1   | 2026-08-23 | Post-audit cleanup: removed dead`repository/CounterRepository.java` (zero consumers, confirmed by repo-wide grep); documented verified `brokerWebClientBuilder` consumers (6 classes) and the BrevoEmailService raw-WebClient exception.                                                                                                                                                                                                              |

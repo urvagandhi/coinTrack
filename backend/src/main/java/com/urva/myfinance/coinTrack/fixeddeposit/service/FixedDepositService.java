@@ -6,8 +6,11 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.PrematureWithdrawalRequestDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.PrematureWithdrawalResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
 
 public interface FixedDepositService {
@@ -47,4 +50,11 @@ public interface FixedDepositService {
             String sortDir);
 
     void updateAllDocumentStatuses();
+
+    // New endpoints
+    PrematureWithdrawalResponseDTO prematureWithdraw(String id, PrematureWithdrawalRequestDTO requestDTO, String userId);
+
+    FdTdsDetailDTO getTdsDetail(String id, Integer financialYear, String userId);
+
+    List<FdTdsDetailDTO> getTdsSummary(Integer financialYear, String userId);
 }

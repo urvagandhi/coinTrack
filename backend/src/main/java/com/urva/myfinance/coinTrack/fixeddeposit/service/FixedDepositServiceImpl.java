@@ -4,8 +4,11 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,19 +32,31 @@ import java.util.Arrays;
 import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.exception.ValidationException;
 import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
+import com.urva.myfinance.coinTrack.common.util.HolderName;
+import com.urva.myfinance.coinTrack.common.util.OwnerGrouping;
 
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.PrematureWithdrawalRequestDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.PrematureWithdrawalResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.exception.InvalidFdDateRangeException;
+import com.urva.myfinance.coinTrack.fixeddeposit.exception.InvalidWithdrawalException;
+import com.urva.myfinance.coinTrack.fixeddeposit.exception.TdsComputationException;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.CompoundingFrequency;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.FdType;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FixedDeposit;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.InterestPayoutFrequency;
 import com.urva.myfinance.coinTrack.fixeddeposit.repository.FixedDepositRepository;
+import com.urva.myfinance.coinTrack.fixeddeposit.util.FdMath;
 
 @Service
 public class FixedDepositServiceImpl implements FixedDepositService {
 
     private static final Logger logger = LoggerFactory.getLogger(FixedDepositServiceImpl.class);
+    private static final BigDecimal MATURITY_TOLERANCE = new BigDecimal("1.00"); // ±₹1
 
     private final FixedDepositRepository fixedDepositRepository;
     private final TransactionSequenceService transactionSequenceService;
@@ -68,11 +83,30 @@ public class FixedDepositServiceImpl implements FixedDepositService {
         FdStatus initialStatus = computeLiveStatus(null, requestDTO.getMaturityDate(), today);
         Instant now = Instant.now();
 
+        // Server-side maturity validation
+        FdMath.MaturityResult serverResult = computeServerMaturity(requestDTO);
+        BigDecimal clientMaturity = requestDTO.getMaturityAmount();
+        BigDecimal serverMaturity = serverResult.maturityAmount();
+        BigDecimal diff = clientMaturity.subtract(serverMaturity).abs();
+
+        Boolean maturityOverridden = false;
+        if (diff.compareTo(MATURITY_TOLERANCE) > 0) {
+            if (isAutoMode(requestDTO)) {
+                logger.warn("Client maturity {} overridden to server value {} for user {}", 
+                        clientMaturity, serverMaturity, userId);
+                clientMaturity = serverMaturity;
+                maturityOverridden = true;
+            } else {
+                logger.info("Manual entry: client maturity {} vs server {} (diff: {})",
+                        clientMaturity, serverMaturity, diff);
+            }
+        }
+
         FixedDeposit fixedDeposit = FixedDeposit.builder()
                 .fdNo(nextFdNo)
                 .userId(userId)
                 .place(requestDTO.getPlace())
-                .holderName(requestDTO.getHolderName())
+                .holderName(normalizeHolderName(requestDTO.getHolderName()))
                 .nominee(requestDTO.getNominee())
                 .accountNumber(requestDTO.getAccountNumber())
                 .interestRate(requestDTO.getInterestRate())
@@ -80,16 +114,70 @@ public class FixedDepositServiceImpl implements FixedDepositService {
                 .issueDate(requestDTO.getIssueDate())
                 .maturityDate(requestDTO.getMaturityDate())
                 .issueAmount(requestDTO.getIssueAmount())
-                .maturityAmount(requestDTO.getMaturityAmount())
+                .maturityAmount(clientMaturity)
                 .status(initialStatus)
                 .remarks(requestDTO.getRemarks())
                 .createdAt(now)
                 .updatedAt(now)
+                // New fields
+                .fdType(requestDTO.getFdType() != null ? requestDTO.getFdType() : FdType.CUMULATIVE)
+                .compoundingFrequency(requestDTO.getCompoundingFrequency() != null ? requestDTO.getCompoundingFrequency() : CompoundingFrequency.QUARTERLY)
+                .payoutFrequency(requestDTO.getPayoutFrequency())
+                .isSeniorCitizen(requestDTO.getIsSeniorCitizen() != null ? requestDTO.getIsSeniorCitizen() : false)
+                .isTaxSaver(requestDTO.getIsTaxSaver() != null ? requestDTO.getIsTaxSaver() : false)
+                .hasPan(requestDTO.getHasPan() != null ? requestDTO.getHasPan() : true)
+                .form15g15hSubmitted(requestDTO.getForm15g15hSubmitted() != null ? requestDTO.getForm15g15hSubmitted() : false)
+                .taxSaverLockInYears(5)
+                // Server-side validation fields
+                .serverComputedMaturityAmount(serverMaturity)
+                .maturityAmountOverridden(maturityOverridden)
+                .maturityDifference(requestDTO.getMaturityAmount().subtract(serverMaturity))
                 .build();
+
+        // Validate tax-saver FD constraints
+        if (fixedDeposit.getIsTaxSaver()) {
+            validateTaxSaverFd(fixedDeposit);
+        }
 
         FixedDeposit saved = fixedDepositRepository.save(fixedDeposit);
         transactionSequenceService.reorderFixedDeposits(userId);
         return toResponseDTO(saved);
+    }
+
+    private FdMath.MaturityResult computeServerMaturity(FixedDepositRequestDTO requestDTO) {
+        FdType fdType = requestDTO.getFdType() != null ? requestDTO.getFdType() : FdType.CUMULATIVE;
+        CompoundingFrequency compoundingFreq = requestDTO.getCompoundingFrequency() != null 
+                ? requestDTO.getCompoundingFrequency() : CompoundingFrequency.QUARTERLY;
+        boolean isSeniorCitizen = requestDTO.getIsSeniorCitizen() != null ? requestDTO.getIsSeniorCitizen() : false;
+        InterestPayoutFrequency payoutFreq = requestDTO.getPayoutFrequency() != null 
+                ? requestDTO.getPayoutFrequency() : InterestPayoutFrequency.AT_MATURITY;
+
+        return FdMath.computeMaturity(
+                requestDTO.getIssueAmount(),
+                requestDTO.getInterestRate(),
+                requestDTO.getIssueDate(),
+                requestDTO.getMaturityDate(),
+                fdType,
+                compoundingFreq,
+                isSeniorCitizen,
+                payoutFreq
+        );
+    }
+
+    private boolean isAutoMode(FixedDepositRequestDTO requestDTO) {
+        // In auto mode, user doesn't provide maturity amount (or provides 0)
+        // For now, we consider it auto if the entry matches computed value within tolerance
+        // The frontend handles this by sending maturityAmount=0 in auto mode
+        return requestDTO.getMaturityAmount() != null 
+                && requestDTO.getMaturityAmount().compareTo(BigDecimal.ZERO) == 0;
+    }
+
+    private void validateTaxSaverFd(FixedDeposit fd) {
+        long tenureDays = ChronoUnit.DAYS.between(fd.getIssueDate(), fd.getMaturityDate());
+        long expectedDays = 5 * 365L; // 5 years
+        if (Math.abs(tenureDays - expectedDays) > 5) { // Allow ±5 days for leap years/holidays
+            throw new ValidationException("maturityDate", "Tax-saver FD must have exactly 5-year tenure");
+        }
     }
 
     @Override
@@ -145,8 +233,27 @@ public class FixedDepositServiceImpl implements FixedDepositService {
         LocalDate today = LocalDate.now();
         FdStatus liveStatus = computeLiveStatus(existing.getStatus(), requestDTO.getMaturityDate(), today);
 
+        // Server-side maturity validation
+        FdMath.MaturityResult serverResult = computeServerMaturity(requestDTO);
+        BigDecimal clientMaturity = requestDTO.getMaturityAmount();
+        BigDecimal serverMaturity = serverResult.maturityAmount();
+        BigDecimal diff = clientMaturity.subtract(serverMaturity).abs();
+
+        Boolean maturityOverridden = false;
+        if (diff.compareTo(MATURITY_TOLERANCE) > 0) {
+            if (isAutoMode(requestDTO)) {
+                logger.warn("Client maturity {} overridden to server value {} for user {}", 
+                        clientMaturity, serverMaturity, userId);
+                clientMaturity = serverMaturity;
+                maturityOverridden = true;
+            } else {
+                logger.info("Manual entry: client maturity {} vs server {} (diff: {})",
+                        clientMaturity, serverMaturity, diff);
+            }
+        }
+
         existing.setPlace(requestDTO.getPlace());
-        existing.setHolderName(requestDTO.getHolderName());
+        existing.setHolderName(normalizeHolderName(requestDTO.getHolderName()));
         existing.setNominee(requestDTO.getNominee());
         existing.setAccountNumber(requestDTO.getAccountNumber());
         existing.setInterestRate(requestDTO.getInterestRate());
@@ -154,10 +261,43 @@ public class FixedDepositServiceImpl implements FixedDepositService {
         existing.setIssueDate(requestDTO.getIssueDate());
         existing.setMaturityDate(requestDTO.getMaturityDate());
         existing.setIssueAmount(requestDTO.getIssueAmount());
-        existing.setMaturityAmount(requestDTO.getMaturityAmount());
+        existing.setMaturityAmount(clientMaturity);
         existing.setStatus(liveStatus);
         existing.setRemarks(requestDTO.getRemarks());
         existing.setUpdatedAt(Instant.now());
+
+        // Update new fields
+        if (requestDTO.getFdType() != null) {
+            existing.setFdType(requestDTO.getFdType());
+        }
+        if (requestDTO.getCompoundingFrequency() != null) {
+            existing.setCompoundingFrequency(requestDTO.getCompoundingFrequency());
+        }
+        if (requestDTO.getPayoutFrequency() != null) {
+            existing.setPayoutFrequency(requestDTO.getPayoutFrequency());
+        }
+        if (requestDTO.getIsSeniorCitizen() != null) {
+            existing.setIsSeniorCitizen(requestDTO.getIsSeniorCitizen());
+        }
+        if (requestDTO.getIsTaxSaver() != null) {
+            existing.setIsTaxSaver(requestDTO.getIsTaxSaver());
+        }
+        if (requestDTO.getHasPan() != null) {
+            existing.setHasPan(requestDTO.getHasPan());
+        }
+        if (requestDTO.getForm15g15hSubmitted() != null) {
+            existing.setForm15g15hSubmitted(requestDTO.getForm15g15hSubmitted());
+        }
+
+        // Server-side validation fields
+        existing.setServerComputedMaturityAmount(serverMaturity);
+        existing.setMaturityAmountOverridden(maturityOverridden);
+        existing.setMaturityDifference(requestDTO.getMaturityAmount().subtract(serverMaturity));
+
+        // Validate tax-saver FD constraints
+        if (existing.getIsTaxSaver()) {
+            validateTaxSaverFd(existing);
+        }
 
         FixedDeposit updated = fixedDepositRepository.save(existing);
         transactionSequenceService.reorderFixedDeposits(userId);
@@ -199,6 +339,37 @@ public class FixedDepositServiceImpl implements FixedDepositService {
         BigDecimal totalMaturedInvestment = BigDecimal.ZERO;
         BigDecimal totalMaturedReturns = BigDecimal.ZERO;
         
+        // TDS totals — computed at the BANK level (threshold is per-payer, not per-FD)
+        BigDecimal totalTdsDeducted = BigDecimal.ZERO;
+        BigDecimal totalNetReturns = BigDecimal.ZERO;
+
+        List<FixedDeposit> activeFds = deposits.stream()
+                .filter(fd -> {
+                    FdStatus s = computeLiveStatus(fd.getStatus(), fd.getMaturityDate(), today);
+                    return s != FdStatus.CLOSED && s != FdStatus.PREMATURELY_WITHDRAWN;
+                })
+                .toList();
+
+        Map<String, BigDecimal> tdsByFdId = new LinkedHashMap<>();
+        Map<String, BigDecimal> netByFdId = new LinkedHashMap<>();
+        int currentFy = today.getYear(); // FY starting 1 Apr of the current calendar year
+        activeFds.stream()
+                .collect(Collectors.groupingBy(
+                        this::tdsGroupKey,
+                        LinkedHashMap::new,
+                        Collectors.toList()))
+                .values()
+                .forEach(group -> {
+                    List<FdMath.BankTdsResult> results = FdMath.computeBankLevelTds(
+                            group.stream().map(fd -> toFdTdsInput(fd, currentFy)).toList());
+                    for (int i = 0; i < group.size(); i++) {
+                        FixedDeposit fd = group.get(i);
+                        FdMath.BankTdsResult r = results.get(i);
+                        tdsByFdId.put(fd.getId(), r.tdsDeducted());
+                        netByFdId.put(fd.getId(), r.netInterest());
+                    }
+                });
+
         long activeCount = 0;
         long dueAndMaturedCount = 0;
 
@@ -212,9 +383,13 @@ public class FixedDepositServiceImpl implements FixedDepositService {
                 returns = matAmt.subtract(issueAmt);
             }
 
-            if (status != FdStatus.CLOSED) {
+            if (status != FdStatus.CLOSED && status != FdStatus.PREMATURELY_WITHDRAWN) {
+                BigDecimal tdsDeducted = tdsByFdId.getOrDefault(fd.getId(), BigDecimal.ZERO);
+                BigDecimal netReturns = netByFdId.getOrDefault(fd.getId(), returns);
                 totalInvestment = totalInvestment.add(issueAmt);
                 totalReturns = totalReturns.add(returns);
+                totalTdsDeducted = totalTdsDeducted.add(tdsDeducted);
+                totalNetReturns = totalNetReturns.add(netReturns);
             }
 
             if (status == FdStatus.ACTIVE) {
@@ -243,6 +418,8 @@ public class FixedDepositServiceImpl implements FixedDepositService {
                 .totalMaturedReturns(totalMaturedReturns)
                 .activeCount(activeCount)
                 .dueAndMaturedCount(dueAndMaturedCount)
+                .totalTdsDeducted(totalTdsDeducted)
+                .totalNetReturns(totalNetReturns)
                 .build();
     }
 
@@ -292,6 +469,222 @@ public class FixedDepositServiceImpl implements FixedDepositService {
             }
         }
         logger.info("Scheduled batch job completed. Updated {} FD status(es)", updatedCount);
+    }
+
+    @Override
+    @Transactional
+    public PrematureWithdrawalResponseDTO prematureWithdraw(String id, PrematureWithdrawalRequestDTO requestDTO, String userId) {
+        logger.info("Processing premature withdrawal for FD {} by user: {}", id, userId);
+        FixedDeposit fd = findAndVerifyOwnership(id, userId);
+
+        if (fd.getIsTaxSaver() != null && fd.getIsTaxSaver()) {
+            throw new InvalidWithdrawalException("Tax-saver FDs cannot be withdrawn before 5 years");
+        }
+
+        if (fd.getStatus() == FdStatus.CLOSED || fd.getStatus() == FdStatus.PREMATURELY_WITHDRAWN) {
+            throw new InvalidWithdrawalException("FD is already closed or withdrawn");
+        }
+
+        LocalDate withdrawalDate = requestDTO.getWithdrawalDate();
+        if (withdrawalDate.isBefore(fd.getIssueDate()) || withdrawalDate.isAfter(fd.getMaturityDate())) {
+            throw new InvalidWithdrawalException("Withdrawal date must be between issue date and maturity date");
+        }
+
+        BigDecimal penaltyRate = requestDTO.getPenaltyRateOverride();
+        if (penaltyRate == null) {
+            penaltyRate = fd.getIssueAmount() != null && fd.getIssueAmount().compareTo(new BigDecimal("500000")) > 0
+                    ? new BigDecimal("1.00")
+                    : new BigDecimal("0.50");
+        }
+
+        FdType fdType = fd.getFdType() != null ? fd.getFdType() : FdType.CUMULATIVE;
+        CompoundingFrequency compoundingFreq = fd.getCompoundingFrequency() != null ? fd.getCompoundingFrequency() : CompoundingFrequency.QUARTERLY;
+        boolean isSeniorCitizen = fd.getIsSeniorCitizen() != null ? fd.getIsSeniorCitizen() : false;
+
+        FdMath.PrematureWithdrawalResult result = FdMath.computePrematureWithdrawal(
+                fd.getIssueAmount(),
+                fd.getInterestRate(),
+                fd.getIssueDate(),
+                fd.getMaturityDate(),
+                withdrawalDate,
+                fdType,
+                compoundingFreq,
+                penaltyRate,
+                isSeniorCitizen
+        );
+
+        fd.setStatus(FdStatus.PREMATURELY_WITHDRAWN);
+        fd.setIsPrematurelyWithdrawn(true);
+        fd.setWithdrawalDate(withdrawalDate);
+        fd.setRealizedMaturityAmount(result.realizedMaturityAmount());
+        fd.setPenaltyAmount(result.penaltyAmount());
+        fd.setEffectiveRateApplied(result.effectiveRate());
+        fd.setUpdatedAt(Instant.now());
+
+        FixedDeposit saved = fixedDepositRepository.save(fd);
+        transactionSequenceService.reorderFixedDeposits(userId);
+
+        return PrematureWithdrawalResponseDTO.builder()
+                .fdId(saved.getId())
+                .fdNo(saved.getFdNo())
+                .withdrawalDate(withdrawalDate)
+                .contractedRate(result.contractedRate())
+                .applicableRate(result.applicableRate())
+                .penaltyRate(result.penaltyRate())
+                .effectiveRate(result.effectiveRate())
+                .contractedMaturityAmount(result.contractedMaturityAmount())
+                .realizedMaturityAmount(result.realizedMaturityAmount())
+                .penaltyAmount(result.penaltyAmount())
+                .actualTenorDays(result.actualTenorDays())
+                .interestEarned(result.interestEarned())
+                .build();
+    }
+
+    @Override
+    public FdTdsDetailDTO getTdsDetail(String id, Integer financialYear, String userId) {
+        FixedDeposit fd = findAndVerifyOwnership(id, userId);
+
+        Integer fy = financialYear != null ? financialYear : LocalDate.now().getYear();
+
+        // The threshold is applied per (bank, holder) — all FDs ONE PERSON holds at the SAME
+        // payer — so compute the whole group even though only one FD's row is returned, to
+        // expose WHY this FD's TDS line is what it is.
+        List<FixedDeposit> deposits = fixedDepositRepository.findByUserId(userId);
+        String groupKey = tdsGroupKey(fd);
+        List<FixedDeposit> bankGroup = deposits.stream()
+                .filter(d -> d.getStatus() != FdStatus.CLOSED && d.getStatus() != FdStatus.PREMATURELY_WITHDRAWN)
+                .filter(d -> tdsGroupKey(d).equals(groupKey))
+                .toList();
+
+        List<FdTdsDetailDTO> bankGroupRows = computeBankGroupTds(deposits, bankGroup, fy);
+
+        return bankGroupRows.stream()
+                .filter(dto -> dto.getFdId().equals(fd.getId()))
+                .findFirst()
+                .orElseThrow(() -> new TdsComputationException(
+                        "Unable to compute TDS for FD " + fd.getFdNo() + " (bank holder group not found)"));
+    }
+
+    @Override
+    public List<FdTdsDetailDTO> getTdsSummary(Integer financialYear, String userId) {
+        Integer fy = financialYear != null ? financialYear : LocalDate.now().getYear();
+        List<FixedDeposit> deposits = fixedDepositRepository.findByUserId(userId);
+
+        // Group active FDs by (place, holderName) — the Section 194A threshold applies to the
+        // TOTAL interest ONE PERSON earns from ONE bank in a financial year, not across a shared
+        // family threshold. Each holder is their own taxpayer, so father+child FDs at the same
+        // bank are separate groups (Zerodha-family UX: separate legal entities shown together).
+        // Grouping by place alone would wrongly pool a family's deposits into one threshold.
+        return deposits.stream()
+                .filter(fd -> fd.getStatus() != FdStatus.CLOSED && fd.getStatus() != FdStatus.PREMATURELY_WITHDRAWN)
+                .collect(Collectors.groupingBy(
+                        this::tdsGroupKey,
+                        LinkedHashMap::new,
+                        Collectors.toList()))
+                .values()
+                .stream()
+                .flatMap(group -> computeBankGroupTds(deposits, group, fy).stream())
+                .toList();
+    }
+
+    /**
+     * Compute bank-level TDS for every FD in the given bank group, using the caller-supplied
+     * group directly as the bank's member set.
+     */
+    private List<FdTdsDetailDTO> computeBankGroupTds(
+            List<FixedDeposit> allDeposits, List<FixedDeposit> bankGroup, Integer fy) {
+
+        String bankName = (bankGroup.get(0).getPlace() != null && !bankGroup.get(0).getPlace().isBlank())
+                ? bankGroup.get(0).getPlace()
+                : "Unknown";
+
+        List<FdMath.FdTdsInput> inputs = bankGroup.stream()
+                .map(fd -> toFdTdsInput(fd, fy))
+                .toList();
+
+        List<FdMath.BankTdsResult> results = FdMath.computeBankLevelTds(inputs);
+
+        String finalBankName = bankName;
+        return bankGroup.stream()
+                .map(fd -> {
+                    int idx = bankGroup.indexOf(fd);
+                    FdMath.BankTdsResult r = results.get(idx);
+                    return FdTdsDetailDTO.builder()
+                            .fdId(fd.getId())
+                            .fdNo(fd.getFdNo())
+                            .financialYear(fy)
+                            .grossInterest(r.grossInterest())
+                            .tdsThreshold(r.tdsThreshold())
+                            .taxableInterest(r.taxableInterest())
+                            .tdsRate(r.tdsRate())
+                            .tdsDeducted(r.tdsDeducted())
+                            .netInterest(r.netInterest())
+                            .bankName(finalBankName)
+                            .bankTotalGrossInterest(r.bankTotalGrossInterest())
+                            .bankTaxableInterest(r.bankTaxableInterest())
+                            .bankTotalTdsDeducted(r.bankTotalTdsDeducted())
+                            .form15g15hSubmitted(fd.getForm15g15hSubmitted())
+                            .hasPan(fd.getHasPan())
+                            .build();
+                })
+                .toList();
+    }
+
+    /**
+     * Composite grouping key for Section 194A TDS: a person's deposits at ONE bank.
+     * Distinct holders at the same bank are separate taxpayers (separate thresholds).
+     */
+    private String tdsGroupKey(FixedDeposit fd) {
+        return OwnerGrouping.groupKey(fd.getPlace(), fd.getHolderName());
+    }
+
+    /**
+     * Normalize a holder name so TDS grouping never silently splits one person's deposits. This
+     * delegates to the shared {@link HolderName} util so FD and MF always agree on the canonical form
+     * (trims whitespace, collapses runs, title-cases each token — applied on save so "krishil ",
+     * "Krishil" and "KRISHIL" all group as "Krishil"). Blank input is returned unchanged.
+     */
+    private String normalizeHolderName(String name) {
+        return HolderName.normalize(name);
+    }
+
+    /**
+     * Build the per-FY TDS input for one FD. {@code grossInterest} is the interest ACCRUED within
+     * the requested financial year's April–March window (Section 194A is a per-FY obligation),
+     * clamped to the FD's active span. Using lifetime interest here (maturityAmount − issueAmount)
+     * would wrongly attribute an FD's entire interest to every FY swept by the query and push it
+     * over the exemption threshold every single year.
+     */
+    private FdMath.FdTdsInput toFdTdsInput(FixedDeposit fd, Integer fy) {
+        BigDecimal issueAmt = fd.getIssueAmount() != null ? fd.getIssueAmount() : BigDecimal.ZERO;
+        BigDecimal rate = fd.getInterestRate() != null ? fd.getInterestRate() : BigDecimal.ZERO;
+        LocalDate issueDate = fd.getIssueDate();
+        LocalDate maturityDate = fd.getMaturityDate();
+        FdType fdType = fd.getFdType() != null ? fd.getFdType() : FdType.CUMULATIVE;
+        CompoundingFrequency compoundingFreq = fd.getCompoundingFrequency() != null
+                ? fd.getCompoundingFrequency() : CompoundingFrequency.QUARTERLY;
+
+        BigDecimal accrued = BigDecimal.ZERO;
+        if (issueDate != null && maturityDate != null && issueAmt.compareTo(BigDecimal.ZERO) > 0) {
+            LocalDate fyStart = LocalDate.of(fy, 4, 1);
+            LocalDate fyEnd = LocalDate.of(fy + 1, 3, 31);
+            accrued = FdMath.computeFyAccruedInterest(
+                    issueAmt,
+                    rate,
+                    issueDate,
+                    maturityDate,
+                    fdType,
+                    compoundingFreq,
+                    fyStart,
+                    fyEnd);
+        }
+
+        return new FdMath.FdTdsInput(
+                accrued,
+                fd.getIsSeniorCitizen() != null ? fd.getIsSeniorCitizen() : false,
+                fd.getHasPan() != null ? fd.getHasPan() : true,
+                fd.getForm15g15hSubmitted() != null ? fd.getForm15g15hSubmitted() : false
+        );
     }
 
     // ── Helper methods ──────────────────────────────────────────────────
@@ -362,8 +755,8 @@ public class FixedDepositServiceImpl implements FixedDepositService {
         if (requestDTO.getIssueAmount() != null && requestDTO.getIssueAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ValidationException("issueAmount", "Issue amount must be greater than 0");
         }
-        if (requestDTO.getMaturityAmount() != null && requestDTO.getMaturityAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("maturityAmount", "Maturity amount must be greater than 0");
+        if (requestDTO.getMaturityAmount() != null && requestDTO.getMaturityAmount().compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("maturityAmount", "Maturity amount must be greater than or equal to 0");
         }
     }
 
@@ -373,8 +766,8 @@ public class FixedDepositServiceImpl implements FixedDepositService {
     }
 
     public FdStatus computeLiveStatus(FdStatus storedStatus, LocalDate maturityDate, LocalDate today) {
-        if (storedStatus == FdStatus.CLOSED) {
-            return FdStatus.CLOSED;
+        if (storedStatus == FdStatus.CLOSED || storedStatus == FdStatus.PREMATURELY_WITHDRAWN) {
+            return storedStatus;
         }
         if (maturityDate == null) {
             return FdStatus.ACTIVE;
@@ -427,6 +820,24 @@ public class FixedDepositServiceImpl implements FixedDepositService {
                 .updatedAt(fd.getUpdatedAt())
                 .daysToMaturity(daysToMaturity)
                 .highlight(highlight)
+                // New fields
+                .fdType(fd.getFdType())
+                .compoundingFrequency(fd.getCompoundingFrequency())
+                .payoutFrequency(fd.getPayoutFrequency())
+                .isSeniorCitizen(fd.getIsSeniorCitizen())
+                .isTaxSaver(fd.getIsTaxSaver())
+                .taxSaverLockInYears(fd.getTaxSaverLockInYears())
+                .hasPan(fd.getHasPan())
+                .form15g15hSubmitted(fd.getForm15g15hSubmitted())
+                .financialYear(fd.getFinancialYear())
+                .isPrematurelyWithdrawn(fd.getIsPrematurelyWithdrawn())
+                .withdrawalDate(fd.getWithdrawalDate())
+                .realizedMaturityAmount(fd.getRealizedMaturityAmount())
+                .penaltyAmount(fd.getPenaltyAmount())
+                .effectiveRateApplied(fd.getEffectiveRateApplied())
+                .serverComputedMaturityAmount(fd.getServerComputedMaturityAmount())
+                .maturityAmountOverridden(fd.getMaturityAmountOverridden())
+                .maturityDifference(fd.getMaturityDifference())
                 .build();
     }
 

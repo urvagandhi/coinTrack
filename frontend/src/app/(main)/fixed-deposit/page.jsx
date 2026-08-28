@@ -1,6 +1,8 @@
 'use client';
 
 import FdDialog from '@/components/fixeddeposit/FdDialog';
+import WithdrawDialog from '@/components/fixeddeposit/WithdrawDialog';
+import TdsSummary from '@/components/fixeddeposit/TdsSummary';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -68,6 +70,9 @@ function StatusBadge({ status }) {
     colorClass =
       'bg-[hsl(var(--loss))]/10 text-[hsl(var(--loss))] border-[hsl(var(--loss))]/30';
     Icon = XCircle;
+  } else if (status === 'PREMATURELY_WITHDRAWN') {
+    colorClass = 'bg-orange-500/10 text-orange-500 border-orange-500/30';
+    Icon = Clock;
   }
 
   return (
@@ -83,7 +88,11 @@ function StatusBadge({ status }) {
   );
 }
 
-function FdCard({ fd, onEdit, onCloseFd }) {
+function FdCard({ fd, onEdit, onCloseFd, onWithdraw }) {
+  const canWithdraw =
+    fd.status !== 'CLOSED' &&
+    fd.status !== 'PREMATURELY_WITHDRAWN' &&
+    fd.status !== 'MATURED';
   return (
     <article
       className='ed-card relative group cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md p-5 flex flex-col justify-between'
@@ -157,7 +166,7 @@ function FdCard({ fd, onEdit, onCloseFd }) {
           </span>
         </div>
         <div className='flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity'>
-          {fd.status !== 'CLOSED' && (
+          {fd.status !== 'CLOSED' && fd.status !== 'PREMATURELY_WITHDRAWN' && (
             <button
               onClick={e => {
                 e.stopPropagation();
@@ -169,13 +178,29 @@ function FdCard({ fd, onEdit, onCloseFd }) {
               CLOSE
             </button>
           )}
+          {canWithdraw && (
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                onWithdraw(fd);
+              }}
+              className='text-[11px] font-mono text-muted-foreground hover:text-[hsl(var(--accent))] transition-colors border border-border bg-card px-2 py-1 rounded-sm hover:border-[hsl(var(--accent))]/50'
+              aria-label='Premature Withdrawal'
+            >
+              WITHDRAW
+            </button>
+          )}
         </div>
       </div>
     </article>
   );
 }
 
-function FdTable({ fds, onEdit, onCloseFd }) {
+function FdTable({ fds, onEdit, onCloseFd, onWithdraw }) {
+  const canWithdraw = fd =>
+    fd.status !== 'CLOSED' &&
+    fd.status !== 'PREMATURELY_WITHDRAWN' &&
+    fd.status !== 'MATURED';
   return (
     <div className='ed-card relative overflow-hidden'>
       <span className='corner-mark corner-tl' />
@@ -258,14 +283,25 @@ function FdTable({ fds, onEdit, onCloseFd }) {
                   className='py-3 px-4 text-right'
                   onClick={e => e.stopPropagation()}
                 >
-                  {fd.status !== 'CLOSED' && (
-                    <button
-                      onClick={() => onCloseFd(fd.id)}
-                      className='text-[11px] font-mono text-muted-foreground hover:text-[hsl(var(--loss))] border border-border bg-card px-2 py-1 rounded-sm transition-colors hover:border-[hsl(var(--loss))]/50'
-                    >
-                      CLOSE
-                    </button>
-                  )}
+                  <div className='flex gap-2 justify-end'>
+                    {fd.status !== 'CLOSED' &&
+                      fd.status !== 'PREMATURELY_WITHDRAWN' && (
+                        <button
+                          onClick={() => onCloseFd(fd.id)}
+                          className='text-[11px] font-mono text-muted-foreground hover:text-[hsl(var(--loss))] border border-border bg-card px-2 py-1 rounded-sm transition-colors hover:border-[hsl(var(--loss))]/50'
+                        >
+                          CLOSE
+                        </button>
+                      )}
+                    {canWithdraw(fd) && (
+                      <button
+                        onClick={() => onWithdraw(fd)}
+                        className='text-[11px] font-mono text-muted-foreground hover:text-[hsl(var(--accent))] border border-border bg-card px-2 py-1 rounded-sm transition-colors hover:border-[hsl(var(--accent))]/50'
+                      >
+                        WITHDRAW
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -285,6 +321,8 @@ export default function FixedDepositPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFd, setEditingFd] = useState(null);
+  const [withdrawFd, setWithdrawFd] = useState(null);
+  const [tdsYear, setTdsYear] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -326,6 +364,8 @@ export default function FixedDepositPage() {
         totalReturns: summaryData?.totalReturns || 0,
         totalActive: summaryData?.totalActiveInvestment || 0,
         activeEstReturns: summaryData?.totalEstimatedReturns || 0,
+        totalTdsDeducted: summaryData?.totalTdsDeducted || 0,
+        totalNetReturns: summaryData?.totalNetReturns || 0,
       };
     } else if (statusFilter === 'ACTIVE') {
       return {
@@ -353,6 +393,8 @@ export default function FixedDepositPage() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['fds'] });
     queryClient.invalidateQueries({ queryKey: ['fdSummary'] });
+    queryClient.invalidateQueries({ queryKey: ['fdTdsSummary'] });
+    queryClient.invalidateQueries({ queryKey: ['fdTdsYears'] });
   };
 
   const onErr = err => {
@@ -391,6 +433,18 @@ export default function FixedDepositPage() {
     mutationFn: fdAPI.close,
     onSuccess: () => {
       toast({ title: 'FD Marked Closed', variant: 'success' });
+      invalidate();
+    },
+    onError: onErr,
+  });
+  const withdrawMutation = useMutation({
+    mutationFn: ({ id, data }) => fdAPI.withdraw(id, data),
+    onSuccess: () => {
+      toast({
+        title: 'Premature Withdrawal Processed',
+        description: 'FD penalized and marked as withdrawn.',
+        variant: 'success',
+      });
       invalidate();
     },
     onError: onErr,
@@ -450,6 +504,18 @@ export default function FixedDepositPage() {
     setIsDialogOpen(true);
   };
 
+  const openWithdraw = fd => {
+    setWithdrawFd(fd);
+  };
+
+  const handleWithdraw = async withdrawalDate => {
+    const res = await withdrawMutation.mutateAsync({
+      id: withdrawFd.id,
+      data: { withdrawalDate },
+    });
+    return res;
+  };
+
   const gridClass = 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6';
 
   const _statusOptions = [
@@ -499,6 +565,18 @@ export default function FixedDepositPage() {
                 <p className='eyebrow text-muted-foreground'>Est. Returns</p>
                 <p className='font-mono text-lg font-bold text-[hsl(var(--gain))]'>
                   +{formatCurrency(computedSummary.activeEstReturns)}
+                </p>
+              </div>
+              <div>
+                <p className='eyebrow text-muted-foreground'>TDS Deducted</p>
+                <p className='font-mono text-lg font-bold text-[hsl(var(--loss))]'>
+                  −{formatCurrency(computedSummary.totalTdsDeducted)}
+                </p>
+              </div>
+              <div>
+                <p className='eyebrow text-muted-foreground'>Net Returns</p>
+                <p className='font-mono text-lg font-bold text-[hsl(var(--gain))]'>
+                  +{formatCurrency(computedSummary.totalNetReturns)}
                 </p>
               </div>
             </div>
@@ -591,7 +669,14 @@ export default function FixedDepositPage() {
       <div className='flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-border'>
         <div className='flex items-center gap-1.5 flex-wrap'>
           <span className='eyebrow mr-1'>Status</span>
-          {['', 'ACTIVE', 'DUE', 'MATURED', 'CLOSED'].map(s => (
+          {[
+            '',
+            'ACTIVE',
+            'DUE',
+            'MATURED',
+            'PREMATURELY_WITHDRAWN',
+            'CLOSED',
+          ].map(s => (
             <button
               key={s}
               onClick={() => {
@@ -735,11 +820,17 @@ export default function FixedDepositPage() {
                   fd={fd}
                   onEdit={openEdit}
                   onCloseFd={handleClose}
+                  onWithdraw={openWithdraw}
                 />
               ))}
             </div>
           ) : (
-            <FdTable fds={fds} onEdit={openEdit} onCloseFd={handleClose} />
+            <FdTable
+              fds={fds}
+              onEdit={openEdit}
+              onCloseFd={handleClose}
+              onWithdraw={openWithdraw}
+            />
           )}
 
           <div className='flex items-center justify-between pt-4 border-t border-border'>
@@ -770,6 +861,15 @@ export default function FixedDepositPage() {
           </div>
         </div>
       )}
+
+      <TdsSummary financialYear={tdsYear} onYearChange={setTdsYear} />
+
+      <WithdrawDialog
+        isOpen={!!withdrawFd}
+        onClose={() => setWithdrawFd(null)}
+        fd={withdrawFd}
+        onWithdrawn={handleWithdraw}
+      />
 
       <FdDialog
         isOpen={isDialogOpen}

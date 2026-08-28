@@ -4,7 +4,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
+import com.urva.myfinance.coinTrack.fixeddeposit.model.CompoundingFrequency;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.FdType;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.InterestPayoutFrequency;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,4 +41,31 @@ public class FixedDepositResponseDTO {
     // Derived fields
     private int daysToMaturity;
     private String highlight; // "YELLOW", "RED", or null
+
+    // FD Type & Compounding
+    private FdType fdType;
+    private CompoundingFrequency compoundingFrequency;
+    private InterestPayoutFrequency payoutFrequency;
+
+    // Senior Citizen / Tax-Saver
+    private Boolean isSeniorCitizen;
+    private Boolean isTaxSaver;
+    private Integer taxSaverLockInYears;
+
+    // TDS
+    private Boolean hasPan;
+    private Boolean form15g15hSubmitted;
+    private Integer financialYear;
+
+    // Premature Withdrawal
+    private Boolean isPrematurelyWithdrawn;
+    private LocalDate withdrawalDate;
+    private BigDecimal realizedMaturityAmount;
+    private BigDecimal penaltyAmount;
+    private BigDecimal effectiveRateApplied;
+
+    // Server-side validation
+    private BigDecimal serverComputedMaturityAmount;
+    private Boolean maturityAmountOverridden;
+    private BigDecimal maturityDifference;
 }

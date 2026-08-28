@@ -11,6 +11,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.urva.myfinance.coinTrack.fixeddeposit.model.CompoundingFrequency;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.FdType;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.InterestPayoutFrequency;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -49,4 +53,21 @@ public class FixedDepositRequestDTO {
     private BigDecimal maturityAmount;
 
     private String remarks;
+
+    // FD Type & Compounding
+    private FdType fdType;
+
+    private CompoundingFrequency compoundingFrequency;
+
+    private InterestPayoutFrequency payoutFrequency;
+
+    // Senior Citizen / Tax-Saver
+    private Boolean isSeniorCitizen;
+
+    private Boolean isTaxSaver;
+
+    // TDS
+    private Boolean hasPan;
+
+    private Boolean form15g15hSubmitted;
 }

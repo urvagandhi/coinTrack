@@ -30,8 +30,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.fixeddeposit.util.FixedDepositExcelExporter;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.PrematureWithdrawalRequestDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.PrematureWithdrawalResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
 import com.urva.myfinance.coinTrack.fixeddeposit.service.FixedDepositService;
 
@@ -39,7 +42,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/fixed-deposits")
-@Tag(name = "Fixed Deposits", description = "Fixed Deposit (FD) management module with status derivation, metrics, and Excel (XLSX) export")
+@Tag(name = "Fixed Deposits", description = "Fixed Deposit (FD) management module with status derivation, metrics, TDS, premature withdrawal, and Excel (XLSX) export")
 public class FixedDepositController {
 
     private static final Logger logger = LoggerFactory.getLogger(FixedDepositController.class);
@@ -145,5 +148,39 @@ public class FixedDepositController {
         logger.info("Deleting fixed deposit {} for user: {}", id, principal.getUsername());
         fixedDepositService.deleteFixedDeposit(id, principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success("Fixed deposit deleted successfully"));
+    }
+
+    // New endpoints
+
+    @Operation(summary = "Premature withdrawal with penalty calculation")
+    @PostMapping("/{id}/withdraw")
+    public ResponseEntity<ApiResponse<PrematureWithdrawalResponseDTO>> prematureWithdraw(
+            @PathVariable String id,
+            @Valid @RequestBody PrematureWithdrawalRequestDTO requestDTO,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.info("Premature withdrawal for FD {} by user: {}", id, principal.getUsername());
+        PrematureWithdrawalResponseDTO response = fixedDepositService.prematureWithdraw(id, requestDTO, principal.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "Get TDS detail for a specific FD and financial year")
+    @GetMapping("/{id}/tds")
+    public ResponseEntity<ApiResponse<FdTdsDetailDTO>> getTdsDetail(
+            @PathVariable String id,
+            @RequestParam(required = false) Integer financialYear,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching TDS detail for FD {} for user: {}", id, principal.getUsername());
+        FdTdsDetailDTO response = fixedDepositService.getTdsDetail(id, financialYear, principal.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "Get TDS summary for all FDs in a financial year")
+    @GetMapping("/tds-summary")
+    public ResponseEntity<ApiResponse<List<FdTdsDetailDTO>>> getTdsSummary(
+            @RequestParam(required = false) Integer financialYear,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        logger.debug("Fetching TDS summary for user: {}", principal.getUsername());
+        List<FdTdsDetailDTO> response = fixedDepositService.getTdsSummary(financialYear, principal.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

@@ -25,7 +25,41 @@ const INITIAL_STATE = {
   maturityAmount: '',
   nominee: '',
   remarks: '',
+  fdType: 'CUMULATIVE',
+  compoundingFrequency: 'QUARTERLY',
+  payoutFrequency: 'AT_MATURITY',
+  isSeniorCitizen: false,
+  isTaxSaver: false,
+  hasPan: true,
+  form15g15hSubmitted: false,
 };
+
+const COMPOUNDING_PERIODS = {
+  MONTHLY: 12,
+  QUARTERLY: 4,
+  HALF_YEARLY: 2,
+  YEARLY: 1,
+};
+
+const FD_TYPE_OPTIONS = [
+  { value: 'CUMULATIVE', label: 'Cumulative' },
+  { value: 'NON_CUMULATIVE', label: 'Non-Cumulative' },
+];
+
+const COMPOUNDING_OPTIONS = [
+  { value: 'MONTHLY', label: 'Monthly' },
+  { value: 'QUARTERLY', label: 'Quarterly' },
+  { value: 'HALF_YEARLY', label: 'Half-Yearly' },
+  { value: 'YEARLY', label: 'Yearly' },
+];
+
+const PAYOUT_OPTIONS = [
+  { value: 'MONTHLY', label: 'Monthly' },
+  { value: 'QUARTERLY', label: 'Quarterly' },
+  { value: 'HALF_YEARLY', label: 'Half-Yearly' },
+  { value: 'YEARLY', label: 'Yearly' },
+  { value: 'AT_MATURITY', label: 'At Maturity' },
+];
 
 /**
  * Format currency in Indian standard (en-IN)
@@ -131,39 +165,69 @@ function daysBetween(start, end) {
   return Math.round((end - start) / (1000 * 60 * 60 * 24));
 }
 
-function fullQuartersAndBrokenDays(start, end) {
-  let totalMonths =
-    (end.getFullYear() - start.getFullYear()) * 12 +
-    (end.getMonth() - start.getMonth());
-  if (end.getDate() < start.getDate()) totalMonths -= 1;
-
-  const fullQuarters = Math.floor(totalMonths / 3);
-
-  const quarterEndDate = new Date(start);
-  quarterEndDate.setMonth(quarterEndDate.getMonth() + fullQuarters * 3);
-
-  const brokenDays = daysBetween(quarterEndDate, end);
-
-  return { fullQuarters, brokenDays };
+/**
+ * Simple interest for a given number of days (matching backend non-cumulative math).
+ */
+function computeSimpleInterest(principal, ratePercent, totalDays) {
+  return principal * (ratePercent / 100) * (totalDays / 365);
 }
 
 /**
- * Maturity amount from principal + rate + dates.
+ * Cumulative compounding with a configurable frequency, mirroring the server
+ * FdMath: compound over full periods, add simple interest for the broken tail.
+ */
+function computeCumulativeInterest(principal, ratePercent, totalDays, freq) {
+  if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
+    return computeSimpleInterest(principal, ratePercent, totalDays);
+  }
+
+  const n = COMPOUNDING_PERIODS[freq] ?? 4;
+  const periodicRate = ratePercent / 100 / n;
+
+  const fullYears = Math.floor(totalDays / 365);
+  const remainingDays = totalDays % 365;
+  const fullPeriodsInRemaining = Math.floor((remainingDays * n) / 365);
+  const brokenDays =
+    remainingDays - Math.floor((fullPeriodsInRemaining * 365) / n);
+
+  const totalPeriods = fullYears * n + fullPeriodsInRemaining;
+  const amountAfterFullPeriods =
+    principal * Math.pow(1 + periodicRate, totalPeriods);
+
+  if (brokenDays > 0) {
+    const dailyRate = ratePercent / 100 / 365;
+    const brokenInterest = amountAfterFullPeriods * dailyRate * brokenDays;
+    return amountAfterFullPeriods + brokenInterest - principal;
+  }
+  return amountAfterFullPeriods - principal;
+}
+
+/**
+ * Maturity amount from principal + rate + dates + FD structure.
  */
 function calculateFdMaturity(
   issueAmount,
   interestRate,
   issueDate,
-  maturityDate
+  maturityDate,
+  fdType = 'CUMULATIVE',
+  compoundingFrequency = 'QUARTERLY'
 ) {
   const P = parseFloat(issueAmount);
   const r = parseFloat(interestRate);
   if (!P || !r || P <= 0 || r <= 0) return null;
 
-  // No dates -> assume 1 year, quarterly compounded (common default)
+  let totalInterest;
+
+  // No dates -> assume 1 year at the selected structure.
   if (!issueDate || !maturityDate) {
-    const amount = P * Math.pow(1 + r / 400, 4);
-    return Math.round(amount * 100) / 100;
+    if (fdType === 'NON_CUMULATIVE') {
+      totalInterest = computeSimpleInterest(P, r, 365);
+    } else {
+      const n = COMPOUNDING_PERIODS[compoundingFrequency] ?? 4;
+      totalInterest = P * (Math.pow(1 + r / 100 / n, n) - 1);
+    }
+    return Math.round((P + totalInterest) * 100) / 100;
   }
 
   const start = new Date(issueDate);
@@ -173,21 +237,18 @@ function calculateFdMaturity(
 
   const totalDays = daysBetween(start, end);
 
-  // Short tenure: simple interest only
-  if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
-    const amount = P + (P * r * totalDays) / (365 * 100);
-    return Math.round(amount * 100) / 100;
+  if (fdType === 'NON_CUMULATIVE') {
+    totalInterest = computeSimpleInterest(P, r, totalDays);
+  } else {
+    totalInterest = computeCumulativeInterest(
+      P,
+      r,
+      totalDays,
+      compoundingFrequency
+    );
   }
 
-  // Long tenure: quarterly compounding + simple interest on the tail
-  const { fullQuarters, brokenDays } = fullQuartersAndBrokenDays(start, end);
-
-  let amount = P * Math.pow(1 + r / 400, fullQuarters);
-  if (brokenDays > 0) {
-    amount += amount * (r / 100) * (brokenDays / 365);
-  }
-
-  return Math.round(amount * 100) / 100;
+  return Math.round((P + totalInterest) * 100) / 100;
 }
 
 /**
@@ -197,14 +258,23 @@ function calculateFdInterestRate(
   issueAmount,
   maturityAmount,
   issueDate,
-  maturityDate
+  maturityDate,
+  fdType = 'CUMULATIVE',
+  compoundingFrequency = 'QUARTERLY'
 ) {
   const P = parseFloat(issueAmount);
   const A = parseFloat(maturityAmount);
   if (!P || !A || P <= 0 || A <= P) return null;
 
+  const targetInterest = A - P;
+
   if (!issueDate || !maturityDate) {
-    const rate = 400 * (Math.pow(A / P, 1 / 4) - 1);
+    if (fdType === 'NON_CUMULATIVE') {
+      const rate = (targetInterest * 365 * 100) / (P * 365);
+      return Math.round(rate * 100) / 100;
+    }
+    const n = COMPOUNDING_PERIODS[compoundingFrequency] ?? 4;
+    const rate = n * (Math.pow(1 + targetInterest / P, 1 / n) - 1) * 100;
     return Math.round(rate * 100) / 100;
   }
 
@@ -215,23 +285,37 @@ function calculateFdInterestRate(
 
   const totalDays = daysBetween(start, end);
 
-  if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
-    const rate = ((A - P) * 365 * 100) / (P * totalDays);
-    return Math.round(rate * 100) / 100;
-  }
-
-  const { fullQuarters, brokenDays } = fullQuartersAndBrokenDays(start, end);
-
   let low = 0.01,
     high = 100,
     bestRate = 0;
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 120; i++) {
     const mid = (low + high) / 2;
-    let testAmount = P * Math.pow(1 + mid / 400, fullQuarters);
-    if (brokenDays > 0) {
-      testAmount += testAmount * (mid / 100) * (brokenDays / 365);
+    let testInterest;
+    if (fdType === 'NON_CUMULATIVE') {
+      testInterest = computeSimpleInterest(P, mid, totalDays);
+    } else if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
+      testInterest = computeSimpleInterest(P, mid, totalDays);
+    } else {
+      const n = COMPOUNDING_PERIODS[compoundingFrequency] ?? 4;
+      const periodicRate = mid / 100 / n;
+      const fullYears = Math.floor(totalDays / 365);
+      const remainingDays = totalDays % 365;
+      const fullPeriodsInRemaining = Math.floor((remainingDays * n) / 365);
+      const brokenDays =
+        remainingDays - Math.floor((fullPeriodsInRemaining * 365) / n);
+      const totalPeriods = fullYears * n + fullPeriodsInRemaining;
+      const amountAfterFullPeriods =
+        P * Math.pow(1 + periodicRate, totalPeriods);
+      if (brokenDays > 0) {
+        const dailyRate = mid / 100 / 365;
+        testInterest =
+          amountAfterFullPeriods * dailyRate * brokenDays +
+          (amountAfterFullPeriods - P);
+      } else {
+        testInterest = amountAfterFullPeriods - P;
+      }
     }
-    if (testAmount >= A) {
+    if (P + testInterest >= A) {
       bestRate = mid;
       high = mid;
     } else {
@@ -287,6 +371,14 @@ export default function FdDialog({
               : '',
           nominee: initialData.nominee || '',
           remarks: initialData.remarks || '',
+          fdType: initialData.fdType || 'CUMULATIVE',
+          compoundingFrequency: initialData.compoundingFrequency || 'QUARTERLY',
+          payoutFrequency: initialData.payoutFrequency || 'AT_MATURITY',
+          isSeniorCitizen: !!initialData.isSeniorCitizen,
+          isTaxSaver: !!initialData.isTaxSaver,
+          hasPan:
+            initialData.hasPan !== undefined ? !!initialData.hasPan : true,
+          form15g15hSubmitted: !!initialData.form15g15hSubmitted,
         });
       } else {
         setFormData({
@@ -300,12 +392,45 @@ export default function FdDialog({
 
   if (!isOpen) return null;
 
+  const calcMaturity = (
+    issueAmount,
+    interestRate,
+    issueDate,
+    maturityDate,
+    extra = {}
+  ) =>
+    calculateFdMaturity(
+      issueAmount,
+      interestRate,
+      issueDate,
+      maturityDate,
+      extra.fdType || formData.fdType || 'CUMULATIVE',
+      extra.compoundingFrequency || formData.compoundingFrequency || 'QUARTERLY'
+    );
+
+  const calcRate = (
+    issueAmount,
+    maturityAmount,
+    issueDate,
+    maturityDate,
+    extra = {}
+  ) =>
+    calculateFdInterestRate(
+      issueAmount,
+      maturityAmount,
+      issueDate,
+      maturityDate,
+      extra.fdType || formData.fdType || 'CUMULATIVE',
+      extra.compoundingFrequency || formData.compoundingFrequency || 'QUARTERLY'
+    );
+
   const triggerMaturityCalculation = (currData = formData) => {
-    const mat = calculateFdMaturity(
+    const mat = calcMaturity(
       currData.issueAmount,
       currData.interestRate,
       currData.issueDate,
-      currData.maturityDate
+      currData.maturityDate,
+      currData
     );
     if (mat !== null) {
       setFormData(prev => ({ ...prev, maturityAmount: String(mat) }));
@@ -324,11 +449,12 @@ export default function FdDialog({
   };
 
   const triggerRateCalculation = (currData = formData) => {
-    const rate = calculateFdInterestRate(
+    const rate = calcRate(
       currData.issueAmount,
       currData.maturityAmount,
       currData.issueDate,
-      currData.maturityDate
+      currData.maturityDate,
+      currData
     );
     if (rate !== null) {
       setFormData(prev => ({ ...prev, interestRate: String(rate) }));
@@ -357,11 +483,12 @@ export default function FdDialog({
         next.issueDate &&
         next.maturityDate
       ) {
-        const mat = calculateFdMaturity(
+        const mat = calcMaturity(
           parsedVal,
           next.interestRate,
           next.issueDate,
-          next.maturityDate
+          next.maturityDate,
+          next
         );
         if (mat !== null) next.maturityAmount = String(mat);
       }
@@ -379,11 +506,12 @@ export default function FdDialog({
         next.issueDate &&
         next.maturityDate
       ) {
-        const mat = calculateFdMaturity(
+        const mat = calcMaturity(
           next.issueAmount,
           val,
           next.issueDate,
-          next.maturityDate
+          next.maturityDate,
+          next
         );
         if (mat !== null) next.maturityAmount = String(mat);
       }
@@ -403,11 +531,12 @@ export default function FdDialog({
         next.maturityDate &&
         parseFloat(parsedVal) > parseFloat(next.issueAmount)
       ) {
-        const rate = calculateFdInterestRate(
+        const rate = calcRate(
           next.issueAmount,
           parsedVal,
           next.issueDate,
-          next.maturityDate
+          next.maturityDate,
+          next
         );
         if (rate !== null) next.interestRate = String(rate);
       }
@@ -428,11 +557,12 @@ export default function FdDialog({
           next.issueDate &&
           next.maturityDate
         ) {
-          const mat = calculateFdMaturity(
+          const mat = calcMaturity(
             next.issueAmount,
             next.interestRate,
             next.issueDate,
-            next.maturityDate
+            next.maturityDate,
+            next
           );
           if (mat !== null) next.maturityAmount = String(mat);
         } else if (
@@ -441,11 +571,12 @@ export default function FdDialog({
           next.issueDate &&
           next.maturityDate
         ) {
-          const rate = calculateFdInterestRate(
+          const rate = calcRate(
             next.issueAmount,
             next.maturityAmount,
             next.issueDate,
-            next.maturityDate
+            next.maturityDate,
+            next
           );
           if (rate !== null) next.interestRate = String(rate);
         }
@@ -492,6 +623,13 @@ export default function FdDialog({
         maturityAmount: formData.maturityAmount
           ? Number(formData.maturityAmount)
           : undefined,
+        fdType: formData.fdType || 'CUMULATIVE',
+        compoundingFrequency: formData.compoundingFrequency || 'QUARTERLY',
+        payoutFrequency: formData.payoutFrequency || 'AT_MATURITY',
+        isSeniorCitizen: !!formData.isSeniorCitizen,
+        isTaxSaver: !!formData.isTaxSaver,
+        hasPan: !!formData.hasPan,
+        form15g15hSubmitted: !!formData.form15g15hSubmitted,
         investmentPeriod:
           formData.investmentPeriod ||
           calculateTenurePeriod(formData.issueDate, formData.maturityDate),
@@ -772,13 +910,214 @@ export default function FdDialog({
                   slightly depending on the specific bank's internal calculation
                   precision.
                 </p>
+                {initialData &&
+                  initialData.serverComputedMaturityAmount != null &&
+                  Number(initialData.serverComputedMaturityAmount) > 0 && (
+                    <div className='mt-2 border border-[hsl(var(--accent))]/30 bg-[hsl(var(--accent))]/5 rounded-sm px-3 py-2'>
+                      <div className='flex items-center justify-between text-[11px] font-mono'>
+                        <span className='text-muted-foreground'>
+                          Server (bank-formula) maturity:
+                        </span>
+                        <span className='text-foreground font-semibold'>
+                          {formatIndianCurrency(
+                            initialData.serverComputedMaturityAmount
+                          )}
+                        </span>
+                      </div>
+                      {initialData.maturityDifference != null &&
+                        Math.abs(Number(initialData.maturityDifference)) >
+                          0.009 && (
+                          <div className='flex items-center justify-between text-[11px] font-mono mt-0.5'>
+                            <span className='text-muted-foreground'>
+                              {initialData.maturityAmountOverridden
+                                ? 'Manual override vs server:'
+                                : 'Saved vs server compute:'}
+                            </span>
+                            <span
+                              className={
+                                Number(initialData.maturityDifference) > 0
+                                  ? 'text-[hsl(var(--gain))]'
+                                  : 'text-[hsl(var(--loss))]'
+                              }
+                            >
+                              {formatIndianCurrency(
+                                initialData.maturityDifference
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      <p className='text-[10px] text-muted-foreground/80 mt-1 leading-tight'>
+                        Saved maturity{' '}
+                        {initialData.maturityAmountOverridden
+                          ? 'was manually entered'
+                          : 'matches server computation'}
+                        . Recalculating uses the selected interest structure for
+                        reference only.
+                      </p>
+                    </div>
+                  )}
               </div>
             </div>
 
-            {/* Section 4: Nominee & Remarks */}
+            {/* Section 4: Interest Structure (FD Type, Compounding, Payout) */}
             <div className='space-y-3'>
               <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
-                04. Additional Details
+                04. Interest Structure
+              </h3>
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>FD Type</label>
+                  <select
+                    value={formData.fdType}
+                    onChange={e =>
+                      setFormData({ ...formData, fdType: e.target.value })
+                    }
+                    className='ed-input w-full font-mono'
+                  >
+                    {FD_TYPE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>Compounding Frequency</label>
+                  <select
+                    value={formData.compoundingFrequency}
+                    disabled={formData.fdType === 'NON_CUMULATIVE'}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        compoundingFrequency: e.target.value,
+                      })
+                    }
+                    className='ed-input w-full font-mono disabled:opacity-50'
+                  >
+                    {COMPOUNDING_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>Interest Payout</label>
+                  <select
+                    value={formData.payoutFrequency}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        payoutFrequency: e.target.value,
+                      })
+                    }
+                    className='ed-input w-full font-mono'
+                  >
+                    {PAYOUT_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {formData.fdType === 'NON_CUMULATIVE' && (
+                <p className='text-[11px] text-muted-foreground leading-tight'>
+                  Non-cumulative FDs pay interest out periodically (simple
+                  interest); the maturity amount equals the principal. The
+                  payout schedule above indicates when the interest is credited.
+                </p>
+              )}
+            </div>
+
+            {/* Section 5: Tax & Compliance */}
+            <div className='space-y-3'>
+              <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
+                05. Tax & Compliance
+              </h3>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <label className='eyebrow'>Details</label>
+                  <label className='flex items-center gap-2.5 cursor-pointer text-[13px] text-foreground'>
+                    <input
+                      type='checkbox'
+                      checked={!!formData.isSeniorCitizen}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          isSeniorCitizen: e.target.checked,
+                        })
+                      }
+                      className='h-4 w-4 accent-[hsl(var(--accent))]'
+                    />
+                    Senior Citizen (higher TDS threshold ₹1L)
+                  </label>
+                  <label className='flex items-center gap-2.5 cursor-pointer text-[13px] text-foreground'>
+                    <input
+                      type='checkbox'
+                      checked={!!formData.isTaxSaver}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          isTaxSaver: e.target.checked,
+                        })
+                      }
+                      className='h-4 w-4 accent-[hsl(var(--accent))]'
+                    />
+                    Tax Saver FD (Section 80C)
+                  </label>
+                  <label className='flex items-center gap-2.5 cursor-pointer text-[13px] text-foreground'>
+                    <input
+                      type='checkbox'
+                      checked={!!formData.hasPan}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          hasPan: e.target.checked,
+                        })
+                      }
+                      className='h-4 w-4 accent-[hsl(var(--accent))]'
+                    />
+                    PAN available (lower 10% TDS)
+                  </label>
+                  <label className='flex items-center gap-2.5 cursor-pointer text-[13px] text-foreground'>
+                    <input
+                      type='checkbox'
+                      checked={!!formData.form15g15hSubmitted}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          form15g15hSubmitted: e.target.checked,
+                        })
+                      }
+                      className='h-4 w-4 accent-[hsl(var(--accent))]'
+                    />
+                    Form 15G / 15H submitted (TDS exempt)
+                  </label>
+                </div>
+                <div className='space-y-1.5'>
+                  <div className='h-5' />
+                  <p className='text-[11px] text-muted-foreground leading-relaxed'>
+                    TDS is computed at the <strong>bank level</strong>: the ₹50k
+                    (regular) / ₹1L (senior citizen) threshold applies to the
+                    combined interest across all deposits at the same bank. The
+                    backend automatically derives this and shows it in the TDS
+                    summary.
+                  </p>
+                  {formData.isSeniorCitizen && (
+                    <p className='text-[11px] text-muted-foreground leading-relaxed'>
+                      Senior-citizen FD rates already embed any bonus; this flag
+                      only raises the TDS exemption threshold.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Section 6: Nominee & Remarks */}
+            <div className='space-y-3'>
+              <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
+                06. Additional Details
               </h3>
               <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                 <div className='space-y-1.5'>

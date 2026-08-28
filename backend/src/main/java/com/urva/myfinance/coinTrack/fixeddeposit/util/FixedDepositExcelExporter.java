@@ -1,7 +1,11 @@
 package com.urva.myfinance.coinTrack.fixeddeposit.util;
 
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.*;
@@ -11,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import com.urva.myfinance.coinTrack.common.util.ExcelExportUtil;
+import com.urva.myfinance.coinTrack.common.util.OwnerGrouping;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
 
@@ -74,7 +79,13 @@ public class FixedDepositExcelExporter {
         String[] headers = {
                 "FD No", "Place", "Holder Name", "Nominee", "Account Number",
                 "Interest Rate", "Investment Period", "Issue Date", "Maturity Date",
-                "Issue Amount", "Maturity Amount", "Status", "Days To Maturity", "Remarks"
+                "Issue Amount", "Maturity Amount", "Status", "Days To Maturity", "Remarks",
+                // New fields
+                "FD Type", "Compounding Frequency", "Payout Frequency",
+                "Senior Citizen", "Tax Saver", "Has PAN", "Form 15G/15H",
+                "TDS Threshold", "Taxable Interest", "TDS Rate", "TDS Deducted", "Net Interest",
+                "Withdrawal Date", "Realized Maturity", "Penalty Amount", "Effective Rate",
+                "Server Computed Maturity", "Maturity Overridden", "Maturity Difference"
         };
 
         Row headerRow = sheet.createRow(0);
@@ -84,6 +95,10 @@ public class FixedDepositExcelExporter {
             cell.setCellValue(headers[i]);
             cell.setCellStyle(headerStyle);
         }
+
+        // Bank-level TDS: the ₹50k/₹1L threshold applies to the TOTAL interest across all FDs
+        // at the SAME bank, so precompute per-FD TDS by grouping the sheet's rows by place.
+        Map<Long, FdMath.BankTdsResult> tdsByFdNo = computeBankTdsForExport(data);
 
         for (int i = 0; i < data.size(); i++) {
             FixedDepositResponseDTO dto = data.get(i);
@@ -104,10 +119,38 @@ public class FixedDepositExcelExporter {
             createCell(row, 11, dto.getStatus() != null ? dto.getStatus().name() : "", dataStyle);
             
             String days = (dto.getDaysToMaturity() <= 0 || dto.getStatus() == FdStatus.MATURED
-                    || dto.getStatus() == FdStatus.CLOSED || dto.getStatus() == FdStatus.DUE) ? "-"
+                    || dto.getStatus() == FdStatus.CLOSED || dto.getStatus() == FdStatus.DUE
+                    || dto.getStatus() == FdStatus.PREMATURELY_WITHDRAWN) ? "-"
                             : String.valueOf(dto.getDaysToMaturity());
             createCell(row, 12, days, dataStyle);
             createCell(row, 13, dto.getRemarks(), dataStyle);
+
+            // New fields
+            createCell(row, 14, dto.getFdType() != null ? dto.getFdType().name() : "CUMULATIVE", dataStyle);
+            createCell(row, 15, dto.getCompoundingFrequency() != null ? dto.getCompoundingFrequency().name() : "QUARTERLY", dataStyle);
+            createCell(row, 16, dto.getPayoutFrequency() != null ? dto.getPayoutFrequency().name() : "AT_MATURITY", dataStyle);
+            createCell(row, 17, dto.getIsSeniorCitizen() != null && dto.getIsSeniorCitizen() ? "Yes" : "No", dataStyle);
+            createCell(row, 18, dto.getIsTaxSaver() != null && dto.getIsTaxSaver() ? "Yes" : "No", dataStyle);
+            createCell(row, 19, dto.getHasPan() != null && dto.getHasPan() ? "Yes" : "No", dataStyle);
+            createCell(row, 20, dto.getForm15g15hSubmitted() != null && dto.getForm15g15hSubmitted() ? "Yes" : "No", dataStyle);
+            
+            // TDS fields (bank-level computation)
+            FdMath.BankTdsResult tds = dto.getFdNo() != null ? tdsByFdNo.get(dto.getFdNo()) : null;
+            if (tds != null) {
+                createNumericCell(row, 21, tds.tdsThreshold().doubleValue(), currencyStyle);
+                createNumericCell(row, 22, tds.taxableInterest().doubleValue(), currencyStyle);
+                createNumericCell(row, 23, tds.tdsRate().doubleValue(), percentStyle);
+                createNumericCell(row, 24, tds.tdsDeducted().doubleValue(), currencyStyle);
+                createNumericCell(row, 25, tds.netInterest().doubleValue(), currencyStyle);
+            }
+            
+            createCell(row, 26, dto.getWithdrawalDate() != null ? dto.getWithdrawalDate().toString() : "", dataStyle);
+            createNumericCell(row, 27, dto.getRealizedMaturityAmount() != null ? dto.getRealizedMaturityAmount().doubleValue() : null, currencyStyle);
+            createNumericCell(row, 28, dto.getPenaltyAmount() != null ? dto.getPenaltyAmount().doubleValue() : null, currencyStyle);
+            createNumericCell(row, 29, dto.getEffectiveRateApplied() != null ? dto.getEffectiveRateApplied().doubleValue() : null, percentStyle);
+            createNumericCell(row, 30, dto.getServerComputedMaturityAmount() != null ? dto.getServerComputedMaturityAmount().doubleValue() : null, currencyStyle);
+            createCell(row, 31, dto.getMaturityAmountOverridden() != null && dto.getMaturityAmountOverridden() ? "Yes" : "No", dataStyle);
+            createNumericCell(row, 32, dto.getMaturityDifference() != null ? dto.getMaturityDifference().doubleValue() : null, currencyStyle);
         }
 
         if (!data.isEmpty()) {
@@ -158,6 +201,49 @@ public class FixedDepositExcelExporter {
 
         // Auto column sizing
         ExcelExportUtil.autoSizeColumns(sheet, headers.length);
+    }
+
+    /**
+     * Group the sheet's FDs by (place, holderName) and compute TDS for each FD, keyed by fdNo.
+     * Mirrors the module's Section 194A semantics: the threshold is checked on the TOTAL interest
+     * one holder earns at one bank, then allocated proportionally per FD. Distinct holders at the
+     * same bank are separate taxpayers with independent thresholds.
+     */
+    private static Map<Long, FdMath.BankTdsResult> computeBankTdsForExport(List<FixedDepositResponseDTO> data) {
+        Map<Long, FdMath.BankTdsResult> tdsByFdNo = new LinkedHashMap<>();
+
+        data.stream()
+                .collect(Collectors.groupingBy(
+                        dto -> OwnerGrouping.groupKey(dto.getPlace(), dto.getHolderName()),
+                        LinkedHashMap::new,
+                        Collectors.toList()))
+                .values()
+                .forEach(group -> {
+                    List<FixedDepositResponseDTO> withReturns = group.stream()
+                            .filter(dto -> dto.getIssueAmount() != null && dto.getMaturityAmount() != null
+                                    && dto.getMaturityAmount().compareTo(dto.getIssueAmount()) > 0)
+                            .toList();
+
+                    List<FdMath.FdTdsInput> inputs = withReturns.stream()
+                            .map(dto -> {
+                                BigDecimal returns = dto.getMaturityAmount().subtract(dto.getIssueAmount());
+                                return new FdMath.FdTdsInput(
+                                        returns,
+                                        dto.getIsSeniorCitizen() != null ? dto.getIsSeniorCitizen() : false,
+                                        dto.getHasPan() != null ? dto.getHasPan() : true,
+                                        dto.getForm15g15hSubmitted() != null ? dto.getForm15g15hSubmitted() : false);
+                            })
+                            .toList();
+
+                    List<FdMath.BankTdsResult> results = FdMath.computeBankLevelTds(inputs);
+                    for (int i = 0; i < withReturns.size(); i++) {
+                        if (withReturns.get(i).getFdNo() != null) {
+                            tdsByFdNo.put(withReturns.get(i).getFdNo(), results.get(i));
+                        }
+                    }
+                });
+
+        return tdsByFdNo;
     }
 
     private static void createCell(Row row, int column, String value, CellStyle style) {

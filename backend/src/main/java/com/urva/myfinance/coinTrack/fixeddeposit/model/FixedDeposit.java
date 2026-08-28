@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class FixedDeposit {
 
     @Id
@@ -43,6 +43,48 @@ public class FixedDeposit {
     private BigDecimal maturityAmount;
     private FdStatus status;
     private String remarks;
+
+    // FD Type & Compounding
+    @Builder.Default
+    private FdType fdType = FdType.CUMULATIVE;
+
+    @Builder.Default
+    private CompoundingFrequency compoundingFrequency = CompoundingFrequency.QUARTERLY;
+
+    private InterestPayoutFrequency payoutFrequency;
+
+    // Senior Citizen / Tax-Saver
+    @Builder.Default
+    private Boolean isSeniorCitizen = false;
+
+    @Builder.Default
+    private Boolean isTaxSaver = false;
+
+    @Builder.Default
+    private Integer taxSaverLockInYears = 5;
+
+    // TDS
+    @Builder.Default
+    private Boolean hasPan = true;
+
+    @Builder.Default
+    private Boolean form15g15hSubmitted = false;
+
+    private Integer financialYear;
+
+    // Premature Withdrawal
+    @Builder.Default
+    private Boolean isPrematurelyWithdrawn = false;
+
+    private LocalDate withdrawalDate;
+    private BigDecimal realizedMaturityAmount;
+    private BigDecimal penaltyAmount;
+    private BigDecimal effectiveRateApplied;
+
+    // Server-side validation
+    private BigDecimal serverComputedMaturityAmount;
+    private Boolean maturityAmountOverridden;
+    private BigDecimal maturityDifference;
 
     @CreatedDate
     private Instant createdAt;

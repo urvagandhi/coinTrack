@@ -4,5 +4,6 @@ public enum FdStatus {
     ACTIVE,
     DUE,
     MATURED,
-    CLOSED
+    CLOSED,
+    PREMATURELY_WITHDRAWN
 }

@@ -1,9 +1,9 @@
 # Fixed Deposit (FD) Management Module – CoinTrack
 
 > **Domain**: User Fixed Deposit (FD) Tracking & Analytics  
-> **Responsibility**: Secure manual CRUD, live status computation, risk highlighting, metrics aggregation, and Excel (XLSX) export  
-> **Version**: 1.2.3  
-> **Last Updated**: 2026-08-26  
+> **Responsibility**: Secure manual CRUD, live status computation, risk highlighting, metrics aggregation, per-bank TDS computation, premature withdrawal with penalty, FD type/cumulative/non-cumulative support, senior citizen/tax-saver flags, configurable compounding, server-side maturity validation, and Excel (XLSX) export  
+> **Version**: 1.3.2  
+> **Last Updated**: 2026-08-28  
 
 ---
 
@@ -45,14 +45,20 @@ Retail investors often hold FDs across multiple banks (HDFC, SBI, ICICI, Post Of
 | Feature | Description |
 |---|---|
 | **Sequential `fdNo`** | Per-user display ordinal: new deposits are saved with a `fdNo = 0` placeholder, then common's `TransactionSequenceService.reorderFixedDeposits(userId)` re-sorts the user's ledger (issueDate ASC, createdAt tiebreak) and rewrites `fdNo` as `1..N` after every create/update. **The shared `counters` collection is NOT used by this module.** Because fdNo is renumbered on re-dating/editing, treat it as an unstable display index — the document `id` is the stable identifier. |
-| **Dual Status Strategy** | Live calculation on read + daily cron job for persisted DB state |
+| **Dual Status Strategy** | Live calculation on read + daily cron job for persisted DB state. Includes `PREMATURELY_WITHDRAWN` status. |
 | **Smart Relative Sorting** | `maturityDate:asc` (Nearest First) evaluates relative to `today` (`LocalDate.now()`) placing upcoming maturities first and past/matured ones at the bottom — **computed server-side via MongoDB aggregation with a computed sort key, so pagination happens at DB level (no full-ledger load)** |
 | **6-Mode Sorting Engine** | Supports sorting by maturity date (nearest/farthest), issue date (oldest/newest), and invested amount (highest/lowest) |
-| **Excel (XLSX) Export Formatting** | Multi-tab workbook (All/Active/Due/Matured/Closed) with 14-column sheets, styled totals row (₹), auto-column widths, BOLD headers, and right-aligned numerics via `ExcelExportUtil`. Defaults to `issueDate:asc` |
+| **Excel (XLSX) Export Formatting** | Multi-tab workbook (All/Active/Due/Matured/Closed/Withdrawn) with 33-column sheets, styled totals row (₹), auto-column widths, BOLD headers, and right-aligned numerics via `ExcelExportUtil`. Defaults to `issueDate:asc` |
 | **Dual View Frontend** | Seamlessly toggle between Card Grid View (`FdCard`) and Financial Table View (`FdTable`) |
 | **Monetary Rigor** | Strict `BigDecimal` usage for all amounts and interest rates |
 | **Strict Date Validation** | `maturityDate` must be strictly after `issueDate` (`InvalidFdDateRangeException`) |
 | **User Isolation** | Ownership scoping enforced on every query (`userId`) |
+| **TDS Computation** | **Per-Bank (Section 194A) TDS**: the ₹50K (regular) / ₹1L (senior) threshold is applied to each **bank group** (grouped by `place`), not per-FD. Excess interest is taxed at 10% (with PAN) / 20% (no PAN) with Form 15G/15H exemption, then allocated proportionally per FD (with rounding reconciliation so per-FD lines sum exactly to the bank total). |
+| **Premature Withdrawal** | `POST /withdraw` endpoint with penalty calculation (0.5% ≤₹5L, 1% >₹5L; min 7 days holding) |
+| **FD Type Support** | Cumulative (compounded) vs Non-Cumulative (simple interest, periodic payouts) |
+| **Compounding Frequency** | Monthly / Quarterly (RBI standard) / Half-Yearly / Yearly — configurable per FD |
+| **Senior Citizen / Tax-Saver** | `isSeniorCitizen` drives the higher ₹1L TDS threshold and 80TTB eligibility only — **no automatic rate bonus**. Rate is the final contracted rate from the certificate (any senior bonus is already embedded). `isTaxSaver` enforces 5-year lock-in (Section 80C). |
+| **Server-Side Maturity Validation** | Recomputes maturity on create/update; auto-overrides in automatic mode (±₹1 tolerance); flags manual discrepancies |
 
 ---
 
@@ -110,22 +116,30 @@ fixeddeposit/
 │   └── FixedDepositController.java    # REST API endpoints (/api/fixed-deposits)
 ├── dto/
 │   ├── request/
-│   │   └── FixedDepositRequestDTO.java
+│   │   ├── FixedDepositRequestDTO.java
+│   │   └── PrematureWithdrawalRequestDTO.java
 │   └── response/
 │       ├── FixedDepositResponseDTO.java
-│       └── FixedDepositSummaryDTO.java
+│       ├── FixedDepositSummaryDTO.java
+│       ├── PrematureWithdrawalResponseDTO.java
+│       └── FdTdsDetailDTO.java
 ├── exception/
-│   └── InvalidFdDateRangeException.java # 400 INVALID_FD_DATE_RANGE (extends common DomainException;
-│                                        # relocated from common.exception on 2026-08-26)
+│   ├── InvalidFdDateRangeException.java
+│   ├── InvalidWithdrawalException.java
+│   └── TdsComputationException.java
 ├── listener/
 │   └── FixedDepositUserDataCleanupListener.java # UserDeletedEvent → deleteByUserId cascade
 ├── model/
-│   ├── FdStatus.java                  # Enum: ACTIVE, DUE, MATURED, CLOSED
+│   ├── FdStatus.java                  # Enum: ACTIVE, DUE, MATURED, CLOSED, PREMATURELY_WITHDRAWN
+│   ├── FdType.java                    # Enum: CUMULATIVE, NON_CUMULATIVE
+│   ├── CompoundingFrequency.java      # Enum: MONTHLY, QUARTERLY, HALF_YEARLY, YEARLY
+│   ├── InterestPayoutFrequency.java   # Enum: MONTHLY, QUARTERLY, HALF_YEARLY, YEARLY, AT_MATURITY
 │   └── FixedDeposit.java              # MongoDB Document ("fixed_deposits")
 ├── repository/
 │   └── FixedDepositRepository.java    # Spring Data Mongo repository
 ├── util/
-│   └── FixedDepositExcelExporter.java # Multi-tab XLSX export (All/Active/Due/Matured/Closed)
+│   ├── FdMath.java                    # Module-owned calculation engine (maturity, TDS, withdrawal)
+│   └── FixedDepositExcelExporter.java # Multi-tab XLSX export (All/Active/Due/Matured/Closed/Withdrawn)
 └── service/
     ├── FixedDepositService.java       # Interface
     ├── FixedDepositServiceImpl.java   # Implementation + status calculation
@@ -141,14 +155,17 @@ fixeddeposit/
 **Authentication**: Required (JWT via `Principal`)  
 
 Endpoints:
-- `POST /api/fixed-deposits` — Create Fixed Deposit
+- `POST /api/fixed-deposits` — Create Fixed Deposit (accepts fdType, compoundingFrequency, isSeniorCitizen, isTaxSaver, hasPan, form15g15hSubmitted; validates maturity server-side)
 - `GET /api/fixed-deposits` — Paginated list with dynamic filter criteria
-- `GET /api/fixed-deposits/summary` — Aggregate metrics for dashboard
-- `GET /api/fixed-deposits/export` — Stream Excel (XLSX) file
+- `GET /api/fixed-deposits/summary` — Aggregate metrics for dashboard (includes totalTdsDeducted, totalNetReturns)
+- `GET /api/fixed-deposits/export` — Stream Excel (XLSX) file (33 columns: TDS, withdrawal, maturity validation fields)
 - `GET /api/fixed-deposits/{id}` — Fetch single record
-- `PUT /api/fixed-deposits/{id}` — Update record
-- `PATCH /api/fixed-deposits/{id}/close` — Mark as CLOSED (manual override)
+- `PUT /api/fixed-deposits/{id}` — Update record (validates maturity server-side)
+- `PATCH /api/fixed-deposits/{id}/close` — Mark as CLOSED (manual sticky override)
 - `DELETE /api/fixed-deposits/{id}` — Delete record
+- `POST /api/fixed-deposits/{id}/withdraw` — **Premature withdrawal** with penalty calc (body: withdrawalDate, penaltyRateOverride?, bankName?)
+- `GET /api/fixed-deposits/{id}/tds` — **TDS detail** for a specific FD and financial year
+- `GET /api/fixed-deposits/tds-summary` — **TDS summary** for all FDs in a financial year
 
 ---
 
@@ -159,7 +176,7 @@ Endpoints:
 ### 5.1 Status Derivation Strategy
 
 Status is derived dynamically on every read:
-1. If stored status is `CLOSED` -> Returns `CLOSED` (manual sticky override).
+1. If stored status is `CLOSED` or `PREMATURELY_WITHDRAWN` -> Returns stored status (sticky override).
 2. If `today.isBefore(maturityDate)` -> `ACTIVE`.
 3. If `today.isEqual(maturityDate)` -> `DUE`.
 4. If `today.isAfter(maturityDate)` -> `MATURED`.
@@ -185,16 +202,62 @@ The module supports 6 distinct sorting modes via `sortBy` and `sortDir` paramete
 
 When exporting via `GET /api/fixed-deposits/export`:
 
-1. **Multi-tab workbook** (up to 5 sheets, status tabs omitted when empty):
-   `Fixed Deposit` (all rows) · `Active` · `Due` · `Matured` · `Closed`.
-2. **14 Columns**: `FD No`, `Place`, `Holder Name`, `Nominee`, `Account Number`, `Interest Rate (%)`, `Investment Period`, `Issue Date`, `Maturity Date`, `Issue Amount`, `Maturity Amount`, `Status`, `Days To Maturity`, `Remarks`.
+1. **Multi-tab workbook** (up to 6 sheets, status tabs omitted when empty):
+   `Fixed Deposit` (all rows) · `Active` · `Due` · `Matured` · `Closed` · `Withdrawn`.
+2. **33 Columns**: 
+   - Base: `FD No`, `Place`, `Holder Name`, `Nominee`, `Account Number`, `Interest Rate (%)`, `Investment Period`, `Issue Date`, `Maturity Date`, `Issue Amount`, `Maturity Amount`, `Status`, `Days To Maturity`, `Remarks`
+   - FD Type & Compounding: `FD Type`, `Compounding Frequency`, `Payout Frequency`
+   - Senior Citizen / Tax-Saver: `Senior Citizen`, `Tax Saver`, `Has PAN`, `Form 15G/15H`
+   - TDS (computed per row): `TDS Threshold`, `Taxable Interest`, `TDS Rate`, `TDS Deducted`, `Net Interest`
+   - Withdrawal: `Withdrawal Date`, `Realized Maturity`, `Penalty Amount`, `Effective Rate`
+   - Server Validation: `Server Computed Maturity`, `Maturity Overridden`, `Maturity Difference`
    Column 0 exports the record's actual **fdNo ordinal** (not the row position).
 3. **Totals row**: every non-empty sheet ends with a styled total row summing
    Issue Amount and Maturity Amount (₹ en-IN currency format).
-4. **`Days To Maturity`**: Formatted as `-` (dash) if the deposit status is `MATURED`, `DUE`, `CLOSED`, or has `daysToMaturity <= 0`.
+4. **`Days To Maturity`**: Formatted as `-` (dash) if the deposit status is `MATURED`, `DUE`, `CLOSED`, `WITHDRAWN`, or has `daysToMaturity <= 0`.
 5. **Default Order**: Defaults to `issueDate:asc` (oldest issued deposit first) unless an explicit sorting choice is passed.
 6. **Style**: `.xlsx` via Apache POI / `ExcelExportUtil` — bold headers, ₹ currency cells,
    right-aligned numerics, auto-sized columns, grid borders.
+
+### 5.5 TDS Computation (Per Bank-and-Holder, Section 194A)
+
+TDS follows **Section 194A of the Income Tax Act**: the exemption threshold applies to the
+**total interest one person earns from a single bank** in a financial year, not to each FD
+individually. The module therefore aggregates by **`(place, holderName)`** and only then decides
+whether TDS is owed.
+
+> **Why `holderName` matters (family ≠ shared threshold).** Each holder is their own taxpayer,
+> exactly like the accounts under a Zerodha "family" view: consolidation is a viewing convenience
+> layered on genuinely separate legal entities, each with its own PAN and tax position. Grouping by
+> `place` alone would wrongly pool a father's and child's deposits into a single shared threshold —
+> suppressing TDS when two people separately don't cross it but together would. `holderName` is
+> **normalized on save** via the shared `common/util/HolderName.normalize` (trim + collapse
+> whitespace + title-case, same pattern as MF scheme-category normalization) so "krishil ", "Krishil"
+> and "KRISHIL" all join one group and can never split one person's deposits into two under-threshold
+> groups. The group key is built by the shared `common/util/OwnerGrouping.groupKey(place, holderName)`
+> — the **same helper** used by the Excel exporter (so **export == screen**), the MF aggregation
+> engine, summaries and dashboard (see `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`).
+
+| Rule | Behavior |
+|---|---|
+| **Group key** | FDs are grouped by `(place, holderName)` (each normalized; `"Unknown"` when blank). Distinct holders at the same bank are separate groups with **independent thresholds**. Closed / prematurely-withdrawn FDs are **excluded** from aggregation. |
+| **Exemption threshold** | ₹50K (regular) per group for the FY — OR ₹1L when **every** non-exempt FD in that group is flagged senior (homogeneous group). A mixed senior+regular group falls back to the regular ₹50K threshold. |
+| **TDS rate** | 10% (all FDs in the group have PAN) else 20% (any FD in the group lacks PAN takes priority). |
+| **Form 15G/15H** | If **any** FD in the group has `form15g15hSubmitted`, the whole holder's bank group is exempt (₹0 TDS). |
+| **Taxable interest** | `groupGross − threshold` (never below 0). |
+| **Proportional allocation** | Group TDS is split across each FD **proportionally to its gross interest**, with a rounding-remainder correction applied so the per-FD deduction lines sum **exactly** to the group total (no 0.01 drift). |
+| **Bank context surfaced** | Every per-FD row carries `bankName`, `bankTotalGrossInterest`, `bankTaxableInterest`, `bankTotalTdsDeducted` so a small FD's nonzero TDS line is explainable (the threshold was crossed at the holder's bank-group level). |
+
+Implementation lives in `FdMath.computeBankLevelTds(List<FdTdsInput>)` (pure calculation) and
+`FixedDepositServiceImpl.computeBankGroupTds(...)` (DB loading + row materialization). The
+**senior-citizen bonus is intentionally NOT added to interest rates** — `interestRate` is the
+final contracted rate transcribed from the certificate, in which any bank senior bonus is already
+embedded; `isSeniorCitizen` is used purely for TDS threshold logic.
+
+> **Future direction:** if "family accounts" becomes a first-class feature (separate holder profiles
+> rather than a free-text label), evolve to a `Holder` entity with its own `PAN` and key the group off
+> `(place, panOrHolderId)` — the current `(place, holderName)` shape stays correct; only the string key
+> needs swapping for a foreign key later, no re-architecture.
 
 ---
 
@@ -203,6 +266,13 @@ When exporting via `GET /api/fixed-deposits/export`:
 **Collection**: `fixed_deposits`  
 
 Key fields: `id`, `fdNo` (indexed — **NOT unique**: it is a per-user `1..N` ordinal, so a global unique index is impossible by design), `userId` (indexed), `place`, `holderName`, `nominee`, `accountNumber`, `interestRate`, `investmentPeriod`, `issueDate`, `maturityDate`, `issueAmount`, `maturityAmount`, `status`, `remarks`, `createdAt`, `updatedAt`.
+
+**New fields (v1.3.0)**:
+- **FD Type & Compounding**: `fdType` (CUMULATIVE/NON_CUMULATIVE), `compoundingFrequency` (MONTHLY/QUARTERLY/HALF_YEARLY/YEARLY), `payoutFrequency` (MONTHLY/QUARTERLY/HALF_YEARLY/YEARLY/AT_MATURITY)
+- **Senior Citizen / Tax-Saver**: `isSeniorCitizen` (boolean), `isTaxSaver` (boolean), `taxSaverLockInYears` (default 5)
+- **TDS**: `hasPan` (boolean, default true), `form15g15hSubmitted` (boolean), `financialYear` (integer)
+- **Premature Withdrawal**: `isPrematurelyWithdrawn` (boolean), `withdrawalDate` (date), `realizedMaturityAmount` (BigDecimal), `penaltyAmount` (BigDecimal), `effectiveRateApplied` (BigDecimal)
+- **Server-Side Validation**: `serverComputedMaturityAmount` (BigDecimal), `maturityAmountOverridden` (boolean), `maturityDifference` (BigDecimal)
 
 ---
 
@@ -296,6 +366,9 @@ and deletes **all** fixed deposits via the newly added
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.3.2 | 2026-08-28 | **HolderName attribution fix**: owner grouping centralized behind shared `common/util/OwnerGrouping.groupKey` + `common/util/HolderName.normalize` (extracted from this module's `normalizeHolderName`, which now delegates). TDS summary grouping and Excel export now build identical keys via the shared helper (**export == screen** guaranteed by construction) — see `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`. |
+| 1.3.1 | 2026-08-28 | **Per-(bank,holder) TDS + senior-rate correction**: TDS threshold (₹50K regular / ₹1L senior) re-applied **per bank-and-holder group** (grouped by `(place, holderName)`, not `place` alone — each holder is their own taxpayer with an independent threshold under Section 194A, matching the Zerodha-family model) instead of per-FD, with proportional per-FD allocation from the group total (rounding-reconciliation so lines sum exactly). `holderName` now **normalized on save** (trim + whitespace-collapse + title-case, same pattern as MF scheme-category) so a person's FDs can never silently split into under-threshold groups. Bank-level context surfaced on every TDS row (`bankName`, `bankTotalGrossInterest`, `bankTaxableInterest`, `bankTotalTdsDeducted`). Removed the hardcoded **+0.50% senior-citizen rate bonus** from `FdMath.computeMaturity` / `computePrematureWithdrawal` and `FdDialog` — `interestRate` is now treated as the final contracted rate (senior bonus already embedded); `isSeniorCitizen` remains only for TDS threshold logic. |
+| 1.3.0 | 2026-08-27 | **Industry Standards Implementation (6 gaps closed)**: TDS computation, premature withdrawal with penalty, Cumulative/Non-Cumulative FD types, configurable compounding frequency (Monthly/Quarterly/Half-Yearly/Yearly), Senior Citizen (+0.50%) & Tax-Saver (5-yr lock-in, 80C) flags, server-side maturity validation with ±₹1 tolerance auto-override. New enums: `FdType`, `CompoundingFrequency`, `InterestPayoutFrequency`, `FdStatus.PREMATURELY_WITHDRAWN`. New endpoints: `/withdraw`, `/tds`, `/tds-summary`. Excel export expanded to 33 columns with TDS, withdrawal, maturity validation fields. Frontend FdDialog updated with all new fields, withdraw button, TDS display in summary. FdMath utility module created for calculation engine. |
 | 1.2.3 | 2026-08-26 | Transaction safety: annotated `createFixedDeposit` and `updateFixedDeposit` with `@Transactional`, leveraging common's `MongoTransactionManager` for atomic save + ordinal reorder operations. |
 | 1.2.2 | 2026-08-26 | XLSX export enhancements: exported actual `fdNo` in column 0, documented multi-tab workbook + totals row. |
 | 1.2.1 | 2026-08-26 | Code cleanup: removed dead `SequenceGeneratorService` injection; corrected documentation to accurately reflect ordinal reordering mechanism. |
