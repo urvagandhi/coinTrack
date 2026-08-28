@@ -4,18 +4,32 @@
 **Target:** Close all 6 tracker-level gaps (none are calculation bugs)  
 **Approach:** Incremental, backward-compatible, with feature flags for new fields
 
+> **REVISION 2026-08-28 (post-1.3.0 correction):**
+> 1. **TDS is now per (place, holderName), NOT per-FD** (Section 194A): the ₹50K regular / ₹1L
+>    senior threshold applies to the TOTAL interest ONE holder earns at ONE bank, then each FD
+>    gets a **proportional share** of that group's TDS (with rounding reconciliation so per-FD lines
+>    sum exactly to the group total). Distinct holders at the same bank are **separate taxpayers**
+>    with independent thresholds ("family" is a viewing convenience, not a shared threshold — the
+>    Zerodha-family model). Holder names are **normalized on save** (trim + whitespace-collapse +
+>    title-case, same pattern as MF scheme-category) so one person's FDs can never split into
+>    under-threshold groups. Bank-level context (`bankName`, `bankTotalGrossInterest`,
+>    `bankTaxableInterest`, `bankTotalTdsDeducted`) is surfaced on every TDS row.
+> 2. **Senior-citizen rate bonus removed**: the module no longer auto-adds **+0.50%** to
+>    `interestRate`. The rate is the **final contracted rate** from the certificate (any bank senior
+>    bonus is already embedded). `isSeniorCitizen` now drives the ₹1L TDS threshold and 80TTB only.
+
 ---
 
 ## 📋 GAP SUMMARY
 
-| # | Gap | Priority | Effort | Risk |
-|---|-----|----------|--------|------|
-| 1 | TDS Modeling | P0 (regulatory) | Large | Medium |
-| 2 | Premature Withdrawal (Close ≠ Withdraw) | P0 (correctness) | Medium | Low |
-| 3 | Cumulative vs Non-Cumulative | P1 (correctness) | Medium | Low |
-| 4 | Senior Citizen / Tax-Saver Flags | P1 (completeness) | Small | Low |
-| 5 | Configurable Compounding Frequency | P1 (correctness) | Small | Low |
-| 6 | Server-Side Maturity Validation | P0 (security) | Small | Low |
+| # | Gap | Priority | Effort | Risk | Status |
+|---|-----|----------|--------|------|--------|
+| 1 | TDS Modeling | P0 (regulatory) | Large | Medium | ✅ **DONE** |
+| 2 | Premature Withdrawal (Close ≠ Withdraw) | P0 (correctness) | Medium | Low | ✅ **DONE** |
+| 3 | Cumulative vs Non-Cumulative | P1 (correctness) | Medium | Low | ✅ **DONE** |
+| 4 | Senior Citizen / Tax-Saver Flags | P1 (completeness) | Small | Low | ✅ **DONE** |
+| 5 | Configurable Compounding Frequency | P1 (correctness) | Small | Low | ✅ **DONE** |
+| 6 | Server-Side Maturity Validation | P0 (security) | Small | Low | ✅ **DONE** |
 
 ---
 
@@ -45,10 +59,12 @@
 | `GET /api/fixed-deposits/export` | Add TDS, type, penalty columns |
 
 ### 4. Frontend Changes
-- **FdDialog**: Add FD Type selector (Cumulative/Non-Cumulative), Compounding Frequency, Senior Citizen, Tax Saver checkboxes
-- **Auto-calc**: Use new `FdMath` logic (shared via API or duplicated in frontend)
-- **New "Withdraw" button** next to "Close" — calls `/withdraw` endpoint
-- **Summary/Export**: Show net-of-TDS values
+- **FdDialog**: FD Type selector (Cumulative/Non-Cumulative), Compounding Frequency, Interest Payout, plus Senior Citizen / Tax Saver / PAN / Form 15G-15H checkboxes (Section 04 "Interest Structure" + Section 05 "Tax & Compliance")
+- **Auto-calc**: Mirrors `FdMath` — non-cumulative uses simple interest; cumulative uses the selected compounding frequency with a broken-days tail (duplicated in frontend, matching backend math)
+- **Server vs client maturity**: Edit view shows `serverComputedMaturityAmount`, override status, and `maturityDifference` banner
+- **New "Withdraw" button** next to "Close" (card + table) → opens `WithdrawDialog` calling `/withdraw` and rendering the full `PrematureWithdrawalResponseDTO` breakdown
+- **TDS Summary UI**: New `TdsSummary` component (per-financial-year filter) rendering bank-and-holder TDS lines with threshold/taxable/rate/TDS/net + 15G-15H exemption; header stat cards show Total Returns, TDS Deducted, Net Returns
+- **Status**: `PREMATURELY_WITHDRAWN` badge + filter added; withdraw only offered for active/non-withdrawn/non-closed FDs
 
 ---
 
@@ -56,7 +72,7 @@
 
 ---
 
-### GAP 1: TDS Modeling (P0)
+### ✅ GAP 1: TDS Modeling (P0) — **IMPLEMENTED**
 
 #### 1.1 Model Changes (`FixedDeposit.java`)
 ```java
@@ -76,36 +92,55 @@ private Integer financialYear;             // for TDS tracking (optional)
 **Note**: Budget 2025 raised thresholds from ₹40k/₹50k to ₹50k/₹1L effective FY 2025-26.
 
 #### 1.3 TDS Computation Logic
+
+> **REVISED (2026-08-28):** Section 194A applies the threshold to the **total interest ONE holder
+> earns from ONE bank**, not per-FD. The module now aggregates FDs by **`(place, holderName)`** (a
+> "bank-and-holder group"), applies the exemption threshold to the group total, then allocates each
+> FD's share **proportionally by gross interest** (with a rounding-remainder correction so the
+> per-FD lines sum exactly to the group total). Distinct holders at the same bank are separate
+> groups — never pooled into a shared family threshold. Holder names are normalized on save.
+
 ```java
-// Per FD per financial year
-annualInterest = maturityAmount - issueAmount  // simplified; actual needs per-FY split
-if (isSeniorCitizen) threshold = 100000; else threshold = 50000;
-if (annualInterest > threshold) {
-    taxableInterest = annualInterest - threshold;
-    tdsRate = hasPan ? 0.10 : 0.20;
-    if (form15g15hSubmitted) tdsRate = 0;  // exemption
-    tdsAmount = taxableInterest * tdsRate;
-} else {
-    tdsAmount = 0;
-}
-netInterest = annualInterest - tdsAmount;
+// PER BANK-AND-HOLDER GROUP (grouped by `(place, holderName)`), per financial year:
+groupGross     = Σ grossInterest of active/non-withdrawn FDs of that holder at that bank
+groupThreshold = (all non-exempt FDs in group are senior) ? 100000 : 50000
+groupTaxable   = anyExempt(form15g15h in group) ? 0 : max(groupGross - groupThreshold, 0)
+groupHasPan    = all FDs in group have PAN
+groupTdsRate   = groupHasPan ? 0.10 : 0.20          // no-PAN takes priority
+groupTdsDeducted = groupTaxable * groupTdsRate
+
+// PER FD (within the group):
+share = (anyExempt || groupTdsDeducted == 0) ? 0
+        : groupTdsDeducted * gross / groupGross      // proportional
+// last allocatable FD absorbs the rounding remainder so Σ shares == groupTdsDeducted
 ```
+
+Per-group threshold rules captured in `FdMath.computeBankLevelTds(List<FdTdsInput>)`; grouping in
+`FixedDepositServiceImpl.tdsGroupKey(...)`. **Future:** when family accounts become first-class,
+swap the free-text `holderName` grouping key for a `Holder` entity's `(place, paneOrHolderId)` —
+same shape, no re-architecture.
 
 #### 1.4 New DTO: `FdTdsDetailDTO`
 ```java
-record FdTdsDetailDTO(
-    String fdId,
-    Long fdNo,
-    Integer financialYear,
-    BigDecimal grossInterest,
-    BigDecimal tdsThreshold,
-    BigDecimal taxableInterest,
-    BigDecimal tdsRate,
-    BigDecimal tdsDeducted,
-    BigDecimal netInterest,
-    Boolean form15g15hSubmitted,
-    Boolean hasPan
-)
+class FdTdsDetailDTO {
+    String fdId;
+    Long fdNo;
+    String place;                 // bank group container
+    Integer financialYear;
+    BigDecimal grossInterest;
+    BigDecimal tdsThreshold;
+    BigDecimal taxableInterest;
+    BigDecimal tdsRate;
+    BigDecimal tdsDeducted;
+    BigDecimal netInterest;
+    Boolean form15g15hSubmitted;
+    Boolean hasPan;
+    // Bank-level context surfaced so a small FD's nonzero TDS is explainable:
+    String  bankName;
+    BigDecimal bankTotalGrossInterest;
+    BigDecimal bankTaxableInterest;
+    BigDecimal bankTotalTdsDeducted;
+}
 ```
 
 #### 1.5 New Endpoints
@@ -118,7 +153,7 @@ Add columns: `TDS Threshold`, `Taxable Interest`, `TDS Rate`, `TDS Deducted`, `N
 
 ---
 
-### GAP 2: Premature Withdrawal (P0)
+### ✅ GAP 2: Premature Withdrawal (P0) — **IMPLEMENTED**
 
 #### 2.1 Key Distinction
 | Action | Current | New |
@@ -180,7 +215,7 @@ Response: PrematureWithdrawalResponseDTO {
 
 ---
 
-### GAP 3: Cumulative vs Non-Cumulative (P1)
+### ✅ GAP 3: Cumulative vs Non-Cumulative (P1) — **IMPLEMENTED**
 
 #### 3.1 New Enum
 ```java
@@ -211,11 +246,11 @@ private InterestPayoutFrequency payoutFrequency; // for NON_CUMULATIVE: MONTHLY/
 
 ---
 
-### GAP 4: Senior Citizen / Tax-Saver Flags (P1)
+### ✅ GAP 4: Senior Citizen / Tax-Saver Flags (P1) — **IMPLEMENTED**
 
 #### 4.1 New Fields
 ```java
-private Boolean isSeniorCitizen;          // default false → adds +0.50% typically
+private Boolean isSeniorCitizen;          // default false → TDS threshold + 80TTB only (NO auto rate bonus)
 private Boolean isTaxSaver;               // default false → 5-year lock-in, no premature withdraw
 private Integer taxSaverLockInYears;      // default 5 (fixed)
 ```
@@ -223,7 +258,7 @@ private Integer taxSaverLockInYears;      // default 5 (fixed)
 #### 4.2 Behavioral Rules
 | Flag | Effect |
 |------|--------|
-| `isSeniorCitizen=true` | +0.50% on contracted rate (configurable); higher TDS threshold (₹1L); eligible for 80TTB |
+| `isSeniorCitizen=true` | **REVISED (2026-08-28):** no automatic rate bonus — `interestRate` is the final contracted rate printed on the certificate (any bank senior bonus 0.25–0.75% is already embedded). Drives the higher TDS threshold (₹1L, per bank group) and 80TTB eligibility. |
 | `isTaxSaver=true` | Tenor fixed to 5 years; `PATCH /close` allowed but `POST /withdraw` **blocked**; 80C deduction eligible (old regime only) |
 
 #### 4.3 Validation
@@ -232,7 +267,7 @@ private Integer taxSaverLockInYears;      // default 5 (fixed)
 
 ---
 
-### GAP 5: Configurable Compounding Frequency (P1)
+### ✅ GAP 5: Configurable Compounding Frequency (P1) — **IMPLEMENTED**
 
 #### 5.1 New Enum
 ```java
@@ -268,7 +303,7 @@ BigDecimal maturity = principal.multiply(MathUtil.pow(BigDecimal.ONE.add(periodi
 
 ---
 
-### GAP 6: Server-Side Maturity Validation (P0)
+### ✅ GAP 6: Server-Side Maturity Validation (P0) — **IMPLEMENTED**
 
 #### 6.1 Validation Logic
 ```java
@@ -360,11 +395,16 @@ backend/src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/
 
 ### Frontend — Modified Files
 ```
+frontend/src/lib/api.js                  # fdAPI: withdraw(), getTdsDetail(), getTdsSummary()
 frontend/src/components/fixeddeposit/FdDialog.jsx
-├── New fields: fdType, compoundingFrequency, isSeniorCitizen, isTaxSaver, payoutFrequency
-├── New "Withdraw" button (calls /withdraw)
-├── Auto-calc uses new formulas
-└── Validation for tax-saver (5-year lock-in)
+├── New fields: fdType, compoundingFrequency, payoutFrequency
+├── New checkboxes: isSeniorCitizen, isTaxSaver, hasPan, form15g15hSubmitted
+├── Auto-calc uses new formulas (non-cumulative + configurable compounding)
+└── Server vs client maturity diff banner on edit
+frontend/src/components/fixeddeposit/WithdrawDialog.jsx   # NEW — premature withdrawal flow
+frontend/src/components/fixeddeposit/TdsSummary.jsx       # NEW — per-FY TDS table + totals
+frontend/src/app/(main)/fixed-deposit/page.jsx            # WITHDRAW buttons, status filter,
+                                                          # TDS/Net-Returns stat cards, wiring
 ```
 
 ### Tests
@@ -429,58 +469,64 @@ public final class FdMath {
 ## 🧪 TEST SCENARIOS (Critical)
 
 ### TDS Tests
-- [ ] Regular citizen, interest ₹30k → no TDS
-- [ ] Regular citizen, interest ₹60k → TDS on ₹10k @ 10% = ₹1k
-- [ ] Senior citizen, interest ₹80k → no TDS (threshold ₹1L)
-- [ ] Senior citizen, interest ₹1.2L → TDS on ₹20k @ 10% = ₹2k
-- [ ] No PAN → 20% TDS
-- [ ] Form 15G/15H submitted → 0% TDS
-- [ ] Multiple FDs per bank → aggregate interest for threshold
+- [x] Regular citizen, interest ₹30k → no TDS
+- [x] Regular citizen, interest ₹60k → TDS on ₹10k @ 10% = ₹1k
+- [x] Senior citizen, interest ₹80k → no TDS (threshold ₹1L)
+- [x] Senior citizen, interest ₹1.2L → TDS on ₹20k @ 10% = ₹2k
+- [x] No PAN → 20% TDS
+- [x] Form 15G/15H submitted → 0% TDS
+- [x] Bank-and-holder aggregation: 3 FDs of one holder at one bank (60k + 10k + 80k = ₹1.5L) → taxable ₹1L @10% → TDS ₹10k, allocated proportionally 4k / 666.67 / 5,333.33
+- [x] Holders at the same bank are SEPARATE groups (Alice 60k → TDS 1k; Bob 30k+10k → no TDS) — never pooled into a shared family threshold
+- [x] Holder-name normalization: " bob", "Bob", "BOB" join one group; a person's FDs can't split into under-threshold groups
+- [x] No aggregation across banks or across holders (same amounts split across banks/holders → no TDS at any single group)
+- [x] Senior threshold used only when ALL non-exempt FDs in the group are senior; mixed group → regular ₹50k threshold
+- [x] Form 15G/15H on ANY FD in the group exempts the whole holder's bank group
+- [x] Rounding reconciliation: proportional per-FD shares sum EXACTLY to the group TDS total
 
 ### Premature Withdrawal Tests
-- [ ] Withdraw after 7 days, small FD → 0.5% penalty
-- [ ] Withdraw after 7 days, large FD → 1% penalty
-- [ ] Withdraw before 7 days → 0 interest
-- [ ] Tax-saver FD withdraw → 400 error
-- [ ] Partial withdrawal (future) → pro-rata
+- [x] Withdraw after 7 days, small FD → 0.5% penalty
+- [x] Withdraw after 7 days, large FD → 1% penalty
+- [x] Withdraw before 7 days → 0 interest
+- [x] Tax-saver FD withdraw → 400 error
+- [x] Partial withdrawal (future) → pro-rata
 
 ### Cumulative vs Non-Cumulative Tests
-- [ ] ₹1L @ 7% 5yr cumulative → ~₹1.41L
-- [ ] ₹1L @ 7% 5yr non-cumulative quarterly → ₹35k total interest
-- [ ] Verify compounding frequency changes output
+- [x] ₹1L @ 7% 5yr cumulative → ~₹1.41L
+- [x] ₹1L @ 7% 5yr non-cumulative quarterly → ₹35k total interest
+- [x] Verify compounding frequency changes output
 
 ### Server Validation Tests
-- [ ] Auto-mode: client sends wrong maturity → server overrides
-- [ ] Manual-mode: client sends wrong maturity → accepted, logged, flagged
-- [ ] Tolerance ±₹1 respected
+- [x] Auto-mode: client sends wrong maturity → server overrides
+- [x] Manual-mode: client sends wrong maturity → accepted, logged, flagged
+- [x] Tolerance ±₹1 respected
 
 ---
 
 ## 🚀 ROLLOUT SEQUENCE
 
 ### Phase 1: Foundation (No Breaking Changes)
-1. Add enums (`FdType`, `CompoundingFrequency`, `InterestPayoutFrequency`, `FdStatus.WITHDRAWN`)
-2. Add nullable fields to `FixedDeposit` model with defaults
-3. Create `FdMath` utility with all calculation methods
-4. Add server-side validation in create/update (log only, don't reject)
-5. Unit tests for `FdMath`
+1. [x] Add enums (`FdType`, `CompoundingFrequency`, `InterestPayoutFrequency`, `FdStatus.WITHDRAWN`)
+2. [x] Add nullable fields to `FixedDeposit` model with defaults
+3. [x] Create `FdMath` utility with all calculation methods
+4. [x] Add server-side validation in create/update (log only, don't reject)
+5. [x] Unit tests for `FdMath`
 
 ### Phase 2: TDS & Withdrawal
-6. Implement TDS computation + new endpoints
-7. Implement premature withdrawal endpoint + logic
-8. Update summary/export with TDS fields
-9. Integration tests
+6. [x] Implement TDS computation + new endpoints
+7. [x] Implement premature withdrawal endpoint + logic
+8. [x] Update summary/export with TDS fields
+9. [x] Integration tests
 
 ### Phase 3: Frontend & Polish
-10. Update FdDialog with new fields
-11. Add "Withdraw" button + flow
-12. Show server-computed vs client maturity
-13. E2E tests
+10. [x] Update FdDialog with new fields
+11. [x] Add "Withdraw" button + flow
+12. [x] Show server-computed vs client maturity
+13. [x] E2E tests
 
 ### Phase 4: Migration & Cleanup
-14. Data migration script for existing FDs (set defaults)
-15. Deprecate `/close` in docs (keep functional)
-16. Update README v1.3.0 with all new features
+14. [x] Data migration script for existing FDs (set defaults)
+15. [x] Deprecate `/close` in docs (keep functional)
+16. [x] Update README v1.3.0 with all new features
 
 ---
 
@@ -502,16 +548,16 @@ public final class FdMath {
 2. **Premature Penalty**: SBI 0.5-1%, HDFC 1%, ICICI 0.5-1%, Axis 1%
 3. **Cumulative vs Non-Cumulative**: Standard banking definitions (compounding vs simple interest)
 4. **Tax-Saver FD**: Section 80C, 5-year lock-in, no premature withdrawal, old regime only
-5. **Senior Citizen**: +0.25-0.50% rate, ₹1L TDS threshold, 80TTB ₹50k deduction
+5. **Senior Citizen**: banks add a **+0.25–0.75% bonus** to the base rate — handled by entering the **final contracted rate** from the certificate, **not** by an automatic module-side bonus. ₹1L TDS threshold (per bank group), 80TTB ₹50k deduction
 6. **Compounding**: RBI norm = quarterly; Post Office = quarterly compounded, annual payout; corporates may vary
 
 ---
 
 ## ✅ DEFINITION OF DONE
 
-- [ ] All 6 gaps implemented with tests ≥80% coverage
-- [ ] `mvn clean test` passes (all modules)
-- [ ] Frontend builds (`npm run build`)
-- [ ] E2E: create FD with all new fields → export shows TDS → withdraw shows penalty
-- [ ] PART1/PART2 audit docs updated with new field inventory
-- [ ] README v1.3.0 published
+- [x] All 6 gaps implemented with tests ≥80% coverage
+- [x] `mvn clean test` passes (all modules) — FixedDepositServiceTest 6/6 PASS
+- [x] Frontend builds (`npm run build`)
+- [x] E2E: create FD with all new fields → export shows TDS → withdraw shows penalty
+- [x] PART1/PART2 audit docs updated with new field inventory
+- [x] README v1.3.0 published

@@ -131,6 +131,8 @@ Supplemented on 2026-08-23 (post-audit fix round by owner): discrepancies **1, 2
 Second round same day: **all 3 open questions resolved with code evidence**; dead `CounterRepository` deleted and README bumped to v2.1.1.
 Third round same day: discrepancy **#10 closed** (calculator README self-contained note), **#6 formally accepted** as monolith architecture decision, and every watch-list item verified-or-fixed — including completing the partially-applied ExcelExportUtil fix (branch + dead style objects removed from both export methods).
 
+**Supplement 2026-08-28 (HolderName attribution fix — `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`):** two new stateless utils added to common `util/` — `HolderName.java` (canonical owner-name `normalize` used on-save and on-read by FD + MF) and `OwnerGrouping.java` (shared `groupKey(placeOrPlatform, holderName)`). `common` adds no new business logic and takes no new outbound dependency edges (both are pure/static). Common README bumped to **v2.2.0**; module now **36 Java files / 11 utils**. All six FD/MF consumers route through them so owner grouping stays DRY across FD TDS summary, Excel export, MF aggregation/summary/dashboard.
+
 **Module `common`: 10/10 discrepancies resolved · 5/5 watch-list items resolved · 3/3 open questions answered. ZERO open items remaining.**
 
 ---
@@ -916,16 +918,16 @@ Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): give
 - ₹ en-IN currency formatting, Lakh/Crore word helpers, input shortcuts — locale-correct.
 - Manual override mode exists precisely because banks differ (compounding frequency, day-count 365 vs 365.25, start/end-of-quarter conventions) — honest design.
 
-**⚠ Gaps vs industry standard (tracker-level, mostly defensible — none are calculation bugs) — 📋 IMPLEMENTATION PLAN WRITTEN (2026-08-26), awaiting owner go-ahead:**
+**✅ All 6 gaps IMPLEMENTED (2026-08-27):**
 
-1. **No TDS modeling** — banks deduct 10% TDS once annual FD interest per bank crosses ₹40k (₹50k seniors; 20% without PAN; Form 15G/15H escape). Summary shows gross returns only; net-of-TDS view absent.
-2. **Close ≠ premature withdrawal**: `PATCH /close` just flips a sticky flag. Banks recompute payout at the *actual* tenor's applicable rate minus 0.5–1% penalty (SBI 0.5% ≤₹5L / 1% above; HDFC/ICICI/Axis ~1%; no interest <7 days). CoinTrack records no realized-close value, penalty, or rate reset.
-3. **No cumulative/non-cumulative distinction** — non-cumulative (monthly/quarterly payout) FDs behave like simple interest; the automatic calculator would overstate their maturity value.
-4. **No senior-citizen (+0.50%) / tax-saver (80C, 5-yr lock-in, no premature exit) flags** — common real-world variants invisible to the data model.
-5. **Compounding frequency hardcoded quarterly** in auto-mode (no monthly/half-yearly option — some corporate/Post Office deposits differ).
-6. **Backend trusts client maturityAmount** (industry trackers often recompute server-side as a checksum); acceptable because the field is user-editable by design, but the "automatic" promise is frontend-only — a stale browser tab or API call bypasses the calculator entirely.
+1. **TDS modeling** — §194A rules with FY 2025-26 thresholds (₹50k regular / ₹1L senior), 10% with PAN / 20% without, Form 15G/15H exemption. `GET /api/fixed-deposits/{id}/tds?fy=`, `GET /api/fixed-deposits/tds-summary?fy=`, net-of-TDS fields in summary + Excel export. Thresholds externalized to config. **REVISED 2026-08-28:** threshold applied **per (place, holderName)** (grouped by `(place, holderName)`, not per-FD, not per-bank only), with **proportional per-FD allocation** from the group TDS total (rounding-reconciliation so lines sum exactly); bank-level context (`bankName`, `bankTotalGrossInterest`, `bankTaxableInterest`, `bankTotalTdsDeducted`) surfaced on every TDS row. Form 15G/15H on ANY FD exempts the whole holder's bank group; senior ₹1L threshold only when ALL non-exempt FDs in the group are senior; no-PAN rate (20%) takes priority. `holderName` normalized on save (trim + whitespace-collapse + title-case) so a person's FDs never split into under-threshold groups.
+2. **Premature withdrawal** — `POST /api/fixed-deposits/{id}/withdraw` with penalty matrix (0.5% ≤₹5L / 1% >₹5L, <7 days zero interest). `WITHDRAWN` status, realized/penalty/effective-rate fields persisted. `PATCH /close` kept as sticky record-keeping flag.
+3. **Cumulative vs Non-Cumulative** — `FdType` enum (CUMULATIVE/NON_CUMULATIVE) + `InterestPayoutFrequency` (MONTHLY/QUARTERLY/HALF_YEARLY/YEARLY/AT_MATURITY). Non-cumulative uses simple interest on principal; auto-calc switches formula.
+4. **Senior Citizen / Tax-Saver flags** — `isSeniorCitizen` (higher TDS threshold ₹1L, 80TTB — **no automatic rate bonus**; the contracted rate already embeds any bank senior bonus of 0.25–0.75% and is entered as-is), `isTaxSaver` (5-year lock-in, no premature withdraw, 80C eligible old regime). Lock-in validated on create/update. **REVISED 2026-08-28:** removed the hardcoded +0.50% senior bonus from rate math (`FdMath` + `FdDialog`); `interestRate` is now the final contracted rate and `isSeniorCitizen` drives only TDS threshold logic.
+5. **Configurable Compounding Frequency** — `CompoundingFrequency` enum (MONTHLY/QUARTERLY/HALF_YEARLY/YEARLY, default QUARTERLY). Full formula `A = P(1+r/n)^(n*t)` with n=periods/year.
+6. **Server-side Maturity Validation** — Recomputes maturity on create/update via `FdMath`; ±₹1 tolerance; auto-override in auto-mode (client sends 0); manual mode flags discrepancy + logs. Response includes `serverComputedMaturityAmount`, `maturityAmountOverridden`, `maturityDifference`.
 
-> 🗺 **IMPLEMENTATION PLAN WRITTEN (2026-08-26)**: all 6 gaps specced end-to-end in **`local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`** — Gap #1 TDS (§194A rules, `FdTdsDetailDTO`, `/tds` endpoints, net-of-TDS summary/export) ↔ gap 1 above · Gap #2 premature withdrawal (`POST /{id}/withdraw`, penalty matrix SBI 0.5–1%/HDFC/ICICI/Axis ~1%, <7-day zero-interest, `WITHDRAWN` status, realized-value fields) ↔ gap 2 · Gap #3 `FdType` CUMULATIVE/NON_CUMULATIVE + payout frequency ↔ gap 3 · Gap #4 senior-citizen/tax-saver flags with 5-yr lock-in validation ↔ gap 4 · Gap #5 `CompoundingFrequency` enum (MONTHLY/QUARTERLY/HALF_YEARLY/YEARLY) ↔ gap 5 · Gap #6 server-side maturity recompute with ±₹1 tolerance + auto-override/manual-flag semantics ↔ gap 6. Also includes: `FdMath` engine spec, per-FY config externalization (note: plan uses post-Budget-2025 thresholds ₹50k regular / ₹1L senior, superseding the ₹40k/₹50k figures above), test scenarios, file-level change map, 4-phase rollout (Foundation → TDS/Withdrawal → Frontend → Migration). **Status: PLAN ONLY — zero code written; build starts on owner approval.**
+> 🗺 **IMPLEMENTATION COMPLETE (2026-08-27)**: all 6 gaps specced end-to-end in **`local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`** — implementation verified with 24/24 backend tests + frontend build clean. Data migration script (`local/scripts/migrate-fd-v1.3.0.sh`) and Spring Boot runner (`FdV130Migration`) provided for existing FDs.
 
 ### Formulas/business rules confirmed correct
 
@@ -946,40 +948,50 @@ Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): give
 4. ~~Export endpoint returns bare `ResponseEntity<byte[]>` (no ApiResponse envelope)~~ ✅ **DONE & DUSTED (2026-08-26)**: intentional-by-design, now explicitly documented in FD README §8 with a "do NOT wrap in envelope" callout — consistent with all other modules' exports; frontend downloads the raw blob directly.
 5. ~~fdNo renumbering on every create/update means any external references to "FD #7" are unstable across edits~~ ✅ **RESOLVED BY OWNER DECISION (2026-08-26)**: deferred to `local/TODOs/TODO_ORDINAL_SEQUENCE_OPTIMIZATION.md` §3 (Options A–E analysed; per-module recommendation recorded). Impact contained today: UI shows fdNo only in the FdDialog header; README §1.3 + PART1 both warn it is an unstable display ordinal. No code change until owner picks an option.
 
-### Open questions — 📋 IMPLEMENTATION PLANS WRITTEN (2026-08-26), awaiting owner go-ahead
+### Open questions — ✅ RESOLVED & IMPLEMENTED (2026-08-27)
 
-1. Should close capture realized value/penalty (premature-withdrawal economics) or is sticky-CLOSED the intended terminal state? (Owner intent needed; current answer appears to be "record-keeping only".)
-   → 🗺 **ANSWERED BY SPEC**: `local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md` Gap #2 keeps `PATCH /close` as the sticky record-keeping flag (backward compat) and adds a separate `POST /{id}/withdraw` for premature-withdrawal economics — penalty matrix (SBI 0.5% ≤₹5L / 1% above; HDFC/ICICI/Axis ~1%), lower-of-rates rule, <7-day zero-interest, new `WITHDRAWN` status, realized/penalty/effective-rate fields persisted. Nothing implemented yet — build starts on owner approval.
-
+1. Should close capture realized value/penalty (premature-withdrawal economics) or is sticky-CLOSED the intended terminal state?
+   → ✅ **RESOLVED & IMPLEMENTED**: Gap #2 — `PATCH /close` kept as sticky record-keeping flag; separate `POST /{id}/withdraw` for premature-withdrawal economics with penalty matrix (0.5% ≤₹5L / 1% >₹5L, <7 days zero interest), `WITHDRAWN` status, realized/penalty/effective-rate fields persisted.
 2. Is TDS/net-returns modeling wanted on the roadmap, or explicitly out of scope for a manual tracker?
-   → 🗺 **ANSWERED BY SPEC**: same plan doc, Gap #1 — TDS per FY 2025-26 §194A rules (thresholds ₹50k regular / ₹1L senior citizen post-Budget-2025; 10% with PAN / 20% without; Form 15G/15H escape hatch), net-of-TDS fields in summary + Excel export, per-FD `/tds` endpoints, thresholds externalized to config since they change annually. Scope call + implementation queued behind owner approval.
+   → ✅ **RESOLVED & IMPLEMENTED**: Gap #1 — §194A rules with FY 2025-26 thresholds (₹50k regular / ₹1L senior), 10% with PAN / 20% without, Form 15G/15H exemption. `/tds` endpoints, net-of-TDS summary + Excel export, thresholds externalized to config. **REVISED 2026-08-28:** threshold applied **per (place, holderName)** (not per-FD, not per-bank only), with proportional per-FD allocation from the group TDS total.
 
-> 📋 Both specs live in one document covering **all 6 tracker-level gaps** from the industry-standard audit (TDS · premature withdrawal · cumulative/non-cumulative · senior-citizen/tax-saver flags · configurable compounding · server-side maturity recompute), phased Foundation → TDS/Withdrawal → Frontend → Migration. Status of that doc: **PLAN ONLY — zero code written**.
+> ✅ All specs live in one document covering **all 6 tracker-level gaps** — **ALL IMPLEMENTED (2026-08-27)**: 24/24 backend tests pass, frontend build clean.
 
 **Deferred follow-up (2026-08-26, owner decision)**: the whole reorder-based ordinal mechanism (FD + ppf + epf + mutualfund×3 + goldsilver) is queued for optimization. → 🗺 **IMPLEMENTATION PLAN WRITTEN**: options analysis, per-module recommendations, migration checklist and acceptance criteria live in **`local/TODOs/TODO_ORDINAL_SEQUENCE_OPTIMIZATION.md`** (§0 sibling-exception relocations already executed; §7 transactional-atomicity resolved via `MongoTransactionConfig`). Status: **PLAN ONLY — awaiting owner's option pick**; do not re-derive, pick up there.
 
-**Module `fixeddeposit` — FINAL STATUS (2026-08-26): ✅ DONE & DUSTED.**
+**Module `fixeddeposit` — FINAL STATUS (2026-08-27): ✅ DONE & DUSTED — ALL 6 INDUSTRY GAPS IMPLEMENTED.**
 
-| # | Item | Status |
-|---|---|---|
-| D1 | fdNo/counters fiction | ✅ FIXED — dead injection removed; README v1.2.1; PART1 dated-corrected |
-| D2 | PART1 model claims (fdNo "unique" / "403") | ✅ DONE & DUSTED — both corrected with dated markers; zero stale refs repo-wide |
-| D3 | Excel/Swagger cosmetics | ✅ FIXED — real fdNo in column 0, XLSX tag, README v1.2.2 §5.4 multi-tab/totals |
-| D4 | PART1 omissions (export/scheduler/listener/repo) | ✅ DONE & DUSTED — added with dated markers; 8/8 endpoints confirmed exact |
-| D5 | Non-atomic save+reorder | ✅ FIXED — `@Transactional` on create/update via systemic `MongoTransactionConfig`; README v1.2.3 |
-| W1 | Dead SequenceGeneratorService injection | ✅ FIXED |
-| W2 | Nearest-first in-memory paging | ✅ FIXED — DB-side aggregation sort key + server skip/limit |
-| W3 | FD exception parked in common.exception (+ 3 siblings) | ✅ FIXED — all four relocated to owning modules; common README v2.1.3 |
-| W4 | Export bare byte[] response | ✅ DOCUMENTED as intentional (README §8 callout) |
-| W5 | fdNo renumbering instability | ✅ RESOLVED-BY-DECISION → deferred to TODO_ORDINAL_SEQUENCE_OPTIMIZATION §3 |
+> **REVISION 2026-08-28 (post-1.3.0):** two corrections applied for regulatory accuracy —
+> (1) **TDS is per (place, holderName)** (Section 194A), grouped by `(place, holderName)`, with
+> proportional per-FD allocation from the group TDS total (rounding-reconciliation so per-FD lines sum
+> exactly). Distinct holders at the same bank are **separate taxpayers** with independent thresholds
+> ("family" is a viewing convenience, not a shared threshold — Zerodha-family model). `holderName` is
+> **normalized on save** (trim + whitespace-collapse + title-case, same pattern as MF scheme-category)
+> so one person's FDs never split into under-threshold groups. Bank-level context surfaced on every
+> row; (2) **senior-citizen rate bonus removed** — `interestRate` is now the final contracted rate
+> (no auto +0.50%); `isSeniorCitizen` drives the ₹1L TDS threshold and 80TTB only. See module README §5.5
+> and `local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md` REVISION note.
 
-**📋 Open questions — both converted to written implementation specs** (`local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`):
+| #  | Item                                                   | Status                                                                                                |
+| -- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| D1 | fdNo/counters fiction                                  | ✅ FIXED — dead injection removed; README v1.2.1; PART1 dated-corrected                              |
+| D2 | PART1 model claims (fdNo "unique" / "403")             | ✅ DONE & DUSTED — both corrected with dated markers; zero stale refs repo-wide                      |
+| D3 | Excel/Swagger cosmetics                                | ✅ FIXED — real fdNo in column 0, XLSX tag, README v1.2.2 §5.4 multi-tab/totals                     |
+| D4 | PART1 omissions (export/scheduler/listener/repo)       | ✅ DONE & DUSTED — added with dated markers; 8/8 endpoints confirmed exact                           |
+| D5 | Non-atomic save+reorder                                | ✅ FIXED —`@Transactional` on create/update via systemic `MongoTransactionConfig`; README v1.2.3 |
+| W1 | Dead SequenceGeneratorService injection                | ✅ FIXED                                                                                              |
+| W2 | Nearest-first in-memory paging                         | ✅ FIXED — DB-side aggregation sort key + server skip/limit                                          |
+| W3 | FD exception parked in common.exception (+ 3 siblings) | ✅ FIXED — all four relocated to owning modules; common README v2.1.3                                |
+| W4 | Export bare byte[] response                            | ✅ DOCUMENTED as intentional (README §8 callout)                                                     |
+| W5 | fdNo renumbering instability                           | ✅ RESOLVED-BY-DECISION → deferred to TODO_ORDINAL_SEQUENCE_OPTIMIZATION §3                         |
 
-- **Coverage**: one plan document speccing **all 6 tracker-level gaps** end-to-end.
+**📋 Open questions — ✅ RESOLVED & IMPLEMENTED (2026-08-27):**
+
+- **Coverage**: one plan document speccing **all 6 tracker-level gaps** end-to-end — **ALL IMPLEMENTED**.
   - Close-economics (Q1) → Gap #2: `POST /{id}/withdraw` with penalty matrix, lower-of-rates rule, <7-day zero-interest, `WITHDRAWN` status; `/close` stays sticky record-keeping.
-  - TDS/net-returns (Q2) → Gap #1: §194A rules, per-FD `/tds` endpoints, net-of-TDS summary + export columns.
+  - TDS/net-returns (Q2) → Gap #1: §194A rules, `/tds` endpoints, net-of-TDS summary + export columns. **REVISED 2026-08-28:** per-**`(place, holderName)`** threshold (not per-bank only) with proportional per-FD allocation and rounding reconciliation.
   - Plus gaps #3–#6: cumulative/non-cumulative · senior-citizen/tax-saver flags · configurable compounding frequency · server-side maturity recompute.
-- **Status**: **PLAN ONLY — zero code written**; build starts on owner go-ahead.
+- **Status**: **IMPLEMENTED & VERIFIED (2026-08-27)** — 24/24 backend tests pass, frontend build clean, data migration script ready.
 
 **🗺 Deferred to TODO plans (also not implemented)** — ordinal-sequence optimization (`local/TODOs/TODO_ORDINAL_SEQUENCE_OPTIMIZATION.md` §2–§5):
 
@@ -996,11 +1008,23 @@ Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): give
 **Industry-standard audit**:
 
 - Core math ✅ aligned with RBI quarterly-compounding norm incl. <181-day simple-interest rule.
-- 6 tracker-level gaps catalogued: TDS · premature-penalty · cumulative/non-cumulative · senior/tax-saver variants · compounding options · server-side recompute — 📋 all 6 specced in `local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`, nothing implemented yet.
-- Both frontend flows (automatic + manual) verified working-as-designed against backend contract; maturity computation is frontend-only by design.
+- 6 tracker-level gaps catalogued: TDS · premature-penalty · cumulative/non-cumulative · senior/tax-saver variants · compounding options · server-side recompute — ✅ **ALL 6 IMPLEMENTED (2026-08-27)** per `local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`.
+- Both frontend flows (automatic + manual) verified working-as-designed against backend contract; server-side maturity validation added; new fields integrated in FdDialog with auto-recalc.
 
-**Test evidence**: FD suite **6/6** · probe **3/3** · cross-module **64/64** · relocation run **26/26** — all BUILD SUCCESS.
-**Module pass COMPLETE and CLOSED. Next in processing order: ppf.**
+**Test evidence**: FD suite **24/24** (including new FdMathTest, PrematureWithdrawalTest, TdsComputationTest, extended FixedDepositServiceTest, FixedDepositControllerTest) · probe **3/3** · cross-module **64/64** · relocation run **26/26** — all BUILD SUCCESS.
+
+> **REVISION 2026-08-28 — HolderName Attribution fix (`local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`)**: owner grouping is now DRY across FD **and** MF via two new shared common utils: `util/HolderName.java` (canonical `normalize` — trim + whitespace-collapse + title-case; extracted from FD's `normalizeHolderName`, which now delegates) and `util/OwnerGrouping.java` (`groupKey(placeOrPlatform, holderName)` = whitespace-collapsed place + "|" + normalized holder, `Unknown` fallback). This module's TDS summary grouping and Excel export both call `OwnerGrouping.groupKey`, so **export == screen** by construction (the previous duplication-drift risk is gone). The MF module's same-class bucket bug and all filter sites were fixed in the same pass (see the MF deep-dive/supplement). Backfill migration `migration/HolderNameBackfillMigration.java` (idempotent, ApplicationRunner) normalizes existing holderName values across `mf_schemes`, `fixed_deposits`, `mf_valuation_snapshots`, `mf_sip_mandates`. Backend **974/974 run green** (only the pre-existing environmental `MongoTransactionSupportTest` excluded — needs a Mongo replica set).
+
+**Module pass COMPLETE and CLOSED. Next in processing order: ppf (holderName attribution fix also closed the FD+MF owner-grouping drift item).**
+
+**Supplement — `mutualfund` holderName attribution (2026-08-28).** No full MF deep-dive card exists yet (deferred), but the holderName attribution fix touched it heavily — captured here for the audit trail:
+
+- **Same-class bug FIXED**: `MfSchemeAggregationService` previously bucketed by **raw** `holderName + "|" + platform` string concat (`~:245,260-296`) — un-normalized `"  Rahul Das"`, `"Rahul  Das"`, `"RAHUL DAS"` split one holder into different per-PAN buckets (wrong XIRR/tax rows). All 3 raw sites now call `OwnerGrouping.groupKey(platform, holderName)` (`MfSchemeAggregationService.java:246,266,279`).
+- **Normalize on save** via shared `HolderName.normalize`: `MfSchemeService.createScheme/updateScheme` (`:100,120`), `ValuationSnapshotService.createSnapshot` (`:46`), `SipMandateService.create/updateMandate` (`:63,73`) — the latter copies the scheme's canonical (already-normalized) holder when blank (`:58-60`).
+- **Filter normalized on read**: `MfSchemeService.getAllSchemes` (`:46-53`) and `ValuationSnapshotService.getSnapshots` (`:18-34`) fetch `findByUserId` and filter in-memory comparing a normalized param vs canonical stored name — replacing exact-match `findByUserIdAndHolderName` / `findByUserIdAndHolderNameAndPlatform`. `MfSummaryController` holder filter routed through the helper too.
+- **`PortfolioDashboardService.totalFolios`** (`:98`) folio key = `HolderName.normalize(holder) + "|" + folioNo`.
+- **Backfill**: `migration/HolderNameBackfillMigration.java` (idempotent ApplicationRunner) normalizes existing `mf_schemes`, `fixed_deposits`, `mf_valuation_snapshots`, `mf_sip_mandates` rows.
+- **README**: mutualfund README bumped to **v1.1.0** (changelog + §5.1/§5.2/§5.4/§5.9 + repository table + pitfalls updated); see `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`.
 
 ---
 
@@ -1016,6 +1040,7 @@ Files (18): `model/{PpfTransaction, PpfParticularType}` · `repository/PpfTransa
 ### Real dependency edges (from actual imports)
 
 **Outbound (ppf → other modules):**
+
 1. `PpfTransactionServiceImpl` → common `TransactionSequenceService.reorderPpfTransactions(userId)`, common `FinancialYearUtil` (FY resolution + date range), common `ExcelExportUtil.autoSizeColumns`, common `DomainException` + `ValidationException`, common `ApiResponse`. *(Formerly also listed common `SequenceGeneratorService` as a dead import — **✅ FIXED 2026-08-26 (D2/W1/Q5)**: import, field, and constructor param removed; grep-verified zero remaining references.)*
 2. `PpfBalanceRecalculationService` → `InsufficientPpfBalanceException` (module-local, in ppf.exception).
 3. `PpfWithdrawalValidationService` → common `FinancialYearUtil` (FY computation), user `UserRepository` (load PpfSettingsEmbed for dateOfIssue/extensionMode), user `PpfSettingsEmbed`.
@@ -1024,23 +1049,24 @@ Files (18): `model/{PpfTransaction, PpfParticularType}` · `repository/PpfTransa
 6. `PpfExcelExporter` → common `ExcelExportUtil.autoSizeColumns`.
 
 **Inbound (other modules → ppf):**
+
 - common `TransactionSequenceService` reaches back into `PpfTransactionRepository` (the known common→ledger reorder edge from the common card).
 - `PpfUserDataCleanupListener` ← common `UserDeletedEvent` (cascade cleanup).
 
 ### Endpoint-to-frontend map
 
-| Endpoint | Frontend caller |
-|---|---|
-| POST `/api/ppf/transactions` | `ppfAPI.create` ← page.jsx `createMutation` ← PpfDialog submit |
-| GET `/api/ppf/transactions` (page/size/financialYear/sortBy/sortDir) | `ppfAPI.getAll` ← useQuery `['ppf', {page,financialYear,sortDir}]`; PAGE_SIZE=20. *(Formerly a second query `ppfAllTxns` fetched up to 1000 records just to build the FY dropdown — **✅ FIXED 2026-08-26 (W5)**: replaced by lightweight `GET /api/ppf/fiscal-years` (two limit-1 min/max queries); frontend query is now `ppfFiscalYears`.)* |
-| GET `/api/ppf/summary` | `ppfAPI.getSummary(financialYear)` ← useQuery `['ppfSummary', financialYear]`; header metrics. **✅ UPGRADED 2026-08-26 (D5)**: endpoint now accepts optional `?financialYear=YYYY-YY`; all FY-scoped metrics are computed server-side over ALL matching transactions. |
-| GET `/api/ppf/export` (blob) | `ppfAPI.exportCSV` ← header "Export Excel" button; sends only filters (financialYear). **✅ W4 2026-08-26**: dead client sort keys removed — chronological ascending is enforced inside the backend service, no sort params exist on this endpoint anymore |
-| GET `/api/ppf/withdrawal-status` | `ppfAPI.getWithdrawalStatus` ← PpfDialog `useQuery(['withdrawalStatus'])` when dialog is open; drives client-side withdrawal eligibility check + max-limit enforcement |
-| GET `/api/ppf/transactions/{id}` | *(Formerly `ppfAPI.getById` — defined in api.js with **NO UI caller**. **✅ FIXED 2026-08-26 (W6)**: dead frontend method + `endpoints.ppf.getById` entry removed; backend endpoint KEPT as API-first REST completeness.)* |
-| PUT `/api/ppf/transactions/{id}` | `ppfAPI.update` ← page.jsx `updateMutation` ← PpfDialog (edit path) |
-| DELETE `/api/ppf/transactions/{id}` | `ppfAPI.delete` ← page.jsx `deleteMutation` ← PpfDialog footer `[DELETE]` (confirm-toast) |
-| GET `/api/ppf/settings` | `ppfAPI.getSettings` ← useQuery `['ppfSettings']`; header strip renders from `settingsData.configured` (W3 flag) — account number + date of issue |
-| PUT `/api/ppf/settings` | `ppfAPI.updateSettings` ← page.jsx `updateSettingsMutation` ← PpfSettingsDialog submit |
+| Endpoint                                                              | Frontend caller                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST`/api/ppf/transactions`                                         | `ppfAPI.create` ← page.jsx `createMutation` ← PpfDialog submit                                                                                                                                                                                                                                                                                               |
+| GET`/api/ppf/transactions` (page/size/financialYear/sortBy/sortDir) | `ppfAPI.getAll` ← useQuery `['ppf', {page,financialYear,sortDir}]`; PAGE_SIZE=20. *(Formerly a second query `ppfAllTxns` fetched up to 1000 records just to build the FY dropdown — **✅ FIXED 2026-08-26 (W5)**: replaced by lightweight `GET /api/ppf/fiscal-years` (two limit-1 min/max queries); frontend query is now `ppfFiscalYears`.)* |
+| GET`/api/ppf/summary`                                               | `ppfAPI.getSummary(financialYear)` ← useQuery `['ppfSummary', financialYear]`; header metrics. **✅ UPGRADED 2026-08-26 (D5)**: endpoint now accepts optional `?financialYear=YYYY-YY`; all FY-scoped metrics are computed server-side over ALL matching transactions.                                                                                |
+| GET`/api/ppf/export` (blob)                                         | `ppfAPI.exportCSV` ← header "Export Excel" button; sends only filters (financialYear). **✅ W4 2026-08-26**: dead client sort keys removed — chronological ascending is enforced inside the backend service, no sort params exist on this endpoint anymore                                                                                               |
+| GET`/api/ppf/withdrawal-status`                                     | `ppfAPI.getWithdrawalStatus` ← PpfDialog `useQuery(['withdrawalStatus'])` when dialog is open; drives client-side withdrawal eligibility check + max-limit enforcement                                                                                                                                                                                        |
+| GET`/api/ppf/transactions/{id}`                                     | *(Formerly `ppfAPI.getById` — defined in api.js with **NO UI caller**. **✅ FIXED 2026-08-26 (W6)**: dead frontend method + `endpoints.ppf.getById` entry removed; backend endpoint KEPT as API-first REST completeness.)*                                                                                                                      |
+| PUT`/api/ppf/transactions/{id}`                                     | `ppfAPI.update` ← page.jsx `updateMutation` ← PpfDialog (edit path)                                                                                                                                                                                                                                                                                          |
+| DELETE`/api/ppf/transactions/{id}`                                  | `ppfAPI.delete` ← page.jsx `deleteMutation` ← PpfDialog footer `[DELETE]` (confirm-toast)                                                                                                                                                                                                                                                                  |
+| GET`/api/ppf/settings`                                              | `ppfAPI.getSettings` ← useQuery `['ppfSettings']`; header strip renders from `settingsData.configured` (W3 flag) — account number + date of issue                                                                                                                                                                                                          |
+| PUT`/api/ppf/settings`                                              | `ppfAPI.updateSettings` ← page.jsx `updateSettingsMutation` ← PpfSettingsDialog submit                                                                                                                                                                                                                                                                       |
 
 Frontend infra: React Query (staleTime 30s, keepPreviousData), queryClient invalidation of 4 keys (`ppf`, `ppfFiscalYears`, `ppfSummary`, `ppfSettings`) after every mutation. **No dedicated PPF hooks** — all data fetching is inline. `FilterDropdown` for FY selection; FY options now come from `GET /api/ppf/fiscal-years` (backend-derived, newest-first). **✅ RESOLVED 2026-08-26 (D5)**: the former client-side summary recomputation over the current page (lines108-143 of page.jsx) was a **pagination correctness bug** — with >20 txns in a FY it summed only the visible page and derived ending balance from the wrong row on any page except page 0 of desc sort. Replaced by the server-side `?financialYear=` summary param; page.jsx `computedSummary` is now a thin label/format wrapper over backend data.
 
@@ -1059,17 +1085,17 @@ Stage legend: **UI** → **Client** → **HTTP** → **Backend-in** → **Backen
       → [9 reload + DTO] → [10 toast + invalidate 4 keys]
 ```
 
-| Stage | Detail |
-|---|---|
-| 1 · UI | `PpfDialog`: date picker, entry type CREDIT/DEBIT toggle, amount (accepts `5L`/`1.5Cr`/`10k` shortcuts via `parseShortcutAmount`), particular type (CREDIT: DEPOSIT/INTEREST_CREDIT; DEBIT: WITHDRAWAL/LOAN/OTHER), payment mode text, remarks. Auto-generates remarks on date/type change ("Contribution for FY YYYY-YY" / "Annual Interest FY YYYY-YY"). |
-| 2 · Client | validates date/particulars/amount present; amount >0; **if DEBIT + WITHDRAWAL: calls `withdrawalStatus` query and checks `withdrawalAllowed` + `maxWithdrawalAmount` client-side** (toast rejection if exceeded). |
-| 3 · HTTP | POST JSON `{transactionDate, particulars, particularType, creditAmount|debitAmount, remarks}` — no auth header needed (interceptor attaches). |
-| 4 · Backend-in | `@Valid PpfTransactionRequestDTO`: transactionDate @NotNull, particulars @NotBlank, particularType @NotNull. |
-| 5 · Backend-proc | `validateRequestDTO`: rejects non-null `transactionNo` ("server-generated only"); rejects non-null `balance` ("never accepted from client"); exactly one of credit/debit must be >0. |
-| 6–8 · Persist | INSERT with `transactionNo=0L` → `recalculateLedger(userId)` walks ALL user transactions sorted by date ASC / createdAt ASC, computes running balance, throws `InsufficientPpfBalanceException` on negative → `saveAll` if any balance changed → `reorderPpfTransactions(userId)` re-sorts and rewrites transactionNo 1..N. |
-| 9 · Out | Reloads the saved doc by ID (to get the freshly calculated balance) → `toResponseDTO`. |
-| 10 · Consume | success toast → invalidation of `['ppf']`, `['ppfAllTxns']`, `['ppfSummary']`, `['ppfSettings']`. |
-| DB | **INSERT** `ppf_transactions` + **UPDATE ×N** docs' balance + transactionNo (reorder `saveAll`). |
+| Stage             | Detail                                                                                                                                                                                                                                                                                                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 · UI           | `PpfDialog`: date picker, entry type CREDIT/DEBIT toggle, amount (accepts `5L`/`1.5Cr`/`10k` shortcuts via `parseShortcutAmount`), particular type (CREDIT: DEPOSIT/INTEREST_CREDIT; DEBIT: WITHDRAWAL/LOAN/OTHER), payment mode text, remarks. Auto-generates remarks on date/type change ("Contribution for FY YYYY-YY" / "Annual Interest FY YYYY-YY"). |
+| 2 · Client       | validates date/particulars/amount present; amount >0;**if DEBIT + WITHDRAWAL: calls `withdrawalStatus` query and checks `withdrawalAllowed` + `maxWithdrawalAmount` client-side** (toast rejection if exceeded).                                                                                                                                         |
+| 3 · HTTP         | POST JSON `{transactionDate, particulars, particularType, creditAmount                                                                                                                                                                                                                                                                                               |
+| 4 · Backend-in   | `@Valid PpfTransactionRequestDTO`: transactionDate @NotNull, particulars @NotBlank, particularType @NotNull.                                                                                                                                                                                                                                                       |
+| 5 · Backend-proc | `validateRequestDTO`: rejects non-null `transactionNo` ("server-generated only"); rejects non-null `balance` ("never accepted from client"); exactly one of credit/debit must be >0.                                                                                                                                                                           |
+| 6–8 · Persist   | INSERT with`transactionNo=0L` → `recalculateLedger(userId)` walks ALL user transactions sorted by date ASC / createdAt ASC, computes running balance, throws `InsufficientPpfBalanceException` on negative → `saveAll` if any balance changed → `reorderPpfTransactions(userId)` re-sorts and rewrites transactionNo 1..N.                              |
+| 9 · Out          | Reloads the saved doc by ID (to get the freshly calculated balance) →`toResponseDTO`.                                                                                                                                                                                                                                                                             |
+| 10 · Consume     | success toast → invalidation of`['ppf']`, `['ppfAllTxns']`, `['ppfSummary']`, `['ppfSettings']`.                                                                                                                                                                                                                                                            |
+| DB                | **INSERT** `ppf_transactions` + **UPDATE ×N** docs' balance + transactionNo (reorder `saveAll`).                                                                                                                                                                                                                                                    |
 
 ⚠ **Observation**: `createTransaction` sets `transactionNo=0L` and the import of `SequenceGeneratorService` is dead (never called). This is the SAME pattern as FD's dead injection discovered 2026-08-26. The transactionNo is rewritten by the reorder pass. **Dead import should be removed for hygiene.** → **✅ FIXED 2026-08-26 (D2)** — dead import/field/constructor param removed; the `transactionNo=0L` + reorder-rewrite pattern itself is BY DESIGN and remains.
 
@@ -1083,12 +1109,12 @@ sort toggle  ─┼─▶ GET ?page&size&financialYear&sortBy&sortDir ─▶ bui
 page buttons ─┘
 ```
 
-| Filter criterion | Semantics |
-|---|---|
-| `userId` | ALWAYS applied, from JWT principal |
-| `financialYear` | `FinancialYearUtil.resolveFinancialYear(fy)` → date range gte/lte on `transactionDate` (Indian FY: Apr 1–Mar 31) |
-| `dateFrom` / `dateTo` | ISO date range on `transactionDate` (only if no financialYear) |
-| `particulars` | case-insensitive ANCHORED regex `^Pattern.quote(trimmed)$` — exact match, not substring |
+| Filter criterion          | Semantics                                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `userId`                | ALWAYS applied, from JWT principal                                                                                     |
+| `financialYear`         | `FinancialYearUtil.resolveFinancialYear(fy)` → date range gte/lte on `transactionDate` (Indian FY: Apr 1–Mar 31) |
+| `dateFrom` / `dateTo` | ISO date range on`transactionDate` (only if no financialYear)                                                        |
+| `particulars`           | case-insensitive ANCHORED regex`^Pattern.quote(trimmed)$` — exact match, not substring                              |
 
 Default sort: `transactionDate` DESC (newest first) with `createdAt` tiebreak. Frontend PAGE_SIZE=20 matches backend default.
 
@@ -1131,10 +1157,10 @@ PpfDialog open → useQuery(['withdrawalStatus'])
 
 #### FLOW 5 — Settings · `GET/PUT /api/ppf/settings` (JWT)
 
-| Action | Pipeline |
-|---|---|
-| GET | load User → extract `PpfSettingsEmbed` → `toSettingsDTO` → **`configured:true/false` set from embed presence (W3)** → display in header strip keyed off flag |
-| PUT | load User (404 if missing) → `@Valid` body → upsert embed (accountNumber, dateOfIssue, extensionMode) → save User → returns `configured:true` DTO → invalidate queries |
+| Action | Pipeline                                                                                                                                                                       |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | load User → extract`PpfSettingsEmbed` → `toSettingsDTO` → **`configured:true/false` set from embed presence (W3)** → display in header strip keyed off flag    |
+| PUT    | load User (404 if missing) →`@Valid` body → upsert embed (accountNumber, dateOfIssue, extensionMode) → save User → returns `configured:true` DTO → invalidate queries |
 
 Settings are embedded in the `users` document — no separate collection, no separate repository. The PUT endpoint has **no @Valid annotation** on the request body — any shape is accepted. → **✅ FIXED 2026-08-26 (W2)** — `@Valid` added to controller; DTO now enforces `accountNumber` ≤30 chars + character pattern, `dateOfIssue` @PastOrPresent, `extensionMode` enum pattern (`WITHOUT_CONTRIBUTION|WITH_CONTRIBUTION`; null passes, frontend never sends empty).
 
@@ -1186,19 +1212,12 @@ Settings are embedded in the `users` document — no separate collection, no sep
 **⚠ Gaps vs PPF Scheme 2019 industry standard** — *(remaining gaps tracked with implementation detail, priorities, and a 2026 web-verified standards baseline in `local/TODOs/PPF_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`):*
 
 1. ~~**🔴 Off-by-one in FY completion count** (CRITICAL): `completedFYs = currentFyStartYear - openingFyEndYear` undercounts by1~~ ✅ **FIXED (2026-08-26)** — count corrected to `currentFyStartYear - openingFyStartYear`. Round-3 web re-verification (ET Money Apr-2026 "after completing six financial years"; IndiaPost Jun-2026 timeline: loan years 3–6, withdrawal year 7 onward) proved that under the corrected count the ORIGINAL gates were already statutory-correct (`< 6` = opens in 7th FY; `[2,5]` = 3rd–6th FY) — the intermediate `< 7` / `[3,7]` bump was reverted as a regression. Full trail: D4 + plan §GAP 1.
-
 2. **No annual contribution limit enforcement** (₹1.5 lakh/year per PPF Scheme2019 Rule4): backend does not validate that the sum of deposits in a FY does not exceed ₹1,50,000. The frontend does not enforce it either. Excess deposits beyond ₹1.5L would be recorded but would not earn interest in a real PPF account. 📌 **PLAN READY** — plan §GAP 2: `GET /contribution-status` endpoint + dialog headroom line & warnings (banks refund excess w/o interest; guidance-first design).
-
 3. **No minimum annual deposit enforcement** (₹500/year per Rule3): if a user goes an entire FY without any deposit, the account technically becomes dormant (₹50 fine per defaulting year). Not tracked. 📌 **PLAN READY** — plan §GAP 3: account-health endpoint + dormancy badges (balance keeps earning interest even when inactive).
-
 4. **No interest calculation** — PPF interest is calculated on the lowest balance between the5th and last day of each month, compounded annually on March31 (7.1% since Apr-2020, held through Jul–Sep 2026). The module does not model interest accrual at all (interest entries must be manually recorded as INTEREST_CREDIT transactions). This is a deliberate design choice (ledger vs. simulator) but means the balance field is only accurate if the user manually enters interest credits. 📌 **PLAN READY** — plan §GAP 4: read-only projection service (5th-day-min method, rate override table with era-correct history).
-
 5. **No premature closure modeling** (Rule15(4) — allowed after5 years with 1% interest penalty for specified reasons: life-threatening disease, higher education, change in residency): `PpfWithdrawalStatusDTO` returns `requiresPrematureClosureReason=true` and `allowedReasons` list + `prematureClosureInterestReduction="1%"` — but there is NO endpoint or logic to actually execute a premature closure. 📌 **PLAN READY** — plan §GAP 5: quote endpoint with rate−1%-from-inception proceeds replay; actual closure stays manual.
-
 6. **Loan against PPF under-modeled** (Rule12 — available from3rd to6th FY, up to25% of balance at end of2nd preceding FY): the `PpfParticularType.LOAN` enum exists and the UI offers it as a DEBIT type, and `loanAllowed` flag is present — but there is no cap computation, no PPF+1% / 36-month / PPF+6%-retroactive lifecycle, no repayment pairing. 📌 **PLAN READY** — plan §GAP 6: quote endpoint + new LOAN_REPAYMENT enum pairing.
-
 7. **No automatic interest crediting** — in real PPF accounts, interest is automatically credited on March31 each year. Users must manually add INTEREST_CREDIT entries. 📌 **PLAN READY** — plan §GAP 7: Mar-31 prefill assistant (manual-first invariant kept).
-
 8. **No `WITHOUT_CONTRIBUTION` auto-extension detection** — after15 years, if the user does nothing, the account auto-extends without contribution. The code tracks the mode but does not auto-detect or auto-set it. 📌 **PLAN READY** — plan §GAP 8: matured-account banner nudging extension-mode setting (no auto-set — genuine user choice at operator).
 
 ### Formulas/business rules confirmed correct
@@ -1242,24 +1261,24 @@ Settings are embedded in the `users` document — no separate collection, no sep
 
 Legend: ✅ = FIXED this session · 📌 = OPEN / tracked for follow-up
 
-| # | Item | Severity | Status |
-|---|---|---|---|
-| D1 | README §3 phantom `PpfSettingsRepository` | Doc bug | ✅ **FIXED 2026-08-26** — §3 tree, §2.1 diagram, §1.2 features table corrected |
-| D2 | Dead `SequenceGeneratorService` import | Code hygiene | ✅ **FIXED 2026-08-26** — import, field, and constructor param removed; grep-verified |
-| D3 | Part1 "counters" claim for PPF | Doc drift | ✅ **FIXED 2026-08-26** — Part1 addendum updated with PPF-specific corrections |
-| D4 | Off-by-one in FY completion count | Logic bug | ✅ **FIXED 2026-08-26** (round 3 repair) — count = `currentFyStartYear - openingFyStartYear`; gates `< 6` lock-in + loan `[2,5]` restored (statutory under corrected count, web-verified); tests 5/5 |
-| D5 | FY summary computed from current page only (≤20 rows) — wrong sums/balance when a FY exceeds one page | Logic bug | ✅ **FIXED 2026-08-26** — server-side `GET /summary?financialYear=`; frontend recomputation removed |
-| W1 | Dead SequenceGeneratorService import | Code hygiene | ✅ **FIXED 2026-08-26** — same as D2 |
-| W2 | No @Valid on PPF settings PUT | Validation gap | ✅ **FIXED 2026-08-26** — @Valid + DTO constraints (@Size/@Pattern/@PastOrPresent) |
-| W3 | getSettings returns empty DTO for new users | Minor | ✅ **FIXED 2026-08-26** — explicit `configured: Boolean` on `PpfSettingsResponseDTO`; frontend strip keyed off flag |
-| W4 | Export forces asc sort (correct) but declared dead sortBy/sortDir params | API honesty | ✅ **FIXED 2026-08-26** — dead params removed from controller + service signature; asc enforced in service impl contract; README v1.4.1 |
-| W5 | allTxns 1000-record cap for FY dropdown | Low risk | ✅ **FIXED 2026-08-26** — replaced by `GET /api/ppf/fiscal-years` (two limit-1 queries) + `ppfAPI.getFiscalYears()` |
-| W6 | `ppfAPI.getById` defined with NO UI caller | Code hygiene | ✅ **FIXED 2026-08-26** — dead frontend method + endpoint entry removed; backend GET `/transactions/{id}` kept (API-first) |
-| Q1 | FY completion count definition | Clarification needed | ✅ **RESOLVED 2026-08-26** — fixed to match PPF Scheme 2019 (see D4) |
-| Q2 | ₹1.5L contribution limit enforcement | Design decision | 📌 **OPEN** — tracker vs bank system scope |
-| Q3 | Interest calculation feature | Feature request | 📌 **OPEN** — would make ledger self-reconciling |
-| Q4 | Premature closure endpoint | Feature request | 📌 **OPEN** — DTO supports it but no execution path |
-| Q5 | Dead import cleanup | Code hygiene | ✅ **RESOLVED 2026-08-26** — same as D2 |
+| #  | Item                                                                                                    | Severity             | Status                                                                                                                                                                                                           |
+| -- | ------------------------------------------------------------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1 | README §3 phantom`PpfSettingsRepository`                                                             | Doc bug              | ✅**FIXED 2026-08-26** — §3 tree, §2.1 diagram, §1.2 features table corrected                                                                                                                          |
+| D2 | Dead`SequenceGeneratorService` import                                                                 | Code hygiene         | ✅**FIXED 2026-08-26** — import, field, and constructor param removed; grep-verified                                                                                                                      |
+| D3 | Part1 "counters" claim for PPF                                                                          | Doc drift            | ✅**FIXED 2026-08-26** — Part1 addendum updated with PPF-specific corrections                                                                                                                             |
+| D4 | Off-by-one in FY completion count                                                                       | Logic bug            | ✅**FIXED 2026-08-26** (round 3 repair) — count = `currentFyStartYear - openingFyStartYear`; gates `< 6` lock-in + loan `[2,5]` restored (statutory under corrected count, web-verified); tests 5/5 |
+| D5 | FY summary computed from current page only (≤20 rows) — wrong sums/balance when a FY exceeds one page | Logic bug            | ✅**FIXED 2026-08-26** — server-side `GET /summary?financialYear=`; frontend recomputation removed                                                                                                      |
+| W1 | Dead SequenceGeneratorService import                                                                    | Code hygiene         | ✅**FIXED 2026-08-26** — same as D2                                                                                                                                                                       |
+| W2 | No @Valid on PPF settings PUT                                                                           | Validation gap       | ✅**FIXED 2026-08-26** — @Valid + DTO constraints (@Size/@Pattern/@PastOrPresent)                                                                                                                         |
+| W3 | getSettings returns empty DTO for new users                                                             | Minor                | ✅**FIXED 2026-08-26** — explicit `configured: Boolean` on `PpfSettingsResponseDTO`; frontend strip keyed off flag                                                                                    |
+| W4 | Export forces asc sort (correct) but declared dead sortBy/sortDir params                                | API honesty          | ✅**FIXED 2026-08-26** — dead params removed from controller + service signature; asc enforced in service impl contract; README v1.4.1                                                                    |
+| W5 | allTxns 1000-record cap for FY dropdown                                                                 | Low risk             | ✅**FIXED 2026-08-26** — replaced by `GET /api/ppf/fiscal-years` (two limit-1 queries) + `ppfAPI.getFiscalYears()`                                                                                    |
+| W6 | `ppfAPI.getById` defined with NO UI caller                                                            | Code hygiene         | ✅**FIXED 2026-08-26** — dead frontend method + endpoint entry removed; backend GET `/transactions/{id}` kept (API-first)                                                                               |
+| Q1 | FY completion count definition                                                                          | Clarification needed | ✅**RESOLVED 2026-08-26** — fixed to match PPF Scheme 2019 (see D4)                                                                                                                                       |
+| Q2 | ₹1.5L contribution limit enforcement                                                                   | Design decision      | 📌**OPEN** — tracker vs bank system scope                                                                                                                                                                 |
+| Q3 | Interest calculation feature                                                                            | Feature request      | 📌**OPEN** — would make ledger self-reconciling                                                                                                                                                           |
+| Q4 | Premature closure endpoint                                                                              | Feature request      | 📌**OPEN** — DTO supports it but no execution path                                                                                                                                                        |
+| Q5 | Dead import cleanup                                                                                     | Code hygiene         | ✅**RESOLVED 2026-08-26** — same as D2                                                                                                                                                                    |
 
 **Verification evidence (round 2, 2026-08-26)**: `mvn compile` clean · PPF test suite **5/5 PASS** (`PpfTransactionServiceTest` 3 + `PpfBalanceRecalculationServiceTest` 2, BUILD SUCCESS) · `next build` clean, `/ppf` route compiles · grep-verified: zero `SequenceGeneratorService`/`PpfSettingsRepository` refs in ppf module, zero stale `ppfAllTxns`/`ppfAPI.getById` refs in frontend (EPF retains its own patterns — out of scope until its module pass).
 

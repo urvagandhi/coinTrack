@@ -127,6 +127,11 @@ ppf, epf, goldsilver, security, user, mutualfund — **all 13 found, no mismatch
   in `FixedDepositServiceImpl`, backed by `common.config.MongoTransactionConfig` (`MongoTransactionManager`),
   guaranteeing transactional atomicity across document save + `TransactionSequenceService.reorderFixedDeposits(userId)`
   ledger reordering operations.
+  ✅ Updated 2026-08-28 (holderName attribution fix): TDS threshold is applied **per (place, holderName)**
+  via shared `common/util/OwnerGrouping.groupKey`; `holderName` is normalized on save via shared
+  `common/util/HolderName.normalize` (`normalizeHolderName` now delegates to it). The Excel exporter
+  calls the **same** `OwnerGrouping` helper as the service, so **export == screen** by construction
+  (see `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`).
 
 ### email (v3.0.0, 2026-03-19)
 - **Responsibility**: transactional email via Brevo REST API + Thymeleaf rendering.
@@ -175,21 +180,26 @@ ppf, epf, goldsilver, security, user, mutualfund — **all 13 found, no mismatch
   else if (currentInvestment <= 0 && totalTradedValue > 0) -> FULLY_REDEEMED
   else                                             -> LUMPSUM_ONLY
   ```
-- **Discrepancy check**: group schemes by `holderName + "|" + platform` bucket; compare latest
-  `ValuationSnapshot.investmentValue` vs ledger-derived total per bucket; if difference
-  > ₹1 tolerance → `discrepancyFlag=true` with signed `discrepancyAmount`.
+- **Discrepancy check**: group schemes by shared `OwnerGrouping.groupKey(platform, holderName)` bucket
+  (**✅ Fixed 2026-08-28**: was raw `holderName + "|" + platform` string concat — un-normalized
+  `" Rahul Das"`/`"RAHUL DAS"` split one holder into different per-PAN buckets, the same-class bug;
+  now canonical) ; compare latest `ValuationSnapshot.investmentValue` vs ledger-derived total per
+  bucket; if difference > ₹1 tolerance → `discrepancyFlag=true` with signed `discrepancyAmount`.
 - **FK integrity rules**: every create validates `schemeId` ownership (`validateSchemeOwnership`);
   SipContribution additionally validates `sipMandateId` ownership AND that
   `mandate.schemeId == contribution.schemeId`; `deleteScheme()` throws
   `RuntimeException("Cannot delete scheme because it has associated transactions.")` if any of
   the 4 transaction collections reference the scheme (delete-block, no orphaned FKs).
-- **Normalization**: `mfCategory` trimmed + case-normalized on every save.
+- **Normalization**: `mfCategory` trimmed + case-normalized on every save; **✅ Added 2026-08-28:
+  `holderName` now normalized on save via shared `common/util/HolderName.normalize`
+  (`MfSchemeService`, `ValuationSnapshotService`, `SipMandateService`)** so owner keys are canonical.
 - **Pitfalls/gotchas**: BigDecimal everywhere; never free-type scheme names (use schemeId);
   LTCG/STCG fields are reference-tracking only — NOT authoritative for tax filing;
   ValuationSnapshots are independent cross-checks, never merged into ledger data;
   FULLY_REDEEMED excluded from default views — use `?includeRedeemed=true`;
   manual edits to `capitalGain` are overwritten on save; `holderName` is plain field under one
-  userId (multi-holder within single login).
+  userId (multi-holder within single login) — all grouping/filter routed through
+  `OwnerGrouping`/`HolderName` (see `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`).
 - **Services noted but not detailed in README's dir tree**: `MfFifoEngine` (FIFO lots,
   1-year holding period STCG/LTCG), `PortfolioHoldingService` (averageCost, realizedGain,
   unrealizedGain, marketGain, absoluteReturnPercentage via latest NAV), `MfNavService`,
@@ -354,6 +364,11 @@ ppf, epf, goldsilver, security, user, mutualfund — **all 13 found, no mismatch
   `sha256(apiKey+requestToken+apiSecret)`); FnoUtils (expiry/strike/option-type parsing);
   SequenceGeneratorService + DatabaseSequence (`counters` collection); NotificationService
   interface (placeholder); Excel export utilities.
+  ✅ **Added 2026-08-28 (holderName attribution fix — `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`)**:
+  `util/HolderName.java` (canonical `normalize` — trim + whitespace-collapse + title-case) and
+  `util/OwnerGrouping.java` (shared `groupKey(placeOrPlatform, holderName)` = place + "|" + normalized
+  holder, `Unknown` fallback). FD TDS summary/export and MF aggregation/summary/dashboard all route
+  through them — the single source of truth for owner grouping, so FD/MF can never drift.
 - **Usage rules**: always throw DomainException subclasses; use LoggingConstants patterns;
   wrap responses in ApiResponse; never log secrets.
 - **Drift flag**: root README says EncryptionUtil is AES-256-GCM; this README says AES-256-CBC
