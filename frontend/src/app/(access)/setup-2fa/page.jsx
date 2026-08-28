@@ -9,121 +9,131 @@ import { useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 function Setup2FAContent() {
-    const router = useRouter();
-    const [isRegistration, setIsRegistration] = useState(false);
-    const [tempToken, setTempToken] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const [isRegistration, setIsRegistration] = useState(false);
+  const [tempToken, setTempToken] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const registrationToken = sessionStorage.getItem('totpSetupToken');
-        const existingUserToken = sessionStorage.getItem('tempToken');
+  useEffect(() => {
+    const registrationToken = sessionStorage.getItem('totpSetupToken');
+    const existingUserToken = sessionStorage.getItem('tempToken');
 
-        if (registrationToken) {
-            if (tokenManager.isTokenExpired(registrationToken)) {
-                sessionStorage.removeItem('totpSetupToken');
-                sessionStorage.removeItem('totpSetupUsername');
-                router.push('/register?error=Registration expired. Please register again.');
-                return;
-            }
-            setTempToken(registrationToken);
-            setIsRegistration(true);
-            setLoading(false);
-        } else if (existingUserToken) {
-            if (tokenManager.isTokenExpired(existingUserToken)) {
-                sessionStorage.removeItem('tempToken');
-                router.push('/login?error=Session expired. Please login again.');
-                return;
-            }
-            tokenManager.setToken(existingUserToken);
-            setIsRegistration(false);
-            setLoading(false);
-        } else {
-            router.push('/login');
-        }
-    }, [router]);
-
-    const registrationSetup = async () => {
-        try {
-            const data = await totpAPI.registerSetup(tempToken);
-            return { success: true, data };
-        } catch (error) {
-            const msg = error.message || '';
-            if (msg.toLowerCase().includes('expired')) {
-                sessionStorage.removeItem('totpSetupToken');
-                sessionStorage.removeItem('totpSetupUsername');
-                router.push('/register?error=Registration expired. Please register again.');
-            }
-            return { success: false, error: msg || 'Setup failed' };
-        }
-    };
-
-    const registrationVerify = async (code) => {
-        try {
-            const data = await totpAPI.registerVerify(tempToken, code);
-            if (data.token) {
-                tokenManager.setToken(data.token);
-                if (data.refreshToken) tokenManager.setRefreshToken(data.refreshToken);
-            }
-            return { success: true, backupCodes: data.backupCodes || [] };
-        } catch (error) {
-            const msg = error.message || '';
-            if (msg.toLowerCase().includes('expired')) {
-                sessionStorage.removeItem('totpSetupToken');
-                sessionStorage.removeItem('totpSetupUsername');
-                router.push('/register?error=Registration expired. Please register again.');
-            }
-            return { success: false, error: msg || 'Verification failed' };
-        }
-    };
-
-    const handleComplete = () => {
-        if (isRegistration) {
-            sessionStorage.removeItem('totpSetupToken');
-            sessionStorage.removeItem('totpSetupUsername');
-            router.push('/dashboard');
-        } else {
-            sessionStorage.removeItem('tempToken');
-            tokenManager.removeToken();
-            router.push('/login?message=Setup%20Complete%20Please%20Login');
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 size={20} className="animate-spin text-muted-foreground" />
-            </div>
+    if (registrationToken) {
+      if (tokenManager.isTokenExpired(registrationToken)) {
+        sessionStorage.removeItem('totpSetupToken');
+        sessionStorage.removeItem('totpSetupUsername');
+        router.push(
+          '/register?error=Registration expired. Please register again.'
         );
+        return;
+      }
+      setTempToken(registrationToken);
+      setIsRegistration(true);
+      setLoading(false);
+    } else if (existingUserToken) {
+      if (tokenManager.isTokenExpired(existingUserToken)) {
+        sessionStorage.removeItem('tempToken');
+        router.push('/login?error=Session expired. Please login again.');
+        return;
+      }
+      tokenManager.setToken(existingUserToken);
+      setIsRegistration(false);
+      setLoading(false);
+    } else {
+      router.push('/login');
     }
+  }, [router]);
 
+  const registrationSetup = async () => {
+    try {
+      const data = await totpAPI.registerSetup(tempToken);
+      return { success: true, data };
+    } catch (error) {
+      const msg = error.message || '';
+      if (msg.toLowerCase().includes('expired')) {
+        sessionStorage.removeItem('totpSetupToken');
+        sessionStorage.removeItem('totpSetupUsername');
+        router.push(
+          '/register?error=Registration expired. Please register again.'
+        );
+      }
+      return { success: false, error: msg || 'Setup failed' };
+    }
+  };
+
+  const registrationVerify = async code => {
+    try {
+      const data = await totpAPI.registerVerify(tempToken, code);
+      if (data.token) {
+        tokenManager.setToken(data.token);
+        if (data.refreshToken) tokenManager.setRefreshToken(data.refreshToken);
+      }
+      return { success: true, backupCodes: data.backupCodes || [] };
+    } catch (error) {
+      const msg = error.message || '';
+      if (msg.toLowerCase().includes('expired')) {
+        sessionStorage.removeItem('totpSetupToken');
+        sessionStorage.removeItem('totpSetupUsername');
+        router.push(
+          '/register?error=Registration expired. Please register again.'
+        );
+      }
+      return { success: false, error: msg || 'Verification failed' };
+    }
+  };
+
+  const handleComplete = () => {
+    if (isRegistration) {
+      sessionStorage.removeItem('totpSetupToken');
+      sessionStorage.removeItem('totpSetupUsername');
+      router.push('/dashboard');
+    } else {
+      sessionStorage.removeItem('tempToken');
+      tokenManager.removeToken();
+      router.push('/login?message=Setup%20Complete%20Please%20Login');
+    }
+  };
+
+  if (loading) {
     return (
-        <AuthPageShell
-            title="Secure your account"
-            subtitle="Two-factor authentication is mandatory for all CoinTrack accounts. Scan, verify, and store your backup codes."
-            index="VII"
-            kicker="Two-Factor Setup"
-            maxWidth="md"
-            asideQuote={'"Security is the editor of every great ledger — quiet, unceasing, essential."'}
-        >
-            <TotpSetup
-                isMandatory
-                onComplete={handleComplete}
-                onCancel={() => router.push('/login')}
-                setupAction={isRegistration ? registrationSetup : undefined}
-                verifyAction={isRegistration ? registrationVerify : undefined}
-            />
-        </AuthPageShell>
+      <div className='min-h-screen flex items-center justify-center bg-background'>
+        <Loader2 size={20} className='animate-spin text-muted-foreground' />
+      </div>
     );
+  }
+
+  return (
+    <AuthPageShell
+      title='Secure your account'
+      subtitle='Two-factor authentication is mandatory for all CoinTrack accounts. Scan, verify, and store your backup codes.'
+      index='VII'
+      kicker='Two-Factor Setup'
+      maxWidth='md'
+      asideQuote={
+        '"Security is the editor of every great ledger — quiet, unceasing, essential."'
+      }
+    >
+      <TotpSetup
+        isMandatory
+        onComplete={handleComplete}
+        onCancel={() => router.push('/login')}
+        setupAction={isRegistration ? registrationSetup : undefined}
+        verifyAction={isRegistration ? registrationVerify : undefined}
+      />
+    </AuthPageShell>
+  );
 }
 
 export default function Setup2FAPage() {
-    return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 size={20} className="animate-spin text-muted-foreground" />
-            </div>
-        }>
-            <Setup2FAContent />
-        </Suspense>
-    );
+  return (
+    <Suspense
+      fallback={
+        <div className='min-h-screen flex items-center justify-center bg-background'>
+          <Loader2 size={20} className='animate-spin text-muted-foreground' />
+        </div>
+      }
+    >
+      <Setup2FAContent />
+    </Suspense>
+  );
 }

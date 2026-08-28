@@ -37,20 +37,22 @@ export async function GET(request) {
     } else if (type === 'all_banks') {
       // The ifsc.in /api/v1/banks endpoint doesn't actually exist despite the docs.
       // We will fallback to Razorpay's open source banknames.json to populate the dropdown.
-      const response = await fetch("https://raw.githubusercontent.com/razorpay/ifsc/master/src/banknames.json");
+      const response = await fetch(
+        'https://raw.githubusercontent.com/razorpay/ifsc/master/src/banknames.json'
+      );
       const bankMap = await response.json();
-      
+
       const banksList = Object.entries(bankMap).map(([code, name]) => ({
         bank_code: code,
-        bank_name: name
+        bank_name: name,
       }));
 
       return NextResponse.json({
         status: true,
         data: {
           total_banks: banksList.length,
-          banks: banksList
-        }
+          banks: banksList,
+        },
       });
     }
 
@@ -66,10 +68,9 @@ export async function GET(request) {
 
     if (!response.ok || !data.status) {
       // Pass rate limits or other errors through
-      return NextResponse.json(
-        data,
-        { status: response.status !== 200 ? response.status : 400 }
-      );
+      return NextResponse.json(data, {
+        status: response.status !== 200 ? response.status : 400,
+      });
     }
 
     return NextResponse.json(data);

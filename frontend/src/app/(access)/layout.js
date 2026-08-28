@@ -7,28 +7,24 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function AccessLayout({ children }) {
-    const { isAuthenticated, isInitializing } = useAuth();
-    const router = useRouter();
+  const { isAuthenticated, isInitializing } = useAuth();
+  const router = useRouter();
 
-    useEffect(() => {
-        if (!isInitializing && isAuthenticated) {
-            router.replace('/dashboard');
-        }
-    }, [isAuthenticated, isInitializing, router]);
-
-    if (isInitializing) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 size={20} className="animate-spin text-muted-foreground" />
-            </div>
-        );
+  useEffect(() => {
+    if (!isInitializing && isAuthenticated) {
+      router.replace('/dashboard');
     }
+  }, [isAuthenticated, isInitializing, router]);
 
-    if (isAuthenticated) return null;
-
+  if (isInitializing) {
     return (
-        <div className="min-h-screen bg-background">
-            {children}
-        </div>
+      <div className='min-h-screen flex items-center justify-center bg-background'>
+        <Loader2 size={20} className='animate-spin text-muted-foreground' />
+      </div>
     );
+  }
+
+  if (isAuthenticated) return null;
+
+  return <div className='min-h-screen bg-background'>{children}</div>;
 }

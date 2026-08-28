@@ -1,172 +1,187 @@
 'use client';
 
 import {
-    CalculatorLayout,
-    FormField,
-    InputCard,
-    ResultCard,
-    ResultMetric
+  CalculatorLayout,
+  FormField,
+  InputCard,
+  ResultCard,
+  ResultMetric,
 } from '@/components/calculators/framework/CalculatorComponents';
-import { calculatorService, formatCurrency, formatPercentage } from '@/lib/calculator.service';
+import {
+  calculatorService,
+  formatCurrency,
+  formatPercentage,
+} from '@/lib/calculator.service';
 import { useState } from 'react';
 
 export default function TdsCalculatorPage() {
-    const [inputs, setInputs] = useState({
-        paymentType: 'SALARY',
-        amount: 50000,
-        panAvailable: true
-    });
+  const [inputs, setInputs] = useState({
+    paymentType: 'SALARY',
+    amount: 50000,
+    panAvailable: true,
+  });
 
-    const [result, setResult] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setInputs(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : (name === 'paymentType' ? value : (parseFloat(value) || 0))
-        }));
-    };
+  const handleInputChange = e => {
+    const { name, value, type, checked } = e.target;
+    setInputs(prev => ({
+      ...prev,
+      [name]:
+        type === 'checkbox'
+          ? checked
+          : name === 'paymentType'
+            ? value
+            : parseFloat(value) || 0,
+    }));
+  };
 
-    const handleCalculate = async () => {
-        setIsLoading(true);
-        setError(null);
+  const handleCalculate = async () => {
+    setIsLoading(true);
+    setError(null);
 
-        try {
-            const response = await calculatorService.calculateTds(inputs);
+    try {
+      const response = await calculatorService.calculateTds(inputs);
 
-            if (response.success) {
-                setResult(response.result);
-            } else {
-                setError(response.error?.message || 'Calculation failed');
-            }
-        } catch (err) {
-            setError(err.response?.data?.error?.message || 'Failed to calculate. Please try again.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+      if (response.success) {
+        setResult(response.result);
+      } else {
+        setError(response.error?.message || 'Calculation failed');
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.error?.message ||
+          'Failed to calculate. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const paymentTypes = [
-        { id: 'SALARY', name: 'Salary (192)' },
-        { id: 'INTEREST', name: 'Interest (194A)' },
-        { id: 'DIVIDEND', name: 'Dividend (194)' },
-        { id: 'CONTRACTOR', name: 'Contractor (194C)' },
-        { id: 'PROFESSIONAL', name: 'Professional (194J)' },
-        { id: 'RENT', name: 'Rent (194I)' },
-        { id: 'COMMISSION', name: 'Commission (194H)' },
-        { id: 'PROPERTY_SALE', name: 'Property (194IA)' },
-    ];
+  const paymentTypes = [
+    { id: 'SALARY', name: 'Salary (192)' },
+    { id: 'INTEREST', name: 'Interest (194A)' },
+    { id: 'DIVIDEND', name: 'Dividend (194)' },
+    { id: 'CONTRACTOR', name: 'Contractor (194C)' },
+    { id: 'PROFESSIONAL', name: 'Professional (194J)' },
+    { id: 'RENT', name: 'Rent (194I)' },
+    { id: 'COMMISSION', name: 'Commission (194H)' },
+    { id: 'PROPERTY_SALE', name: 'Property (194IA)' },
+  ];
 
-    return (
-        <CalculatorLayout
-            title="TDS Calculator"
-            description="Calculate TDS deduction on various payments"
-            category="Tax"
-        >
-            <InputCard
-                title="Enter Payment Details"
-                onCalculate={handleCalculate}
-                isLoading={isLoading}
-            >
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Payment Type (Section)</label>
-                    <select
-                        name="paymentType"
-                        value={inputs.paymentType}
-                        onChange={handleInputChange}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                        {paymentTypes.map(type => (
-                            <option key={type.id} value={type.id}>{type.name}</option>
-                        ))}
-                    </select>
-                </div>
+  return (
+    <CalculatorLayout
+      title='TDS Calculator'
+      description='Calculate TDS deduction on various payments'
+      category='Tax'
+    >
+      <InputCard
+        title='Enter Payment Details'
+        onCalculate={handleCalculate}
+        isLoading={isLoading}
+      >
+        <div className='space-y-2'>
+          <label className='text-sm font-medium'>Payment Type (Section)</label>
+          <select
+            name='paymentType'
+            value={inputs.paymentType}
+            onChange={handleInputChange}
+            className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+          >
+            {paymentTypes.map(type => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-                <FormField
-                    label="Payment Amount"
-                    name="amount"
-                    value={inputs.amount}
-                    onChange={handleInputChange}
-                    prefix="₹"
-                    min={1}
-                    step={1000}
-                />
+        <FormField
+          label='Payment Amount'
+          name='amount'
+          value={inputs.amount}
+          onChange={handleInputChange}
+          prefix='₹'
+          min={1}
+          step={1000}
+        />
 
-                <div className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        id="panAvailable"
-                        name="panAvailable"
-                        checked={inputs.panAvailable}
-                        onChange={handleInputChange}
-                        className="h-4 w-4 rounded border-gray-300"
-                    />
-                    <label htmlFor="panAvailable" className="text-sm font-medium">
-                        PAN of Deductee Available
-                    </label>
-                </div>
+        <div className='flex items-center gap-2'>
+          <input
+            type='checkbox'
+            id='panAvailable'
+            name='panAvailable'
+            checked={inputs.panAvailable}
+            onChange={handleInputChange}
+            className='h-4 w-4 rounded border-gray-300'
+          />
+          <label htmlFor='panAvailable' className='text-sm font-medium'>
+            PAN of Deductee Available
+          </label>
+        </div>
 
-                {!inputs.panAvailable && (
-                    <div className="text-sm text-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-200 p-3 rounded-md">
-                        ⚠️ Without PAN, TDS is deducted at 20% or applicable rate, whichever is higher (Sec 206AA)
-                    </div>
-                )}
+        {!inputs.panAvailable && (
+          <div className='text-sm text-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-200 p-3 rounded-md'>
+            ⚠️ Without PAN, TDS is deducted at 20% or applicable rate, whichever
+            is higher (Sec 206AA)
+          </div>
+        )}
 
-                {error && (
-                    <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-2.5">
-                        <p className="font-mono text-[12px] text-[hsl(var(--loss))] leading-snug">{error}</p>
-                    </div>
-                )}
-            </InputCard>
+        {error && (
+          <div className='border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-2.5'>
+            <p className='font-mono text-[12px] text-[hsl(var(--loss))] leading-snug'>
+              {error}
+            </p>
+          </div>
+        )}
+      </InputCard>
 
-            <ResultCard title="TDS Calculation" isEmpty={!result}>
-                {result && (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-3">
-                                <p className="eyebrow">TDS Deducted</p>
-                                <p className="font-serif text-[22px] leading-[1.05] tracking-tight tabular-nums text-[hsl(var(--loss))] mt-0.5">
-                                    {formatCurrency(result.tdsAmount)}
-                                </p>
-                            </div>
-                            <div className="border-l-2 border-[hsl(var(--gain))] bg-[hsl(var(--gain)/0.05)] px-3 py-3">
-                                <p className="eyebrow">Net Payment</p>
-                                <p className="font-serif text-[22px] leading-[1.05] tracking-tight tabular-nums text-[hsl(var(--gain))] mt-0.5">
-                                    {formatCurrency(result.netPayment)}
-                                </p>
-                            </div>
-                        </div>
+      <ResultCard title='TDS Calculation' isEmpty={!result}>
+        {result && (
+          <div className='space-y-6'>
+            <div className='grid grid-cols-2 gap-4'>
+              <div className='border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)] px-3 py-3'>
+                <p className='eyebrow'>TDS Deducted</p>
+                <p className='font-serif text-[22px] leading-[1.05] tracking-tight tabular-nums text-[hsl(var(--loss))] mt-0.5'>
+                  {formatCurrency(result.tdsAmount)}
+                </p>
+              </div>
+              <div className='border-l-2 border-[hsl(var(--gain))] bg-[hsl(var(--gain)/0.05)] px-3 py-3'>
+                <p className='eyebrow'>Net Payment</p>
+                <p className='font-serif text-[22px] leading-[1.05] tracking-tight tabular-nums text-[hsl(var(--gain))] mt-0.5'>
+                  {formatCurrency(result.netPayment)}
+                </p>
+              </div>
+            </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <ResultMetric
-                                label="Gross Amount"
-                                value={formatCurrency(result.grossAmount)}
-                            />
-                            <ResultMetric
-                                label="TDS Rate"
-                                value={formatPercentage(result.tdsRate)}
-                            />
-                            <ResultMetric
-                                label="Section"
-                                value={result.section}
-                            />
-                            <ResultMetric
-                                label="Threshold"
-                                value={formatCurrency(result.threshold)}
-                                subValue="Annual limit"
-                            />
-                        </div>
+            <div className='grid grid-cols-2 gap-4'>
+              <ResultMetric
+                label='Gross Amount'
+                value={formatCurrency(result.grossAmount)}
+              />
+              <ResultMetric
+                label='TDS Rate'
+                value={formatPercentage(result.tdsRate)}
+              />
+              <ResultMetric label='Section' value={result.section} />
+              <ResultMetric
+                label='Threshold'
+                value={formatCurrency(result.threshold)}
+                subValue='Annual limit'
+              />
+            </div>
 
-                        {result.tdsAmount === 0 && (
-                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md text-sm text-blue-700 dark:text-blue-300">
-                                No TDS applicable - amount is below the threshold limit of {formatCurrency(result.threshold)}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </ResultCard>
-        </CalculatorLayout>
-    );
+            {result.tdsAmount === 0 && (
+              <div className='p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md text-sm text-blue-700 dark:text-blue-300'>
+                No TDS applicable - amount is below the threshold limit of{' '}
+                {formatCurrency(result.threshold)}
+              </div>
+            )}
+          </div>
+        )}
+      </ResultCard>
+    </CalculatorLayout>
+  );
 }

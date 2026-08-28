@@ -1,8 +1,7 @@
 # CoinTrack Frontend
 
-> **Version 3.0.0** | Last updated: 2026-03-19
-> Status: Active Development
-> Stack: Next.js 16 / React 18 / Tailwind CSS 3 / React Query 5
+> **Version 3.0.0** | Last updated: 2026-03-19 Status: Active Development Stack: Next.js 16 / React
+> 18 / Tailwind CSS 3 / React Query 5
 
 ---
 
@@ -28,9 +27,9 @@
 
 ## Overview
 
-CoinTrack is a personal finance dashboard that aggregates portfolio data from
-multiple Indian stockbrokers (Zerodha, AngelOne, Upstox). The frontend is a
-Next.js App Router application providing:
+CoinTrack is a personal finance dashboard that aggregates portfolio data from multiple Indian
+stockbrokers (Zerodha, AngelOne, Upstox). The frontend is a Next.js App Router application
+providing:
 
 - Authenticated dashboard with real-time portfolio summaries
 - Multi-broker connection management with OAuth callbacks
@@ -205,25 +204,24 @@ Connect multiple Indian stockbrokers through OAuth and view consolidated data:
 - **AngelOne** -- SmartAPI (client ID + password + MFA)
 - **Upstox** -- Upstox API v2 (API key + secret)
 
-Each broker follows a consistent pattern: setup page, OAuth callback handler,
-and dedicated dashboard view. Broker-specific configuration lives in
-`lib/brokerConfig.js`.
+Each broker follows a consistent pattern: setup page, OAuth callback handler, and dedicated
+dashboard view. Broker-specific configuration lives in `lib/brokerConfig.js`.
 
 ### Portfolio Views (13 Tabs)
 
-| Tab              | Data Source               |
-|------------------|---------------------------|
-| Holdings         | Equity holdings           |
-| Positions        | Open positions            |
-| Orders           | Order history             |
-| Trades           | Trade executions          |
-| MF Holdings      | Mutual fund holdings      |
-| MF Orders        | MF order history          |
-| MF SIPs          | Active SIP list           |
-| MF Instruments   | Available MF instruments  |
-| MF Timeline      | MF transaction timeline   |
-| Profile          | Broker account profile    |
-| Broker Info      | Connection status banner  |
+| Tab            | Data Source              |
+| -------------- | ------------------------ |
+| Holdings       | Equity holdings          |
+| Positions      | Open positions           |
+| Orders         | Order history            |
+| Trades         | Trade executions         |
+| MF Holdings    | Mutual fund holdings     |
+| MF Orders      | MF order history         |
+| MF SIPs        | Active SIP list          |
+| MF Instruments | Available MF instruments |
+| MF Timeline    | MF transaction timeline  |
+| Profile        | Broker account profile   |
+| Broker Info    | Connection status banner |
 
 ### Alternative Assets & Manual Tracking Views
 
@@ -236,17 +234,17 @@ Track non-broker assets with comprehensive ledger UI and dedicated dashboards:
 
 ### Financial Calculators (32 pages)
 
-All calculators are publicly accessible (no authentication required) and share
-a common framework in `components/calculators/framework/CalculatorComponents`.
+All calculators are publicly accessible (no authentication required) and share a common framework in
+`components/calculators/framework/CalculatorComponents`.
 
-| Category    | Count | Examples                                      |
-|-------------|-------|-----------------------------------------------|
-| Investment  | 7     | SIP, Lumpsum, CAGR, XIRR, Step-up SIP        |
-| Savings     | 10    | FD, RD, PPF, NPS, EPF, SSY, NPS, NSC, SCSS   |
-| Loans       | 6     | EMI, Home Loan, Car Loan, Compound Interest   |
-| Tax         | 6     | Income Tax, HRA, TDS, GST, Salary, Gratuity  |
-| Trading     | 2     | Brokerage, Margin                             |
-| Planning    | 1     | Retirement                                    |
+| Category   | Count | Examples                                    |
+| ---------- | ----- | ------------------------------------------- |
+| Investment | 7     | SIP, Lumpsum, CAGR, XIRR, Step-up SIP       |
+| Savings    | 10    | FD, RD, PPF, NPS, EPF, SSY, NPS, NSC, SCSS  |
+| Loans      | 6     | EMI, Home Loan, Car Loan, Compound Interest |
+| Tax        | 6     | Income Tax, HRA, TDS, GST, Salary, Gratuity |
+| Trading    | 2     | Brokerage, Margin                           |
+| Planning   | 1     | Retirement                                  |
 
 ### Authentication and Security
 
@@ -295,8 +293,8 @@ a common framework in `components/calculators/framework/CalculatorComponents`.
 /settings/2fa-settings              MFA management [auth]
 ```
 
-Where `{broker}` is one of: `zerodha`, `angelone`, `upstox`.
-Where `{category}` is one of: `investment`, `loans`, `savings`, `tax`, `trading`, `planning`.
+Where `{broker}` is one of: `zerodha`, `angelone`, `upstox`. Where `{category}` is one of:
+`investment`, `loans`, `savings`, `tax`, `trading`, `planning`.
 
 ---
 
@@ -377,8 +375,8 @@ graph TD
 
 Built on Radix UI and styled with Tailwind + class-variance-authority:
 
-`alert` | `badge` | `button` | `card` | `input` | `label` |
-`PageTransition` | `Skeleton` | `toast` | `toaster` | `use-toast`
+`alert` | `badge` | `button` | `card` | `input` | `label` | `PageTransition` | `Skeleton` | `toast`
+| `toaster` | `use-toast`
 
 ---
 
@@ -398,28 +396,27 @@ graph LR
     style QP fill:#e3f2fd,stroke:#2196F3
 ```
 
-All portfolio data flows through React Query via custom hooks. Each hook
-encapsulates the query key, fetch function, and transformation logic.
+All portfolio data flows through React Query via custom hooks. Each hook encapsulates the query key,
+fetch function, and transformation logic.
 
 ### React Contexts
 
-| Context        | Purpose                              | Scope          |
-|----------------|--------------------------------------|----------------|
-| AuthContext     | User state, login/logout, token mgmt | Global         |
-| ThemeContext    | Dark/light mode toggle               | Global         |
-| ModalContext    | Contact, legal modal visibility      | Global         |
+| Context      | Purpose                              | Scope  |
+| ------------ | ------------------------------------ | ------ |
+| AuthContext  | User state, login/logout, token mgmt | Global |
+| ThemeContext | Dark/light mode toggle               | Global |
+| ModalContext | Contact, legal modal visibility      | Global |
 
-AuthContext uses `useReducer` for predictable state transitions across
-login, logout, loading, and error states. It listens for `auth:sessionExpired`
-events dispatched by the Axios interceptor.
+AuthContext uses `useReducer` for predictable state transitions across login, logout, loading, and
+error states. It listens for `auth:sessionExpired` events dispatched by the Axios interceptor.
 
 ---
 
 ## Hooks
 
 | Hook                    | Purpose                                          |
-|-------------------------|--------------------------------------------------|
-| `useBrokerConnection`   | Broker OAuth flow, credentials, connection state  |
+| ----------------------- | ------------------------------------------------ |
+| `useBrokerConnection`   | Broker OAuth flow, credentials, connection state |
 | `usePortfolioFunds`     | Fetch broker fund/balance data                   |
 | `usePortfolioHoldings`  | Fetch equity holdings for connected broker       |
 | `usePortfolioOrders`    | Fetch order history                              |
@@ -428,23 +425,23 @@ events dispatched by the Axios interceptor.
 | `usePortfolioTab`       | Tab-specific data loading orchestration          |
 | `useZerodhaDashboard`   | Zerodha-specific dashboard data                  |
 
-All `usePortfolio*` hooks return `{ data, isLoading, error, refetch }` and
-integrate with React Query for caching and background refresh.
+All `usePortfolio*` hooks return `{ data, isLoading, error, refetch }` and integrate with React
+Query for caching and background refresh.
 
 ---
 
 ## Library Modules
 
-| Module                 | Purpose                                          |
-|------------------------|--------------------------------------------------|
-| `api.js`               | Axios instance, 40+ API methods, token manager   |
-| `brokerConfig.js`      | Broker metadata, OAuth URLs, field definitions   |
-| `calculator.service.js`| Calculator computation functions                 |
-| `format.js`            | Currency, percentage, number formatting          |
-| `logger.js`            | Structured console logging (dev/prod aware)      |
-| `motion.js`            | Framer Motion animation presets                  |
-| `stockNameMapping.js`  | NSE/BSE symbol to display name mapping           |
-| `utils.js`             | Tailwind `cn()` merge helper and misc utilities  |
+| Module                  | Purpose                                         |
+| ----------------------- | ----------------------------------------------- |
+| `api.js`                | Axios instance, 40+ API methods, token manager  |
+| `brokerConfig.js`       | Broker metadata, OAuth URLs, field definitions  |
+| `calculator.service.js` | Calculator computation functions                |
+| `format.js`             | Currency, percentage, number formatting         |
+| `logger.js`             | Structured console logging (dev/prod aware)     |
+| `motion.js`             | Framer Motion animation presets                 |
+| `stockNameMapping.js`   | NSE/BSE symbol to display name mapping          |
+| `utils.js`              | Tailwind `cn()` merge helper and misc utilities |
 
 ### API Module (`lib/api.js`)
 
@@ -458,25 +455,24 @@ The API module exports named method groups:
 - `notesAPI` -- CRUD operations for personal notes
 - `tokenManager` -- get/set/remove JWT and refresh tokens
 
-Request interceptor attaches `Authorization: Bearer <token>` to every request.
-Response interceptor handles 401s with a queued refresh mechanism to prevent
-parallel refresh token race conditions.
+Request interceptor attaches `Authorization: Bearer <token>` to every request. Response interceptor
+handles 401s with a queued refresh mechanism to prevent parallel refresh token race conditions.
 
 ---
 
 ## Environment Variables
 
-| Variable                | Required | Description                          |
-|-------------------------|----------|--------------------------------------|
-| `NEXT_PUBLIC_API_BASE`  | Yes      | Backend API base URL                 |
-| `NEXT_PUBLIC_APP_URL`   | Yes      | Frontend public URL (for callbacks)  |
-| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | For Google SSO | Google OAuth client ID (public by design) |
-| `IFSC_API_KEY`          | For bank/IFSC lookup | Bank name & IFSC provider API key (server-side usage) |
-| `NEXT_PUBLIC_APP_NAME`  | No       | Display app name (default: CoinTrack) |
-| `NEXT_PUBLIC_APP_VERSION` | No     | Displayed version metadata           |
-| `NEXT_PUBLIC_ENABLE_WEBSOCKETS` | No | Feature flag for live data websockets |
-| `NEXT_PUBLIC_ENABLE_NOTIFICATIONS` | No | Feature flag for in-app notifications |
-| `NEXT_PUBLIC_DEBUG`     | No       | Enables debug logging in the client  |
+| Variable                           | Required             | Description                                           |
+| ---------------------------------- | -------------------- | ----------------------------------------------------- |
+| `NEXT_PUBLIC_API_BASE`             | Yes                  | Backend API base URL                                  |
+| `NEXT_PUBLIC_APP_URL`              | Yes                  | Frontend public URL (for callbacks)                   |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID`     | For Google SSO       | Google OAuth client ID (public by design)             |
+| `IFSC_API_KEY`                     | For bank/IFSC lookup | Bank name & IFSC provider API key (server-side usage) |
+| `NEXT_PUBLIC_APP_NAME`             | No                   | Display app name (default: CoinTrack)                 |
+| `NEXT_PUBLIC_APP_VERSION`          | No                   | Displayed version metadata                            |
+| `NEXT_PUBLIC_ENABLE_WEBSOCKETS`    | No                   | Feature flag for live data websockets                 |
+| `NEXT_PUBLIC_ENABLE_NOTIFICATIONS` | No                   | Feature flag for in-app notifications                 |
+| `NEXT_PUBLIC_DEBUG`                | No                   | Enables debug logging in the client                   |
 
 > Note: `IFSC_API_KEY` has no `NEXT_PUBLIC_` prefix — it is not exposed to the browser bundle.
 
@@ -487,8 +483,7 @@ NEXT_PUBLIC_API_BASE=http://localhost:8080
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-In production (Vercel), these are set via the Vercel dashboard as environment
-variables.
+In production (Vercel), these are set via the Vercel dashboard as environment variables.
 
 ---
 
@@ -513,109 +508,112 @@ npm install
 npm run dev
 ```
 
-The app starts at `http://localhost:3000`. In development, Next.js rewrites
-`/api/*` requests to the backend at `http://localhost:8080`.
+The app starts at `http://localhost:3000`. In development, Next.js rewrites `/api/*` requests to the
+backend at `http://localhost:8080`.
 
-### Linting and Formatting
+### Linting, Formatting & Quality Standards
+
+1. **ESLint 9 Flat Config (`eslint.config.mjs`)**:
+   - Modernized ESLint setup with native Flat Config rules.
+   - Enforces React 18 / Next.js 16 best practices, TanStack Query referential stability
+     (`@tanstack/query/no-unstable-deps`), and unused import auto-pruning
+     (`eslint-plugin-unused-imports`).
+   - Top-level global `ignores` prevent scanning build outputs (`.next`) and `node_modules`.
+
+2. **Decoupled Prettier Formatting**:
+   - Formatting is decoupled from ESLint to avoid rule conflicts and performance bottlenecks.
+   - Run `npm run format` to auto-format all code files or `npm run format:check` to verify styling
+     compliance.
+
+3. **Git Pre-commit Hooks (`Husky` + `lint-staged`)**:
+   - Configured via `.husky/pre-commit` to automatically run `lint-staged` on git commit, ensuring
+     only cleanly formatted (`prettier`) and lint-free (`eslint --fix`) code is committed.
+
+---
+
+## End-to-End Production Verification & Workflow
+
+### Developer Step-by-Step Flow & Purpose
+
+Follow this sequential workflow prior to pushing code or deploying:
+
+| Step  | Command                | Purpose & Description                                                                                                                                                                        |
+| :---- | :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | `npm run dev`          | **Local Development**: Runs Next.js dev server on `http://localhost:3000`. Executed manually during feature work.                                                                            |
+| **2** | `npm run lint`         | **Code Quality Check**: Scans codebase for syntax errors, missing dependencies in React hooks (`react-hooks/exhaustive-deps`), unstable TanStack Query references, and unused imports.       |
+| **3** | `npm run format:check` | **Code Formatting Verification**: Checks all files (`js, jsx, ts, tsx, json, css, md`) against Prettier style standards without modifying files.                                             |
+| **4** | `npm run test`         | **Automated Unit Testing**: Runs Jest unit tests in non-blocking mode (`--passWithNoTests`).                                                                                                 |
+| **5** | `npm run build`        | **Production Compilation**: Compiles Next.js for production, optimizes package imports (`lucide-react`, `recharts`, `framer-motion`, `date-fns`, Radix UI), and prerenders all static pages. |
+
+---
+
+### Single Command End-to-End Pipeline
+
+To execute the entire verification flow end-to-end with a single command and receive a formatted,
+colorized CLI status report, run:
 
 ```bash
-npm run lint          # ESLint check
-npm run lint:fix      # ESLint auto-fix
-npm run format        # Prettier format all files
-npm run format:check  # Prettier check (CI)
+npm run pipeline
+# OR
+npm run verify
 ```
 
-Husky pre-commit hooks run lint checks automatically on commit.
+#### What `npm run pipeline` Does:
+
+1. Executes `ESLint Code Quality Inspection` (`eslint .`).
+2. Executes `Prettier Formatting Verification` (`prettier --check`).
+3. Executes `Automated Unit Testing` (`jest`).
+4. Executes `Next.js Production Build` (`next build --webpack`).
+5. Prints a clean, colorized execution summary box with timings for every phase.
 
 ---
 
 ## Scripts Reference
 
-| Script              | Command                  | Description                    |
-|---------------------|--------------------------|--------------------------------|
-| `dev`               | `next dev --webpack`     | Start dev server               |
-| `build`             | `next build`             | Production build               |
-| `start`             | `next start`             | Start production server        |
-| `lint`              | `next lint`              | Run ESLint                     |
-| `lint:fix`          | `next lint --fix`        | Auto-fix lint issues           |
-| `format`            | `prettier --write ...`   | Format all files               |
-| `format:check`      | `prettier --check ...`   | Check formatting               |
-| `test`              | `jest`                   | Run unit tests                 |
-| `test:watch`        | `jest --watch`           | Run tests in watch mode        |
-| `test:coverage`     | `jest --coverage`        | Generate coverage report       |
-| `cypress:open`      | `cypress open`           | Open Cypress GUI               |
-| `cypress:run`       | `cypress run`            | Run Cypress headless           |
-
----
-
-## Testing
-
-### Unit Tests (Jest + Testing Library)
-
-```bash
-npm test                 # Single run
-npm run test:watch       # Watch mode
-npm run test:coverage    # With coverage report
-```
-
-Configuration: `jest.config.js` with `jest-environment-jsdom`.
-Testing utilities: `@testing-library/react`, `@testing-library/jest-dom`,
-`@testing-library/user-event`.
-
-### E2E Tests (Cypress)
-
-```bash
-npm run cypress:open      # Interactive mode
-npm run cypress:run       # Headless (CI)
-```
-
-Cypress tests live in the `cypress/` directory and test full user flows
-including authentication, broker connection, and portfolio navigation.
-
----
-
-## Deployment
-
-### Vercel (Production)
-
-The frontend auto-deploys to Vercel on push to `main`.
-
-- **Build command:** `next build`
-- **Output directory:** `.next`
-- **Node.js version:** 18.x
-- **Environment variables:** Set via Vercel dashboard
-
-### Vercel Configuration
-
-Additional configuration is managed through `vercel.json` in the project root.
-Vercel Analytics and Speed Insights are integrated via `@vercel/analytics` and
-`@vercel/speed-insights`.
+| Script          | Command                                                | Purpose & Description                                                                               |
+| :-------------- | :----------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| `dev`           | `next dev --webpack`                                   | Start local development server (`http://localhost:3000`)                                            |
+| `pipeline`      | `node scripts/pipeline.mjs`                            | **End-to-End Production Verification** (Runs Lint ➔ Format Check ➔ Test ➔ Build with pretty output) |
+| `verify`        | `node scripts/pipeline.mjs`                            | Alias for `npm run pipeline`                                                                        |
+| `check`         | `npm run lint && npm run format:check && npm run test` | Quick quality check without build                                                                   |
+| `build`         | `next build --webpack`                                 | Production build and static page generation                                                         |
+| `analyze`       | `ANALYZE=true next build`                              | Build with `@next/bundle-analyzer` visualizer                                                       |
+| `start`         | `next start`                                           | Start built production server                                                                       |
+| `lint`          | `eslint .`                                             | Inspect static code quality & rules                                                                 |
+| `lint:fix`      | `eslint . --fix`                                       | Automatically fix ESLint issues                                                                     |
+| `format`        | `prettier --write ...`                                 | Format all codebase files                                                                           |
+| `format:check`  | `prettier --check ...`                                 | Verify code formatting compliance                                                                   |
+| `test`          | `jest --passWithNoTests`                               | Run unit tests                                                                                      |
+| `test:watch`    | `jest --watch`                                         | Run unit tests in watch mode                                                                        |
+| `test:coverage` | `jest --coverage`                                      | Generate test coverage report                                                                       |
+| `cypress:open`  | `cypress open`                                         | Open Cypress E2E GUI                                                                                |
+| `cypress:run`   | `cypress run`                                          | Run Cypress E2E tests headless                                                                      |
 
 ---
 
 ## Tech Stack Reference
 
-| Library                    | Version   | Purpose                          |
-|----------------------------|-----------|----------------------------------|
-| Next.js                    | ^16.2.6   | React framework (App Router)     |
-| React                      | 18.3.1    | UI library                       |
-| Tailwind CSS               | 3.4.14    | Utility-first CSS                |
-| @tanstack/react-query      | ^5.90.12  | Server state management          |
-| Axios                      | ^1.7.0    | HTTP client                      |
-| Framer Motion              | ^11.0.0   | Animations and transitions       |
-| React Hook Form            | ^7.52.0   | Form state management            |
-| Yup                        | —         | Not currently a dependency       |
-| Recharts                   | ^3.8.0    | Charting library                 |
-| Lucide React               | ^0.545.0  | Icon library                     |
-| date-fns                   | ^3.6.0    | Date utilities                   |
-| class-variance-authority   | ^0.7.1    | Component variant styling        |
-| @radix-ui/*                | various   | Accessible UI primitives         |
-| Cypress                    | ^13.7.0   | E2E testing                      |
-| Jest                       | ^29.7.0   | Unit testing                     |
-| @testing-library/react     | ^14.2.0   | Component testing utilities      |
-| ESLint                     | ^8.57.0   | Code linting                     |
-| Prettier                   | ^3.3.3    | Code formatting                  |
-| Husky                      | ^9.1.7    | Git hooks                        |
+| Library                  | Version  | Purpose                      |
+| ------------------------ | -------- | ---------------------------- |
+| Next.js                  | ^16.2.6  | React framework (App Router) |
+| React                    | 18.3.1   | UI library                   |
+| Tailwind CSS             | 3.4.14   | Utility-first CSS            |
+| @tanstack/react-query    | ^5.90.12 | Server state management      |
+| Axios                    | ^1.7.0   | HTTP client                  |
+| Framer Motion            | ^11.0.0  | Animations and transitions   |
+| React Hook Form          | ^7.52.0  | Form state management        |
+| Yup                      | —        | Not currently a dependency   |
+| Recharts                 | ^3.8.0   | Charting library             |
+| Lucide React             | ^0.545.0 | Icon library                 |
+| date-fns                 | ^3.6.0   | Date utilities               |
+| class-variance-authority | ^0.7.1   | Component variant styling    |
+| @radix-ui/*              | various  | Accessible UI primitives     |
+| Cypress                  | ^13.7.0  | E2E testing                  |
+| Jest                     | ^29.7.0  | Unit testing                 |
+| @testing-library/react   | ^14.2.0  | Component testing utilities  |
+| ESLint                   | ^8.57.0  | Code linting                 |
+| Prettier                 | ^3.3.3   | Code formatting              |
+| Husky                    | ^9.1.7   | Git hooks                    |
 
-> Versions above reflect `package.json` (verified 2026-08-23). Earlier revisions listed
-> Next 16.0.10 / Recharts 2.9.0 / ESLint 9.0.0 / Yup 1.3.0 — those were stale.
+> Versions above reflect `package.json` (verified 2026-08-23). Earlier revisions listed Next 16.0.10
+> / Recharts 2.9.0 / ESLint 9.0.0 / Yup 1.3.0 — those were stale.

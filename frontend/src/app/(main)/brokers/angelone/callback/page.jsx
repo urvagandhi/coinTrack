@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function AngelOneCallbackRedirect() {
-    const router = useRouter();
-    useEffect(() => { router.replace('/brokers/angelone'); }, [router]);
-    return null;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/brokers/angelone');
+  }, [router]);
+  return null;
 }

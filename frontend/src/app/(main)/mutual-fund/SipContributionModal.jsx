@@ -1,29 +1,35 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { X, Loader2 } from "lucide-react";
-import { mutualFundAPI } from "@/lib/api";
-import { useToast } from "@/components/ui/use-toast";
-import DataAccuracyWarning from "@/components/portfolio/tabs/DataAccuracyWarning";
+import { useState, useEffect, useMemo } from 'react';
+import { X, Loader2 } from 'lucide-react';
+import { mutualFundAPI } from '@/lib/api';
+import { useToast } from '@/components/ui/use-toast';
+import DataAccuracyWarning from '@/components/portfolio/tabs/DataAccuracyWarning';
 
-export default function SipContributionModal({ isOpen, onClose, onSuccess, schemes, initialData }) {
+export default function SipContributionModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  schemes,
+  initialData,
+}) {
   const [formData, setFormData] = useState({
-    schemeId: "",
-    debitedBank: "",
-    contributionDate: "",
-    amount: "",
-    navPrice: "",
-    totalUnit: "",
-    remarks: ""
+    schemeId: '',
+    debitedBank: '',
+    contributionDate: '',
+    amount: '',
+    navPrice: '',
+    totalUnit: '',
+    remarks: '',
   });
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [entryMode, setEntryMode] = useState("automatic");
+  const [entryMode, setEntryMode] = useState('automatic');
   const { toast } = useToast();
 
   const schemesByPlatform = useMemo(() => {
     if (!schemes) return {};
     const groups = {};
-    schemes.forEach((s) => {
-      const platform = s.platform || "Other";
+    schemes.forEach(s => {
+      const platform = s.platform || 'Other';
       if (!groups[platform]) groups[platform] = [];
       groups[platform].push(s);
     });
@@ -34,30 +40,30 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
     if (isOpen) {
       if (initialData) {
         setFormData({
-          schemeId: initialData.schemeId || "",
-          debitedBank: initialData.debitedBank || "",
+          schemeId: initialData.schemeId || '',
+          debitedBank: initialData.debitedBank || '',
           contributionDate: initialData.contributionDate
             ? Array.isArray(initialData.contributionDate)
               ? `${initialData.contributionDate[0]}-${String(initialData.contributionDate[1]).padStart(2, '0')}-${String(initialData.contributionDate[2]).padStart(2, '0')}`
               : initialData.contributionDate.split('T')[0]
             : new Date().toISOString().split('T')[0],
-          amount: initialData.amount || "",
-          navPrice: initialData.navPrice || "",
-          totalUnit: initialData.totalUnit || "",
-          remarks: initialData.remarks || ""
+          amount: initialData.amount || '',
+          navPrice: initialData.navPrice || '',
+          totalUnit: initialData.totalUnit || '',
+          remarks: initialData.remarks || '',
         });
-        setEntryMode(initialData.navPrice ? "manual" : "automatic");
+        setEntryMode(initialData.navPrice ? 'manual' : 'automatic');
       } else {
         setFormData({
-          schemeId: "",
-          debitedBank: "",
+          schemeId: '',
+          debitedBank: '',
           contributionDate: new Date().toISOString().split('T')[0],
-          amount: "",
-          navPrice: "",
-          totalUnit: "",
-          remarks: ""
+          amount: '',
+          navPrice: '',
+          totalUnit: '',
+          remarks: '',
         });
-        setEntryMode("automatic");
+        setEntryMode('automatic');
       }
       setLoading(false);
       setDeleteLoading(false);
@@ -66,7 +72,7 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
 
   if (!isOpen) return null;
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -78,29 +84,48 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
     try {
       const payload = {
         ...formData,
         amount: Number(formData.amount),
-        navPrice: entryMode === "manual" && formData.navPrice ? Number(formData.navPrice) : null,
-        totalUnit: entryMode === "manual" && formData.totalUnit ? Number(formData.totalUnit) : null,
+        navPrice:
+          entryMode === 'manual' && formData.navPrice
+            ? Number(formData.navPrice)
+            : null,
+        totalUnit:
+          entryMode === 'manual' && formData.totalUnit
+            ? Number(formData.totalUnit)
+            : null,
       };
-      
+
       if (initialData?.id || initialData?.contributionId) {
-        await mutualFundAPI.updateSipContribution(initialData.id || initialData.contributionId, payload);
-        toast({ title: "Success", description: "SIP contribution updated successfully." });
+        await mutualFundAPI.updateSipContribution(
+          initialData.id || initialData.contributionId,
+          payload
+        );
+        toast({
+          title: 'Success',
+          description: 'SIP contribution updated successfully.',
+        });
       } else {
         await mutualFundAPI.createSipContribution(payload);
-        toast({ title: "Success", description: "SIP contribution added successfully." });
+        toast({
+          title: 'Success',
+          description: 'SIP contribution added successfully.',
+        });
       }
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Failed to add sip contribution", error);
-      toast({ title: "Error", description: "Failed to save contribution.", variant: "destructive" });
+      console.error('Failed to add sip contribution', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save contribution.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -108,25 +133,37 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
 
   const handleDelete = () => {
     toast({
-      title: "Delete Contribution?",
-      description: "Are you sure you want to delete this contribution? This action cannot be undone.",
-      variant: "warning",
+      title: 'Delete Contribution?',
+      description:
+        'Are you sure you want to delete this contribution? This action cannot be undone.',
+      variant: 'warning',
       action: (
         <button
           onClick={async () => {
             setDeleteLoading(true);
             try {
-              await mutualFundAPI.deleteSipContribution(initialData.id || initialData.contributionId);
-              toast({ title: "Success", description: "Contribution deleted successfully." });
+              await mutualFundAPI.deleteSipContribution(
+                initialData.id || initialData.contributionId
+              );
+              toast({
+                title: 'Success',
+                description: 'Contribution deleted successfully.',
+              });
               onSuccess();
               onClose();
             } catch (error) {
-              toast({ title: "Error", description: error.response?.data?.message || "Failed to delete contribution.", variant: "destructive" });
+              toast({
+                title: 'Error',
+                description:
+                  error.response?.data?.message ||
+                  'Failed to delete contribution.',
+                variant: 'destructive',
+              });
             } finally {
               setDeleteLoading(false);
             }
           }}
-          className="text-[11px] font-medium text-[hsl(var(--loss))] hover:underline"
+          className='text-[11px] font-medium text-[hsl(var(--loss))] hover:underline'
         >
           Confirm
         </button>
@@ -135,204 +172,231 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="ed-card w-full max-w-4xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200">
-        <span className="corner-mark corner-tl" />
-        <span className="corner-mark corner-tr" />
-        <span className="corner-mark corner-bl" />
-        <span className="corner-mark corner-br" />
+    <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200'>
+      <div className='ed-card w-full max-w-4xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200'>
+        <span className='corner-mark corner-tl' />
+        <span className='corner-mark corner-tr' />
+        <span className='corner-mark corner-bl' />
+        <span className='corner-mark corner-br' />
 
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className='flex items-center justify-between p-6 border-b border-border'>
           <div>
-            <h2 className="font-serif text-[24px] text-foreground leading-none mb-1">
-              {initialData ? "Edit SIP Contribution" : "New SIP Contribution"}
+            <h2 className='font-serif text-[24px] text-foreground leading-none mb-1'>
+              {initialData ? 'Edit SIP Contribution' : 'New SIP Contribution'}
             </h2>
-            <p className="text-[12px] text-muted-foreground font-mono uppercase tracking-[0.05em]">
+            <p className='text-[12px] text-muted-foreground font-mono uppercase tracking-[0.05em]'>
               Mutual Fund SIP Ledger
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-sm border border-transparent hover:border-border hover:bg-muted text-muted-foreground transition-all"
+            className='w-8 h-8 flex items-center justify-center rounded-sm border border-transparent hover:border-border hover:bg-muted text-muted-foreground transition-all'
           >
-            <X className="h-4 w-4" />
+            <X className='h-4 w-4' />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto">
-          <div className="mb-6">
-             <DataAccuracyWarning className="mb-4" />
+        <div className='p-6 overflow-y-auto'>
+          <div className='mb-6'>
+            <DataAccuracyWarning className='mb-4' />
           </div>
-          <form id="sip-form" onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-8">
+          <form
+            id='sip-form'
+            onSubmit={handleSubmit}
+            className='flex flex-col md:flex-row gap-8'
+          >
             {/* LEFT COLUMN: Setup */}
-            <div className="flex-1 space-y-6 min-w-[300px]">
-              <div className="space-y-4">
-                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+            <div className='flex-1 space-y-6 min-w-[300px]'>
+              <div className='space-y-4'>
+                <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
                   01. Configuration
                 </h3>
-                <div className="space-y-1.5">
-                  <label className="eyebrow">Select Scheme *</label>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>Select Scheme *</label>
                   <select
                     required
-                    name="schemeId"
+                    name='schemeId'
                     value={formData.schemeId}
-                    onChange={(e) => {
+                    onChange={e => {
                       const schemeId = e.target.value;
-                      const selected = schemes?.find(s => (s.id || s.schemeId) === schemeId);
+                      const selected = schemes?.find(
+                        s => (s.id || s.schemeId) === schemeId
+                      );
                       setFormData({
                         ...formData,
                         schemeId,
-                        debitedBank: selected?.bank || formData.debitedBank || ""
+                        debitedBank:
+                          selected?.bank || formData.debitedBank || '',
                       });
                     }}
-                    className="ed-input w-full font-mono bg-card"
+                    className='ed-input w-full font-mono bg-card'
                   >
-                    <option value="" disabled>-- Choose a Scheme --</option>
-                    {Object.entries(schemesByPlatform).map(([platform, items]) => (
-                      <optgroup key={platform} label={`${platform.toUpperCase()} (${items.length} Schemes)`}>
-                        {items.map(s => {
-                          const id = s.id || s.schemeId;
-                          return (
-                            <option key={id} value={id}>
-                              {s.schemeName} — {s.holderName} (Folio: {s.folioNo || 'N/A'})
-                            </option>
-                          );
-                        })}
-                      </optgroup>
-                    ))}
+                    <option value='' disabled>
+                      -- Choose a Scheme --
+                    </option>
+                    {Object.entries(schemesByPlatform).map(
+                      ([platform, items]) => (
+                        <optgroup
+                          key={platform}
+                          label={`${platform.toUpperCase()} (${items.length} Schemes)`}
+                        >
+                          {items.map(s => {
+                            const id = s.id || s.schemeId;
+                            return (
+                              <option key={id} value={id}>
+                                {s.schemeName} — {s.holderName} (Folio:{' '}
+                                {s.folioNo || 'N/A'})
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      )
+                    )}
                   </select>
                 </div>
 
-                <div className="space-y-1.5 pt-4">
-                  <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3">
+                <div className='space-y-1.5 pt-4'>
+                  <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3'>
                     03. Settlement
                   </h3>
-                  <label className="eyebrow">Debited Bank Account *</label>
+                  <label className='eyebrow'>Debited Bank Account *</label>
                   <input
-                    type="text"
-                    name="debitedBank"
-                    value={formData.debitedBank || ""}
+                    type='text'
+                    name='debitedBank'
+                    value={formData.debitedBank || ''}
                     readOnly
                     disabled
-                    placeholder={formData.debitedBank ? "" : "Select a scheme to auto-fill bank"}
-                    className="ed-input w-full font-mono bg-muted/40 opacity-90 cursor-not-allowed"
+                    placeholder={
+                      formData.debitedBank
+                        ? ''
+                        : 'Select a scheme to auto-fill bank'
+                    }
+                    className='ed-input w-full font-mono bg-muted/40 opacity-90 cursor-not-allowed'
                   />
                 </div>
 
-                <div className="space-y-1.5 pt-4">
-                  <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3">
+                <div className='space-y-1.5 pt-4'>
+                  <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3'>
                     04. Remarks
                   </h3>
-                  <label className="eyebrow">Remarks [Optional]</label>
+                  <label className='eyebrow'>Remarks [Optional]</label>
                   <input
-                    type="text"
-                    name="remarks"
+                    type='text'
+                    name='remarks'
                     value={formData.remarks}
                     onChange={handleChange}
-                    className="ed-input w-full font-mono bg-card"
-                    placeholder="e.g. May 2025 installment"
+                    className='ed-input w-full font-mono bg-card'
+                    placeholder='e.g. May 2025 installment'
                   />
                 </div>
               </div>
             </div>
 
             {/* DIVIDER */}
-            <div className="hidden md:block w-px bg-border"></div>
+            <div className='hidden md:block w-px bg-border'></div>
 
             {/* RIGHT COLUMN: Execution Details */}
-            <div className="flex-1 space-y-6 min-w-[300px]">
-              <div className="space-y-4">
-                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+            <div className='flex-1 space-y-6 min-w-[300px]'>
+              <div className='space-y-4'>
+                <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
                   02. Execution Details
                 </h3>
-                
-                <div className="bg-muted/20 border border-border rounded-md p-3 mb-4 space-y-4">
-                   <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center">
-                      <div>
-                        <span className="text-[10px] uppercase text-muted-foreground font-mono mb-1.5 block tracking-wider">Calculation Mode</span>
-                        <div className="flex bg-background rounded-full p-0.5 w-max border border-border/50">
-                          <button
-                             type="button"
-                             onClick={() => setEntryMode("automatic")}
-                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
-                                entryMode === "automatic" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                             }`}
-                          >
-                             Automatic
-                          </button>
-                          <button
-                             type="button"
-                             onClick={() => setEntryMode("manual")}
-                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
-                                entryMode === "manual" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                             }`}
-                          >
-                             Manual
-                          </button>
-                        </div>
+
+                <div className='bg-muted/20 border border-border rounded-md p-3 mb-4 space-y-4'>
+                  <div className='flex flex-col md:flex-row gap-4 justify-between md:items-center'>
+                    <div>
+                      <span className='text-[10px] uppercase text-muted-foreground font-mono mb-1.5 block tracking-wider'>
+                        Calculation Mode
+                      </span>
+                      <div className='flex bg-background rounded-full p-0.5 w-max border border-border/50'>
+                        <button
+                          type='button'
+                          onClick={() => setEntryMode('automatic')}
+                          className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                            entryMode === 'automatic'
+                              ? 'bg-accent text-accent-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Automatic
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => setEntryMode('manual')}
+                          className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                            entryMode === 'manual'
+                              ? 'bg-accent text-accent-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Manual
+                        </button>
                       </div>
-                   </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
-                  <div className="space-y-1.5 flex-1">
-                    <label className="eyebrow">Date of Contribution *</label>
+                <div className='grid grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200'>
+                  <div className='space-y-1.5 flex-1'>
+                    <label className='eyebrow'>Date of Contribution *</label>
                     <input
                       required
-                      type="date"
-                      name="contributionDate"
+                      type='date'
+                      name='contributionDate'
                       value={formData.contributionDate}
                       onChange={handleChange}
-                      className="ed-input w-full font-mono bg-card"
+                      className='ed-input w-full font-mono bg-card'
                     />
                   </div>
-                  <div className="space-y-1.5 flex-1">
-                    <label className="eyebrow">Amount (₹) *</label>
+                  <div className='space-y-1.5 flex-1'>
+                    <label className='eyebrow'>Amount (₹) *</label>
                     <input
                       required
-                      type="number"
-                      step="0.01"
-                      name="amount"
+                      type='number'
+                      step='0.01'
+                      name='amount'
                       value={formData.amount}
                       onChange={handleChange}
                       onBlur={calculateUnits}
-                      className="ed-input w-full font-mono bg-card"
+                      className='ed-input w-full font-mono bg-card'
                     />
                   </div>
                 </div>
 
-                {entryMode === "manual" && (
-                  <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200 mt-4">
-                    <div className="space-y-1.5">
-                      <label className="eyebrow">NAV Price</label>
+                {entryMode === 'manual' && (
+                  <div className='grid grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200 mt-4'>
+                    <div className='space-y-1.5'>
+                      <label className='eyebrow'>NAV Price</label>
                       <input
-                        type="number"
-                        step="0.0001"
-                        name="navPrice"
+                        type='number'
+                        step='0.0001'
+                        name='navPrice'
                         value={formData.navPrice}
                         onChange={handleChange}
                         onBlur={calculateUnits}
-                        className="ed-input w-full font-mono bg-card"
+                        className='ed-input w-full font-mono bg-card'
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="eyebrow">Allotted Units</label>
+                    <div className='space-y-1.5'>
+                      <label className='eyebrow'>Allotted Units</label>
                       <input
-                        type="number"
-                        step="0.001"
-                        name="totalUnit"
+                        type='number'
+                        step='0.001'
+                        name='totalUnit'
                         value={formData.totalUnit}
                         onChange={handleChange}
-                        className="ed-input w-full font-mono bg-card"
+                        className='ed-input w-full font-mono bg-card'
                       />
                     </div>
                   </div>
                 )}
-                
-                {entryMode === "automatic" && (
-                  <div className="bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1 animate-in fade-in zoom-in-95">
-                    <p className="text-[11px] text-muted-foreground leading-tight">
-                      NAV Price and Allotted Units will be auto-calculated by the system based on the NAV of the applicable settlement date.
+
+                {entryMode === 'automatic' && (
+                  <div className='bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1 animate-in fade-in zoom-in-95'>
+                    <p className='text-[11px] text-muted-foreground leading-tight'>
+                      NAV Price and Allotted Units will be auto-calculated by
+                      the system based on the NAV of the applicable settlement
+                      date.
                     </p>
                   </div>
                 )}
@@ -341,35 +405,45 @@ export default function SipContributionModal({ isOpen, onClose, onSuccess, schem
           </form>
         </div>
 
-        <div className="p-6 border-t border-border bg-muted/20 flex items-center justify-between mt-auto">
+        <div className='p-6 border-t border-border bg-muted/20 flex items-center justify-between mt-auto'>
           <div>
             {initialData && (
               <button
-                type="button"
+                type='button'
                 onClick={handleDelete}
                 disabled={deleteLoading || loading}
-                className="ed-btn bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border-transparent transition-colors"
+                className='ed-btn bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border-transparent transition-colors'
               >
-                {deleteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+                {deleteLoading ? (
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Delete'
+                )}
               </button>
             )}
           </div>
-          <div className="flex gap-3">
+          <div className='flex gap-3'>
             <button
-              type="button"
+              type='button'
               onClick={onClose}
               disabled={loading || deleteLoading}
-              className="ed-btn bg-card border-border hover:bg-muted text-foreground"
+              className='ed-btn bg-card border-border hover:bg-muted text-foreground'
             >
               Cancel
             </button>
             <button
-              type="submit"
-              form="sip-form"
+              type='submit'
+              form='sip-form'
               disabled={loading || deleteLoading}
-              className="ed-btn ed-btn-accent min-w-[120px]"
+              className='ed-btn ed-btn-accent min-w-[120px]'
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (initialData ? "Update Entry" : "Save Entry")}
+              {loading ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : initialData ? (
+                'Update Entry'
+              ) : (
+                'Save Entry'
+              )}
             </button>
           </div>
         </div>

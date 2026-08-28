@@ -9,22 +9,27 @@ import { TabLoadingSkeleton } from './TabLoadingSkeleton';
 import DataAccuracyWarning from './DataAccuracyWarning';
 
 export function MfInstrumentsTab() {
-    const { data: rawData, isLoading, error, refetch } = useQuery({
-        queryKey: ['portfolio', 'mf-instruments'],
-        queryFn: portfolioAPI.getMfInstruments,
-        staleTime: 60 * 60 * 1000, // 1 hour
-        refetchOnWindowFocus: false,
-    });
+  const {
+    data: rawData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['portfolio', 'mf-instruments'],
+    queryFn: portfolioAPI.getMfInstruments,
+    staleTime: 60 * 60 * 1000, // 1 hour
+    refetchOnWindowFocus: false,
+  });
 
-    if (isLoading) return <TabLoadingSkeleton rows={6} columns={4} />;
-    if (error) return <TabError error={error} onRetry={refetch} />;
+  if (isLoading) return <TabLoadingSkeleton rows={6} columns={4} />;
+  if (error) return <TabError error={error} onRetry={refetch} />;
 
-    const instruments = Array.isArray(rawData) ? rawData : (rawData?.data || []);
+  const instruments = Array.isArray(rawData) ? rawData : rawData?.data || [];
 
-    return (
-        <div>
-            <DataAccuracyWarning />
-            <MfInstrumentList instruments={instruments} isLoading={false} />
-        </div>
-    );
+  return (
+    <div>
+      <DataAccuracyWarning />
+      <MfInstrumentList instruments={instruments} isLoading={false} />
+    </div>
+  );
 }

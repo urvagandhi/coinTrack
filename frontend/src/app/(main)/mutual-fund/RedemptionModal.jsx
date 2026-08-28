@@ -1,27 +1,33 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { X, Loader2, Info } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { mutualFundAPI } from "@/lib/api";
-import { useToast } from "@/components/ui/use-toast";
-import DataAccuracyWarning from "@/components/portfolio/tabs/DataAccuracyWarning";
+import { useState, useEffect, useMemo } from 'react';
+import { X, Loader2, Info } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { mutualFundAPI } from '@/lib/api';
+import { useToast } from '@/components/ui/use-toast';
+import DataAccuracyWarning from '@/components/portfolio/tabs/DataAccuracyWarning';
 
-export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, initialData }) {
+export default function RedemptionModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  schemes,
+  initialData,
+}) {
   const [formData, setFormData] = useState({
-    schemeId: "",
-    redemptionDate: "",
-    redemptionUnit: "",
-    redemptionValue: "",
-    redemptionNav: "",
-    amountCreditedBank: "",
-    tradeInvestmentValue: "",
-    exitLoadDeducted: "",
+    schemeId: '',
+    redemptionDate: '',
+    redemptionUnit: '',
+    redemptionValue: '',
+    redemptionNav: '',
+    amountCreditedBank: '',
+    tradeInvestmentValue: '',
+    exitLoadDeducted: '',
     isAfterCutoff: false,
-    remarks: ""
+    remarks: '',
   });
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [redemptionType, setRedemptionType] = useState("amount"); // 'amount' or 'unit'
-  const [entryMode, setEntryMode] = useState("automatic"); // 'automatic' or 'manual'
+  const [redemptionType, setRedemptionType] = useState('amount'); // 'amount' or 'unit'
+  const [entryMode, setEntryMode] = useState('automatic'); // 'automatic' or 'manual'
   const [calculatedNavData, setCalculatedNavData] = useState(null);
   const [navLoading, setNavLoading] = useState(false);
   const { toast } = useToast();
@@ -29,8 +35,8 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
   const schemesByPlatform = useMemo(() => {
     if (!schemes) return {};
     const groups = {};
-    schemes.forEach((s) => {
-      const platform = s.platform || "Other";
+    schemes.forEach(s => {
+      const platform = s.platform || 'Other';
       if (!groups[platform]) groups[platform] = [];
       groups[platform].push(s);
     });
@@ -50,37 +56,41 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
     if (isOpen) {
       if (initialData) {
         setFormData({
-          schemeId: initialData.schemeId || "",
+          schemeId: initialData.schemeId || '',
           redemptionDate: initialData.redemptionDate
             ? Array.isArray(initialData.redemptionDate)
               ? `${initialData.redemptionDate[0]}-${String(initialData.redemptionDate[1]).padStart(2, '0')}-${String(initialData.redemptionDate[2]).padStart(2, '0')}`
               : initialData.redemptionDate.split('T')[0]
             : new Date().toISOString().split('T')[0],
-          redemptionUnit: initialData.redemptionUnit || "",
-          redemptionValue: initialData.redemptionValue || "",
-          redemptionNav: initialData.redemptionNav || "",
-          amountCreditedBank: initialData.amountCreditedBank || "",
-          tradeInvestmentValue: initialData.tradeInvestmentValue || "",
-          exitLoadDeducted: initialData.exitLoadDeducted || "",
+          redemptionUnit: initialData.redemptionUnit || '',
+          redemptionValue: initialData.redemptionValue || '',
+          redemptionNav: initialData.redemptionNav || '',
+          amountCreditedBank: initialData.amountCreditedBank || '',
+          tradeInvestmentValue: initialData.tradeInvestmentValue || '',
+          exitLoadDeducted: initialData.exitLoadDeducted || '',
           isAfterCutoff: initialData.isAfterCutoff || false,
-          remarks: initialData.remarks || ""
+          remarks: initialData.remarks || '',
         });
-        setRedemptionType(initialData.redemptionUnit && !initialData.redemptionValue ? "unit" : "amount");
-        setEntryMode(initialData.redemptionNav ? "manual" : "automatic");
+        setRedemptionType(
+          initialData.redemptionUnit && !initialData.redemptionValue
+            ? 'unit'
+            : 'amount'
+        );
+        setEntryMode(initialData.redemptionNav ? 'manual' : 'automatic');
       } else {
         setFormData({
-          schemeId: "",
+          schemeId: '',
           redemptionDate: new Date().toISOString().split('T')[0],
-          redemptionUnit: "",
-          redemptionValue: "",
-          amountCreditedBank: "",
-          tradeInvestmentValue: "",
-          exitLoadDeducted: "",
+          redemptionUnit: '',
+          redemptionValue: '',
+          amountCreditedBank: '',
+          tradeInvestmentValue: '',
+          exitLoadDeducted: '',
           isAfterCutoff: false,
-          remarks: ""
+          remarks: '',
         });
-        setRedemptionType("amount");
-        setEntryMode("automatic");
+        setRedemptionType('amount');
+        setEntryMode('automatic');
       }
       setLoading(false);
       setDeleteLoading(false);
@@ -89,16 +99,26 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
 
   useEffect(() => {
     let active = true;
-    if (isOpen && entryMode === "automatic" && formData.schemeId && formData.redemptionDate) {
+    if (
+      isOpen &&
+      entryMode === 'automatic' &&
+      formData.schemeId &&
+      formData.redemptionDate
+    ) {
       setNavLoading(true);
-      mutualFundAPI.getSchemeNavForDate(formData.schemeId, formData.redemptionDate, formData.isAfterCutoff)
-        .then((res) => {
+      mutualFundAPI
+        .getSchemeNavForDate(
+          formData.schemeId,
+          formData.redemptionDate,
+          formData.isAfterCutoff
+        )
+        .then(res => {
           if (active) {
             setCalculatedNavData(res);
           }
         })
-        .catch((err) => {
-          console.error("Failed to fetch NAV", err);
+        .catch(err => {
+          console.error('Failed to fetch NAV', err);
           if (active) setCalculatedNavData(null);
         })
         .finally(() => {
@@ -110,14 +130,20 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
     return () => {
       active = false;
     };
-  }, [isOpen, entryMode, formData.schemeId, formData.redemptionDate, formData.isAfterCutoff]);
+  }, [
+    isOpen,
+    entryMode,
+    formData.schemeId,
+    formData.redemptionDate,
+    formData.isAfterCutoff,
+  ]);
 
   const selectedScheme = useMemo(() => {
     if (!formData.schemeId || !schemes) return null;
     return schemes.find(s => (s.id || s.schemeId) === formData.schemeId);
   }, [formData.schemeId, schemes]);
 
-  const originalRedemptionUnit = useMemo(() => {
+  const _originalRedemptionUnit = useMemo(() => {
     if (initialData && initialData.redemptionUnit) {
       return parseFloat(initialData.redemptionUnit);
     }
@@ -133,95 +159,166 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
   }, [selectedScheme, initialData]);
 
   const effectiveRedemptionUnit = useMemo(() => {
-    if (entryMode === "manual") {
-      if (formData.redemptionUnit && !isNaN(parseFloat(formData.redemptionUnit))) {
+    if (entryMode === 'manual') {
+      if (
+        formData.redemptionUnit &&
+        !isNaN(parseFloat(formData.redemptionUnit))
+      ) {
         return parseFloat(formData.redemptionUnit);
       }
-      if (formData.redemptionValue && formData.redemptionNav && !isNaN(parseFloat(formData.redemptionValue)) && !isNaN(parseFloat(formData.redemptionNav))) {
-        return parseFloat(formData.redemptionValue) / parseFloat(formData.redemptionNav);
+      if (
+        formData.redemptionValue &&
+        formData.redemptionNav &&
+        !isNaN(parseFloat(formData.redemptionValue)) &&
+        !isNaN(parseFloat(formData.redemptionNav))
+      ) {
+        return (
+          parseFloat(formData.redemptionValue) /
+          parseFloat(formData.redemptionNav)
+        );
       }
       return 0;
     }
-    
+
     // Automatic Mode
-    if (redemptionType === "unit" && formData.redemptionUnit && !isNaN(parseFloat(formData.redemptionUnit))) {
+    if (
+      redemptionType === 'unit' &&
+      formData.redemptionUnit &&
+      !isNaN(parseFloat(formData.redemptionUnit))
+    ) {
       return parseFloat(formData.redemptionUnit);
     }
-    if (redemptionType === "amount" && formData.redemptionValue && !isNaN(parseFloat(formData.redemptionValue))) {
+    if (
+      redemptionType === 'amount' &&
+      formData.redemptionValue &&
+      !isNaN(parseFloat(formData.redemptionValue))
+    ) {
       if (calculatedNavData?.nav) {
         return parseFloat(formData.redemptionValue) / calculatedNavData.nav;
       }
     }
     return 0;
-  }, [formData.redemptionUnit, formData.redemptionValue, formData.redemptionNav, redemptionType, entryMode, calculatedNavData]);
+  }, [
+    formData.redemptionUnit,
+    formData.redemptionValue,
+    formData.redemptionNav,
+    redemptionType,
+    entryMode,
+    calculatedNavData,
+  ]);
 
   // Debounce the units for the API call
-  const [debouncedUnits, setDebouncedUnits] = useState("");
+  const [debouncedUnits, setDebouncedUnits] = useState('');
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedUnits(effectiveRedemptionUnit > 0 ? effectiveRedemptionUnit.toFixed(3) : "");
+      setDebouncedUnits(
+        effectiveRedemptionUnit > 0 ? effectiveRedemptionUnit.toFixed(3) : ''
+      );
     }, 500);
     return () => clearTimeout(handler);
   }, [effectiveRedemptionUnit]);
 
   const calculateMissingValue = () => {
-    if (entryMode === "manual" && formData.redemptionNav) {
-      if (redemptionType === "amount" && formData.redemptionValue) {
-        setFormData(prev => ({ ...prev, redemptionUnit: (parseFloat(prev.redemptionValue) / parseFloat(prev.redemptionNav)).toFixed(3) }));
-      } else if (redemptionType === "unit" && formData.redemptionUnit) {
-        setFormData(prev => ({ ...prev, redemptionValue: (parseFloat(prev.redemptionUnit) * parseFloat(prev.redemptionNav)).toFixed(2) }));
+    if (entryMode === 'manual' && formData.redemptionNav) {
+      if (redemptionType === 'amount' && formData.redemptionValue) {
+        setFormData(prev => ({
+          ...prev,
+          redemptionUnit: (
+            parseFloat(prev.redemptionValue) / parseFloat(prev.redemptionNav)
+          ).toFixed(3),
+        }));
+      } else if (redemptionType === 'unit' && formData.redemptionUnit) {
+        setFormData(prev => ({
+          ...prev,
+          redemptionValue: (
+            parseFloat(prev.redemptionUnit) * parseFloat(prev.redemptionNav)
+          ).toFixed(2),
+        }));
       }
     }
   };
 
   const { data: previewData, isLoading: isPreviewLoading } = useQuery({
-    queryKey: ["previewFifo", formData.schemeId, formData.redemptionDate, debouncedUnits],
-    queryFn: () => mutualFundAPI.previewFifo({ 
-      schemeId: formData.schemeId, 
-      date: formData.redemptionDate, 
-      units: debouncedUnits 
-    }),
-    enabled: !!formData.schemeId && !!formData.redemptionDate && !!debouncedUnits,
+    queryKey: [
+      'previewFifo',
+      formData.schemeId,
+      formData.redemptionDate,
+      debouncedUnits,
+    ],
+    queryFn: () =>
+      mutualFundAPI.previewFifo({
+        schemeId: formData.schemeId,
+        date: formData.redemptionDate,
+        units: debouncedUnits,
+      }),
+    enabled:
+      !!formData.schemeId && !!formData.redemptionDate && !!debouncedUnits,
     staleTime: 60 * 1000,
   });
 
   if (!isOpen) return null;
 
-  const handleChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+  const handleChange = e => {
+    const value =
+      e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setFormData({ ...formData, [e.target.name]: value });
   };
 
-
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (!formData.redemptionValue && !formData.redemptionUnit) {
-      toast({ title: "Validation Error", description: "Please enter either Redemption Value or Redeemed Units.", variant: "destructive" });
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter either Redemption Value or Redeemed Units.',
+        variant: 'destructive',
+      });
       return;
     }
     setLoading(true);
     try {
       const payload = {
         ...formData,
-        redemptionUnit: formData.redemptionUnit ? Number(formData.redemptionUnit) : null,
-        redemptionValue: formData.redemptionValue ? Number(formData.redemptionValue) : null,
-        redemptionNav: entryMode === "manual" && formData.redemptionNav ? Number(formData.redemptionNav) : null,
-        tradeInvestmentValue: entryMode === "manual" && formData.tradeInvestmentValue ? Number(formData.tradeInvestmentValue) : null,
-        exitLoadDeducted: entryMode === "manual" && formData.exitLoadDeducted ? Number(formData.exitLoadDeducted) : null,
+        redemptionUnit: formData.redemptionUnit
+          ? Number(formData.redemptionUnit)
+          : null,
+        redemptionValue: formData.redemptionValue
+          ? Number(formData.redemptionValue)
+          : null,
+        redemptionNav:
+          entryMode === 'manual' && formData.redemptionNav
+            ? Number(formData.redemptionNav)
+            : null,
+        tradeInvestmentValue:
+          entryMode === 'manual' && formData.tradeInvestmentValue
+            ? Number(formData.tradeInvestmentValue)
+            : null,
+        exitLoadDeducted:
+          entryMode === 'manual' && formData.exitLoadDeducted
+            ? Number(formData.exitLoadDeducted)
+            : null,
       };
       if (initialData?.id) {
         await mutualFundAPI.updateRedemption(initialData.id, payload);
-        toast({ title: "Success", description: "Redemption updated successfully." });
+        toast({
+          title: 'Success',
+          description: 'Redemption updated successfully.',
+        });
       } else {
         await mutualFundAPI.createRedemption(payload);
-        toast({ title: "Success", description: "Redemption recorded successfully." });
+        toast({
+          title: 'Success',
+          description: 'Redemption recorded successfully.',
+        });
       }
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Failed to save redemption", error);
-      toast({ title: "Error", description: "Failed to save redemption.", variant: "destructive" });
+      console.error('Failed to save redemption', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save redemption.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -229,25 +326,35 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
 
   const handleDelete = () => {
     toast({
-      title: "Delete Redemption Entry?",
-      description: "Are you sure you want to delete this redemption entry? This action cannot be undone.",
-      variant: "warning",
+      title: 'Delete Redemption Entry?',
+      description:
+        'Are you sure you want to delete this redemption entry? This action cannot be undone.',
+      variant: 'warning',
       action: (
         <button
           onClick={async () => {
             setDeleteLoading(true);
             try {
               await mutualFundAPI.deleteRedemption(initialData.id);
-              toast({ title: "Success", description: "Redemption entry deleted successfully." });
+              toast({
+                title: 'Success',
+                description: 'Redemption entry deleted successfully.',
+              });
               onSuccess();
               onClose();
             } catch (error) {
-              toast({ title: "Error", description: error.response?.data?.message || "Failed to delete redemption entry.", variant: "destructive" });
+              toast({
+                title: 'Error',
+                description:
+                  error.response?.data?.message ||
+                  'Failed to delete redemption entry.',
+                variant: 'destructive',
+              });
             } finally {
               setDeleteLoading(false);
             }
           }}
-          className="text-[11px] font-medium text-[hsl(var(--loss))] hover:underline"
+          className='text-[11px] font-medium text-[hsl(var(--loss))] hover:underline'
         >
           Confirm
         </button>
@@ -256,114 +363,129 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="ed-card w-full max-w-4xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200">
-        <span className="corner-mark corner-tl" />
-        <span className="corner-mark corner-tr" />
-        <span className="corner-mark corner-bl" />
-        <span className="corner-mark corner-br" />
+    <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200'>
+      <div className='ed-card w-full max-w-4xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200'>
+        <span className='corner-mark corner-tl' />
+        <span className='corner-mark corner-tr' />
+        <span className='corner-mark corner-bl' />
+        <span className='corner-mark corner-br' />
 
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className='flex items-center justify-between p-6 border-b border-border'>
           <div>
-            <h2 className="font-serif text-[24px] text-foreground leading-none mb-1">
-              {initialData ? "Edit Redemption Entry" : "Record Redemption"}
+            <h2 className='font-serif text-[24px] text-foreground leading-none mb-1'>
+              {initialData ? 'Edit Redemption Entry' : 'Record Redemption'}
             </h2>
-            <p className="text-[12px] text-muted-foreground font-mono uppercase tracking-[0.05em]">
+            <p className='text-[12px] text-muted-foreground font-mono uppercase tracking-[0.05em]'>
               Mutual Fund Withdrawal
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-sm border border-transparent hover:border-border hover:bg-muted text-muted-foreground transition-all"
+            className='w-8 h-8 flex items-center justify-center rounded-sm border border-transparent hover:border-border hover:bg-muted text-muted-foreground transition-all'
           >
-            <X className="h-4 w-4" />
+            <X className='h-4 w-4' />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto">
-          <div className="mb-6">
-             <DataAccuracyWarning className="mb-4" />
+        <div className='p-6 overflow-y-auto'>
+          <div className='mb-6'>
+            <DataAccuracyWarning className='mb-4' />
           </div>
-          <form id="redemption-form" onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-8">
+          <form
+            id='redemption-form'
+            onSubmit={handleSubmit}
+            className='flex flex-col md:flex-row gap-8'
+          >
             {/* LEFT COLUMN: Setup */}
-            <div className="flex-1 space-y-6 min-w-[300px]">
-              <div className="space-y-4">
-                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+            <div className='flex-1 space-y-6 min-w-[300px]'>
+              <div className='space-y-4'>
+                <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
                   01. Configuration
                 </h3>
-                <div className="space-y-1.5">
-                  <label className="eyebrow">Select Scheme *</label>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>Select Scheme *</label>
                   <select
                     required
-                    name="schemeId"
+                    name='schemeId'
                     value={formData.schemeId}
                     onChange={handleChange}
-                    className="ed-input w-full font-mono bg-card"
+                    className='ed-input w-full font-mono bg-card'
                   >
-                    <option value="" disabled>-- Choose a Scheme --</option>
-                    {Object.entries(schemesByPlatform).map(([platform, platformSchemes]) => (
-                      <optgroup key={platform} label={platform}>
-                        {platformSchemes.map((scheme) => (
-                          <option key={scheme.id || scheme.schemeId} value={scheme.id || scheme.schemeId}>
-                            {scheme.schemeName}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
+                    <option value='' disabled>
+                      -- Choose a Scheme --
+                    </option>
+                    {Object.entries(schemesByPlatform).map(
+                      ([platform, platformSchemes]) => (
+                        <optgroup key={platform} label={platform}>
+                          {platformSchemes.map(scheme => (
+                            <option
+                              key={scheme.id || scheme.schemeId}
+                              value={scheme.id || scheme.schemeId}
+                            >
+                              {scheme.schemeName}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )
+                    )}
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="eyebrow">Date of Redemption *</label>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>Date of Redemption *</label>
                   <input
-                    type="date"
+                    type='date'
                     required
-                    name="redemptionDate"
+                    name='redemptionDate'
                     value={formData.redemptionDate}
                     onChange={handleChange}
-                    className="ed-input w-full font-mono bg-card"
+                    className='ed-input w-full font-mono bg-card'
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
-                    For historical entries, enter the actual NAV processing date, not the submission date.
+                  <p className='text-[11px] text-muted-foreground mt-1 leading-tight'>
+                    For historical entries, enter the actual NAV processing
+                    date, not the submission date.
                   </p>
-                  {isRecentDate && entryMode === "automatic" && (
-                    <div className="flex items-center space-x-2 mt-3 p-2 bg-muted/20 border border-border/50 rounded">
+                  {isRecentDate && entryMode === 'automatic' && (
+                    <div className='flex items-center space-x-2 mt-3 p-2 bg-muted/20 border border-border/50 rounded'>
                       <input
-                        type="checkbox"
-                        id="isAfterCutoff"
-                        name="isAfterCutoff"
+                        type='checkbox'
+                        id='isAfterCutoff'
+                        name='isAfterCutoff'
                         checked={formData.isAfterCutoff}
                         onChange={handleChange}
-                        className="rounded border-border text-accent focus:ring-accent"
+                        className='rounded border-border text-accent focus:ring-accent'
                       />
-                      <label htmlFor="isAfterCutoff" className="text-[12px] text-foreground cursor-pointer font-medium">
+                      <label
+                        htmlFor='isAfterCutoff'
+                        className='text-[12px] text-foreground cursor-pointer font-medium'
+                      >
                         Placed after 3:00 PM (Cut-off)
                       </label>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-1.5 pt-4">
-                  <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3">
+                <div className='space-y-1.5 pt-4'>
+                  <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 mb-3'>
                     03. Settlement
                   </h3>
-                  <label className="eyebrow">Credited to Bank [Optional]</label>
+                  <label className='eyebrow'>Credited to Bank [Optional]</label>
                   <input
-                    type="text"
-                    name="amountCreditedBank"
+                    type='text'
+                    name='amountCreditedBank'
                     value={formData.amountCreditedBank}
                     onChange={handleChange}
-                    className="ed-input w-full font-mono bg-card"
-                    placeholder="e.g. HDFC Bank - 1234"
+                    className='ed-input w-full font-mono bg-card'
+                    placeholder='e.g. HDFC Bank - 1234'
                   />
-                  <div className="pt-2 space-y-1.5">
-                    <label className="eyebrow">Remarks / Notes</label>
+                  <div className='pt-2 space-y-1.5'>
+                    <label className='eyebrow'>Remarks / Notes</label>
                     <textarea
-                      name="remarks"
+                      name='remarks'
                       value={formData.remarks}
                       onChange={handleChange}
-                      className="ed-input w-full font-mono bg-card min-h-[60px] resize-y"
-                      placeholder="Add any notes here..."
+                      className='ed-input w-full font-mono bg-card min-h-[60px] resize-y'
+                      placeholder='Add any notes here...'
                     />
                   </div>
                 </div>
@@ -371,240 +493,372 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
             </div>
 
             {/* DIVIDER */}
-            <div className="hidden md:block w-px bg-border"></div>
+            <div className='hidden md:block w-px bg-border'></div>
 
             {/* RIGHT COLUMN: Execution Details */}
-            <div className="flex-1 space-y-6 min-w-[300px]">
-              <div className="space-y-4">
-                <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
+            <div className='flex-1 space-y-6 min-w-[300px]'>
+              <div className='space-y-4'>
+                <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
                   02. Execution Details
                 </h3>
 
-                <div className="bg-muted/20 border border-border rounded-md p-3 mb-4 space-y-4">
-                   <div className="flex flex-col md:flex-row gap-4 justify-between md:items-center">
-                      <div>
-                        <span className="text-[10px] uppercase text-muted-foreground font-mono mb-1.5 block tracking-wider">Calculation Mode</span>
-                        <div className="flex bg-background rounded-full p-0.5 w-max border border-border/50">
-                          <button
-                             type="button"
-                             onClick={() => setEntryMode("automatic")}
-                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
-                                entryMode === "automatic" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                             }`}
-                          >
-                             Automatic
-                          </button>
-                          <button
-                             type="button"
-                             onClick={() => setEntryMode("manual")}
-                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
-                                entryMode === "manual" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                             }`}
-                          >
-                             Manual
-                          </button>
-                        </div>
+                <div className='bg-muted/20 border border-border rounded-md p-3 mb-4 space-y-4'>
+                  <div className='flex flex-col md:flex-row gap-4 justify-between md:items-center'>
+                    <div>
+                      <span className='text-[10px] uppercase text-muted-foreground font-mono mb-1.5 block tracking-wider'>
+                        Calculation Mode
+                      </span>
+                      <div className='flex bg-background rounded-full p-0.5 w-max border border-border/50'>
+                        <button
+                          type='button'
+                          onClick={() => setEntryMode('automatic')}
+                          className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                            entryMode === 'automatic'
+                              ? 'bg-accent text-accent-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Automatic
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => setEntryMode('manual')}
+                          className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                            entryMode === 'manual'
+                              ? 'bg-accent text-accent-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Manual
+                        </button>
                       </div>
-                      
-                      <div>
-                        <span className="text-[10px] uppercase text-muted-foreground font-mono mb-1.5 block tracking-wider">Redemption Type</span>
-                        <div className="flex bg-background rounded-full p-0.5 w-max border border-border/50">
-                          <button
-                             type="button"
-                             onClick={() => setRedemptionType("amount")}
-                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
-                                redemptionType === "amount" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                             }`}
-                          >
-                             By Amount
-                          </button>
-                          <button
-                             type="button"
-                             onClick={() => setRedemptionType("unit")}
-                             className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
-                                redemptionType === "unit" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                             }`}
-                          >
-                             By Units
-                          </button>
-                        </div>
+                    </div>
+
+                    <div>
+                      <span className='text-[10px] uppercase text-muted-foreground font-mono mb-1.5 block tracking-wider'>
+                        Redemption Type
+                      </span>
+                      <div className='flex bg-background rounded-full p-0.5 w-max border border-border/50'>
+                        <button
+                          type='button'
+                          onClick={() => setRedemptionType('amount')}
+                          className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                            redemptionType === 'amount'
+                              ? 'bg-accent text-accent-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          By Amount
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => setRedemptionType('unit')}
+                          className={`px-3 py-1 text-[10px] font-mono uppercase tracking-[0.05em] rounded-full transition-all ${
+                            redemptionType === 'unit'
+                              ? 'bg-accent text-accent-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          By Units
+                        </button>
                       </div>
-                   </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200">
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex items-center gap-2 h-5">
-                        <label className={`eyebrow mb-0 ${redemptionType !== "amount" && entryMode !== "manual" ? 'text-muted-foreground/50' : ''}`}>Redemption Value (₹) {redemptionType === "amount" && "*"}</label>
-                        {redemptionType === "unit" && entryMode !== "manual" && (
-                          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border h-max leading-none">
-                            <Info className="h-3 w-3" /> Auto
+                <div className='grid grid-cols-2 gap-4 items-start animate-in slide-in-from-top-1 fade-in duration-200'>
+                  <div className='space-y-1.5 flex-1'>
+                    <div className='flex items-center gap-2 h-5'>
+                      <label
+                        className={`eyebrow mb-0 ${redemptionType !== 'amount' && entryMode !== 'manual' ? 'text-muted-foreground/50' : ''}`}
+                      >
+                        Redemption Value (₹){' '}
+                        {redemptionType === 'amount' && '*'}
+                      </label>
+                      {redemptionType === 'unit' && entryMode !== 'manual' && (
+                        <span className='text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border h-max leading-none'>
+                          <Info className='h-3 w-3' /> Auto
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type='number'
+                      step='0.01'
+                      required={redemptionType === 'amount'}
+                      disabled={
+                        redemptionType !== 'amount' && entryMode !== 'manual'
+                      }
+                      name='redemptionValue'
+                      value={formData.redemptionValue}
+                      onChange={handleChange}
+                      onBlur={calculateMissingValue}
+                      className={`ed-input w-full font-mono transition-all ${redemptionType !== 'amount' && entryMode !== 'manual' ? 'opacity-50 cursor-not-allowed' : 'bg-card'}`}
+                      placeholder={
+                        redemptionType !== 'amount' && entryMode !== 'manual'
+                          ? 'Auto-calculated'
+                          : 'e.g. 5000'
+                      }
+                    />
+                  </div>
+                  <div className='space-y-1.5 flex-1'>
+                    <div className='flex items-center gap-2 h-5'>
+                      <label
+                        className={`eyebrow mb-0 ${redemptionType !== 'unit' && entryMode !== 'manual' ? 'text-muted-foreground/50' : ''}`}
+                      >
+                        Redeemed Units {redemptionType === 'unit' && '*'}
+                      </label>
+                      {redemptionType === 'amount' &&
+                        entryMode !== 'manual' && (
+                          <span className='text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border h-max leading-none'>
+                            <Info className='h-3 w-3' /> Auto
                           </span>
                         )}
-                      </div>
-                      <input
-                        type="number"
-                        step="0.01"
-                        required={redemptionType === "amount"}
-                        disabled={redemptionType !== "amount" && entryMode !== "manual"}
-                        name="redemptionValue"
-                        value={formData.redemptionValue}
-                        onChange={handleChange}
-                        onBlur={calculateMissingValue}
-                        className={`ed-input w-full font-mono transition-all ${redemptionType !== "amount" && entryMode !== "manual" ? "opacity-50 cursor-not-allowed" : "bg-card"}`}
-                        placeholder={redemptionType !== "amount" && entryMode !== "manual" ? "Auto-calculated" : "e.g. 5000"}
-                      />
                     </div>
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex items-center gap-2 h-5">
-                        <label className={`eyebrow mb-0 ${redemptionType !== "unit" && entryMode !== "manual" ? 'text-muted-foreground/50' : ''}`}>Redeemed Units {redemptionType === "unit" && "*"}</label>
-                        {redemptionType === "amount" && entryMode !== "manual" && (
-                          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm flex items-center gap-1 border border-border h-max leading-none">
-                            <Info className="h-3 w-3" /> Auto
-                          </span>
-                        )}
-                      </div>
-                      <input
-                        type="number"
-                        step="0.001"
-                        required={redemptionType === "unit"}
-                        disabled={redemptionType !== "unit" && entryMode !== "manual"}
-                        name="redemptionUnit"
-                        value={formData.redemptionUnit}
-                        onChange={handleChange}
-                        onBlur={calculateMissingValue}
-                        className={`ed-input w-full font-mono transition-all ${redemptionType !== "unit" && entryMode !== "manual" ? "opacity-50 cursor-not-allowed" : "bg-card"}`}
-                        placeholder={redemptionType !== "unit" && entryMode !== "manual" ? "Auto-calculated" : "e.g. 50.000"}
-                      />
-                    </div>
+                    <input
+                      type='number'
+                      step='0.001'
+                      required={redemptionType === 'unit'}
+                      disabled={
+                        redemptionType !== 'unit' && entryMode !== 'manual'
+                      }
+                      name='redemptionUnit'
+                      value={formData.redemptionUnit}
+                      onChange={handleChange}
+                      onBlur={calculateMissingValue}
+                      className={`ed-input w-full font-mono transition-all ${redemptionType !== 'unit' && entryMode !== 'manual' ? 'opacity-50 cursor-not-allowed' : 'bg-card'}`}
+                      placeholder={
+                        redemptionType !== 'unit' && entryMode !== 'manual'
+                          ? 'Auto-calculated'
+                          : 'e.g. 50.000'
+                      }
+                    />
+                  </div>
                 </div>
 
-                {entryMode === "manual" && (
-                  <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200 mt-4">
-                    <div className="space-y-1.5">
-                      <label className="eyebrow">NAV Price</label>
+                {entryMode === 'manual' && (
+                  <div className='grid grid-cols-2 gap-4 animate-in slide-in-from-top-1 fade-in duration-200 mt-4'>
+                    <div className='space-y-1.5'>
+                      <label className='eyebrow'>NAV Price</label>
                       <input
-                        type="number"
-                        step="0.0001"
-                        name="redemptionNav"
+                        type='number'
+                        step='0.0001'
+                        name='redemptionNav'
                         value={formData.redemptionNav}
                         onChange={handleChange}
                         onBlur={calculateMissingValue}
-                        className="ed-input w-full font-mono bg-card"
+                        className='ed-input w-full font-mono bg-card'
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="eyebrow">Investment Traded Value</label>
+                    <div className='space-y-1.5'>
+                      <label className='eyebrow'>Investment Traded Value</label>
                       <input
-                        type="number"
-                        step="0.01"
-                        name="tradeInvestmentValue"
+                        type='number'
+                        step='0.01'
+                        name='tradeInvestmentValue'
                         value={formData.tradeInvestmentValue}
                         onChange={handleChange}
-                        className="ed-input w-full font-mono bg-card"
-                        placeholder="Auto if blank"
+                        className='ed-input w-full font-mono bg-card'
+                        placeholder='Auto if blank'
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="eyebrow">Exit Load Deducted</label>
+                    <div className='space-y-1.5'>
+                      <label className='eyebrow'>Exit Load Deducted</label>
                       <input
-                        type="number"
-                        step="0.01"
-                        name="exitLoadDeducted"
+                        type='number'
+                        step='0.01'
+                        name='exitLoadDeducted'
                         value={formData.exitLoadDeducted}
                         onChange={handleChange}
-                        className="ed-input w-full font-mono bg-card"
-                        placeholder="Auto if blank"
+                        className='ed-input w-full font-mono bg-card'
+                        placeholder='Auto if blank'
                       />
                     </div>
                   </div>
                 )}
 
-                {entryMode === "automatic" && (
-                  <div className="bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1 animate-in fade-in zoom-in-95">
-                  <p className="text-[11px] text-muted-foreground leading-tight">
-                    NAV Price and the missing value will be auto-calculated by the system based on the NAV of the applicable settlement date.
-                  </p>
-                  {navLoading ? (
-                    <div className="flex items-center text-xs text-muted-foreground mt-2">
-                      <Loader2 className="h-3 w-3 animate-spin mr-2" /> Fetching applicable NAV...
-                    </div>
-                  ) : calculatedNavData?.nav ? (
-                    <div className="flex flex-col text-xs mt-2 text-foreground/80 font-mono space-y-1">
-                      <span className="flex justify-between"><span>Applicable Date:</span> <span className="text-foreground">{calculatedNavData.applicableDate}</span></span>
-                      <span className="flex justify-between"><span>Applicable NAV:</span> <span className="text-foreground">₹{calculatedNavData.nav}</span></span>
-                      {redemptionType === "amount" && formData.redemptionValue && !isNaN(parseFloat(formData.redemptionValue)) && (
-                        <span className="flex justify-between font-medium text-accent"><span>Est. Redeemed Units:</span> <span>{(parseFloat(formData.redemptionValue) / calculatedNavData.nav).toFixed(3)}</span></span>
-                      )}
-                      {redemptionType === "unit" && formData.redemptionUnit && !isNaN(parseFloat(formData.redemptionUnit)) && (
-                        <span className="flex justify-between font-medium text-accent"><span>Est. Redemption Value:</span> <span>₹{(parseFloat(formData.redemptionUnit) * calculatedNavData.nav).toFixed(2)}</span></span>
-                      )}
-                    </div>
-                  ) : calculatedNavData?.error ? (
-                    <div className="text-xs text-[hsl(var(--loss))] mt-2 italic">
-                      {calculatedNavData.error}
-                    </div>
-                  ) : formData.schemeId && formData.redemptionDate ? (
-                    <div className="text-xs text-ed-muted-text mt-2 italic">
-                      NAV for the applicable date is currently unavailable (e.g., future date).
-                    </div>
-                  ) : null}
-                </div>
+                {entryMode === 'automatic' && (
+                  <div className='bg-muted/30 p-3 rounded-md border border-border mt-3 space-y-1 animate-in fade-in zoom-in-95'>
+                    <p className='text-[11px] text-muted-foreground leading-tight'>
+                      NAV Price and the missing value will be auto-calculated by
+                      the system based on the NAV of the applicable settlement
+                      date.
+                    </p>
+                    {navLoading ? (
+                      <div className='flex items-center text-xs text-muted-foreground mt-2'>
+                        <Loader2 className='h-3 w-3 animate-spin mr-2' />{' '}
+                        Fetching applicable NAV...
+                      </div>
+                    ) : calculatedNavData?.nav ? (
+                      <div className='flex flex-col text-xs mt-2 text-foreground/80 font-mono space-y-1'>
+                        <span className='flex justify-between'>
+                          <span>Applicable Date:</span>{' '}
+                          <span className='text-foreground'>
+                            {calculatedNavData.applicableDate}
+                          </span>
+                        </span>
+                        <span className='flex justify-between'>
+                          <span>Applicable NAV:</span>{' '}
+                          <span className='text-foreground'>
+                            ₹{calculatedNavData.nav}
+                          </span>
+                        </span>
+                        {redemptionType === 'amount' &&
+                          formData.redemptionValue &&
+                          !isNaN(parseFloat(formData.redemptionValue)) && (
+                            <span className='flex justify-between font-medium text-accent'>
+                              <span>Est. Redeemed Units:</span>{' '}
+                              <span>
+                                {(
+                                  parseFloat(formData.redemptionValue) /
+                                  calculatedNavData.nav
+                                ).toFixed(3)}
+                              </span>
+                            </span>
+                          )}
+                        {redemptionType === 'unit' &&
+                          formData.redemptionUnit &&
+                          !isNaN(parseFloat(formData.redemptionUnit)) && (
+                            <span className='flex justify-between font-medium text-accent'>
+                              <span>Est. Redemption Value:</span>{' '}
+                              <span>
+                                ₹
+                                {(
+                                  parseFloat(formData.redemptionUnit) *
+                                  calculatedNavData.nav
+                                ).toFixed(2)}
+                              </span>
+                            </span>
+                          )}
+                      </div>
+                    ) : calculatedNavData?.error ? (
+                      <div className='text-xs text-[hsl(var(--loss))] mt-2 italic'>
+                        {calculatedNavData.error}
+                      </div>
+                    ) : formData.schemeId && formData.redemptionDate ? (
+                      <div className='text-xs text-ed-muted-text mt-2 italic'>
+                        NAV for the applicable date is currently unavailable
+                        (e.g., future date).
+                      </div>
+                    ) : null}
+                  </div>
                 )}
 
                 {selectedScheme && selectedScheme.totalUnit != null && (
-                  <div className="mt-3 p-3 rounded-md bg-muted/40 border border-border/50 w-full animate-in fade-in slide-in-from-bottom-2">
-                    <p className="text-[11px] font-mono text-muted-foreground mb-1">
+                  <div className='mt-3 p-3 rounded-md bg-muted/40 border border-border/50 w-full animate-in fade-in slide-in-from-bottom-2'>
+                    <p className='text-[11px] font-mono text-muted-foreground mb-1'>
                       {effectiveRedemptionUnit > 0 ? (
-                        <>Redeeming <strong className="text-foreground">{effectiveRedemptionUnit.toFixed(3)}</strong> out of <strong className="text-foreground">{availableUnitsForThisTransaction.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong> total units</>
+                        <>
+                          Redeeming{' '}
+                          <strong className='text-foreground'>
+                            {effectiveRedemptionUnit.toFixed(3)}
+                          </strong>{' '}
+                          out of{' '}
+                          <strong className='text-foreground'>
+                            {availableUnitsForThisTransaction.toLocaleString(
+                              'en-IN',
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 3,
+                              }
+                            )}
+                          </strong>{' '}
+                          total units
+                        </>
                       ) : (
-                        <>Total Available Units: <strong className="text-foreground">{availableUnitsForThisTransaction.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong></>
+                        <>
+                          Total Available Units:{' '}
+                          <strong className='text-foreground'>
+                            {availableUnitsForThisTransaction.toLocaleString(
+                              'en-IN',
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 3,
+                              }
+                            )}
+                          </strong>
+                        </>
                       )}
                     </p>
-                    
+
                     {effectiveRedemptionUnit > 0 && (
-                      <p className="text-[11px] font-mono font-medium text-accent">
-                        Remaining Units: {(availableUnitsForThisTransaction - effectiveRedemptionUnit).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                      <p className='text-[11px] font-mono font-medium text-accent'>
+                        Remaining Units:{' '}
+                        {(
+                          availableUnitsForThisTransaction -
+                          effectiveRedemptionUnit
+                        ).toLocaleString('en-IN', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 3,
+                        })}
                       </p>
                     )}
-                    
-                    {effectiveRedemptionUnit > 0 && (
-                      isPreviewLoading ? (
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground animate-pulse mt-3 pt-3 border-t border-border/50">
-                          <Loader2 className="h-3 w-3 animate-spin" />
+
+                    {effectiveRedemptionUnit > 0 &&
+                      (isPreviewLoading ? (
+                        <div className='flex items-center gap-2 text-[10px] text-muted-foreground animate-pulse mt-3 pt-3 border-t border-border/50'>
+                          <Loader2 className='h-3 w-3 animate-spin' />
                           <span>Calculating FIFO gains...</span>
                         </div>
                       ) : previewData ? (
-                        <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-border/50">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-muted-foreground">STCG Units (&lt;1 year):</span>
-                            <span className="font-mono font-medium text-foreground">{previewData.stcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
+                        <div className='flex flex-col gap-1 mt-3 pt-3 border-t border-border/50'>
+                          <div className='flex items-center justify-between text-[11px]'>
+                            <span className='text-muted-foreground'>
+                              STCG Units (&lt;1 year):
+                            </span>
+                            <span className='font-mono font-medium text-foreground'>
+                              {previewData.stcgUnits?.toLocaleString('en-IN', {
+                                minimumFractionDigits: 3,
+                                maximumFractionDigits: 3,
+                              })}
+                            </span>
                           </div>
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-muted-foreground">LTCG Units (&gt;1 year):</span>
-                            <span className="font-mono font-medium text-foreground">{previewData.ltcgUnits?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
+                          <div className='flex items-center justify-between text-[11px]'>
+                            <span className='text-muted-foreground'>
+                              LTCG Units (&gt;1 year):
+                            </span>
+                            <span className='font-mono font-medium text-foreground'>
+                              {previewData.ltcgUnits?.toLocaleString('en-IN', {
+                                minimumFractionDigits: 3,
+                                maximumFractionDigits: 3,
+                              })}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1.5 mt-2 bg-accent/20 px-2 py-1 rounded w-max">
-                            <Info className="h-3 w-3 text-accent-foreground" />
-                            <span className="text-[9px] uppercase tracking-widest font-mono text-accent-foreground font-semibold">
-                              {previewData.stcgUnits > 0 && previewData.ltcgUnits > 0 ? "STCG + LTCG Mix" : previewData.stcgUnits > 0 ? "Short Term (STCG)" : previewData.ltcgUnits > 0 ? "Long Term (LTCG)" : "No Gains Calculated"}
+                          <div className='flex items-center gap-1.5 mt-2 bg-accent/20 px-2 py-1 rounded w-max'>
+                            <Info className='h-3 w-3 text-accent-foreground' />
+                            <span className='text-[9px] uppercase tracking-widest font-mono text-accent-foreground font-semibold'>
+                              {previewData.stcgUnits > 0 &&
+                              previewData.ltcgUnits > 0
+                                ? 'STCG + LTCG Mix'
+                                : previewData.stcgUnits > 0
+                                  ? 'Short Term (STCG)'
+                                  : previewData.ltcgUnits > 0
+                                    ? 'Long Term (LTCG)'
+                                    : 'No Gains Calculated'}
                             </span>
                           </div>
                         </div>
-                      ) : null
-                    )}
+                      ) : null)}
                   </div>
                 )}
-                
-                {entryMode === "automatic" && (
-                  <div className="mt-4 p-3 bg-muted/40 border border-border/50 rounded-lg animate-in slide-in-from-top-1 fade-in duration-200">
-                    <div className="flex gap-2 text-muted-foreground">
-                      <Info className="h-4 w-4 shrink-0 mt-0.5 text-accent-foreground" />
-                      <div className="text-[11px] leading-relaxed">
-                        <span className="font-semibold text-foreground">How AMCs process redemptions: </span>
-                        When redeeming "By Amount", AMCs do not gross up units to hit your requested amount. Instead, they sell exactly that value worth of units, and charges (like Exit Load and STT) are deducted from the payout. 
-                        <br/>
-                        <span className="italic mt-1 block opacity-80">Use <strong>Manual Mode</strong> to precisely match AMC-specific decimal rounding if your CAS statement differs by a few paise.</span>
+
+                {entryMode === 'automatic' && (
+                  <div className='mt-4 p-3 bg-muted/40 border border-border/50 rounded-lg animate-in slide-in-from-top-1 fade-in duration-200'>
+                    <div className='flex gap-2 text-muted-foreground'>
+                      <Info className='h-4 w-4 shrink-0 mt-0.5 text-accent-foreground' />
+                      <div className='text-[11px] leading-relaxed'>
+                        <span className='font-semibold text-foreground'>
+                          How AMCs process redemptions:{' '}
+                        </span>
+                        When redeeming "By Amount", AMCs do not gross up units
+                        to hit your requested amount. Instead, they sell exactly
+                        that value worth of units, and charges (like Exit Load
+                        and STT) are deducted from the payout.
+                        <br />
+                        <span className='italic mt-1 block opacity-80'>
+                          Use <strong>Manual Mode</strong> to precisely match
+                          AMC-specific decimal rounding if your CAS statement
+                          differs by a few paise.
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -614,35 +868,45 @@ export default function RedemptionModal({ isOpen, onClose, onSuccess, schemes, i
           </form>
         </div>
 
-        <div className="p-6 border-t border-border bg-muted/20 flex items-center justify-between mt-auto">
+        <div className='p-6 border-t border-border bg-muted/20 flex items-center justify-between mt-auto'>
           <div>
             {initialData?.id && (
               <button
-                type="button"
+                type='button'
                 onClick={handleDelete}
                 disabled={deleteLoading || loading}
-                className="ed-btn bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border-transparent transition-colors"
+                className='ed-btn bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border-transparent transition-colors'
               >
-                {deleteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete Entry"}
+                {deleteLoading ? (
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Delete Entry'
+                )}
               </button>
             )}
           </div>
-          <div className="flex gap-3">
+          <div className='flex gap-3'>
             <button
-              type="button"
+              type='button'
               onClick={onClose}
               disabled={loading}
-              className="ed-btn bg-card border-border hover:bg-muted text-foreground"
+              className='ed-btn bg-card border-border hover:bg-muted text-foreground'
             >
               Cancel
             </button>
             <button
-              type="submit"
-              form="redemption-form"
+              type='submit'
+              form='redemption-form'
               disabled={loading}
-              className="ed-btn ed-btn-accent min-w-[120px]"
+              className='ed-btn ed-btn-accent min-w-[120px]'
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : initialData ? "Update Entry" : "Save Entry"}
+              {loading ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : initialData ? (
+                'Update Entry'
+              ) : (
+                'Save Entry'
+              )}
             </button>
           </div>
         </div>

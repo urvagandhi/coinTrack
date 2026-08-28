@@ -9,38 +9,43 @@ import { TabLoadingSkeleton } from './TabLoadingSkeleton';
 import DataAccuracyWarning from './DataAccuracyWarning';
 
 export function MfSipsTab({ navigateTo, context }) {
-    const { data: rawData, isLoading, error, refetch } = useQuery({
-        queryKey: ['portfolio', 'mf-sips'],
-        queryFn: portfolioAPI.getMfSips,
-        staleTime: 60 * 1000,
-        refetchOnWindowFocus: false,
-    });
+  const {
+    data: rawData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['portfolio', 'mf-sips'],
+    queryFn: portfolioAPI.getMfSips,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
-    if (isLoading) return <TabLoadingSkeleton rows={5} columns={6} />;
-    if (error) return <TabError error={error} onRetry={refetch} />;
+  if (isLoading) return <TabLoadingSkeleton rows={5} columns={6} />;
+  if (error) return <TabError error={error} onRetry={refetch} />;
 
-    // getMfSips returns { data: SIP[], unlinkedSipOrders: Order[] }
-    const sips = rawData?.data || [];
-    const unlinkedOrders = rawData?.unlinkedSipOrders || [];
+  // getMfSips returns { data: SIP[], unlinkedSipOrders: Order[] }
+  const sips = rawData?.data || [];
+  const unlinkedOrders = rawData?.unlinkedSipOrders || [];
 
-    const handleNavigate = (targetTab, navContext) => {
-        if (navigateTo) {
-            // Map old tab names to URL tab IDs
-            const tabMap = { timeline: 'mf-timeline', mf_sips: 'mf-sips' };
-            navigateTo(tabMap[targetTab] || targetTab, navContext);
-        }
-    };
+  const handleNavigate = (targetTab, navContext) => {
+    if (navigateTo) {
+      // Map old tab names to URL tab IDs
+      const tabMap = { timeline: 'mf-timeline', mf_sips: 'mf-sips' };
+      navigateTo(tabMap[targetTab] || targetTab, navContext);
+    }
+  };
 
-    return (
-        <div>
-            <DataAccuracyWarning />
-            <MfSipList
-                sips={sips}
-                unlinkedOrders={unlinkedOrders}
-                isLoading={false}
-                onNavigate={handleNavigate}
-                initialContext={context}
-            />
-        </div>
-    );
+  return (
+    <div>
+      <DataAccuracyWarning />
+      <MfSipList
+        sips={sips}
+        unlinkedOrders={unlinkedOrders}
+        isLoading={false}
+        onNavigate={handleNavigate}
+        initialContext={context}
+      />
+    </div>
+  );
 }

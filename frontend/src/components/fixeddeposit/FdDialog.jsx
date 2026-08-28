@@ -1,661 +1,852 @@
 'use client';
 
 import { useToast } from '@/components/ui/use-toast';
-import { Calculator, Loader2, X, RefreshCw, Calendar, Sparkles } from 'lucide-react';
+import {
+  Calculator,
+  Loader2,
+  X,
+  RefreshCw,
+  Calendar,
+  Sparkles,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import BankSearchCombobox from '@/components/ui/BankSearchCombobox';
 
 const INITIAL_STATE = {
-    place: '',
-    holderName: '',
-    accountNumber: '',
-    interestRate: '',
-    issueDate: '',
-    maturityDate: '',
-    investmentPeriod: '',
-    issueAmount: '',
-    maturityAmount: '',
-    nominee: '',
-    remarks: '',
+  place: '',
+  holderName: '',
+  accountNumber: '',
+  interestRate: '',
+  issueDate: '',
+  maturityDate: '',
+  investmentPeriod: '',
+  issueAmount: '',
+  maturityAmount: '',
+  nominee: '',
+  remarks: '',
 };
 
 /**
  * Format currency in Indian standard (en-IN)
  */
 function formatIndianCurrency(amount) {
-    if (amount === null || amount === undefined || amount === '' || isNaN(amount)) return '';
-    const num = Number(amount);
-    return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(num);
+  if (amount === null || amount === undefined || amount === '' || isNaN(amount))
+    return '';
+  const num = Number(amount);
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
 }
 
 /**
  * Helper to display amounts in Indian words (Lakh / Crore)
  */
 function formatInIndianWords(amount) {
-    const num = parseFloat(amount);
-    if (isNaN(num) || num <= 0) return '';
-    if (num >= 10000000) {
-        return `${(num / 10000000).toFixed(2)} Cr`;
-    }
-    if (num >= 100000) {
-        return `${(num / 100000).toFixed(2)} Lakh`;
-    }
-    if (num >= 1000) {
-        return `${(num / 1000).toFixed(1)}k`;
-    }
-    return '';
+  const num = parseFloat(amount);
+  if (isNaN(num) || num <= 0) return '';
+  if (num >= 10000000) {
+    return `${(num / 10000000).toFixed(2)} Cr`;
+  }
+  if (num >= 100000) {
+    return `${(num / 100000).toFixed(2)} Lakh`;
+  }
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}k`;
+  }
+  return '';
 }
 
 /**
  * Helper to parse amount shortcuts (e.g. 5L -> 500000)
  */
 function parseShortcutAmount(val) {
-    if (!val) return '';
-    let clean = val.toString().trim().replace(/,/g, '');
-    
-    // Lakhs
-    if (/[lL]$/i.test(clean)) {
-        let num = parseFloat(clean.substring(0, clean.length - 1));
-        if (!isNaN(num)) return String(num * 100000);
-    }
-    // Crores
-    if (/cr$/i.test(clean)) {
-        let num = parseFloat(clean.substring(0, clean.length - 2));
-        if (!isNaN(num)) return String(num * 10000000);
-    }
-    // Thousands
-    if (/[kK]$/i.test(clean)) {
-        let num = parseFloat(clean.substring(0, clean.length - 1));
-        if (!isNaN(num)) return String(num * 1000);
-    }
-    return val;
+  if (!val) return '';
+  const clean = val.toString().trim().replace(/,/g, '');
+
+  // Lakhs
+  if (/[lL]$/i.test(clean)) {
+    const num = parseFloat(clean.substring(0, clean.length - 1));
+    if (!isNaN(num)) return String(num * 100000);
+  }
+  // Crores
+  if (/cr$/i.test(clean)) {
+    const num = parseFloat(clean.substring(0, clean.length - 2));
+    if (!isNaN(num)) return String(num * 10000000);
+  }
+  // Thousands
+  if (/[kK]$/i.test(clean)) {
+    const num = parseFloat(clean.substring(0, clean.length - 1));
+    if (!isNaN(num)) return String(num * 1000);
+  }
+  return val;
 }
 
 /**
  * Calculate human-readable tenure (Years, Months, Days) from dates
  */
 function calculateTenurePeriod(issueDate, maturityDate) {
-    if (!issueDate || !maturityDate) return '';
-    const start = new Date(issueDate);
-    const end = new Date(maturityDate);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return '';
+  if (!issueDate || !maturityDate) return '';
+  const start = new Date(issueDate);
+  const end = new Date(maturityDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return '';
 
-    let y1 = start.getFullYear(), m1 = start.getMonth(), d1 = start.getDate();
-    let y2 = end.getFullYear(), m2 = end.getMonth(), d2 = end.getDate();
+  const y1 = start.getFullYear(),
+    m1 = start.getMonth(),
+    d1 = start.getDate();
+  const y2 = end.getFullYear(),
+    m2 = end.getMonth(),
+    d2 = end.getDate();
 
-    let years = y2 - y1;
-    let months = m2 - m1;
-    let days = d2 - d1;
+  let years = y2 - y1;
+  let months = m2 - m1;
+  let days = d2 - d1;
 
-    if (days < 0) {
-        months -= 1;
-        const prevMonthDate = new Date(y2, m2, 0);
-        days += prevMonthDate.getDate();
-    }
-    if (months < 0) {
-        years -= 1;
-        months += 12;
-    }
+  if (days < 0) {
+    months -= 1;
+    const prevMonthDate = new Date(y2, m2, 0);
+    days += prevMonthDate.getDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
 
-    const parts = [];
-    if (years > 0) parts.push(`${years} ${years === 1 ? 'Year' : 'Years'}`);
-    if (months > 0) parts.push(`${months} ${months === 1 ? 'Month' : 'Months'}`);
-    if (days > 0 || parts.length === 0) parts.push(`${days} ${days === 1 ? 'Day' : 'Days'}`);
+  const parts = [];
+  if (years > 0) parts.push(`${years} ${years === 1 ? 'Year' : 'Years'}`);
+  if (months > 0) parts.push(`${months} ${months === 1 ? 'Month' : 'Months'}`);
+  if (days > 0 || parts.length === 0)
+    parts.push(`${days} ${days === 1 ? 'Day' : 'Days'}`);
 
-    const totalDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
-    return `${parts.join(', ')} (${totalDays} Days)`;
+  const totalDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  return `${parts.join(', ')} (${totalDays} Days)`;
 }
 
 const SIMPLE_INTEREST_THRESHOLD_DAYS = 181;
 
 function daysBetween(start, end) {
-    return Math.round((end - start) / (1000 * 60 * 60 * 24));
+  return Math.round((end - start) / (1000 * 60 * 60 * 24));
 }
 
 function fullQuartersAndBrokenDays(start, end) {
-    let totalMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-    if (end.getDate() < start.getDate()) totalMonths -= 1;
+  let totalMonths =
+    (end.getFullYear() - start.getFullYear()) * 12 +
+    (end.getMonth() - start.getMonth());
+  if (end.getDate() < start.getDate()) totalMonths -= 1;
 
-    const fullQuarters = Math.floor(totalMonths / 3);
+  const fullQuarters = Math.floor(totalMonths / 3);
 
-    const quarterEndDate = new Date(start);
-    quarterEndDate.setMonth(quarterEndDate.getMonth() + fullQuarters * 3);
+  const quarterEndDate = new Date(start);
+  quarterEndDate.setMonth(quarterEndDate.getMonth() + fullQuarters * 3);
 
-    const brokenDays = daysBetween(quarterEndDate, end);
+  const brokenDays = daysBetween(quarterEndDate, end);
 
-    return { fullQuarters, brokenDays };
+  return { fullQuarters, brokenDays };
 }
 
 /**
  * Maturity amount from principal + rate + dates.
  */
-function calculateFdMaturity(issueAmount, interestRate, issueDate, maturityDate) {
-    const P = parseFloat(issueAmount);
-    const r = parseFloat(interestRate);
-    if (!P || !r || P <= 0 || r <= 0) return null;
+function calculateFdMaturity(
+  issueAmount,
+  interestRate,
+  issueDate,
+  maturityDate
+) {
+  const P = parseFloat(issueAmount);
+  const r = parseFloat(interestRate);
+  if (!P || !r || P <= 0 || r <= 0) return null;
 
-    // No dates -> assume 1 year, quarterly compounded (common default)
-    if (!issueDate || !maturityDate) {
-        const amount = P * Math.pow(1 + r / 400, 4);
-        return Math.round(amount * 100) / 100;
-    }
-
-    const start = new Date(issueDate);
-    const end = new Date(maturityDate);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return null;
-
-    const totalDays = daysBetween(start, end);
-
-    // Short tenure: simple interest only
-    if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
-        const amount = P + (P * r * totalDays) / (365 * 100);
-        return Math.round(amount * 100) / 100;
-    }
-
-    // Long tenure: quarterly compounding + simple interest on the tail
-    const { fullQuarters, brokenDays } = fullQuartersAndBrokenDays(start, end);
-
-    let amount = P * Math.pow(1 + r / 400, fullQuarters);
-    if (brokenDays > 0) {
-        amount += amount * (r / 100) * (brokenDays / 365);
-    }
-
+  // No dates -> assume 1 year, quarterly compounded (common default)
+  if (!issueDate || !maturityDate) {
+    const amount = P * Math.pow(1 + r / 400, 4);
     return Math.round(amount * 100) / 100;
+  }
+
+  const start = new Date(issueDate);
+  const end = new Date(maturityDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start)
+    return null;
+
+  const totalDays = daysBetween(start, end);
+
+  // Short tenure: simple interest only
+  if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
+    const amount = P + (P * r * totalDays) / (365 * 100);
+    return Math.round(amount * 100) / 100;
+  }
+
+  // Long tenure: quarterly compounding + simple interest on the tail
+  const { fullQuarters, brokenDays } = fullQuartersAndBrokenDays(start, end);
+
+  let amount = P * Math.pow(1 + r / 400, fullQuarters);
+  if (brokenDays > 0) {
+    amount += amount * (r / 100) * (brokenDays / 365);
+  }
+
+  return Math.round(amount * 100) / 100;
 }
 
 /**
  * Reverse-solve for interest rate (% p.a.) given principal, maturity amount and dates.
  */
-function calculateFdInterestRate(issueAmount, maturityAmount, issueDate, maturityDate) {
-    const P = parseFloat(issueAmount);
-    const A = parseFloat(maturityAmount);
-    if (!P || !A || P <= 0 || A <= P) return null;
+function calculateFdInterestRate(
+  issueAmount,
+  maturityAmount,
+  issueDate,
+  maturityDate
+) {
+  const P = parseFloat(issueAmount);
+  const A = parseFloat(maturityAmount);
+  if (!P || !A || P <= 0 || A <= P) return null;
 
-    if (!issueDate || !maturityDate) {
-        const rate = 400 * (Math.pow(A / P, 1 / 4) - 1);
-        return Math.round(rate * 100) / 100;
+  if (!issueDate || !maturityDate) {
+    const rate = 400 * (Math.pow(A / P, 1 / 4) - 1);
+    return Math.round(rate * 100) / 100;
+  }
+
+  const start = new Date(issueDate);
+  const end = new Date(maturityDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start)
+    return null;
+
+  const totalDays = daysBetween(start, end);
+
+  if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
+    const rate = ((A - P) * 365 * 100) / (P * totalDays);
+    return Math.round(rate * 100) / 100;
+  }
+
+  const { fullQuarters, brokenDays } = fullQuartersAndBrokenDays(start, end);
+
+  let low = 0.01,
+    high = 100,
+    bestRate = 0;
+  for (let i = 0; i < 60; i++) {
+    const mid = (low + high) / 2;
+    let testAmount = P * Math.pow(1 + mid / 400, fullQuarters);
+    if (brokenDays > 0) {
+      testAmount += testAmount * (mid / 100) * (brokenDays / 365);
     }
-
-    const start = new Date(issueDate);
-    const end = new Date(maturityDate);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return null;
-
-    const totalDays = daysBetween(start, end);
-
-    if (totalDays < SIMPLE_INTEREST_THRESHOLD_DAYS) {
-        const rate = ((A - P) * 365 * 100) / (P * totalDays);
-        return Math.round(rate * 100) / 100;
+    if (testAmount >= A) {
+      bestRate = mid;
+      high = mid;
+    } else {
+      low = mid;
     }
+  }
 
-    const { fullQuarters, brokenDays } = fullQuartersAndBrokenDays(start, end);
-
-    let low = 0.01, high = 100, bestRate = 0;
-    for (let i = 0; i < 60; i++) {
-        const mid = (low + high) / 2;
-        let testAmount = P * Math.pow(1 + mid / 400, fullQuarters);
-        if (brokenDays > 0) {
-            testAmount += testAmount * (mid / 100) * (brokenDays / 365);
-        }
-        if (testAmount >= A) {
-            bestRate = mid;
-            high = mid;
-        } else {
-            low = mid;
-        }
-    }
-
-    return Math.round(bestRate * 100) / 100;
+  return Math.round(bestRate * 100) / 100;
 }
-export default function FdDialog({ isOpen, onClose, onSave, onDelete, initialData }) {
-    const { user } = useAuth();
-    const { toast } = useToast();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [entryMode, setEntryMode] = useState('automatic');
-    const [formData, setFormData] = useState(INITIAL_STATE);
+export default function FdDialog({
+  isOpen,
+  onClose,
+  onSave,
+  onDelete,
+  initialData,
+}) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [entryMode, setEntryMode] = useState('automatic');
+  const [formData, setFormData] = useState(INITIAL_STATE);
 
-    useEffect(() => {
-        if (isOpen) {
-            if (initialData) {
-                const issueDate = initialData.issueDate || '';
-                const maturityDate = initialData.maturityDate || '';
-                const period = initialData.investmentPeriod || calculateTenurePeriod(issueDate, maturityDate);
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        const issueDate = initialData.issueDate || '';
+        const maturityDate = initialData.maturityDate || '';
+        const period =
+          initialData.investmentPeriod ||
+          calculateTenurePeriod(issueDate, maturityDate);
 
-                setFormData({
-                    place: initialData.place || '',
-                    holderName: initialData.holderName || '',
-                    accountNumber: initialData.accountNumber || '',
-                    interestRate: initialData.interestRate !== undefined && initialData.interestRate !== null ? String(initialData.interestRate) : '',
-                    issueDate,
-                    maturityDate,
-                    investmentPeriod: period,
-                    issueAmount: initialData.issueAmount !== undefined && initialData.issueAmount !== null ? String(initialData.issueAmount) : '',
-                    maturityAmount: initialData.maturityAmount !== undefined && initialData.maturityAmount !== null ? String(initialData.maturityAmount) : '',
-                    nominee: initialData.nominee || '',
-                    remarks: initialData.remarks || '',
-                });
-            } else {
-                setFormData({
-                    ...INITIAL_STATE,
-                    holderName: user?.name || user?.username || ''
-                });
-            }
-            setIsSubmitting(false);
-        }
-    }, [isOpen, initialData]);
-
-    if (!isOpen) return null;
-
-    const triggerMaturityCalculation = (currData = formData) => {
-        const mat = calculateFdMaturity(currData.issueAmount, currData.interestRate, currData.issueDate, currData.maturityDate);
-        if (mat !== null) {
-            setFormData(prev => ({ ...prev, maturityAmount: String(mat) }));
-            toast({ title: 'Maturity Calculated', description: `Calculated Maturity Amount: ${formatIndianCurrency(mat)}` });
-        } else {
-            toast({ title: 'Calculation Notice', description: 'Please enter valid Issue Amount, Interest Rate, and Dates.', variant: 'warning' });
-        }
-    };
-
-    const triggerRateCalculation = (currData = formData) => {
-        const rate = calculateFdInterestRate(currData.issueAmount, currData.maturityAmount, currData.issueDate, currData.maturityDate);
-        if (rate !== null) {
-            setFormData(prev => ({ ...prev, interestRate: String(rate) }));
-            toast({ title: 'Rate Calculated', description: `Calculated Interest Rate: ${rate}% p.a.` });
-        } else {
-            toast({ title: 'Calculation Notice', description: 'Please enter valid Issue Amount, Maturity Amount (> Issue Amount), and Dates.', variant: 'warning' });
-        }
-    };
-
-    const handleIssueAmountChange = (e) => {
-        const val = e.target.value;
-        const parsedVal = parseShortcutAmount(val);
-        setFormData(prev => {
-            const next = { ...prev, issueAmount: parsedVal };
-            if (entryMode === 'automatic' && next.interestRate && next.issueDate && next.maturityDate) {
-                const mat = calculateFdMaturity(parsedVal, next.interestRate, next.issueDate, next.maturityDate);
-                if (mat !== null) next.maturityAmount = String(mat);
-            }
-            return next;
+        setFormData({
+          place: initialData.place || '',
+          holderName: initialData.holderName || '',
+          accountNumber: initialData.accountNumber || '',
+          interestRate:
+            initialData.interestRate !== undefined &&
+            initialData.interestRate !== null
+              ? String(initialData.interestRate)
+              : '',
+          issueDate,
+          maturityDate,
+          investmentPeriod: period,
+          issueAmount:
+            initialData.issueAmount !== undefined &&
+            initialData.issueAmount !== null
+              ? String(initialData.issueAmount)
+              : '',
+          maturityAmount:
+            initialData.maturityAmount !== undefined &&
+            initialData.maturityAmount !== null
+              ? String(initialData.maturityAmount)
+              : '',
+          nominee: initialData.nominee || '',
+          remarks: initialData.remarks || '',
         });
-    };
-
-    const handleInterestRateChange = (e) => {
-        const val = e.target.value;
-        setFormData(prev => {
-            const next = { ...prev, interestRate: val };
-            if (entryMode === 'automatic' && next.issueAmount && next.issueDate && next.maturityDate) {
-                const mat = calculateFdMaturity(next.issueAmount, val, next.issueDate, next.maturityDate);
-                if (mat !== null) next.maturityAmount = String(mat);
-            }
-            return next;
+      } else {
+        setFormData({
+          ...INITIAL_STATE,
+          holderName: user?.name || user?.username || '',
         });
-    };
+      }
+      setIsSubmitting(false);
+    }
+  }, [isOpen, initialData, user?.name, user?.username]);
 
-    const handleMaturityAmountChange = (e) => {
-        const val = e.target.value;
-        const parsedVal = parseShortcutAmount(val);
-        setFormData(prev => {
-            const next = { ...prev, maturityAmount: parsedVal };
-            if (entryMode === 'manual' && next.issueAmount && next.issueDate && next.maturityDate && parseFloat(parsedVal) > parseFloat(next.issueAmount)) {
-                const rate = calculateFdInterestRate(next.issueAmount, parsedVal, next.issueDate, next.maturityDate);
-                if (rate !== null) next.interestRate = String(rate);
-            }
-            return next;
-        });
-    };
+  if (!isOpen) return null;
 
-    const handleDateChange = (field, val) => {
-        setFormData(prev => {
-            const next = { ...prev, [field]: val };
-            const tenure = calculateTenurePeriod(next.issueDate, next.maturityDate);
-            next.investmentPeriod = tenure;
-
-            if (entryMode === 'automatic') {
-                if (next.issueAmount && next.interestRate && next.issueDate && next.maturityDate) {
-                    const mat = calculateFdMaturity(next.issueAmount, next.interestRate, next.issueDate, next.maturityDate);
-                    if (mat !== null) next.maturityAmount = String(mat);
-                } else if (next.issueAmount && next.maturityAmount && next.issueDate && next.maturityDate) {
-                    const rate = calculateFdInterestRate(next.issueAmount, next.maturityAmount, next.issueDate, next.maturityDate);
-                    if (rate !== null) next.interestRate = String(rate);
-                }
-            }
-            return next;
-        });
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        
-        // Basic validation
-        if (!formData.place || !formData.holderName || !formData.interestRate || !formData.issueDate || !formData.maturityDate || !formData.issueAmount) {
-            toast({ title: 'Validation Error', description: 'Please fill out all required fields.', variant: 'destructive' });
-            return;
-        }
-
-        if (new Date(formData.maturityDate) <= new Date(formData.issueDate)) {
-            toast({ title: 'Validation Error', description: 'Maturity date must be after issue date.', variant: 'destructive' });
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            await onSave({
-                ...formData,
-                interestRate: Number(formData.interestRate),
-                issueAmount: Number(formData.issueAmount),
-                maturityAmount: formData.maturityAmount ? Number(formData.maturityAmount) : undefined,
-                investmentPeriod: formData.investmentPeriod || calculateTenurePeriod(formData.issueDate, formData.maturityDate),
-            });
-            onClose();
-        } catch (error) {
-            console.error('Error saving FD:', error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="ed-card w-full max-w-2xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200">
-                <span className="corner-mark corner-tl" />
-                <span className="corner-mark corner-tr" />
-                <span className="corner-mark corner-bl" />
-                <span className="corner-mark corner-br" />
-
-                <div className="flex items-center justify-between p-6 border-b border-border">
-                    <div>
-                        <h2 className="font-serif text-[24px] text-foreground leading-none mb-1">
-                            {initialData ? 'Edit Fixed Deposit' : 'New Fixed Deposit'}
-                        </h2>
-                        <p className="text-[12px] text-muted-foreground font-mono uppercase tracking-[0.05em]">
-                            {initialData ? `FD #${initialData.fdNo}` : 'Enter deposit details'}
-                        </p>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="w-8 h-8 flex items-center justify-center rounded-sm border border-transparent hover:border-border hover:bg-muted text-muted-foreground transition-all"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
-                </div>
-
-                <div className="p-6 overflow-y-auto space-y-6">
-                    <form id="fd-form" onSubmit={handleSubmit} className="space-y-6">
-                        {/* Section 1: Institution & Holder Info */}
-                        <div className="space-y-3">
-                            <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                                01. General Info
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-1.5 md:col-span-1">
-                                    <label className="eyebrow">Bank/Institution *</label>
-                                    <BankSearchCombobox
-                                        value={formData.place}
-                                        onChange={(val) => setFormData({ ...formData, place: val })}
-                                    />
-                                </div>
-                                <div className="space-y-1.5 md:col-span-1">
-                                    <label className="eyebrow">Holder Name *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.holderName}
-                                        readOnly
-                                        disabled
-                                        onChange={(e) => setFormData({ ...formData, holderName: e.target.value })}
-                                        className="ed-input w-full bg-muted/40 cursor-not-allowed opacity-70"
-                                        placeholder="Primary account holder"
-                                    />
-                                </div>
-                                <div className="space-y-1.5 md:col-span-1">
-                                    <label className="eyebrow">Account / FD No.</label>
-                                    <input
-                                        type="text"
-                                        value={formData.accountNumber}
-                                        onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                                        className="ed-input w-full font-mono"
-                                        placeholder="Optional A/C No."
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section 2: Dates & Auto Tenure Period */}
-                        <div className="space-y-3">
-                            <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 flex items-center justify-between">
-                                <span>02. Tenure & Dates</span>
-                                {formData.investmentPeriod && (
-                                    <span className="text-[hsl(var(--accent))] flex items-center gap-1 font-normal lowercase tracking-normal">
-                                        <Calendar className="h-3 w-3" /> {formData.investmentPeriod}
-                                    </span>
-                                )}
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="eyebrow">Issue Date *</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={formData.issueDate}
-                                        onChange={(e) => handleDateChange('issueDate', e.target.value)}
-                                        className="ed-input w-full font-mono"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="eyebrow">Maturity Date *</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={formData.maturityDate}
-                                        onChange={(e) => handleDateChange('maturityDate', e.target.value)}
-                                        className="ed-input w-full font-mono"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section 3: Financials (Initial Amount & Interest Rate, with Maturity Amount at the END) */}
-                        <div className="space-y-3">
-                            <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                                03. Investment & Interest Details
-                            </h3>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between h-5">
-                                        <label className="eyebrow">Initial / Issue Amount (₹) *</label>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.issueAmount}
-                                        onChange={handleIssueAmountChange}
-                                        className="ed-input w-full font-mono"
-                                        placeholder="e.g. 5L or 500000"
-                                    />
-                                    {formData.issueAmount && !isNaN(formData.issueAmount) && Number(formData.issueAmount) > 0 && (
-                                        <p className="text-[11px] font-mono text-[hsl(var(--accent))] mt-1">
-                                            {formatIndianCurrency(formData.issueAmount)}
-                                            {formatInIndianWords(formData.issueAmount) ? ` (${formatInIndianWords(formData.issueAmount)})` : ''}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between h-5">
-                                        <label className="eyebrow">Interest Rate (%) *</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => triggerRateCalculation()}
-                                            className="text-[10px] font-mono text-[hsl(var(--accent))] hover:underline flex items-center gap-1"
-                                            title="Auto-calculate Interest Rate from Maturity & Initial Amount"
-                                        >
-                                            <RefreshCw className="h-2.5 w-2.5" /> Calc Rate
-                                        </button>
-                                    </div>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        required
-                                        value={formData.interestRate}
-                                        onChange={handleInterestRateChange}
-                                        className="ed-input w-full font-mono"
-                                        placeholder="e.g. 7.1"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Maturity Amount placed at the LAST of Financial Section */}
-                            <div className="space-y-1.5 pt-2 border-t border-dashed border-border/60 mt-3">
-                                <div className="flex items-center justify-between">
-                                    <label className="eyebrow flex items-center gap-1.5 text-foreground font-semibold">
-                                        <Sparkles className="h-3 w-3 text-[hsl(var(--gain))]" />
-                                        Maturity Amount (₹)
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={() => triggerMaturityCalculation()}
-                                        className="text-[10px] font-mono text-[hsl(var(--accent))] hover:underline flex items-center gap-1"
-                                        title="Auto-calculate Maturity Amount"
-                                    >
-                                        <Calculator className="h-3 w-3" /> Auto-Calc
-                                    </button>
-                                </div>
-                                <div className="flex items-center space-x-2 mt-2 mb-2">
-                                   <button
-                                      type="button"
-                                      onClick={() => setEntryMode('automatic')}
-                                      className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
-                                         entryMode === 'automatic' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                      }`}
-                                   >
-                                      Automatic Mode
-                                   </button>
-                                   <button
-                                      type="button"
-                                      onClick={() => setEntryMode('manual')}
-                                      className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
-                                         entryMode === 'manual' ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                      }`}
-                                   >
-                                      Manual Mode
-                                   </button>
-                                </div>
-
-                                {entryMode === 'manual' && (
-                                   <div className="animate-in slide-in-from-top-1 fade-in duration-200">
-                                      <input
-                                          type="text"
-                                          value={formData.maturityAmount}
-                                          onChange={handleMaturityAmountChange}
-                                          className="ed-input w-full font-mono text-[16px] font-semibold text-[hsl(var(--gain))] bg-[hsl(var(--gain))]/5 border-[hsl(var(--gain))]/30 focus:border-[hsl(var(--gain))]"
-                                          placeholder="Enter maturity amount manually"
-                                      />
-                                   </div>
-                                )}
-                                {entryMode === 'automatic' && (
-                                   <div className="animate-in slide-in-from-top-1 fade-in duration-200">
-                                      <input
-                                          type="text"
-                                          value={formData.maturityAmount}
-                                          readOnly
-                                          className="ed-input w-full font-mono text-[16px] font-semibold text-[hsl(var(--gain))] bg-[hsl(var(--gain))]/5 border-none opacity-80 cursor-not-allowed"
-                                          placeholder="0.00 (Auto-calculated)"
-                                      />
-                                      <p className="text-[11px] text-muted-foreground mt-1.5 leading-tight">
-                                        Maturity amount is auto-calculated based on interest rate and tenure. Switch to Manual mode to override.
-                                      </p>
-                                   </div>
-                                )}
-                                {formData.maturityAmount && !isNaN(formData.maturityAmount) && Number(formData.maturityAmount) > 0 && (
-                                    <div className="flex flex-col gap-1.5 mt-1">
-                                        <div className="flex items-center justify-between text-[11px] font-mono text-[hsl(var(--gain))]">
-                                            <span>{formatIndianCurrency(formData.maturityAmount)} {formatInIndianWords(formData.maturityAmount) ? `(${formatInIndianWords(formData.maturityAmount)})` : ''}</span>
-                                            {formData.issueAmount && Number(formData.maturityAmount) > Number(formData.issueAmount) && (
-                                                <span className="text-muted-foreground">
-                                                    Est. Interest: +{formatIndianCurrency(Number(formData.maturityAmount) - Number(formData.issueAmount))}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                                <p className="text-[9.5px] text-muted-foreground/80 italic leading-tight font-serif mt-2">
-                                    * Note: Calculated maturity amount is an estimate based on standard banking formulas. The exact final amount may differ slightly depending on the specific bank's internal calculation precision.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Section 4: Nominee & Remarks */}
-                        <div className="space-y-3">
-                            <h3 className="text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1">
-                                04. Additional Details
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="eyebrow">Nominee Name</label>
-                                    <input
-                                        type="text"
-                                        value={formData.nominee}
-                                        onChange={(e) => setFormData({ ...formData, nominee: e.target.value })}
-                                        className="ed-input w-full"
-                                        placeholder="Nominee name (Optional)"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="eyebrow">Remarks / Notes</label>
-                                    <input
-                                        type="text"
-                                        value={formData.remarks}
-                                        onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-                                        className="ed-input w-full"
-                                        placeholder="Additional notes or references (Optional)"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                <div className="p-6 border-t border-border bg-muted/20 flex items-center justify-between mt-auto">
-                    {initialData && onDelete ? (
-                        <button
-                            type="button"
-                            onClick={onDelete}
-                            disabled={isSubmitting}
-                            className="text-[11px] font-mono text-[hsl(var(--loss))] hover:underline disabled:opacity-50"
-                        >
-                            [ DELETE FD ]
-                        </button>
-                    ) : (
-                        <div />
-                    )}
-                    <div className="flex gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={isSubmitting}
-                            className="ed-btn bg-card border-border hover:bg-muted text-foreground"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            form="fd-form"
-                            disabled={isSubmitting}
-                            className="ed-btn ed-btn-accent min-w-[100px]"
-                        >
-                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Deposit'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+  const triggerMaturityCalculation = (currData = formData) => {
+    const mat = calculateFdMaturity(
+      currData.issueAmount,
+      currData.interestRate,
+      currData.issueDate,
+      currData.maturityDate
     );
+    if (mat !== null) {
+      setFormData(prev => ({ ...prev, maturityAmount: String(mat) }));
+      toast({
+        title: 'Maturity Calculated',
+        description: `Calculated Maturity Amount: ${formatIndianCurrency(mat)}`,
+      });
+    } else {
+      toast({
+        title: 'Calculation Notice',
+        description:
+          'Please enter valid Issue Amount, Interest Rate, and Dates.',
+        variant: 'warning',
+      });
+    }
+  };
+
+  const triggerRateCalculation = (currData = formData) => {
+    const rate = calculateFdInterestRate(
+      currData.issueAmount,
+      currData.maturityAmount,
+      currData.issueDate,
+      currData.maturityDate
+    );
+    if (rate !== null) {
+      setFormData(prev => ({ ...prev, interestRate: String(rate) }));
+      toast({
+        title: 'Rate Calculated',
+        description: `Calculated Interest Rate: ${rate}% p.a.`,
+      });
+    } else {
+      toast({
+        title: 'Calculation Notice',
+        description:
+          'Please enter valid Issue Amount, Maturity Amount (> Issue Amount), and Dates.',
+        variant: 'warning',
+      });
+    }
+  };
+
+  const handleIssueAmountChange = e => {
+    const val = e.target.value;
+    const parsedVal = parseShortcutAmount(val);
+    setFormData(prev => {
+      const next = { ...prev, issueAmount: parsedVal };
+      if (
+        entryMode === 'automatic' &&
+        next.interestRate &&
+        next.issueDate &&
+        next.maturityDate
+      ) {
+        const mat = calculateFdMaturity(
+          parsedVal,
+          next.interestRate,
+          next.issueDate,
+          next.maturityDate
+        );
+        if (mat !== null) next.maturityAmount = String(mat);
+      }
+      return next;
+    });
+  };
+
+  const handleInterestRateChange = e => {
+    const val = e.target.value;
+    setFormData(prev => {
+      const next = { ...prev, interestRate: val };
+      if (
+        entryMode === 'automatic' &&
+        next.issueAmount &&
+        next.issueDate &&
+        next.maturityDate
+      ) {
+        const mat = calculateFdMaturity(
+          next.issueAmount,
+          val,
+          next.issueDate,
+          next.maturityDate
+        );
+        if (mat !== null) next.maturityAmount = String(mat);
+      }
+      return next;
+    });
+  };
+
+  const handleMaturityAmountChange = e => {
+    const val = e.target.value;
+    const parsedVal = parseShortcutAmount(val);
+    setFormData(prev => {
+      const next = { ...prev, maturityAmount: parsedVal };
+      if (
+        entryMode === 'manual' &&
+        next.issueAmount &&
+        next.issueDate &&
+        next.maturityDate &&
+        parseFloat(parsedVal) > parseFloat(next.issueAmount)
+      ) {
+        const rate = calculateFdInterestRate(
+          next.issueAmount,
+          parsedVal,
+          next.issueDate,
+          next.maturityDate
+        );
+        if (rate !== null) next.interestRate = String(rate);
+      }
+      return next;
+    });
+  };
+
+  const handleDateChange = (field, val) => {
+    setFormData(prev => {
+      const next = { ...prev, [field]: val };
+      const tenure = calculateTenurePeriod(next.issueDate, next.maturityDate);
+      next.investmentPeriod = tenure;
+
+      if (entryMode === 'automatic') {
+        if (
+          next.issueAmount &&
+          next.interestRate &&
+          next.issueDate &&
+          next.maturityDate
+        ) {
+          const mat = calculateFdMaturity(
+            next.issueAmount,
+            next.interestRate,
+            next.issueDate,
+            next.maturityDate
+          );
+          if (mat !== null) next.maturityAmount = String(mat);
+        } else if (
+          next.issueAmount &&
+          next.maturityAmount &&
+          next.issueDate &&
+          next.maturityDate
+        ) {
+          const rate = calculateFdInterestRate(
+            next.issueAmount,
+            next.maturityAmount,
+            next.issueDate,
+            next.maturityDate
+          );
+          if (rate !== null) next.interestRate = String(rate);
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+
+    // Basic validation
+    if (
+      !formData.place ||
+      !formData.holderName ||
+      !formData.interestRate ||
+      !formData.issueDate ||
+      !formData.maturityDate ||
+      !formData.issueAmount
+    ) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill out all required fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (new Date(formData.maturityDate) <= new Date(formData.issueDate)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Maturity date must be after issue date.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSave({
+        ...formData,
+        interestRate: Number(formData.interestRate),
+        issueAmount: Number(formData.issueAmount),
+        maturityAmount: formData.maturityAmount
+          ? Number(formData.maturityAmount)
+          : undefined,
+        investmentPeriod:
+          formData.investmentPeriod ||
+          calculateTenurePeriod(formData.issueDate, formData.maturityDate),
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error saving FD:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200'>
+      <div className='ed-card w-full max-w-2xl relative flex flex-col max-h-[92vh] shadow-2xl animate-in zoom-in-95 duration-200'>
+        <span className='corner-mark corner-tl' />
+        <span className='corner-mark corner-tr' />
+        <span className='corner-mark corner-bl' />
+        <span className='corner-mark corner-br' />
+
+        <div className='flex items-center justify-between p-6 border-b border-border'>
+          <div>
+            <h2 className='font-serif text-[24px] text-foreground leading-none mb-1'>
+              {initialData ? 'Edit Fixed Deposit' : 'New Fixed Deposit'}
+            </h2>
+            <p className='text-[12px] text-muted-foreground font-mono uppercase tracking-[0.05em]'>
+              {initialData
+                ? `FD #${initialData.fdNo}`
+                : 'Enter deposit details'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className='w-8 h-8 flex items-center justify-center rounded-sm border border-transparent hover:border-border hover:bg-muted text-muted-foreground transition-all'
+          >
+            <X className='h-4 w-4' />
+          </button>
+        </div>
+
+        <div className='p-6 overflow-y-auto space-y-6'>
+          <form id='fd-form' onSubmit={handleSubmit} className='space-y-6'>
+            {/* Section 1: Institution & Holder Info */}
+            <div className='space-y-3'>
+              <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
+                01. General Info
+              </h3>
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div className='space-y-1.5 md:col-span-1'>
+                  <label className='eyebrow'>Bank/Institution *</label>
+                  <BankSearchCombobox
+                    value={formData.place}
+                    onChange={val => setFormData({ ...formData, place: val })}
+                  />
+                </div>
+                <div className='space-y-1.5 md:col-span-1'>
+                  <label className='eyebrow'>Holder Name *</label>
+                  <input
+                    type='text'
+                    required
+                    value={formData.holderName}
+                    readOnly
+                    disabled
+                    onChange={e =>
+                      setFormData({ ...formData, holderName: e.target.value })
+                    }
+                    className='ed-input w-full bg-muted/40 cursor-not-allowed opacity-70'
+                    placeholder='Primary account holder'
+                  />
+                </div>
+                <div className='space-y-1.5 md:col-span-1'>
+                  <label className='eyebrow'>Account / FD No.</label>
+                  <input
+                    type='text'
+                    value={formData.accountNumber}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        accountNumber: e.target.value,
+                      })
+                    }
+                    className='ed-input w-full font-mono'
+                    placeholder='Optional A/C No.'
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Dates & Auto Tenure Period */}
+            <div className='space-y-3'>
+              <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1 flex items-center justify-between'>
+                <span>02. Tenure & Dates</span>
+                {formData.investmentPeriod && (
+                  <span className='text-[hsl(var(--accent))] flex items-center gap-1 font-normal lowercase tracking-normal'>
+                    <Calendar className='h-3 w-3' /> {formData.investmentPeriod}
+                  </span>
+                )}
+              </h3>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>Issue Date *</label>
+                  <input
+                    type='date'
+                    required
+                    value={formData.issueDate}
+                    onChange={e =>
+                      handleDateChange('issueDate', e.target.value)
+                    }
+                    className='ed-input w-full font-mono'
+                  />
+                </div>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>Maturity Date *</label>
+                  <input
+                    type='date'
+                    required
+                    value={formData.maturityDate}
+                    onChange={e =>
+                      handleDateChange('maturityDate', e.target.value)
+                    }
+                    className='ed-input w-full font-mono'
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Financials (Initial Amount & Interest Rate, with Maturity Amount at the END) */}
+            <div className='space-y-3'>
+              <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
+                03. Investment & Interest Details
+              </h3>
+
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='space-y-1.5'>
+                  <div className='flex items-center justify-between h-5'>
+                    <label className='eyebrow'>
+                      Initial / Issue Amount (₹) *
+                    </label>
+                  </div>
+                  <input
+                    type='text'
+                    required
+                    value={formData.issueAmount}
+                    onChange={handleIssueAmountChange}
+                    className='ed-input w-full font-mono'
+                    placeholder='e.g. 5L or 500000'
+                  />
+                  {formData.issueAmount &&
+                    !isNaN(formData.issueAmount) &&
+                    Number(formData.issueAmount) > 0 && (
+                      <p className='text-[11px] font-mono text-[hsl(var(--accent))] mt-1'>
+                        {formatIndianCurrency(formData.issueAmount)}
+                        {formatInIndianWords(formData.issueAmount)
+                          ? ` (${formatInIndianWords(formData.issueAmount)})`
+                          : ''}
+                      </p>
+                    )}
+                </div>
+
+                <div className='space-y-1.5'>
+                  <div className='flex items-center justify-between h-5'>
+                    <label className='eyebrow'>Interest Rate (%) *</label>
+                    <button
+                      type='button'
+                      onClick={() => triggerRateCalculation()}
+                      className='text-[10px] font-mono text-[hsl(var(--accent))] hover:underline flex items-center gap-1'
+                      title='Auto-calculate Interest Rate from Maturity & Initial Amount'
+                    >
+                      <RefreshCw className='h-2.5 w-2.5' /> Calc Rate
+                    </button>
+                  </div>
+                  <input
+                    type='number'
+                    step='0.01'
+                    required
+                    value={formData.interestRate}
+                    onChange={handleInterestRateChange}
+                    className='ed-input w-full font-mono'
+                    placeholder='e.g. 7.1'
+                  />
+                </div>
+              </div>
+
+              {/* Maturity Amount placed at the LAST of Financial Section */}
+              <div className='space-y-1.5 pt-2 border-t border-dashed border-border/60 mt-3'>
+                <div className='flex items-center justify-between'>
+                  <label className='eyebrow flex items-center gap-1.5 text-foreground font-semibold'>
+                    <Sparkles className='h-3 w-3 text-[hsl(var(--gain))]' />
+                    Maturity Amount (₹)
+                  </label>
+                  <button
+                    type='button'
+                    onClick={() => triggerMaturityCalculation()}
+                    className='text-[10px] font-mono text-[hsl(var(--accent))] hover:underline flex items-center gap-1'
+                    title='Auto-calculate Maturity Amount'
+                  >
+                    <Calculator className='h-3 w-3' /> Auto-Calc
+                  </button>
+                </div>
+                <div className='flex items-center space-x-2 mt-2 mb-2'>
+                  <button
+                    type='button'
+                    onClick={() => setEntryMode('automatic')}
+                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
+                      entryMode === 'automatic'
+                        ? 'bg-accent text-accent-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    Automatic Mode
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setEntryMode('manual')}
+                    className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
+                      entryMode === 'manual'
+                        ? 'bg-accent text-accent-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    Manual Mode
+                  </button>
+                </div>
+
+                {entryMode === 'manual' && (
+                  <div className='animate-in slide-in-from-top-1 fade-in duration-200'>
+                    <input
+                      type='text'
+                      value={formData.maturityAmount}
+                      onChange={handleMaturityAmountChange}
+                      className='ed-input w-full font-mono text-[16px] font-semibold text-[hsl(var(--gain))] bg-[hsl(var(--gain))]/5 border-[hsl(var(--gain))]/30 focus:border-[hsl(var(--gain))]'
+                      placeholder='Enter maturity amount manually'
+                    />
+                  </div>
+                )}
+                {entryMode === 'automatic' && (
+                  <div className='animate-in slide-in-from-top-1 fade-in duration-200'>
+                    <input
+                      type='text'
+                      value={formData.maturityAmount}
+                      readOnly
+                      className='ed-input w-full font-mono text-[16px] font-semibold text-[hsl(var(--gain))] bg-[hsl(var(--gain))]/5 border-none opacity-80 cursor-not-allowed'
+                      placeholder='0.00 (Auto-calculated)'
+                    />
+                    <p className='text-[11px] text-muted-foreground mt-1.5 leading-tight'>
+                      Maturity amount is auto-calculated based on interest rate
+                      and tenure. Switch to Manual mode to override.
+                    </p>
+                  </div>
+                )}
+                {formData.maturityAmount &&
+                  !isNaN(formData.maturityAmount) &&
+                  Number(formData.maturityAmount) > 0 && (
+                    <div className='flex flex-col gap-1.5 mt-1'>
+                      <div className='flex items-center justify-between text-[11px] font-mono text-[hsl(var(--gain))]'>
+                        <span>
+                          {formatIndianCurrency(formData.maturityAmount)}{' '}
+                          {formatInIndianWords(formData.maturityAmount)
+                            ? `(${formatInIndianWords(formData.maturityAmount)})`
+                            : ''}
+                        </span>
+                        {formData.issueAmount &&
+                          Number(formData.maturityAmount) >
+                            Number(formData.issueAmount) && (
+                            <span className='text-muted-foreground'>
+                              Est. Interest: +
+                              {formatIndianCurrency(
+                                Number(formData.maturityAmount) -
+                                  Number(formData.issueAmount)
+                              )}
+                            </span>
+                          )}
+                      </div>
+                    </div>
+                  )}
+                <p className='text-[9.5px] text-muted-foreground/80 italic leading-tight font-serif mt-2'>
+                  * Note: Calculated maturity amount is an estimate based on
+                  standard banking formulas. The exact final amount may differ
+                  slightly depending on the specific bank's internal calculation
+                  precision.
+                </p>
+              </div>
+            </div>
+
+            {/* Section 4: Nominee & Remarks */}
+            <div className='space-y-3'>
+              <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
+                04. Additional Details
+              </h3>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>Nominee Name</label>
+                  <input
+                    type='text'
+                    value={formData.nominee}
+                    onChange={e =>
+                      setFormData({ ...formData, nominee: e.target.value })
+                    }
+                    className='ed-input w-full'
+                    placeholder='Nominee name (Optional)'
+                  />
+                </div>
+                <div className='space-y-1.5'>
+                  <label className='eyebrow'>Remarks / Notes</label>
+                  <input
+                    type='text'
+                    value={formData.remarks}
+                    onChange={e =>
+                      setFormData({ ...formData, remarks: e.target.value })
+                    }
+                    className='ed-input w-full'
+                    placeholder='Additional notes or references (Optional)'
+                  />
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div className='p-6 border-t border-border bg-muted/20 flex items-center justify-between mt-auto'>
+          {initialData && onDelete ? (
+            <button
+              type='button'
+              onClick={onDelete}
+              disabled={isSubmitting}
+              className='text-[11px] font-mono text-[hsl(var(--loss))] hover:underline disabled:opacity-50'
+            >
+              [ DELETE FD ]
+            </button>
+          ) : (
+            <div />
+          )}
+          <div className='flex gap-3'>
+            <button
+              type='button'
+              onClick={onClose}
+              disabled={isSubmitting}
+              className='ed-btn bg-card border-border hover:bg-muted text-foreground'
+            >
+              Cancel
+            </button>
+            <button
+              type='submit'
+              form='fd-form'
+              disabled={isSubmitting}
+              className='ed-btn ed-btn-accent min-w-[100px]'
+            >
+              {isSubmitting ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                'Save Deposit'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
-
-

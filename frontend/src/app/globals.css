@@ -68,7 +68,7 @@
 
     /* Broker brand accents */
     --broker-zerodha: 211 90% 45%;
-    --broker-angel:   18 90% 50%;
+    --broker-angel: 18 90% 50%;
     --broker-upstox: 271 60% 50%;
 
     --sidebar: 220 14% 9%;
@@ -132,7 +132,7 @@
     --chart-5: 271 60% 60%;
 
     --broker-zerodha: 211 85% 60%;
-    --broker-angel:   18 90% 60%;
+    --broker-angel: 18 90% 60%;
     --broker-upstox: 271 65% 65%;
 
     --sidebar: 220 18% 4%;
@@ -160,7 +160,9 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "ss01" on, "cv11" on;
+    font-feature-settings:
+      'ss01' on,
+      'cv11' on;
   }
 
   /* Paper grain — barely visible, gives the warm tactility */
@@ -181,8 +183,13 @@
   }
 
   /* Numerical defaults — always tabular */
-  .font-mono, code, pre {
-    font-feature-settings: "tnum" on, "zero" on, "ss01" on;
+  .font-mono,
+  code,
+  pre {
+    font-feature-settings:
+      'tnum' on,
+      'zero' on,
+      'ss01' on;
   }
 }
 
@@ -190,7 +197,7 @@
   /* ── Editorial display type ─────────────────────────────────── */
   .font-serif {
     font-family: var(--font-serif);
-    font-feature-settings: "ss01" on;
+    font-feature-settings: 'ss01' on;
   }
   .display-serif {
     font-family: var(--font-serif);
@@ -231,9 +238,15 @@
   }
 
   /* ── Hairline rules ─────────────────────────────────────────── */
-  .rule-h { border-bottom: 1px solid hsl(var(--border)); }
-  .rule-v { border-right: 1px solid hsl(var(--border)); }
-  .rule-strong-h { border-bottom: 1px solid hsl(var(--hairline)); }
+  .rule-h {
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .rule-v {
+    border-right: 1px solid hsl(var(--border));
+  }
+  .rule-strong-h {
+    border-bottom: 1px solid hsl(var(--hairline));
+  }
   .rule-double {
     border-bottom: 1px solid hsl(var(--border));
     box-shadow: 0 3px 0 -2px hsl(var(--border));
@@ -264,9 +277,15 @@
     animation: ct-pulse 2s ease-out infinite;
   }
   @keyframes ct-pulse {
-    0%   { box-shadow: 0 0 0 0   hsl(var(--gain) / 0.55); }
-    70%  { box-shadow: 0 0 0 6px hsl(var(--gain) / 0); }
-    100% { box-shadow: 0 0 0 0   hsl(var(--gain) / 0); }
+    0% {
+      box-shadow: 0 0 0 0 hsl(var(--gain) / 0.55);
+    }
+    70% {
+      box-shadow: 0 0 0 6px hsl(var(--gain) / 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 hsl(var(--gain) / 0);
+    }
   }
 
   /* ── Ticker tape ────────────────────────────────────────────── */
@@ -277,11 +296,17 @@
     animation: ct-ticker 60s linear infinite;
   }
   @keyframes ct-ticker {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
   @media (prefers-reduced-motion: reduce) {
-    .ticker-track { animation: none; }
+    .ticker-track {
+      animation: none;
+    }
   }
 
   /* ── Editorial input ────────────────────────────────────────── */
@@ -296,7 +321,9 @@
     width: 100%;
     transition: border-color 0.15s ease;
   }
-  .ed-input::placeholder { color: hsl(var(--muted-foreground)); }
+  .ed-input::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
   .ed-input:focus {
     outline: none;
     border-bottom-color: hsl(var(--accent));
@@ -344,7 +371,9 @@
     color: hsl(var(--accent-foreground));
     border-color: hsl(var(--accent));
   }
-  .ed-btn-accent:hover { filter: brightness(0.94); }
+  .ed-btn-accent:hover {
+    filter: brightness(0.94);
+  }
 
   /* Coloured action variants — for distinct CTAs (edit/save/security/destructive) */
   .ed-btn-info {
@@ -391,7 +420,10 @@
     border-color: hsl(var(--loss));
   }
 
-  .ed-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .ed-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 
   /* ── Decorative crosshair corner marker ─────────────────────── */
   .corner-mark {
@@ -400,10 +432,30 @@
     height: 8px;
     border-color: hsl(var(--hairline));
   }
-  .corner-tl { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
-  .corner-tr { top: -1px; right: -1px; border-top: 1px solid; border-right: 1px solid; }
-  .corner-bl { bottom: -1px; left: -1px; border-bottom: 1px solid; border-left: 1px solid; }
-  .corner-br { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
+  .corner-tl {
+    top: -1px;
+    left: -1px;
+    border-top: 1px solid;
+    border-left: 1px solid;
+  }
+  .corner-tr {
+    top: -1px;
+    right: -1px;
+    border-top: 1px solid;
+    border-right: 1px solid;
+  }
+  .corner-bl {
+    bottom: -1px;
+    left: -1px;
+    border-bottom: 1px solid;
+    border-left: 1px solid;
+  }
+  .corner-br {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+  }
 
   /* ── Underline link, editorial style ─────────────────────────── */
   .ed-link {
@@ -414,7 +466,9 @@
     text-underline-offset: 4px;
     transition: text-decoration-thickness 0.15s ease;
   }
-  .ed-link:hover { text-decoration-thickness: 2px; }
+  .ed-link:hover {
+    text-decoration-thickness: 2px;
+  }
 
   /* ── Tabular table treatment ──────────────────────────────────
      Note: :where() zeroes specificity so individual th/td classes
@@ -446,7 +500,9 @@
   :where(.ed-table) tbody tr:hover {
     background: hsl(var(--accent-muted) / 0.4);
   }
-  :where(.ed-table) tbody tr:last-child { border-bottom: 1px solid hsl(var(--hairline)); }
+  :where(.ed-table) tbody tr:last-child {
+    border-bottom: 1px solid hsl(var(--hairline));
+  }
   :where(.ed-table) tbody td {
     padding: 0.875rem 1rem;
     font-size: 0.8125rem;
@@ -502,34 +558,78 @@
   }
 
   /* ── Custom scrollbars (subtle, paperweight) ─────────────────── */
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
   ::-webkit-scrollbar-thumb {
     background: hsl(var(--border));
     border-radius: 999px;
   }
-  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
 }
 
 @layer utilities {
-  .tnum { font-variant-numeric: tabular-nums; }
-  .text-gain { color: hsl(var(--gain)); }
-  .text-loss { color: hsl(var(--loss)); }
-  .bg-gain { background-color: hsl(var(--gain)); }
-  .bg-loss { background-color: hsl(var(--loss)); }
-  .border-hairline { border-color: hsl(var(--hairline)); }
-  .stagger-fade > * { opacity: 0; animation: ct-fade-up 0.5s ease forwards; }
-  .stagger-fade > *:nth-child(1) { animation-delay: 0.02s; }
-  .stagger-fade > *:nth-child(2) { animation-delay: 0.06s; }
-  .stagger-fade > *:nth-child(3) { animation-delay: 0.10s; }
-  .stagger-fade > *:nth-child(4) { animation-delay: 0.14s; }
-  .stagger-fade > *:nth-child(5) { animation-delay: 0.18s; }
-  .stagger-fade > *:nth-child(6) { animation-delay: 0.22s; }
-  .stagger-fade > *:nth-child(7) { animation-delay: 0.26s; }
-  .stagger-fade > *:nth-child(8) { animation-delay: 0.30s; }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .text-gain {
+    color: hsl(var(--gain));
+  }
+  .text-loss {
+    color: hsl(var(--loss));
+  }
+  .bg-gain {
+    background-color: hsl(var(--gain));
+  }
+  .bg-loss {
+    background-color: hsl(var(--loss));
+  }
+  .border-hairline {
+    border-color: hsl(var(--hairline));
+  }
+  .stagger-fade > * {
+    opacity: 0;
+    animation: ct-fade-up 0.5s ease forwards;
+  }
+  .stagger-fade > *:nth-child(1) {
+    animation-delay: 0.02s;
+  }
+  .stagger-fade > *:nth-child(2) {
+    animation-delay: 0.06s;
+  }
+  .stagger-fade > *:nth-child(3) {
+    animation-delay: 0.1s;
+  }
+  .stagger-fade > *:nth-child(4) {
+    animation-delay: 0.14s;
+  }
+  .stagger-fade > *:nth-child(5) {
+    animation-delay: 0.18s;
+  }
+  .stagger-fade > *:nth-child(6) {
+    animation-delay: 0.22s;
+  }
+  .stagger-fade > *:nth-child(7) {
+    animation-delay: 0.26s;
+  }
+  .stagger-fade > *:nth-child(8) {
+    animation-delay: 0.3s;
+  }
   @keyframes ct-fade-up {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 

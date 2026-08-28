@@ -1,15 +1,19 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useRef } from "react";
-import { Search, Loader2 } from "lucide-react";
-import { useDebounce } from "@/lib/hooks";
+import { useState, useEffect, useRef } from 'react';
+import { Search, Loader2 } from 'lucide-react';
+import { useDebounce } from '@/lib/hooks';
 
-export default function SchemeSearchCombobox({ value, onChange, onSelectScheme }) {
-  const [query, setQuery] = useState(value || "");
+export default function SchemeSearchCombobox({
+  value,
+  onChange,
+  onSelectScheme,
+}) {
+  const [query, setQuery] = useState(value || '');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  
+
   const debouncedQuery = useDebounce(query, 200);
   const containerRef = useRef(null);
   const ignoreSearchRef = useRef(false);
@@ -17,18 +21,21 @@ export default function SchemeSearchCombobox({ value, onChange, onSelectScheme }
   useEffect(() => {
     if (value !== query) {
       ignoreSearchRef.current = true;
-      setQuery(value || "");
+      setQuery(value || '');
     }
-  }, [value]);
+  }, [value, query]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+    const handleClickOutside = event => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -44,61 +51,72 @@ export default function SchemeSearchCombobox({ value, onChange, onSelectScheme }
       try {
         // If query is a 5-6 digit number, try direct lookup first (very robust for AMFI codes)
         if (/^\d{5,6}$/.test(debouncedQuery)) {
-            try {
-                const directRes = await fetch(`https://api.mfapi.in/mf/${debouncedQuery}/latest`, {
-                    signal: abortController.signal
-                });
-                const directData = await directRes.json();
-                if (directData && directData.meta && directData.meta.scheme_code) {
-                    setResults([{
-                        schemeCode: directData.meta.scheme_code,
-                        schemeName: directData.meta.scheme_name
-                    }]);
-                    setOpen(true);
-                    setLoading(false);
-                    return; // Skip the general text search if we found an exact code match
-                }
-            } catch (e) {
-                // Ignore direct lookup failure and fallback to general text search
+          try {
+            const directRes = await fetch(
+              `https://api.mfapi.in/mf/${debouncedQuery}/latest`,
+              {
+                signal: abortController.signal,
+              }
+            );
+            const directData = await directRes.json();
+            if (directData && directData.meta && directData.meta.scheme_code) {
+              setResults([
+                {
+                  schemeCode: directData.meta.scheme_code,
+                  schemeName: directData.meta.scheme_name,
+                },
+              ]);
+              setOpen(true);
+              setLoading(false);
+              return; // Skip the general text search if we found an exact code match
             }
+          } catch {
+            // Ignore direct lookup failure and fallback to general text search
+          }
         }
 
         let data = [];
         try {
           // Primary: Hit mfapi.in directly for text search
-          const res = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(debouncedQuery)}`, {
-            signal: abortController.signal
-          });
+          const res = await fetch(
+            `https://api.mfapi.in/mf/search?q=${encodeURIComponent(debouncedQuery)}`,
+            {
+              signal: abortController.signal,
+            }
+          );
           if (res.ok) {
             const parsed = await res.json();
             if (Array.isArray(parsed)) data = parsed;
           }
-        } catch (e) {
+        } catch {
           // Ignore error and try fallback
         }
 
         // Fallback: If mfapi.in fails or returns empty, try local AMFI scraping route
         if (data.length === 0) {
           try {
-            const fallbackRes = await fetch(`/api/mf-search?q=${encodeURIComponent(debouncedQuery)}`, {
-              signal: abortController.signal
-            });
+            const fallbackRes = await fetch(
+              `/api/mf-search?q=${encodeURIComponent(debouncedQuery)}`,
+              {
+                signal: abortController.signal,
+              }
+            );
             if (fallbackRes.ok) {
               const fallbackParsed = await fallbackRes.json();
               if (Array.isArray(fallbackParsed)) data = fallbackParsed;
             }
-          } catch (e) {
+          } catch {
             // Ignore fallback error
           }
         }
-        
+
         setResults(data);
         setOpen(true);
       } catch (err) {
         if (err.name === 'AbortError') {
-          console.log("Fetch aborted for:", debouncedQuery);
+          console.log('Fetch aborted for:', debouncedQuery);
         } else {
-          console.error("Failed to search schemes:", err);
+          console.error('Failed to search schemes:', err);
         }
       } finally {
         // Only set loading false if this isn't an aborted request, otherwise the next request's loading state might be overwritten
@@ -121,12 +139,12 @@ export default function SchemeSearchCombobox({ value, onChange, onSelectScheme }
   }, [debouncedQuery]);
 
   return (
-    <div className="relative" ref={containerRef}>
-      <div className="relative">
+    <div className='relative' ref={containerRef}>
+      <div className='relative'>
         <input
-          type="text"
+          type='text'
           value={query}
-          onChange={(e) => {
+          onChange={e => {
             setQuery(e.target.value);
             onChange(e.target.value); // Keep passing raw string to parent
             if (e.target.value.length >= 3) setOpen(true);
@@ -134,25 +152,25 @@ export default function SchemeSearchCombobox({ value, onChange, onSelectScheme }
           onFocus={() => {
             if (results.length > 0) setOpen(true);
           }}
-          placeholder="e.g. Parag Parikh Flexi Cap Fund"
-          className="ed-input w-full font-serif text-[16px] py-2.5 pr-10"
+          placeholder='e.g. Parag Parikh Flexi Cap Fund'
+          className='ed-input w-full font-serif text-[16px] py-2.5 pr-10'
         />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+        <div className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground'>
           {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className='w-4 h-4 animate-spin' />
           ) : (
-            <Search className="w-4 h-4" />
+            <Search className='w-4 h-4' />
           )}
         </div>
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-card border border-border shadow-xl rounded-md max-h-60 overflow-y-auto">
-          {results.map((scheme) => (
+        <div className='absolute z-50 w-full mt-1 bg-card border border-border shadow-xl rounded-md max-h-60 overflow-y-auto'>
+          {results.map(scheme => (
             <button
               key={scheme.schemeCode}
-              type="button"
-              className="w-full text-left px-4 py-2 text-sm hover:bg-muted/50 border-b border-hairline last:border-b-0 focus:bg-muted/50 outline-none"
+              type='button'
+              className='w-full text-left px-4 py-2 text-sm hover:bg-muted/50 border-b border-hairline last:border-b-0 focus:bg-muted/50 outline-none'
               onClick={() => {
                 ignoreSearchRef.current = true;
                 setQuery(scheme.schemeName);
@@ -161,10 +179,10 @@ export default function SchemeSearchCombobox({ value, onChange, onSelectScheme }
                 setOpen(false);
               }}
             >
-              <div className="font-serif text-[14px] text-foreground leading-tight">
+              <div className='font-serif text-[14px] text-foreground leading-tight'>
                 {scheme.schemeName}
               </div>
-              <div className="font-mono text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider">
+              <div className='font-mono text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider'>
                 AMFI: {scheme.schemeCode}
               </div>
             </button>

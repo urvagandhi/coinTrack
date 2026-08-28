@@ -4,5 +4,13 @@
 // This file is kept to prevent import errors — will be removed in cleanup.
 
 export function useZerodhaDashboard() {
-    return { holdings: [], mfHoldings: [], sips: [], profile: null, isLoading: false, error: null, refreshAll: () => {} };
+  return {
+    holdings: [],
+    mfHoldings: [],
+    sips: [],
+    profile: null,
+    isLoading: false,
+    error: null,
+    refreshAll: () => {},
+  };
 }

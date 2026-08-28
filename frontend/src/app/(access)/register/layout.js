@@ -1,11 +1,7 @@
 export const metadata = {
-    title: "Register",
+  title: 'Register',
 };
 
 export default function LoginLayout({ children }) {
-    return (
-        <>
-            {children}
-        </>
-    );
+  return <>{children}</>;
 }
