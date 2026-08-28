@@ -1,7 +1,17 @@
 package com.urva.myfinance.coinTrack.calculator.controller;
 
+import com.urva.myfinance.coinTrack.calculator.dto.request.CompoundInterestRequest;
+import com.urva.myfinance.coinTrack.calculator.dto.request.EmiRequest;
+import com.urva.myfinance.coinTrack.calculator.dto.request.SimpleInterestRequest;
+import com.urva.myfinance.coinTrack.calculator.dto.response.CalculatorResponse;
+import com.urva.myfinance.coinTrack.calculator.dto.response.CompoundInterestResponse;
+import com.urva.myfinance.coinTrack.calculator.dto.response.EmiResponse;
+import com.urva.myfinance.coinTrack.calculator.dto.response.FlatVsReducingResponse;
+import com.urva.myfinance.coinTrack.calculator.dto.response.SimpleInterestResponse;
+import com.urva.myfinance.coinTrack.calculator.service.LoanCalculatorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -12,131 +22,103 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urva.myfinance.coinTrack.calculator.dto.request.CompoundInterestRequest;
-import com.urva.myfinance.coinTrack.calculator.dto.request.EmiRequest;
-import com.urva.myfinance.coinTrack.calculator.dto.request.SimpleInterestRequest;
-import com.urva.myfinance.coinTrack.calculator.dto.response.CalculatorResponse;
-import com.urva.myfinance.coinTrack.calculator.dto.response.CompoundInterestResponse;
-import com.urva.myfinance.coinTrack.calculator.dto.response.EmiResponse;
-import com.urva.myfinance.coinTrack.calculator.dto.response.FlatVsReducingResponse;
-import com.urva.myfinance.coinTrack.calculator.dto.response.SimpleInterestResponse;
-import com.urva.myfinance.coinTrack.calculator.service.LoanCalculatorService;
-
-import jakarta.validation.Valid;
-
 /**
- * REST Controller for Loan Calculators.
- * All endpoints are public (no authentication required) with rate limiting.
+ * REST Controller for Loan Calculators. All endpoints are public (no authentication required) with
+ * rate limiting.
  */
 @RestController
 @RequestMapping("/api/calculators/loans")
 @Validated
-@Tag(name = "Calculators — Loans", description = "EMI, simple interest, compound interest, flat vs reducing")
+@Tag(
+    name = "Calculators — Loans",
+    description = "EMI, simple interest, compound interest, flat vs reducing")
 public class LoanCalculatorController {
 
-        private static final Logger logger = LoggerFactory.getLogger(LoanCalculatorController.class);
+  private static final Logger logger = LoggerFactory.getLogger(LoanCalculatorController.class);
 
-        private final LoanCalculatorService loanService;
+  private final LoanCalculatorService loanService;
 
-        public LoanCalculatorController(LoanCalculatorService loanService) {
-                this.loanService = loanService;
-        }
+  public LoanCalculatorController(LoanCalculatorService loanService) {
+    this.loanService = loanService;
+  }
 
-        /**
-         * Calculate EMI (Generic).
-         * POST /api/calculators/loans/emi
-         */
-        @Operation(summary = "Calculate generic loan EMI")
-        @PostMapping("/emi")
-        public ResponseEntity<CalculatorResponse<EmiResponse>> calculateEmi(
-                        @Valid @RequestBody EmiRequest request,
-                        @RequestParam(defaultValue = "false") boolean debug) {
+  /** Calculate EMI (Generic). POST /api/calculators/loans/emi */
+  @Operation(summary = "Calculate generic loan EMI")
+  @PostMapping("/emi")
+  public ResponseEntity<CalculatorResponse<EmiResponse>> calculateEmi(
+      @Valid @RequestBody EmiRequest request, @RequestParam(defaultValue = "false") boolean debug) {
 
-                logger.info("Loan EMI calculation: principal={}, rate={}%, months={}",
-                                request.principal(), request.annualRate(), request.months());
+    logger.info(
+        "Loan EMI calculation: principal={}, rate={}%, months={}",
+        request.principal(), request.annualRate(), request.months());
 
-                return ResponseEntity.ok(loanService.calculateEmi(request, debug));
-        }
+    return ResponseEntity.ok(loanService.calculateEmi(request, debug));
+  }
 
-        /**
-         * Calculate Home Loan EMI.
-         * POST /api/calculators/loans/home-loan-emi
-         */
-        @Operation(summary = "Calculate home loan EMI")
-        @PostMapping("/home-loan-emi")
-        public ResponseEntity<CalculatorResponse<EmiResponse>> calculateHomeLoanEmi(
-                        @Valid @RequestBody EmiRequest request,
-                        @RequestParam(defaultValue = "false") boolean debug) {
+  /** Calculate Home Loan EMI. POST /api/calculators/loans/home-loan-emi */
+  @Operation(summary = "Calculate home loan EMI")
+  @PostMapping("/home-loan-emi")
+  public ResponseEntity<CalculatorResponse<EmiResponse>> calculateHomeLoanEmi(
+      @Valid @RequestBody EmiRequest request, @RequestParam(defaultValue = "false") boolean debug) {
 
-                logger.info("Home Loan EMI calculation: principal={}, rate={}%, months={}",
-                                request.principal(), request.annualRate(), request.months());
+    logger.info(
+        "Home Loan EMI calculation: principal={}, rate={}%, months={}",
+        request.principal(), request.annualRate(), request.months());
 
-                return ResponseEntity.ok(loanService.calculateEmi(request, debug));
-        }
+    return ResponseEntity.ok(loanService.calculateEmi(request, debug));
+  }
 
-        /**
-         * Calculate Car Loan EMI.
-         * POST /api/calculators/loans/car-loan-emi
-         */
-        @Operation(summary = "Calculate car loan EMI")
-        @PostMapping("/car-loan-emi")
-        public ResponseEntity<CalculatorResponse<EmiResponse>> calculateCarLoanEmi(
-                        @Valid @RequestBody EmiRequest request,
-                        @RequestParam(defaultValue = "false") boolean debug) {
+  /** Calculate Car Loan EMI. POST /api/calculators/loans/car-loan-emi */
+  @Operation(summary = "Calculate car loan EMI")
+  @PostMapping("/car-loan-emi")
+  public ResponseEntity<CalculatorResponse<EmiResponse>> calculateCarLoanEmi(
+      @Valid @RequestBody EmiRequest request, @RequestParam(defaultValue = "false") boolean debug) {
 
-                logger.info("Car Loan EMI calculation: principal={}, rate={}%, months={}",
-                                request.principal(), request.annualRate(), request.months());
+    logger.info(
+        "Car Loan EMI calculation: principal={}, rate={}%, months={}",
+        request.principal(), request.annualRate(), request.months());
 
-                return ResponseEntity.ok(loanService.calculateEmi(request, debug));
-        }
+    return ResponseEntity.ok(loanService.calculateEmi(request, debug));
+  }
 
-        /**
-         * Calculate Simple Interest.
-         * POST /api/calculators/loans/simple-interest
-         */
-        @Operation(summary = "Calculate simple interest")
-        @PostMapping("/simple-interest")
-        public ResponseEntity<CalculatorResponse<SimpleInterestResponse>> calculateSimpleInterest(
-                        @Valid @RequestBody SimpleInterestRequest request,
-                        @RequestParam(defaultValue = "false") boolean debug) {
+  /** Calculate Simple Interest. POST /api/calculators/loans/simple-interest */
+  @Operation(summary = "Calculate simple interest")
+  @PostMapping("/simple-interest")
+  public ResponseEntity<CalculatorResponse<SimpleInterestResponse>> calculateSimpleInterest(
+      @Valid @RequestBody SimpleInterestRequest request,
+      @RequestParam(defaultValue = "false") boolean debug) {
 
-                logger.info("Simple Interest calculation: principal={}, rate={}%, years={}",
-                                request.principal(), request.annualRate(), request.years());
+    logger.info(
+        "Simple Interest calculation: principal={}, rate={}%, years={}",
+        request.principal(), request.annualRate(), request.years());
 
-                return ResponseEntity.ok(loanService.calculateSimpleInterest(request, debug));
-        }
+    return ResponseEntity.ok(loanService.calculateSimpleInterest(request, debug));
+  }
 
-        /**
-         * Calculate Compound Interest.
-         * POST /api/calculators/loans/compound-interest
-         */
-        @Operation(summary = "Calculate compound interest")
-        @PostMapping("/compound-interest")
-        public ResponseEntity<CalculatorResponse<CompoundInterestResponse>> calculateCompoundInterest(
-                        @Valid @RequestBody CompoundInterestRequest request,
-                        @RequestParam(defaultValue = "false") boolean debug) {
+  /** Calculate Compound Interest. POST /api/calculators/loans/compound-interest */
+  @Operation(summary = "Calculate compound interest")
+  @PostMapping("/compound-interest")
+  public ResponseEntity<CalculatorResponse<CompoundInterestResponse>> calculateCompoundInterest(
+      @Valid @RequestBody CompoundInterestRequest request,
+      @RequestParam(defaultValue = "false") boolean debug) {
 
-                logger.info("Compound Interest calculation: principal={}, rate={}%, years={}, freq={}",
-                                request.principal(), request.annualRate(), request.years(),
-                                request.compoundingFrequency());
+    logger.info(
+        "Compound Interest calculation: principal={}, rate={}%, years={}, freq={}",
+        request.principal(), request.annualRate(), request.years(), request.compoundingFrequency());
 
-                return ResponseEntity.ok(loanService.calculateCompoundInterest(request, debug));
-        }
+    return ResponseEntity.ok(loanService.calculateCompoundInterest(request, debug));
+  }
 
-        /**
-         * Compare Flat Rate vs Reducing Rate.
-         * POST /api/calculators/loans/flat-vs-reducing
-         */
-        @Operation(summary = "Compare flat rate vs reducing rate EMI")
-        @PostMapping("/flat-vs-reducing")
-        public ResponseEntity<CalculatorResponse<FlatVsReducingResponse>> compareFlatVsReducing(
-                        @Valid @RequestBody EmiRequest request,
-                        @RequestParam(defaultValue = "false") boolean debug) {
+  /** Compare Flat Rate vs Reducing Rate. POST /api/calculators/loans/flat-vs-reducing */
+  @Operation(summary = "Compare flat rate vs reducing rate EMI")
+  @PostMapping("/flat-vs-reducing")
+  public ResponseEntity<CalculatorResponse<FlatVsReducingResponse>> compareFlatVsReducing(
+      @Valid @RequestBody EmiRequest request, @RequestParam(defaultValue = "false") boolean debug) {
 
-                logger.info("Flat vs Reducing comparison: principal={}, rate={}%, months={}",
-                                request.principal(), request.annualRate(), request.months());
+    logger.info(
+        "Flat vs Reducing comparison: principal={}, rate={}%, months={}",
+        request.principal(), request.annualRate(), request.months());
 
-                return ResponseEntity.ok(loanService.compareFlatVsReducing(request, debug));
-        }
-
+    return ResponseEntity.ok(loanService.compareFlatVsReducing(request, debug));
+  }
 }

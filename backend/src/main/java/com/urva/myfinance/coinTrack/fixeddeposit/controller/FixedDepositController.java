@@ -1,18 +1,28 @@
 package com.urva.myfinance.coinTrack.fixeddeposit.controller;
 
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.PrematureWithdrawalRequestDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.PrematureWithdrawalResponseDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
+import com.urva.myfinance.coinTrack.fixeddeposit.service.FixedDepositService;
+import com.urva.myfinance.coinTrack.fixeddeposit.util.FixedDepositExcelExporter;
 import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,163 +34,181 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
-import com.urva.myfinance.coinTrack.common.response.ApiResponse;
-import com.urva.myfinance.coinTrack.fixeddeposit.util.FixedDepositExcelExporter;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.PrematureWithdrawalRequestDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.PrematureWithdrawalResponseDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
-import com.urva.myfinance.coinTrack.fixeddeposit.service.FixedDepositService;
-
-import jakarta.validation.Valid;
-
 @RestController
 @RequestMapping("/api/fixed-deposits")
-@Tag(name = "Fixed Deposits", description = "Fixed Deposit (FD) management module with status derivation, metrics, TDS, premature withdrawal, and Excel (XLSX) export")
+@Tag(
+    name = "Fixed Deposits",
+    description =
+        "Fixed Deposit (FD) management module with status derivation, metrics, TDS, premature withdrawal, and Excel (XLSX) export")
 public class FixedDepositController {
 
-    private static final Logger logger = LoggerFactory.getLogger(FixedDepositController.class);
+  private static final Logger logger = LoggerFactory.getLogger(FixedDepositController.class);
 
-    private final FixedDepositService fixedDepositService;
+  private final FixedDepositService fixedDepositService;
 
-    @Autowired
-    public FixedDepositController(FixedDepositService fixedDepositService) {
-        this.fixedDepositService = fixedDepositService;
-    }
+  @Autowired
+  public FixedDepositController(FixedDepositService fixedDepositService) {
+    this.fixedDepositService = fixedDepositService;
+  }
 
-    @Operation(summary = "Create a new fixed deposit")
-    @PostMapping
-    public ResponseEntity<ApiResponse<FixedDepositResponseDTO>> createFixedDeposit(
-            @Valid @RequestBody FixedDepositRequestDTO requestDTO,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        logger.info("Creating fixed deposit for user: {}", principal.getUsername());
-        FixedDepositResponseDTO response = fixedDepositService.createFixedDeposit(requestDTO, principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Create a new fixed deposit")
+  @PostMapping
+  public ResponseEntity<ApiResponse<FixedDepositResponseDTO>> createFixedDeposit(
+      @Valid @RequestBody FixedDepositRequestDTO requestDTO,
+      @AuthenticationPrincipal UserPrincipal principal) {
+    logger.info("Creating fixed deposit for user: {}", principal.getUsername());
+    FixedDepositResponseDTO response =
+        fixedDepositService.createFixedDeposit(requestDTO, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 
-    @Operation(summary = "Get paginated fixed deposits with optional filters")
-    @GetMapping
-    public ResponseEntity<ApiResponse<Page<FixedDepositResponseDTO>>> getFixedDeposits(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) String place,
-            @RequestParam(required = false) FdStatus status,
-            @RequestParam(required = false) String nominee,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate maturityFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate maturityTo,
-            @RequestParam(defaultValue = "maturityDate") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        logger.debug("Fetching fixed deposits for user: {}, page={}, size={}", principal.getUsername(), page, size);
-        Page<FixedDepositResponseDTO> result = fixedDepositService.getFixedDeposits(
-                principal.getUserId(), place, status, nominee, maturityFrom, maturityTo, sortBy, sortDir, page, size);
-        return ResponseEntity.ok(ApiResponse.success(result));
-    }
+  @Operation(summary = "Get paginated fixed deposits with optional filters")
+  @GetMapping
+  public ResponseEntity<ApiResponse<Page<FixedDepositResponseDTO>>> getFixedDeposits(
+      @AuthenticationPrincipal UserPrincipal principal,
+      @RequestParam(required = false) String place,
+      @RequestParam(required = false) FdStatus status,
+      @RequestParam(required = false) String nominee,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate maturityFrom,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate maturityTo,
+      @RequestParam(defaultValue = "maturityDate") String sortBy,
+      @RequestParam(defaultValue = "asc") String sortDir,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size) {
+    logger.debug(
+        "Fetching fixed deposits for user: {}, page={}, size={}",
+        principal.getUsername(),
+        page,
+        size);
+    Page<FixedDepositResponseDTO> result =
+        fixedDepositService.getFixedDeposits(
+            principal.getUserId(),
+            place,
+            status,
+            nominee,
+            maturityFrom,
+            maturityTo,
+            sortBy,
+            sortDir,
+            page,
+            size);
+    return ResponseEntity.ok(ApiResponse.success(result));
+  }
 
-    @Operation(summary = "Get fixed deposit summary metrics for dashboard")
-    @GetMapping("/summary")
-    public ResponseEntity<ApiResponse<FixedDepositSummaryDTO>> getSummary(@AuthenticationPrincipal UserPrincipal principal) {
-        logger.debug("Fetching fixed deposit summary for user: {}", principal.getUsername());
-        FixedDepositSummaryDTO summary = fixedDepositService.getSummary(principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(summary));
-    }
+  @Operation(summary = "Get fixed deposit summary metrics for dashboard")
+  @GetMapping("/summary")
+  public ResponseEntity<ApiResponse<FixedDepositSummaryDTO>> getSummary(
+      @AuthenticationPrincipal UserPrincipal principal) {
+    logger.debug("Fetching fixed deposit summary for user: {}", principal.getUsername());
+    FixedDepositSummaryDTO summary = fixedDepositService.getSummary(principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(summary));
+  }
 
-    @Operation(summary = "Export fixed deposits to CSV respecting active filters")
-    @GetMapping("/export")
-    public ResponseEntity<byte[]> exportFixedDeposits(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) String place,
-            @RequestParam(required = false) FdStatus status,
-            @RequestParam(required = false) String nominee,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate maturityFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate maturityTo,
-            @RequestParam(defaultValue = "issueDate") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
-        logger.info("Exporting fixed deposits to XLSX for user: {}", principal.getUsername());
-        List<FixedDepositResponseDTO> list = fixedDepositService.getAllForExport(
-                principal.getUserId(), place, status, nominee, maturityFrom, maturityTo, sortBy, sortDir);
+  @Operation(summary = "Export fixed deposits to CSV respecting active filters")
+  @GetMapping("/export")
+  public ResponseEntity<byte[]> exportFixedDeposits(
+      @AuthenticationPrincipal UserPrincipal principal,
+      @RequestParam(required = false) String place,
+      @RequestParam(required = false) FdStatus status,
+      @RequestParam(required = false) String nominee,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate maturityFrom,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate maturityTo,
+      @RequestParam(defaultValue = "issueDate") String sortBy,
+      @RequestParam(defaultValue = "asc") String sortDir) {
+    logger.info("Exporting fixed deposits to XLSX for user: {}", principal.getUsername());
+    List<FixedDepositResponseDTO> list =
+        fixedDepositService.getAllForExport(
+            principal.getUserId(),
+            place,
+            status,
+            nominee,
+            maturityFrom,
+            maturityTo,
+            sortBy,
+            sortDir);
 
-        return FixedDepositExcelExporter.export(list);
-    }
+    return FixedDepositExcelExporter.export(list);
+  }
 
-    @Operation(summary = "Get a single fixed deposit by ID")
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<FixedDepositResponseDTO>> getFixedDepositById(
-            @PathVariable String id,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        logger.debug("Fetching fixed deposit {} for user: {}", id, principal.getUsername());
-        FixedDepositResponseDTO response = fixedDepositService.getFixedDepositById(id, principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Get a single fixed deposit by ID")
+  @GetMapping("/{id}")
+  public ResponseEntity<ApiResponse<FixedDepositResponseDTO>> getFixedDepositById(
+      @PathVariable String id, @AuthenticationPrincipal UserPrincipal principal) {
+    logger.debug("Fetching fixed deposit {} for user: {}", id, principal.getUsername());
+    FixedDepositResponseDTO response =
+        fixedDepositService.getFixedDepositById(id, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 
-    @Operation(summary = "Update an existing fixed deposit")
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<FixedDepositResponseDTO>> updateFixedDeposit(
-            @PathVariable String id,
-            @Valid @RequestBody FixedDepositRequestDTO requestDTO,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        logger.info("Updating fixed deposit {} for user: {}", id, principal.getUsername());
-        FixedDepositResponseDTO response = fixedDepositService.updateFixedDeposit(id, requestDTO, principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Update an existing fixed deposit")
+  @PutMapping("/{id}")
+  public ResponseEntity<ApiResponse<FixedDepositResponseDTO>> updateFixedDeposit(
+      @PathVariable String id,
+      @Valid @RequestBody FixedDepositRequestDTO requestDTO,
+      @AuthenticationPrincipal UserPrincipal principal) {
+    logger.info("Updating fixed deposit {} for user: {}", id, principal.getUsername());
+    FixedDepositResponseDTO response =
+        fixedDepositService.updateFixedDeposit(id, requestDTO, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 
-    @Operation(summary = "Close a fixed deposit (manual sticky override)")
-    @PatchMapping("/{id}/close")
-    public ResponseEntity<ApiResponse<FixedDepositResponseDTO>> closeFixedDeposit(
-            @PathVariable String id,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        logger.info("Closing fixed deposit {} for user: {}", id, principal.getUsername());
-        FixedDepositResponseDTO response = fixedDepositService.closeFixedDeposit(id, principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Close a fixed deposit (manual sticky override)")
+  @PatchMapping("/{id}/close")
+  public ResponseEntity<ApiResponse<FixedDepositResponseDTO>> closeFixedDeposit(
+      @PathVariable String id, @AuthenticationPrincipal UserPrincipal principal) {
+    logger.info("Closing fixed deposit {} for user: {}", id, principal.getUsername());
+    FixedDepositResponseDTO response =
+        fixedDepositService.closeFixedDeposit(id, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 
-    @Operation(summary = "Delete a fixed deposit")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteFixedDeposit(
-            @PathVariable String id,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        logger.info("Deleting fixed deposit {} for user: {}", id, principal.getUsername());
-        fixedDepositService.deleteFixedDeposit(id, principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success("Fixed deposit deleted successfully"));
-    }
+  @Operation(summary = "Delete a fixed deposit")
+  @DeleteMapping("/{id}")
+  public ResponseEntity<ApiResponse<Void>> deleteFixedDeposit(
+      @PathVariable String id, @AuthenticationPrincipal UserPrincipal principal) {
+    logger.info("Deleting fixed deposit {} for user: {}", id, principal.getUsername());
+    fixedDepositService.deleteFixedDeposit(id, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success("Fixed deposit deleted successfully"));
+  }
 
-    // New endpoints
+  // New endpoints
 
-    @Operation(summary = "Premature withdrawal with penalty calculation")
-    @PostMapping("/{id}/withdraw")
-    public ResponseEntity<ApiResponse<PrematureWithdrawalResponseDTO>> prematureWithdraw(
-            @PathVariable String id,
-            @Valid @RequestBody PrematureWithdrawalRequestDTO requestDTO,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        logger.info("Premature withdrawal for FD {} by user: {}", id, principal.getUsername());
-        PrematureWithdrawalResponseDTO response = fixedDepositService.prematureWithdraw(id, requestDTO, principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Premature withdrawal with penalty calculation")
+  @PostMapping("/{id}/withdraw")
+  public ResponseEntity<ApiResponse<PrematureWithdrawalResponseDTO>> prematureWithdraw(
+      @PathVariable String id,
+      @Valid @RequestBody PrematureWithdrawalRequestDTO requestDTO,
+      @AuthenticationPrincipal UserPrincipal principal) {
+    logger.info("Premature withdrawal for FD {} by user: {}", id, principal.getUsername());
+    PrematureWithdrawalResponseDTO response =
+        fixedDepositService.prematureWithdraw(id, requestDTO, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 
-    @Operation(summary = "Get TDS detail for a specific FD and financial year")
-    @GetMapping("/{id}/tds")
-    public ResponseEntity<ApiResponse<FdTdsDetailDTO>> getTdsDetail(
-            @PathVariable String id,
-            @RequestParam(required = false) Integer financialYear,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        logger.debug("Fetching TDS detail for FD {} for user: {}", id, principal.getUsername());
-        FdTdsDetailDTO response = fixedDepositService.getTdsDetail(id, financialYear, principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Get TDS detail for a specific FD and financial year")
+  @GetMapping("/{id}/tds")
+  public ResponseEntity<ApiResponse<FdTdsDetailDTO>> getTdsDetail(
+      @PathVariable String id,
+      @RequestParam(required = false) Integer financialYear,
+      @AuthenticationPrincipal UserPrincipal principal) {
+    logger.debug("Fetching TDS detail for FD {} for user: {}", id, principal.getUsername());
+    FdTdsDetailDTO response =
+        fixedDepositService.getTdsDetail(id, financialYear, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 
-    @Operation(summary = "Get TDS summary for all FDs in a financial year")
-    @GetMapping("/tds-summary")
-    public ResponseEntity<ApiResponse<List<FdTdsDetailDTO>>> getTdsSummary(
-            @RequestParam(required = false) Integer financialYear,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        logger.debug("Fetching TDS summary for user: {}", principal.getUsername());
-        List<FdTdsDetailDTO> response = fixedDepositService.getTdsSummary(financialYear, principal.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Get TDS summary for all FDs in a financial year")
+  @GetMapping("/tds-summary")
+  public ResponseEntity<ApiResponse<List<FdTdsDetailDTO>>> getTdsSummary(
+      @RequestParam(required = false) Integer financialYear,
+      @AuthenticationPrincipal UserPrincipal principal) {
+    logger.debug("Fetching TDS summary for user: {}", principal.getUsername());
+    List<FdTdsDetailDTO> response =
+        fixedDepositService.getTdsSummary(financialYear, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 }

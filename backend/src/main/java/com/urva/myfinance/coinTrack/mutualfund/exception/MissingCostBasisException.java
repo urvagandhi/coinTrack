@@ -8,7 +8,7 @@ import com.urva.myfinance.coinTrack.common.exception.DomainException;
  */
 public class MissingCostBasisException extends DomainException {
 
-    public MissingCostBasisException(String message) {
-        super(message, "MISSING_COST_BASIS", 400);
-    }
+  public MissingCostBasisException(String message) {
+    super(message, "MISSING_COST_BASIS", 400);
+  }
 }

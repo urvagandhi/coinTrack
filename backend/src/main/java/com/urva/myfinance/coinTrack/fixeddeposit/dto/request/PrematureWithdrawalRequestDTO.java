@@ -1,9 +1,8 @@
 package com.urva.myfinance.coinTrack.fixeddeposit.dto.request;
 
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,10 +14,10 @@ import lombok.NoArgsConstructor;
 @Builder
 public class PrematureWithdrawalRequestDTO {
 
-    @NotNull(message = "Withdrawal date is required")
-    private LocalDate withdrawalDate;
+  @NotNull(message = "Withdrawal date is required")
+  private LocalDate withdrawalDate;
 
-    private BigDecimal penaltyRateOverride;
+  private BigDecimal penaltyRateOverride;
 
-    private String bankName;
+  private String bankName;
 }

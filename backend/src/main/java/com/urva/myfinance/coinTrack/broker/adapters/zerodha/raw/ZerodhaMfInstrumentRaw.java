@@ -1,55 +1,53 @@
 package com.urva.myfinance.coinTrack.broker.adapters.zerodha.raw;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 import java.util.Map;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ZerodhaMfInstrumentRaw {
 
-    private String tradingSymbol;
+  private String tradingSymbol;
 
-    private String name;
+  private String name;
 
-    private String amc;
+  private String amc;
 
-    private String isin;
+  private String isin;
 
-    private String schemeType;
+  private String schemeType;
 
-    private String plan;
+  private String plan;
 
-    private String fundHouse;
+  private String fundHouse;
 
-    private String dividendType;
+  private String dividendType;
 
-    private BigDecimal purchaseAmountMultiplier;
+  private BigDecimal purchaseAmountMultiplier;
 
-    private BigDecimal minimumAdditionalPurchaseAmount;
+  private BigDecimal minimumAdditionalPurchaseAmount;
 
-    private BigDecimal minimumPurchaseAmount;
+  private BigDecimal minimumPurchaseAmount;
 
-    private Boolean redemptionAllowed;
+  private Boolean redemptionAllowed;
 
-    private Boolean purchaseAllowed;
+  private Boolean purchaseAllowed;
 
-    private BigDecimal minimumRedemptionQuantity;
+  private BigDecimal minimumRedemptionQuantity;
 
-    private BigDecimal redemptionQuantityMultiplier;
+  private BigDecimal redemptionQuantityMultiplier;
 
-    private String lastPriceDate;
+  private String lastPriceDate;
 
-    private String settlementType;
+  private String settlementType;
 
-    private BigDecimal lastPrice;
+  private BigDecimal lastPrice;
 
-    /**
-     * Stores the complete raw JSON object received from Zerodha.
-     * This ensures forward compatibility if new fields are added.
-     */
-    private Map<String, Object> raw;
+  /**
+   * Stores the complete raw JSON object received from Zerodha. This ensures forward compatibility
+   * if new fields are added.
+   */
+  private Map<String, Object> raw;
 }

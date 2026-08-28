@@ -1,18 +1,15 @@
 package com.urva.myfinance.coinTrack.portfolio.model;
 
-import java.time.LocalDateTime;
-
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import com.urva.myfinance.coinTrack.broker.model.Broker;
-
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @NoArgsConstructor
@@ -21,20 +18,19 @@ import lombok.NoArgsConstructor;
 @Document(collection = "sync_logs")
 @CompoundIndex(name = "idx_synclog_user_time", def = "{'userId': 1, 'timestamp': -1}")
 public class SyncLog {
-    @Id
-    private String id;
+  @Id private String id;
 
-    /** TTL: MongoDB auto-deletes sync logs older than 14 days. */
-    @Indexed(expireAfter = "14d")
-    private LocalDateTime timestamp;
+  /** TTL: MongoDB auto-deletes sync logs older than 14 days. */
+  @Indexed(expireAfter = "14d")
+  private LocalDateTime timestamp;
 
-    private String userId;
+  private String userId;
 
-    private Broker broker;
+  private Broker broker;
 
-    private SyncStatus status;
+  private SyncStatus status;
 
-    private String message;
+  private String message;
 
-    private Long durationMs;
+  private Long durationMs;
 }

@@ -1,5 +1,7 @@
 package com.urva.myfinance.coinTrack;
 
+import com.urva.myfinance.coinTrack.email.config.BrevoConfigProperties;
+import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -7,18 +9,15 @@ import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-import com.urva.myfinance.coinTrack.email.config.BrevoConfigProperties;
-import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
-
 @SpringBootApplication
 @EnableAsync
 @EnableMongoAuditing
-@EnableConfigurationProperties({ BrevoConfigProperties.class, EmailConfigProperties.class })
-@EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
+@EnableConfigurationProperties({BrevoConfigProperties.class, EmailConfigProperties.class})
+@EnableSpringDataWebSupport(
+    pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class FinanceDashboardApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(FinanceDashboardApplication.class, args);
-	}
-
+  public static void main(String[] args) {
+    SpringApplication.run(FinanceDashboardApplication.class, args);
+  }
 }

@@ -1,9 +1,9 @@
 package com.urva.myfinance.coinTrack.fixeddeposit.model;
 
 public enum FdStatus {
-    ACTIVE,
-    DUE,
-    MATURED,
-    CLOSED,
-    PREMATURELY_WITHDRAWN
+  ACTIVE,
+  DUE,
+  MATURED,
+  CLOSED,
+  PREMATURELY_WITHDRAWN
 }

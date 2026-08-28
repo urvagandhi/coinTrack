@@ -4,77 +4,77 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 /**
- * Raw position response from Angel One SmartAPI.
- * All numeric fields are Strings — parsed by PriceNormalizer in the mapper.
+ * Raw position response from Angel One SmartAPI. All numeric fields are Strings — parsed by
+ * PriceNormalizer in the mapper.
  */
 @Data
 public class AngelOnePositionRaw {
-    @JsonProperty("tradingsymbol")
-    private String tradingsymbol;
+  @JsonProperty("tradingsymbol")
+  private String tradingsymbol;
 
-    @JsonProperty("exchange")
-    private String exchange;
+  @JsonProperty("exchange")
+  private String exchange;
 
-    @JsonProperty("symboltoken")
-    private String symboltoken;
+  @JsonProperty("symboltoken")
+  private String symboltoken;
 
-    @JsonProperty("producttype")
-    private String producttype;
+  @JsonProperty("producttype")
+  private String producttype;
 
-    @JsonProperty("instrumenttype")
-    private String instrumenttype;
+  @JsonProperty("instrumenttype")
+  private String instrumenttype;
 
-    @JsonProperty("netqty")
-    private String netqty;
+  @JsonProperty("netqty")
+  private String netqty;
 
-    @JsonProperty("buyavgprice")
-    private String buyavgprice;
+  @JsonProperty("buyavgprice")
+  private String buyavgprice;
 
-    @JsonProperty("sellavgprice")
-    private String sellavgprice;
+  @JsonProperty("sellavgprice")
+  private String sellavgprice;
 
-    @JsonProperty("avg_price")
-    private String avgPrice;
+  @JsonProperty("avg_price")
+  private String avgPrice;
 
-    @JsonProperty("buqty")
-    private String buqty;
+  @JsonProperty("buqty")
+  private String buqty;
 
-    @JsonProperty("sellqty")
-    private String sellqty;
+  @JsonProperty("sellqty")
+  private String sellqty;
 
-    @JsonProperty("buyamt")
-    private String buyamt;
+  @JsonProperty("buyamt")
+  private String buyamt;
 
-    @JsonProperty("sellamt")
-    private String sellamt;
+  @JsonProperty("sellamt")
+  private String sellamt;
 
-    @JsonProperty("ltp")
-    private String ltp;
+  @JsonProperty("ltp")
+  private String ltp;
 
-    @JsonProperty("close")
-    private String close;
+  @JsonProperty("close")
+  private String close;
 
-    @JsonProperty("realisedprofitloss")
-    private String realisedprofitloss;
+  @JsonProperty("realisedprofitloss")
+  private String realisedprofitloss;
 
-    @JsonProperty("unrealisedprofitloss")
-    private String unrealisedprofitloss;
+  @JsonProperty("unrealisedprofitloss")
+  private String unrealisedprofitloss;
 
-    @JsonProperty("totalprofitloss")
-    private String totalprofitloss;
+  @JsonProperty("totalprofitloss")
+  private String totalprofitloss;
 
-    @JsonProperty("multiplier")
-    private String multiplier;
+  @JsonProperty("multiplier")
+  private String multiplier;
 
-    @JsonProperty("lotsize")
-    private String lotsize;
+  @JsonProperty("lotsize")
+  private String lotsize;
 
-    @JsonProperty("strikeprice")
-    private String strikeprice;
+  @JsonProperty("strikeprice")
+  private String strikeprice;
 
-    @JsonProperty("optiontype")
-    private String optiontype;
+  @JsonProperty("optiontype")
+  private String optiontype;
 
-    @JsonProperty("expirydate")
-    private String expirydate;
+  @JsonProperty("expirydate")
+  private String expirydate;
 }

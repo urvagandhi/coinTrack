@@ -1,7 +1,12 @@
 package com.urva.myfinance.coinTrack.calculator.controller;
 
+import com.urva.myfinance.coinTrack.calculator.dto.request.RetirementRequest;
+import com.urva.myfinance.coinTrack.calculator.dto.response.CalculatorResponse;
+import com.urva.myfinance.coinTrack.calculator.dto.response.RetirementResponse;
+import com.urva.myfinance.coinTrack.calculator.service.PlanningCalculatorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,16 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urva.myfinance.coinTrack.calculator.dto.request.RetirementRequest;
-import com.urva.myfinance.coinTrack.calculator.dto.response.CalculatorResponse;
-import com.urva.myfinance.coinTrack.calculator.dto.response.RetirementResponse;
-import com.urva.myfinance.coinTrack.calculator.service.PlanningCalculatorService;
-
-import jakarta.validation.Valid;
-
 /**
- * REST Controller for Financial Planning Calculators.
- * All endpoints are public (no authentication required) with rate limiting.
+ * REST Controller for Financial Planning Calculators. All endpoints are public (no authentication
+ * required) with rate limiting.
  */
 @RestController
 @RequestMapping("/api/calculators/planning")
@@ -30,28 +28,28 @@ import jakarta.validation.Valid;
 @Tag(name = "Calculators — Planning", description = "Retirement planning")
 public class PlanningCalculatorController {
 
-    private static final Logger logger = LoggerFactory.getLogger(PlanningCalculatorController.class);
+  private static final Logger logger = LoggerFactory.getLogger(PlanningCalculatorController.class);
 
-    private final PlanningCalculatorService planningService;
+  private final PlanningCalculatorService planningService;
 
-    @Autowired
-    public PlanningCalculatorController(PlanningCalculatorService planningService) {
-        this.planningService = planningService;
-    }
+  @Autowired
+  public PlanningCalculatorController(PlanningCalculatorService planningService) {
+    this.planningService = planningService;
+  }
 
-    /**
-     * Calculate retirement planning.
-     * POST /api/calculators/planning/retirement
-     */
-    @Operation(summary = "Calculate retirement planning corpus and SIP")
-    @PostMapping("/retirement")
-    public ResponseEntity<CalculatorResponse<RetirementResponse>> calculateRetirement(
-            @Valid @RequestBody RetirementRequest request,
-            @RequestParam(defaultValue = "false") boolean debug) {
+  /** Calculate retirement planning. POST /api/calculators/planning/retirement */
+  @Operation(summary = "Calculate retirement planning corpus and SIP")
+  @PostMapping("/retirement")
+  public ResponseEntity<CalculatorResponse<RetirementResponse>> calculateRetirement(
+      @Valid @RequestBody RetirementRequest request,
+      @RequestParam(defaultValue = "false") boolean debug) {
 
-        logger.info("Retirement calculation: currentAge={}, retireAge={}, lifeExp={}, monthlyExp={}",
-                request.currentAge(), request.retirementAge(), request.lifeExpectancy(),
-                request.currentMonthlyExpense());
-        return ResponseEntity.ok(planningService.calculateRetirement(request, debug));
-    }
+    logger.info(
+        "Retirement calculation: currentAge={}, retireAge={}, lifeExp={}, monthlyExp={}",
+        request.currentAge(),
+        request.retirementAge(),
+        request.lifeExpectancy(),
+        request.currentMonthlyExpense());
+    return ResponseEntity.ok(planningService.calculateRetirement(request, debug));
+  }
 }

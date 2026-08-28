@@ -9,14 +9,14 @@ import lombok.Data;
 @Data
 @Builder
 public class EpfSettingsResponseDTO {
-    private String userId;
-    private BigDecimal currentBalance;
-    private LocalDate asOfDate;
-    private BigDecimal employeeContributionRate;
-    private BigDecimal employerContributionRate;
-    private BigDecimal epsContributionRate;
-    private BigDecimal defaultBasicDA;
-    private boolean useActualSalaryForEps;
-    private BigDecimal monthlyVpfAmount;
-    private Instant updatedAt;
+  private String userId;
+  private BigDecimal currentBalance;
+  private LocalDate asOfDate;
+  private BigDecimal employeeContributionRate;
+  private BigDecimal employerContributionRate;
+  private BigDecimal epsContributionRate;
+  private BigDecimal defaultBasicDA;
+  private boolean useActualSalaryForEps;
+  private BigDecimal monthlyVpfAmount;
+  private Instant updatedAt;
 }

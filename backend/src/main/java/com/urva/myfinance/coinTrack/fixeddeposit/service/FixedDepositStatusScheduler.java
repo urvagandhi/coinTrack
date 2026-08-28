@@ -11,26 +11,26 @@ import org.springframework.stereotype.Component;
 @EnableScheduling
 public class FixedDepositStatusScheduler {
 
-    private static final Logger logger = LoggerFactory.getLogger(FixedDepositStatusScheduler.class);
+  private static final Logger logger = LoggerFactory.getLogger(FixedDepositStatusScheduler.class);
 
-    private final FixedDepositService fixedDepositService;
+  private final FixedDepositService fixedDepositService;
 
-    @Autowired
-    public FixedDepositStatusScheduler(FixedDepositService fixedDepositService) {
-        this.fixedDepositService = fixedDepositService;
+  @Autowired
+  public FixedDepositStatusScheduler(FixedDepositService fixedDepositService) {
+    this.fixedDepositService = fixedDepositService;
+  }
+
+  /**
+   * Daily batch job to update FD status in MongoDB Atlas database. Runs at 00:00:00 every day in
+   * Asia/Kolkata timezone.
+   */
+  @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Kolkata")
+  public void runDailyStatusUpdate() {
+    logger.info("FixedDepositStatusScheduler triggered daily status update");
+    try {
+      fixedDepositService.updateAllDocumentStatuses();
+    } catch (Exception e) {
+      logger.error("Error during daily FD status update batch job: {}", e.getMessage(), e);
     }
-
-    /**
-     * Daily batch job to update FD status in MongoDB Atlas database.
-     * Runs at 00:00:00 every day in Asia/Kolkata timezone.
-     */
-    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Kolkata")
-    public void runDailyStatusUpdate() {
-        logger.info("FixedDepositStatusScheduler triggered daily status update");
-        try {
-            fixedDepositService.updateAllDocumentStatuses();
-        } catch (Exception e) {
-            logger.error("Error during daily FD status update batch job: {}", e.getMessage(), e);
-        }
-    }
+  }
 }

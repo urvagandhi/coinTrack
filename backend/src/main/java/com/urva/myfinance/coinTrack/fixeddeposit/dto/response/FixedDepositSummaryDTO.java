@@ -1,7 +1,6 @@
 package com.urva.myfinance.coinTrack.fixeddeposit.dto.response;
 
 import java.math.BigDecimal;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,22 +12,22 @@ import lombok.NoArgsConstructor;
 @Builder
 public class FixedDepositSummaryDTO {
 
-    private BigDecimal totalInvestment;
-    private BigDecimal totalReturns; // All returns (active + due + matured + closed if applicable)
-    
-    private BigDecimal totalActiveInvestment;
-    private BigDecimal totalEstimatedReturns;
-    
-    private BigDecimal totalDueInvestment;
-    private BigDecimal totalDueReturns;
-    
-    private BigDecimal totalMaturedInvestment;
-    private BigDecimal totalMaturedReturns;
+  private BigDecimal totalInvestment;
+  private BigDecimal totalReturns; // All returns (active + due + matured + closed if applicable)
 
-    private long activeCount;
-    private long dueAndMaturedCount;
+  private BigDecimal totalActiveInvestment;
+  private BigDecimal totalEstimatedReturns;
 
-    // TDS fields
-    private BigDecimal totalTdsDeducted;
-    private BigDecimal totalNetReturns;
+  private BigDecimal totalDueInvestment;
+  private BigDecimal totalDueReturns;
+
+  private BigDecimal totalMaturedInvestment;
+  private BigDecimal totalMaturedReturns;
+
+  private long activeCount;
+  private long dueAndMaturedCount;
+
+  // TDS fields
+  private BigDecimal totalTdsDeducted;
+  private BigDecimal totalNetReturns;
 }

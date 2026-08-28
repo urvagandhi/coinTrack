@@ -1,124 +1,120 @@
 package com.urva.myfinance.coinTrack.mutualfund.service;
 
 import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
-import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
-import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.PortfolioHoldingRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.RedemptionTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipContributionRepository;
-import com.urva.myfinance.coinTrack.mutualfund.repository.PortfolioHoldingRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class MfSchemeService {
 
-    @Autowired
-    private MfSchemeRepository repository;
-    @Autowired
-    private PortfolioHoldingService portfolioHoldingService;
-    @Autowired
-    private LumpsumTransactionRepository lumpsumRepo;
-    @Autowired
-    private SipMandateRepository sipMandateRepo;
-    @Autowired
-    private RedemptionTransactionRepository redemptionRepo;
-    @Autowired
-    private SipContributionRepository sipContributionRepo;
-    @Autowired
-    private PortfolioHoldingRepository portfolioHoldingRepo;
+  @Autowired private MfSchemeRepository repository;
+  @Autowired private PortfolioHoldingService portfolioHoldingService;
+  @Autowired private LumpsumTransactionRepository lumpsumRepo;
+  @Autowired private SipMandateRepository sipMandateRepo;
+  @Autowired private RedemptionTransactionRepository redemptionRepo;
+  @Autowired private SipContributionRepository sipContributionRepo;
+  @Autowired private PortfolioHoldingRepository portfolioHoldingRepo;
 
-    private String normalizeCategory(String category) {
-        if (category == null || category.trim().isEmpty())
-            return category;
-        String trimmed = category.trim();
-        return trimmed.substring(0, 1).toUpperCase() + trimmed.substring(1).toLowerCase();
+  private String normalizeCategory(String category) {
+    if (category == null || category.trim().isEmpty()) return category;
+    String trimmed = category.trim();
+    return trimmed.substring(0, 1).toUpperCase() + trimmed.substring(1).toLowerCase();
+  }
+
+  public List<MfScheme> getAllSchemes(String userId, String holderName) {
+    if (holderName != null && !holderName.isEmpty()) {
+      return repository.findByUserIdAndHolderName(userId, holderName);
     }
+    return repository.findByUserId(userId);
+  }
 
-    public List<MfScheme> getAllSchemes(String userId, String holderName) {
-        if (holderName != null && !holderName.isEmpty()) {
-            return repository.findByUserIdAndHolderName(userId, holderName);
-        }
-        return repository.findByUserId(userId);
-    }
+  public List<MfScheme> getSchemesByCategory(String userId, String category) {
+    return repository.findByUserIdAndMfCategory(userId, category);
+  }
 
-    public List<MfScheme> getSchemesByCategory(String userId, String category) {
-        return repository.findByUserIdAndMfCategory(userId, category);
-    }
+  public List<MfScheme> getSchemesByPlatform(String userId, String platform) {
+    return repository.findByUserIdAndPlatform(userId, platform);
+  }
 
-    public List<MfScheme> getSchemesByPlatform(String userId, String platform) {
-        return repository.findByUserIdAndPlatform(userId, platform);
-    }
+  public List<MfScheme> getSchemesByBank(String userId, String bank) {
+    return repository.findByUserIdAndBank(userId, bank);
+  }
 
-    public List<MfScheme> getSchemesByBank(String userId, String bank) {
-        return repository.findByUserIdAndBank(userId, bank);
-    }
+  public List<MfScheme> searchSchemes(String userId, String query) {
+    return repository.findByUserIdAndSchemeNameContainingIgnoreCase(userId, query);
+  }
 
-    public List<MfScheme> searchSchemes(String userId, String query) {
-        return repository.findByUserIdAndSchemeNameContainingIgnoreCase(userId, query);
-    }
+  public List<java.util.Map<String, Object>> getDropdownData(String userId) {
+    return repository.findByUserId(userId).stream()
+        .map(
+            scheme -> {
+              java.util.Map<String, Object> map = new java.util.HashMap<>();
+              map.put("id", scheme.getId());
+              map.put("schemeName", scheme.getSchemeName());
+              map.put("folioNo", scheme.getFolioNo());
+              map.put("bank", scheme.getBank());
+              map.put("holderName", scheme.getHolderName());
+              map.put("platform", scheme.getPlatform());
+              return map;
+            })
+        .collect(java.util.stream.Collectors.toList());
+  }
 
-    public List<java.util.Map<String, Object>> getDropdownData(String userId) {
-        return repository.findByUserId(userId).stream().map(scheme -> {
-            java.util.Map<String, Object> map = new java.util.HashMap<>();
-            map.put("id", scheme.getId());
-            map.put("schemeName", scheme.getSchemeName());
-            map.put("folioNo", scheme.getFolioNo());
-            map.put("bank", scheme.getBank());
-            map.put("holderName", scheme.getHolderName());
-            map.put("platform", scheme.getPlatform());
-            return map;
-        }).collect(java.util.stream.Collectors.toList());
-    }
+  public MfScheme getScheme(String userId, String id) {
+    return repository
+        .findById(id)
+        .filter(s -> s.getUserId().equals(userId))
+        .orElseThrow(() -> new RuntimeException("Scheme not found"));
+  }
 
-    public MfScheme getScheme(String userId, String id) {
-        return repository.findById(id)
-                .filter(s -> s.getUserId().equals(userId))
-                .orElseThrow(() -> new RuntimeException("Scheme not found"));
-    }
+  public MfScheme createScheme(String userId, MfScheme scheme) {
+    scheme.setUserId(userId);
+    scheme.setMfCategory(normalizeCategory(scheme.getMfCategory()));
+    scheme.setCreatedAt(Instant.now());
+    scheme.setUpdatedAt(Instant.now());
+    return repository.save(scheme);
+  }
 
-    public MfScheme createScheme(String userId, MfScheme scheme) {
-        scheme.setUserId(userId);
-        scheme.setMfCategory(normalizeCategory(scheme.getMfCategory()));
-        scheme.setCreatedAt(Instant.now());
-        scheme.setUpdatedAt(Instant.now());
-        return repository.save(scheme);
-    }
+  public MfScheme updateScheme(String userId, String id, MfScheme updatedScheme) {
+    MfScheme existing = getScheme(userId, id);
+    existing.setHolderName(updatedScheme.getHolderName());
+    existing.setSchemeName(updatedScheme.getSchemeName());
+    existing.setAmfiCode(updatedScheme.getAmfiCode());
+    existing.setMfCategory(normalizeCategory(updatedScheme.getMfCategory()));
+    existing.setPlatform(updatedScheme.getPlatform());
+    existing.setFolioNo(updatedScheme.getFolioNo());
+    existing.setBank(updatedScheme.getBank());
+    existing.setSipStartDate(updatedScheme.getSipStartDate());
+    existing.setSipStopDate(updatedScheme.getSipStopDate());
+    existing.setManualTotalUnits(updatedScheme.getManualTotalUnits());
+    existing.setAverageNav(updatedScheme.getAverageNav());
+    existing.setUpdatedAt(Instant.now());
+    MfScheme savedScheme = repository.save(existing);
+    portfolioHoldingService.updateHoldingForScheme(userId, id);
+    return savedScheme;
+  }
 
-    public MfScheme updateScheme(String userId, String id, MfScheme updatedScheme) {
-        MfScheme existing = getScheme(userId, id);
-        existing.setHolderName(updatedScheme.getHolderName());
-        existing.setSchemeName(updatedScheme.getSchemeName());
-        existing.setAmfiCode(updatedScheme.getAmfiCode());
-        existing.setMfCategory(normalizeCategory(updatedScheme.getMfCategory()));
-        existing.setPlatform(updatedScheme.getPlatform());
-        existing.setFolioNo(updatedScheme.getFolioNo());
-        existing.setBank(updatedScheme.getBank());
-        existing.setSipStartDate(updatedScheme.getSipStartDate());
-        existing.setSipStopDate(updatedScheme.getSipStopDate());
-        existing.setManualTotalUnits(updatedScheme.getManualTotalUnits());
-        existing.setAverageNav(updatedScheme.getAverageNav());
-        existing.setUpdatedAt(Instant.now());
-        MfScheme savedScheme = repository.save(existing);
-        portfolioHoldingService.updateHoldingForScheme(userId, id);
-        return savedScheme;
-    }
+  public void deleteScheme(String userId, String id) {
+    // Cascading delete: delete all associated transactions
+    lumpsumRepo.deleteAll(lumpsumRepo.findByUserIdAndSchemeId(userId, id));
+    sipMandateRepo.deleteAll(sipMandateRepo.findByUserIdAndSchemeId(userId, id));
+    redemptionRepo.deleteAll(redemptionRepo.findByUserIdAndSchemeId(userId, id));
+    sipContributionRepo.deleteAll(sipContributionRepo.findByUserIdAndSchemeId(userId, id));
 
-    public void deleteScheme(String userId, String id) {
-        // Cascading delete: delete all associated transactions
-        lumpsumRepo.deleteAll(lumpsumRepo.findByUserIdAndSchemeId(userId, id));
-        sipMandateRepo.deleteAll(sipMandateRepo.findByUserIdAndSchemeId(userId, id));
-        redemptionRepo.deleteAll(redemptionRepo.findByUserIdAndSchemeId(userId, id));
-        sipContributionRepo.deleteAll(sipContributionRepo.findByUserIdAndSchemeId(userId, id));
+    // Delete associated portfolio holding
+    portfolioHoldingRepo
+        .findByUserIdAndSchemeId(userId, id)
+        .ifPresent(holding -> portfolioHoldingRepo.delete(holding));
 
-        // Delete associated portfolio holding
-        portfolioHoldingRepo.findByUserIdAndSchemeId(userId, id)
-                .ifPresent(holding -> portfolioHoldingRepo.delete(holding));
-
-        MfScheme existing = getScheme(userId, id);
-        repository.delete(existing);
-    }
+    MfScheme existing = getScheme(userId, id);
+    repository.delete(existing);
+  }
 }

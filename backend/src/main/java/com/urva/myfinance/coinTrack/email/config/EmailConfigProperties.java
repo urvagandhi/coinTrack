@@ -1,92 +1,80 @@
 package com.urva.myfinance.coinTrack.email.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
-
 import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for email functionality.
  *
- * Properties are loaded from application.properties with prefix "email."
+ * <p>Properties are loaded from application.properties with prefix "email."
  *
- * Required environment variables for production:
- * - EMAIL_SUPPORT: Support email address
- * - EMAIL_BASE_URL: Frontend base URL for magic links
- * - EMAIL_MAGIC_LINK_SECRET: Secret key for signing magic link tokens
+ * <p>Required environment variables for production: - EMAIL_SUPPORT: Support email address -
+ * EMAIL_BASE_URL: Frontend base URL for magic links - EMAIL_MAGIC_LINK_SECRET: Secret key for
+ * signing magic link tokens
  *
- * Note: the From identity for outgoing mail comes solely from
- * BrevoConfigProperties (brevo.sender-email / BREVO_SENDER_EMAIL).
+ * <p>Note: the From identity for outgoing mail comes solely from BrevoConfigProperties
+ * (brevo.sender-email / BREVO_SENDER_EMAIL).
  */
 @ConfigurationProperties(prefix = "email")
 @Data
 public class EmailConfigProperties {
 
-    /**
-     * Support email address for user assistance
-     * Default: support@cointrack.app
-     */
-    private String support = "support@cointrack.app";
+  /** Support email address for user assistance Default: support@cointrack.app */
+  private String support = "support@cointrack.app";
 
-    /**
-     * Base URL for the frontend application
-     * Used to construct magic links for email verification, password reset, etc.
-     * Default: https://cointrack-finance.vercel.app
-     */
-    private String baseUrl = "https://cointrack-finance.vercel.app";
+  /**
+   * Base URL for the frontend application Used to construct magic links for email verification,
+   * password reset, etc. Default: https://cointrack-finance.vercel.app
+   */
+  private String baseUrl = "https://cointrack-finance.vercel.app";
 
-    /**
-     * Magic link expiry time in minutes
-     * Default: 10 minutes
-     */
-    private int magicLinkExpiryMinutes = 10;
+  /** Magic link expiry time in minutes Default: 10 minutes */
+  private int magicLinkExpiryMinutes = 10;
 
-    /**
-     * Secret key for signing magic link JWT tokens
-     * IMPORTANT: Must be a strong, unique secret in production!
-     * Generate with: openssl rand -base64 32
-     */
-    private String magicLinkSecret;
+  /**
+   * Secret key for signing magic link JWT tokens IMPORTANT: Must be a strong, unique secret in
+   * production! Generate with: openssl rand -base64 32
+   */
+  private String magicLinkSecret;
 
-    /**
-     * Backend API base URL for serving static assets like logo.
-     * Used for email templates to reference the logo image.
-     * Default: https://cointrack-backend-1g44.onrender.com
-     */
-    private String apiBaseUrl = "https://cointrack-backend-1g44.onrender.com";
+  /**
+   * Backend API base URL for serving static assets like logo. Used for email templates to reference
+   * the logo image. Default: https://cointrack-backend-1g44.onrender.com
+   */
+  private String apiBaseUrl = "https://cointrack-backend-1g44.onrender.com";
 
-    /**
-     * Get the full URL for the logo image
-     */
-    public String getLogoUrl() {
-        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(apiBaseUrl) + "/logo/coinTrack.png";
-    }
+  /** Get the full URL for the logo image */
+  public String getLogoUrl() {
+    return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(apiBaseUrl)
+        + "/logo/coinTrack.png";
+  }
 
-    /**
-     * Get the full URL for email verification
-     */
-    public String getEmailVerifyUrl(String token) {
-        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl) + "/verify-email?token=" + token;
-    }
+  /** Get the full URL for email verification */
+  public String getEmailVerifyUrl(String token) {
+    return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl)
+        + "/verify-email?token="
+        + token;
+  }
 
-    /**
-     * Get the full URL for password reset
-     */
-    public String getPasswordResetUrl(String token) {
-        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl) + "/reset-password?token=" + token;
-    }
+  /** Get the full URL for password reset */
+  public String getPasswordResetUrl(String token) {
+    return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl)
+        + "/reset-password?token="
+        + token;
+  }
 
-    /**
-     * Get the full URL for email change verification
-     */
-    public String getEmailChangeVerifyUrl(String token) {
-        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl) + "/verify-email?token=" + token + "&type=change";
-    }
+  /** Get the full URL for email change verification */
+  public String getEmailChangeVerifyUrl(String token) {
+    return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl)
+        + "/verify-email?token="
+        + token
+        + "&type=change";
+  }
 
-    /**
-     * Get the full URL for 2FA recovery
-     */
-    public String get2FARecoveryUrl(String token) {
-        return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl) + "/reset-2fa?token=" + token;
-    }
+  /** Get the full URL for 2FA recovery */
+  public String get2FARecoveryUrl(String token) {
+    return com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(baseUrl)
+        + "/reset-2fa?token="
+        + token;
+  }
 }

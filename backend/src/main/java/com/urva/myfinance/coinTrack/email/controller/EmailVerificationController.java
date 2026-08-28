@@ -1,8 +1,19 @@
 package com.urva.myfinance.coinTrack.email.controller;
 
+import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
+import com.urva.myfinance.coinTrack.email.model.EmailToken;
+import com.urva.myfinance.coinTrack.email.service.EmailService;
+import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
+import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmailTokenException;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Map;
-
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -13,26 +24,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urva.myfinance.coinTrack.common.response.ApiResponse;
-import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
-import com.urva.myfinance.coinTrack.email.model.EmailToken;
-import com.urva.myfinance.coinTrack.email.service.EmailService;
-import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
-import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmailTokenException;
-import com.urva.myfinance.coinTrack.user.model.User;
-import com.urva.myfinance.coinTrack.user.repository.UserRepository;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-
 /**
  * Controller for email verification endpoints.
  *
- * Endpoints:
- * - POST /api/auth/email/verify - Verify email with magic link token
- * - POST /api/auth/email/resend - Resend verification email (authenticated)
+ * <p>Endpoints: - POST /api/auth/email/verify - Verify email with magic link token - POST
+ * /api/auth/email/resend - Resend verification email (authenticated)
  */
 @RestController
 @RequestMapping("/api/auth/email")
@@ -40,161 +36,156 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Email Verification", description = "Verify and resend email verification")
 public class EmailVerificationController {
 
-        private static final Logger logger = LoggerFactory.getLogger(EmailVerificationController.class);
+  private static final Logger logger = LoggerFactory.getLogger(EmailVerificationController.class);
 
-        private final EmailTokenService emailTokenService;
-        private final EmailService emailService;
-        private final EmailConfigProperties emailConfig;
-        private final UserRepository userRepository;
+  private final EmailTokenService emailTokenService;
+  private final EmailService emailService;
+  private final EmailConfigProperties emailConfig;
+  private final UserRepository userRepository;
 
-        /**
-         * Verify email address using magic link token.
-         *
-         * Handles both registration verification and email change verification.
-         * Returns success even if already verified (graceful handling).
-         */
-        @Operation(summary = "Verify email address using magic link token")
-        @PostMapping("/verify")
-        public ResponseEntity<?> verifyEmail(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
-                String token = request.get("token");
-                String type = request.get("type"); // "change" for email change, null for registration
+  /**
+   * Verify email address using magic link token.
+   *
+   * <p>Handles both registration verification and email change verification. Returns success even
+   * if already verified (graceful handling).
+   */
+  @Operation(summary = "Verify email address using magic link token")
+  @PostMapping("/verify")
+  public ResponseEntity<?> verifyEmail(
+      @RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
+    String token = request.get("token");
+    String type = request.get("type"); // "change" for email change, null for registration
 
-                if (token == null || token.isBlank()) {
-                        return ResponseEntity.badRequest()
-                                        .body(ApiResponse.error("Token is required"));
-                }
+    if (token == null || token.isBlank()) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("Token is required"));
+    }
 
-                try {
-                        // Determine expected purpose
-                        String expectedPurpose = "change".equals(type)
-                                        ? EmailToken.PURPOSE_EMAIL_CHANGE_VERIFY
-                                        : EmailToken.PURPOSE_EMAIL_VERIFY;
+    try {
+      // Determine expected purpose
+      String expectedPurpose =
+          "change".equals(type)
+              ? EmailToken.PURPOSE_EMAIL_CHANGE_VERIFY
+              : EmailToken.PURPOSE_EMAIL_VERIFY;
 
-                        // Validate token
-                        EmailToken emailToken = emailTokenService.validateToken(token, expectedPurpose);
+      // Validate token
+      EmailToken emailToken = emailTokenService.validateToken(token, expectedPurpose);
 
-                        // Get user
-                        @SuppressWarnings("null")
-                        User user = userRepository.findById(emailToken.getUserId())
-                                        .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
+      // Get user
+      @SuppressWarnings("null")
+      User user =
+          userRepository
+              .findById(emailToken.getUserId())
+              .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
 
-                        // Handle email change verification
-                        if (EmailToken.PURPOSE_EMAIL_CHANGE_VERIFY.equals(expectedPurpose)) {
-                                String oldEmail = user.getEmail();
-                                String newEmail = emailToken.getNewEmail();
+      // Handle email change verification
+      if (EmailToken.PURPOSE_EMAIL_CHANGE_VERIFY.equals(expectedPurpose)) {
+        String oldEmail = user.getEmail();
+        String newEmail = emailToken.getNewEmail();
 
-                                // Update email
-                                user.setEmail(newEmail);
-                                user.setEmailVerified(true);
-                                user.setEmailVerifiedAt(LocalDateTime.now());
-                                user.setPendingEmail(null);
-                                userRepository.save(user);
+        // Update email
+        user.setEmail(newEmail);
+        user.setEmailVerified(true);
+        user.setEmailVerifiedAt(LocalDateTime.now());
+        user.setPendingEmail(null);
+        userRepository.save(user);
 
-                                // Mark token as used
-                                emailTokenService.markUsed(emailToken.getId());
+        // Mark token as used
+        emailTokenService.markUsed(emailToken.getId());
 
-                                // Invalidate all other tokens
-                                emailTokenService.invalidateAllForUser(user.getId());
+        // Invalidate all other tokens
+        emailTokenService.invalidateAllForUser(user.getId());
 
-                                // Send security alert to OLD email (non-blocking)
-                                try {
-                                        User alertUser = User.builder()
-                                                        .username(user.getUsername())
-                                                        .name(user.getName())
-                                                        .email(oldEmail)
-                                                        .build();
-                                        emailService.sendSecurityAlert(alertUser, "Email Address Changed",
-                                                        Map.of("New Email", newEmail));
-                                } catch (Exception emailEx) {
-                                        logger.warn("Failed to send email change security alert: {}",
-                                                        emailEx.getMessage());
-                                }
-
-                                logger.info("Email changed successfully: userId={}, oldEmail={}, newEmail={}",
-                                                user.getId(), oldEmail, newEmail);
-
-                                return ResponseEntity.ok(ApiResponse.success(Map.of(
-                                                "verified", true,
-                                                "message", "Email changed successfully")));
-                        }
-
-                        // Handle registration email verification
-                        // Check if already verified (graceful handling)
-                        if (user.isEmailVerified()) {
-                                logger.info("Email already verified: userId={}", user.getId());
-                                return ResponseEntity.ok(ApiResponse.success(Map.of(
-                                                "verified", true,
-                                                "message", "Email already verified",
-                                                "alreadyVerified", true)));
-                        }
-
-                        // Mark email as verified
-                        user.setEmailVerified(true);
-                        user.setEmailVerifiedAt(LocalDateTime.now());
-                        userRepository.save(user);
-
-                        // Mark token as used
-                        emailTokenService.markUsed(emailToken.getId());
-
-                        logger.info("Email verified successfully: userId={}", user.getId());
-
-                        return ResponseEntity.ok(ApiResponse.success(Map.of(
-                                        "verified", true,
-                                        "message", "Email verified successfully")));
-
-                } catch (InvalidEmailTokenException e) {
-                        logger.warn("Email verification failed: {}", e.getMessage());
-                        return ResponseEntity.badRequest()
-                                        .body(ApiResponse.error(e.getMessage()));
-                }
+        // Send security alert to OLD email (non-blocking)
+        try {
+          User alertUser =
+              User.builder()
+                  .username(user.getUsername())
+                  .name(user.getName())
+                  .email(oldEmail)
+                  .build();
+          emailService.sendSecurityAlert(
+              alertUser, "Email Address Changed", Map.of("New Email", newEmail));
+        } catch (Exception emailEx) {
+          logger.warn("Failed to send email change security alert: {}", emailEx.getMessage());
         }
 
-        /**
-         * Resend verification email.
-         * Requires authentication.
-         */
-        @Operation(summary = "Resend email verification link")
-        @PostMapping("/resend")
-        public ResponseEntity<?> resendVerification(
-                        @AuthenticationPrincipal UserDetails userDetails,
-                        HttpServletRequest request) {
+        logger.info(
+            "Email changed successfully: userId={}, oldEmail={}, newEmail={}",
+            user.getId(),
+            oldEmail,
+            newEmail);
 
-                if (userDetails == null) {
-                        return ResponseEntity.status(401)
-                                        .body(ApiResponse.error("Authentication required"));
-                }
+        return ResponseEntity.ok(
+            ApiResponse.success(Map.of("verified", true, "message", "Email changed successfully")));
+      }
 
-                User user = userRepository.findByUsername(userDetails.getUsername());
+      // Handle registration email verification
+      // Check if already verified (graceful handling)
+      if (user.isEmailVerified()) {
+        logger.info("Email already verified: userId={}", user.getId());
+        return ResponseEntity.ok(
+            ApiResponse.success(
+                Map.of(
+                    "verified", true,
+                    "message", "Email already verified",
+                    "alreadyVerified", true)));
+      }
 
-                if (user == null) {
-                        return ResponseEntity.badRequest()
-                                        .body(ApiResponse.error("User not found"));
-                }
+      // Mark email as verified
+      user.setEmailVerified(true);
+      user.setEmailVerifiedAt(LocalDateTime.now());
+      userRepository.save(user);
 
-                // Check if already verified
-                if (user.isEmailVerified()) {
-                        return ResponseEntity.ok(ApiResponse.success(Map.of(
-                                        "message", "Email is already verified",
-                                        "alreadyVerified", true)));
-                }
+      // Mark token as used
+      emailTokenService.markUsed(emailToken.getId());
 
-                // Create new token and send email
-                String token = emailTokenService.createToken(
-                                user,
-                                EmailToken.PURPOSE_EMAIL_VERIFY,
-                                request);
-                String magicLink = emailConfig.getEmailVerifyUrl(token);
+      logger.info("Email verified successfully: userId={}", user.getId());
 
-                // Send email (non-blocking)
-                try {
-                        emailService.sendEmailVerification(user, magicLink);
-                } catch (Exception emailEx) {
-                        logger.warn("Failed to send verification email: {}", emailEx.getMessage());
-                }
+      return ResponseEntity.ok(
+          ApiResponse.success(Map.of("verified", true, "message", "Email verified successfully")));
 
-                logger.info("Verification email resent: userId={}", user.getId());
+    } catch (InvalidEmailTokenException e) {
+      logger.warn("Email verification failed: {}", e.getMessage());
+      return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+    }
+  }
 
-                return ResponseEntity.ok(ApiResponse.success(Map.of(
-                                "message", "Verification email sent")));
-        }
+  /** Resend verification email. Requires authentication. */
+  @Operation(summary = "Resend email verification link")
+  @PostMapping("/resend")
+  public ResponseEntity<?> resendVerification(
+      @AuthenticationPrincipal UserDetails userDetails, HttpServletRequest request) {
+
+    if (userDetails == null) {
+      return ResponseEntity.status(401).body(ApiResponse.error("Authentication required"));
+    }
+
+    User user = userRepository.findByUsername(userDetails.getUsername());
+
+    if (user == null) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("User not found"));
+    }
+
+    // Check if already verified
+    if (user.isEmailVerified()) {
+      return ResponseEntity.ok(
+          ApiResponse.success(
+              Map.of("message", "Email is already verified", "alreadyVerified", true)));
+    }
+
+    // Create new token and send email
+    String token = emailTokenService.createToken(user, EmailToken.PURPOSE_EMAIL_VERIFY, request);
+    String magicLink = emailConfig.getEmailVerifyUrl(token);
+
+    // Send email (non-blocking)
+    try {
+      emailService.sendEmailVerification(user, magicLink);
+    } catch (Exception emailEx) {
+      logger.warn("Failed to send verification email: {}", emailEx.getMessage());
+    }
+
+    logger.info("Verification email resent: userId={}", user.getId());
+
+    return ResponseEntity.ok(ApiResponse.success(Map.of("message", "Verification email sent")));
+  }
 }

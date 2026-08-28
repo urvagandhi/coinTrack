@@ -1,18 +1,17 @@
 package com.urva.myfinance.coinTrack.portfolio.market;
 
+import com.urva.myfinance.coinTrack.portfolio.model.MarketPrice;
 import java.util.List;
 import java.util.Map;
 
-import com.urva.myfinance.coinTrack.portfolio.model.MarketPrice;
-
 public interface MarketDataService {
-    MarketPrice getPrice(String symbol);
+  MarketPrice getPrice(String symbol);
 
-    Map<String, MarketPrice> getPrices(List<String> symbols);
+  Map<String, MarketPrice> getPrices(List<String> symbols);
 
-    MarketPrice fetchAndCachePrice(String symbol);
+  MarketPrice fetchAndCachePrice(String symbol);
 
-    void warmupPrices(List<String> symbols);
+  void warmupPrices(List<String> symbols);
 
-    boolean isMarketOpen();
+  boolean isMarketOpen();
 }

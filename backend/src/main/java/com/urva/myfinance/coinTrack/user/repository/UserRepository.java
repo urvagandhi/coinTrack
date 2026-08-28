@@ -1,31 +1,29 @@
 package com.urva.myfinance.coinTrack.user.repository;
 
-import java.util.Optional;
-
-import org.springframework.data.mongodb.repository.MongoRepository;
-
 import com.urva.myfinance.coinTrack.user.model.User;
+import java.util.Optional;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface UserRepository extends MongoRepository<User, String> {
 
-    User findByUsername(String username);
+  User findByUsername(String username);
 
-    User findByEmail(String email);
+  User findByEmail(String email);
 
-    User findByPhoneNumber(String phoneNumber);
+  User findByPhoneNumber(String phoneNumber);
 
-    boolean existsByUsername(String username);
+  boolean existsByUsername(String username);
 
-    boolean existsByEmail(String email);
+  boolean existsByEmail(String email);
 
-    boolean existsByPhoneNumber(String phoneNumber);
+  boolean existsByPhoneNumber(String phoneNumber);
 
-    // Optional-returning methods for safe lookups
-    Optional<User> findOptionalByUsername(String username);
+  // Optional-returning methods for safe lookups
+  Optional<User> findOptionalByUsername(String username);
 
-    Optional<User> findOptionalByEmail(String email);
+  Optional<User> findOptionalByEmail(String email);
 
-    Optional<User> findOptionalByPhoneNumber(String phoneNumber);
+  Optional<User> findOptionalByPhoneNumber(String phoneNumber);
 
-    Optional<User> findByGoogleId(String googleId);
+  Optional<User> findByGoogleId(String googleId);
 }

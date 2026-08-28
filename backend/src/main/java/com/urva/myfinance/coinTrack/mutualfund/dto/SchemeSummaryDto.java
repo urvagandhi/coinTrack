@@ -1,174 +1,172 @@
 package com.urva.myfinance.coinTrack.mutualfund.dto;
 
 import com.urva.myfinance.coinTrack.mutualfund.model.FundStatus;
-
 import java.math.BigDecimal;
 import java.util.Set;
 
 public class SchemeSummaryDto {
-    private String schemeId;
-    private String schemeName;
-    private String holderName;
-    private String platform;
-    private String mfCategory;
-    private String folioNo;
-    private String bank;
-    private BigDecimal totalUnit;
-    private BigDecimal lumpsumInvestment;
-    private BigDecimal sipInvestment;
-    private BigDecimal totalInvestment;
-    private BigDecimal totalStampDuty;
-    private BigDecimal netInvestment;
-    private BigDecimal totalTradedValue;
-    private BigDecimal currentInvestment;
-    private BigDecimal averageNav;
-    private BigDecimal currentValue;
-    private Set<FundStatus> statuses;
+  private String schemeId;
+  private String schemeName;
+  private String holderName;
+  private String platform;
+  private String mfCategory;
+  private String folioNo;
+  private String bank;
+  private BigDecimal totalUnit;
+  private BigDecimal lumpsumInvestment;
+  private BigDecimal sipInvestment;
+  private BigDecimal totalInvestment;
+  private BigDecimal totalStampDuty;
+  private BigDecimal netInvestment;
+  private BigDecimal totalTradedValue;
+  private BigDecimal currentInvestment;
+  private BigDecimal averageNav;
+  private BigDecimal currentValue;
+  private Set<FundStatus> statuses;
 
-    public SchemeSummaryDto() {
-    }
+  public SchemeSummaryDto() {}
 
-    public String getSchemeId() {
-        return schemeId;
-    }
+  public String getSchemeId() {
+    return schemeId;
+  }
 
-    public void setSchemeId(String schemeId) {
-        this.schemeId = schemeId;
-    }
+  public void setSchemeId(String schemeId) {
+    this.schemeId = schemeId;
+  }
 
-    public String getSchemeName() {
-        return schemeName;
-    }
+  public String getSchemeName() {
+    return schemeName;
+  }
 
-    public void setSchemeName(String schemeName) {
-        this.schemeName = schemeName;
-    }
+  public void setSchemeName(String schemeName) {
+    this.schemeName = schemeName;
+  }
 
-    public String getHolderName() {
-        return holderName;
-    }
+  public String getHolderName() {
+    return holderName;
+  }
 
-    public void setHolderName(String holderName) {
-        this.holderName = holderName;
-    }
+  public void setHolderName(String holderName) {
+    this.holderName = holderName;
+  }
 
-    public String getPlatform() {
-        return platform;
-    }
+  public String getPlatform() {
+    return platform;
+  }
 
-    public void setPlatform(String platform) {
-        this.platform = platform;
-    }
+  public void setPlatform(String platform) {
+    this.platform = platform;
+  }
 
-    public String getMfCategory() {
-        return mfCategory;
-    }
+  public String getMfCategory() {
+    return mfCategory;
+  }
 
-    public void setMfCategory(String mfCategory) {
-        this.mfCategory = mfCategory;
-    }
+  public void setMfCategory(String mfCategory) {
+    this.mfCategory = mfCategory;
+  }
 
-    public String getFolioNo() {
-        return folioNo;
-    }
+  public String getFolioNo() {
+    return folioNo;
+  }
 
-    public void setFolioNo(String folioNo) {
-        this.folioNo = folioNo;
-    }
+  public void setFolioNo(String folioNo) {
+    this.folioNo = folioNo;
+  }
 
-    public String getBank() {
-        return bank;
-    }
+  public String getBank() {
+    return bank;
+  }
 
-    public void setBank(String bank) {
-        this.bank = bank;
-    }
+  public void setBank(String bank) {
+    this.bank = bank;
+  }
 
-    public BigDecimal getTotalUnit() {
-        return totalUnit;
-    }
+  public BigDecimal getTotalUnit() {
+    return totalUnit;
+  }
 
-    public void setTotalUnit(BigDecimal totalUnit) {
-        this.totalUnit = totalUnit;
-    }
+  public void setTotalUnit(BigDecimal totalUnit) {
+    this.totalUnit = totalUnit;
+  }
 
-    public BigDecimal getLumpsumInvestment() {
-        return lumpsumInvestment;
-    }
+  public BigDecimal getLumpsumInvestment() {
+    return lumpsumInvestment;
+  }
 
-    public void setLumpsumInvestment(BigDecimal lumpsumInvestment) {
-        this.lumpsumInvestment = lumpsumInvestment;
-    }
+  public void setLumpsumInvestment(BigDecimal lumpsumInvestment) {
+    this.lumpsumInvestment = lumpsumInvestment;
+  }
 
-    public BigDecimal getSipInvestment() {
-        return sipInvestment;
-    }
+  public BigDecimal getSipInvestment() {
+    return sipInvestment;
+  }
 
-    public void setSipInvestment(BigDecimal sipInvestment) {
-        this.sipInvestment = sipInvestment;
-    }
+  public void setSipInvestment(BigDecimal sipInvestment) {
+    this.sipInvestment = sipInvestment;
+  }
 
-    public BigDecimal getTotalInvestment() {
-        return totalInvestment;
-    }
+  public BigDecimal getTotalInvestment() {
+    return totalInvestment;
+  }
 
-    public void setTotalInvestment(BigDecimal totalInvestment) {
-        this.totalInvestment = totalInvestment;
-    }
+  public void setTotalInvestment(BigDecimal totalInvestment) {
+    this.totalInvestment = totalInvestment;
+  }
 
-    public BigDecimal getTotalTradedValue() {
-        return totalTradedValue;
-    }
+  public BigDecimal getTotalTradedValue() {
+    return totalTradedValue;
+  }
 
-    public void setTotalTradedValue(BigDecimal totalTradedValue) {
-        this.totalTradedValue = totalTradedValue;
-    }
+  public void setTotalTradedValue(BigDecimal totalTradedValue) {
+    this.totalTradedValue = totalTradedValue;
+  }
 
-    public BigDecimal getCurrentInvestment() {
-        return currentInvestment;
-    }
+  public BigDecimal getCurrentInvestment() {
+    return currentInvestment;
+  }
 
-    public void setCurrentInvestment(BigDecimal currentInvestment) {
-        this.currentInvestment = currentInvestment;
-    }
+  public void setCurrentInvestment(BigDecimal currentInvestment) {
+    this.currentInvestment = currentInvestment;
+  }
 
-    public BigDecimal getAverageNav() {
-        return averageNav;
-    }
+  public BigDecimal getAverageNav() {
+    return averageNav;
+  }
 
-    public void setAverageNav(BigDecimal averageNav) {
-        this.averageNav = averageNav;
-    }
+  public void setAverageNav(BigDecimal averageNav) {
+    this.averageNav = averageNav;
+  }
 
-    public BigDecimal getCurrentValue() {
-        return currentValue;
-    }
+  public BigDecimal getCurrentValue() {
+    return currentValue;
+  }
 
-    public void setCurrentValue(BigDecimal currentValue) {
-        this.currentValue = currentValue;
-    }
+  public void setCurrentValue(BigDecimal currentValue) {
+    this.currentValue = currentValue;
+  }
 
-    public Set<FundStatus> getStatuses() {
-        return statuses;
-    }
+  public Set<FundStatus> getStatuses() {
+    return statuses;
+  }
 
-    public void setStatuses(Set<FundStatus> statuses) {
-        this.statuses = statuses;
-    }
+  public void setStatuses(Set<FundStatus> statuses) {
+    this.statuses = statuses;
+  }
 
-    public BigDecimal getTotalStampDuty() {
-        return totalStampDuty;
-    }
+  public BigDecimal getTotalStampDuty() {
+    return totalStampDuty;
+  }
 
-    public void setTotalStampDuty(BigDecimal totalStampDuty) {
-        this.totalStampDuty = totalStampDuty;
-    }
+  public void setTotalStampDuty(BigDecimal totalStampDuty) {
+    this.totalStampDuty = totalStampDuty;
+  }
 
-    public BigDecimal getNetInvestment() {
-        return netInvestment;
-    }
+  public BigDecimal getNetInvestment() {
+    return netInvestment;
+  }
 
-    public void setNetInvestment(BigDecimal netInvestment) {
-        this.netInvestment = netInvestment;
-    }
+  public void setNetInvestment(BigDecimal netInvestment) {
+    this.netInvestment = netInvestment;
+  }
 }

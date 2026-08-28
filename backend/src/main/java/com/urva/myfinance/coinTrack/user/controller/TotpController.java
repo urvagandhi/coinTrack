@@ -1,8 +1,24 @@
 package com.urva.myfinance.coinTrack.user.controller;
 
+import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.common.service.NotificationService;
+import com.urva.myfinance.coinTrack.common.util.RequestUtils;
+import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
+import com.urva.myfinance.coinTrack.security.service.JWTService;
+import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
+import com.urva.myfinance.coinTrack.user.dto.TotpSetupResponse;
+import com.urva.myfinance.coinTrack.user.dto.TotpVerifyRequest;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.service.TotpService;
+import com.urva.myfinance.coinTrack.user.service.UserAuthenticationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,390 +31,372 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.urva.myfinance.coinTrack.common.response.ApiResponse;
-import com.urva.myfinance.coinTrack.common.service.NotificationService;
-import com.urva.myfinance.coinTrack.common.util.RequestUtils;
-import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
-import com.urva.myfinance.coinTrack.security.service.JWTService;
-import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
-import com.urva.myfinance.coinTrack.user.dto.TotpSetupResponse;
-import com.urva.myfinance.coinTrack.user.dto.TotpVerifyRequest;
-import com.urva.myfinance.coinTrack.user.model.User;
-import com.urva.myfinance.coinTrack.user.service.TotpService;
-import com.urva.myfinance.coinTrack.user.service.UserAuthenticationService;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-
 @RestController
 @RequestMapping("/api/auth/mfa")
 @Tag(name = "Multi-Factor Auth", description = "MFA setup, verification, and recovery")
 public class TotpController {
 
-    private static final Logger logger = LoggerFactory.getLogger(TotpController.class);
+  private static final Logger logger = LoggerFactory.getLogger(TotpController.class);
 
-    private final TotpService totpService;
-    private final UserAuthenticationService userAuthService;
-    private final JWTService jwtService;
+  private final TotpService totpService;
+  private final UserAuthenticationService userAuthService;
+  private final JWTService jwtService;
 
-    // Notification services - optional for backward compatibility
-    private NotificationService notificationService;
-    private EmailTokenService emailTokenService;
+  // Notification services - optional for backward compatibility
+  private NotificationService notificationService;
+  private EmailTokenService emailTokenService;
 
-    @Autowired(required = false)
-    public void setNotificationService(NotificationService notificationService) {
-        this.notificationService = notificationService;
+  @Autowired(required = false)
+  public void setNotificationService(NotificationService notificationService) {
+    this.notificationService = notificationService;
+  }
+
+  @Autowired(required = false)
+  public void setEmailTokenService(EmailTokenService emailTokenService) {
+    this.emailTokenService = emailTokenService;
+  }
+
+  public TotpController(
+      TotpService totpService, UserAuthenticationService userAuthService, JWTService jwtService) {
+    this.totpService = totpService;
+    this.userAuthService = userAuthService;
+    this.jwtService = jwtService;
+  }
+
+  /** 1. Initial TOTP Setup Requires: Access Token OR Temp Token (Purpose: TOTP_SETUP) */
+  @Operation(summary = "Initiate TOTP 2FA setup")
+  @PostMapping("/setup")
+  public ResponseEntity<?> setupTotp(
+      @RequestHeader(name = "Authorization", required = false) String authHeader) {
+
+    User user = resolveUser(authHeader, "TOTP_SETUP");
+    if (user == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Unauthorized"));
     }
 
-    @Autowired(required = false)
-    public void setEmailTokenService(EmailTokenService emailTokenService) {
-        this.emailTokenService = emailTokenService;
+    TotpSetupResponse response = totpService.generateSetup(user);
+    return ResponseEntity.ok(ApiResponse.success(response, "TOTP Setup Initiated"));
+  }
+
+  /**
+   * 2. Verify Initial Setup (Enable 2FA) Requires: Access Token OR Temp Token (Purpose: TOTP_SETUP)
+   */
+  @Operation(summary = "Verify TOTP setup and enable 2FA")
+  @PostMapping("/verify")
+  public ResponseEntity<?> verifySetup(
+      @RequestHeader(name = "Authorization", required = false) String authHeader,
+      @Valid @RequestBody TotpVerifyRequest requestBody,
+      HttpServletRequest request) {
+
+    User user = resolveUser(authHeader, "TOTP_SETUP");
+    if (user == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Unauthorized"));
     }
 
-    public TotpController(TotpService totpService, UserAuthenticationService userAuthService, JWTService jwtService) {
-        this.totpService = totpService;
-        this.userAuthService = userAuthService;
-        this.jwtService = jwtService;
-    }
+    try {
+      List<String> backupCodes = totpService.verifySetup(user, requestBody.getCode());
 
-    /**
-     * 1. Initial TOTP Setup
-     * Requires: Access Token OR Temp Token (Purpose: TOTP_SETUP)
-     */
-    @Operation(summary = "Initiate TOTP 2FA setup")
-    @PostMapping("/setup")
-    public ResponseEntity<?> setupTotp(
-            @RequestHeader(name = "Authorization", required = false) String authHeader) {
-
-        User user = resolveUser(authHeader, "TOTP_SETUP");
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Unauthorized"));
+      // Send security alert for 2FA setup (non-blocking)
+      try {
+        if (notificationService != null && user.getEmail() != null) {
+          notificationService.sendSecurityAlert(user, "2-Factor Authentication Enabled", null);
         }
+      } catch (Exception emailEx) {
+        logger.warn("Failed to send 2FA setup security alert: {}", emailEx.getMessage());
+      }
 
-        TotpSetupResponse response = totpService.generateSetup(user);
-        return ResponseEntity.ok(ApiResponse.success(response, "TOTP Setup Initiated"));
+      return ResponseEntity.ok(
+          ApiResponse.success(Map.of("backupCodes", backupCodes), "TOTP Verified & Enabled"));
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+    }
+  }
+
+  /** 3. Complete Login with TOTP Requires: Temp Token (Purpose: TOTP_LOGIN) in Body */
+  @Operation(summary = "Complete login with TOTP code")
+  @PostMapping("/login")
+  public ResponseEntity<?> completeLoginTotp(
+      @RequestBody Map<String, String> body, HttpServletRequest request) {
+    String tempToken = body.get("tempToken");
+    String code = body.get("code");
+
+    if (tempToken == null || code == null) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken or code"));
     }
 
-    /**
-     * 2. Verify Initial Setup (Enable 2FA)
-     * Requires: Access Token OR Temp Token (Purpose: TOTP_SETUP)
-     */
-    @Operation(summary = "Verify TOTP setup and enable 2FA")
-    @PostMapping("/verify")
-    public ResponseEntity<?> verifySetup(
-            @RequestHeader(name = "Authorization", required = false) String authHeader,
-            @Valid @RequestBody TotpVerifyRequest requestBody,
-            HttpServletRequest request) {
+    try {
+      LoginResponse response =
+          userAuthService.completeTotpLogin(
+              tempToken,
+              code,
+              RequestUtils.extractUserAgent(request),
+              RequestUtils.extractIpAddress(request));
+      return ResponseEntity.ok(ApiResponse.success(response, "Login Successful"));
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
+    }
+  }
 
-        User user = resolveUser(authHeader, "TOTP_SETUP");
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Unauthorized"));
-        }
+  /** 4. Complete Login with Backup Code Requires: Temp Token (Purpose: TOTP_LOGIN) in Body */
+  @Operation(summary = "Complete login with backup recovery code")
+  @PostMapping("/login-recovery")
+  public ResponseEntity<?> completeLoginRecovery(
+      @RequestBody Map<String, String> body, HttpServletRequest request) {
+    String tempToken = body.get("tempToken");
+    String code = body.get("code");
 
+    if (tempToken == null || code == null) {
+      return ResponseEntity.badRequest()
+          .body(ApiResponse.error("Missing tempToken or backup code"));
+    }
+
+    try {
+      LoginResponse response =
+          userAuthService.completeRecoveryLogin(
+              tempToken,
+              code,
+              RequestUtils.extractUserAgent(request),
+              RequestUtils.extractIpAddress(request));
+      return ResponseEntity.ok(ApiResponse.success(response, "Login Successful"));
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
+    }
+  }
+
+  /**
+   * 5. Initiate TOTP Reset Requires: Standard Access Token User must prove identity via current
+   * TOTP or Backup Code before calling this (handled by Frontend confirming intention/password if
+   * needed, but strict flow usually requires re-auth). Here we interpret "Reset" as: User is logged
+   * in, wants to rotate key.
+   */
+  @Operation(summary = "Initiate TOTP 2FA reset")
+  @PostMapping("/reset")
+  public ResponseEntity<?> resetTotp(
+      @AuthenticationPrincipal UserDetails userDetails, @RequestBody Map<String, String> body) {
+    if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    User user = userAuthService.getUserEntityByUsername(extractTokenFromContext());
+
+    // To add security, we could require current TOTP verification here too.
+    // For now, assuming session is valid is "okay" but re-verification is better.
+    // The plan says: "Reset Rules: Requires existing TOTP".
+    // Let's enforce that if provided, else fail?
+    // Or simpler: Valid Authenticated Session -> Generate NEW setup (pending).
+
+    // Actually, the safest way is: verification of OLD secret happens before this
+    // or during this?
+    // Plan: initiateReset -> returns new QR.
+    // But we need to verify the user has the right to reset.
+    // Let's assume the user just verified their password/TOTP to enter settings.
+
+    // BETTER: Verify current code passed in body to allow reset initiation
+    // Supports both TOTP codes (6 digits) and backup codes (8 digits)
+    String currentCode = body.get("code");
+    if (currentCode != null) {
+      boolean verified = false;
+
+      // Try TOTP verification first (6 digit code)
+      if (currentCode.length() == 6) {
         try {
-            List<String> backupCodes = totpService.verifySetup(user, requestBody.getCode());
-
-            // Send security alert for 2FA setup (non-blocking)
-            try {
-                if (notificationService != null && user.getEmail() != null) {
-                    notificationService.sendSecurityAlert(user, "2-Factor Authentication Enabled", null);
-                }
-            } catch (Exception emailEx) {
-                logger.warn("Failed to send 2FA setup security alert: {}", emailEx.getMessage());
-            }
-
-            return ResponseEntity
-                    .ok(ApiResponse.success(Map.of("backupCodes", backupCodes), "TOTP Verified & Enabled"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+          verified = totpService.verifyLogin(user, currentCode);
+        } catch (Exception e) {
+          // Continue to check if it might be a backup code
         }
-    }
+      }
 
-    /**
-     * 3. Complete Login with TOTP
-     * Requires: Temp Token (Purpose: TOTP_LOGIN) in Body
-     */
-    @Operation(summary = "Complete login with TOTP code")
-    @PostMapping("/login")
-    public ResponseEntity<?> completeLoginTotp(@RequestBody Map<String, String> body,
-                                                HttpServletRequest request) {
-        String tempToken = body.get("tempToken");
-        String code = body.get("code");
-
-        if (tempToken == null || code == null) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken or code"));
-        }
-
+      // If TOTP failed or code is 8 digits, try backup code
+      if (!verified && currentCode.length() == 8) {
         try {
-            LoginResponse response = userAuthService.completeTotpLogin(tempToken, code,
-                    RequestUtils.extractUserAgent(request), RequestUtils.extractIpAddress(request));
-            return ResponseEntity.ok(ApiResponse.success(response, "Login Successful"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
+          verified = totpService.verifyBackupCode(user, currentCode);
+        } catch (Exception e) {
+          return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+              .body(ApiResponse.error("Invalid backup code or account locked"));
         }
+      }
+
+      if (!verified) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.error("Invalid code. Please try again."));
+      }
+    }
+    // If code is missing, we might decide to allow if they are authenticated,
+    // BUT strict security says: prove it again.
+    // For this implementation, we'll proceed if they are authenticated,
+    // relying on the fact that they are logged in. (Or enforcing code if we want
+    // strictness)
+
+    TotpSetupResponse response = totpService.initiateReset(user);
+    return ResponseEntity.ok(ApiResponse.success(response, "TOTP Reset Initiated"));
+  }
+
+  /**
+   * 6. Verify Reset (finalize rotation) Requires: Access Token Logic is same as setup verification
+   * (verifies pending secret). Sends security alert and invalidates all email tokens.
+   */
+  @Operation(summary = "Verify TOTP reset and finalize key rotation")
+  @PostMapping("/reset/verify")
+  public ResponseEntity<?> verifyReset(
+      @AuthenticationPrincipal UserDetails userDetails,
+      @Valid @RequestBody TotpVerifyRequest request) {
+    if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    User user = userAuthService.getUserEntityByUsername(extractTokenFromContext());
+
+    try {
+      List<String> backupCodes = totpService.verifySetup(user, request.getCode());
+
+      // Send security alert for TOTP reset (non-blocking)
+      try {
+        if (notificationService != null && user.getEmail() != null) {
+          notificationService.sendSecurityAlert(user, "2-Factor Authentication Reset", null);
+        }
+      } catch (Exception emailEx) {
+        // Log but don't fail the request - email is secondary
+        logger.warn("Failed to send 2FA reset security alert: {}", emailEx.getMessage());
+      }
+
+      // Invalidate all email tokens on TOTP reset (non-blocking)
+      try {
+        if (emailTokenService != null && user.getId() != null) {
+          emailTokenService.invalidateAllForUser(user.getId());
+        }
+      } catch (Exception tokenEx) {
+        logger.warn("Failed to invalidate email tokens: {}", tokenEx.getMessage());
+      }
+
+      return ResponseEntity.ok(
+          ApiResponse.success(Map.of("backupCodes", backupCodes), "TOTP Reset Complete"));
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+    }
+  }
+
+  /** 7. 2FA Status Status Requires: Access Token */
+  @Operation(summary = "Get current 2FA status")
+  @GetMapping("/status")
+  public ResponseEntity<?> getTotpStatus(@AuthenticationPrincipal UserDetails userDetails) {
+    if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    User user = userAuthService.getUserEntityByUsername(extractTokenFromContext());
+
+    Map<String, Object> status =
+        Map.of(
+            "enabled",
+            user.isTotpEnabled(),
+            "verified",
+            user.isTotpVerified(),
+            "setupAt",
+            user.getTotpSetupAt() != null ? user.getTotpSetupAt() : "",
+            "lastUsedAt",
+            user.getTotpLastUsedAt() != null ? user.getTotpLastUsedAt() : "");
+
+    return ResponseEntity.ok(ApiResponse.success(status, "TOTP Status"));
+  }
+
+  /**
+   * 8. Registration TOTP Setup Requires: Temp Token (Purpose: TOTP_REGISTRATION) in body For NEW
+   * users who are completing registration - not yet in DB
+   */
+  @Operation(summary = "Initiate TOTP setup during registration")
+  @PostMapping("/register/setup")
+  public ResponseEntity<?> setupRegistrationTotp(@RequestBody Map<String, String> body) {
+    String tempToken = body.get("tempToken");
+    if (tempToken == null) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken"));
     }
 
-    /**
-     * 4. Complete Login with Backup Code
-     * Requires: Temp Token (Purpose: TOTP_LOGIN) in Body
-     */
-    @Operation(summary = "Complete login with backup recovery code")
-    @PostMapping("/login-recovery")
-    public ResponseEntity<?> completeLoginRecovery(@RequestBody Map<String, String> body,
-                                                    HttpServletRequest request) {
-        String tempToken = body.get("tempToken");
-        String code = body.get("code");
-
-        if (tempToken == null || code == null) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken or backup code"));
-        }
-
-        try {
-            LoginResponse response = userAuthService.completeRecoveryLogin(tempToken, code,
-                    RequestUtils.extractUserAgent(request), RequestUtils.extractIpAddress(request));
-            return ResponseEntity.ok(ApiResponse.success(response, "Login Successful"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
-        }
+    // Validate temp token
+    if (!jwtService.isValidTempToken(tempToken, "TOTP_REGISTRATION")) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+          .body(ApiResponse.error("Invalid or expired registration token"));
     }
 
-    /**
-     * 5. Initiate TOTP Reset
-     * Requires: Standard Access Token
-     * User must prove identity via current TOTP or Backup Code before calling this
-     * (handled by Frontend confirming intention/password if needed, but strict flow
-     * usually requires re-auth).
-     * Here we interpret "Reset" as: User is logged in, wants to rotate key.
-     */
-    @Operation(summary = "Initiate TOTP 2FA reset")
-    @PostMapping("/reset")
-    public ResponseEntity<?> resetTotp(@AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> body) {
-        if (userDetails == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        User user = userAuthService.getUserEntityByUsername(extractTokenFromContext());
+    // Get username from token
+    String username = jwtService.extractUsername(tempToken);
 
-        // To add security, we could require current TOTP verification here too.
-        // For now, assuming session is valid is "okay" but re-verification is better.
-        // The plan says: "Reset Rules: Requires existing TOTP".
-        // Let's enforce that if provided, else fail?
-        // Or simpler: Valid Authenticated Session -> Generate NEW setup (pending).
-
-        // Actually, the safest way is: verification of OLD secret happens before this
-        // or during this?
-        // Plan: initiateReset -> returns new QR.
-        // But we need to verify the user has the right to reset.
-        // Let's assume the user just verified their password/TOTP to enter settings.
-
-        // BETTER: Verify current code passed in body to allow reset initiation
-        // Supports both TOTP codes (6 digits) and backup codes (8 digits)
-        String currentCode = body.get("code");
-        if (currentCode != null) {
-            boolean verified = false;
-
-            // Try TOTP verification first (6 digit code)
-            if (currentCode.length() == 6) {
-                try {
-                    verified = totpService.verifyLogin(user, currentCode);
-                } catch (Exception e) {
-                    // Continue to check if it might be a backup code
-                }
-            }
-
-            // If TOTP failed or code is 8 digits, try backup code
-            if (!verified && currentCode.length() == 8) {
-                try {
-                    verified = totpService.verifyBackupCode(user, currentCode);
-                } catch (Exception e) {
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                            .body(ApiResponse.error("Invalid backup code or account locked"));
-                }
-            }
-
-            if (!verified) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Invalid code. Please try again."));
-            }
-        }
-        // If code is missing, we might decide to allow if they are authenticated,
-        // BUT strict security says: prove it again.
-        // For this implementation, we'll proceed if they are authenticated,
-        // relying on the fact that they are logged in. (Or enforcing code if we want
-        // strictness)
-
-        TotpSetupResponse response = totpService.initiateReset(user);
-        return ResponseEntity.ok(ApiResponse.success(response, "TOTP Reset Initiated"));
+    // Get pending user from UserService (not DB)
+    User pendingUser = userAuthService.getPendingUser(username);
+    if (pendingUser == null) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(ApiResponse.error("Registration expired. Please register again."));
     }
 
-    /**
-     * 6. Verify Reset (finalize rotation)
-     * Requires: Access Token
-     * Logic is same as setup verification (verifies pending secret).
-     * Sends security alert and invalidates all email tokens.
-     */
-    @Operation(summary = "Verify TOTP reset and finalize key rotation")
-    @PostMapping("/reset/verify")
-    public ResponseEntity<?> verifyReset(@AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody TotpVerifyRequest request) {
-        if (userDetails == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        User user = userAuthService.getUserEntityByUsername(extractTokenFromContext());
+    // Generate TOTP setup for this pending user
+    TotpSetupResponse response = totpService.generateSetupForPendingUser(pendingUser);
 
-        try {
-            List<String> backupCodes = totpService.verifySetup(user, request.getCode());
+    // Save the generated encrypted secret back to the database for this pending user
+    userAuthService.updatePendingTotpSecret(username, pendingUser.getTotpSecretPending());
 
-            // Send security alert for TOTP reset (non-blocking)
-            try {
-                if (notificationService != null && user.getEmail() != null) {
-                    notificationService.sendSecurityAlert(user, "2-Factor Authentication Reset", null);
-                }
-            } catch (Exception emailEx) {
-                // Log but don't fail the request - email is secondary
-                logger.warn("Failed to send 2FA reset security alert: {}", emailEx.getMessage());
-            }
+    return ResponseEntity.ok(ApiResponse.success(response, "TOTP Setup Initiated"));
+  }
 
-            // Invalidate all email tokens on TOTP reset (non-blocking)
-            try {
-                if (emailTokenService != null && user.getId() != null) {
-                    emailTokenService.invalidateAllForUser(user.getId());
-                }
-            } catch (Exception tokenEx) {
-                logger.warn("Failed to invalidate email tokens: {}", tokenEx.getMessage());
-            }
+  /**
+   * 9. Registration TOTP Verify & Complete Registration Requires: Temp Token (Purpose:
+   * TOTP_REGISTRATION) in body On success: Save user to DB, return JWT token and backup codes
+   */
+  @Operation(summary = "Verify TOTP and complete registration")
+  @PostMapping("/register/verify")
+  public ResponseEntity<?> verifyRegistrationTotp(
+      @RequestBody Map<String, String> body, HttpServletRequest request) {
+    String tempToken = body.get("tempToken");
+    String code = body.get("code");
 
-            return ResponseEntity.ok(ApiResponse.success(Map.of("backupCodes", backupCodes), "TOTP Reset Complete"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
-        }
+    if (tempToken == null || code == null) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken or code"));
     }
 
-    /**
-     * 7. 2FA Status Status
-     * Requires: Access Token
-     */
-    @Operation(summary = "Get current 2FA status")
-    @GetMapping("/status")
-    public ResponseEntity<?> getTotpStatus(@AuthenticationPrincipal UserDetails userDetails) {
-        if (userDetails == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        User user = userAuthService.getUserEntityByUsername(extractTokenFromContext());
-
-        Map<String, Object> status = Map.of(
-                "enabled", user.isTotpEnabled(),
-                "verified", user.isTotpVerified(),
-                "setupAt", user.getTotpSetupAt() != null ? user.getTotpSetupAt() : "",
-                "lastUsedAt", user.getTotpLastUsedAt() != null ? user.getTotpLastUsedAt() : "");
-
-        return ResponseEntity.ok(ApiResponse.success(status, "TOTP Status"));
+    if (!jwtService.isValidTempToken(tempToken, "TOTP_REGISTRATION")) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+          .body(ApiResponse.error("Invalid or expired registration token"));
     }
 
-    /**
-     * 8. Registration TOTP Setup
-     * Requires: Temp Token (Purpose: TOTP_REGISTRATION) in body
-     * For NEW users who are completing registration - not yet in DB
-     */
-    @Operation(summary = "Initiate TOTP setup during registration")
-    @PostMapping("/register/setup")
-    public ResponseEntity<?> setupRegistrationTotp(@RequestBody Map<String, String> body) {
-        String tempToken = body.get("tempToken");
-        if (tempToken == null) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken"));
-        }
-
-        // Validate temp token
-        if (!jwtService.isValidTempToken(tempToken, "TOTP_REGISTRATION")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Invalid or expired registration token"));
-        }
-
-        // Get username from token
-        String username = jwtService.extractUsername(tempToken);
-
-        // Get pending user from UserService (not DB)
-        User pendingUser = userAuthService.getPendingUser(username);
-        if (pendingUser == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("Registration expired. Please register again."));
-        }
-
-        // Generate TOTP setup for this pending user
-        TotpSetupResponse response = totpService.generateSetupForPendingUser(pendingUser);
-        
-        // Save the generated encrypted secret back to the database for this pending user
-        userAuthService.updatePendingTotpSecret(username, pendingUser.getTotpSecretPending());
-        
-        return ResponseEntity.ok(ApiResponse.success(response, "TOTP Setup Initiated"));
+    try {
+      LoginResponse response =
+          userAuthService.completeRegistrationWithTotp(
+              tempToken,
+              code,
+              RequestUtils.extractUserAgent(request),
+              RequestUtils.extractIpAddress(request));
+      return ResponseEntity.ok(ApiResponse.success(response, "Registration Complete"));
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
     }
+  }
 
-    /**
-     * 9. Registration TOTP Verify & Complete Registration
-     * Requires: Temp Token (Purpose: TOTP_REGISTRATION) in body
-     * On success: Save user to DB, return JWT token and backup codes
-     */
-    @Operation(summary = "Verify TOTP and complete registration")
-    @PostMapping("/register/verify")
-    public ResponseEntity<?> verifyRegistrationTotp(@RequestBody Map<String, String> body,
-                                                     HttpServletRequest request) {
-        String tempToken = body.get("tempToken");
-        String code = body.get("code");
+  // --- Helpers ---
 
-        if (tempToken == null || code == null) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Missing tempToken or code"));
-        }
+  private User resolveUser(String authHeader, String requiredPurpose) {
+    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+      String token = authHeader.substring(7);
 
-        if (!jwtService.isValidTempToken(tempToken, "TOTP_REGISTRATION")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Invalid or expired registration token"));
-        }
+      // 1. Try as standard access token (UserDetails)
+      if (requiredPurpose == null && userAuthService.isTokenValid(token)) {
+        return userAuthService.getUserByToken(token);
+      }
 
-        try {
-            LoginResponse response = userAuthService.completeRegistrationWithTotp(tempToken, code,
-                    RequestUtils.extractUserAgent(request), RequestUtils.extractIpAddress(request));
-            return ResponseEntity.ok(ApiResponse.success(response, "Registration Complete"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
-        }
+      // 2. Try as Temp Token
+      if (requiredPurpose != null && jwtService.isValidTempToken(token, requiredPurpose)) {
+        return userAuthService.getUserByToken(token);
+      }
+      // 3. Try as Access Token even if purpose required (e.g. SETUP can differ)
+      // Allow fully authenticated users to Setup/Reset
+      if (userAuthService.isTokenValid(token)) {
+        return userAuthService.getUserByToken(token);
+      }
     }
+    return null;
+  }
 
-    // --- Helpers ---
-
-    private User resolveUser(String authHeader, String requiredPurpose) {
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-
-            // 1. Try as standard access token (UserDetails)
-            if (requiredPurpose == null && userAuthService.isTokenValid(token)) {
-                return userAuthService.getUserByToken(token);
-            }
-
-            // 2. Try as Temp Token
-            if (requiredPurpose != null && jwtService.isValidTempToken(token, requiredPurpose)) {
-                return userAuthService.getUserByToken(token);
-            }
-            // 3. Try as Access Token even if purpose required (e.g. SETUP can differ)
-            // Allow fully authenticated users to Setup/Reset
-            if (userAuthService.isTokenValid(token)) {
-                return userAuthService.getUserByToken(token);
-            }
-        }
-        return null;
-    }
-
-    // Quick hack for getting token from context if needed, but resolving via header
-    // is passed down typically
-    // For @AuthenticationPrincipal usage, UserDetails is injected by Spring
-    // Security filter
-    // We need to fetch the Entity.
-    private String extractTokenFromContext() {
-        // In real app, standard way. Here we rely on AuthPrincipal working which means
-        // SecurityContext has authentication.
-        // We can also lookup user by username from UserDetails.
-        return ((UserDetails) org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal()).getUsername();
-    }
+  // Quick hack for getting token from context if needed, but resolving via header
+  // is passed down typically
+  // For @AuthenticationPrincipal usage, UserDetails is injected by Spring
+  // Security filter
+  // We need to fetch the Entity.
+  private String extractTokenFromContext() {
+    // In real app, standard way. Here we rely on AuthPrincipal working which means
+    // SecurityContext has authentication.
+    // We can also lookup user by username from UserDetails.
+    return ((UserDetails)
+            org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal())
+        .getUsername();
+  }
 }

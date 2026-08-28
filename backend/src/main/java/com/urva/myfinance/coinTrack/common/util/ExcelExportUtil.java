@@ -4,10 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
@@ -24,288 +22,296 @@ import org.springframework.http.ResponseEntity;
 
 public class ExcelExportUtil {
 
-    public static class SheetConfig<T> {
-        private String sheetName;
-        private String[] headers;
-        private List<T> data;
-        private List<? extends Function<T, ?>> extractors;
-        private Set<Integer> rightAlignedIndices;
+  public static class SheetConfig<T> {
+    private String sheetName;
+    private String[] headers;
+    private List<T> data;
+    private List<? extends Function<T, ?>> extractors;
+    private Set<Integer> rightAlignedIndices;
 
-        public SheetConfig(String sheetName, String[] headers, List<T> data, List<? extends Function<T, ?>> extractors,
-                Set<Integer> rightAlignedIndices) {
-            this.sheetName = sheetName;
-            this.headers = headers;
-            this.data = data;
-            this.extractors = extractors;
-            this.rightAlignedIndices = rightAlignedIndices;
-        }
-
-        public String getSheetName() {
-            return sheetName;
-        }
-
-        public String[] getHeaders() {
-            return headers;
-        }
-
-        public List<T> getData() {
-            return data;
-        }
-
-        public List<? extends Function<T, ?>> getExtractors() {
-            return extractors;
-        }
-
-        public Set<Integer> getRightAlignedIndices() {
-            return rightAlignedIndices;
-        }
+    public SheetConfig(
+        String sheetName,
+        String[] headers,
+        List<T> data,
+        List<? extends Function<T, ?>> extractors,
+        Set<Integer> rightAlignedIndices) {
+      this.sheetName = sheetName;
+      this.headers = headers;
+      this.data = data;
+      this.extractors = extractors;
+      this.rightAlignedIndices = rightAlignedIndices;
     }
 
-    private ExcelExportUtil() {
-        // Utility class
+    public String getSheetName() {
+      return sheetName;
     }
 
-    public static <T> ResponseEntity<byte[]> exportToExcel(
-            String filename,
-            String sheetName,
-            String[] headers,
-            List<T> data,
-            List<? extends Function<T, ?>> extractors,
-            Set<Integer> rightAlignedIndices) {
+    public String[] getHeaders() {
+      return headers;
+    }
 
-        try (Workbook workbook = new XSSFWorkbook();
-                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+    public List<T> getData() {
+      return data;
+    }
 
-            Sheet sheet = workbook.createSheet(sheetName != null ? sheetName : "Data");
+    public List<? extends Function<T, ?>> getExtractors() {
+      return extractors;
+    }
 
-            // ── Style Definitions ──────────
+    public Set<Integer> getRightAlignedIndices() {
+      return rightAlignedIndices;
+    }
+  }
 
-            // 1. Header Style: Bold, Soft Gray Fill, Left Aligned
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
-            headerFont.setColor(IndexedColors.BLACK.getIndex());
-            headerFont.setFontHeightInPoints((short) 11);
-            headerStyle.setFont(headerFont);
-            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            headerStyle.setAlignment(HorizontalAlignment.LEFT);
+  private ExcelExportUtil() {
+    // Utility class
+  }
 
-            // 2. Right-Aligned Data Cell Style
-            CellStyle dataStyleRight = workbook.createCellStyle();
-            dataStyleRight.setAlignment(HorizontalAlignment.RIGHT);
-            dataStyleRight.setVerticalAlignment(VerticalAlignment.CENTER);
+  public static <T> ResponseEntity<byte[]> exportToExcel(
+      String filename,
+      String sheetName,
+      String[] headers,
+      List<T> data,
+      List<? extends Function<T, ?>> extractors,
+      Set<Integer> rightAlignedIndices) {
 
-            // 3. Left-Aligned Data Cell Style
-            CellStyle dataStyleLeft = workbook.createCellStyle();
-            dataStyleLeft.setAlignment(HorizontalAlignment.LEFT);
-            dataStyleLeft.setVerticalAlignment(VerticalAlignment.CENTER);
+    try (Workbook workbook = new XSSFWorkbook();
+        ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-            // ── Create Header Row ──────────────────────────────────────────
-            Row headerRow = sheet.createRow(0);
-            headerRow.setHeightInPoints(26);
+      Sheet sheet = workbook.createSheet(sheetName != null ? sheetName : "Data");
 
-            for (int i = 0; i < headers.length; i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(headers[i]);
-                cell.setCellStyle(headerStyle);
+      // ── Style Definitions ──────────
+
+      // 1. Header Style: Bold, Soft Gray Fill, Left Aligned
+      CellStyle headerStyle = workbook.createCellStyle();
+      Font headerFont = workbook.createFont();
+      headerFont.setBold(true);
+      headerFont.setColor(IndexedColors.BLACK.getIndex());
+      headerFont.setFontHeightInPoints((short) 11);
+      headerStyle.setFont(headerFont);
+      headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+      headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+      headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+      headerStyle.setAlignment(HorizontalAlignment.LEFT);
+
+      // 2. Right-Aligned Data Cell Style
+      CellStyle dataStyleRight = workbook.createCellStyle();
+      dataStyleRight.setAlignment(HorizontalAlignment.RIGHT);
+      dataStyleRight.setVerticalAlignment(VerticalAlignment.CENTER);
+
+      // 3. Left-Aligned Data Cell Style
+      CellStyle dataStyleLeft = workbook.createCellStyle();
+      dataStyleLeft.setAlignment(HorizontalAlignment.LEFT);
+      dataStyleLeft.setVerticalAlignment(VerticalAlignment.CENTER);
+
+      // ── Create Header Row ──────────────────────────────────────────
+      Row headerRow = sheet.createRow(0);
+      headerRow.setHeightInPoints(26);
+
+      for (int i = 0; i < headers.length; i++) {
+        Cell cell = headerRow.createCell(i);
+        cell.setCellValue(headers[i]);
+        cell.setCellStyle(headerStyle);
+      }
+
+      // ── Populate Data Rows ─────────────────────────────────────────
+      for (int r = 0; r < data.size(); r++) {
+        T item = data.get(r);
+        Row row = sheet.createRow(r + 1);
+        row.setHeightInPoints(22);
+
+        for (int c = 0; c < extractors.size(); c++) {
+          Cell cell = row.createCell(c);
+          Object value = extractors.get(c).apply(item);
+
+          if (value == null) {
+            cell.setCellValue("");
+          } else if (value instanceof Number) {
+            cell.setCellValue(((Number) value).doubleValue());
+          } else {
+            cell.setCellValue(value.toString());
+          }
+
+          if (rightAlignedIndices != null && rightAlignedIndices.contains(c)) {
+            cell.setCellStyle(dataStyleRight);
+          } else {
+            cell.setCellStyle(dataStyleLeft);
+          }
+        }
+      }
+
+      // ── Fast Column Width Calculation (Instant execution) ─────────
+      for (int i = 0; i < headers.length; i++) {
+        int maxLen = headers[i] != null ? headers[i].length() : 10;
+        for (T item : data) {
+          if (i < extractors.size()) {
+            Object val = extractors.get(i).apply(item);
+            if (val != null) {
+              maxLen = Math.max(maxLen, val.toString().length());
+            }
+          }
+        }
+        // Convert char length to POI units + 6 padding chars (min 14, max 45)
+        int colWidth = Math.min(Math.max(maxLen + 6, 14), 45) * 256;
+        sheet.setColumnWidth(i, colWidth);
+      }
+
+      workbook.write(out);
+      byte[] bytes = out.toByteArray();
+
+      HttpHeaders httpHeaders = new HttpHeaders();
+      httpHeaders.setContentType(
+          MediaType.parseMediaType(
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+      httpHeaders.set(
+          HttpHeaders.CONTENT_DISPOSITION,
+          "attachment; filename=\""
+              + (filename.endsWith(".xlsx") ? filename : filename + ".xlsx")
+              + "\"");
+
+      return ResponseEntity.ok().headers(httpHeaders).body(bytes);
+
+    } catch (Exception e) {
+      org.slf4j.LoggerFactory.getLogger(ExcelExportUtil.class)
+          .error("Error generating Excel export", e);
+      throw new RuntimeException("Error generating Excel export: " + e.getMessage(), e);
+    }
+  }
+
+  public static ResponseEntity<byte[]> exportToExcelMultiSheet(
+      String filename, List<SheetConfig<?>> sheets) {
+
+    try (Workbook workbook = new XSSFWorkbook();
+        ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+      // ── Style Definitions ──────────
+      CellStyle headerStyle = workbook.createCellStyle();
+      Font headerFont = workbook.createFont();
+      headerFont.setBold(true);
+      headerFont.setColor(IndexedColors.BLACK.getIndex());
+      headerFont.setFontHeightInPoints((short) 11);
+      headerStyle.setFont(headerFont);
+      headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+      headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+      headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+      headerStyle.setAlignment(HorizontalAlignment.LEFT);
+
+      CellStyle dataStyleRight = workbook.createCellStyle();
+      dataStyleRight.setAlignment(HorizontalAlignment.RIGHT);
+      dataStyleRight.setVerticalAlignment(VerticalAlignment.CENTER);
+
+      CellStyle dataStyleLeft = workbook.createCellStyle();
+      dataStyleLeft.setAlignment(HorizontalAlignment.LEFT);
+      dataStyleLeft.setVerticalAlignment(VerticalAlignment.CENTER);
+
+      for (SheetConfig<?> config : sheets) {
+        Sheet sheet =
+            workbook.createSheet(config.getSheetName() != null ? config.getSheetName() : "Data");
+
+        // Header Row
+        Row headerRow = sheet.createRow(0);
+        headerRow.setHeightInPoints(26);
+
+        String[] headers = config.getHeaders();
+        for (int i = 0; i < headers.length; i++) {
+          Cell cell = headerRow.createCell(i);
+          cell.setCellValue(headers[i]);
+          cell.setCellStyle(headerStyle);
+        }
+
+        // Data Rows
+        List<?> data = config.getData();
+        @SuppressWarnings("unchecked")
+        List<Function<Object, ?>> extractors = (List<Function<Object, ?>>) config.getExtractors();
+        Set<Integer> rightAlignedIndices = config.getRightAlignedIndices();
+
+        for (int r = 0; r < data.size(); r++) {
+          Object item = data.get(r);
+          Row row = sheet.createRow(r + 1);
+          row.setHeightInPoints(22);
+
+          for (int c = 0; c < extractors.size(); c++) {
+            Cell cell = row.createCell(c);
+            Object value = extractors.get(c).apply(item);
+
+            if (value == null) {
+              cell.setCellValue("");
+            } else if (value instanceof Number) {
+              cell.setCellValue(((Number) value).doubleValue());
+            } else {
+              cell.setCellValue(value.toString());
             }
 
-            // ── Populate Data Rows ─────────────────────────────────────────
-            for (int r = 0; r < data.size(); r++) {
-                T item = data.get(r);
-                Row row = sheet.createRow(r + 1);
-                row.setHeightInPoints(22);
-
-                for (int c = 0; c < extractors.size(); c++) {
-                    Cell cell = row.createCell(c);
-                    Object value = extractors.get(c).apply(item);
-
-                    if (value == null) {
-                        cell.setCellValue("");
-                    } else if (value instanceof Number) {
-                        cell.setCellValue(((Number) value).doubleValue());
-                    } else {
-                        cell.setCellValue(value.toString());
-                    }
-
-                    if (rightAlignedIndices != null && rightAlignedIndices.contains(c)) {
-                        cell.setCellStyle(dataStyleRight);
-                    } else {
-                        cell.setCellStyle(dataStyleLeft);
-                    }
-                }
+            if (rightAlignedIndices != null && rightAlignedIndices.contains(c)) {
+              cell.setCellStyle(dataStyleRight);
+            } else {
+              cell.setCellStyle(dataStyleLeft);
             }
-
-            // ── Fast Column Width Calculation (Instant execution) ─────────
-            for (int i = 0; i < headers.length; i++) {
-                int maxLen = headers[i] != null ? headers[i].length() : 10;
-                for (T item : data) {
-                    if (i < extractors.size()) {
-                        Object val = extractors.get(i).apply(item);
-                        if (val != null) {
-                            maxLen = Math.max(maxLen, val.toString().length());
-                        }
-                    }
-                }
-                // Convert char length to POI units + 6 padding chars (min 14, max 45)
-                int colWidth = Math.min(Math.max(maxLen + 6, 14), 45) * 256;
-                sheet.setColumnWidth(i, colWidth);
-            }
-
-            workbook.write(out);
-            byte[] bytes = out.toByteArray();
-
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.setContentType(
-                    MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-            httpHeaders.set(HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\"" + (filename.endsWith(".xlsx") ? filename : filename + ".xlsx") + "\"");
-
-            return ResponseEntity.ok()
-                    .headers(httpHeaders)
-                    .body(bytes);
-
-        } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(ExcelExportUtil.class).error("Error generating Excel export", e);
-            throw new RuntimeException("Error generating Excel export: " + e.getMessage(), e);
+          }
         }
-    }
 
-    public static ResponseEntity<byte[]> exportToExcelMultiSheet(
-            String filename,
-            List<SheetConfig<?>> sheets) {
-
-        try (Workbook workbook = new XSSFWorkbook();
-                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-
-            // ── Style Definitions ──────────
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
-            headerFont.setColor(IndexedColors.BLACK.getIndex());
-            headerFont.setFontHeightInPoints((short) 11);
-            headerStyle.setFont(headerFont);
-            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            headerStyle.setAlignment(HorizontalAlignment.LEFT);
-
-            CellStyle dataStyleRight = workbook.createCellStyle();
-            dataStyleRight.setAlignment(HorizontalAlignment.RIGHT);
-            dataStyleRight.setVerticalAlignment(VerticalAlignment.CENTER);
-
-            CellStyle dataStyleLeft = workbook.createCellStyle();
-            dataStyleLeft.setAlignment(HorizontalAlignment.LEFT);
-            dataStyleLeft.setVerticalAlignment(VerticalAlignment.CENTER);
-
-            for (SheetConfig<?> config : sheets) {
-                Sheet sheet = workbook.createSheet(config.getSheetName() != null ? config.getSheetName() : "Data");
-
-                // Header Row
-                Row headerRow = sheet.createRow(0);
-                headerRow.setHeightInPoints(26);
-
-                String[] headers = config.getHeaders();
-                for (int i = 0; i < headers.length; i++) {
-                    Cell cell = headerRow.createCell(i);
-                    cell.setCellValue(headers[i]);
-                    cell.setCellStyle(headerStyle);
-                }
-
-                // Data Rows
-                List<?> data = config.getData();
-                @SuppressWarnings("unchecked")
-                List<Function<Object, ?>> extractors = (List<Function<Object, ?>>) config.getExtractors();
-                Set<Integer> rightAlignedIndices = config.getRightAlignedIndices();
-
-                for (int r = 0; r < data.size(); r++) {
-                    Object item = data.get(r);
-                    Row row = sheet.createRow(r + 1);
-                    row.setHeightInPoints(22);
-
-                    for (int c = 0; c < extractors.size(); c++) {
-                        Cell cell = row.createCell(c);
-                        Object value = extractors.get(c).apply(item);
-
-                        if (value == null) {
-                            cell.setCellValue("");
-                        } else if (value instanceof Number) {
-                            cell.setCellValue(((Number) value).doubleValue());
-                        } else {
-                            cell.setCellValue(value.toString());
-                        }
-
-                        if (rightAlignedIndices != null && rightAlignedIndices.contains(c)) {
-                            cell.setCellStyle(dataStyleRight);
-                        } else {
-                            cell.setCellStyle(dataStyleLeft);
-                        }
-                    }
-                }
-
-                // Auto size column
-                for (int i = 0; i < headers.length; i++) {
-                    int maxLen = headers[i] != null ? headers[i].length() : 10;
-                    for (Object item : data) {
-                        if (i < extractors.size()) {
-                            Object val = extractors.get(i).apply(item);
-                            if (val != null) {
-                                maxLen = Math.max(maxLen, val.toString().length());
-                            }
-                        }
-                    }
-                    int colWidth = Math.min(Math.max(maxLen + 6, 14), 45) * 256;
-                    sheet.setColumnWidth(i, colWidth);
-                }
+        // Auto size column
+        for (int i = 0; i < headers.length; i++) {
+          int maxLen = headers[i] != null ? headers[i].length() : 10;
+          for (Object item : data) {
+            if (i < extractors.size()) {
+              Object val = extractors.get(i).apply(item);
+              if (val != null) {
+                maxLen = Math.max(maxLen, val.toString().length());
+              }
             }
-
-            workbook.write(out);
-            byte[] bytes = out.toByteArray();
-
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.setContentType(
-                    MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-            httpHeaders.set(HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\"" + (filename.endsWith(".xlsx") ? filename : filename + ".xlsx") + "\"");
-
-            return ResponseEntity.ok()
-                    .headers(httpHeaders)
-                    .body(bytes);
-
-        } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(ExcelExportUtil.class).error("Error generating Excel export", e);
-            throw new RuntimeException("Error generating Excel export: " + e.getMessage(), e);
+          }
+          int colWidth = Math.min(Math.max(maxLen + 6, 14), 45) * 256;
+          sheet.setColumnWidth(i, colWidth);
         }
+      }
+
+      workbook.write(out);
+      byte[] bytes = out.toByteArray();
+
+      HttpHeaders httpHeaders = new HttpHeaders();
+      httpHeaders.setContentType(
+          MediaType.parseMediaType(
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+      httpHeaders.set(
+          HttpHeaders.CONTENT_DISPOSITION,
+          "attachment; filename=\""
+              + (filename.endsWith(".xlsx") ? filename : filename + ".xlsx")
+              + "\"");
+
+      return ResponseEntity.ok().headers(httpHeaders).body(bytes);
+
+    } catch (Exception e) {
+      org.slf4j.LoggerFactory.getLogger(ExcelExportUtil.class)
+          .error("Error generating Excel export", e);
+      throw new RuntimeException("Error generating Excel export: " + e.getMessage(), e);
     }
+  }
 
-    public static void autoSizeColumns(Sheet sheet, int numColumns) {
-        autoSizeColumns(sheet, numColumns, 45); // Default max 45 characters
-    }
+  public static void autoSizeColumns(Sheet sheet, int numColumns) {
+    autoSizeColumns(sheet, numColumns, 45); // Default max 45 characters
+  }
 
-    public static void autoSizeColumns(Sheet sheet, int numColumns, int maxChars) {
-        DataFormatter formatter = new DataFormatter();
-        for (int i = 0; i < numColumns; i++) {
-            int maxLen = 0;
-            for (int r = 0; r <= sheet.getLastRowNum(); r++) {
-                Row row = sheet.getRow(r);
-                if (row == null)
-                    continue;
-                Cell cell = row.getCell(i);
-                if (cell == null)
-                    continue;
+  public static void autoSizeColumns(Sheet sheet, int numColumns, int maxChars) {
+    DataFormatter formatter = new DataFormatter();
+    for (int i = 0; i < numColumns; i++) {
+      int maxLen = 0;
+      for (int r = 0; r <= sheet.getLastRowNum(); r++) {
+        Row row = sheet.getRow(r);
+        if (row == null) continue;
+        Cell cell = row.getCell(i);
+        if (cell == null) continue;
 
-                String val = formatter.formatCellValue(cell);
-                if (val != null && !val.isEmpty()) {
-                    for (String line : val.split("\n")) {
-                        maxLen = Math.max(maxLen, line.length());
-                    }
-                }
-            }
-            // Use 12 min and maxChars max, plus 4 characters padding
-            int colWidth = Math.min(Math.max(maxLen + 4, 12), maxChars) * 256;
-            sheet.setColumnWidth(i, colWidth);
+        String val = formatter.formatCellValue(cell);
+        if (val != null && !val.isEmpty()) {
+          for (String line : val.split("\n")) {
+            maxLen = Math.max(maxLen, line.length());
+          }
         }
+      }
+      // Use 12 min and maxChars max, plus 4 characters padding
+      int colWidth = Math.min(Math.max(maxLen + 4, 12), maxChars) * 256;
+      sheet.setColumnWidth(i, colWidth);
     }
+  }
 }

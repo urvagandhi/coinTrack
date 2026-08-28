@@ -1,21 +1,5 @@
 package com.urva.myfinance.coinTrack.email.controller;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.Optional;
-
-import javax.crypto.SecretKey;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.common.util.RequestUtils;
 import com.urva.myfinance.coinTrack.common.util.UserLookupUtil;
@@ -27,28 +11,36 @@ import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmail
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
+import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Controller for forgot password flow.
  *
- * Flow:
- * 1. POST /auth/forgot-password - Request password reset
- * (email/username/mobile)
- * 2. POST /auth/forgot-password/verify - Verify reset token, return temp JWT
- * 3. POST /auth/reset-password - Reset password with temp JWT
+ * <p>Flow: 1. POST /auth/forgot-password - Request password reset (email/username/mobile) 2. POST
+ * /auth/forgot-password/verify - Verify reset token, return temp JWT 3. POST /auth/reset-password -
+ * Reset password with temp JWT
  *
- * Security:
- * - Always return neutral response (no user enumeration)
- * - Token is single-use and short-lived
- * - All sessions invalidated on password reset
+ * <p>Security: - Always return neutral response (no user enumeration) - Token is single-use and
+ * short-lived - All sessions invalidated on password reset
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -56,222 +48,216 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Password Reset", description = "Forgot password and reset flows")
 public class ForgotPasswordController {
 
-    private static final Logger logger = LoggerFactory.getLogger(ForgotPasswordController.class);
-    private static final String TEMP_JWT_PURPOSE = "PASSWORD_RESET_TEMP";
+  private static final Logger logger = LoggerFactory.getLogger(ForgotPasswordController.class);
+  private static final String TEMP_JWT_PURPOSE = "PASSWORD_RESET_TEMP";
 
-    private final EmailTokenService emailTokenService;
-    private final EmailService emailService;
-    private final EmailConfigProperties emailConfig;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JWTService jwtService;
+  private final EmailTokenService emailTokenService;
+  private final EmailService emailService;
+  private final EmailConfigProperties emailConfig;
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final JWTService jwtService;
 
-    /**
-     * Request password reset.
-     * Accepts email, username, or mobile number.
-     * Always returns success message (no user enumeration).
-     */
-    @Operation(summary = "Request a password reset link")
-    @PostMapping("/forgot-password")
-    public ResponseEntity<?> requestPasswordReset(
-            @RequestBody Map<String, String> request,
-            HttpServletRequest httpRequest) {
+  /**
+   * Request password reset. Accepts email, username, or mobile number. Always returns success
+   * message (no user enumeration).
+   */
+  @Operation(summary = "Request a password reset link")
+  @PostMapping("/forgot-password")
+  public ResponseEntity<?> requestPasswordReset(
+      @RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
 
-        String identifier = request.get("identifier");
+    String identifier = request.get("identifier");
 
-        if (identifier == null || identifier.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Email, username, or mobile number is required"));
-        }
-
-        // Find user by email, username, or phone
-        Optional<User> userOpt = UserLookupUtil.findByIdentifier(userRepository, identifier);
-
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-
-            // Create token and send email
-            String token = emailTokenService.createToken(
-                    user,
-                    EmailToken.PURPOSE_PASSWORD_RESET,
-                    httpRequest);
-            String magicLink = emailConfig.getPasswordResetUrl(token);
-
-            // Send email (non-blocking - don't fail if email fails)
-            try {
-                emailService.sendPasswordResetLink(user, magicLink);
-            } catch (Exception emailEx) {
-                logger.warn("Failed to send password reset email: {}", emailEx.getMessage());
-            }
-
-            logger.info("Password reset requested: userId={}", user.getId());
-        } else {
-            // Log but don't reveal to user (prevent enumeration)
-            logger.info("Password reset requested for unknown identifier: {}", identifier);
-        }
-
-        // Always return same response (no enumeration)
-        return ResponseEntity.ok(ApiResponse.success(Map.of(
-                "message", "If an account exists with this identifier, you will receive a password reset link")));
+    if (identifier == null || identifier.isBlank()) {
+      return ResponseEntity.badRequest()
+          .body(ApiResponse.error("Email, username, or mobile number is required"));
     }
 
-    /**
-     * Verify password reset token and return temporary JWT.
-     * The temp JWT is used to authorize the actual password reset.
-     */
-    @Operation(summary = "Verify password reset token")
-    @PostMapping("/forgot-password/verify")
-    public ResponseEntity<?> verifyResetToken(@RequestBody Map<String, String> request) {
-        String token = request.get("token");
+    // Find user by email, username, or phone
+    Optional<User> userOpt = UserLookupUtil.findByIdentifier(userRepository, identifier);
 
-        if (token == null || token.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Token is required"));
-        }
+    if (userOpt.isPresent()) {
+      User user = userOpt.get();
 
-        try {
-            // Validate token
-            EmailToken emailToken = emailTokenService.validateToken(token, EmailToken.PURPOSE_PASSWORD_RESET);
+      // Create token and send email
+      String token =
+          emailTokenService.createToken(user, EmailToken.PURPOSE_PASSWORD_RESET, httpRequest);
+      String magicLink = emailConfig.getPasswordResetUrl(token);
 
-            // Get user
-            @SuppressWarnings("null")
-            User user = userRepository.findById(emailToken.getUserId())
-                    .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
+      // Send email (non-blocking - don't fail if email fails)
+      try {
+        emailService.sendPasswordResetLink(user, magicLink);
+      } catch (Exception emailEx) {
+        logger.warn("Failed to send password reset email: {}", emailEx.getMessage());
+      }
 
-            // Mark token as used
-            emailTokenService.markUsed(emailToken.getId());
-
-            // Create temporary JWT for password reset
-            String tempJwt = createTempResetJwt(user);
-
-            logger.info("Password reset token verified: userId={}", user.getId());
-
-            return ResponseEntity.ok(ApiResponse.success(Map.of(
-                    "verified", true,
-                    "tempToken", tempJwt,
-                    "message", "Token verified. You can now reset your password.")));
-
-        } catch (InvalidEmailTokenException e) {
-            logger.warn("Password reset token verification failed: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(e.getMessage()));
-        }
+      logger.info("Password reset requested: userId={}", user.getId());
+    } else {
+      // Log but don't reveal to user (prevent enumeration)
+      logger.info("Password reset requested for unknown identifier: {}", identifier);
     }
 
-    /**
-     * Reset password using temporary JWT.
-     */
-    @Operation(summary = "Reset password using temporary token")
-    @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(
-            @RequestHeader(name = "Authorization", required = false) String authHeader,
-            @RequestBody Map<String, String> request,
-            HttpServletRequest httpRequest) {
+    // Always return same response (no enumeration)
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            Map.of(
+                "message",
+                "If an account exists with this identifier, you will receive a password reset link")));
+  }
 
-        String newPassword = request.get("newPassword");
+  /**
+   * Verify password reset token and return temporary JWT. The temp JWT is used to authorize the
+   * actual password reset.
+   */
+  @Operation(summary = "Verify password reset token")
+  @PostMapping("/forgot-password/verify")
+  public ResponseEntity<?> verifyResetToken(@RequestBody Map<String, String> request) {
+    String token = request.get("token");
 
-        if (newPassword == null || newPassword.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("New password is required"));
-        }
-
-        // Validate password strength
-        if (!isValidPassword(newPassword)) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(
-                            "Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&#)"));
-        }
-
-        // Extract and validate temp JWT
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(401)
-                    .body(ApiResponse.error("Authorization token required"));
-        }
-
-        String tempJwt = authHeader.substring(7);
-
-        try {
-            // Validate temp JWT
-            Claims claims = validateTempResetJwt(tempJwt);
-            String userId = claims.getSubject();
-
-            // Get user
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
-
-            // Update password
-            user.setPassword(passwordEncoder.encode(newPassword));
-            userRepository.save(user);
-
-            // Revoke ALL refresh tokens — a stolen session must not survive a password
-            // reset (parity with UserService.changePassword)
-            jwtService.revokeAllRefreshTokens(userId);
-
-            // Invalidate all email tokens
-            emailTokenService.invalidateAllForUser(userId);
-
-            // Send security alert (non-blocking)
-            try {
-                String ipAddress = RequestUtils.extractIpAddress(httpRequest);
-                emailService.sendSecurityAlertWithIP(user, "Password Changed", ipAddress);
-            } catch (Exception emailEx) {
-                logger.warn("Failed to send password change security alert: {}", emailEx.getMessage());
-            }
-
-            logger.info("Password reset successful: userId={}", userId);
-
-            return ResponseEntity.ok(ApiResponse.success(Map.of(
-                    "message", "Password reset successfully. Please login with your new password.")));
-
-        } catch (Exception e) {
-            logger.warn("Password reset failed: {}", e.getMessage());
-            return ResponseEntity.status(401)
-                    .body(ApiResponse.error("Invalid or expired reset token"));
-        }
+    if (token == null || token.isBlank()) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("Token is required"));
     }
 
-    /**
-     * Create temporary JWT for password reset.
-     * Short-lived (5 minutes), purpose-bound.
-     */
-    private String createTempResetJwt(User user) {
-        SecretKey key = Keys.hmacShaKeyFor(emailConfig.getMagicLinkSecret().getBytes());
+    try {
+      // Validate token
+      EmailToken emailToken =
+          emailTokenService.validateToken(token, EmailToken.PURPOSE_PASSWORD_RESET);
 
-        return Jwts.builder()
-                .subject(user.getId())
-                .claim("purpose", TEMP_JWT_PURPOSE)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 5 * 60 * 1000)) // 5 minutes
-                .signWith(key)
-                .compact();
+      // Get user
+      @SuppressWarnings("null")
+      User user =
+          userRepository
+              .findById(emailToken.getUserId())
+              .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
+
+      // Mark token as used
+      emailTokenService.markUsed(emailToken.getId());
+
+      // Create temporary JWT for password reset
+      String tempJwt = createTempResetJwt(user);
+
+      logger.info("Password reset token verified: userId={}", user.getId());
+
+      return ResponseEntity.ok(
+          ApiResponse.success(
+              Map.of(
+                  "verified",
+                  true,
+                  "tempToken",
+                  tempJwt,
+                  "message",
+                  "Token verified. You can now reset your password.")));
+
+    } catch (InvalidEmailTokenException e) {
+      logger.warn("Password reset token verification failed: {}", e.getMessage());
+      return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+    }
+  }
+
+  /** Reset password using temporary JWT. */
+  @Operation(summary = "Reset password using temporary token")
+  @PostMapping("/reset-password")
+  public ResponseEntity<?> resetPassword(
+      @RequestHeader(name = "Authorization", required = false) String authHeader,
+      @RequestBody Map<String, String> request,
+      HttpServletRequest httpRequest) {
+
+    String newPassword = request.get("newPassword");
+
+    if (newPassword == null || newPassword.isBlank()) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("New password is required"));
     }
 
-    /**
-     * Validate temporary reset JWT.
-     */
-    private Claims validateTempResetJwt(String jwt) {
-        SecretKey key = Keys.hmacShaKeyFor(emailConfig.getMagicLinkSecret().getBytes());
-
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(jwt)
-                .getPayload();
-
-        // Verify purpose
-        String purpose = claims.get("purpose", String.class);
-        if (!TEMP_JWT_PURPOSE.equals(purpose)) {
-            throw new IllegalArgumentException("Invalid token purpose");
-        }
-
-        return claims;
+    // Validate password strength
+    if (!isValidPassword(newPassword)) {
+      return ResponseEntity.badRequest()
+          .body(
+              ApiResponse.error(
+                  "Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&#)"));
     }
 
-    /**
-     * Validate password strength.
-     */
-    private boolean isValidPassword(String password) {
-        if (password == null || password.length() < 8) return false;
-        return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#]).*$");
+    // Extract and validate temp JWT
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+      return ResponseEntity.status(401).body(ApiResponse.error("Authorization token required"));
     }
+
+    String tempJwt = authHeader.substring(7);
+
+    try {
+      // Validate temp JWT
+      Claims claims = validateTempResetJwt(tempJwt);
+      String userId = claims.getSubject();
+
+      // Get user
+      User user =
+          userRepository
+              .findById(userId)
+              .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
+
+      // Update password
+      user.setPassword(passwordEncoder.encode(newPassword));
+      userRepository.save(user);
+
+      // Revoke ALL refresh tokens — a stolen session must not survive a password
+      // reset (parity with UserService.changePassword)
+      jwtService.revokeAllRefreshTokens(userId);
+
+      // Invalidate all email tokens
+      emailTokenService.invalidateAllForUser(userId);
+
+      // Send security alert (non-blocking)
+      try {
+        String ipAddress = RequestUtils.extractIpAddress(httpRequest);
+        emailService.sendSecurityAlertWithIP(user, "Password Changed", ipAddress);
+      } catch (Exception emailEx) {
+        logger.warn("Failed to send password change security alert: {}", emailEx.getMessage());
+      }
+
+      logger.info("Password reset successful: userId={}", userId);
+
+      return ResponseEntity.ok(
+          ApiResponse.success(
+              Map.of(
+                  "message", "Password reset successfully. Please login with your new password.")));
+
+    } catch (Exception e) {
+      logger.warn("Password reset failed: {}", e.getMessage());
+      return ResponseEntity.status(401).body(ApiResponse.error("Invalid or expired reset token"));
+    }
+  }
+
+  /** Create temporary JWT for password reset. Short-lived (5 minutes), purpose-bound. */
+  private String createTempResetJwt(User user) {
+    SecretKey key = Keys.hmacShaKeyFor(emailConfig.getMagicLinkSecret().getBytes());
+
+    return Jwts.builder()
+        .subject(user.getId())
+        .claim("purpose", TEMP_JWT_PURPOSE)
+        .issuedAt(new Date())
+        .expiration(new Date(System.currentTimeMillis() + 5 * 60 * 1000)) // 5 minutes
+        .signWith(key)
+        .compact();
+  }
+
+  /** Validate temporary reset JWT. */
+  private Claims validateTempResetJwt(String jwt) {
+    SecretKey key = Keys.hmacShaKeyFor(emailConfig.getMagicLinkSecret().getBytes());
+
+    Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(jwt).getPayload();
+
+    // Verify purpose
+    String purpose = claims.get("purpose", String.class);
+    if (!TEMP_JWT_PURPOSE.equals(purpose)) {
+      throw new IllegalArgumentException("Invalid token purpose");
+    }
+
+    return claims;
+  }
+
+  /** Validate password strength. */
+  private boolean isValidPassword(String password) {
+    if (password == null || password.length() < 8) return false;
+    return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#]).*$");
+  }
 }

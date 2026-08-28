@@ -1,51 +1,49 @@
 package com.urva.myfinance.coinTrack.mutualfund.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.math.BigDecimal;
 import java.time.Instant;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "mf_portfolio_metrics")
 public class MfPortfolioMetrics {
 
-    @Id
-    private String id;
-    private String userId;
-    
-    private BigDecimal overallXirr;
-    
-    private Instant lastUpdated;
+  @Id private String id;
+  private String userId;
 
-    public String getId() {
-        return id;
-    }
+  private BigDecimal overallXirr;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+  private Instant lastUpdated;
 
-    public String getUserId() {
-        return userId;
-    }
+  public String getId() {
+    return id;
+  }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+  public void setId(String id) {
+    this.id = id;
+  }
 
-    public BigDecimal getOverallXirr() {
-        return overallXirr;
-    }
+  public String getUserId() {
+    return userId;
+  }
 
-    public void setOverallXirr(BigDecimal overallXirr) {
-        this.overallXirr = overallXirr;
-    }
+  public void setUserId(String userId) {
+    this.userId = userId;
+  }
 
-    public Instant getLastUpdated() {
-        return lastUpdated;
-    }
+  public BigDecimal getOverallXirr() {
+    return overallXirr;
+  }
 
-    public void setLastUpdated(Instant lastUpdated) {
-        this.lastUpdated = lastUpdated;
-    }
+  public void setOverallXirr(BigDecimal overallXirr) {
+    this.overallXirr = overallXirr;
+  }
+
+  public Instant getLastUpdated() {
+    return lastUpdated;
+  }
+
+  public void setLastUpdated(Instant lastUpdated) {
+    this.lastUpdated = lastUpdated;
+  }
 }

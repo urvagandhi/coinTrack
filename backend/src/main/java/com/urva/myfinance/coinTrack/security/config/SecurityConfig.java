@@ -1,5 +1,6 @@
 package com.urva.myfinance.coinTrack.security.config;
 
+import com.urva.myfinance.coinTrack.security.filter.JwtFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,156 +20,186 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import com.urva.myfinance.coinTrack.security.filter.JwtFilter;
-
 /**
  * Spring Security configuration.
  *
- * Changed: Added /api/auth/refresh (public) and /api/auth/logout (authenticated).
- * Auth endpoints split to AuthController, profile to UserController.
+ * <p>Changed: Added /api/auth/refresh (public) and /api/auth/logout (authenticated). Auth endpoints
+ * split to AuthController, profile to UserController.
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
-    private final CorsConfigurationSource corsConfigurationSource;
+  private final JwtFilter jwtFilter;
+  private final CorsConfigurationSource corsConfigurationSource;
 
-    public SecurityConfig(JwtFilter jwtFilter, CorsConfigurationSource corsConfigurationSource) {
-        this.jwtFilter = jwtFilter;
-        this.corsConfigurationSource = corsConfigurationSource;
-    }
+  public SecurityConfig(JwtFilter jwtFilter, CorsConfigurationSource corsConfigurationSource) {
+    this.jwtFilter = jwtFilter;
+    this.corsConfigurationSource = corsConfigurationSource;
+  }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .csrf(csrf -> csrf.disable())
-                .exceptionHandling(e -> e.authenticationEntryPoint(
-                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .headers(headers -> headers
-                        .frameOptions(frame -> frame.deny())
-                        .contentTypeOptions(contentType -> {}))
-                .authorizeHttpRequests(request -> request
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http.cors(cors -> cors.configurationSource(corsConfigurationSource))
+        .csrf(csrf -> csrf.disable())
+        .exceptionHandling(
+            e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .headers(
+            headers ->
+                headers.frameOptions(frame -> frame.deny()).contentTypeOptions(contentType -> {}))
+        .authorizeHttpRequests(
+            request ->
+                request
 
-                        // Health & Actuator
-                        .requestMatchers("/api/health", "/api/health/**", "/actuator", "/actuator/**", "/health").permitAll()
+                    // Health & Actuator
+                    .requestMatchers(
+                        "/api/health", "/api/health/**", "/actuator", "/actuator/**", "/health")
+                    .permitAll()
 
-                        // Admin
-                        // TODO: REMOVE THIS LATER
-                        .requestMatchers("/api/mutual-fund/admin/**").permitAll()
+                    // Admin
+                    // TODO: REMOVE THIS LATER
+                    .requestMatchers("/api/mutual-fund/admin/**")
+                    .permitAll()
 
-                        // CORS preflight
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    // CORS preflight
+                    .requestMatchers(HttpMethod.OPTIONS, "/**")
+                    .permitAll()
 
-                        // Auth (public) — login, register, TOTP flows, refresh
-                        .requestMatchers(
-                                "/api/auth/login",
-                                "/api/auth/register",
-                                // Disabled 2026-08-24 with the AuthController endpoints — uncomment both when restoring.
-                                // "/api/auth/verify-token",
-                                // "/api/auth/check-username/*",
-                                "/api/auth/mfa/login",
-                                "/api/auth/mfa/login-recovery",
-                                "/api/auth/mfa/email-recovery",
-                                "/api/auth/mfa/email-recovery/verify",
-                                "/api/auth/mfa/setup",
-                                "/api/auth/mfa/verify",
-                                "/api/auth/mfa/register/setup",
-                                "/api/auth/mfa/register/verify",
-                                "/api/auth/refresh",
-                                "/api/auth/oauth2/**")
-                        .permitAll()
+                    // Auth (public) — login, register, TOTP flows, refresh
+                    .requestMatchers(
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        // Disabled 2026-08-24 with the AuthController endpoints — uncomment both
+                        // when restoring.
+                        // "/api/auth/verify-token",
+                        // "/api/auth/check-username/*",
+                        "/api/auth/mfa/login",
+                        "/api/auth/mfa/login-recovery",
+                        "/api/auth/mfa/email-recovery",
+                        "/api/auth/mfa/email-recovery/verify",
+                        "/api/auth/mfa/setup",
+                        "/api/auth/mfa/verify",
+                        "/api/auth/mfa/register/setup",
+                        "/api/auth/mfa/register/verify",
+                        "/api/auth/refresh",
+                        "/api/auth/oauth2/**")
+                    .permitAll()
 
-                        // Email verification / password reset (public)
-                        // Note: change-verification rides /api/auth/email/verify?type=change;
-                        // the old /api/auth/email/change/verify route never existed server-side
-                        .requestMatchers(
-                                "/api/auth/email/verify",
-                                "/api/auth/forgot-password",
-                                "/api/auth/forgot-password/verify",
-                                "/api/auth/reset-password")
-                        .permitAll()
+                    // Email verification / password reset (public)
+                    // Note: change-verification rides /api/auth/email/verify?type=change;
+                    // the old /api/auth/email/change/verify route never existed server-side
+                    .requestMatchers(
+                        "/api/auth/email/verify",
+                        "/api/auth/forgot-password",
+                        "/api/auth/forgot-password/verify",
+                        "/api/auth/reset-password")
+                    .permitAll()
 
-                        // OpenAPI / Swagger UI (public)
-                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**",
-                                "/v3/api-docs", "/v3/api-docs/**")
-                        .permitAll()
+                    // OpenAPI / Swagger UI (public)
+                    .requestMatchers(
+                        "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**")
+                    .permitAll()
 
-                        // Static resources
-                        .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**",
-                                "/public/**", "/api/public/**", "/logo/**")
-                        .permitAll()
+                    // Static resources
+                    .requestMatchers(
+                        "/",
+                        "/index.html",
+                        "/favicon.ico",
+                        "/static/**",
+                        "/public/**",
+                        "/api/public/**",
+                        "/logo/**")
+                    .permitAll()
 
-                        // Admin email preview (dev only)
-                        .requestMatchers("/admin/emails/**").permitAll()
+                    // Admin email preview (dev only)
+                    .requestMatchers("/admin/emails/**")
+                    .permitAll()
 
-                        // Broker callbacks (public)
-                        .requestMatchers("/api/brokers/ZERODHA/callback",
-                                "/api/brokers/UPSTOX/callback",
-                                "/api/brokers/ANGELONE/callback",
-                                "/api/brokers/zerodha/callback",
-                                "/api/brokers/upstox/callback",
-                                "/api/brokers/angelone/callback")
-                        .permitAll()
+                    // Broker callbacks (public)
+                    .requestMatchers(
+                        "/api/brokers/ZERODHA/callback",
+                        "/api/brokers/UPSTOX/callback",
+                        "/api/brokers/ANGELONE/callback",
+                        "/api/brokers/zerodha/callback",
+                        "/api/brokers/upstox/callback",
+                        "/api/brokers/angelone/callback")
+                    .permitAll()
 
-                        // Zerodha login + connect
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/ZERODHA/login-url",
-                                "/api/brokers/zerodha/login-url")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/ZERODHA/connect",
-                                "/api/brokers/zerodha/connect")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/brokers/ZERODHA/connect",
-                                "/api/brokers/zerodha/connect")
-                        .permitAll()
+                    // Zerodha login + connect
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/brokers/ZERODHA/login-url",
+                        "/api/brokers/zerodha/login-url")
+                    .permitAll()
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/brokers/ZERODHA/connect",
+                        "/api/brokers/zerodha/connect")
+                    .permitAll()
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/brokers/ZERODHA/connect",
+                        "/api/brokers/zerodha/connect")
+                    .permitAll()
 
-                        // AngelOne login + connect
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/ANGELONE/login-url",
-                                "/api/brokers/angelone/login-url")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/ANGELONE/connect",
-                                "/api/brokers/angelone/connect")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/brokers/ANGELONE/connect",
-                                "/api/brokers/angelone/connect")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/brokers/ANGELONE/test-totp",
-                                "/api/brokers/angelone/test-totp")
-                        .permitAll()
+                    // AngelOne login + connect
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/brokers/ANGELONE/login-url",
+                        "/api/brokers/angelone/login-url")
+                    .permitAll()
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/brokers/ANGELONE/connect",
+                        "/api/brokers/angelone/connect")
+                    .permitAll()
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/brokers/ANGELONE/connect",
+                        "/api/brokers/angelone/connect")
+                    .permitAll()
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/brokers/ANGELONE/test-totp",
+                        "/api/brokers/angelone/test-totp")
+                    .permitAll()
 
-                        // Zerodha redirect bridge (localhost dev)
-                        .requestMatchers("/zerodha/callback").permitAll()
+                    // Zerodha redirect bridge (localhost dev)
+                    .requestMatchers("/zerodha/callback")
+                    .permitAll()
 
-                        // Calculator endpoints (public with rate limiting)
-                        .requestMatchers("/api/calculators/**").permitAll()
+                    // Calculator endpoints (public with rate limiting)
+                    .requestMatchers("/api/calculators/**")
+                    .permitAll()
 
-                        // Everything else requires authentication
-                        .anyRequest().authenticated())
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                    // Everything else requires authentication
+                    .anyRequest()
+                    .authenticated())
+        .formLogin(form -> form.disable())
+        .httpBasic(basic -> basic.disable())
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+    return http.build();
+  }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
+  @Bean
+  public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
+      throws Exception {
+    return config.getAuthenticationManager();
+  }
 
-    @Bean
-    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);
-        return authProvider;
-    }
+  @Bean
+  public AuthenticationProvider authenticationProvider(
+      UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+    authProvider.setPasswordEncoder(passwordEncoder);
+    return authProvider;
+  }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 }

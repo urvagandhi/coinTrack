@@ -1,28 +1,27 @@
 package com.urva.myfinance.coinTrack.user.repository;
 
+import com.urva.myfinance.coinTrack.user.model.PendingRegistration;
 import java.util.Optional;
-
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
-import com.urva.myfinance.coinTrack.user.model.PendingRegistration;
-
 @Repository
-public interface PendingRegistrationRepository extends MongoRepository<PendingRegistration, String> {
+public interface PendingRegistrationRepository
+    extends MongoRepository<PendingRegistration, String> {
 
-    Optional<PendingRegistration> findByTempToken(String tempToken);
+  Optional<PendingRegistration> findByTempToken(String tempToken);
 
-    Optional<PendingRegistration> findByGoogleId(String googleId);
+  Optional<PendingRegistration> findByGoogleId(String googleId);
 
-    Optional<PendingRegistration> findByUsername(String username);
+  Optional<PendingRegistration> findByUsername(String username);
 
-    void deleteByTempToken(String tempToken);
+  void deleteByTempToken(String tempToken);
 
-    void deleteByUsername(String username);
+  void deleteByUsername(String username);
 
-    boolean existsByUsername(String username);
+  boolean existsByUsername(String username);
 
-    boolean existsByEmail(String email);
+  boolean existsByEmail(String email);
 
-    boolean existsByPhoneNumber(String phoneNumber);
+  boolean existsByPhoneNumber(String phoneNumber);
 }

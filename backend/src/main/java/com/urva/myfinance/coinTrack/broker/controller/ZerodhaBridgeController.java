@@ -9,18 +9,20 @@ import org.springframework.web.servlet.view.RedirectView;
 @Controller
 public class ZerodhaBridgeController {
 
-    private final String frontendUrl;
+  private final String frontendUrl;
 
-    public ZerodhaBridgeController(
-            @Value("${frontend.url:http://localhost:3000}") String frontendUrl) {
-        this.frontendUrl = frontendUrl;
-    }
+  public ZerodhaBridgeController(
+      @Value("${frontend.url:http://localhost:3000}") String frontendUrl) {
+    this.frontendUrl = frontendUrl;
+  }
 
-    @GetMapping("/zerodha/callback")
-    public RedirectView handleCallback(@RequestParam("request_token") String requestToken) {
-        // Redirect to Frontend URL (configured via frontend.url property)
-        String resolvedFrontendUrl = com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(frontendUrl);
-        String redirectUrl = resolvedFrontendUrl + "/brokers/zerodha/callback?request_token=" + requestToken;
-        return new RedirectView(redirectUrl);
-    }
+  @GetMapping("/zerodha/callback")
+  public RedirectView handleCallback(@RequestParam("request_token") String requestToken) {
+    // Redirect to Frontend URL (configured via frontend.url property)
+    String resolvedFrontendUrl =
+        com.urva.myfinance.coinTrack.common.util.UrlResolverUtil.resolveUrl(frontendUrl);
+    String redirectUrl =
+        resolvedFrontendUrl + "/brokers/zerodha/callback?request_token=" + requestToken;
+    return new RedirectView(redirectUrl);
+  }
 }

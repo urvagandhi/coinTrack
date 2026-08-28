@@ -1,9 +1,29 @@
 package com.urva.myfinance.coinTrack.user.controller;
 
+import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.common.util.HashUtil;
+import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
+import com.urva.myfinance.coinTrack.common.util.RequestUtils;
+import com.urva.myfinance.coinTrack.security.model.InvalidatedToken;
+import com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository;
+import com.urva.myfinance.coinTrack.security.service.JWTService;
+import com.urva.myfinance.coinTrack.user.dto.CompleteProfileRequest;
+import com.urva.myfinance.coinTrack.user.dto.GoogleLoginRequest;
+import com.urva.myfinance.coinTrack.user.dto.LoginRequest;
+import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
+import com.urva.myfinance.coinTrack.user.dto.RegisterUserDTO;
+import com.urva.myfinance.coinTrack.user.model.RefreshToken;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.RefreshTokenRepository;
+import com.urva.myfinance.coinTrack.user.service.UserAuthenticationService;
+import com.urva.myfinance.coinTrack.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -15,36 +35,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// Disabled 2026-08-24 together with the endpoints below — re-enable both when restoring.
-// import org.springframework.web.bind.annotation.GetMapping;
-// import org.springframework.web.bind.annotation.PathVariable;
-
-import com.urva.myfinance.coinTrack.common.response.ApiResponse;
-import com.urva.myfinance.coinTrack.common.util.HashUtil;
-import com.urva.myfinance.coinTrack.common.util.LoggingConstants;
-import com.urva.myfinance.coinTrack.common.util.RequestUtils;
-import com.urva.myfinance.coinTrack.security.model.InvalidatedToken;
-import com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository;
-import com.urva.myfinance.coinTrack.security.service.JWTService;
-import com.urva.myfinance.coinTrack.user.dto.LoginRequest;
-import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
-import com.urva.myfinance.coinTrack.user.dto.RegisterUserDTO;
-import com.urva.myfinance.coinTrack.user.dto.GoogleLoginRequest;
-import com.urva.myfinance.coinTrack.user.dto.CompleteProfileRequest;
-import com.urva.myfinance.coinTrack.user.model.RefreshToken;
-import com.urva.myfinance.coinTrack.user.model.User;
-import com.urva.myfinance.coinTrack.user.repository.RefreshTokenRepository;
-import com.urva.myfinance.coinTrack.user.service.UserAuthenticationService;
-import com.urva.myfinance.coinTrack.user.service.UserService;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-
 /**
- * Authentication controller — login, register, refresh, logout.
- * Split from UserController to separate auth from profile management.
+ * Authentication controller — login, register, refresh, logout. Split from UserController to
+ * separate auth from profile management.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -52,259 +45,267 @@ import jakarta.validation.Valid;
 @Tag(name = "Authentication", description = "Login, registration, token refresh, and logout")
 public class AuthController {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+  private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    private final UserService userService;
-    private final UserAuthenticationService authService;
-    private final JWTService jwtService;
-    private final InvalidatedTokenRepository invalidatedTokenRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+  private final UserService userService;
+  private final UserAuthenticationService authService;
+  private final JWTService jwtService;
+  private final InvalidatedTokenRepository invalidatedTokenRepository;
+  private final RefreshTokenRepository refreshTokenRepository;
 
-    public AuthController(UserService userService,
-                          UserAuthenticationService authService,
-                          JWTService jwtService,
-                          InvalidatedTokenRepository invalidatedTokenRepository,
-                          RefreshTokenRepository refreshTokenRepository) {
-        this.userService = userService;
-        this.authService = authService;
-        this.jwtService = jwtService;
-        this.invalidatedTokenRepository = invalidatedTokenRepository;
-        this.refreshTokenRepository = refreshTokenRepository;
+  public AuthController(
+      UserService userService,
+      UserAuthenticationService authService,
+      JWTService jwtService,
+      InvalidatedTokenRepository invalidatedTokenRepository,
+      RefreshTokenRepository refreshTokenRepository) {
+    this.userService = userService;
+    this.authService = authService;
+    this.jwtService = jwtService;
+    this.invalidatedTokenRepository = invalidatedTokenRepository;
+    this.refreshTokenRepository = refreshTokenRepository;
+  }
+
+  @Operation(summary = "Authenticate user with credentials")
+  @PostMapping("/login")
+  public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+    try {
+      logger.info(LoggingConstants.AUTH_LOGIN_STARTED, loginRequest.getUsernameOrEmailOrMobile());
+
+      LoginResponse response =
+          authService.authenticate(
+              loginRequest.getUsernameOrEmailOrMobile(), loginRequest.getPassword());
+
+      if (response != null) {
+        return ResponseEntity.ok(ApiResponse.success(response));
+      } else {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.error("Invalid credentials"));
+      }
+    } catch (com.urva.myfinance.coinTrack.common.exception.AuthenticationException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
+    } catch (Exception e) {
+      logger.error(
+          LoggingConstants.AUTH_LOGIN_FAILED,
+          loginRequest.getUsernameOrEmailOrMobile(),
+          e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(ApiResponse.error("Authentication failed"));
+    }
+  }
+
+  @Operation(summary = "Register a new user account")
+  @PostMapping("/register")
+  public ResponseEntity<?> register(@Valid @RequestBody RegisterUserDTO dto) {
+    try {
+      logger.info("Registration attempt for username: {}", dto.getUsername());
+
+      User user = new User();
+      user.setUsername(dto.getUsername());
+      String fullName = dto.getFirstName() != null ? dto.getFirstName() : "";
+      if (dto.getLastName() != null && !dto.getLastName().isEmpty()) {
+        fullName = fullName.isEmpty() ? dto.getLastName() : fullName + " " + dto.getLastName();
+      }
+      user.setName(fullName.isEmpty() ? null : fullName);
+      user.setEmail(dto.getEmail());
+      user.setPhoneNumber(dto.getMobile());
+      user.setPassword(dto.getPassword());
+
+      LoginResponse response = userService.registerUser(user);
+      return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    } catch (Exception e) {
+      logger.error("Error during registration: {}", e.getMessage());
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(ApiResponse.error("Registration failed: " + e.getMessage()));
+    }
+  }
+
+  // ── Disabled 2026-08-24 (owner decision: retain code, don't delete) ──────────
+  // verify-token is redundant — the JWT filter already validates every request and
+  // GET /api/users/me returns the same profile with the same Bearer token.
+  // check-username never had a UI caller. To restore: uncomment here AND the two
+  // SecurityConfig whitelist entries AND the matching AuthControllerTest block,
+  // plus the GetMapping/PathVariable imports above.
+  //
+  // @Operation(summary = "Verify JWT access token validity")
+  // @GetMapping("/verify-token")
+  // public ResponseEntity<?> verifyToken(HttpServletRequest request) {
+  //     try {
+  //         String authHeader = request.getHeader("Authorization");
+  //         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+  //             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+  //                     .body(ApiResponse.error("Missing or invalid Authorization header"));
+  //         }
+  //
+  //         String token = authHeader.substring(7);
+  //         if (!userService.isTokenValid(token)) {
+  //             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+  //                     .body(ApiResponse.error("Invalid or expired token"));
+  //         }
+  //
+  //         User user = userService.getUserByToken(token);
+  //         if (user != null) {
+  //             user.setPassword(null);
+  //             return
+  // ResponseEntity.ok(com.urva.myfinance.coinTrack.user.dto.UserProfileResponse.from(user));
+  //         }
+  //         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not
+  // found"));
+  //     } catch (Exception e) {
+  //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+  //                 .body(ApiResponse.error("Token verification failed"));
+  //     }
+  // }
+  //
+  // @Operation(summary = "Check if a username is available")
+  // @GetMapping("/check-username/{username}")
+  // public ResponseEntity<?> checkUsernameAvailability(@PathVariable String username) {
+  //     try {
+  //         boolean isAvailable = userService.isUsernameAvailable(username);
+  //         Map<String, Object> response = new HashMap<>();
+  //         response.put("username", username);
+  //         response.put("available", isAvailable);
+  //         return ResponseEntity.ok(response);
+  //     } catch (Exception e) {
+  //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+  //                 .body(ApiResponse.error("Failed to check username availability"));
+  //     }
+  // }
+  // ── End disabled endpoints ───────────────────────────────────────────────────
+
+  /**
+   * Refresh access token using a refresh token. Public endpoint — the refresh token IS the
+   * credential, no JWT needed.
+   */
+  @Operation(summary = "Refresh access token using a refresh token")
+  @PostMapping("/refresh")
+  public ResponseEntity<?> refresh(
+      @RequestBody Map<String, String> body, HttpServletRequest request) {
+    String rawRefreshToken = body.get("refreshToken");
+    if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("Missing refreshToken"));
     }
 
-    @Operation(summary = "Authenticate user with credentials")
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
-        try {
-            logger.info(LoggingConstants.AUTH_LOGIN_STARTED, loginRequest.getUsernameOrEmailOrMobile());
+    try {
+      // Look up stored token to get userId
+      String hash = HashUtil.sha256(rawRefreshToken);
+      RefreshToken stored =
+          refreshTokenRepository
+              .findByTokenHash(hash)
+              .orElseThrow(
+                  () ->
+                      new com.urva.myfinance.coinTrack.common.exception.AuthenticationException(
+                          "Invalid refresh token"));
 
-            LoginResponse response = authService.authenticate(
-                    loginRequest.getUsernameOrEmailOrMobile(),
-                    loginRequest.getPassword());
+      User user = userService.getUserById(stored.getUserId());
+      if (user == null) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.error("User not found"));
+      }
 
-            if (response != null) {
-                return ResponseEntity.ok(ApiResponse.success(response));
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Invalid credentials"));
-            }
-        } catch (com.urva.myfinance.coinTrack.common.exception.AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            logger.error(LoggingConstants.AUTH_LOGIN_FAILED, loginRequest.getUsernameOrEmailOrMobile(), e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Authentication failed"));
-        }
+      String deviceInfo = RequestUtils.extractUserAgent(request);
+      String ipAddress = RequestUtils.extractIpAddress(request);
+
+      JWTService.TokenPair pair =
+          jwtService.validateAndRotateRefreshToken(rawRefreshToken, user, deviceInfo, ipAddress);
+
+      Map<String, String> response = new HashMap<>();
+      response.put("token", pair.accessToken());
+      response.put("refreshToken", pair.refreshToken());
+      return ResponseEntity.ok(ApiResponse.success(response));
+
+    } catch (com.urva.myfinance.coinTrack.common.exception.AuthenticationException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
+    } catch (Exception e) {
+      logger.error("Refresh token error: {}", e.getMessage());
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+          .body(ApiResponse.error("Session expired. Please log in again."));
     }
+  }
 
-    @Operation(summary = "Register a new user account")
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterUserDTO dto) {
-        try {
-            logger.info("Registration attempt for username: {}", dto.getUsername());
+  /**
+   * Logout — invalidates the current JWT and revokes refresh tokens. Requires authentication (JWT
+   * needed to know what to invalidate).
+   */
+  @Operation(summary = "Logout and invalidate tokens")
+  @PostMapping("/logout")
+  public ResponseEntity<?> logout(Authentication authentication, HttpServletRequest request) {
+    try {
+      String authHeader = request.getHeader("Authorization");
+      if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        return ResponseEntity.badRequest().body(ApiResponse.error("Missing Authorization header"));
+      }
 
-            User user = new User();
-            user.setUsername(dto.getUsername());
-            String fullName = dto.getFirstName() != null ? dto.getFirstName() : "";
-            if (dto.getLastName() != null && !dto.getLastName().isEmpty()) {
-                fullName = fullName.isEmpty() ? dto.getLastName() : fullName + " " + dto.getLastName();
-            }
-            user.setName(fullName.isEmpty() ? null : fullName);
-            user.setEmail(dto.getEmail());
-            user.setPhoneNumber(dto.getMobile());
-            user.setPassword(dto.getPassword());
+      String token = authHeader.substring(7);
+      String tokenHash = HashUtil.sha256(token);
 
-            LoginResponse response = userService.registerUser(user);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
-            logger.error("Error during registration: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("Registration failed: " + e.getMessage()));
-        }
+      Date expiry = jwtService.extractExpiration(token);
+      String userId = jwtService.extractUserId(token);
+
+      // Blacklist the access token
+      invalidatedTokenRepository.save(
+          InvalidatedToken.builder()
+              .tokenHash(tokenHash)
+              .userId(userId)
+              .expiresAt(expiry.toInstant())
+              .build());
+
+      // Revoke all refresh tokens for this user
+      if (userId != null) {
+        jwtService.revokeAllRefreshTokens(userId);
+      }
+
+      return ResponseEntity.ok(ApiResponse.success("Logged out successfully"));
+    } catch (Exception e) {
+      logger.error("Logout error: {}", e.getMessage());
+      return ResponseEntity.ok(ApiResponse.success("Logged out"));
     }
+  }
 
-    // ── Disabled 2026-08-24 (owner decision: retain code, don't delete) ──────────
-    // verify-token is redundant — the JWT filter already validates every request and
-    // GET /api/users/me returns the same profile with the same Bearer token.
-    // check-username never had a UI caller. To restore: uncomment here AND the two
-    // SecurityConfig whitelist entries AND the matching AuthControllerTest block,
-    // plus the GetMapping/PathVariable imports above.
-    //
-    // @Operation(summary = "Verify JWT access token validity")
-    // @GetMapping("/verify-token")
-    // public ResponseEntity<?> verifyToken(HttpServletRequest request) {
-    //     try {
-    //         String authHeader = request.getHeader("Authorization");
-    //         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-    //             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-    //                     .body(ApiResponse.error("Missing or invalid Authorization header"));
-    //         }
-    //
-    //         String token = authHeader.substring(7);
-    //         if (!userService.isTokenValid(token)) {
-    //             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-    //                     .body(ApiResponse.error("Invalid or expired token"));
-    //         }
-    //
-    //         User user = userService.getUserByToken(token);
-    //         if (user != null) {
-    //             user.setPassword(null);
-    //             return ResponseEntity.ok(com.urva.myfinance.coinTrack.user.dto.UserProfileResponse.from(user));
-    //         }
-    //         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found"));
-    //     } catch (Exception e) {
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    //                 .body(ApiResponse.error("Token verification failed"));
-    //     }
-    // }
-    //
-    // @Operation(summary = "Check if a username is available")
-    // @GetMapping("/check-username/{username}")
-    // public ResponseEntity<?> checkUsernameAvailability(@PathVariable String username) {
-    //     try {
-    //         boolean isAvailable = userService.isUsernameAvailable(username);
-    //         Map<String, Object> response = new HashMap<>();
-    //         response.put("username", username);
-    //         response.put("available", isAvailable);
-    //         return ResponseEntity.ok(response);
-    //     } catch (Exception e) {
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    //                 .body(ApiResponse.error("Failed to check username availability"));
-    //     }
-    // }
-    // ── End disabled endpoints ───────────────────────────────────────────────────
+  @Operation(summary = "Authenticate or register user via Google SSO")
+  @PostMapping("/oauth2/google")
+  public ResponseEntity<?> oauth2Google(
+      @Valid @RequestBody GoogleLoginRequest googleRequest, HttpServletRequest request) {
+    try {
+      logger.info("Google SSO authentication attempt starting...");
+      String deviceInfo = RequestUtils.extractUserAgent(request);
+      String ipAddress = RequestUtils.extractIpAddress(request);
 
-    /**
-     * Refresh access token using a refresh token.
-     * Public endpoint — the refresh token IS the credential, no JWT needed.
-     */
-    @Operation(summary = "Refresh access token using a refresh token")
-    @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody Map<String, String> body, HttpServletRequest request) {
-        String rawRefreshToken = body.get("refreshToken");
-        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Missing refreshToken"));
-        }
+      LoginResponse response =
+          authService.authenticateGoogle(
+              googleRequest.getCode(), googleRequest.getRedirectUri(), deviceInfo, ipAddress);
 
-        try {
-            // Look up stored token to get userId
-            String hash = HashUtil.sha256(rawRefreshToken);
-            RefreshToken stored = refreshTokenRepository.findByTokenHash(hash)
-                    .orElseThrow(() -> new com.urva.myfinance.coinTrack.common.exception.AuthenticationException(
-                            "Invalid refresh token"));
-
-            User user = userService.getUserById(stored.getUserId());
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("User not found"));
-            }
-
-            String deviceInfo = RequestUtils.extractUserAgent(request);
-            String ipAddress = RequestUtils.extractIpAddress(request);
-
-            JWTService.TokenPair pair = jwtService.validateAndRotateRefreshToken(
-                    rawRefreshToken, user, deviceInfo, ipAddress);
-
-            Map<String, String> response = new HashMap<>();
-            response.put("token", pair.accessToken());
-            response.put("refreshToken", pair.refreshToken());
-            return ResponseEntity.ok(ApiResponse.success(response));
-
-        } catch (com.urva.myfinance.coinTrack.common.exception.AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Refresh token error: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Session expired. Please log in again."));
-        }
+      return ResponseEntity.ok(ApiResponse.success(response));
+    } catch (com.urva.myfinance.coinTrack.common.exception.AuthenticationException e) {
+      logger.warn("Google authentication warning: {}", e.getMessage());
+      if (e.getMessage().contains("already exists")) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
+      }
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
+    } catch (Exception e) {
+      logger.error("Google authentication failed: {}", e.getMessage(), e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(ApiResponse.error("Google login failed: " + e.getMessage()));
     }
+  }
 
-    /**
-     * Logout — invalidates the current JWT and revokes refresh tokens.
-     * Requires authentication (JWT needed to know what to invalidate).
-     */
-    @Operation(summary = "Logout and invalidate tokens")
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout(Authentication authentication, HttpServletRequest request) {
-        try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Missing Authorization header"));
-            }
+  @Operation(summary = "Complete profile for Google SSO registration")
+  @PostMapping("/oauth2/complete-profile")
+  public ResponseEntity<?> completeGoogleProfile(
+      @Valid @RequestBody CompleteProfileRequest profileRequest, HttpServletRequest request) {
+    try {
+      logger.info("Google SSO profile completion attempt starting...");
+      String deviceInfo = RequestUtils.extractUserAgent(request);
+      String ipAddress = RequestUtils.extractIpAddress(request);
 
-            String token = authHeader.substring(7);
-            String tokenHash = HashUtil.sha256(token);
+      LoginResponse response =
+          authService.completeGoogleProfile(profileRequest, deviceInfo, ipAddress);
 
-            Date expiry = jwtService.extractExpiration(token);
-            String userId = jwtService.extractUserId(token);
-
-            // Blacklist the access token
-            invalidatedTokenRepository.save(InvalidatedToken.builder()
-                    .tokenHash(tokenHash)
-                    .userId(userId)
-                    .expiresAt(expiry.toInstant())
-                    .build());
-
-            // Revoke all refresh tokens for this user
-            if (userId != null) {
-                jwtService.revokeAllRefreshTokens(userId);
-            }
-
-            return ResponseEntity.ok(ApiResponse.success("Logged out successfully"));
-        } catch (Exception e) {
-            logger.error("Logout error: {}", e.getMessage());
-            return ResponseEntity.ok(ApiResponse.success("Logged out"));
-        }
+      return ResponseEntity.ok(ApiResponse.success(response));
+    } catch (Exception e) {
+      logger.error("Google profile completion failed: {}", e.getMessage(), e);
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(ApiResponse.error("Failed to complete profile: " + e.getMessage()));
     }
-
-    @Operation(summary = "Authenticate or register user via Google SSO")
-    @PostMapping("/oauth2/google")
-    public ResponseEntity<?> oauth2Google(@Valid @RequestBody GoogleLoginRequest googleRequest, HttpServletRequest request) {
-        try {
-            logger.info("Google SSO authentication attempt starting...");
-            String deviceInfo = RequestUtils.extractUserAgent(request);
-            String ipAddress = RequestUtils.extractIpAddress(request);
-
-            LoginResponse response = authService.authenticateGoogle(
-                    googleRequest.getCode(),
-                    googleRequest.getRedirectUri(),
-                    deviceInfo,
-                    ipAddress);
-
-            return ResponseEntity.ok(ApiResponse.success(response));
-        } catch (com.urva.myfinance.coinTrack.common.exception.AuthenticationException e) {
-            logger.warn("Google authentication warning: {}", e.getMessage());
-            if (e.getMessage().contains("already exists")) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(ApiResponse.error(e.getMessage()));
-            }
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Google authentication failed: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Google login failed: " + e.getMessage()));
-        }
-    }
-
-    @Operation(summary = "Complete profile for Google SSO registration")
-    @PostMapping("/oauth2/complete-profile")
-    public ResponseEntity<?> completeGoogleProfile(@Valid @RequestBody CompleteProfileRequest profileRequest, HttpServletRequest request) {
-        try {
-            logger.info("Google SSO profile completion attempt starting...");
-            String deviceInfo = RequestUtils.extractUserAgent(request);
-            String ipAddress = RequestUtils.extractIpAddress(request);
-
-            LoginResponse response = authService.completeGoogleProfile(
-                    profileRequest,
-                    deviceInfo,
-                    ipAddress);
-
-            return ResponseEntity.ok(ApiResponse.success(response));
-        } catch (Exception e) {
-            logger.error("Google profile completion failed: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("Failed to complete profile: " + e.getMessage()));
-        }
-    }
+  }
 }

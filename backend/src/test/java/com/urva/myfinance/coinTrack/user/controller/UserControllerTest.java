@@ -4,8 +4,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
+import com.urva.myfinance.coinTrack.user.dto.DeleteAccountRequest;
+import com.urva.myfinance.coinTrack.user.dto.UpdateProfileRequest;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,235 +24,252 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
-import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
-import com.urva.myfinance.coinTrack.user.dto.DeleteAccountRequest;
-import com.urva.myfinance.coinTrack.user.dto.UpdateProfileRequest;
-import com.urva.myfinance.coinTrack.user.model.User;
-import com.urva.myfinance.coinTrack.user.service.UserService;
-
-import jakarta.servlet.http.HttpServletRequest;
-
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserController - Comprehensive Tests")
 class UserControllerTest {
 
-    @Mock private UserService userService;
-    @Mock private Authentication authentication;
-    @Mock private HttpServletRequest httpRequest;
+  @Mock private UserService userService;
+  @Mock private Authentication authentication;
+  @Mock private HttpServletRequest httpRequest;
 
-    @InjectMocks
-    private UserController userController;
+  @InjectMocks private UserController userController;
 
-    private User sampleUser;
-    private UserPrincipal samplePrincipal;
+  private User sampleUser;
+  private UserPrincipal samplePrincipal;
 
-    @BeforeEach
-    void setUp() {
-        sampleUser = User.builder()
-                .id("u1").username("testuser").email("test@example.com")
-                .name("Test User").password("encoded").build();
-        samplePrincipal = mock(UserPrincipal.class);
-        when(samplePrincipal.getUserId()).thenReturn("u1");
-    }
+  @BeforeEach
+  void setUp() {
+    sampleUser =
+        User.builder()
+            .id("u1")
+            .username("testuser")
+            .email("test@example.com")
+            .name("Test User")
+            .password("encoded")
+            .build();
+    samplePrincipal = mock(UserPrincipal.class);
+    when(samplePrincipal.getUserId()).thenReturn("u1");
+  }
 
-    // ── getCurrentUser ────────────────────────────────────────────
+  // ── getCurrentUser ────────────────────────────────────────────
 
-    @Test
-    @DisplayName("getCurrentUser: authenticated → 200 with user (password null)")
-    void getCurrentUser_authenticated_returns200() {
-        when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn("testuser");
-        when(userService.findUserByUsername("testuser")).thenReturn(sampleUser);
+  @Test
+  @DisplayName("getCurrentUser: authenticated → 200 with user (password null)")
+  void getCurrentUser_authenticated_returns200() {
+    when(authentication.isAuthenticated()).thenReturn(true);
+    when(authentication.getName()).thenReturn("testuser");
+    when(userService.findUserByUsername("testuser")).thenReturn(sampleUser);
 
-        ResponseEntity<?> response = userController.getCurrentUser(authentication);
+    ResponseEntity<?> response = userController.getCurrentUser(authentication);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNull(sampleUser.getPassword());
-    }
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNull(sampleUser.getPassword());
+  }
 
-    @Test
-    @DisplayName("getCurrentUser: not authenticated → 401")
-    void getCurrentUser_notAuthenticated_returns401() {
-        when(authentication.isAuthenticated()).thenReturn(false);
+  @Test
+  @DisplayName("getCurrentUser: not authenticated → 401")
+  void getCurrentUser_notAuthenticated_returns401() {
+    when(authentication.isAuthenticated()).thenReturn(false);
 
-        ResponseEntity<?> response = userController.getCurrentUser(authentication);
+    ResponseEntity<?> response = userController.getCurrentUser(authentication);
 
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("getCurrentUser: null authentication → 401")
-    void getCurrentUser_nullAuth_returns401() {
-        ResponseEntity<?> response = userController.getCurrentUser(null);
+  @Test
+  @DisplayName("getCurrentUser: null authentication → 401")
+  void getCurrentUser_nullAuth_returns401() {
+    ResponseEntity<?> response = userController.getCurrentUser(null);
 
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("getCurrentUser: user not found → 404")
-    void getCurrentUser_userNotFound_returns404() {
-        when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn("unknown");
-        when(userService.findUserByUsername("unknown")).thenReturn(null);
+  @Test
+  @DisplayName("getCurrentUser: user not found → 404")
+  void getCurrentUser_userNotFound_returns404() {
+    when(authentication.isAuthenticated()).thenReturn(true);
+    when(authentication.getName()).thenReturn("unknown");
+    when(userService.findUserByUsername("unknown")).thenReturn(null);
 
-        ResponseEntity<?> response = userController.getCurrentUser(authentication);
+    ResponseEntity<?> response = userController.getCurrentUser(authentication);
 
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("getCurrentUser: exception → 500")
-    void getCurrentUser_exception_returns500() {
-        when(authentication.isAuthenticated()).thenThrow(new RuntimeException("db error"));
+  @Test
+  @DisplayName("getCurrentUser: exception → 500")
+  void getCurrentUser_exception_returns500() {
+    when(authentication.isAuthenticated()).thenThrow(new RuntimeException("db error"));
 
-        ResponseEntity<?> response = userController.getCurrentUser(authentication);
+    ResponseEntity<?> response = userController.getCurrentUser(authentication);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+  }
 
-    // ── updateCurrentUser ─────────────────────────────────────────
+  // ── updateCurrentUser ─────────────────────────────────────────
 
-    @Test
-    @DisplayName("updateCurrentUser: valid updates → 200")
-    void updateCurrentUser_valid_returns200() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        UpdateProfileRequest updates = new UpdateProfileRequest(null, "Updated Name", null, null, null, "New bio", "Mumbai");
-        User updated = User.builder()
-                .id("u1").name("Updated Name").bio("New bio").location("Mumbai")
-                .password("encoded").build();
-        when(userService.updateUser(org.mockito.ArgumentMatchers.eq("u1"), org.mockito.ArgumentMatchers.any(User.class)))
-                .thenReturn(updated);
+  @Test
+  @DisplayName("updateCurrentUser: valid updates → 200")
+  void updateCurrentUser_valid_returns200() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    UpdateProfileRequest updates =
+        new UpdateProfileRequest(null, "Updated Name", null, null, null, "New bio", "Mumbai");
+    User updated =
+        User.builder()
+            .id("u1")
+            .name("Updated Name")
+            .bio("New bio")
+            .location("Mumbai")
+            .password("encoded")
+            .build();
+    when(userService.updateUser(
+            org.mockito.ArgumentMatchers.eq("u1"), org.mockito.ArgumentMatchers.any(User.class)))
+        .thenReturn(updated);
 
-        ResponseEntity<?> response = userController.updateCurrentUser(authentication, updates);
+    ResponseEntity<?> response = userController.updateCurrentUser(authentication, updates);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("updateCurrentUser: user not found → 404")
-    void updateCurrentUser_notFound_returns404() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        UpdateProfileRequest updates = new UpdateProfileRequest(null, null, null, null, null, null, null);
-        when(userService.updateUser(org.mockito.ArgumentMatchers.eq("u1"), org.mockito.ArgumentMatchers.any(User.class)))
-                .thenReturn(null);
+  @Test
+  @DisplayName("updateCurrentUser: user not found → 404")
+  void updateCurrentUser_notFound_returns404() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    UpdateProfileRequest updates =
+        new UpdateProfileRequest(null, null, null, null, null, null, null);
+    when(userService.updateUser(
+            org.mockito.ArgumentMatchers.eq("u1"), org.mockito.ArgumentMatchers.any(User.class)))
+        .thenReturn(null);
 
-        ResponseEntity<?> response = userController.updateCurrentUser(authentication, updates);
+    ResponseEntity<?> response = userController.updateCurrentUser(authentication, updates);
 
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("updateCurrentUser: illegal arg → 400")
-    void updateCurrentUser_illegalArg_returns400() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        UpdateProfileRequest updates = new UpdateProfileRequest(null, null, null, null, null, null, null);
-        when(userService.updateUser(org.mockito.ArgumentMatchers.eq("u1"), org.mockito.ArgumentMatchers.any(User.class)))
-                .thenThrow(new IllegalArgumentException("Invalid data"));
+  @Test
+  @DisplayName("updateCurrentUser: illegal arg → 400")
+  void updateCurrentUser_illegalArg_returns400() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    UpdateProfileRequest updates =
+        new UpdateProfileRequest(null, null, null, null, null, null, null);
+    when(userService.updateUser(
+            org.mockito.ArgumentMatchers.eq("u1"), org.mockito.ArgumentMatchers.any(User.class)))
+        .thenThrow(new IllegalArgumentException("Invalid data"));
 
-        ResponseEntity<?> response = userController.updateCurrentUser(authentication, updates);
+    ResponseEntity<?> response = userController.updateCurrentUser(authentication, updates);
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
 
-    // ── changePassword ────────────────────────────────────────────
+  // ── changePassword ────────────────────────────────────────────
 
-    @Test
-    @DisplayName("changePassword: valid → 200")
-    void changePassword_valid_returns200() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        Map<String, String> payload = Map.of("oldPassword", "OldPass1!", "password", "NewPass1!");
-        when(userService.getUserById("u1")).thenReturn(sampleUser);
-        when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+  @Test
+  @DisplayName("changePassword: valid → 200")
+  void changePassword_valid_returns200() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    Map<String, String> payload = Map.of("oldPassword", "OldPass1!", "password", "NewPass1!");
+    when(userService.getUserById("u1")).thenReturn(sampleUser);
+    when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
 
-        ResponseEntity<?> response = userController.changePassword(authentication, payload, httpRequest);
+    ResponseEntity<?> response =
+        userController.changePassword(authentication, payload, httpRequest);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(userService).changePassword("u1", "OldPass1!", "NewPass1!");
-    }
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    verify(userService).changePassword("u1", "OldPass1!", "NewPass1!");
+  }
 
-    @Test
-    @DisplayName("changePassword: missing old password → 400")
-    void changePassword_missingOldPassword_returns400() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        Map<String, String> payload = Map.of("password", "NewPass1!");
+  @Test
+  @DisplayName("changePassword: missing old password → 400")
+  void changePassword_missingOldPassword_returns400() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    Map<String, String> payload = Map.of("password", "NewPass1!");
 
-        ResponseEntity<?> response = userController.changePassword(authentication, payload, httpRequest);
+    ResponseEntity<?> response =
+        userController.changePassword(authentication, payload, httpRequest);
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("changePassword: short new password → 400")
-    void changePassword_shortPassword_returns400() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        Map<String, String> payload = Map.of("oldPassword", "OldPass1!", "password", "short");
+  @Test
+  @DisplayName("changePassword: short new password → 400")
+  void changePassword_shortPassword_returns400() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    Map<String, String> payload = Map.of("oldPassword", "OldPass1!", "password", "short");
 
-        ResponseEntity<?> response = userController.changePassword(authentication, payload, httpRequest);
+    ResponseEntity<?> response =
+        userController.changePassword(authentication, payload, httpRequest);
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("changePassword: same as old → 400")
-    void changePassword_sameAsOld_returns400() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        Map<String, String> payload = Map.of("oldPassword", "SamePass1!", "password", "SamePass1!");
+  @Test
+  @DisplayName("changePassword: same as old → 400")
+  void changePassword_sameAsOld_returns400() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    Map<String, String> payload = Map.of("oldPassword", "SamePass1!", "password", "SamePass1!");
 
-        ResponseEntity<?> response = userController.changePassword(authentication, payload, httpRequest);
+    ResponseEntity<?> response =
+        userController.changePassword(authentication, payload, httpRequest);
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
 
-    // ── deleteCurrentUser ─────────────────────────────────────────
+  // ── deleteCurrentUser ─────────────────────────────────────────
 
-    @Test
-    @DisplayName("deleteCurrentUser: success → 200")
-    void deleteCurrentUser_success_returns200() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        when(userService.getUserById("u1")).thenReturn(sampleUser);
-        when(userService.deleteAccount(eq("u1"), isNull(), any(), any())).thenReturn(true);
+  @Test
+  @DisplayName("deleteCurrentUser: success → 200")
+  void deleteCurrentUser_success_returns200() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    when(userService.getUserById("u1")).thenReturn(sampleUser);
+    when(userService.deleteAccount(eq("u1"), isNull(), any(), any())).thenReturn(true);
 
-        ResponseEntity<?> response = userController.deleteCurrentUser(authentication, null, httpRequest);
+    ResponseEntity<?> response =
+        userController.deleteCurrentUser(authentication, null, httpRequest);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("deleteCurrentUser: wrong password → 401, account intact")
-    void deleteCurrentUser_wrongPassword_returns401() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        when(userService.getUserById("u1")).thenReturn(sampleUser);
-        when(userService.deleteAccount(eq("u1"), eq("bad"), any(), any()))
-                .thenThrow(new IllegalArgumentException("Password confirmation failed — account not deleted"));
+  @Test
+  @DisplayName("deleteCurrentUser: wrong password → 401, account intact")
+  void deleteCurrentUser_wrongPassword_returns401() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    when(userService.getUserById("u1")).thenReturn(sampleUser);
+    when(userService.deleteAccount(eq("u1"), eq("bad"), any(), any()))
+        .thenThrow(
+            new IllegalArgumentException("Password confirmation failed — account not deleted"));
 
-        ResponseEntity<?> response = userController.deleteCurrentUser(
-                authentication, new DeleteAccountRequest("bad"), httpRequest);
+    ResponseEntity<?> response =
+        userController.deleteCurrentUser(
+            authentication, new DeleteAccountRequest("bad"), httpRequest);
 
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("deleteCurrentUser: user not found → 404")
-    void deleteCurrentUser_notFound_returns404() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        when(userService.getUserById("u1")).thenReturn(null);
-        when(userService.deleteAccount(eq("u1"), isNull(), any(), any())).thenReturn(false);
+  @Test
+  @DisplayName("deleteCurrentUser: user not found → 404")
+  void deleteCurrentUser_notFound_returns404() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    when(userService.getUserById("u1")).thenReturn(null);
+    when(userService.deleteAccount(eq("u1"), isNull(), any(), any())).thenReturn(false);
 
-        ResponseEntity<?> response = userController.deleteCurrentUser(authentication, null, httpRequest);
+    ResponseEntity<?> response =
+        userController.deleteCurrentUser(authentication, null, httpRequest);
 
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
 
-    @Test
-    @DisplayName("deleteCurrentUser: exception → 500")
-    void deleteCurrentUser_exception_returns500() {
-        when(authentication.getPrincipal()).thenReturn(samplePrincipal);
-        when(userService.getUserById("u1")).thenReturn(sampleUser);
-        when(userService.deleteAccount(eq("u1"), isNull(), any(), any())).thenThrow(new RuntimeException("db error"));
+  @Test
+  @DisplayName("deleteCurrentUser: exception → 500")
+  void deleteCurrentUser_exception_returns500() {
+    when(authentication.getPrincipal()).thenReturn(samplePrincipal);
+    when(userService.getUserById("u1")).thenReturn(sampleUser);
+    when(userService.deleteAccount(eq("u1"), isNull(), any(), any()))
+        .thenThrow(new RuntimeException("db error"));
 
-        ResponseEntity<?> response = userController.deleteCurrentUser(authentication, null, httpRequest);
+    ResponseEntity<?> response =
+        userController.deleteCurrentUser(authentication, null, httpRequest);
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    }
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+  }
 }

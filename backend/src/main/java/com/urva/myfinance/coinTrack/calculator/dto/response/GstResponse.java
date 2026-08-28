@@ -2,15 +2,12 @@ package com.urva.myfinance.coinTrack.calculator.dto.response;
 
 import java.math.BigDecimal;
 
-/**
- * Response DTO for GST Calculator.
- */
+/** Response DTO for GST Calculator. */
 public record GstResponse(
-        BigDecimal baseAmount,
-        BigDecimal gstAmount,
-        BigDecimal totalAmount,
-        BigDecimal cgst,
-        BigDecimal sgst,
-        BigDecimal gstRate,
-        boolean isInclusive) {
-}
+    BigDecimal baseAmount,
+    BigDecimal gstAmount,
+    BigDecimal totalAmount,
+    BigDecimal cgst,
+    BigDecimal sgst,
+    BigDecimal gstRate,
+    boolean isInclusive) {}

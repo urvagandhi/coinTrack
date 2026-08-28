@@ -1,14 +1,12 @@
 package com.urva.myfinance.coinTrack.migration;
 
 import java.time.Instant;
-
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "schema_migrations")
 @Data
@@ -17,20 +15,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MigrationRecord {
 
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String migrationId;
+  private String migrationId;
 
-    private String version;
+  private String version;
 
-    private String description;
+  private String description;
 
-    private Instant executedAt;
+  private Instant executedAt;
 
-    private boolean success;
+  private boolean success;
 
-    private String errorMessage;
+  private String errorMessage;
 
-    private int documentsModified;
+  private int documentsModified;
 }

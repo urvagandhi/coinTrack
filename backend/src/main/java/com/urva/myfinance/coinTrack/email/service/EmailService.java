@@ -1,11 +1,14 @@
 package com.urva.myfinance.coinTrack.email.service;
 
+import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
+import com.urva.myfinance.coinTrack.user.model.User;
+import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -14,12 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-
-import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
-import com.urva.myfinance.coinTrack.user.model.User;
-
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 
 // ============================================================================
 // LEGACY SMTP IMPORTS (DISABLED – Gmail SMTP blocked on cloud providers)
@@ -33,287 +30,244 @@ import lombok.RequiredArgsConstructor;
 /**
  * Service for sending emails using Thymeleaf templates.
  *
- * IMPORTANT: Now uses Brevo API instead of SMTP!
- * Gmail SMTP is blocked on cloud providers like Render (ports 25, 587, 465).
- * Brevo uses HTTPS (port 443) which works on all cloud platforms.
+ * <p>IMPORTANT: Now uses Brevo API instead of SMTP! Gmail SMTP is blocked on cloud providers like
+ * Render (ports 25, 587, 465). Brevo uses HTTPS (port 443) which works on all cloud platforms.
  *
- * Email Types:
- * - Welcome email (on registration)
- * - Email verification (magic link)
- * - Password reset (magic link)
- * - Email change verification (magic link to new email)
- * - Security alerts (password change, 2FA setup/reset, email/mobile/username
- * change)
+ * <p>Email Types: - Welcome email (on registration) - Email verification (magic link) - Password
+ * reset (magic link) - Email change verification (magic link to new email) - Security alerts
+ * (password change, 2FA setup/reset, email/mobile/username change)
  *
- * Email Timing Rule:
- * - Welcome email and verification email are sent SEPARATELY
- * - Never combine them into one email
+ * <p>Email Timing Rule: - Welcome email and verification email are sent SEPARATELY - Never combine
+ * them into one email
  *
- * DESIGN PRINCIPLE:
- * - Email failures should NEVER block user flows (login, registration, etc.)
- * - All email methods are async and fail-safe
+ * <p>DESIGN PRINCIPLE: - Email failures should NEVER block user flows (login, registration, etc.) -
+ * All email methods are async and fail-safe
  */
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
-    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
+  private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    // ============================================================================
-    // Email sender — BrevoEmailService is the sole EmailSender implementation (all profiles)
-    // ============================================================================
-    private final EmailSender brevoEmailService;
-    private final TemplateEngine templateEngine;
-    private final EmailConfigProperties emailConfig;
+  // ============================================================================
+  // Email sender — BrevoEmailService is the sole EmailSender implementation (all profiles)
+  // ============================================================================
+  private final EmailSender brevoEmailService;
+  private final TemplateEngine templateEngine;
+  private final EmailConfigProperties emailConfig;
 
+  private static final DateTimeFormatter DATETIME_FORMAT =
+      DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a");
 
-    private static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a");
+  private String logoDataUri;
 
-    private String logoDataUri;
-
-    @PostConstruct
-    public void initLogo() {
-        try {
-            ClassPathResource resource = new ClassPathResource("static/logo/coinTrack.png");
-            byte[] bytes = StreamUtils.copyToByteArray(resource.getInputStream());
-            String base64 = Base64.getEncoder().encodeToString(bytes);
-            this.logoDataUri = "data:image/png;base64," + base64;
-            logger.info("Email logo loaded successfully from classpath (size: {} bytes)", bytes.length);
-        } catch (Exception e) {
-            logger.warn("Failed to load email logo from classpath, falling back to configuration URL", e);
-            this.logoDataUri = emailConfig.getLogoUrl();
-        }
+  @PostConstruct
+  public void initLogo() {
+    try {
+      ClassPathResource resource = new ClassPathResource("static/logo/coinTrack.png");
+      byte[] bytes = StreamUtils.copyToByteArray(resource.getInputStream());
+      String base64 = Base64.getEncoder().encodeToString(bytes);
+      this.logoDataUri = "data:image/png;base64," + base64;
+      logger.info("Email logo loaded successfully from classpath (size: {} bytes)", bytes.length);
+    } catch (Exception e) {
+      logger.warn("Failed to load email logo from classpath, falling back to configuration URL", e);
+      this.logoDataUri = emailConfig.getLogoUrl();
     }
+  }
 
-    /**
-     * Send welcome email to new user.
-     * Sent FIRST, before verification email.
-     */
-    @Async
-    public void sendWelcomeEmail(User user) {
-        Context context = new Context();
-        context.setVariable("username", user.getUsername());
-        context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
-        context.setVariable("supportEmail", emailConfig.getSupport());
-        context.setVariable("year", LocalDateTime.now().getYear());
+  /** Send welcome email to new user. Sent FIRST, before verification email. */
+  @Async
+  public void sendWelcomeEmail(User user) {
+    Context context = new Context();
+    context.setVariable("username", user.getUsername());
+    context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
+    context.setVariable("supportEmail", emailConfig.getSupport());
+    context.setVariable("year", LocalDateTime.now().getYear());
 
-        sendEmail(
-                user.getEmail(),
-                "Welcome to CoinTrack",
-                "email/welcome",
-                context);
+    sendEmail(user.getEmail(), "Welcome to CoinTrack", "email/welcome", context);
+  }
+
+  /** Send email verification link. Sent SECOND, after welcome email. */
+  @Async
+  public void sendEmailVerification(User user, String magicLink) {
+    Context context = new Context();
+    context.setVariable("username", user.getUsername());
+    context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
+    context.setVariable("magicLink", magicLink);
+    context.setVariable("expiryMinutes", emailConfig.getMagicLinkExpiryMinutes());
+    context.setVariable("supportEmail", emailConfig.getSupport());
+    context.setVariable("year", LocalDateTime.now().getYear());
+
+    sendEmail(
+        user.getEmail(), "Verify Your Email Address - CoinTrack", "email/verify-email", context);
+  }
+
+  /** Send password reset link. */
+  @Async
+  public void sendPasswordResetLink(User user, String magicLink) {
+    Context context = new Context();
+    context.setVariable("username", user.getUsername());
+    context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
+    context.setVariable("magicLink", magicLink);
+    context.setVariable("expiryMinutes", emailConfig.getMagicLinkExpiryMinutes());
+    context.setVariable("supportEmail", emailConfig.getSupport());
+    context.setVariable("year", LocalDateTime.now().getYear());
+
+    sendEmail(user.getEmail(), "Reset Your Password - CoinTrack", "email/reset-password", context);
+  }
+
+  /**
+   * Send email change verification to the NEW email address. Old email will receive a security
+   * alert separately.
+   */
+  @Async
+  public void sendEmailChangeVerification(User user, String newEmail, String magicLink) {
+    Context context = new Context();
+    context.setVariable("username", user.getUsername());
+    context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
+    context.setVariable("oldEmail", user.getEmail());
+    context.setVariable("newEmail", newEmail);
+    context.setVariable("magicLink", magicLink);
+    context.setVariable("expiryMinutes", emailConfig.getMagicLinkExpiryMinutes());
+    context.setVariable("supportEmail", emailConfig.getSupport());
+    context.setVariable("year", LocalDateTime.now().getYear());
+
+    sendEmail(
+        newEmail, // Send to NEW email
+        "Confirm Your Email Change - CoinTrack",
+        "email/change-email",
+        context);
+  }
+
+  /**
+   * Send 2FA recovery magic link. Used when user has lost access to their authenticator AND all
+   * backup codes.
+   */
+  @Async
+  public void send2FARecoveryLink(User user, String magicLink) {
+    Context context = new Context();
+    context.setVariable("username", user.getUsername());
+    context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
+    context.setVariable("magicLink", magicLink);
+    context.setVariable("expiryMinutes", emailConfig.getMagicLinkExpiryMinutes());
+    context.setVariable("supportEmail", emailConfig.getSupport());
+    context.setVariable("year", LocalDateTime.now().getYear());
+
+    sendEmail(
+        user.getEmail(),
+        "Reset Your 2-Factor Authentication - CoinTrack",
+        "email/2fa-recovery",
+        context);
+  }
+
+  /**
+   * Send security alert email.
+   *
+   * <p>Security alerts are sent for: - Password change - 2FA setup - 2FA reset - Email change (to
+   * old email) - Mobile change - Username change
+   *
+   * @param user User to send alert to
+   * @param event Event type (e.g., "Password Changed", "2FA Enabled")
+   * @param metadata Additional details (e.g., IP address, location)
+   */
+  @Async
+  public void sendSecurityAlert(User user, String event, Map<String, String> metadata) {
+    doSendSecurityAlert(user, event, metadata);
+  }
+
+  /** Convenience method for sending security alert without metadata. */
+  @Async
+  public void sendSecurityAlert(User user, String event) {
+    doSendSecurityAlert(user, event, null);
+  }
+
+  /** Send security alert with IP address. */
+  @Async
+  public void sendSecurityAlertWithIP(User user, String event, String ipAddress) {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("IP Address", ipAddress);
+    doSendSecurityAlert(user, event, metadata);
+  }
+
+  /**
+   * Internal worker shared by all security-alert overloads. Kept private and non-@Async so every
+   * public entry point is independently proxied — no {@code this.} call can bypass the async
+   * executor.
+   */
+  private void doSendSecurityAlert(User user, String event, Map<String, String> metadata) {
+    Context context = new Context();
+    context.setVariable("username", user.getUsername());
+    context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
+    context.setVariable("event", event);
+    context.setVariable("timestamp", LocalDateTime.now().format(DATETIME_FORMAT));
+    context.setVariable("metadata", metadata != null ? metadata : new HashMap<>());
+    context.setVariable("supportEmail", emailConfig.getSupport());
+    context.setVariable("year", LocalDateTime.now().getYear());
+
+    sendEmail(
+        user.getEmail(),
+        "Security Alert: " + event + " - CoinTrack",
+        "email/security-alert",
+        context);
+  }
+
+  /** Send contact form email to support. */
+  @Async
+  public void sendContactFormEmail(String name, String email, String message) {
+    Context context = new Context();
+    context.setVariable("name", name);
+    context.setVariable("email", email);
+    context.setVariable("message", message);
+
+    // Send internally to support email
+    sendEmail(
+        emailConfig.getSupport(),
+        "New Contact Form Submission from " + name,
+        "email/contact-form",
+        context);
+  }
+
+  /** Preview email template (for admin/dev use). Returns rendered HTML without sending. */
+  public String previewEmailTemplate(String templateName, Map<String, Object> variables) {
+    Context context = new Context();
+    variables.forEach(context::setVariable);
+
+    // Add common variables
+    context.setVariable("logoUrl", logoDataUri != null ? logoDataUri : emailConfig.getLogoUrl());
+    context.setVariable("supportEmail", emailConfig.getSupport());
+    context.setVariable("year", LocalDateTime.now().getYear());
+
+    return templateEngine.process("email/" + templateName, context);
+  }
+
+  /**
+   * Send an email using Thymeleaf template via Brevo API.
+   *
+   * <p>This method: 1. Renders HTML content using Thymeleaf template 2. Sends via Brevo REST API
+   * (HTTPS, port 443) 3. Logs warning if email fails (never throws)
+   *
+   * <p>IMPORTANT: Email failures should NEVER block user flows! Login, registration, and other
+   * operations must succeed even if email fails.
+   *
+   * @param to Recipient email address
+   * @param subject Email subject
+   * @param templateName Thymeleaf template name (e.g., "email/welcome")
+   * @param context Thymeleaf context with template variables
+   */
+  private void sendEmail(String to, String subject, String templateName, Context context) {
+    // Add common variables to all email templates
+    context.setVariable("logoUrl", logoDataUri != null ? logoDataUri : emailConfig.getLogoUrl());
+    context.setVariable("supportEmail", emailConfig.getSupport());
+    context.setVariable("year", LocalDateTime.now().getYear());
+
+    // Render HTML using Thymeleaf
+    String htmlContent = templateEngine.process(templateName, context);
+
+    // Send via Brevo API (never throws - fail-safe)
+    boolean sent = brevoEmailService.sendEmail(to, subject, htmlContent);
+
+    if (!sent) {
+      logger.warn("Email not sent to {} - subject: {}", to, subject);
     }
-
-    /**
-     * Send email verification link.
-     * Sent SECOND, after welcome email.
-     */
-    @Async
-    public void sendEmailVerification(User user, String magicLink) {
-        Context context = new Context();
-        context.setVariable("username", user.getUsername());
-        context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
-        context.setVariable("magicLink", magicLink);
-        context.setVariable("expiryMinutes", emailConfig.getMagicLinkExpiryMinutes());
-        context.setVariable("supportEmail", emailConfig.getSupport());
-        context.setVariable("year", LocalDateTime.now().getYear());
-
-        sendEmail(
-                user.getEmail(),
-                "Verify Your Email Address - CoinTrack",
-                "email/verify-email",
-                context);
-    }
-
-    /**
-     * Send password reset link.
-     */
-    @Async
-    public void sendPasswordResetLink(User user, String magicLink) {
-        Context context = new Context();
-        context.setVariable("username", user.getUsername());
-        context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
-        context.setVariable("magicLink", magicLink);
-        context.setVariable("expiryMinutes", emailConfig.getMagicLinkExpiryMinutes());
-        context.setVariable("supportEmail", emailConfig.getSupport());
-        context.setVariable("year", LocalDateTime.now().getYear());
-
-        sendEmail(
-                user.getEmail(),
-                "Reset Your Password - CoinTrack",
-                "email/reset-password",
-                context);
-    }
-
-    /**
-     * Send email change verification to the NEW email address.
-     * Old email will receive a security alert separately.
-     */
-    @Async
-    public void sendEmailChangeVerification(User user, String newEmail, String magicLink) {
-        Context context = new Context();
-        context.setVariable("username", user.getUsername());
-        context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
-        context.setVariable("oldEmail", user.getEmail());
-        context.setVariable("newEmail", newEmail);
-        context.setVariable("magicLink", magicLink);
-        context.setVariable("expiryMinutes", emailConfig.getMagicLinkExpiryMinutes());
-        context.setVariable("supportEmail", emailConfig.getSupport());
-        context.setVariable("year", LocalDateTime.now().getYear());
-
-        sendEmail(
-                newEmail, // Send to NEW email
-                "Confirm Your Email Change - CoinTrack",
-                "email/change-email",
-                context);
-    }
-
-    /**
-     * Send 2FA recovery magic link.
-     * Used when user has lost access to their authenticator AND all backup codes.
-     */
-    @Async
-    public void send2FARecoveryLink(User user, String magicLink) {
-        Context context = new Context();
-        context.setVariable("username", user.getUsername());
-        context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
-        context.setVariable("magicLink", magicLink);
-        context.setVariable("expiryMinutes", emailConfig.getMagicLinkExpiryMinutes());
-        context.setVariable("supportEmail", emailConfig.getSupport());
-        context.setVariable("year", LocalDateTime.now().getYear());
-
-        sendEmail(
-                user.getEmail(),
-                "Reset Your 2-Factor Authentication - CoinTrack",
-                "email/2fa-recovery",
-                context);
-    }
-
-    /**
-     * Send security alert email.
-     *
-     * Security alerts are sent for:
-     * - Password change
-     * - 2FA setup
-     * - 2FA reset
-     * - Email change (to old email)
-     * - Mobile change
-     * - Username change
-     *
-     * @param user     User to send alert to
-     * @param event    Event type (e.g., "Password Changed", "2FA Enabled")
-     * @param metadata Additional details (e.g., IP address, location)
-     */
-    @Async
-    public void sendSecurityAlert(User user, String event, Map<String, String> metadata) {
-        doSendSecurityAlert(user, event, metadata);
-    }
-
-    /**
-     * Convenience method for sending security alert without metadata.
-     */
-    @Async
-    public void sendSecurityAlert(User user, String event) {
-        doSendSecurityAlert(user, event, null);
-    }
-
-    /**
-     * Send security alert with IP address.
-     */
-    @Async
-    public void sendSecurityAlertWithIP(User user, String event, String ipAddress) {
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("IP Address", ipAddress);
-        doSendSecurityAlert(user, event, metadata);
-    }
-
-    /**
-     * Internal worker shared by all security-alert overloads. Kept private and
-     * non-@Async so every public entry point is independently proxied — no
-     * {@code this.} call can bypass the async executor.
-     */
-    private void doSendSecurityAlert(User user, String event, Map<String, String> metadata) {
-        Context context = new Context();
-        context.setVariable("username", user.getUsername());
-        context.setVariable("name", user.getName() != null ? user.getName() : user.getUsername());
-        context.setVariable("event", event);
-        context.setVariable("timestamp", LocalDateTime.now().format(DATETIME_FORMAT));
-        context.setVariable("metadata", metadata != null ? metadata : new HashMap<>());
-        context.setVariable("supportEmail", emailConfig.getSupport());
-        context.setVariable("year", LocalDateTime.now().getYear());
-
-        sendEmail(
-                user.getEmail(),
-                "Security Alert: " + event + " - CoinTrack",
-                "email/security-alert",
-                context);
-    }
-
-    /**
-     * Send contact form email to support.
-     */
-    @Async
-    public void sendContactFormEmail(String name, String email, String message) {
-        Context context = new Context();
-        context.setVariable("name", name);
-        context.setVariable("email", email);
-        context.setVariable("message", message);
-
-        // Send internally to support email
-        sendEmail(
-                emailConfig.getSupport(),
-                "New Contact Form Submission from " + name,
-                "email/contact-form",
-                context);
-    }
-
-    /**
-     * Preview email template (for admin/dev use).
-     * Returns rendered HTML without sending.
-     */
-    public String previewEmailTemplate(String templateName, Map<String, Object> variables) {
-        Context context = new Context();
-        variables.forEach(context::setVariable);
-
-        // Add common variables
-        context.setVariable("logoUrl", logoDataUri != null ? logoDataUri : emailConfig.getLogoUrl());
-        context.setVariable("supportEmail", emailConfig.getSupport());
-        context.setVariable("year", LocalDateTime.now().getYear());
-
-        return templateEngine.process("email/" + templateName, context);
-    }
-
-    /**
-     * Send an email using Thymeleaf template via Brevo API.
-     *
-     * This method:
-     * 1. Renders HTML content using Thymeleaf template
-     * 2. Sends via Brevo REST API (HTTPS, port 443)
-     * 3. Logs warning if email fails (never throws)
-     *
-     * IMPORTANT: Email failures should NEVER block user flows!
-     * Login, registration, and other operations must succeed even if email fails.
-     *
-     * @param to           Recipient email address
-     * @param subject      Email subject
-     * @param templateName Thymeleaf template name (e.g., "email/welcome")
-     * @param context      Thymeleaf context with template variables
-     */
-    private void sendEmail(String to, String subject, String templateName, Context context) {
-        // Add common variables to all email templates
-        context.setVariable("logoUrl", logoDataUri != null ? logoDataUri : emailConfig.getLogoUrl());
-        context.setVariable("supportEmail", emailConfig.getSupport());
-        context.setVariable("year", LocalDateTime.now().getYear());
-
-        // Render HTML using Thymeleaf
-        String htmlContent = templateEngine.process(templateName, context);
-
-        // Send via Brevo API (never throws - fail-safe)
-        boolean sent = brevoEmailService.sendEmail(to, subject, htmlContent);
-
-        if (!sent) {
-            logger.warn("Email not sent to {} - subject: {}", to, subject);
-        }
-
-    }
+  }
 }

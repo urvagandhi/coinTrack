@@ -25,11 +25,12 @@
 14. [Logging Strategy](#14-logging-strategy)
 15. [Configuration & Environments](#15-configuration--environments)
 16. [Testing Strategy](#16-testing-strategy)
-17. [Extension Guide](#17-extension-guide)
-18. [Anti-Patterns](#18-anti-patterns)
-19. [Deployment & Runtime](#19-deployment--runtime)
-20. [Codebase Statistics](#20-codebase-statistics)
-21. [Documentation Index](#21-documentation-index)
+17. [Code Quality, Formatting & Linting](#17-code-quality-formatting--linting)
+18. [Extension Guide](#18-extension-guide)
+19. [Anti-Patterns](#19-anti-patterns)
+20. [Deployment & Runtime](#20-deployment--runtime)
+21. [Codebase Statistics](#21-codebase-statistics)
+22. [Documentation Index](#22-documentation-index)
 
 ---
 
@@ -773,7 +774,25 @@ when(mockAdapter.fetchHoldings(any())).thenReturn(CompletableFuture.completedFut
 
 ---
 
-## 17. Extension Guide
+## 17. Code Quality, Formatting & Linting
+
+We enforce automated code formatting and static code quality checks via Maven plugins in `pom.xml`.
+
+### Developer Commands
+
+| Command | Purpose | Tool |
+|---------|---------|------|
+| `./mvnw spotless:apply` | Auto-formats all Java code | **Spotless** (Google Java Format v1.24.0) |
+| `./mvnw spotless:check` | Verifies code formatting compliance | **Spotless** |
+| `./mvnw checkstyle:check` | Runs static code analysis & style checks | **Checkstyle** (`google_checks.xml`) |
+
+### Standards Enforced
+- **Formatting**: Google Java Format standard 2-space indentation, Unix line endings (`lf`), and trailing whitespace removal.
+- **Linting**: Import ordering, naming conventions, and static code quality rules.
+
+---
+
+## 18. Extension Guide
 
 ### Adding a New Broker (e.g., Groww)
 

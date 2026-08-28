@@ -21,44 +21,44 @@ import java.util.stream.Collectors;
  */
 public final class HolderName {
 
-    private HolderName() {
-        // Utility class
-    }
+  private HolderName() {
+    // Utility class
+  }
 
-    /**
-     * Normalize a holder name: trim surrounding whitespace, collapse runs of internal whitespace to a
-     * single space, and title-case every whitespace-delimited token.
-     *
-     * @param raw the raw input (may be {@code null} or blank)
-     * @return the canonical form, or the input unchanged when it is {@code null}; blank input is
-     *         returned unchanged so callers can decide their own blank/fallback semantics
-     */
-    public static String normalize(String raw) {
-        if (raw == null) {
-            return null;
-        }
-        String collapsed = raw.trim().replaceAll("\\s+", " ");
-        if (collapsed.isEmpty()) {
-            return collapsed;
-        }
-        return titleCase(collapsed);
+  /**
+   * Normalize a holder name: trim surrounding whitespace, collapse runs of internal whitespace to a
+   * single space, and title-case every whitespace-delimited token.
+   *
+   * @param raw the raw input (may be {@code null} or blank)
+   * @return the canonical form, or the input unchanged when it is {@code null}; blank input is
+   *     returned unchanged so callers can decide their own blank/fallback semantics
+   */
+  public static String normalize(String raw) {
+    if (raw == null) {
+      return null;
     }
+    String collapsed = raw.trim().replaceAll("\\s+", " ");
+    if (collapsed.isEmpty()) {
+      return collapsed;
+    }
+    return titleCase(collapsed);
+  }
 
-    /**
-     * Title-case each whitespace-delimited token: "rahul das" &rarr; "Rahul Das". Words separated by
-     * punctuation (e.g. "Kumar-Das") are treated as single tokens to avoid corrupting apostrophes or
-     * hyphens; the whole token's first letter is upper-cased and the remainder lower-cased.
-     */
-    private static String titleCase(String collapsed) {
-        return Arrays.stream(collapsed.split(" ", -1))
-                .map(HolderName::titleCaseToken)
-                .collect(Collectors.joining(" "));
-    }
+  /**
+   * Title-case each whitespace-delimited token: "rahul das" &rarr; "Rahul Das". Words separated by
+   * punctuation (e.g. "Kumar-Das") are treated as single tokens to avoid corrupting apostrophes or
+   * hyphens; the whole token's first letter is upper-cased and the remainder lower-cased.
+   */
+  private static String titleCase(String collapsed) {
+    return Arrays.stream(collapsed.split(" ", -1))
+        .map(HolderName::titleCaseToken)
+        .collect(Collectors.joining(" "));
+  }
 
-    private static String titleCaseToken(String token) {
-        if (token.isEmpty()) {
-            return token;
-        }
-        return Character.toUpperCase(token.charAt(0)) + token.substring(1).toLowerCase();
+  private static String titleCaseToken(String token) {
+    if (token.isEmpty()) {
+      return token;
     }
+    return Character.toUpperCase(token.charAt(0)) + token.substring(1).toLowerCase();
+  }
 }

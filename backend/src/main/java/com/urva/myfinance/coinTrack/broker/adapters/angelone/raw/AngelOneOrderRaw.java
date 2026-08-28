@@ -4,97 +4,97 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 /**
- * Raw order row from Angel One SmartAPI /rest/secure/angelbroking/order/v1/getOrderBook.
- * All numeric fields are Strings — parsed by PriceNormalizer in the mapper.
- * Timestamps arrive as "dd-MMM-yyyy HH:mm:ss" (e.g. "12-May-2026 14:30:45").
+ * Raw order row from Angel One SmartAPI /rest/secure/angelbroking/order/v1/getOrderBook. All
+ * numeric fields are Strings — parsed by PriceNormalizer in the mapper. Timestamps arrive as
+ * "dd-MMM-yyyy HH:mm:ss" (e.g. "12-May-2026 14:30:45").
  */
 @Data
 public class AngelOneOrderRaw {
 
-    @JsonProperty("orderid")
-    private String orderid;
+  @JsonProperty("orderid")
+  private String orderid;
 
-    @JsonProperty("uniqueorderid")
-    private String uniqueorderid;
+  @JsonProperty("uniqueorderid")
+  private String uniqueorderid;
 
-    @JsonProperty("exchorderid")
-    private String exchorderid;
+  @JsonProperty("exchorderid")
+  private String exchorderid;
 
-    @JsonProperty("status")
-    private String status;
+  @JsonProperty("status")
+  private String status;
 
-    @JsonProperty("text")
-    private String text;
+  @JsonProperty("text")
+  private String text;
 
-    @JsonProperty("orderstatus")
-    private String orderstatus;
+  @JsonProperty("orderstatus")
+  private String orderstatus;
 
-    @JsonProperty("variety")
-    private String variety;
+  @JsonProperty("variety")
+  private String variety;
 
-    @JsonProperty("ordertype")
-    private String ordertype;
+  @JsonProperty("ordertype")
+  private String ordertype;
 
-    @JsonProperty("producttype")
-    private String producttype;
+  @JsonProperty("producttype")
+  private String producttype;
 
-    @JsonProperty("duration")
-    private String duration;
+  @JsonProperty("duration")
+  private String duration;
 
-    @JsonProperty("transactiontype")
-    private String transactiontype;
+  @JsonProperty("transactiontype")
+  private String transactiontype;
 
-    @JsonProperty("exchange")
-    private String exchange;
+  @JsonProperty("exchange")
+  private String exchange;
 
-    @JsonProperty("tradingsymbol")
-    private String tradingsymbol;
+  @JsonProperty("tradingsymbol")
+  private String tradingsymbol;
 
-    @JsonProperty("symboltoken")
-    private String symboltoken;
+  @JsonProperty("symboltoken")
+  private String symboltoken;
 
-    @JsonProperty("instrumenttype")
-    private String instrumenttype;
+  @JsonProperty("instrumenttype")
+  private String instrumenttype;
 
-    @JsonProperty("price")
-    private String price;
+  @JsonProperty("price")
+  private String price;
 
-    @JsonProperty("triggerprice")
-    private String triggerprice;
+  @JsonProperty("triggerprice")
+  private String triggerprice;
 
-    @JsonProperty("averageprice")
-    private String averageprice;
+  @JsonProperty("averageprice")
+  private String averageprice;
 
-    @JsonProperty("quantity")
-    private String quantity;
+  @JsonProperty("quantity")
+  private String quantity;
 
-    @JsonProperty("filledshares")
-    private String filledshares;
+  @JsonProperty("filledshares")
+  private String filledshares;
 
-    @JsonProperty("unfilledshares")
-    private String unfilledshares;
+  @JsonProperty("unfilledshares")
+  private String unfilledshares;
 
-    @JsonProperty("disclosedquantity")
-    private String disclosedquantity;
+  @JsonProperty("disclosedquantity")
+  private String disclosedquantity;
 
-    @JsonProperty("squareoff")
-    private String squareoff;
+  @JsonProperty("squareoff")
+  private String squareoff;
 
-    @JsonProperty("stoploss")
-    private String stoploss;
+  @JsonProperty("stoploss")
+  private String stoploss;
 
-    @JsonProperty("trailingstoploss")
-    private String trailingstoploss;
+  @JsonProperty("trailingstoploss")
+  private String trailingstoploss;
 
-    @JsonProperty("ordertag")
-    private String ordertag;
+  @JsonProperty("ordertag")
+  private String ordertag;
 
-    @JsonProperty("updatetime")
-    private String updatetime;
+  @JsonProperty("updatetime")
+  private String updatetime;
 
-    @JsonProperty("exchtime")
-    private String exchtime;
+  @JsonProperty("exchtime")
+  private String exchtime;
 
-    @JsonProperty("exchorderupdatetime")
-    private String exchorderupdatetime;
+  @JsonProperty("exchorderupdatetime")
+  private String exchorderupdatetime;
 }

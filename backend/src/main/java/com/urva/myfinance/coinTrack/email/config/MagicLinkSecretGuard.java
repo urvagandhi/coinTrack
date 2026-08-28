@@ -10,33 +10,34 @@ import org.springframework.core.env.Environment;
 import org.springframework.lang.NonNull;
 
 /**
- * Defense-in-depth guard: fails loud at startup if the magic-link signing secret
- * equals the auth JWT secret. The two secret domains must stay disjoint so a
- * PASSWORD_RESET_TEMP token can never be mistaken for an auth token even if a
- * route were misconfigured (JwtFilter would reject it by signature).
+ * Defense-in-depth guard: fails loud at startup if the magic-link signing secret equals the auth
+ * JWT secret. The two secret domains must stay disjoint so a PASSWORD_RESET_TEMP token can never be
+ * mistaken for an auth token even if a route were misconfigured (JwtFilter would reject it by
+ * signature).
  */
 @Configuration
-public class MagicLinkSecretGuard implements ApplicationListener<ApplicationReadyEvent>, EnvironmentAware {
+public class MagicLinkSecretGuard
+    implements ApplicationListener<ApplicationReadyEvent>, EnvironmentAware {
 
-    private static final Logger log = LoggerFactory.getLogger(MagicLinkSecretGuard.class);
+  private static final Logger log = LoggerFactory.getLogger(MagicLinkSecretGuard.class);
 
-    private Environment environment;
+  private Environment environment;
 
-    @Override
-    public void setEnvironment(@NonNull Environment environment) {
-        this.environment = environment;
+  @Override
+  public void setEnvironment(@NonNull Environment environment) {
+    this.environment = environment;
+  }
+
+  @Override
+  public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
+    String magicLinkSecret = environment.getProperty("email.magic-link-secret");
+    String jwtSecret = environment.getProperty("jwt.secret");
+
+    if (magicLinkSecret != null && magicLinkSecret.equals(jwtSecret)) {
+      log.error(
+          "SECURITY CONFIGURATION ERROR: EMAIL_MAGIC_LINK_SECRET is identical to JWT_SECRET. "
+              + "Magic-link tokens and auth tokens MUST use different secrets to preserve "
+              + "the two-tier token model. Regenerate one of them before production traffic.");
     }
-
-    @Override
-    public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
-        String magicLinkSecret = environment.getProperty("email.magic-link-secret");
-        String jwtSecret = environment.getProperty("jwt.secret");
-
-        if (magicLinkSecret != null && magicLinkSecret.equals(jwtSecret)) {
-            log.error(
-                    "SECURITY CONFIGURATION ERROR: EMAIL_MAGIC_LINK_SECRET is identical to JWT_SECRET. "
-                            + "Magic-link tokens and auth tokens MUST use different secrets to preserve "
-                            + "the two-tier token model. Regenerate one of them before production traffic.");
-        }
-    }
+  }
 }

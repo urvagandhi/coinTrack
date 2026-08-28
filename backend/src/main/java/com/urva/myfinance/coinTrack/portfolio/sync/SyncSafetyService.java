@@ -1,13 +1,13 @@
 package com.urva.myfinance.coinTrack.portfolio.sync;
 
 public interface SyncSafetyService {
-    boolean tryGlobalSyncLock();
+  boolean tryGlobalSyncLock();
 
-    void releaseGlobalSyncLock();
+  void releaseGlobalSyncLock();
 
-    boolean isMarketOpen();
+  boolean isMarketOpen();
 
-    boolean tryAccountLock(String accountId);
+  boolean tryAccountLock(String accountId);
 
-    void releaseAccountLock(String accountId);
+  void releaseAccountLock(String accountId);
 }
