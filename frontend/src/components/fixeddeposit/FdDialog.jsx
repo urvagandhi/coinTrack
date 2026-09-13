@@ -1,14 +1,7 @@
 'use client';
 
 import { useToast } from '@/components/ui/use-toast';
-import {
-  Calculator,
-  Loader2,
-  X,
-  RefreshCw,
-  Calendar,
-  Sparkles,
-} from 'lucide-react';
+import { Loader2, X, RefreshCw, Calendar, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import BankSearchCombobox from '@/components/ui/BankSearchCombobox';
@@ -25,13 +18,14 @@ const INITIAL_STATE = {
   maturityAmount: '',
   nominee: '',
   remarks: '',
-  fdType: 'CUMULATIVE',
-  compoundingFrequency: 'QUARTERLY',
-  payoutFrequency: 'AT_MATURITY',
-  isSeniorCitizen: false,
-  isTaxSaver: false,
-  hasPan: true,
-  form15g15hSubmitted: false,
+  // [DEPRECATED-SEC-04-05] Interest Structure / Eligibility fields are DISABLED along with the
+  // commented Sections 04/05 JSX below. fdType/compoundingFrequency defaults are now folded into
+  // the maturity-estimate helpers (CUMULATIVE / QUARTERLY), and nothing is sent to the backend.
+  // fdType: 'CUMULATIVE',
+  // compoundingFrequency: 'QUARTERLY',
+  // payoutFrequency: 'AT_MATURITY',
+  // isSeniorCitizen: false,
+  // isTaxSaver: false,
 };
 
 const COMPOUNDING_PERIODS = {
@@ -41,25 +35,27 @@ const COMPOUNDING_PERIODS = {
   YEARLY: 1,
 };
 
-const FD_TYPE_OPTIONS = [
-  { value: 'CUMULATIVE', label: 'Cumulative' },
-  { value: 'NON_CUMULATIVE', label: 'Non-Cumulative' },
-];
-
-const COMPOUNDING_OPTIONS = [
-  { value: 'MONTHLY', label: 'Monthly' },
-  { value: 'QUARTERLY', label: 'Quarterly' },
-  { value: 'HALF_YEARLY', label: 'Half-Yearly' },
-  { value: 'YEARLY', label: 'Yearly' },
-];
-
-const PAYOUT_OPTIONS = [
-  { value: 'MONTHLY', label: 'Monthly' },
-  { value: 'QUARTERLY', label: 'Quarterly' },
-  { value: 'HALF_YEARLY', label: 'Half-Yearly' },
-  { value: 'YEARLY', label: 'Yearly' },
-  { value: 'AT_MATURITY', label: 'At Maturity' },
-];
+// [DEPRECATED-SEC-04-05] FD Type / Compounding / Payout option lists are DISABLED with sections
+// 04/05; referenced only by the commented JSX below. Re-enable together with that block.
+// const FD_TYPE_OPTIONS = [
+//   { value: 'CUMULATIVE', label: 'Cumulative' },
+//   { value: 'NON_CUMULATIVE', label: 'Non-Cumulative' },
+// ];
+//
+// const COMPOUNDING_OPTIONS = [
+//   { value: 'MONTHLY', label: 'Monthly' },
+//   { value: 'QUARTERLY', label: 'Quarterly' },
+//   { value: 'HALF_YEARLY', label: 'Half-Yearly' },
+//   { value: 'YEARLY', label: 'Yearly' },
+// ];
+//
+// const PAYOUT_OPTIONS = [
+//   { value: 'MONTHLY', label: 'Monthly' },
+//   { value: 'QUARTERLY', label: 'Quarterly' },
+//   { value: 'HALF_YEARLY', label: 'Half-Yearly' },
+//   { value: 'YEARLY', label: 'Yearly' },
+//   { value: 'AT_MATURITY', label: 'At Maturity' },
+// ];
 
 /**
  * Format currency in Indian standard (en-IN)
@@ -120,7 +116,10 @@ function parseShortcutAmount(val) {
 }
 
 /**
- * Calculate human-readable tenure (Years, Months, Days) from dates
+ * Calculate human-readable tenure (Years, Months, Days) from dates.
+ * Decomposes via whole calendar months (dropping one when the end
+ * day-of-month is smaller than the start), then counts exact leftover days,
+ * so the text always agrees with the trailing total-day count.
  */
 function calculateTenurePeriod(issueDate, maturityDate) {
   if (!issueDate || !maturityDate) return '';
@@ -128,34 +127,39 @@ function calculateTenurePeriod(issueDate, maturityDate) {
   const end = new Date(maturityDate);
   if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return '';
 
-  const y1 = start.getFullYear(),
-    m1 = start.getMonth(),
-    d1 = start.getDate();
-  const y2 = end.getFullYear(),
-    m2 = end.getMonth(),
-    d2 = end.getDate();
+  const totalDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
 
-  let years = y2 - y1;
-  let months = m2 - m1;
-  let days = d2 - d1;
+  let months =
+    (end.getFullYear() - start.getFullYear()) * 12 +
+    (end.getMonth() - start.getMonth());
+  if (end.getDate() < start.getDate()) months -= 1;
 
+  let monthsAfterStart = new Date(
+    start.getFullYear(),
+    start.getMonth() + months,
+    start.getDate()
+  );
+  let days = Math.round((end - monthsAfterStart) / (1000 * 60 * 60 * 24));
   if (days < 0) {
     months -= 1;
-    const prevMonthDate = new Date(y2, m2, 0);
-    days += prevMonthDate.getDate();
+    monthsAfterStart = new Date(
+      start.getFullYear(),
+      start.getMonth() + months,
+      start.getDate()
+    );
+    days = Math.round((end - monthsAfterStart) / (1000 * 60 * 60 * 24));
   }
-  if (months < 0) {
-    years -= 1;
-    months += 12;
-  }
+
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
 
   const parts = [];
   if (years > 0) parts.push(`${years} ${years === 1 ? 'Year' : 'Years'}`);
-  if (months > 0) parts.push(`${months} ${months === 1 ? 'Month' : 'Months'}`);
+  if (remMonths > 0)
+    parts.push(`${remMonths} ${remMonths === 1 ? 'Month' : 'Months'}`);
   if (days > 0 || parts.length === 0)
     parts.push(`${days} ${days === 1 ? 'Day' : 'Days'}`);
 
-  const totalDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
   return `${parts.join(', ')} (${totalDays} Days)`;
 }
 
@@ -286,7 +290,7 @@ function calculateFdInterestRate(
   const totalDays = daysBetween(start, end);
 
   let low = 0.01,
-    high = 100,
+    high = 500,
     bestRate = 0;
   for (let i = 0; i < 120; i++) {
     const mid = (low + high) / 2;
@@ -340,6 +344,12 @@ export default function FdDialog({
 
   useEffect(() => {
     if (isOpen) {
+      // Restore the FD's persisted maturity mode (legacy docs without one = AUTOMATIC, matching
+      // the server default). Manual records stay Manual on edit so their certificate value is
+      // never silently re-computed.
+      setEntryMode(
+        initialData?.maturityMode === 'MANUAL' ? 'manual' : 'automatic'
+      );
       if (initialData) {
         const issueDate = initialData.issueDate || '';
         const maturityDate = initialData.maturityDate || '';
@@ -371,14 +381,13 @@ export default function FdDialog({
               : '',
           nominee: initialData.nominee || '',
           remarks: initialData.remarks || '',
-          fdType: initialData.fdType || 'CUMULATIVE',
-          compoundingFrequency: initialData.compoundingFrequency || 'QUARTERLY',
-          payoutFrequency: initialData.payoutFrequency || 'AT_MATURITY',
-          isSeniorCitizen: !!initialData.isSeniorCitizen,
-          isTaxSaver: !!initialData.isTaxSaver,
-          hasPan:
-            initialData.hasPan !== undefined ? !!initialData.hasPan : true,
-          form15g15hSubmitted: !!initialData.form15g15hSubmitted,
+          // [DEPRECATED-SEC-04-05] Interest Structure / Eligibility fields are DISABLED (sections
+          // 04/05); the dialog no longer tracks or submits them.
+          // fdType: initialData.fdType || 'CUMULATIVE',
+          // compoundingFrequency: initialData.compoundingFrequency || 'QUARTERLY',
+          // payoutFrequency: initialData.payoutFrequency || 'AT_MATURITY',
+          // isSeniorCitizen: !!initialData.isSeniorCitizen,
+          // isTaxSaver: !!initialData.isTaxSaver,
         });
       } else {
         setFormData({
@@ -424,26 +433,18 @@ export default function FdDialog({
       extra.compoundingFrequency || formData.compoundingFrequency || 'QUARTERLY'
     );
 
-  const triggerMaturityCalculation = (currData = formData) => {
-    const mat = calcMaturity(
-      currData.issueAmount,
-      currData.interestRate,
-      currData.issueDate,
-      currData.maturityDate,
-      currData
-    );
-    if (mat !== null) {
-      setFormData(prev => ({ ...prev, maturityAmount: String(mat) }));
-      toast({
-        title: 'Maturity Calculated',
-        description: `Calculated Maturity Amount: ${formatIndianCurrency(mat)}`,
-      });
-    } else {
-      toast({
-        title: 'Calculation Notice',
-        description:
-          'Please enter valid Issue Amount, Interest Rate, and Dates.',
-        variant: 'warning',
+  const handleModeChange = mode => {
+    setEntryMode(mode);
+    if (mode === 'automatic') {
+      setFormData(prev => {
+        const mat = calcMaturity(
+          prev.issueAmount,
+          prev.interestRate,
+          prev.issueDate,
+          prev.maturityDate,
+          prev
+        );
+        return mat !== null ? { ...prev, maturityAmount: String(mat) } : prev;
       });
     }
   };
@@ -529,6 +530,7 @@ export default function FdDialog({
         next.issueAmount &&
         next.issueDate &&
         next.maturityDate &&
+        !isNaN(parseFloat(parsedVal)) &&
         parseFloat(parsedVal) > parseFloat(next.issueAmount)
       ) {
         const rate = calcRate(
@@ -614,29 +616,101 @@ export default function FdDialog({
       return;
     }
 
+    const issueAmountNum = Number(formData.issueAmount);
+    const rateNum = Number(formData.interestRate);
+    if (isNaN(issueAmountNum) || !(issueAmountNum > 0)) {
+      toast({
+        title: 'Validation Error',
+        description:
+          'Initial / Issue Amount must be a valid number greater than 0.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (isNaN(rateNum) || !(rateNum > 0)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Interest Rate must be a valid number greater than 0.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let maturityForSend;
+    if (entryMode === 'manual') {
+      const manualMaturityNum = Number(formData.maturityAmount);
+      if (
+        !formData.maturityAmount ||
+        isNaN(manualMaturityNum) ||
+        !(manualMaturityNum > 0)
+      ) {
+        toast({
+          title: 'Validation Error',
+          description: 'Manual mode requires a Maturity Amount greater than 0.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      maturityForSend = manualMaturityNum;
+    } else {
+      const computed = calcMaturity(
+        formData.issueAmount,
+        formData.interestRate,
+        formData.issueDate,
+        formData.maturityDate,
+        formData
+      );
+      if (computed === null) {
+        toast({
+          title: 'Validation Error',
+          description:
+            'Could not compute the maturity amount. Check the Issue Amount, Interest Rate and Dates.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      maturityForSend = computed;
+    }
+
     setIsSubmitting(true);
     try {
       await onSave({
-        ...formData,
-        interestRate: Number(formData.interestRate),
-        issueAmount: Number(formData.issueAmount),
-        maturityAmount: formData.maturityAmount
-          ? Number(formData.maturityAmount)
-          : undefined,
-        fdType: formData.fdType || 'CUMULATIVE',
-        compoundingFrequency: formData.compoundingFrequency || 'QUARTERLY',
-        payoutFrequency: formData.payoutFrequency || 'AT_MATURITY',
-        isSeniorCitizen: !!formData.isSeniorCitizen,
-        isTaxSaver: !!formData.isTaxSaver,
-        hasPan: !!formData.hasPan,
-        form15g15hSubmitted: !!formData.form15g15hSubmitted,
+        place: formData.place,
+        holderName: formData.holderName,
+        accountNumber: formData.accountNumber,
+        interestRate: rateNum,
+        issueDate: formData.issueDate,
+        maturityDate: formData.maturityDate,
         investmentPeriod:
           formData.investmentPeriod ||
           calculateTenurePeriod(formData.issueDate, formData.maturityDate),
+        issueAmount: issueAmountNum,
+        maturityAmount: maturityForSend,
+        maturityMode: entryMode === 'manual' ? 'MANUAL' : 'AUTOMATIC',
+        nominee: formData.nominee,
+        remarks: formData.remarks,
+        // [DEPRECATED-SEC-04-05] Interest Structure / Eligibility fields are DISABLED (sections
+        // 04/05) and deliberately NOT sent: the backend means compute maturity with its fixed
+        // defaults (CUMULATIVE / QUARTERLY / AT_MATURITY) while preserving any stored fdType on
+        // edit. Re-enable together with the sections to start sending them again. [DEPRECATED-TDS]
+        // hasPan / form15g15hSubmitted were removed from the backend DTO and are not sent either.
+        // fdType: formData.fdType || 'CUMULATIVE',
+        // compoundingFrequency: formData.compoundingFrequency || 'QUARTERLY',
+        // payoutFrequency: formData.payoutFrequency || 'AT_MATURITY',
+        // isSeniorCitizen: !!formData.isSeniorCitizen,
+        // isTaxSaver: !!formData.isTaxSaver,
       });
       onClose();
     } catch (error) {
       console.error('Error saving FD:', error);
+      toast({
+        title: 'Failed to Save',
+        description:
+          error?.response?.data?.message ||
+          error?.message ||
+          'An unexpected error occurred while saving the fixed deposit.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -690,12 +764,10 @@ export default function FdDialog({
                     type='text'
                     required
                     value={formData.holderName}
-                    readOnly
-                    disabled
                     onChange={e =>
                       setFormData({ ...formData, holderName: e.target.value })
                     }
-                    className='ed-input w-full bg-muted/40 cursor-not-allowed opacity-70'
+                    className='ed-input w-full'
                     placeholder='Primary account holder'
                   />
                 </div>
@@ -819,19 +891,11 @@ export default function FdDialog({
                     <Sparkles className='h-3 w-3 text-[hsl(var(--gain))]' />
                     Maturity Amount (₹)
                   </label>
-                  <button
-                    type='button'
-                    onClick={() => triggerMaturityCalculation()}
-                    className='text-[10px] font-mono text-[hsl(var(--accent))] hover:underline flex items-center gap-1'
-                    title='Auto-calculate Maturity Amount'
-                  >
-                    <Calculator className='h-3 w-3' /> Auto-Calc
-                  </button>
                 </div>
                 <div className='flex items-center space-x-2 mt-2 mb-2'>
                   <button
                     type='button'
-                    onClick={() => setEntryMode('automatic')}
+                    onClick={() => handleModeChange('automatic')}
                     className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
                       entryMode === 'automatic'
                         ? 'bg-accent text-accent-foreground'
@@ -842,7 +906,7 @@ export default function FdDialog({
                   </button>
                   <button
                     type='button'
-                    onClick={() => setEntryMode('manual')}
+                    onClick={() => handleModeChange('manual')}
                     className={`px-3 py-1 text-[11px] font-mono uppercase tracking-[0.05em] rounded-full transition-colors ${
                       entryMode === 'manual'
                         ? 'bg-accent text-accent-foreground'
@@ -862,6 +926,11 @@ export default function FdDialog({
                       className='ed-input w-full font-mono text-[16px] font-semibold text-[hsl(var(--gain))] bg-[hsl(var(--gain))]/5 border-[hsl(var(--gain))]/30 focus:border-[hsl(var(--gain))]'
                       placeholder='Enter maturity amount manually'
                     />
+                    <p className='text-[11px] text-muted-foreground mt-1.5 leading-tight'>
+                      Manual mode keeps the certificate value as-is — the server
+                      will NOT recalculate it on save. Change the Maturity
+                      Amount above to update it.
+                    </p>
                   </div>
                 )}
                 {entryMode === 'automatic' && (
@@ -877,6 +946,19 @@ export default function FdDialog({
                       Maturity amount is auto-calculated based on interest rate
                       and tenure. Switch to Manual mode to override.
                     </p>
+                    {initialData?.serverComputedMaturityAmount != null &&
+                      formData.maturityAmount &&
+                      !isNaN(formData.maturityAmount) &&
+                      Math.abs(
+                        Number(formData.maturityAmount) -
+                          Number(initialData.serverComputedMaturityAmount)
+                      ) > 1 && (
+                        <p className='text-[11px] font-mono text-[hsl(var(--loss))] mt-1.5 leading-tight'>
+                          This estimate deviates from the server (bank-formula)
+                          value by more than ₹1 — the server will apply its own
+                          computation on save.
+                        </p>
+                      )}
                   </div>
                 )}
                 {formData.maturityAmount &&
@@ -930,7 +1012,7 @@ export default function FdDialog({
                           <div className='flex items-center justify-between text-[11px] font-mono mt-0.5'>
                             <span className='text-muted-foreground'>
                               {initialData.maturityAmountOverridden
-                                ? 'Manual override vs server:'
+                                ? 'Server override vs client estimate:'
                                 : 'Saved vs server compute:'}
                             </span>
                             <span
@@ -949,17 +1031,26 @@ export default function FdDialog({
                       <p className='text-[10px] text-muted-foreground/80 mt-1 leading-tight'>
                         Saved maturity{' '}
                         {initialData.maturityAmountOverridden
-                          ? 'was manually entered'
-                          : 'matches server computation'}
-                        . Recalculating uses the selected interest structure for
-                        reference only.
+                          ? 'is the server-computed value (saved in auto mode)'
+                          : 'matches the server computation within tolerance'}
+                        .
                       </p>
                     </div>
                   )}
               </div>
             </div>
 
-            {/* Section 4: Interest Structure (FD Type, Compounding, Payout) */}
+            {/* ============================================================
+                 SECTION 04 — INTEREST STRUCTURE  (INTENTIONALLY COMMENTED OUT)
+                 ------------------------------------------------------------------
+                 FD Type (Cumulative / Non-Cumulative), Compounding Frequency and
+                 Interest Payout are temporarily disabled (hidden from the UI and
+                 not sent to the backend). The backend continues to compute
+                 maturity using its fixed defaults (CUMULATIVE / QUARTERLY /
+                 AT_MATURITY). To re-enable later, uncomment this block and the
+                 related constants / submit fields below.
+                 ============================================================ */}
+            {/*
             <div className='space-y-3'>
               <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
                 04. Interest Structure
@@ -1029,8 +1120,18 @@ export default function FdDialog({
                 </p>
               )}
             </div>
+            */}
 
-            {/* Section 5: Tax & Compliance */}
+            {/* ============================================================
+                 SECTION 05 — TAX & COMPLIANCE  (INTENTIONALLY COMMENTED OUT)
+                 ------------------------------------------------------------------
+                 Senior Citizen (TDS threshold), Tax Saver (80C), PAN, Form
+                 15G/15H and the TDS explanatory note are temporarily disabled
+                 (hidden from the UI and not sent to the backend). TDS summary
+                 is also removed from the FD list page. To re-enable later,
+                 uncomment this block and the related submit fields below.
+                 ============================================================ */}
+            {/*
             <div className='space-y-3'>
               <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em] border-b border-border/50 pb-1'>
                 05. Tax & Compliance
@@ -1113,6 +1214,7 @@ export default function FdDialog({
                 </div>
               </div>
             </div>
+            */}
 
             {/* Section 6: Nominee & Remarks */}
             <div className='space-y-3'>

@@ -2,7 +2,11 @@
 
 import FdDialog from '@/components/fixeddeposit/FdDialog';
 import WithdrawDialog from '@/components/fixeddeposit/WithdrawDialog';
-import TdsSummary from '@/components/fixeddeposit/TdsSummary';
+// ============================================================
+// SECTION 05 / TDS — TdsSummary import COMMENTED OUT (intentional)
+// Re-enable when the TDS Summary feature is un-commented.
+// import TdsSummary from '@/components/fixeddeposit/TdsSummary';
+// ============================================================
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -22,7 +26,6 @@ import {
   Plus,
   Building2,
   CheckCircle2,
-  XCircle,
   Clock,
   ChevronDown,
   ArrowUpDown,
@@ -66,10 +69,6 @@ function StatusBadge({ status }) {
       'bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] border-[hsl(var(--accent))]/30';
   } else if (status === 'MATURED') {
     colorClass = 'bg-blue-500/10 text-blue-500 border-blue-500/30';
-  } else if (status === 'CLOSED') {
-    colorClass =
-      'bg-[hsl(var(--loss))]/10 text-[hsl(var(--loss))] border-[hsl(var(--loss))]/30';
-    Icon = XCircle;
   } else if (status === 'PREMATURELY_WITHDRAWN') {
     colorClass = 'bg-orange-500/10 text-orange-500 border-orange-500/30';
     Icon = Clock;
@@ -88,11 +87,9 @@ function StatusBadge({ status }) {
   );
 }
 
-function FdCard({ fd, onEdit, onCloseFd, onWithdraw }) {
+function FdCard({ fd, onEdit, onWithdraw }) {
   const canWithdraw =
-    fd.status !== 'CLOSED' &&
-    fd.status !== 'PREMATURELY_WITHDRAWN' &&
-    fd.status !== 'MATURED';
+    fd.status !== 'PREMATURELY_WITHDRAWN' && fd.status !== 'MATURED';
   return (
     <article
       className='ed-card relative group cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md p-5 flex flex-col justify-between'
@@ -152,6 +149,30 @@ function FdCard({ fd, onEdit, onCloseFd, onWithdraw }) {
           </div>
         )}
 
+        {/* ============================================================
+             SECTION 04 — FD Type / Compounding / Payout badges on the card
+             COMMENTED OUT (intentional). Re-enable with section 04.
+             ============================================================ */}
+        {/* <div className='flex flex-wrap gap-1.5 pt-2'>
+          {fd.fdType && (
+            <span className='text-[10px] font-mono uppercase tracking-[0.05em] text-muted-foreground border border-border bg-card px-1.5 py-0.5 rounded-sm'>
+              {fd.fdType === 'CUMULATIVE' ? 'Cumulative' : 'Non-Cumulative'}
+            </span>
+          )}
+          {fd.compoundingFrequency && fd.fdType !== 'NON_CUMULATIVE' && (
+            <span className='text-[10px] font-mono uppercase tracking-[0.05em] text-muted-foreground border border-border bg-card px-1.5 py-0.5 rounded-sm'>
+              {fd.compoundingFrequency}
+            </span>
+          )}
+          {fd.payoutFrequency && (
+            <span className='text-[10px] font-mono uppercase tracking-[0.05em] text-muted-foreground border border-border bg-card px-1.5 py-0.5 rounded-sm'>
+              {fd.payoutFrequency === 'AT_MATURITY'
+                ? 'Payout: At Maturity'
+                : `Payout: ${fd.payoutFrequency}`}
+            </span>
+          )}
+        </div> */}
+
         {fd.remarks && (
           <p className='text-[11px] text-muted-foreground italic mt-2 line-clamp-1'>
             "{fd.remarks}"
@@ -166,18 +187,6 @@ function FdCard({ fd, onEdit, onCloseFd, onWithdraw }) {
           </span>
         </div>
         <div className='flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity'>
-          {fd.status !== 'CLOSED' && fd.status !== 'PREMATURELY_WITHDRAWN' && (
-            <button
-              onClick={e => {
-                e.stopPropagation();
-                onCloseFd(fd.id);
-              }}
-              className='text-[11px] font-mono text-muted-foreground hover:text-[hsl(var(--loss))] transition-colors border border-border bg-card px-2 py-1 rounded-sm hover:border-[hsl(var(--loss))]/50'
-              aria-label='Mark Closed'
-            >
-              CLOSE
-            </button>
-          )}
           {canWithdraw && (
             <button
               onClick={e => {
@@ -196,11 +205,9 @@ function FdCard({ fd, onEdit, onCloseFd, onWithdraw }) {
   );
 }
 
-function FdTable({ fds, onEdit, onCloseFd, onWithdraw }) {
+function FdTable({ fds, onEdit, onWithdraw }) {
   const canWithdraw = fd =>
-    fd.status !== 'CLOSED' &&
-    fd.status !== 'PREMATURELY_WITHDRAWN' &&
-    fd.status !== 'MATURED';
+    fd.status !== 'PREMATURELY_WITHDRAWN' && fd.status !== 'MATURED';
   return (
     <div className='ed-card relative overflow-hidden'>
       <span className='corner-mark corner-tl' />
@@ -227,6 +234,19 @@ function FdTable({ fds, onEdit, onCloseFd, onWithdraw }) {
               <th className='py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground'>
                 Rate
               </th>
+              {/* ============================================================
+                   SECTION 04 — table columns FD Type / Compounding /
+                   Interest Payout COMMENTED OUT (intentional).
+                   ============================================================ */}
+              {/* <th className='py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground'>
+                FD Type
+              </th>
+              <th className='py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground'>
+                Compounding
+              </th>
+              <th className='py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground'>
+                Interest Payout
+              </th> */}
               <th className='py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground text-right'>
                 Invested
               </th>
@@ -270,6 +290,23 @@ function FdTable({ fds, onEdit, onCloseFd, onWithdraw }) {
                 <td className='py-3 px-4 text-[13px] font-mono text-[hsl(var(--accent))] font-medium'>
                   {fd.interestRate}%
                 </td>
+                {/* ============================================================
+                     SECTION 04 — table cells FD Type / Compounding /
+                     Interest Payout COMMENTED OUT (intentional).
+                     ============================================================ */}
+                {/* <td className='py-3 px-4 text-[12px] font-mono text-muted-foreground'>
+                  {fd.fdType === 'CUMULATIVE' ? 'Cumulative' : 'Non-Cumulative'}
+                </td>
+                <td className='py-3 px-4 text-[12px] font-mono text-muted-foreground'>
+                  {fd.fdType === 'NON_CUMULATIVE'
+                    ? '—'
+                    : fd.compoundingFrequency}
+                </td>
+                <td className='py-3 px-4 text-[12px] font-mono text-muted-foreground'>
+                  {fd.payoutFrequency === 'AT_MATURITY'
+                    ? 'At Maturity'
+                    : fd.payoutFrequency}
+                </td> */}
                 <td className='py-3 px-4 text-right font-mono text-[13px] font-medium text-foreground'>
                   {formatCurrency(fd.issueAmount)}
                 </td>
@@ -284,15 +321,6 @@ function FdTable({ fds, onEdit, onCloseFd, onWithdraw }) {
                   onClick={e => e.stopPropagation()}
                 >
                   <div className='flex gap-2 justify-end'>
-                    {fd.status !== 'CLOSED' &&
-                      fd.status !== 'PREMATURELY_WITHDRAWN' && (
-                        <button
-                          onClick={() => onCloseFd(fd.id)}
-                          className='text-[11px] font-mono text-muted-foreground hover:text-[hsl(var(--loss))] border border-border bg-card px-2 py-1 rounded-sm transition-colors hover:border-[hsl(var(--loss))]/50'
-                        >
-                          CLOSE
-                        </button>
-                      )}
                     {canWithdraw(fd) && (
                       <button
                         onClick={() => onWithdraw(fd)}
@@ -322,7 +350,10 @@ export default function FixedDepositPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFd, setEditingFd] = useState(null);
   const [withdrawFd, setWithdrawFd] = useState(null);
-  const [tdsYear, setTdsYear] = useState('');
+  // ============================================================
+  // SECTION 05 / TDS — tdsYear state COMMENTED OUT (intentional)
+  // const [tdsYear, setTdsYear] = useState('');
+  // ============================================================
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -393,8 +424,11 @@ export default function FixedDepositPage() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['fds'] });
     queryClient.invalidateQueries({ queryKey: ['fdSummary'] });
-    queryClient.invalidateQueries({ queryKey: ['fdTdsSummary'] });
-    queryClient.invalidateQueries({ queryKey: ['fdTdsYears'] });
+    // ============================================================
+    // SECTION 05 / TDS — TDS query invalidation COMMENTED OUT (intent.)
+    // queryClient.invalidateQueries({ queryKey: ['fdTdsSummary'] });
+    // queryClient.invalidateQueries({ queryKey: ['fdTdsYears'] });
+    // ============================================================
   };
 
   const onErr = err => {
@@ -425,14 +459,6 @@ export default function FixedDepositPage() {
     mutationFn: fdAPI.delete,
     onSuccess: () => {
       toast({ title: 'FD Deleted', variant: 'success' });
-      invalidate();
-    },
-    onError: onErr,
-  });
-  const closeMutation = useMutation({
-    mutationFn: fdAPI.close,
-    onSuccess: () => {
-      toast({ title: 'FD Marked Closed', variant: 'success' });
       invalidate();
     },
     onError: onErr,
@@ -480,21 +506,6 @@ export default function FixedDepositPage() {
     }
   };
 
-  const handleClose = id => {
-    toast({
-      title: 'Close Fixed Deposit?',
-      description: 'This marks the FD as permanently closed.',
-      action: (
-        <button
-          onClick={() => closeMutation.mutate(id)}
-          className='text-[11px] font-medium text-[hsl(var(--accent))] hover:underline'
-        >
-          Close FD
-        </button>
-      ),
-    });
-  };
-
   const openCreate = () => {
     setEditingFd(null);
     setIsDialogOpen(true);
@@ -523,7 +534,7 @@ export default function FixedDepositPage() {
     { value: 'ACTIVE', label: 'ACTIVE' },
     { value: 'DUE', label: 'DUE' },
     { value: 'MATURED', label: 'MATURED' },
-    { value: 'CLOSED', label: 'CLOSED' },
+    { value: 'PREMATURELY_WITHDRAWN', label: 'WITHDRAWN' },
   ];
 
   return (
@@ -567,7 +578,11 @@ export default function FixedDepositPage() {
                   +{formatCurrency(computedSummary.activeEstReturns)}
                 </p>
               </div>
-              <div>
+              {/* ============================================================
+                   SECTION 05 / TDS — summary cards COMMENTED OUT (intentionally)
+                   TDS Deducted + Net Returns cards hidden while TDS is disabled.
+                   ============================================================ */}
+              {/* <div>
                 <p className='eyebrow text-muted-foreground'>TDS Deducted</p>
                 <p className='font-mono text-lg font-bold text-[hsl(var(--loss))]'>
                   −{formatCurrency(computedSummary.totalTdsDeducted)}
@@ -578,7 +593,7 @@ export default function FixedDepositPage() {
                 <p className='font-mono text-lg font-bold text-[hsl(var(--gain))]'>
                   +{formatCurrency(computedSummary.totalNetReturns)}
                 </p>
-              </div>
+              </div> */}
             </div>
           ) : (
             <div className='flex flex-wrap gap-6 mt-4'>
@@ -669,14 +684,7 @@ export default function FixedDepositPage() {
       <div className='flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-border'>
         <div className='flex items-center gap-1.5 flex-wrap'>
           <span className='eyebrow mr-1'>Status</span>
-          {[
-            '',
-            'ACTIVE',
-            'DUE',
-            'MATURED',
-            'PREMATURELY_WITHDRAWN',
-            'CLOSED',
-          ].map(s => (
+          {['', 'ACTIVE', 'DUE', 'MATURED', 'PREMATURELY_WITHDRAWN'].map(s => (
             <button
               key={s}
               onClick={() => {
@@ -819,18 +827,12 @@ export default function FixedDepositPage() {
                   key={fd.id}
                   fd={fd}
                   onEdit={openEdit}
-                  onCloseFd={handleClose}
                   onWithdraw={openWithdraw}
                 />
               ))}
             </div>
           ) : (
-            <FdTable
-              fds={fds}
-              onEdit={openEdit}
-              onCloseFd={handleClose}
-              onWithdraw={openWithdraw}
-            />
+            <FdTable fds={fds} onEdit={openEdit} onWithdraw={openWithdraw} />
           )}
 
           <div className='flex items-center justify-between pt-4 border-t border-border'>
@@ -862,7 +864,13 @@ export default function FixedDepositPage() {
         </div>
       )}
 
-      <TdsSummary financialYear={tdsYear} onYearChange={setTdsYear} />
+      {/* ============================================================
+           SECTION 05 / TDS — TDS Summary section COMMENTED OUT (intentional)
+           Hides: "TDS Summary / per financial year" + Gross Interest /
+           TDS Deducted / Net Interest cards + the per-(Bank/FD) table +
+           the explanatory note. Re-enable when TDS is un-commented.
+           ============================================================ */}
+      {/* <TdsSummary financialYear={tdsYear} onYearChange={setTdsYear} /> */}
 
       <WithdrawDialog
         isOpen={!!withdrawFd}

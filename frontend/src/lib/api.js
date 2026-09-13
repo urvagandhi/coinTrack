@@ -343,10 +343,12 @@ export const endpoints = {
     create: '/api/fixed-deposits',
     update: id => `/api/fixed-deposits/${id}`,
     delete: id => `/api/fixed-deposits/${id}`,
-    close: id => `/api/fixed-deposits/${id}/close`,
     withdraw: id => `/api/fixed-deposits/${id}/withdraw`,
-    tdsDetail: id => `/api/fixed-deposits/${id}/tds`,
-    tdsSummary: '/api/fixed-deposits/tds-summary',
+    // ============================================================
+    // SECTION 05 / TDS — endpoints COMMENTED OUT (intentional)
+    // tdsDetail: id => `/api/fixed-deposits/${id}/tds`,
+    // tdsSummary: '/api/fixed-deposits/tds-summary',
+    // ============================================================
     summary: '/api/fixed-deposits/summary',
     export: '/api/fixed-deposits/export',
     getById: id => `/api/fixed-deposits/${id}`,
@@ -893,28 +895,27 @@ export const fdAPI = {
     const { data } = await api.delete(endpoints.fd.delete(id));
     return unwrapResponse(data);
   },
-  close: async id => {
-    const { data } = await api.patch(endpoints.fd.close(id));
-    return unwrapResponse(data);
-  },
   withdraw: async (id, payload) => {
     const { data } = await api.post(endpoints.fd.withdraw(id), payload);
     return unwrapResponse(data);
   },
-  getTdsDetail: async (id, financialYear) => {
-    const params = financialYear
-      ? `?financialYear=${encodeURIComponent(financialYear)}`
-      : '';
-    const { data } = await api.get(`${endpoints.fd.tdsDetail(id)}${params}`);
-    return unwrapResponse(data);
-  },
-  getTdsSummary: async financialYear => {
-    const params = financialYear
-      ? `?financialYear=${encodeURIComponent(financialYear)}`
-      : '';
-    const { data } = await api.get(`${endpoints.fd.tdsSummary}${params}`);
-    return unwrapResponse(data);
-  },
+  // ============================================================
+  // SECTION 05 / TDS — API methods COMMENTED OUT (intentional)
+  // getTdsDetail: async (id, financialYear) => {
+  //   const params = financialYear
+  //     ? `?financialYear=${encodeURIComponent(financialYear)}`
+  //     : '';
+  //   const { data } = await api.get(`${endpoints.fd.tdsDetail(id)}${params}`);
+  //   return unwrapResponse(data);
+  // },
+  // getTdsSummary: async financialYear => {
+  //   const params = financialYear
+  //     ? `?financialYear=${encodeURIComponent(financialYear)}`
+  //     : '';
+  //   const { data } = await api.get(`${endpoints.fd.tdsSummary}${params}`);
+  //   return unwrapResponse(data);
+  // },
+  // ============================================================
   exportCSV: async (params = {}) => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {

@@ -1,0 +1,11 @@
+{
+  "realizedMaturityAmount": 487500.0,
+  "actualTenorDays": 500,
+  "contractedRate": 7.1,
+  "penaltyRate": 1.0,
+  "applicableRate": 6.1,
+  "effectiveRate": 6.1,
+  "contractedMaturityAmount": 506940.5,
+  "penaltyAmount": 19440.5,
+  "interestEarned": 19440.5
+}

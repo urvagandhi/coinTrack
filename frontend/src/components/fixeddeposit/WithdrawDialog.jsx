@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, X, ArrowRightLeft, Calendar } from 'lucide-react';
+// [DEPRECATED-SEC-04-05] ArrowRightLeft is only used by the commented senior-citizen notice below.
+import { Loader2, X, Calendar } from 'lucide-react';
 
 function formatCurrency(amount) {
   if (amount === null || amount === undefined || isNaN(Number(amount)))
@@ -138,13 +139,17 @@ export default function WithdrawDialog({ isOpen, onClose, fd, onWithdrawn }) {
                     </p>
                   </div>
 
-                  {fd.isSeniorCitizen && (
-                    <div className='flex items-center gap-2 text-[11px] text-muted-foreground'>
-                      <ArrowRightLeft className='h-3 w-3' />
-                      Senior citizen profile detected — TDS threshold applies at
-                      bank level on realized interest.
-                    </div>
-                  )}
+                  {/* [DEPRECATED-SEC-04-05] Senior-citizen notice is DISABLED along with the isSeniorCitizen
+                    field (sections 04/05) and the whole TDS feature it referenced. Re-enable with
+                    the field + TDS to restore.
+                    {fd.isSeniorCitizen && (
+                      <div className='flex items-center gap-2 text-[11px] text-muted-foreground'>
+                        <ArrowRightLeft className='h-3 w-3' />
+                        Senior citizen profile detected — TDS threshold applies at
+                        bank level on realized interest.
+                      </div>
+                    )}
+                  */}
                 </>
               )}
             </div>

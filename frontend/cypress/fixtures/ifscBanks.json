@@ -1,0 +1,27 @@
+{
+  "status": true,
+  "data": {
+    "banks": [
+      {
+        "bank_name": "State Bank of India",
+        "bank_code": "SBIN"
+      },
+      {
+        "bank_name": "HDFC Bank",
+        "bank_code": "HDFC"
+      },
+      {
+        "bank_name": "ICICI Bank",
+        "bank_code": "ICIC"
+      },
+      {
+        "bank_name": "Axis Bank",
+        "bank_code": "UTIB"
+      },
+      {
+        "bank_name": "Kotak Mahindra Bank",
+        "bank_code": "KKBK"
+      }
+    ]
+  }
+}
