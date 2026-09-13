@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -47,6 +49,7 @@ public class MarketDataServiceImpl implements MarketDataService {
   private static final int LTP_BATCH_SIZE = 200;
   private static final long MAX_STALE_MINUTES = 1440; // 24 hours
   private static final long PERMISSION_DENIED_TTL_MS = 60L * 60L * 1000L; // 1 hour
+  private static final long LTP_INFLIGHT_TIMEOUT_MS = 10_000;
 
   private final MarketPriceRepository priceRepository;
   private final BrokerAccountRepository brokerAccountRepository;
@@ -54,6 +57,12 @@ public class MarketDataServiceImpl implements MarketDataService {
   private final EncryptionUtil encryptionUtil;
   private final WebClient webClient;
   private final ObjectMapper objectMapper = new ObjectMapper();
+
+  // Single-flight: concurrent requests for the same symbol set share one LTP network call instead
+  // of each issuing its own blocking call (summary + holdings + positions all miss the cache at
+  // once on a cold dashboard load). Keyed by sorted/deduped symbol list.
+  private final ConcurrentMap<String, CompletableFuture<Map<String, MarketPrice>>> ltpInflight =
+      new java.util.concurrent.ConcurrentHashMap<>();
 
   // accountId -> expiry timestamp (ms). While present, skip LTP calls for that account.
   // Cleared on reconnect path or after TTL so a user who later upgrades their Kite plan
@@ -152,6 +161,45 @@ public class MarketDataServiceImpl implements MarketDataService {
    * user — LTP is symbol-level, not user-level).
    */
   private Map<String, MarketPrice> fetchFromZerodhaLtp(List<String> symbols) {
+    if (symbols == null || symbols.isEmpty()) return Collections.emptyMap();
+
+    String key =
+        symbols.stream().map(String::trim).distinct().sorted().collect(Collectors.joining("|"));
+
+    // Already in flight? Wait on the shared future instead of issuing another network call.
+    CompletableFuture<Map<String, MarketPrice>> inFlight = ltpInflight.get(key);
+    if (inFlight != null) {
+      try {
+        return inFlight.get(LTP_INFLIGHT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+      } catch (Exception e) {
+        ltpInflight.remove(key, inFlight);
+      }
+    }
+
+    CompletableFuture<Map<String, MarketPrice>> future = new CompletableFuture<>();
+    CompletableFuture<Map<String, MarketPrice>> winner = ltpInflight.putIfAbsent(key, future);
+    if (winner != null) {
+      try {
+        return winner.get(LTP_INFLIGHT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+      } catch (Exception e) {
+        ltpInflight.remove(key, winner);
+        return Collections.emptyMap();
+      }
+    }
+
+    try {
+      Map<String, MarketPrice> prices = doFetchFromZerodhaLtp(symbols);
+      future.complete(prices);
+      return prices;
+    } catch (Exception e) {
+      future.complete(Collections.emptyMap());
+      return Collections.emptyMap();
+    } finally {
+      ltpInflight.remove(key, future);
+    }
+  }
+
+  private Map<String, MarketPrice> doFetchFromZerodhaLtp(List<String> symbols) {
     Map<String, MarketPrice> result = new HashMap<>();
 
     // Find any Zerodha account that (a) is active, (b) has a non-expired token,

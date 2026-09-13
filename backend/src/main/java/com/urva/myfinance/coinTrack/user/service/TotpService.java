@@ -51,6 +51,16 @@ public class TotpService {
   @Value("${totp.encryption-key}")
   private String totpEncryptionKey;
 
+  /**
+   * Legacy TOTP encryption key, used only as a read-time fallback when a stored TOTP secret cannot
+   * be decrypted with {@link #totpEncryptionKey} (i.e. it was encrypted before {@code
+   * TOTP_ENCRYPTION_KEY} was configured, when the hardcoded dev key was silently used). The secret
+   * is then immediately re-encrypted under the primary key (migration on login).
+   */
+  @Value(
+      "${totp.encryption-key-legacy:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2}")
+  private String totpEncryptionKeyLegacy;
+
   /** Allowed adjacent-period drift when verifying codes (default 1). */
   @Value("${totp.window:1}")
   private int totpWindow;
@@ -85,6 +95,37 @@ public class TotpService {
 
   private String decrypt(String ciphertext) {
     return EncryptionUtil.decrypt(ciphertext, totpEncryptionKey);
+  }
+
+  /**
+   * Decrypt the user's stored TOTP secret for login. Tries the primary key first; if that fails,
+   * retries with the legacy key (covers secrets enrolled before {@code TOTP_ENCRYPTION_KEY} was
+   * configured) and, on success, permanently migrates the stored secret to the primary key so the
+   * legacy fallback is only ever needed once per account.
+   */
+  private String decryptSecret(User user) {
+    try {
+      return EncryptionUtil.decrypt(user.getTotpSecretEncrypted(), totpEncryptionKey);
+    } catch (RuntimeException primaryError) {
+      if (totpEncryptionKeyLegacy == null
+          || totpEncryptionKeyLegacy.isBlank()
+          || totpEncryptionKeyLegacy.equals(totpEncryptionKey)) {
+        throw primaryError;
+      }
+      try {
+        String secret =
+            EncryptionUtil.decrypt(user.getTotpSecretEncrypted(), totpEncryptionKeyLegacy);
+        logger.warn(
+            "TOTP secret for user {} was stored under a previous encryption key — decrypting "
+                + "with the legacy key and migrating to the configured key",
+            user.getId());
+        user.setTotpSecretEncrypted(EncryptionUtil.encrypt(secret, totpEncryptionKey));
+        return secret;
+      } catch (RuntimeException legacyError) {
+        throw new RuntimeException(
+            "TOTP secret is encrypted with an unrecognized key. Please reset MFA.", primaryError);
+      }
+    }
   }
 
   // ── Setup (authenticated users already in DB) ───────────────────
@@ -146,7 +187,7 @@ public class TotpService {
       throw new RuntimeException("TOTP not set up");
     }
 
-    String secret = decrypt(user.getTotpSecretEncrypted());
+    String secret = decryptSecret(user);
 
     if (codeVerifier.isValidCode(secret, code)) {
       user.setTotpFailedAttempts(0);

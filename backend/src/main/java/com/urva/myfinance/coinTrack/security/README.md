@@ -2,8 +2,8 @@
 
 > **Domain**: Authentication, authorization, and access control
 > **Responsibility**: Gatekeeper ensuring identity verification (JWT) and protecting resources
-> **Version**: 3.1.1
-> **Last Updated**: 2026-08-23
+> **Version**: 3.2.0
+> **Last Updated**: 2026-09-12
 
 ---
 
@@ -42,7 +42,7 @@ The Security module guards every API endpoint in CoinTrack. It employs a **state
 |-----------|----------------|
 | **JwtFilter** | Intercepts requests, extracts Bearer token, checks token invalidation in MongoDB |
 | **JWTService** | Access & refresh token generation, validation, temp token issuance |
-| **GoogleOAuthService** | Google OIDC authorization code exchange & JWKS RSA public key verification |
+| **GoogleOAuthService** | Google OIDC authorization code exchange & JWKS RSA public key verification with a TTL-bounded atomic key cache (single-flight refresh) |
 | **SecurityConfig** | Spring Security filter chain, permitAll whitelists, CORS, statutory stateless configuration |
 | **AsyncConfig** | Enables Spring `@EnableAsync` background task execution |
 | **CustomerUserDetailService** | Load user from database by username or email |
@@ -317,9 +317,21 @@ Annotated with `@Configuration` and `@EnableAsync`. Enables Spring's asynchronou
 **Location**: `service/GoogleOAuthService.java`
 
 Provides OpenID Connect (OIDC) authentication with Google:
-1. **Authorization Code Exchange**: POST to `https://oauth2.googleapis.com/token` using `${google.client-id}`, `${google.client-secret}`, and matching `${google.redirect-uri}`.
-2. **ID Token Verification**: Fetches Google's public JWK set (`https://www.googleapis.com/oauth2/v3/certs`), parses RSA public key specs, and caches them in a `ConcurrentHashMap` keyed by `kid`.
+
+1. **Authorization Code Exchange** (`exchangeCodeForIdToken`): POST to `https://oauth2.googleapis.com/token` using `${google.client-id}`, `${google.client-secret}`, and a `redirect_uri` that must equal `${google.redirect-uri}`. This is an inherently blocking network call (~1–2s), a fixed latency cost of the OAuth authorization-code flow.
+2. **ID Token Verification** (`verifyIdToken`): Fetches Google's public JWK set (`https://www.googleapis.com/oauth2/v3/certs`), parses RSA public key specs, and validates the JWT signature against the cached key matching the token's `kid`.
 3. **Claims Validation**: Verifies signature, expiration, issuer (`accounts.google.com` or `https://accounts.google.com`), and audience (`google.client-id`).
+
+**JWKS Key Cache** (`getOrLoadPublicKey` → `refreshAndLookup` → `refreshKeysFromGoogle`):
+
+| Aspect | Behavior |
+|--------|----------|
+| Data structure | `volatile Map<String, PublicKey>` keyed by `kid`. The reference is only ever **atomically swapped** to a complete freshly-built map — never cleared or mutated in place. A concurrent reader always sees either the old or the new full snapshot, so there is no TOCTOU window and no "cleared cache" gap (a request can never observe an empty cache while a refresh is in flight). |
+| TTL | Keys are re-fetched when the cache is older than **12 hours** (`JWKS_TTL_MILLIS`), since Google rotates OIDC signing keys roughly daily. Unused-but-fresh keys are served indefinitely within that window. |
+| Rotation handling | A `kid` missing from a **healthy** cache triggers a prompt refresh (Google rotated its signing key), bounded to at most one fetch per **5s** cooldown (`JWKS_UNKNOWN_KID_COOLDOWN_MILLIS`) so random/bogus `kid` bursts cannot hammer the certs endpoint. |
+| Failure backoff | After a failed or empty fetch, retries are throttled to **one per 60s** (`JWKS_FAILURE_BACKOFF_MILLIS`) so a dead network is not pounded. Known keys from the previous snapshot keep working during the outage. |
+| Single-flight | All refresh logic is serialized on the service instance (`synchronized`), so N concurrent misses share exactly one network fetch — no stampede. |
+| Latency | A JWKS fetch is ~200–400ms, one-time per TTL window per instance. Every subsequent token verification for a cached `kid` is purely local. |
 
 ---
 
@@ -443,7 +455,9 @@ sequenceDiagram
     participant DB as MongoDB
 
     Client->>Auth: POST /api/auth/login { username, password }
-    Auth->>DB: Fetch user & verify BCrypt password
+    Auth->>DB: findByIdentifier(...) — single $or query (username | email | phoneNumber)
+    DB-->>Auth: User (or null)
+    Auth->>Auth: Direct timing-safe BCrypt.verify (dummy hash for unknown/OAuth-only accounts)
     alt MFA Enabled
         Auth->>JWT: generateTempToken(user, "MFA_LOGIN", 10)
         JWT-->>Auth: Return 10-min temp token
@@ -474,8 +488,14 @@ sequenceDiagram
 │           │                                                             │
 │           ▼                                                             │
 │     ┌─────────────────────────────────┐                                │
-│     │ Verify password (BCrypt)        │                                │
-│     │ Check MFA enabled              │                                │
+│     │ findByIdentifier(username/email/│  Single $or query (1 RTT)      │
+│     │   phoneNumber) → user OR null  │                                │
+│     └─────────────────────────────────┘                                │
+│           │                                                             │
+│           ▼                                                             │
+│     ┌─────────────────────────────────┐                                │
+│     │ Direct BCrypt.matches (timing-  │  No DaoAuthenticationProvider │
+│     │   safe dummy hash on miss)      │  re-fetch; constant work      │
 │     └─────────────────────────────────┘                                │
 │           │                                                             │
 │     ┌─────┴─────┐                                                      │
@@ -659,7 +679,7 @@ openssl rand -hex 32
 |------|------|-------|-------------|
 | `SecurityConfig.java` | ~8.3KB | 171 | Spring Security filter chain & permitAll rules |
 | `JWTService.java` | ~11.2KB | 295 | Token issuance, rotation, & temp token validation |
-| `GoogleOAuthService.java` | ~8.5KB | 209 | Google OIDC code exchange & JWKS verification |
+| `GoogleOAuthService.java` | ~12KB | 301 | Google OIDC code exchange & JWKS verification with TTL-bounded atomic key cache |
 | `JwtFilter.java` | ~4.7KB | 114 | Intercepts requests, validates JWT, checks MongoDB token invalidation |
 | `CustomerUserDetailService.java` | ~1.4KB | 36 | UserDetailsService implementation loading users by username/email |
 | `UserPrincipal.java` | ~1.3KB | 55 | UserDetails adapter wrapping User entity |
@@ -679,6 +699,7 @@ openssl rand -hex 32
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3.2.0 | 2026-09-12 | Optimized login path (single `$or` identifier lookup via `UserRepository.findByIdentifier`; direct timing-safe BCrypt in `UserAuthenticationService`, no `DaoAuthenticationProvider` re-fetch). Rebuilt `GoogleOAuthService` JWKS key cache: atomic volatile-swap map (no TOCTOU / no clear-before-refetch gap), 12h TTL (`JWKS_TTL_MILLIS`), 5s unknown-`kid` rotation cooldown, 60s failure backoff, single-flight serialized refresh; documented the inherently blocking authorization-code exchange (~1–2s). Added `GoogleOAuthServiceTest` (9 tests). |
 | 3.1.1 | 2026-08-23 | Removed dead whitelist entries: `/api/contact` (no controller maps it — real route is `/api/public/contact`, already covered by `/api/public/**`) and `/api/auth/email/change/verify` (route never existed server-side; change-verification rides `/api/auth/email/verify?type=change`) |
 | 3.1.0 | 2026-08-23 | Comprehensive rewrite & code audit: added Mermaid & ASCII diagrams, `GoogleOAuthService`, `@Profile("dev")` guards, dynamic temp tokens, direct MongoDB invalidation in `JWTService` for temp & access tokens, and restored full appendices & checklists. |
 | 2.0.0 | 2025-12-17 | Updated stateless JWT architecture documentation |

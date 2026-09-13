@@ -2,8 +2,8 @@
 
 > **Domain**: User identity, registration, authentication, MFA/MFA management, and profile settings
 > **Responsibility**: Manages user accounts, authentication workflows, security lockouts, and embedded preferences
-> **Version**: 3.3.0
-> **Last Updated**: 2026-08-23
+> **Version**: 3.5.0
+> **Last Updated**: 2026-09-12
 
 ---
 
@@ -41,7 +41,7 @@ The User module handles core identity operations in CoinTrack. It manages user r
 
 | Feature                                                  | Description                                                                                      |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Multi-Identifier Login**                         | Users log in using username, email (lowercased), or mobile phone number                          |
+| **Multi-Identifier Login**                         | Users log in using username, email (lowercased), or mobile phone number — resolved in a single `$or` query (`findByIdentifier`) with direct timing-safe BCrypt |
 | **Stateless MFA / MFA**                           | Mandatory MFA using Google Authenticator / MFA with 8-digit numeric backup codes                |
 | **Google OIDC SSO**                                | OAuth2 single sign-on with strict`email_verified` validation before account linking            |
 | **Pending Signup Persistence**                     | Multi-instance restart-safe signup state stored in MongoDB`pending_registrations` (TTL 15 min) |
@@ -149,10 +149,10 @@ sequenceDiagram
 
     Client->>Ctrl: POST /api/auth/login {identifier, password}
     Ctrl->>AuthSvc: authenticate(identifier, password)
-    AuthSvc->>DB: findByUsername / findByEmail / findByPhoneNumber
-    DB-->>AuthSvc: User document
+    AuthSvc->>DB: findByIdentifier(id, email, phoneNumber) — single $or query
+    DB-->>AuthSvc: User document (or null)
+    AuthSvc->>AuthSvc: Timing-safe BCrypt verify (DUMMY_HASH for unknown/OAuth-only)
     AuthSvc->>AuthSvc: Check Password Lockout (5 failed -> 15m, 10 failed -> 1h)
-    AuthSvc->>AuthSvc: Verify BCrypt password match
     alt Password invalid
         AuthSvc->>DB: Increment passwordFailedAttempts
         AuthSvc-->>Client: 401 Unauthorized / AuthenticationException
@@ -186,11 +186,14 @@ sequenceDiagram
      ├─────────────────────────►│                                  │                               │                    │
      │                          │ 2. authenticate(id, pass)        │                               │                    │
      │                          ├─────────────────────────────────►│                               │                    │
-     │                          │                                  │ 3. findUser                   │                    │
-     │                          │                                  ├───────────────────────────────────────────────────►│
-     │                          │                                  │◄───────────────────────────────────────────────────┤
-     │                          │                                  │                               │                    │
-     │                          │                                  │ 4. Verify BCrypt & Lockouts   │                    │
+│                          │                                  │ 3. findByIdentifier           │                    │
+      │                          │                                  │    ($or: username/email/phone)│                    │
+      │                          │                                  ├───────────────────────────────────────────────────►│
+      │                          │                                  │◄───────────────────────────────────────────────────┤
+      │                          │                                  │                               │                    │
+      │                          │                                  │ 4. Direct timing-safe BCrypt  │                    │
+      │                          │                                  │    + Lockout check (no Spring │                    │
+      │                          │                                  │    Security re-fetch)         │                    │
      │                          │                                  │                               │                    │
      │                          │                                  │ 5. If MFA -> TempToken (10m) │                    │
      │                          │                                  ├──────────────────────────────►│                    │
@@ -287,7 +290,7 @@ Stores intermediate signup state during multi-step MFA onboarding. Configured wi
 
 | Repository                        | Entity                  | Key Methods                                                                                                                                      |
 | --------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `UserRepository`                | `User`                | `findByUsername`, `findByEmail`, `findByPhoneNumber`, `findByGoogleId`, `existsByUsername`, `existsByEmail`, `existsByPhoneNumber` |
+| `UserRepository`                | `User`                | `findByIdentifier` (single `$or` query used by login), `findByUsername`, `findByEmail`, `findByPhoneNumber`, `findByGoogleId`, `existsByUsername`, `existsByEmail`, `existsByPhoneNumber` |
 | `PendingRegistrationRepository` | `PendingRegistration` | `findByUsername`, `findByEmail`, `deleteByUsername`                                                                                        |
 | `RefreshTokenRepository`        | `RefreshToken`        | `findByTokenHash`, `revokeAllByUserId`, `deleteByExpiresAtBefore`                                                                          |
 
@@ -299,7 +302,7 @@ Stores intermediate signup state during multi-step MFA onboarding. Configured wi
 
 **Location**: `service/UserAuthenticationService.java`
 
-* **`authenticate(identifier, password)`**: Verifies username/email/mobile & BCrypt password. Evaluates password lockout ladder. Returns 10-min `MFA_LOGIN` tempToken if MFA active, or TokenPair if MFA disabled.
+* **`authenticate(identifier, password)`**: Single `$or` user lookup (`findByIdentifier`) then direct timing-safe BCrypt verification — no `AuthenticationManager`/`DaoAuthenticationProvider` round-trip (which previously re-fetched the user). Unknown identifiers and OAuth-only accounts verify against a `DUMMY_HASH` so response timing is constant. Evaluates password lockout ladder. Returns 10-min `MFA_LOGIN` tempToken if MFA active, or TokenPair if MFA disabled.
 * **`authenticateGoogle(idToken, deviceInfo, ip)`**: Exchanges Google OIDC token. Checks `email_verified == true` before linking existing email accounts.
 * **`completeGoogleProfile(tempToken, username, name, phone)`**: Completes Google SSO profile for new users requiring a chosen username.
 
@@ -645,6 +648,8 @@ Content-Type: application/json
 
 | Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.5.0   | 2026-09-12 | TOTP login hardened against encryption-key drift: `TotpService.verifyLogin` now falls back to a configurable **legacy key** (`totp.encryption-key-legacy` / `TOTP_ENCRYPTION_KEY_LEGACY`, defaulting to the historical dev key) when the stored secret cannot be decrypted with the current `totp.encryption-key` (e.g. MFA enrolled before `TOTP_ENCRYPTION_KEY` was configured) and **migrates** the stored secret in-place to the configured key on first successful login; a clear "reset MFA" error replaces the raw AES-GCM message when both keys fail. `application.properties` documents the constraint; 2 new `TotpServiceTest` cases; full suite (960) green. |
+| 3.4.0   | 2026-09-12 | Login path optimized: `UserRepository.findByIdentifier(username,email,phoneNumber)` resolves the identifier in a **single `$or` query** (replaces three sequential lookups); `UserAuthenticationService.authenticate` now verifies BCrypt **directly** (removed `AuthenticationManager`/Spring Security `DaoAuthenticationProvider`, which re-fetched the user and duplicated the lookup) with a timing-safe `DUMMY_HASH` for unknown identifiers & OAuth-only accounts; blank phone → sentinel keeps the `$or` branch inert. Tests updated (`UserAuthenticationServiceTest`, `ComprehensiveTest`, `GoogleTest`); 74 auth tests + full suite (958) green. |
 | 3.1.0   | 2026-08-23 | Complete alignment with codebase: added Authentication & Login Flow sequence diagram, removed dead `UserProfileService` & `LoginController`, documented MongoDB `@Indexed` fields on `User`, updated 8-digit numeric backup code format, documented dual lockout ladders (15m/1h password, 10m/24h MFA), `pending_registrations` TTL storage, token revocation on password change/delete, enforced registration email lowercasing + startup DB migration (`migrateMixedCaseEmailsToLowerCase`), centralized blacklist check in `JWTService` for temp & access tokens, and added collapsible ASCII diagram toggles across all Mermaid diagrams. |
 | 3.2.0   | 2026-08-23 | DTO-only profile contract (`UserProfileResponse` out, validated `UpdateProfileRequest` in — no raw entity binding); account-deletion cascade via `UserDeletedEvent` (all modules purge their user-keyed data); phone uniqueness now includes pending registrations + null-safe (`isPhoneNumberRegistered`); rotation fully deletes previous-generation backup codes; `totp.window` & `totp.max-backup-codes` properties wired into TotpService; dead code removed (3 legacy DTOs, `getAllUsers`); `isTokenValid` delegates to blacklist-enforcing `JWTService.validateToken`. |
 | 3.2.1   | 2026-08-23 | Index spec aligned with `migration/IndexMigration`: `username` and `phoneNumber` now `unique + sparse` (matching app-level uniqueness semantics); migration extended to reconcile `email` alongside googleId/phoneNumber/username; only single-field indexes are dropped (compound indexes preserved); index list materialized before dropping; `!prod` gate documented (dev/prod share the same database). |

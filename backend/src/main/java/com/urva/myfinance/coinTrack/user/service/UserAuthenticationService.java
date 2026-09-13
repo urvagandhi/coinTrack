@@ -14,9 +14,6 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,8 +35,10 @@ public class UserAuthenticationService {
   private static final String DUMMY_HASH =
       "$2a$10$AAAAAAAAAAAAAAAAAAAAAO8kI2R6x9YpFKeMMxaq0JZm2DOiCm9eK";
 
+  /** Never a real username/email/phone — keeps the repository {@code $or} phone branch inert. */
+  private static final String NO_MATCH_SENTINEL = "__CT__NO_IDENTIFIER_MATCH__";
+
   private final UserRepository userRepository;
-  private final AuthenticationManager authManager;
   private final PasswordEncoder passwordEncoder;
   private final JWTService jwtService;
   private final TotpService totpService;
@@ -48,14 +47,12 @@ public class UserAuthenticationService {
 
   public UserAuthenticationService(
       UserRepository userRepository,
-      AuthenticationManager authManager,
       PasswordEncoder passwordEncoder,
       JWTService jwtService,
       TotpService totpService,
       UserService userService,
       GoogleOAuthService googleOAuthService) {
     this.userRepository = userRepository;
-    this.authManager = authManager;
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
     this.totpService = totpService;
@@ -88,11 +85,17 @@ public class UserAuthenticationService {
           "Too many failed attempts. Try again in " + minutesLeft + " minute(s).");
     }
 
-    // Verify password
-    try {
-      authManager.authenticate(
-          new UsernamePasswordAuthenticationToken(foundUser.getUsername(), password));
-    } catch (AuthenticationException e) {
+    // Verify password against the already-loaded user (avoids the second user fetch that
+    // spring-security's DaoAuthenticationProvider would do). Timing-safe on all paths.
+    String storedHash = foundUser.getPassword();
+    if (storedHash == null || storedHash.isBlank()) {
+      // OAuth-only account — no local password to verify, but keep the timing profile uniform
+      passwordEncoder.matches(password, DUMMY_HASH);
+      handlePasswordFailure(foundUser);
+      logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, identifier, "invalid credentials");
+      return null;
+    }
+    if (!passwordEncoder.matches(password, storedHash)) {
       handlePasswordFailure(foundUser);
       logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, identifier, "invalid credentials");
       return null;
@@ -424,17 +427,12 @@ public class UserAuthenticationService {
     if (identifier == null || identifier.trim().isEmpty()) return null;
 
     String clean = identifier.trim();
-    User user = userRepository.findByUsername(clean);
-    if (user != null) return user;
-
-    user = userRepository.findByEmail(clean.toLowerCase());
-    if (user != null) return user;
-
     String normalized = normalizePhoneNumber(clean);
-    if (normalized != null) {
-      user = userRepository.findByPhoneNumber(normalized);
-    }
-    return user;
+    // Sentinel keeps the phone branch inert for non-phone identifiers (empty or null) so the
+    // {@code $or} never matches documents whose phoneNumber field is null/missing.
+    String phoneBranch =
+        (normalized == null || normalized.isEmpty()) ? NO_MATCH_SENTINEL : normalized;
+    return userRepository.findByIdentifier(clean, clean.toLowerCase(), phoneBranch);
   }
 
   private String normalizePhoneNumber(String input) {

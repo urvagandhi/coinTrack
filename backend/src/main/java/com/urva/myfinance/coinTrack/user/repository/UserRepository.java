@@ -3,8 +3,17 @@ package com.urva.myfinance.coinTrack.user.repository;
 import com.urva.myfinance.coinTrack.user.model.User;
 import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 
 public interface UserRepository extends MongoRepository<User, String> {
+
+  /**
+   * Single round-trip lookup across username / email / normalized phone. The phone branch falls
+   * back to a no-match sentinel when no phone is present so {@code $or} never matches documents
+   * whose field is null/missing.
+   */
+  @Query("{ '$or': [ { 'username': ?0 }, { 'email': ?1 }, { 'phoneNumber': ?2 } ] }")
+  User findByIdentifier(String username, String email, String phoneNumber);
 
   User findByUsername(String username);
 

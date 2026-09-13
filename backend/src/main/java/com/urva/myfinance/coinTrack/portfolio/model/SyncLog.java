@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,7 +17,15 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @AllArgsConstructor
 @Builder
 @Document(collection = "sync_logs")
-@CompoundIndex(name = "idx_synclog_user_time", def = "{'userId': 1, 'timestamp': -1}")
+@CompoundIndexes({
+  @CompoundIndex(name = "idx_synclog_user_time", def = "{'userId': 1, 'timestamp': -1}"),
+  @CompoundIndex(
+      name = "idx_synclog_user_broker_time",
+      def = "{'userId': 1, 'broker': 1, 'timestamp': -1}"),
+  @CompoundIndex(
+      name = "idx_synclog_user_status_time",
+      def = "{'userId': 1, 'status': 1, 'timestamp': -1}")
+})
 public class SyncLog {
   @Id private String id;
 

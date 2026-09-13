@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.urva.myfinance.coinTrack.common.util.EncryptionUtil;
 import com.urva.myfinance.coinTrack.user.dto.TotpSetupResponse;
 import com.urva.myfinance.coinTrack.user.model.BackupCode;
 import com.urva.myfinance.coinTrack.user.model.User;
@@ -174,6 +175,46 @@ class TotpServiceTest {
   }
 
   @Test
+  @DisplayName(
+      "verifyLogin: secret encrypted under the legacy key → decrypts and migrates to primary key")
+  void verifyLogin_legacyKey_migratesToPrimary() throws Exception {
+    String newKey = "fedcba9876543210fedcba9876543210";
+    String oldKey = "12345678901234567890123456789012";
+    ReflectionTestUtils.setField(totpService, "totpEncryptionKey", newKey);
+    ReflectionTestUtils.setField(totpService, "totpEncryptionKeyLegacy", oldKey);
+
+    TotpSetupResponse setup = totpService.generateSetup(sampleUser);
+    String secret = setup.getSecret();
+    sampleUser.setTotpSecretEncrypted(EncryptionUtil.encrypt(secret, oldKey));
+    sampleUser.setTotpEnabled(true);
+    sampleUser.setTotpVerified(true);
+
+    String validCode = generateValidCode(secret);
+    boolean result = totpService.verifyLogin(sampleUser, validCode);
+
+    assertTrue(result);
+    assertEquals(secret, EncryptionUtil.decrypt(sampleUser.getTotpSecretEncrypted(), newKey));
+  }
+
+  @Test
+  @DisplayName("verifyLogin: secret encrypted under an unrecognized key → clear, actionable error")
+  void verifyLogin_unrecognizedKey_clearError() {
+    ReflectionTestUtils.setField(
+        totpService, "totpEncryptionKey", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    ReflectionTestUtils.setField(
+        totpService, "totpEncryptionKeyLegacy", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    sampleUser.setTotpSecretEncrypted(
+        EncryptionUtil.encrypt("somesever", "cccccccccccccccccccccccccccccccc"));
+    sampleUser.setTotpEnabled(true);
+    sampleUser.setTotpVerified(true);
+
+    RuntimeException ex =
+        assertThrows(RuntimeException.class, () -> totpService.verifyLogin(sampleUser, "000000"));
+    assertTrue(ex.getMessage().contains("unrecognized key"));
+    assertFalse(ex.getMessage().contains("data may be tampered"));
+  }
+
+  @Test
   @DisplayName("verifyLogin: 5th failed attempt → locks for 10 minutes")
   void verifyLogin_5thAttempt_locks10Min() throws Exception {
     TotpSetupResponse setup = totpService.generateSetup(sampleUser);
@@ -277,6 +318,7 @@ class TotpServiceTest {
 
   @Test
   @DisplayName("saveBackupCodes: hashes and saves all codes")
+  @SuppressWarnings("unchecked")
   void saveBackupCodes_hashesAndSaves() {
     List<String> codes = List.of("11111111", "22222222");
 

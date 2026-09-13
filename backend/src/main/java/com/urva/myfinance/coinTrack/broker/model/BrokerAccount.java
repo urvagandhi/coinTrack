@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
@@ -22,7 +23,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class BrokerAccount {
   @Id private String id;
 
-  private String userId; // Reference to internal user
+  @Indexed private String userId; // Reference to internal user
 
   private String brokerUserId; // Broker-specific user ID
 

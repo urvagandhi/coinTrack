@@ -24,7 +24,14 @@ public class MarketPrice {
 
   private BigDecimal previousClose;
 
+  // TTL index is only a safety net against unbounded growth. Freshness is decided by the app
+  // layer (MarketDataServiceImpl.getCacheTtlSeconds: 15s market hours / 5min off-hours). A TTL of
+  // 24h keeps cached prices alive long enough for that logic to work; the previous 15s TTL deleted
+  // every cached price 15s after write, so every dashboard load missed the cache and hit the
+  // Zerodha LTP API over the network.
+  // NOTE: existing Mongo `price_ttl_index` must be dropped once so it is recreated with 24h:
+  //   db.market_prices.dropIndex('price_ttl_index')
   @SuppressWarnings("removal")
-  @Indexed(name = "price_ttl_index", expireAfterSeconds = 15)
+  @Indexed(name = "price_ttl_index", expireAfterSeconds = 86400)
   private LocalDateTime updatedAt;
 }

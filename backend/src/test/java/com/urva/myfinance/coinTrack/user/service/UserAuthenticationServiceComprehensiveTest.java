@@ -21,8 +21,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -31,7 +29,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class UserAuthenticationServiceComprehensiveTest {
 
   @Mock private UserRepository userRepository;
-  @Mock private AuthenticationManager authManager;
   @Mock private PasswordEncoder passwordEncoder;
   @Mock private JWTService jwtService;
   @Mock private TotpService totpService;
@@ -64,7 +61,8 @@ class UserAuthenticationServiceComprehensiveTest {
   @Test
   @DisplayName("authenticate: user not found → returns null with timing-safe BCrypt")
   void authenticate_userNotFound_returnsNull() {
-    when(userRepository.findByUsername("unknown")).thenReturn(null);
+    when(userRepository.findByIdentifier("unknown", "unknown", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(null);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
     LoginResponse result = authService.authenticate("unknown", "Pass1!");
@@ -77,8 +75,9 @@ class UserAuthenticationServiceComprehensiveTest {
   @Test
   @DisplayName("authenticate: user not found via email → returns null")
   void authenticate_userNotFoundByEmail_returnsNull() {
-    when(userRepository.findByUsername("email@test.com")).thenReturn(null);
-    when(userRepository.findByEmail("email@test.com")).thenReturn(null);
+    when(userRepository.findByIdentifier(
+            "email@test.com", "email@test.com", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(null);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
     LoginResponse result = authService.authenticate("email@test.com", "Pass1!");
@@ -89,9 +88,8 @@ class UserAuthenticationServiceComprehensiveTest {
   @Test
   @DisplayName("authenticate: user not found via phone → returns null")
   void authenticate_userNotFoundByPhone_returnsNull() {
-    when(userRepository.findByUsername("9876543210")).thenReturn(null);
-    when(userRepository.findByEmail("9876543210")).thenReturn(null);
-    when(userRepository.findByPhoneNumber("+919876543210")).thenReturn(null);
+    when(userRepository.findByIdentifier("9876543210", "9876543210", "+919876543210"))
+        .thenReturn(null);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
     LoginResponse result = authService.authenticate("9876543210", "Pass1!");
@@ -122,9 +120,9 @@ class UserAuthenticationServiceComprehensiveTest {
   @Test
   @DisplayName("authenticate: wrong password → returns null, increments failed attempts")
   void authenticate_wrongPassword_returnsNull() {
-    when(userRepository.findByUsername("testuser")).thenReturn(sampleUser);
-    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-    when(authManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad"));
+    when(userRepository.findByIdentifier("testuser", "testuser", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(sampleUser);
+    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
 
     LoginResponse result = authService.authenticate("testuser", "WrongPass1!");
 
@@ -136,9 +134,9 @@ class UserAuthenticationServiceComprehensiveTest {
   @DisplayName("authenticate: 5th failed attempt → 15min lockout")
   void authenticate_fifthAttempt_lockout15min() {
     sampleUser.setPasswordFailedAttempts(4);
-    when(userRepository.findByUsername("testuser")).thenReturn(sampleUser);
-    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-    when(authManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad"));
+    when(userRepository.findByIdentifier("testuser", "testuser", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(sampleUser);
+    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
 
     authService.authenticate("testuser", "WrongPass1!");
 
@@ -156,9 +154,9 @@ class UserAuthenticationServiceComprehensiveTest {
   @DisplayName("authenticate: 10th failed attempt → 1hr lockout")
   void authenticate_tenthAttempt_lockout1hr() {
     sampleUser.setPasswordFailedAttempts(9);
-    when(userRepository.findByUsername("testuser")).thenReturn(sampleUser);
-    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-    when(authManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad"));
+    when(userRepository.findByIdentifier("testuser", "testuser", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(sampleUser);
+    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
 
     authService.authenticate("testuser", "WrongPass1!");
 
@@ -176,7 +174,8 @@ class UserAuthenticationServiceComprehensiveTest {
   @DisplayName("authenticate: account locked → throws AuthenticationException")
   void authenticate_lockedAccount_throws() {
     sampleUser.setPasswordLockedUntil(Instant.now().plusSeconds(600));
-    when(userRepository.findByUsername("testuser")).thenReturn(sampleUser);
+    when(userRepository.findByIdentifier("testuser", "testuser", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(sampleUser);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
     assertThrows(
@@ -188,7 +187,8 @@ class UserAuthenticationServiceComprehensiveTest {
   void authenticate_expiredLock_resets() {
     sampleUser.setPasswordLockedUntil(Instant.now().minusSeconds(10));
     sampleUser.setPasswordFailedAttempts(7);
-    when(userRepository.findByUsername("testuser")).thenReturn(sampleUser);
+    when(userRepository.findByIdentifier("testuser", "testuser", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(sampleUser);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
     LoginResponse result = authService.authenticate("testuser", "Pass1!");
@@ -202,7 +202,8 @@ class UserAuthenticationServiceComprehensiveTest {
   @Test
   @DisplayName("authenticate: successful login without TOTP → returns requireTotpSetup=true")
   void authenticate_success_noTotp_returnsSetup() {
-    when(userRepository.findByUsername("testuser")).thenReturn(sampleUser);
+    when(userRepository.findByIdentifier("testuser", "testuser", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(sampleUser);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
     when(jwtService.generateTempToken(any(User.class), eq("TOTP_SETUP"), eq(30)))
         .thenReturn("setup-token");
@@ -221,7 +222,8 @@ class UserAuthenticationServiceComprehensiveTest {
   void authenticate_success_withTotp_returnsTempToken() {
     sampleUser.setTotpEnabled(true);
     sampleUser.setTotpVerified(true);
-    when(userRepository.findByUsername("testuser")).thenReturn(sampleUser);
+    when(userRepository.findByIdentifier("testuser", "testuser", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(sampleUser);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
     when(jwtService.generateTempToken(any(User.class), eq("TOTP_LOGIN"), eq(10)))
         .thenReturn("totp-login-token");
@@ -238,7 +240,8 @@ class UserAuthenticationServiceComprehensiveTest {
   @DisplayName("authenticate: successful with existing failed attempts → resets counters")
   void authenticate_success_resetsFailedAttempts() {
     sampleUser.setPasswordFailedAttempts(3);
-    when(userRepository.findByUsername("testuser")).thenReturn(sampleUser);
+    when(userRepository.findByIdentifier("testuser", "testuser", "__CT__NO_IDENTIFIER_MATCH__"))
+        .thenReturn(sampleUser);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
     authService.authenticate("testuser", "Pass1!");
@@ -468,42 +471,38 @@ class UserAuthenticationServiceComprehensiveTest {
   @Test
   @DisplayName("authenticate: 10-digit phone normalized with +91 prefix")
   void authenticate_10digitPhone_normalized() {
-    when(userRepository.findByUsername("9876543210")).thenReturn(null);
-    when(userRepository.findByEmail("9876543210")).thenReturn(null);
-    when(userRepository.findByPhoneNumber("+919876543210")).thenReturn(sampleUser);
+    when(userRepository.findByIdentifier("9876543210", "9876543210", "+919876543210"))
+        .thenReturn(sampleUser);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
     LoginResponse result = authService.authenticate("9876543210", "Pass1!");
 
     assertNotNull(result);
-    verify(userRepository).findByPhoneNumber("+919876543210");
+    verify(userRepository).findByIdentifier("9876543210", "9876543210", "+919876543210");
   }
 
   @Test
   @DisplayName("authenticate: phone with +91 prefix → kept as-is")
   void authenticate_plusPrefixPhone_keptAsIs() {
-    when(userRepository.findByUsername("+919876543210")).thenReturn(null);
-    when(userRepository.findByEmail("+919876543210")).thenReturn(null);
-    when(userRepository.findByPhoneNumber("+919876543210")).thenReturn(sampleUser);
+    when(userRepository.findByIdentifier("+919876543210", "+919876543210", "+919876543210"))
+        .thenReturn(sampleUser);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
     LoginResponse result = authService.authenticate("+919876543210", "Pass1!");
 
     assertNotNull(result);
-    verify(userRepository).findByPhoneNumber("+919876543210");
+    verify(userRepository).findByIdentifier("+919876543210", "+919876543210", "+919876543210");
   }
 
   @Test
   @DisplayName("authenticate: non-10-digit phone → normalized without +91")
   void authenticate_nonDigitPhone_normalized() {
-    when(userRepository.findByUsername("12345")).thenReturn(null);
-    when(userRepository.findByEmail("12345")).thenReturn(null);
-    when(userRepository.findByPhoneNumber("12345")).thenReturn(sampleUser);
+    when(userRepository.findByIdentifier("12345", "12345", "12345")).thenReturn(sampleUser);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
     LoginResponse result = authService.authenticate("12345", "Pass1!");
 
     assertNotNull(result);
-    verify(userRepository).findByPhoneNumber("12345");
+    verify(userRepository).findByIdentifier("12345", "12345", "12345");
   }
 }

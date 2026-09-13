@@ -619,6 +619,10 @@ public static String groupKey(String placeOrPlatform, String holderName)
   `MfSchemeService`, `PortfolioDashboardService`) — see
   `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`.
 
+  > [DEPRECATED-TDS] The **FD TDS summary** consumer (`FixedDepositServiceImpl.getTdsSummary`) has
+  > been **commented out** of the codebase (Section 194A TDS feature deprecated). The other five
+  > consumers remain active.
+
 ### 10.10 ExcelExportUtil
 
 Static XLSX builder on Apache POI:
