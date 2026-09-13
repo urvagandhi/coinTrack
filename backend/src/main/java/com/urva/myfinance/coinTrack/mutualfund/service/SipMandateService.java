@@ -1,5 +1,6 @@
 package com.urva.myfinance.coinTrack.mutualfund.service;
 
+import com.urva.myfinance.coinTrack.common.util.HolderName;
 import com.urva.myfinance.coinTrack.mutualfund.model.SipMandate;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
@@ -56,9 +57,11 @@ public class SipMandateService {
                 mandate.setBank(scheme.getBank());
               }
               if (mandate.getHolderName() == null || mandate.getHolderName().trim().isEmpty()) {
+                // Copy the scheme's canonical (already normalized) holder name downstream.
                 mandate.setHolderName(scheme.getHolderName());
               }
             });
+    mandate.setHolderName(HolderName.normalize(mandate.getHolderName()));
     SipMandate saved = repository.save(mandate);
     contributionService.backfillMandate(saved);
     return saved;
@@ -70,7 +73,7 @@ public class SipMandateService {
             .findById(id)
             .filter(m -> m.getUserId().equals(userId))
             .orElseThrow(() -> new RuntimeException("Mandate not found"));
-    existing.setHolderName(updatedMandate.getHolderName());
+    existing.setHolderName(HolderName.normalize(updatedMandate.getHolderName()));
     existing.setStartDate(updatedMandate.getStartDate());
     existing.setAmount(updatedMandate.getAmount());
     existing.setBank(updatedMandate.getBank());

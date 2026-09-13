@@ -7,6 +7,7 @@ public class OverallSummaryDto {
   private BigDecimal totalInvested;
   private BigDecimal currentInvestment;
   private BigDecimal totalRedeemed;
+  private BigDecimal realizedGain;
   private BigDecimal overallPL;
   private int activeSipCount;
   private List<DiscrepancyReport> discrepancies;
@@ -53,6 +54,14 @@ public class OverallSummaryDto {
 
   public void setTotalRedeemed(BigDecimal totalRedeemed) {
     this.totalRedeemed = totalRedeemed;
+  }
+
+  public BigDecimal getRealizedGain() {
+    return realizedGain;
+  }
+
+  public void setRealizedGain(BigDecimal realizedGain) {
+    this.realizedGain = realizedGain;
   }
 
   public BigDecimal getOverallPL() {

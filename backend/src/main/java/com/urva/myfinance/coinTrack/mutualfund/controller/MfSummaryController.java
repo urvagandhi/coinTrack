@@ -1,6 +1,7 @@
 package com.urva.myfinance.coinTrack.mutualfund.controller;
 
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.common.util.HolderName;
 import com.urva.myfinance.coinTrack.mutualfund.dto.DashboardSummaryDto;
 import com.urva.myfinance.coinTrack.mutualfund.dto.OverallSummaryDto;
 import com.urva.myfinance.coinTrack.mutualfund.dto.SchemeSummaryDto;
@@ -43,12 +44,13 @@ public class MfSummaryController {
     String userId = userDetails.getUserId();
     List<MfScheme> schemes = schemeRepository.findByUserId(userId);
 
-    // Apply optional holderName filter
+    // Apply optional holderName filter — normalize the param and compare against canonical
+    // stored names so case/whitespace variants match (parity with MfSchemeService.getAllSchemes).
     if (holderName != null && !holderName.isEmpty()) {
-      final String hn = holderName.trim();
+      final String normalized = HolderName.normalize(holderName);
       schemes =
           schemes.stream()
-              .filter(s -> hn.equalsIgnoreCase(s.getHolderName()))
+              .filter(s -> normalized.equals(HolderName.normalize(s.getHolderName())))
               .collect(Collectors.toList());
     }
 

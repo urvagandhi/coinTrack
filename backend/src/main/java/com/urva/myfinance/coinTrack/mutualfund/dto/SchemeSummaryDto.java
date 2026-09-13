@@ -22,6 +22,8 @@ public class SchemeSummaryDto {
   private BigDecimal currentInvestment;
   private BigDecimal averageNav;
   private BigDecimal currentValue;
+  private BigDecimal totalSttPaid;
+  private BigDecimal realizedGain;
   private Set<FundStatus> statuses;
 
   public SchemeSummaryDto() {}
@@ -168,5 +170,21 @@ public class SchemeSummaryDto {
 
   public void setNetInvestment(BigDecimal netInvestment) {
     this.netInvestment = netInvestment;
+  }
+
+  public BigDecimal getTotalSttPaid() {
+    return totalSttPaid;
+  }
+
+  public void setTotalSttPaid(BigDecimal totalSttPaid) {
+    this.totalSttPaid = totalSttPaid;
+  }
+
+  public BigDecimal getRealizedGain() {
+    return realizedGain;
+  }
+
+  public void setRealizedGain(BigDecimal realizedGain) {
+    this.realizedGain = realizedGain;
   }
 }

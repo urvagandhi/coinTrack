@@ -6,156 +6,71 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PortfolioHoldingService {
 
+  private static final Logger logger = LoggerFactory.getLogger(PortfolioHoldingService.class);
+
   @Autowired private PortfolioHoldingRepository holdingRepository;
-  @Autowired private LumpsumTransactionRepository lumpsumRepository;
-  @Autowired private SipContributionRepository sipRepository;
   @Autowired private RedemptionTransactionRepository redemptionRepository;
   @Autowired private ValuationSnapshotRepository valuationRepository;
   @Autowired private MfNavService navService;
   @Autowired private MfSchemeRepository schemeRepository;
+  @Autowired private MfSchemeAggregationService mfSchemeAggregationService;
 
-  @Async
   public void updateHoldingForScheme(String userId, String schemeId) {
-    PortfolioHolding holding =
-        holdingRepository.findByUserIdAndSchemeId(userId, schemeId).orElse(new PortfolioHolding());
+    MfScheme scheme = schemeRepository.findById(schemeId).orElse(null);
+    String targetUserId = (scheme != null) ? scheme.getUserId() : userId;
 
-    holding.setUserId(userId);
+    PortfolioHolding holding =
+        holdingRepository
+            .findByUserIdAndSchemeId(targetUserId, schemeId)
+            .orElse(new PortfolioHolding());
+
+    holding.setUserId(targetUserId);
     holding.setSchemeId(schemeId);
 
-    List<LumpsumTransaction> lumpsums = lumpsumRepository.findByUserIdAndSchemeId(userId, schemeId);
-    List<SipContribution> sips = sipRepository.findByUserIdAndSchemeId(userId, schemeId);
-    List<RedemptionTransaction> redemptions =
-        redemptionRepository.findByUserIdAndSchemeId(userId, schemeId);
+    com.urva.myfinance.coinTrack.mutualfund.dto.SchemeSummaryDto summary =
+        mfSchemeAggregationService.calculateSummary(targetUserId, schemeId);
 
-    BigDecimal totalLumpsumUnits =
-        lumpsums.stream()
-            .map(LumpsumTransaction::getTotalUnit)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalLumpsumInvested =
-        lumpsums.stream()
-            .map(LumpsumTransaction::getLumpsumInvestment)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalSipUnits =
-        sips.stream()
-            .map(SipContribution::getTotalUnit)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalSipInvested =
-        sips.stream()
-            .map(SipContribution::getAmount)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalSipStampDuty =
-        sips.stream()
-            .map(SipContribution::getStampDuty)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalLumpsumStampDuty =
-        lumpsums.stream()
-            .map(LumpsumTransaction::getStampDuty)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalRedeemedStt =
-        redemptions.stream()
-            .map(RedemptionTransaction::getSttAmount)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalRedeemedUnits =
-        redemptions.stream()
-            .map(RedemptionTransaction::getRedemptionUnit)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal realizedGain =
-        redemptions.stream()
-            .map(RedemptionTransaction::getCapitalGain)
-            .filter(java.util.Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalPurchasedUnits = totalLumpsumUnits.add(totalSipUnits);
-    BigDecimal totalInvestedAmount = totalLumpsumInvested.add(totalSipInvested);
-    BigDecimal totalStampDuty = totalLumpsumStampDuty.add(totalSipStampDuty);
-
-    MfScheme scheme = schemeRepository.findById(schemeId).orElse(null);
-
-    BigDecimal currentUnits = totalPurchasedUnits.subtract(totalRedeemedUnits);
-    if (scheme != null
-        && scheme.getManualTotalUnits() != null
-        && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
-      currentUnits = scheme.getManualTotalUnits();
-    }
-
+    BigDecimal currentUnits = summary.getTotalUnit();
     holding.setCurrentUnits(currentUnits);
-    holding.setTotalStampDuty(totalStampDuty);
-    holding.setTotalSttPaid(totalRedeemedStt);
+    holding.setTotalStampDuty(summary.getTotalStampDuty());
+    holding.setTotalSttPaid(summary.getTotalSttPaid());
 
-    BigDecimal averageCost = BigDecimal.ZERO;
-    if (totalPurchasedUnits.compareTo(BigDecimal.ZERO) > 0) {
-      averageCost = totalInvestedAmount.divide(totalPurchasedUnits, 8, RoundingMode.HALF_UP);
-    }
-    holding.setAverageCost(averageCost);
-
-    if (scheme != null) {
-      scheme.setAverageNav(averageCost);
-      schemeRepository.save(scheme);
-    }
-
-    BigDecimal currentInvestment;
-    if (totalRedeemedUnits.compareTo(BigDecimal.ZERO) == 0) {
-      currentInvestment = totalInvestedAmount;
-    } else {
-      BigDecimal totalTradedValue =
-          redemptions.stream()
-              .map(RedemptionTransaction::getTradeInvestmentValue)
-              .filter(java.util.Objects::nonNull)
-              .reduce(BigDecimal.ZERO, BigDecimal::add);
-      currentInvestment = totalInvestedAmount.subtract(totalTradedValue);
-      if (currentInvestment.compareTo(BigDecimal.ZERO) < 0) {
-        currentInvestment = BigDecimal.ZERO;
-      }
+    holding.setAverageCost(summary.getAverageNav());
+    BigDecimal currentInvestment = summary.getCurrentInvestment();
+    if (currentInvestment == null) {
+      currentInvestment = BigDecimal.ZERO;
     }
     holding.setCurrentInvestment(currentInvestment);
-    holding.setRealizedGain(realizedGain);
+    holding.setRealizedGain(summary.getRealizedGain());
 
-    // Valuation / NAV
+    // Valuation / NAV determination with multi-tier fallback
     BigDecimal latestNav = null;
 
-    // Try to fetch latest live NAV first
+    // 1. Try live NAV (or local cache via MfNavService)
     if (scheme != null && scheme.getAmfiCode() != null && !scheme.getAmfiCode().trim().isEmpty()) {
       latestNav = navService.fetchLatestNav(scheme.getAmfiCode());
     }
 
-    // Fallback to latest recorded transaction NAV if API fails
-    if (latestNav == null) {
-      for (int i = lumpsums.size() - 1; i >= 0; i--) {
-        if (lumpsums.get(i).getNavPrice() != null) {
-          latestNav = lumpsums.get(i).getNavPrice();
-          break;
-        }
+    // 2. Fallback to existing saved holding NAV if live fetch failed
+    if (latestNav == null || latestNav.compareTo(BigDecimal.ZERO) <= 0) {
+      if (holding.getLatestNav() != null && holding.getLatestNav().compareTo(BigDecimal.ZERO) > 0) {
+        latestNav = holding.getLatestNav();
       }
-      if (latestNav == null) {
-        for (int i = sips.size() - 1; i >= 0; i--) {
-          if (sips.get(i).getNavPrice() != null) {
-            latestNav = sips.get(i).getNavPrice();
-            break;
-          }
-        }
+    }
+
+    // 3. Fallback to average purchase NAV if no historical or live NAV exists
+    if (latestNav == null || latestNav.compareTo(BigDecimal.ZERO) <= 0) {
+      if (summary.getAverageNav() != null
+          && summary.getAverageNav().compareTo(BigDecimal.ZERO) > 0) {
+        latestNav = summary.getAverageNav();
       }
     }
 
@@ -182,16 +97,26 @@ public class PortfolioHoldingService {
       holding.setAbsoluteReturnPercentage(BigDecimal.ZERO);
     }
 
-    // XIRR calculation placeholder
-    holding.setXirr(BigDecimal.ZERO);
+    if (holding.getXirr() == null) {
+      holding.setXirr(BigDecimal.ZERO);
+    }
 
     holding.setLastUpdated(Instant.now());
 
     holdingRepository.save(holding);
-    refreshAllHoldingsLiveNav(userId);
+
+    logger.info(
+        "[HOLDING-UPDATED] User: {} | Scheme ID: {} | Units: {} | Avg NAV: ₹{} | Latest NAV: ₹{} | Current Inv: ₹{} | Current Val: ₹{} | Unrealized Gain: ₹{}",
+        targetUserId,
+        schemeId,
+        currentUnits,
+        holding.getAverageCost(),
+        latestNav,
+        currentInvestment,
+        currentValue,
+        marketGain);
   }
 
-  @Async
   public void refreshAllHoldingsLiveNav(String userId) {
     List<PortfolioHolding> holdings = holdingRepository.findByUserId(userId);
     for (PortfolioHolding h : holdings) {

@@ -2,10 +2,12 @@ package com.urva.myfinance.coinTrack.mutualfund.service;
 
 import com.urva.myfinance.coinTrack.mutualfund.model.LumpsumTransaction;
 import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
+import com.urva.myfinance.coinTrack.mutualfund.model.PortfolioHolding;
 import com.urva.myfinance.coinTrack.mutualfund.model.RedemptionTransaction;
 import com.urva.myfinance.coinTrack.mutualfund.model.SipContribution;
 import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.PortfolioHoldingRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.RedemptionTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipContributionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.util.MfRoundingHelper;
@@ -29,10 +31,12 @@ public class MfFifoEngine {
   @Autowired private SipContributionRepository sipRepository;
   @Autowired private RedemptionTransactionRepository redemptionRepository;
   @Autowired private MfSchemeRepository schemeRepository;
+  @Autowired private PortfolioHoldingRepository portfolioHoldingRepository;
 
   public static class MfLot {
     public LocalDate date;
     public java.time.Instant createdAt;
+    public Long transactionNo;
     public BigDecimal originalUnits;
     public BigDecimal availableUnits;
     public BigDecimal navPrice;
@@ -40,11 +44,13 @@ public class MfFifoEngine {
     public MfLot(
         LocalDate date,
         java.time.Instant createdAt,
+        Long transactionNo,
         BigDecimal originalUnits,
         BigDecimal availableUnits,
         BigDecimal navPrice) {
       this.date = date;
       this.createdAt = createdAt;
+      this.transactionNo = transactionNo;
       this.originalUnits = originalUnits;
       this.availableUnits = availableUnits;
       this.navPrice = navPrice;
@@ -71,7 +77,8 @@ public class MfFifoEngine {
       String schemeId,
       LocalDate redemptionDate,
       BigDecimal redemptionUnits,
-      String excludeTransactionId) {
+      String excludeTransactionId,
+      Long currentTransactionNo) {
     logger.info(
         "Starting FIFO calculation for Scheme: {}, Redemption Date: {}, Units: {}",
         schemeId,
@@ -89,17 +96,18 @@ public class MfFifoEngine {
         if (txn.getLumpsumInvestment() != null
             && txn.getTotalUnit() != null
             && txn.getTotalUnit().compareTo(BigDecimal.ZERO) > 0) {
-          costPerUnit =
+          BigDecimal netInvestment =
               txn.getLumpsumInvestment()
-                  .divide(
-                      txn.getTotalUnit(),
-                      MfRoundingHelper.COST_BASIS_PRECISION,
-                      RoundingMode.HALF_UP);
+                  .subtract(txn.getStampDuty() != null ? txn.getStampDuty() : BigDecimal.ZERO);
+          costPerUnit =
+              netInvestment.divide(
+                  txn.getTotalUnit(), MfRoundingHelper.COST_BASIS_PRECISION, RoundingMode.HALF_UP);
         }
         lots.add(
             new MfLot(
                 txn.getInvestmentDate(),
                 txn.getCreatedAt(),
+                txn.getTransactionNo(),
                 txn.getTotalUnit(),
                 txn.getTotalUnit(),
                 costPerUnit));
@@ -115,16 +123,21 @@ public class MfFifoEngine {
         // cost basis)
         BigDecimal costPerUnit = sip.getNavPrice();
         if (sip.getAmount() != null && sip.getTotalUnit().compareTo(BigDecimal.ZERO) > 0) {
-          costPerUnit =
+          BigDecimal netInvestment =
               sip.getAmount()
-                  .divide(
-                      sip.getTotalUnit(),
-                      MfRoundingHelper.COST_BASIS_PRECISION,
-                      RoundingMode.HALF_UP);
+                  .subtract(sip.getStampDuty() != null ? sip.getStampDuty() : BigDecimal.ZERO);
+          costPerUnit =
+              netInvestment.divide(
+                  sip.getTotalUnit(), MfRoundingHelper.COST_BASIS_PRECISION, RoundingMode.HALF_UP);
         }
         lots.add(
             new MfLot(
-                date, sip.getCreatedAt(), sip.getTotalUnit(), sip.getTotalUnit(), costPerUnit));
+                date,
+                sip.getCreatedAt(),
+                sip.getTransactionNo(),
+                sip.getTotalUnit(),
+                sip.getTotalUnit(),
+                costPerUnit));
       }
     }
 
@@ -139,28 +152,43 @@ public class MfFifoEngine {
       // Synthesize a lot for the missing units. We don't have a real date or cost basis.
       // We use the scheme's averageNav as cost basis, and a very old date (e.g. 1970) so it's
       // always LTCG and consumed first.
-      BigDecimal avgNav = scheme.getAverageNav() != null ? scheme.getAverageNav() : BigDecimal.ZERO;
+      PortfolioHolding holding =
+          portfolioHoldingRepository
+              .findByUserIdAndSchemeId(scheme.getUserId(), schemeId)
+              .orElse(null);
+      BigDecimal avgNav =
+          holding != null && holding.getAverageCost() != null
+              ? holding.getAverageCost()
+              : BigDecimal.ZERO;
+      if (avgNav.compareTo(BigDecimal.ZERO) == 0) {
+        throw new com.urva.myfinance.coinTrack.mutualfund.exception.MissingCostBasisException(
+            "Cannot synthesize lot for manual units without a valid cost basis in PortfolioHolding for scheme: "
+                + schemeId);
+      }
       lots.add(
           new MfLot(
               LocalDate.of(1970, 1, 1),
               java.time.Instant.EPOCH,
+              0L,
               missingUnits,
               missingUnits,
               avgNav));
     }
 
-    // 3. Sort lots by chronological order (FIFO), using createdAt as tie-breaker
+    // 3. Sort lots by chronological order (FIFO), using transactionNo as tie-breaker
     lots.sort(
         Comparator.comparing((MfLot lot) -> lot.date)
-            .thenComparing(lot -> lot.createdAt == null ? java.time.Instant.MIN : lot.createdAt));
+            .thenComparing(lot -> lot.transactionNo == null ? 0L : lot.transactionNo)
+            .thenComparing(lot -> lot.createdAt == null ? java.time.Instant.EPOCH : lot.createdAt));
 
     // 4. Fetch prior redemptions to consume the queue up to this point
     List<RedemptionTransaction> priorRedemptions =
         redemptionRepository.findByUserIdAndSchemeId(userId, schemeId);
     priorRedemptions.sort(
         Comparator.comparing(RedemptionTransaction::getRedemptionDate)
+            .thenComparing(tx -> tx.getTransactionNo() == null ? 0L : tx.getTransactionNo())
             .thenComparing(
-                tx -> tx.getCreatedAt() == null ? java.time.Instant.MIN : tx.getCreatedAt()));
+                tx -> tx.getCreatedAt() == null ? java.time.Instant.EPOCH : tx.getCreatedAt()));
 
     for (RedemptionTransaction prior : priorRedemptions) {
       if (excludeTransactionId != null
@@ -169,7 +197,11 @@ public class MfFifoEngine {
         continue;
       }
       if (prior.getRedemptionDate().isBefore(redemptionDate)
-          || (prior.getRedemptionDate().isEqual(redemptionDate) && prior.getId() != null)) {
+          || (prior.getRedemptionDate().isEqual(redemptionDate)
+              && prior.getTransactionNo() != null
+              && (currentTransactionNo == null
+                  || currentTransactionNo == 0L
+                  || prior.getTransactionNo() < currentTransactionNo))) {
         // We consume lots for previous redemptions to find the exact state of holdings
         // at redemptionDate
         consumeUnitsFromLots(lots, prior.getRedemptionUnit());
@@ -179,15 +211,18 @@ public class MfFifoEngine {
 
     // 5. Determine LTCG threshold based on category
     int ltcgYears = 1;
+    boolean isDebt = false;
     if (scheme != null && scheme.getMfCategory() != null) {
       String category = scheme.getMfCategory().toLowerCase();
       if (category.contains("debt") || category.contains("liquid")) {
         ltcgYears = 3;
+        isDebt = true;
       }
     }
 
     // 6. Now calculate the cost of the current redemption
-    FifoResult result = calculateCostForUnits(lots, redemptionUnits, redemptionDate, ltcgYears);
+    FifoResult result =
+        calculateCostForUnits(lots, redemptionUnits, redemptionDate, ltcgYears, isDebt);
 
     // Calculate the total units that were available before this redemption was processed
     BigDecimal availableBefore = BigDecimal.ZERO;
@@ -230,10 +265,16 @@ public class MfFifoEngine {
   }
 
   private FifoResult calculateCostForUnits(
-      List<MfLot> lots, BigDecimal unitsToRedeem, LocalDate redemptionDate, int ltcgYears) {
+      List<MfLot> lots,
+      BigDecimal unitsToRedeem,
+      LocalDate redemptionDate,
+      int ltcgYears,
+      boolean isDebt) {
     logger.info("Calculating cost for {} units to redeem on {}", unitsToRedeem, redemptionDate);
     FifoResult result = new FifoResult();
     BigDecimal remainingToRedeem = unitsToRedeem;
+
+    LocalDate debtStcgLawDate = LocalDate.of(2023, 4, 1);
 
     for (MfLot lot : lots) {
       if (remainingToRedeem.compareTo(BigDecimal.ZERO) <= 0) break;
@@ -254,9 +295,17 @@ public class MfFifoEngine {
         result.totalCostValue = result.totalCostValue.add(costForTheseUnits);
 
         // STCG vs LTCG
-        LocalDate thresholdDate = redemptionDate.minusYears(ltcgYears);
-        if (lot.date.isAfter(thresholdDate)) {
-          // STCG: Held for less than threshold
+        boolean isStcg = false;
+        if (isDebt && !lot.date.isBefore(debtStcgLawDate)) {
+          // Debt funds acquired on or after April 1, 2023 are always STCG
+          isStcg = true;
+        } else {
+          LocalDate thresholdDate = redemptionDate.minusYears(ltcgYears);
+          isStcg = lot.date.isAfter(thresholdDate);
+        }
+
+        if (isStcg) {
+          // STCG: Held for less than threshold (or debt post-April 2023)
           result.stcgCost = result.stcgCost.add(costForTheseUnits);
           result.stcgUnits = result.stcgUnits.add(unitsTaken);
         } else {

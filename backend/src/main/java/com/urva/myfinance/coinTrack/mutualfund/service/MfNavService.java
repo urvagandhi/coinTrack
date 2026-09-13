@@ -73,11 +73,12 @@ public class MfNavService {
     return nav;
   }
 
+  @SuppressWarnings("unchecked")
   private BigDecimal fetchFromTigzigApi(String amfiCode, LocalDate targetDate) {
     try {
       // Fetch exactly for the target date. No date shifting or looking forward here.
       String url =
-          UriComponentsBuilder.fromHttpUrl(TIGZIG_PRIMARY_API_URL)
+          UriComponentsBuilder.fromUriString(TIGZIG_PRIMARY_API_URL)
               .queryParam("scheme", amfiCode.trim())
               .queryParam("since", targetDate.toString())
               .queryParam("to", targetDate.toString())
@@ -106,27 +107,46 @@ public class MfNavService {
     return null;
   }
 
+  @SuppressWarnings("unchecked")
   private BigDecimal fetchFromMfapiIn(String amfiCode, LocalDate targetDate) {
     try {
+      // First try with startDate and endDate query parameters for fast targeted fetch
       String url =
-          UriComponentsBuilder.fromHttpUrl(MFAPI_FALLBACK_URL + amfiCode.trim()).toUriString();
+          UriComponentsBuilder.fromUriString(MFAPI_FALLBACK_URL + amfiCode.trim())
+              .queryParam("startDate", targetDate.toString())
+              .queryParam("endDate", targetDate.toString())
+              .toUriString();
       Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
       if (response != null && "SUCCESS".equals(response.get("status"))) {
         List<Map<String, String>> data = (List<Map<String, String>>) response.get("data");
         if (data != null && !data.isEmpty()) {
           DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+          for (int i = 0; i < data.size(); i++) {
+            Map<String, String> row = data.get(i);
+            LocalDate rowDate = LocalDate.parse(row.get("date"), formatter);
+            if (rowDate.equals(targetDate)) {
+              return new BigDecimal(row.get("nav"));
+            }
+          }
+        }
+      }
 
-          // API returns data in descending order of dates (latest first)
-          // We look for the exact target date. No date shifting.
+      // Fallback: If date-filtered query returned no exact match (e.g. market holiday), fetch full
+      // history to find nearest prior date
+      String fallbackUrl =
+          UriComponentsBuilder.fromUriString(MFAPI_FALLBACK_URL + amfiCode.trim()).toUriString();
+      Map<String, Object> fallbackResponse = restTemplate.getForObject(fallbackUrl, Map.class);
+      if (fallbackResponse != null && "SUCCESS".equals(fallbackResponse.get("status"))) {
+        List<Map<String, String>> data = (List<Map<String, String>>) fallbackResponse.get("data");
+        if (data != null && !data.isEmpty()) {
+          DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
           for (int i = 0; i < data.size(); i++) {
             Map<String, String> row = data.get(i);
             LocalDate rowDate = LocalDate.parse(row.get("date"), formatter);
             if (rowDate.equals(targetDate)) {
               return new BigDecimal(row.get("nav"));
             } else if (rowDate.isBefore(targetDate)) {
-              // Since it's descending, if we hit a date before our target without finding it, it
-              // doesn't exist.
               break;
             }
           }
@@ -142,6 +162,7 @@ public class MfNavService {
     return null;
   }
 
+  @SuppressWarnings("unchecked")
   public BigDecimal fetchLatestNav(String amfiCode) {
     if (amfiCode == null || amfiCode.trim().isEmpty()) {
       logger.warn("Cannot fetch latest NAV: AMFI code is null or empty");
@@ -149,8 +170,10 @@ public class MfNavService {
     }
 
     try {
+      // Use /latest endpoint for fast lightweight NAV retrieval as per mfapi.in documentation
       String url =
-          UriComponentsBuilder.fromHttpUrl(MFAPI_FALLBACK_URL + amfiCode.trim()).toUriString();
+          UriComponentsBuilder.fromUriString(MFAPI_FALLBACK_URL + amfiCode.trim() + "/latest")
+              .toUriString();
       Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
       if (response != null && "SUCCESS".equals(response.get("status"))) {
@@ -187,6 +210,19 @@ public class MfNavService {
       logger.error(
           "mfapi.in Fallback latest NAV API error for scheme {}: {}", amfiCode, e.getMessage());
     }
+
+    logger.info(
+        "External NAV fetch failed for scheme {}. Falling back to local database cache...",
+        amfiCode);
+    Optional<MutualFundNavCache> cachedLatest =
+        navCacheRepository.findFirstBySchemeCodeOrderByNavDateDesc(amfiCode.trim());
+    if (cachedLatest.isPresent()) {
+      BigDecimal fallbackNav = cachedLatest.get().getNavValue();
+      logger.info(
+          "Successfully fell back to locally cached NAV {} for scheme {}", fallbackNav, amfiCode);
+      return fallbackNav;
+    }
+
     return null;
   }
 }

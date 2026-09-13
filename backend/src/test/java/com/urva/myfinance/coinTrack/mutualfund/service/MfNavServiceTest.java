@@ -110,7 +110,7 @@ class MfNavServiceTest {
 
     assertNull(result); // Should not fallback to 16th or 14th
     verify(restTemplate, times(1)).getForObject(contains("tigzig.com"), eq(Map.class));
-    verify(restTemplate, times(1)).getForObject(contains("mfapi.in"), eq(Map.class));
+    verify(restTemplate, atLeastOnce()).getForObject(contains("mfapi.in"), eq(Map.class));
     verify(navCacheRepository, never()).save(any(MutualFundNavCache.class));
   }
 }

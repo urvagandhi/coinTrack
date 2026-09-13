@@ -10,6 +10,7 @@ import com.urva.myfinance.coinTrack.mutualfund.service.MfFifoEngine;
 import com.urva.myfinance.coinTrack.mutualfund.service.MfNavService;
 import com.urva.myfinance.coinTrack.mutualfund.service.PortfolioHoldingService;
 import com.urva.myfinance.coinTrack.mutualfund.util.MfCategoryHelper;
+import com.urva.myfinance.coinTrack.mutualfund.util.MfRoundingHelper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -66,7 +67,11 @@ public class PendingTransactionSettlementService {
         t.setNavPrice(nav);
         t.setStatus(TransactionStatus.COMPLETED);
         if (t.getLumpsumInvestment() != null) {
-          t.setTotalUnit(t.getLumpsumInvestment().divide(nav, 3, RoundingMode.HALF_UP));
+          BigDecimal netInvestment =
+              t.getLumpsumInvestment()
+                  .subtract(t.getStampDuty() != null ? t.getStampDuty() : BigDecimal.ZERO);
+          t.setTotalUnit(
+              netInvestment.divide(nav, MfRoundingHelper.UNIT_PRECISION, RoundingMode.HALF_UP));
         }
         lumpsumRepo.save(t);
         portfolioHoldingService.updateHoldingForScheme(t.getUserId(), t.getSchemeId());
@@ -108,7 +113,10 @@ public class PendingTransactionSettlementService {
         t.setNavPrice(nav);
         t.setStatus(TransactionStatus.COMPLETED);
         if (t.getAmount() != null) {
-          t.setTotalUnit(t.getAmount().divide(nav, 3, RoundingMode.HALF_UP));
+          BigDecimal netInvestment =
+              t.getAmount().subtract(t.getStampDuty() != null ? t.getStampDuty() : BigDecimal.ZERO);
+          t.setTotalUnit(
+              netInvestment.divide(nav, MfRoundingHelper.UNIT_PRECISION, RoundingMode.HALF_UP));
         }
         sipRepo.save(t);
         portfolioHoldingService.updateHoldingForScheme(t.getUserId(), t.getSchemeId());
@@ -185,7 +193,8 @@ public class PendingTransactionSettlementService {
                   t.getSchemeId(),
                   t.getApplicableDate(),
                   t.getRedemptionUnit(),
-                  null);
+                  null,
+                  t.getTransactionNo());
           t.setTradeInvestmentValue(fifoResult.totalCostValue);
 
           if (t.getRedemptionValue() != null) {

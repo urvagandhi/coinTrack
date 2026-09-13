@@ -1,8 +1,10 @@
 package com.urva.myfinance.coinTrack.mutualfund.service;
 
+import com.urva.myfinance.coinTrack.common.util.HolderName;
 import com.urva.myfinance.coinTrack.mutualfund.model.ValuationSnapshot;
 import com.urva.myfinance.coinTrack.mutualfund.repository.ValuationSnapshotRepository;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +17,23 @@ public class ValuationSnapshotService {
     if ((holderName == null || holderName.isEmpty()) && (platform == null || platform.isEmpty())) {
       return repository.findByUserId(userId);
     }
-    return repository.findByUserIdAndHolderNameAndPlatform(userId, holderName, platform);
+    // Normalize the holderName param and compare against canonical stored names so
+    // case/whitespace variants match (parity with MfSchemeService.getAllSchemes).
+    final String normalizedHolder =
+        holderName == null || holderName.isEmpty() ? null : HolderName.normalize(holderName);
+    final String normalizedPlatform =
+        platform == null || platform.isEmpty() ? null : platform.trim();
+    return repository.findByUserId(userId).stream()
+        .filter(
+            s ->
+                normalizedHolder == null
+                    || normalizedHolder.equals(HolderName.normalize(s.getHolderName())))
+        .filter(
+            s ->
+                normalizedPlatform == null
+                    || normalizedPlatform.equalsIgnoreCase(
+                        s.getPlatform() == null ? null : s.getPlatform().trim()))
+        .collect(Collectors.toList());
   }
 
   public ValuationSnapshot getSnapshot(String userId, String id) {
@@ -27,6 +45,7 @@ public class ValuationSnapshotService {
 
   public ValuationSnapshot createSnapshot(String userId, ValuationSnapshot snapshot) {
     snapshot.setUserId(userId);
+    snapshot.setHolderName(HolderName.normalize(snapshot.getHolderName()));
     return repository.save(snapshot);
   }
 

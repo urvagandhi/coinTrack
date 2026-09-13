@@ -1,5 +1,6 @@
 package com.urva.myfinance.coinTrack.mutualfund.service;
 
+import com.urva.myfinance.coinTrack.common.util.HolderName;
 import com.urva.myfinance.coinTrack.mutualfund.dto.DashboardSummaryDto;
 import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
 import com.urva.myfinance.coinTrack.mutualfund.model.PortfolioHolding;
@@ -9,20 +10,28 @@ import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PortfolioDashboardService {
 
+  private static final Logger logger = LoggerFactory.getLogger(PortfolioDashboardService.class);
+
   @Autowired private PortfolioHoldingRepository holdingRepository;
   @Autowired private MfSchemeRepository schemeRepository;
   @Autowired private SipMandateRepository sipMandateRepository;
   @Autowired private SipMandateService sipMandateService;
   @Autowired private PortfolioHoldingService portfolioHoldingService;
+  @Autowired private MfSchemeAggregationService mfSchemeAggregationService;
+
+  @Autowired
+  private com.urva.myfinance.coinTrack.mutualfund.repository.MfPortfolioMetricsRepository
+      portfolioMetricsRepository;
 
   public DashboardSummaryDto getDashboardSummary(String userId) {
-    portfolioHoldingService.refreshAllHoldingsLiveNav(userId);
     List<PortfolioHolding> holdings = holdingRepository.findByUserId(userId);
     List<MfScheme> schemes = schemeRepository.findByUserId(userId);
 
@@ -33,27 +42,37 @@ public class PortfolioDashboardService {
             .filter(h -> schemes.stream().noneMatch(s -> s.getId().equals(h.getSchemeId())))
             .collect(Collectors.toList());
     if (!orphanHoldings.isEmpty()) {
+      for (PortfolioHolding orphan : orphanHoldings) {
+        org.slf4j.LoggerFactory.getLogger(PortfolioDashboardService.class)
+            .warn(
+                "[Portfolio] Deleted orphan holding for user: {}, scheme: {}",
+                userId,
+                orphan.getSchemeId());
+      }
       holdingRepository.deleteAll(orphanHoldings);
       holdings.removeAll(orphanHoldings);
     }
 
     DashboardSummaryDto dto = new DashboardSummaryDto();
 
-    BigDecimal totalInvestment =
-        holdings.stream()
-            .map(PortfolioHolding::getCurrentInvestment)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    com.urva.myfinance.coinTrack.mutualfund.dto.OverallSummaryDto overall =
+        mfSchemeAggregationService.calculateOverallSummary(userId);
+
+    BigDecimal totalInvestment = overall.getTotalInvested();
+    BigDecimal realizedGain = overall.getRealizedGain();
+
+    // Compute currentValue from live scheme summaries (which fetch live NAV) rather than
+    // stale PortfolioHolding records that only update on transaction events.
+    List<com.urva.myfinance.coinTrack.mutualfund.dto.SchemeSummaryDto> liveSummaries =
+        schemes.stream()
+            .map(s -> mfSchemeAggregationService.calculateSummary(userId, s.getId()))
+            .collect(Collectors.toList());
+
     BigDecimal currentValue =
-        holdings.stream()
-            .map(PortfolioHolding::getCurrentValue)
-            .filter(Objects::nonNull)
+        liveSummaries.stream()
+            .map(s -> s.getCurrentValue() != null ? s.getCurrentValue() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal realizedGain =
-        holdings.stream()
-            .map(PortfolioHolding::getRealizedGain)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
     BigDecimal unrealizedGain =
         holdings.stream()
             .map(PortfolioHolding::getUnrealizedGain)
@@ -65,7 +84,22 @@ public class PortfolioDashboardService {
     dto.setRealizedGain(realizedGain);
     dto.setUnrealizedGain(unrealizedGain);
     dto.setAbsoluteGain(currentValue.subtract(totalInvestment));
-    dto.setXirr(BigDecimal.ZERO); // Placeholder for actual XIRR
+
+    logger.info(
+        "[DASHBOARD-VALUATION] User: {} | Total Investment: ₹{} | Current Value: ₹{} | Realized Gain: ₹{} | Unrealized Gain: ₹{} | Absolute Gain: ₹{}",
+        userId,
+        totalInvestment,
+        currentValue,
+        realizedGain,
+        unrealizedGain,
+        dto.getAbsoluteGain());
+    com.urva.myfinance.coinTrack.mutualfund.model.MfPortfolioMetrics metrics =
+        portfolioMetricsRepository.findByUserId(userId).orElse(null);
+    if (metrics != null && metrics.getOverallXirr() != null) {
+      dto.setXirr(metrics.getOverallXirr());
+    } else {
+      dto.setXirr(BigDecimal.ZERO);
+    }
 
     int activeSips =
         (int)
@@ -74,9 +108,13 @@ public class PortfolioDashboardService {
                 .count();
     dto.setActiveSipCount(activeSips);
 
-    dto.setTotalSchemes((int) schemes.stream().map(MfScheme::getSchemeName).distinct().count());
+    dto.setTotalSchemes(schemes.size());
     dto.setTotalFolios(
-        (int) schemes.stream().map(s -> s.getSchemeName() + s.getFolioNo()).distinct().count());
+        (int)
+            schemes.stream()
+                .map(s -> HolderName.normalize(s.getHolderName()) + "|" + s.getFolioNo())
+                .distinct()
+                .count());
 
     // Allocations
     dto.setCategoryAllocation(calculateAllocation(holdings, schemes, MfScheme::getMfCategory));

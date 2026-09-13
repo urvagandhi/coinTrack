@@ -286,6 +286,7 @@ class SipContributionServiceTest {
 
   @Test
   @DisplayName("backfillMandate: handles weekends and holidays correctly via forward-rolling")
+  @SuppressWarnings("unchecked")
   void backfillMandate_weekendsAndHolidays() {
     SipMandate mandate = new SipMandate();
     mandate.setId("m1");
@@ -323,6 +324,7 @@ class SipContributionServiceTest {
         .thenReturn(new BigDecimal("110"));
     when(mfNavService.fetchNavForDate(sampleScheme.getAmfiCode(), app3))
         .thenReturn(new BigDecimal("120"));
+    when(sipMandateRepository.findById(mandate.getId())).thenReturn(Optional.of(mandate));
 
     when(repository.existsBySipMandateIdAndContributionDateBetween(any(), any(), any()))
         .thenReturn(false);

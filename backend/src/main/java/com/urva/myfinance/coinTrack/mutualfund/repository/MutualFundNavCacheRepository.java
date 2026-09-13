@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface MutualFundNavCacheRepository extends MongoRepository<MutualFundNavCache, String> {
   Optional<MutualFundNavCache> findBySchemeCodeAndNavDate(String schemeCode, LocalDate navDate);
+
+  Optional<MutualFundNavCache> findFirstBySchemeCodeOrderByNavDateDesc(String schemeCode);
 }

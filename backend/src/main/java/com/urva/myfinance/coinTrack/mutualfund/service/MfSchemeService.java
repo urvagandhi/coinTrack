@@ -1,5 +1,6 @@
 package com.urva.myfinance.coinTrack.mutualfund.service;
 
+import com.urva.myfinance.coinTrack.common.util.HolderName;
 import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
 import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
 import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
@@ -9,11 +10,15 @@ import com.urva.myfinance.coinTrack.mutualfund.repository.SipContributionReposit
 import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
 import java.time.Instant;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MfSchemeService {
+
+  private static final Logger logger = LoggerFactory.getLogger(MfSchemeService.class);
 
   @Autowired private MfSchemeRepository repository;
   @Autowired private PortfolioHoldingService portfolioHoldingService;
@@ -31,7 +36,13 @@ public class MfSchemeService {
 
   public List<MfScheme> getAllSchemes(String userId, String holderName) {
     if (holderName != null && !holderName.isEmpty()) {
-      return repository.findByUserIdAndHolderName(userId, holderName);
+      // Normalize the query param to the canonical form and compare against the canonical
+      // stored value, so case/whitespace variants ("RAHUL DAS", "rahul das") match the same
+      // schemes regardless of how historical rows were stored.
+      final String normalized = HolderName.normalize(holderName);
+      return repository.findByUserId(userId).stream()
+          .filter(s -> normalized.equals(HolderName.normalize(s.getHolderName())))
+          .collect(java.util.stream.Collectors.toList());
     }
     return repository.findByUserId(userId);
   }
@@ -69,15 +80,18 @@ public class MfSchemeService {
   }
 
   public MfScheme getScheme(String userId, String id) {
-    return repository
-        .findById(id)
-        .filter(s -> s.getUserId().equals(userId))
-        .orElseThrow(() -> new RuntimeException("Scheme not found"));
+    MfScheme scheme =
+        repository.findById(id).orElseThrow(() -> new RuntimeException("Scheme not found"));
+    if (!scheme.getUserId().equals(userId)) {
+      throw new RuntimeException("Scheme not found or unauthorized");
+    }
+    return scheme;
   }
 
   public MfScheme createScheme(String userId, MfScheme scheme) {
     scheme.setUserId(userId);
     scheme.setMfCategory(normalizeCategory(scheme.getMfCategory()));
+    scheme.setHolderName(HolderName.normalize(scheme.getHolderName()));
     scheme.setCreatedAt(Instant.now());
     scheme.setUpdatedAt(Instant.now());
     return repository.save(scheme);
@@ -85,20 +99,52 @@ public class MfSchemeService {
 
   public MfScheme updateScheme(String userId, String id, MfScheme updatedScheme) {
     MfScheme existing = getScheme(userId, id);
-    existing.setHolderName(updatedScheme.getHolderName());
-    existing.setSchemeName(updatedScheme.getSchemeName());
-    existing.setAmfiCode(updatedScheme.getAmfiCode());
-    existing.setMfCategory(normalizeCategory(updatedScheme.getMfCategory()));
-    existing.setPlatform(updatedScheme.getPlatform());
-    existing.setFolioNo(updatedScheme.getFolioNo());
-    existing.setBank(updatedScheme.getBank());
-    existing.setSipStartDate(updatedScheme.getSipStartDate());
-    existing.setSipStopDate(updatedScheme.getSipStopDate());
+
+    // Log & update manualTotalUnits when included in request (supports setting or resetting to
+    // null)
+    logger.info(
+        "[MANUAL-OVERRIDE-UPDATE] Scheme ID: {} ('{}') | Previous Manual Units: {} | New Manual Units: {}",
+        id,
+        existing.getSchemeName(),
+        existing.getManualTotalUnits(),
+        updatedScheme.getManualTotalUnits());
     existing.setManualTotalUnits(updatedScheme.getManualTotalUnits());
-    existing.setAverageNav(updatedScheme.getAverageNav());
+
+    if (updatedScheme.getAverageNav() != null) {
+      logger.info(
+          "[AVERAGE-NAV-OVERRIDE] Scheme ID: {} ('{}') | Avg NAV updated from {} -> {}",
+          id,
+          existing.getSchemeName(),
+          existing.getAverageNav(),
+          updatedScheme.getAverageNav());
+      existing.setAverageNav(updatedScheme.getAverageNav());
+    }
+
+    if (updatedScheme.getHolderName() != null)
+      existing.setHolderName(HolderName.normalize(updatedScheme.getHolderName()));
+    if (updatedScheme.getSchemeName() != null)
+      existing.setSchemeName(updatedScheme.getSchemeName());
+    if (updatedScheme.getAmfiCode() != null) existing.setAmfiCode(updatedScheme.getAmfiCode());
+    if (updatedScheme.getMfCategory() != null)
+      existing.setMfCategory(normalizeCategory(updatedScheme.getMfCategory()));
+    if (updatedScheme.getPlatform() != null) existing.setPlatform(updatedScheme.getPlatform());
+    if (updatedScheme.getFolioNo() != null) existing.setFolioNo(updatedScheme.getFolioNo());
+    if (updatedScheme.getBank() != null) existing.setBank(updatedScheme.getBank());
+    if (updatedScheme.getSipStartDate() != null)
+      existing.setSipStartDate(updatedScheme.getSipStartDate());
+    if (updatedScheme.getSipStopDate() != null)
+      existing.setSipStopDate(updatedScheme.getSipStopDate());
+
     existing.setUpdatedAt(Instant.now());
     MfScheme savedScheme = repository.save(existing);
-    portfolioHoldingService.updateHoldingForScheme(userId, id);
+
+    logger.info(
+        "[SCHEME-UPDATED] Scheme ID: {} ('{}') successfully saved for User ID: {}",
+        id,
+        savedScheme.getSchemeName(),
+        userId);
+
+    portfolioHoldingService.updateHoldingForScheme(existing.getUserId(), id);
     return savedScheme;
   }
 

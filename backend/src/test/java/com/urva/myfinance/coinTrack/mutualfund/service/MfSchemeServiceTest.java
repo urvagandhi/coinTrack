@@ -70,13 +70,25 @@ class MfSchemeServiceTest {
   }
 
   @Test
-  @DisplayName("getAllSchemes: with holderName → filters by holder")
+  @DisplayName("getAllSchemes: with holderName → filters by holder (normalized match)")
   void getAllSchemes_withHolderName_filtersByHolder() {
-    when(repository.findByUserIdAndHolderName(USER_ID, "John")).thenReturn(List.of(sampleScheme));
+    MfScheme matching = new MfScheme();
+    matching.setHolderName("John");
+    MfScheme caseVariant = new MfScheme();
+    caseVariant.setHolderName("JOHN");
+    MfScheme other = new MfScheme();
+    other.setHolderName("Jane");
+    when(repository.findByUserId(USER_ID))
+        .thenReturn(List.of(sampleScheme, matching, caseVariant, other));
 
-    List<MfScheme> result = service.getAllSchemes(USER_ID, "John");
+    // Case/whitespace variants of "John" must match the same person.
+    List<MfScheme> result = service.getAllSchemes(USER_ID, "john");
 
-    assertEquals(1, result.size());
+    assertEquals(3, result.size());
+    assertTrue(result.contains(sampleScheme));
+    assertTrue(result.contains(matching));
+    assertTrue(result.contains(caseVariant));
+    assertFalse(result.contains(other));
   }
 
   // ── getScheme ──────────────────────────────────────────────────
@@ -114,7 +126,7 @@ class MfSchemeServiceTest {
   // ── createScheme ──────────────────────────────────────────────
 
   @Test
-  @DisplayName("createScheme: sets userId, normalizes category, sets timestamps")
+  @DisplayName("createScheme: sets userId, normalizes category+holderName, sets timestamps")
   void createScheme_setsFieldsCorrectly() {
     when(repository.save(any(MfScheme.class)))
         .thenAnswer(
@@ -127,13 +139,28 @@ class MfSchemeServiceTest {
     MfScheme newScheme = new MfScheme();
     newScheme.setSchemeName("ICICI Prudential");
     newScheme.setMfCategory("debt");
+    newScheme.setHolderName("  RAHUL   das ");
 
     MfScheme result = service.createScheme(USER_ID, newScheme);
 
     assertEquals(USER_ID, result.getUserId());
     assertEquals("Debt", result.getMfCategory());
+    assertEquals("Rahul Das", result.getHolderName());
     assertNotNull(result.getCreatedAt());
     assertNotNull(result.getUpdatedAt());
+  }
+
+  @Test
+  @DisplayName("createScheme: null holderName → preserved as null")
+  void createScheme_nullHolderName_preserved() {
+    when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    MfScheme s = new MfScheme();
+    s.setHolderName(null);
+
+    MfScheme result = service.createScheme(USER_ID, s);
+
+    assertNull(result.getHolderName());
   }
 
   @Test
@@ -165,13 +192,13 @@ class MfSchemeServiceTest {
   // ── updateScheme ──────────────────────────────────────────────
 
   @Test
-  @DisplayName("updateScheme: updates all mutable fields")
+  @DisplayName("updateScheme: updates all mutable fields (holderName normalized)")
   void updateScheme_updatesFields() {
     when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     MfScheme updates = new MfScheme();
-    updates.setHolderName("Jane");
+    updates.setHolderName("  jane  singh ");
     updates.setSchemeName("SBI Small Cap");
     updates.setMfCategory("equity");
     updates.setPlatform("Zerodha");
@@ -180,7 +207,7 @@ class MfSchemeServiceTest {
 
     MfScheme result = service.updateScheme(USER_ID, SCHEME_ID, updates);
 
-    assertEquals("Jane", result.getHolderName());
+    assertEquals("Jane Singh", result.getHolderName());
     assertEquals("SBI Small Cap", result.getSchemeName());
     assertEquals("Equity", result.getMfCategory());
     assertEquals("Zerodha", result.getPlatform());

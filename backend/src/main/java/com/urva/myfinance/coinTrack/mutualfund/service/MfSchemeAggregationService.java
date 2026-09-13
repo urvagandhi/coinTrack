@@ -1,5 +1,6 @@
 package com.urva.myfinance.coinTrack.mutualfund.service;
 
+import com.urva.myfinance.coinTrack.common.util.OwnerGrouping;
 import com.urva.myfinance.coinTrack.mutualfund.dto.OverallSummaryDto;
 import com.urva.myfinance.coinTrack.mutualfund.dto.OverallSummaryDto.DiscrepancyReport;
 import com.urva.myfinance.coinTrack.mutualfund.dto.SchemeSummaryDto;
@@ -24,6 +25,7 @@ public class MfSchemeAggregationService {
   @Autowired private SipMandateRepository sipMandateRepository;
   @Autowired private ValuationSnapshotRepository valuationSnapshotRepository;
   @Autowired private PortfolioHoldingRepository portfolioHoldingRepository;
+  @Autowired private MfNavService navService;
 
   public SchemeSummaryDto calculateSummary(String userId, String schemeId) {
     MfScheme scheme =
@@ -72,6 +74,18 @@ public class MfSchemeAggregationService {
             .filter(Objects::nonNull)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+    BigDecimal totalSttPaid =
+        redemptions.stream()
+            .map(RedemptionTransaction::getSttAmount)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    BigDecimal realizedGain =
+        redemptions.stream()
+            .map(RedemptionTransaction::getCapitalGain)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
     BigDecimal sipUnits =
         sips.stream()
             .map(SipContribution::getTotalUnit)
@@ -94,6 +108,9 @@ public class MfSchemeAggregationService {
     BigDecimal totalInvestment = lumpsumInvestment.add(sipInvestment);
     BigDecimal netInvestment = totalInvestment.subtract(totalStampDuty);
     BigDecimal currentInvestment = totalInvestment.subtract(totalTradedValue);
+    if (currentInvestment.compareTo(BigDecimal.ZERO) < 0) {
+      currentInvestment = BigDecimal.ZERO;
+    }
     BigDecimal totalUnit;
     if (scheme.getManualTotalUnits() != null
         && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0) {
@@ -105,7 +122,14 @@ public class MfSchemeAggregationService {
     BigDecimal totalPurchasedUnits = lumpsumUnits.add(sipUnits);
     // Do not override totalPurchasedUnits with manualTotalUnits (which represents current balance)
     // to keep historical average Nav calculation accurate.
-    BigDecimal averageNav = scheme.getAverageNav();
+    PortfolioHolding holding =
+        portfolioHoldingRepository
+            .findByUserIdAndSchemeId(scheme.getUserId(), schemeId)
+            .orElse(null);
+    BigDecimal averageNav =
+        holding != null && holding.getAverageCost() != null
+            ? holding.getAverageCost()
+            : BigDecimal.ZERO;
     if ((averageNav == null || averageNav.compareTo(BigDecimal.ZERO) == 0)
         && totalPurchasedUnits.compareTo(BigDecimal.ZERO) > 0) {
       averageNav = totalInvestment.divide(totalPurchasedUnits, 8, java.math.RoundingMode.HALF_UP);
@@ -121,9 +145,6 @@ public class MfSchemeAggregationService {
         currentInvestment);
 
     java.util.Set<FundStatus> statuses = new java.util.HashSet<>();
-    if (scheme.getStatuses() != null) {
-      statuses.addAll(scheme.getStatuses());
-    }
 
     boolean hasInvestments = false;
 
@@ -137,8 +158,7 @@ public class MfSchemeAggregationService {
 
     if (sipUnits.compareTo(BigDecimal.ZERO) > 0
         || sipInvestment.compareTo(BigDecimal.ZERO) > 0
-        || !mandates.isEmpty()
-        || scheme.getSipStartDate() != null) {
+        || !mandates.isEmpty()) {
       statuses.add(FundStatus.SIP);
       hasInvestments = true;
     }
@@ -154,12 +174,7 @@ public class MfSchemeAggregationService {
       statuses.add(FundStatus.FULLY_REDEEMED);
     }
 
-    if (statuses.contains(FundStatus.LUMPSUM)
-        || statuses.contains(FundStatus.SIP)
-        || statuses.contains(FundStatus.PARTIALLY_REDEEMED)
-        || statuses.contains(FundStatus.FULLY_REDEEMED)) {
-      statuses.remove(FundStatus.CREATED);
-    } else if (statuses.isEmpty()) {
+    if (statuses.isEmpty()) {
       statuses.add(FundStatus.CREATED);
     }
 
@@ -180,16 +195,60 @@ public class MfSchemeAggregationService {
     dto.setTotalTradedValue(totalTradedValue);
     dto.setCurrentInvestment(currentInvestment);
     dto.setAverageNav(averageNav);
+    dto.setTotalSttPaid(totalSttPaid);
+    dto.setRealizedGain(realizedGain);
 
-    PortfolioHolding holding =
-        portfolioHoldingRepository
-            .findByUserIdAndSchemeId(scheme.getUserId(), schemeId)
-            .orElse(null);
-    if (holding != null && holding.getCurrentValue() != null) {
-      dto.setCurrentValue(holding.getCurrentValue());
-    } else {
-      dto.setCurrentValue(BigDecimal.ZERO);
+    // Compute currentValue live: fetch latest NAV and multiply by current units.
+    // This avoids staleness — the holding's persisted currentValue is only updated
+    // on transaction events, so reading it here would show 0 until a transaction fires.
+    BigDecimal liveNav = null;
+    if (scheme.getAmfiCode() != null && !scheme.getAmfiCode().trim().isEmpty()) {
+      liveNav = navService.fetchLatestNav(scheme.getAmfiCode());
     }
+
+    // 2. Fallback to saved holding NAV if live fetch returned null or 0
+    if (liveNav == null || liveNav.compareTo(BigDecimal.ZERO) <= 0) {
+      if (holding != null
+          && holding.getLatestNav() != null
+          && holding.getLatestNav().compareTo(BigDecimal.ZERO) > 0) {
+        liveNav = holding.getLatestNav();
+      }
+    }
+
+    // 3. Fallback to average purchase NAV if no historical or live NAV exists
+    if (liveNav == null || liveNav.compareTo(BigDecimal.ZERO) <= 0) {
+      if (averageNav != null && averageNav.compareTo(BigDecimal.ZERO) > 0) {
+        liveNav = averageNav;
+      }
+    }
+
+    BigDecimal liveCurrentValue = BigDecimal.ZERO;
+    if (liveNav != null
+        && liveNav.compareTo(BigDecimal.ZERO) > 0
+        && totalUnit.compareTo(BigDecimal.ZERO) > 0) {
+      liveCurrentValue = totalUnit.multiply(liveNav).setScale(2, java.math.RoundingMode.HALF_UP);
+    } else if (holding != null
+        && holding.getCurrentValue() != null
+        && holding.getCurrentValue().compareTo(BigDecimal.ZERO) > 0) {
+      liveCurrentValue = holding.getCurrentValue();
+    }
+
+    boolean isManualOverride =
+        scheme.getManualTotalUnits() != null
+            && scheme.getManualTotalUnits().compareTo(BigDecimal.ZERO) >= 0;
+    logger.info(
+        "[VALUATION-SCHEME] Scheme: '{}' (Folio: {}) | ManualOverride: {} (Value: {}) | Effective Units: {} | Avg NAV: ₹{} | Resolved NAV: ₹{} | Gross Inv: ₹{} | Current Inv: ₹{} | Current Val: ₹{}",
+        scheme.getSchemeName(),
+        scheme.getFolioNo(),
+        isManualOverride,
+        scheme.getManualTotalUnits(),
+        totalUnit,
+        averageNav,
+        liveNav,
+        totalInvestment,
+        currentInvestment,
+        liveCurrentValue);
+    dto.setCurrentValue(liveCurrentValue);
 
     dto.setStatuses(statuses);
 
@@ -202,6 +261,7 @@ public class MfSchemeAggregationService {
     BigDecimal totalInvested = BigDecimal.ZERO;
     BigDecimal currentInvestment = BigDecimal.ZERO;
     BigDecimal totalRedeemed = BigDecimal.ZERO;
+    BigDecimal realizedGain = BigDecimal.ZERO;
     int activeSipCount = 0;
 
     // Bucket ledger totals by holder + platform
@@ -212,12 +272,15 @@ public class MfSchemeAggregationService {
       totalInvested = totalInvested.add(sm.getTotalInvestment());
       currentInvestment = currentInvestment.add(sm.getCurrentInvestment());
       totalRedeemed = totalRedeemed.add(sm.getTotalTradedValue());
+      if (sm.getRealizedGain() != null) {
+        realizedGain = realizedGain.add(sm.getRealizedGain());
+      }
 
       if (sm.getStatuses() != null && sm.getStatuses().contains(FundStatus.SIP)) {
         activeSipCount++;
       }
 
-      String bucketKey = s.getHolderName() + "|" + s.getPlatform();
+      String bucketKey = OwnerGrouping.groupKey(s.getPlatform(), s.getHolderName());
       ledgerTotalsByBucket.put(
           bucketKey,
           ledgerTotalsByBucket
@@ -225,10 +288,21 @@ public class MfSchemeAggregationService {
               .add(sm.getTotalInvestment()));
     }
 
+    logger.info(
+        "[VALUATION-OVERALL] User: {} | Total Schemes: {} | Overall Gross Invested: ₹{} | Overall Current Invested: ₹{} | Total Redeemed: ₹{} | Realized Gain: ₹{} | Active SIPs: {}",
+        userId,
+        allSchemes.size(),
+        totalInvested,
+        currentInvestment,
+        totalRedeemed,
+        realizedGain,
+        activeSipCount);
+
     OverallSummaryDto overall = new OverallSummaryDto();
     overall.setTotalInvested(totalInvested);
     overall.setCurrentInvestment(currentInvestment);
     overall.setTotalRedeemed(totalRedeemed);
+    overall.setRealizedGain(realizedGain);
     overall.setActiveSipCount(activeSipCount);
 
     // Group snapshots by holderName and platform, key: holderName + "|" + platform,
@@ -236,7 +310,7 @@ public class MfSchemeAggregationService {
     Map<String, ValuationSnapshot> latestSnapshotsByBucket = new HashMap<>();
     List<ValuationSnapshot> allSnapshots = valuationSnapshotRepository.findByUserId(userId);
     for (ValuationSnapshot snapshot : allSnapshots) {
-      String key = snapshot.getHolderName() + "|" + snapshot.getPlatform();
+      String key = OwnerGrouping.groupKey(snapshot.getPlatform(), snapshot.getHolderName());
       ValuationSnapshot existing = latestSnapshotsByBucket.get(key);
       if (existing == null || snapshot.getSnapshotDate().isAfter(existing.getSnapshotDate())) {
         latestSnapshotsByBucket.put(key, snapshot);
@@ -249,7 +323,7 @@ public class MfSchemeAggregationService {
     BigDecimal overallDiscrepancyAmount = BigDecimal.ZERO;
 
     for (ValuationSnapshot snapshot : latestSnapshotsByBucket.values()) {
-      String bucketKey = snapshot.getHolderName() + "|" + snapshot.getPlatform();
+      String bucketKey = OwnerGrouping.groupKey(snapshot.getPlatform(), snapshot.getHolderName());
       BigDecimal ledgerTotal = ledgerTotalsByBucket.getOrDefault(bucketKey, BigDecimal.ZERO);
 
       BigDecimal diff = snapshot.getInvestmentValue().subtract(ledgerTotal).abs();

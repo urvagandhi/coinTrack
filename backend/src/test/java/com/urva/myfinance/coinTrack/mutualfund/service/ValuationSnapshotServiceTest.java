@@ -55,11 +55,31 @@ class ValuationSnapshotServiceTest {
   }
 
   @Test
-  @DisplayName("getSnapshots: with holder + platform → filtered")
+  @DisplayName("getSnapshots: with holder + platform → filtered (normalized match)")
   void getSnapshots_withFilters() {
-    when(repository.findByUserIdAndHolderNameAndPlatform(USER_ID, "Test Holder", "Zerodha"))
-        .thenReturn(List.of(sampleSnapshot));
-    assertEquals(1, service.getSnapshots(USER_ID, "Test Holder", "Zerodha").size());
+    ValuationSnapshot caseVariant = new ValuationSnapshot();
+    caseVariant.setHolderName("TEST HOLDER");
+    caseVariant.setPlatform("zerodha");
+    when(repository.findByUserId(USER_ID)).thenReturn(List.of(sampleSnapshot, caseVariant));
+
+    // Case/whitespace variants of "Test Holder"/"Zerodha" must still match.
+    List<ValuationSnapshot> result = service.getSnapshots(USER_ID, "test holder", "Zerodha");
+
+    assertEquals(2, result.size());
+  }
+
+  @Test
+  @DisplayName("getSnapshots: with holder only + mismatched platform → filtered out")
+  void getSnapshots_platformMismatchFiltersOut() {
+    ValuationSnapshot otherPlatform = new ValuationSnapshot();
+    otherPlatform.setHolderName("Test Holder");
+    otherPlatform.setPlatform("Groww");
+    when(repository.findByUserId(USER_ID)).thenReturn(List.of(sampleSnapshot, otherPlatform));
+
+    List<ValuationSnapshot> result = service.getSnapshots(USER_ID, "test holder", "Zerodha");
+
+    assertEquals(1, result.size());
+    assertEquals(VS_ID, result.get(0).getId());
   }
 
   @Test
@@ -97,12 +117,14 @@ class ValuationSnapshotServiceTest {
   // ── createSnapshot ─────────────────────────────────────────────
 
   @Test
-  @DisplayName("createSnapshot: sets userId and saves")
+  @DisplayName("createSnapshot: sets userId, normalizes holderName, saves")
   void createSnapshot_valid() {
-    when(repository.save(any())).thenReturn(sampleSnapshot);
+    when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     ValuationSnapshot newSnap = new ValuationSnapshot();
+    newSnap.setHolderName("  RAHUL   das ");
     ValuationSnapshot result = service.createSnapshot(USER_ID, newSnap);
     assertEquals(USER_ID, result.getUserId());
+    assertEquals("Rahul Das", result.getHolderName());
   }
 
   // ── updateSnapshot ─────────────────────────────────────────────

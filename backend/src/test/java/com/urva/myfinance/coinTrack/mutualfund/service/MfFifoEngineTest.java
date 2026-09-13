@@ -77,7 +77,7 @@ class MfFifoEngineTest {
     // 10000
     FifoResult result =
         fifoEngine.calculateRedemptionCost(
-            USER_ID, SCHEME_ID, LocalDate.of(2026, 1, 1), new BigDecimal("100"), null);
+            USER_ID, SCHEME_ID, LocalDate.of(2026, 1, 1), new BigDecimal("100"), null, null);
 
     assertEquals(
         0,
@@ -105,7 +105,7 @@ class MfFifoEngineTest {
     // Redeem at 2025-01-01 (Exactly 2 years later)
     FifoResult result =
         fifoEngine.calculateRedemptionCost(
-            USER_ID, SCHEME_ID, LocalDate.of(2025, 1, 1), new BigDecimal("100"), null);
+            USER_ID, SCHEME_ID, LocalDate.of(2025, 1, 1), new BigDecimal("100"), null, null);
 
     assertEquals(
         0,
@@ -134,7 +134,7 @@ class MfFifoEngineTest {
     // Redeem at 2025-01-01 (Exactly 2 years later)
     FifoResult result =
         fifoEngine.calculateRedemptionCost(
-            USER_ID, SCHEME_ID, LocalDate.of(2025, 1, 1), new BigDecimal("100"), null);
+            USER_ID, SCHEME_ID, LocalDate.of(2025, 1, 1), new BigDecimal("100"), null, null);
 
     assertEquals(
         0,
