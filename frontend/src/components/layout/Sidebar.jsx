@@ -163,6 +163,7 @@ export default function Sidebar({ onNavigate }) {
             src='/coinTrack.png'
             alt='coinTrack'
             fill
+            sizes='32px'
             priority
             className='object-contain'
           />

@@ -136,6 +136,7 @@ export default function HomePage() {
                 src='/coinTrack.png'
                 alt='coinTrack'
                 fill
+                sizes='36px'
                 priority
                 className='object-contain'
               />
@@ -700,6 +701,7 @@ export default function HomePage() {
                     src='/coinTrack.png'
                     alt='coinTrack'
                     fill
+                    sizes='36px'
                     className='object-contain'
                   />
                 </span>

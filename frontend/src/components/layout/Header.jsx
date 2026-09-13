@@ -122,6 +122,7 @@ export default function Header({ onMenuClick }) {
               src='/coinTrack.png'
               alt='coinTrack'
               fill
+              sizes='28px'
               className='object-contain'
             />
           </span>

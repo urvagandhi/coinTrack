@@ -63,5 +63,23 @@ export default [
     },
   },
   ...tanstackQuery.configs['flat/recommended'],
+  {
+    files: ['cypress/**/*.js'],
+    languageOptions: {
+      globals: {
+        cy: 'readonly',
+        Cypress: 'readonly',
+        expect: 'readonly',
+        describe: 'readonly',
+        context: 'readonly',
+        it: 'readonly',
+        specify: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        before: 'readonly',
+        after: 'readonly',
+      },
+    },
+  },
   eslintConfigPrettier,
 ];

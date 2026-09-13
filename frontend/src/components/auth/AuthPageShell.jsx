@@ -63,6 +63,7 @@ export function AuthPageShell({
                 src='/coinTrack.png'
                 alt='coinTrack'
                 fill
+                sizes='32px'
                 priority
                 className='object-contain'
               />

@@ -52,6 +52,7 @@ export default function CalculatorsLayout({ children }) {
                 src='/coinTrack.png'
                 alt='coinTrack'
                 fill
+                sizes='36px'
                 priority
                 className='object-contain'
               />
@@ -181,6 +182,7 @@ export default function CalculatorsLayout({ children }) {
                     src='/coinTrack.png'
                     alt='coinTrack'
                     fill
+                    sizes='28px'
                     className='object-contain'
                   />
                 </span>
