@@ -13,7 +13,8 @@ import lombok.NoArgsConstructor;
 public class FixedDepositSummaryDTO {
 
   private BigDecimal totalInvestment;
-  private BigDecimal totalReturns; // All returns (active + due + matured + closed if applicable)
+  private BigDecimal
+      totalReturns; // All returns (active + due + matured + pre_matured if applicable)
 
   private BigDecimal totalActiveInvestment;
   private BigDecimal totalEstimatedReturns;
@@ -27,7 +28,10 @@ public class FixedDepositSummaryDTO {
   private long activeCount;
   private long dueAndMaturedCount;
 
-  // TDS fields
-  private BigDecimal totalTdsDeducted;
-  private BigDecimal totalNetReturns;
+  // [DEPRECATED-TDS] TDS totals are DISABLED. The getSummary() service no longer computes or
+  // populates these fields (see FixedDepositServiceImpl.getSummary). Kept commented for reference.
+  // Re-enabling TDS requires restoring these fields AND the bank-level TDS accumulation block in
+  // FixedDepositServiceImpl.getSummary().
+  // private BigDecimal totalTdsDeducted;
+  // private BigDecimal totalNetReturns;
 }

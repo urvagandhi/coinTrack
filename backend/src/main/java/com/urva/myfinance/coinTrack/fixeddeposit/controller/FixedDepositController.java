@@ -3,7 +3,10 @@ package com.urva.myfinance.coinTrack.fixeddeposit.controller;
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.PrematureWithdrawalRequestDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
+// [DEPRECATED-TDS] FdTdsDetailDTO import removed/disabled — the TDS detail & summary feature has
+// been disabled across the stack (frontend, backend, tests, docs). Kept commented below for
+// reference. The import is unused so it no longer compiles/links.
+// import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.PrematureWithdrawalResponseDTO;
@@ -25,7 +28,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -39,7 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(
     name = "Fixed Deposits",
     description =
-        "Fixed Deposit (FD) management module with status derivation, metrics, TDS, premature withdrawal, and Excel (XLSX) export")
+        "Fixed Deposit (FD) management module with status derivation, metrics, premature withdrawal, and Excel (XLSX) export")
 public class FixedDepositController {
 
   private static final Logger logger = LoggerFactory.getLogger(FixedDepositController.class);
@@ -156,16 +158,6 @@ public class FixedDepositController {
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
-  @Operation(summary = "Close a fixed deposit (manual sticky override)")
-  @PatchMapping("/{id}/close")
-  public ResponseEntity<ApiResponse<FixedDepositResponseDTO>> closeFixedDeposit(
-      @PathVariable String id, @AuthenticationPrincipal UserPrincipal principal) {
-    logger.info("Closing fixed deposit {} for user: {}", id, principal.getUsername());
-    FixedDepositResponseDTO response =
-        fixedDepositService.closeFixedDeposit(id, principal.getUserId());
-    return ResponseEntity.ok(ApiResponse.success(response));
-  }
-
   @Operation(summary = "Delete a fixed deposit")
   @DeleteMapping("/{id}")
   public ResponseEntity<ApiResponse<Void>> deleteFixedDeposit(
@@ -189,6 +181,17 @@ public class FixedDepositController {
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
+  // =====================================================================================
+  // [DEPRECATED-TDS] Section 194A TDS detail & summary are DISABLED.
+  //
+  // The TDS feature was removed from the product surface (frontend UI is already disabled).
+  // These endpoints, their service methods, DTOs, math engine, Excel columns and tests have been
+  // commented out for traceability while we decide whether to re-enable or permanently remove TDS.
+  // Re-enabling requires restoring: FdTdsDetailDTO,
+  // FixedDepositService#getTdsDetail/#getTdsSummary,
+  // FdMath#computeBankLevelTds/#computeTds/#computeFyAccruedInterest, and the TDS tests.
+  // =====================================================================================
+  /*
   @Operation(summary = "Get TDS detail for a specific FD and financial year")
   @GetMapping("/{id}/tds")
   public ResponseEntity<ApiResponse<FdTdsDetailDTO>> getTdsDetail(
@@ -211,4 +214,5 @@ public class FixedDepositController {
         fixedDepositService.getTdsSummary(financialYear, principal.getUserId());
     return ResponseEntity.ok(ApiResponse.success(response));
   }
+  */
 }

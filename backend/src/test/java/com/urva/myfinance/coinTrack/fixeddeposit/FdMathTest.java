@@ -12,7 +12,8 @@ import com.urva.myfinance.coinTrack.fixeddeposit.util.FdMath;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.List;
+// [DEPRECATED-TDS] java.util.List was used only by the now-commented TDS tests.
+// import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -268,6 +269,15 @@ class FdMathTest {
     System.out.println("Non-cumulative withdrawal: " + result.realizedMaturityAmount());
   }
 
+  // =====================================================================================
+  // [DEPRECATED-TDS] The following TDS test sections are DISABLED along with the TDS feature:
+  //   - "TDS TESTS" (computeTds unit tests)
+  //   - "BANK-LEVEL TDS TESTS (Section 194A ...)" (computeBankLevelTds tests)
+  // The methods under test (FdMath.computeTds / FdMath.computeBankLevelTds) no longer exist.
+  // Re-enable alongside the TDS feature. The EDGE CASES and PER-FY ACCRUAL blocks below remain
+  // active (they exercise non-TDS paths).
+  // =====================================================================================
+  /*
   // ===== TDS TESTS =====
 
   @Test
@@ -326,9 +336,12 @@ class FdMathTest {
     assertEquals(0, result.tdsRate().compareTo(BigDecimal.ZERO));
     assertEquals(0, result.netInterest().compareTo(new BigDecimal("60000")));
   }
+  */
 
   // ===== EDGE CASES =====
 
+  // [DEPRECATED-TDS] testZeroInterest exercised FdMath.computeTds (now removed) — see TDS banner.
+  /*
   @Test
   @DisplayName("Zero or negative interest returns zero")
   void testZeroInterest() {
@@ -338,6 +351,7 @@ class FdMathTest {
     FdMath.TdsResult result2 = FdMath.computeTds(new BigDecimal("-1000"), false, true, false);
     assertEquals(0, result2.tdsDeducted().compareTo(BigDecimal.ZERO));
   }
+  */
 
   @Test
   @DisplayName("1-day tenure handled gracefully")
@@ -358,6 +372,12 @@ class FdMathTest {
     assertTrue(result.maturityAmount().compareTo(PRINCIPAL_1L) > 0);
   }
 
+  // =====================================================================================
+  // [DEPRECATED-TDS] BANK-LEVEL TDS TESTS and PER-FY ACCRUAL TESTS are DISABLED along with
+  // the TDS feature (they call FdMath.computeBankLevelTds / FdMath.computeFyAccruedInterest,
+  // which no longer exist). Re-enable with TDS.
+  // =====================================================================================
+  /*
   // ===== BANK-LEVEL TDS TESTS (Section 194A: threshold is per-bank, not per-FD) =====
 
   @Test
@@ -599,4 +619,6 @@ class FdMathTest {
     BigDecimal rounded = accrued.setScale(2, RoundingMode.HALF_EVEN);
     assertEquals(0, rounded.compareTo(expected.setScale(2, RoundingMode.HALF_EVEN)));
   }
+  */
+
 }

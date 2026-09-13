@@ -1,5 +1,17 @@
 package com.urva.myfinance.coinTrack.fixeddeposit;
 
+// =====================================================================================
+// [DEPRECATED-TDS] TdsComputationTest is DISABLED.
+//
+// This is a dedicated Section 194A TDS test suite. The TDS feature was removed from the
+// product surface (frontend UI, backend endpoints/services/math/DTOs all commented out).
+// The classes it exercises (FixedDepositServiceImpl#getTdsDetail/#getTdsSummary,
+// FdMath#computeFyAccruedInterest, FdTdsDetailDTO) are now commented out and the method
+// under test no longer exists, so this suite no longer compiles.
+//
+// Re-enable alongside the TDS feature by uncommenting the class body.
+// =====================================================================================
+/*
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -29,14 +41,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
-/**
- * Service-level TDS tests. NOTE: Section 194A TDS is a per-FY obligation — the gross interest fed
- * into the bank/holder group is the interest ACCRUED within the queried financial year (via {@link
- * FdMath#computeFyAccruedInterest}), NOT the FD's lifetime (maturity − issue) interest. Fixtures
- * here are single-FY FDs whose full life sits inside FY 2024, so their FY-2024 accrual is
- * deterministic and the assertions on threshold/grouping/exemption remain exact while exercising
- * the real per-FY accrual path.
- */
 @ExtendWith(MockitoExtension.class)
 class TdsComputationTest {
 
@@ -49,7 +53,7 @@ class TdsComputationTest {
   @InjectMocks private FixedDepositServiceImpl fixedDepositService;
 
   // Fixed FDI for accurate use in calculations
-  private static final int FY = 2024; // FY 2024 = 2024-04-01 → 2025-03-31
+  private static final int FY = 2024;
   private static final LocalDate FY_START = LocalDate.of(2024, 4, 1);
   private static final LocalDate FY_END = LocalDate.of(2025, 3, 31);
 
@@ -81,7 +85,7 @@ class TdsComputationTest {
         .issueDate(FY_START)
         .maturityDate(FY_END)
         .issueAmount(principal)
-        .maturityAmount(BigDecimal.ZERO) // unused for TDS; accrual is computed
+        .maturityAmount(BigDecimal.ZERO)
         .fdType(FdType.CUMULATIVE)
         .compoundingFrequency(CompoundingFrequency.QUARTERLY)
         .status(FdStatus.ACTIVE)
@@ -93,10 +97,6 @@ class TdsComputationTest {
         .build();
   }
 
-  /**
-   * Deterministic FY-2024 interest for a non-cumulative (simple) FD: principal × (rate/100) ×
-   * days/365.
-   */
   private BigDecimal simpleInterest(BigDecimal principal, BigDecimal rate) {
     long days = java.time.temporal.ChronoUnit.DAYS.between(FY_START, FY_END); // 364
     return principal
@@ -106,14 +106,9 @@ class TdsComputationTest {
         .setScale(2, RoundingMode.HALF_EVEN);
   }
 
-  // ===== Per-FY accrual is used, not lifetime interest =====
-
   @Test
-  @DisplayName(
-      "TDS Detail: gross interest is the FY-window accrual, NOT lifetime (maturity − issue)")
+  @DisplayName("TDS Detail: gross interest is the FY-window accrual, NOT lifetime")
   void testGrossInterestIsPerFyAccrualNotLifetime() {
-    // FD with lifetime interest 60k (maturity 160k − issue 100k) but a modest 7% rate.
-    // Under per-FY accrual gross interest must equal the computed 7% accrual, not 60k.
     FixedDeposit fd =
         createFd("fd_1", new BigDecimal("100000"), new BigDecimal("7.00"), false, true, false);
     fd.setMaturityAmount(new BigDecimal("160000"));
@@ -123,15 +118,11 @@ class TdsComputationTest {
     FdTdsDetailDTO result = fixedDepositService.getTdsDetail("fd_1", FY, "user_A");
 
     assertNotNull(result);
-    // Accrued FY-2024 interest ≈ 7% of principal (full FY), NOT the arbitrary 60k lifetime.
     assertTrue(result.getGrossInterest().compareTo(new BigDecimal("5000")) > 0);
     assertTrue(result.getGrossInterest().compareTo(new BigDecimal("8000")) < 0);
     assertTrue(result.getGrossInterest().compareTo(new BigDecimal("60000")) < 0);
-    // Below the ₹50k regular threshold → no TDS.
     assertEquals(0, result.getTdsDeducted().compareTo(BigDecimal.ZERO));
   }
-
-  // ===== Threshold behavior (now driven by per-FY accrual) =====
 
   @Test
   @DisplayName("TDS Detail: Regular citizen, ~₹7k FY interest → no TDS (under ₹50k)")
@@ -146,14 +137,12 @@ class TdsComputationTest {
     assertNotNull(result);
     assertEquals(0, result.getTdsDeducted().compareTo(BigDecimal.ZERO));
     assertEquals(0, result.getTdsThreshold().compareTo(new BigDecimal("50000")));
-    // Net = gross − tds (both positive)
     assertTrue(result.getNetInterest().compareTo(BigDecimal.ZERO) > 0);
   }
 
   @Test
   @DisplayName("TDS Detail: Regular citizen, large FY accrual (> ₹50k) → TDS on the excess @10%")
   void testTdsDetailRegularAboveThreshold() {
-    // ₹8L at 7% accrues ~₹56k in a year → taxable ₹6k @10% → ₹600 TDS.
     FixedDeposit fd =
         createFd("fd_2", new BigDecimal("800000"), new BigDecimal("7.00"), false, true, false);
     when(fixedDepositRepository.findByIdAndUserId("fd_2", "user_A")).thenReturn(Optional.of(fd));
@@ -163,19 +152,17 @@ class TdsComputationTest {
 
     assertNotNull(result);
     BigDecimal gross = result.getGrossInterest();
-    assertTrue(
-        gross.compareTo(new BigDecimal("50000")) > 0, "gross must exceed threshold: " + gross);
+    assertTrue(gross.compareTo(new BigDecimal("50000")) > 0, "gross must exceed threshold: " + gross);
     BigDecimal taxable = result.getTaxableInterest();
     assertEquals(
         0,
         result
             .getTdsDeducted()
-            .compareTo(
-                taxable.multiply(new BigDecimal("0.10")).setScale(2, RoundingMode.HALF_EVEN)));
+            .compareTo(taxable.multiply(new BigDecimal("0.10")).setScale(2, RoundingMode.HALF_EVEN)));
   }
 
   @Test
-  @DisplayName("TDS Detail: Senior citizen → ₹1L threshold used (even though interest is low)")
+  @DisplayName("TDS Detail: Senior citizen → ₹1L threshold used")
   void testTdsDetailSeniorBelowThreshold() {
     FixedDeposit fd =
         createFd("fd_3", new BigDecimal("400000"), new BigDecimal("7.00"), true, true, false);
@@ -201,7 +188,6 @@ class TdsComputationTest {
 
     assertNotNull(result);
     assertEquals(false, result.getHasPan());
-    // gross > 50k → taxable > 0 → TDS at 20%
     assertTrue(result.getGrossInterest().compareTo(new BigDecimal("50000")) > 0);
     assertEquals(0, result.getTdsRate().compareTo(new BigDecimal("0.20")));
     assertEquals(
@@ -231,14 +217,9 @@ class TdsComputationTest {
     assertEquals(0, result.getTdsRate().compareTo(BigDecimal.ZERO));
   }
 
-  // ===== Bank-and-holder grouping with proportional allocation =====
-
   @Test
   @DisplayName("TDS Summary: bank-level threshold + proportional allocation across FDs at one bank")
   void testTdsSummaryMultipleFds() {
-    // Three FDs at the SAME bank (HDFC) for the SAME holder. Threshold is on the bank's TOTAL
-    // per-FY interest, allocated proportionally by each FD's gross interest.
-    // Force a predictable 60:10:80 gross split via non-cumulative simple interest.
     FixedDeposit fd1 =
         createFd("fd_1", new BigDecimal("600000"), new BigDecimal("7.00"), false, true, false);
     FixedDeposit fd2 =
@@ -252,7 +233,6 @@ class TdsComputationTest {
     BigDecimal g2 = simpleInterest(new BigDecimal("100000"), new BigDecimal("7.00"));
     BigDecimal g3 = simpleInterest(new BigDecimal("800000"), new BigDecimal("7.00"));
     BigDecimal total = g1.add(g2).add(g3);
-    // Note: mixed senior/regular → regular ₹50k threshold.
     BigDecimal taxable = total.subtract(new BigDecimal("50000"));
     BigDecimal bankTds =
         taxable.multiply(new BigDecimal("0.10")).setScale(2, RoundingMode.HALF_EVEN);
@@ -262,19 +242,12 @@ class TdsComputationTest {
 
     assertNotNull(results);
     assertEquals(3, results.size());
-    // Expose tolerance: the service's cumulative/proportional rounding path can differ from the
-    // helper by ≤ ₹0.02.
     BigDecimal bankGrossActual = results.get(0).getBankTotalGrossInterest();
     assertTrue(
         bankGrossActual.subtract(total.setScale(2)).abs().compareTo(new BigDecimal("0.02")) <= 0,
-        "bank gross should match total sums (±2p): "
-            + bankGrossActual
-            + " vs "
-            + total.setScale(2));
+        "bank gross should match total sums (±2p): " + bankGrossActual + " vs " + total.setScale(2));
     assertEquals(0, results.get(0).getBankTotalTdsDeducted().compareTo(bankTds));
 
-    // Proportional per-FD: tds ≈ bankTds * gross / total (tolerance for rounding path differences;
-    // the exact-sum property below is the authoritative correctness check).
     FdTdsDetailDTO r1 =
         results.stream().filter(r -> r.getFdId().equals("fd_1")).findFirst().orElseThrow();
     FdTdsDetailDTO r2 =
@@ -289,26 +262,19 @@ class TdsComputationTest {
     assertTrue(
         r1.getTdsDeducted().subtract(expectedR1).abs().compareTo(new BigDecimal("0.02")) <= 0,
         "r1 should be proportional: " + r1.getTdsDeducted() + " vs " + expectedR1);
-    // Per-FD TDS lines must reconcile EXACTLY to the bank total (rounding reconciliation).
     BigDecimal sum = r1.getTdsDeducted().add(r2.getTdsDeducted()).add(r3.getTdsDeducted());
     assertEquals(0, sum.compareTo(bankTds));
   }
 
   @Test
-  @DisplayName(
-      "TDS Summary: holders at the same bank are separate groups (family ≠ shared threshold)")
+  @DisplayName("TDS Summary: holders at the same bank are separate groups")
   void testTdsSummarySeparatesHoldersAtSameBank() {
-    // Alice (₹8L → ~₹57k FY interest) crosses the ₹50k threshold at HDFC → TDS.
-    // Bob (₹2L + ₹2L → ~₹29k total) stays under → no TDS. They must NOT be pooled.
-    // " bob" (noisy) and "Bob" normalize into ONE group.
     FixedDeposit alice1 =
         createFd("alice_1", new BigDecimal("800000"), new BigDecimal("7.00"), false, true, false);
     FixedDeposit bob1 =
-        createFd(
-            "bob_1", new BigDecimal("200000"), new BigDecimal("7.00"), " bob", false, true, false);
+        createFd("bob_1", new BigDecimal("200000"), new BigDecimal("7.00"), " bob", false, true, false);
     FixedDeposit bob2 =
-        createFd(
-            "bob_2", new BigDecimal("200000"), new BigDecimal("7.00"), "Bob", false, true, false);
+        createFd("bob_2", new BigDecimal("200000"), new BigDecimal("7.00"), "Bob", false, true, false);
     for (FixedDeposit fd : List.of(alice1, bob1, bob2)) {
       fd.setFdType(FdType.NON_CUMULATIVE);
     }
@@ -319,13 +285,11 @@ class TdsComputationTest {
     assertNotNull(results);
     assertEquals(3, results.size());
 
-    // Alice's group: gross ≈ ₹57k > 50k → TDS > 0
     FdTdsDetailDTO a =
         results.stream().filter(r -> r.getFdId().equals("alice_1")).findFirst().orElseThrow();
     assertTrue(a.getBankTotalGrossInterest().compareTo(new BigDecimal("50000")) > 0);
     assertTrue(a.getBankTotalTdsDeducted().compareTo(BigDecimal.ZERO) > 0);
 
-    // Bob's group: gross ≈ ₹29k < 50k → no TDS, and NOT combined with Alice's ₹57k.
     FdTdsDetailDTO b1 =
         results.stream().filter(r -> r.getFdId().equals("bob_1")).findFirst().orElseThrow();
     FdTdsDetailDTO b2 =
@@ -337,20 +301,16 @@ class TdsComputationTest {
   }
 
   @Test
-  @DisplayName("TDS Summary: Excludes CLOSED and PREMATURELY_WITHDRAWN FDs")
-  void testTdsSummaryExcludesClosedAndWithdrawn() {
+  @DisplayName("TDS Summary: Excludes PREMATURELY_WITHDRAWN FDs")
+  void testTdsSummaryExcludesWithdrawn() {
     FixedDeposit activeFd =
-        createFd("fd_active", new BigDecimal("100000"), new BigDecimal("7.00"), false, true, false);
-    FixedDeposit closedFd =
-        createFd("fd_closed", new BigDecimal("100000"), new BigDecimal("7.00"), false, true, false);
-    closedFd.setStatus(FdStatus.CLOSED);
+        createFd("fd_active", new BigDecimal("100000"), new BigDecimal("70000"), false, true, false);
     FixedDeposit withdrawnFd =
-        createFd(
-            "fd_withdrawn", new BigDecimal("100000"), new BigDecimal("7.00"), false, true, false);
+        createFd("fd_withdrawn", new BigDecimal("100000"), new BigDecimal("60000"), false, true, false);
     withdrawnFd.setStatus(FdStatus.PREMATURELY_WITHDRAWN);
 
     when(fixedDepositRepository.findByUserId("user_A"))
-        .thenReturn(List.of(activeFd, closedFd, withdrawnFd));
+        .thenReturn(List.of(activeFd, withdrawnFd));
     List<FdTdsDetailDTO> results = fixedDepositService.getTdsSummary(FY, "user_A");
 
     assertEquals(1, results.size());
@@ -372,3 +332,4 @@ class TdsComputationTest {
     assertNotEquals(FY, result.getFinancialYear().intValue());
   }
 }
+*/

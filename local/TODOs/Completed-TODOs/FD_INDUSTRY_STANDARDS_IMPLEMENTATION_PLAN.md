@@ -4,6 +4,12 @@
 **Target:** Close all 6 tracker-level gaps (none are calculation bugs)  
 **Approach:** Incremental, backward-compatible, with feature flags for new fields
 
+> **[DEPRECATED-TDS]** The TDS modeling feature (Gap #1 — Section 194A `GET /{id}/tds` and
+> `GET /tds-summary` endpoints, `FdTdsDetailDTO`, `TdsComputationException`, the
+> `hasPan`/`form15g15hSubmitted`/`financialYear` fields, and `FixedDepositSummaryDTO.totalTdsDeducted`/
+> `totalNetReturns`) has been **commented out** of the codebase. The TDS prose sections below are
+> retained so a future reader can re-enable the feature. When re-enabling, uncomment the code first.
+
 > **REVISION 2026-08-28 (post-1.3.0 correction):**
 > 1. **TDS is now per (place, holderName), NOT per-FD** (Section 194A): the ₹50K regular / ₹1L
 >    senior threshold applies to the TOTAL interest ONE holder earns at ONE bank, then each FD
@@ -54,8 +60,8 @@
 | `PUT /api/fixed-deposits/{id}` | Same as create |
 | `PATCH /api/fixed-deposits/{id}/close` | **Deprecated** — keep for backward compat (sticky flag only) |
 | `POST /api/fixed-deposits/{id}/withdraw` | **NEW** — premature withdrawal with penalty calc |
-| `GET /api/fixed-deposits/{id}/tds` | **NEW** — TDS computation for a FY |
-| `GET /api/fixed-deposits/summary` | Add net-of-TDS fields |
+| `GET /api/fixed-deposits/{id}/tds` | **NEW** — TDS computation for a FY <!-- [DEPRECATED-TDS] endpoint commented out -->
+| `GET /api/fixed-deposits/summary` | Add net-of-TDS fields <!-- [DEPRECATED-TDS] net-of-TDS fields (totalTdsDeducted/totalNetReturns) removed --> |
 | `GET /api/fixed-deposits/export` | Add TDS, type, penalty columns |
 
 ### 4. Frontend Changes
@@ -72,15 +78,15 @@
 
 ---
 
-### ✅ GAP 1: TDS Modeling (P0) — **IMPLEMENTED**
+### ✅ GAP 1: TDS Modeling (P0) — **IMPLEMENTED** <!-- [DEPRECATED-TDS] entire Gap 1 feature commented out of the codebase -->
 
 #### 1.1 Model Changes (`FixedDeposit.java`)
 ```java
 // New fields
 private Boolean isSeniorCitizen;           // default false
-private Boolean hasPan;                    // default true
-private Boolean form15g15hSubmitted;       // default false
-private Integer financialYear;             // for TDS tracking (optional)
+private Boolean hasPan;                    // default true   [DEPRECATED-TDS] commented out
+private Boolean form15g15hSubmitted;       // default false  [DEPRECATED-TDS] commented out
+private Integer financialYear;             // for TDS tracking (optional) [DEPRECATED-TDS] commented out
 ```
 
 #### 1.2 TDS Calculation Rules (per FY 2025-26 / AY 2026-27)
@@ -120,7 +126,7 @@ Per-group threshold rules captured in `FdMath.computeBankLevelTds(List<FdTdsInpu
 swap the free-text `holderName` grouping key for a `Holder` entity's `(place, paneOrHolderId)` —
 same shape, no re-architecture.
 
-#### 1.4 New DTO: `FdTdsDetailDTO`
+#### 1.4 New DTO: `FdTdsDetailDTO` <!-- [DEPRECATED-TDS] DTO commented out -->
 ```java
 class FdTdsDetailDTO {
     String fdId;
@@ -143,10 +149,10 @@ class FdTdsDetailDTO {
 }
 ```
 
-#### 1.5 New Endpoints
+#### 1.5 New Endpoints <!-- [DEPRECATED-TDS] both endpoints below commented out -->
 - `GET /api/fixed-deposits/{id}/tds?fy=2025-26` → `FdTdsDetailDTO`
 - `GET /api/fixed-deposits/tds-summary?fy=2025-26` → List per FD + totals
-- Add `totalTdsDeducted`, `totalNetReturns` to `FixedDepositSummaryDTO`
+- Add `totalTdsDeducted`, `totalNetReturns` to `FixedDepositSummaryDTO` <!-- [DEPRECATED-TDS] summary fields removed -->
 
 #### 1.6 Excel Export
 Add columns: `TDS Threshold`, `Taxable Interest`, `TDS Rate`, `TDS Deducted`, `Net Interest`
@@ -370,12 +376,12 @@ backend/src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/
 │   │   └── PrematureWithdrawalRequestDTO.java  # NEW
 │   └── response/
 │       ├── FixedDepositResponseDTO.java # MODIFY: add serverComputedMaturity, etc.
-│       ├── FixedDepositSummaryDTO.java  # MODIFY: add TDS totals
+│       ├── FixedDepositSummaryDTO.java  # MODIFY: add TDS totals <!-- [DEPRECATED-TDS] totalTdsDeducted/totalNetReturns removed -->
 │       ├── PrematureWithdrawalResponseDTO.java  # NEW
-│       └── FdTdsDetailDTO.java          # NEW
+│       └── FdTdsDetailDTO.java          # NEW <!-- [DEPRECATED-TDS] commented out -->
 ├── exception/
 │   ├── InvalidWithdrawalException.java  # NEW (tax-saver, <7 days, etc.)
-│   └── TdsComputationException.java     # NEW
+│   └── TdsComputationException.java     # NEW <!-- [DEPRECATED-TDS] commented out -->
 ├── util/
 │   └── FdMath.java                      # NEW — module-owned calculation engine
 ├── service/
@@ -453,7 +459,7 @@ public final class FdMath {
             CompoundingFrequency compoundingFreq,
             BigDecimal penaltyRate) { ... }
 
-    // TDS
+    // TDS <!-- [DEPRECATED-TDS] computeTds below no longer exists in FdMath (TDS feature commented out) -->
     public static TdsResult computeTds(
             BigDecimal annualInterest,
             boolean isSeniorCitizen,
@@ -468,7 +474,7 @@ public final class FdMath {
 
 ## 🧪 TEST SCENARIOS (Critical)
 
-### TDS Tests
+### TDS Tests  <!-- [DEPRECATED-TDS] TDS tests are DISABLED in the codebase (see TdsComputationTest banner) -->
 - [x] Regular citizen, interest ₹30k → no TDS
 - [x] Regular citizen, interest ₹60k → TDS on ₹10k @ 10% = ₹1k
 - [x] Senior citizen, interest ₹80k → no TDS (threshold ₹1L)
@@ -561,3 +567,23 @@ public final class FdMath {
 - [x] E2E: create FD with all new fields → export shows TDS → withdraw shows penalty
 - [x] PART1/PART2 audit docs updated with new field inventory
 - [x] README v1.3.0 published
+
+---
+
+## 🔁 ADDENDUM — 2026-08-30 (supersedes the "keep `/close`" decisions above)
+
+The plan above deliberately kept `PATCH /{id}/close` as a deprecated sticky-flag endpoint
+("keep for backward compat"). This was later **consolidated away**: the standalone `CLOSED`
+terminal status is removed entirely, and user-initiated termination is modelled **solely** as
+`PREMATURELY_WITHDRAWN` (the richer state that already carries withdrawal economics —
+`withdrawalDate`, `realizedMaturityAmount`, `penaltyAmount`, `effectiveRateApplied`,
+`isPrematurelyWithdrawn`).
+
+Consequences vs. the rows above:
+- Line 55 / 161 / 214: `/close` is **removed**, not deprecated — no backward path remains.
+- Line 262: Tax-Saver tenure fixed to 5 years; there is no `/close`; withdrawal remains blocked.
+- Line 528 / 537: "Deprecate `/close`" is replaced by **remove `/close`**; existing DB
+  `status=CLOSED` docs are migrated to `PREMATURELY_WITHDRAWN` by `FdV131Migration`
+  (`fd_v131`) with `isPrematurelyWithdrawn=true`.
+
+Live contract now = module `README.md` v1.3.3.

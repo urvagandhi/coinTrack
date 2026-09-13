@@ -1,5 +1,24 @@
 package com.urva.myfinance.coinTrack.fixeddeposit.dto.response;
 
+// =====================================================================================
+// [DEPRECATED-TDS] FdTdsDetailDTO is DISABLED.
+//
+// The Section 194A TDS detail & summary feature has been removed from the product surface
+// (frontend UI disabled, backend endpoints/controllers/services/math/tests commented out).
+// This DTO is therefore no longer referenced anywhere in the compiled codebase.
+//
+// Re-enabling TDS requires restoring this class as an active @Data builder DTO alongside:
+//   - FixedDepositController  -> /{id}/tds and /tds-summary endpoints
+//   - FixedDepositService     -> getTdsDetail / getTdsSummary
+//   - FixedDepositServiceImpl -> getTdsDetail / getTdsSummary / computeBankGroupTds / tdsGroupKey
+//                               / toFdTdsInput
+//   - FdMath                  -> computeBankLevelTds / computeTds / computeFyAccruedInterest
+//   - FixedDepositExcelExporter -> TDS columns
+//   - And the dedicated test suites.
+//
+// The original class is reproduced below (commented) for reference.
+// =====================================================================================
+/*
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,3 +52,4 @@ public class FdTdsDetailDTO {
   private Boolean form15g15hSubmitted;
   private Boolean hasPan;
 }
+*/

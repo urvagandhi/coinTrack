@@ -5,8 +5,10 @@ package com.urva.myfinance.coinTrack.common.util;
  *
  * <p>Every site that groups by owner must route through {@link #groupKey(String, String)} (or the
  * module-specific variants below) rather than inlining {@code a + "|" + b}, so the grouping rule
- * can never drift between, for example, the FD TDS summary, the FD Excel export, and the MF
- * cross-check aggregation.
+ * can never drift between, for example,
+ * <!-- [DEPRECATED-TDS] the FD TDS summary consumer below has been deprecated (commented out of the
+ *      codebase). It is retained here so a future reader can re-enable it. -->
+ * the FD TDS summary, the FD Excel export, and the MF cross-check aggregation.
  *
  * <p>Key rule: {@code groupKey(placeOrPlatform, holder) = placeOrPlatform + "|" +
  * HolderName.normalize(holder)}. Blank place/platform and blank holder collapse to the display

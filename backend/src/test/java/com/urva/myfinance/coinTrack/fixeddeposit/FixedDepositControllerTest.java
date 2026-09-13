@@ -11,16 +11,17 @@ import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.fixeddeposit.controller.FixedDepositController;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.PrematureWithdrawalRequestDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
+// [DEPRECATED-TDS] FdTdsDetailDTO test import disabled along with the TDS endpoints.
+// import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.PrematureWithdrawalResponseDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
 import com.urva.myfinance.coinTrack.fixeddeposit.service.FixedDepositService;
 import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Collections;
+// [DEPRECATED-TDS] java.util.Collections was used only by the now-commented TDS summary test.
+// import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,7 +72,7 @@ class FixedDepositControllerTest {
     ResponseEntity<ApiResponse<FixedDepositResponseDTO>> response =
         fixedDepositController.createFixedDeposit(request, createUserPrincipal());
 
-    assertEquals(200, response.getStatusCodeValue());
+    assertEquals(200, response.getStatusCode().value());
     assertNotNull(response.getBody());
     assertEquals("fd_1", response.getBody().getData().getId());
   }
@@ -97,19 +98,20 @@ class FixedDepositControllerTest {
             fixedDepositController.getFixedDeposits(
                 createUserPrincipal(), null, null, null, null, null, "maturityDate", "asc", 0, 20);
 
-    assertEquals(200, response.getStatusCodeValue());
+    assertEquals(200, response.getStatusCode().value());
     assertEquals(1, response.getBody().getData().getContent().size());
   }
 
   @Test
-  @DisplayName("GET /api/fixed-deposits/summary returns metrics with TDS")
+  @DisplayName("GET /api/fixed-deposits/summary returns metrics")
   void testGetSummary() {
     FixedDepositSummaryDTO summary =
         FixedDepositSummaryDTO.builder()
             .totalInvestment(new BigDecimal("100000"))
             .totalReturns(new BigDecimal("40000"))
-            .totalTdsDeducted(new BigDecimal("1000"))
-            .totalNetReturns(new BigDecimal("39000"))
+            // [DEPRECATED-TDS] totalTdsDeducted / totalNetReturns removed from the DTO.
+            // .totalTdsDeducted(new BigDecimal("1000"))
+            // .totalNetReturns(new BigDecimal("39000"))
             .activeCount(1L)
             .build();
 
@@ -118,9 +120,10 @@ class FixedDepositControllerTest {
     ResponseEntity<ApiResponse<FixedDepositSummaryDTO>> response =
         fixedDepositController.getSummary(createUserPrincipal());
 
-    assertEquals(200, response.getStatusCodeValue());
-    assertEquals(
-        0, response.getBody().getData().getTotalTdsDeducted().compareTo(new BigDecimal("1000")));
+    assertEquals(200, response.getStatusCode().value());
+    // [DEPRECATED-TDS] getTotalTdsDeducted() assertion removed — field no longer exists.
+    // assertEquals(
+    //     0, response.getBody().getData().getTotalTdsDeducted().compareTo(new BigDecimal("1000")));
   }
 
   @Test
@@ -139,7 +142,7 @@ class FixedDepositControllerTest {
     ResponseEntity<ApiResponse<FixedDepositResponseDTO>> response =
         fixedDepositController.getFixedDepositById("fd_1", createUserPrincipal());
 
-    assertEquals(200, response.getStatusCodeValue());
+    assertEquals(200, response.getStatusCode().value());
     assertEquals("fd_1", response.getBody().getData().getId());
   }
 
@@ -172,28 +175,8 @@ class FixedDepositControllerTest {
     ResponseEntity<ApiResponse<FixedDepositResponseDTO>> response =
         fixedDepositController.updateFixedDeposit("fd_1", request, createUserPrincipal());
 
-    assertEquals(200, response.getStatusCodeValue());
+    assertEquals(200, response.getStatusCode().value());
     assertEquals("ICICI Bank", response.getBody().getData().getPlace());
-  }
-
-  @Test
-  @DisplayName("PATCH /api/fixed-deposits/{id}/close marks FD as closed")
-  void testCloseFixedDeposit() {
-    FixedDepositResponseDTO expected =
-        FixedDepositResponseDTO.builder()
-            .id("fd_1")
-            .fdNo(1L)
-            .userId("user_1")
-            .status(FdStatus.CLOSED)
-            .build();
-
-    when(fixedDepositService.closeFixedDeposit("fd_1", "user_1")).thenReturn(expected);
-
-    ResponseEntity<ApiResponse<FixedDepositResponseDTO>> response =
-        fixedDepositController.closeFixedDeposit("fd_1", createUserPrincipal());
-
-    assertEquals(200, response.getStatusCodeValue());
-    assertEquals(FdStatus.CLOSED, response.getBody().getData().getStatus());
   }
 
   @Test
@@ -204,7 +187,7 @@ class FixedDepositControllerTest {
     ResponseEntity<ApiResponse<Void>> response =
         fixedDepositController.deleteFixedDeposit("fd_1", createUserPrincipal());
 
-    assertEquals(200, response.getStatusCodeValue());
+    assertEquals(200, response.getStatusCode().value());
   }
 
   @Test
@@ -229,7 +212,7 @@ class FixedDepositControllerTest {
     ResponseEntity<ApiResponse<PrematureWithdrawalResponseDTO>> response =
         fixedDepositController.prematureWithdraw("fd_1", request, createUserPrincipal());
 
-    assertEquals(200, response.getStatusCodeValue());
+    assertEquals(200, response.getStatusCode().value());
     assertEquals(
         0,
         response
@@ -239,6 +222,11 @@ class FixedDepositControllerTest {
             .compareTo(new BigDecimal("120000")));
   }
 
+  // =====================================================================================
+  // [DEPRECATED-TDS] TDS endpoint tests (getTdsDetail / getTdsSummary) are DISABLED along with
+  // the /{id}/tds and /tds-summary controller endpoints. Re-enable with the TDS feature.
+  // =====================================================================================
+  /*
   @Test
   @DisplayName("GET /api/fixed-deposits/{id}/tds returns TDS detail")
   void testGetTdsDetail() {
@@ -257,7 +245,7 @@ class FixedDepositControllerTest {
     ResponseEntity<ApiResponse<FdTdsDetailDTO>> response =
         fixedDepositController.getTdsDetail("fd_1", 2024, createUserPrincipal());
 
-    assertEquals(200, response.getStatusCodeValue());
+    assertEquals(200, response.getStatusCode().value());
     assertEquals(
         0, response.getBody().getData().getTdsDeducted().compareTo(new BigDecimal("1000")));
   }
@@ -286,7 +274,7 @@ class FixedDepositControllerTest {
     ResponseEntity<ApiResponse<List<FdTdsDetailDTO>>> response =
         fixedDepositController.getTdsSummary(2024, createUserPrincipal());
 
-    assertEquals(200, response.getStatusCodeValue());
+    assertEquals(200, response.getStatusCode().value());
     assertEquals(2, response.getBody().getData().size());
   }
 
@@ -298,6 +286,7 @@ class FixedDepositControllerTest {
     ResponseEntity<ApiResponse<List<FdTdsDetailDTO>>> response =
         fixedDepositController.getTdsSummary(null, createUserPrincipal());
 
-    assertEquals(200, response.getStatusCodeValue());
+    assertEquals(200, response.getStatusCode().value());
   }
+  */
 }

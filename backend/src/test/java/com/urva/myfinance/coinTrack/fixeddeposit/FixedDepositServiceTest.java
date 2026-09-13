@@ -2,7 +2,6 @@ package com.urva.myfinance.coinTrack.fixeddeposit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,12 +15,13 @@ import com.urva.myfinance.coinTrack.common.exception.DomainException;
 import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.exception.InvalidFdDateRangeException;
-import com.urva.myfinance.coinTrack.fixeddeposit.model.CompoundingFrequency;
+// [DEPRECATED-SEC-04-05] CompoundingFrequency model import unused after Sections 04/05 removal.
+// import com.urva.myfinance.coinTrack.fixeddeposit.model.CompoundingFrequency;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdType;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FixedDeposit;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.MaturityMode;
 import com.urva.myfinance.coinTrack.fixeddeposit.repository.FixedDepositRepository;
 import com.urva.myfinance.coinTrack.fixeddeposit.service.FixedDepositServiceImpl;
 import java.math.BigDecimal;
@@ -114,7 +114,7 @@ class FixedDepositServiceTest {
   }
 
   @Test
-  @DisplayName("2. Status derivation for all 4 branches including CLOSED override")
+  @DisplayName("2. Status derivation for all 4 branches including PREMATURELY_WITHDRAWN override")
   void testStatusDerivationBranches() {
     LocalDate today = LocalDate.of(2026, 7, 24);
 
@@ -135,13 +135,14 @@ class FixedDepositServiceTest {
         FdStatus.MATURED,
         fixedDepositService.computeLiveStatus(FdStatus.ACTIVE, pastMaturity, today));
 
-    // Branch 4: CLOSED override (sticky state regardless of dates)
+    // Branch 4: PREMATURELY_WITHDRAWN override (sticky state regardless of dates)
     assertEquals(
-        FdStatus.CLOSED,
-        fixedDepositService.computeLiveStatus(FdStatus.CLOSED, futureMaturity, today));
+        FdStatus.PREMATURELY_WITHDRAWN,
+        fixedDepositService.computeLiveStatus(
+            FdStatus.PREMATURELY_WITHDRAWN, futureMaturity, today));
     assertEquals(
-        FdStatus.CLOSED,
-        fixedDepositService.computeLiveStatus(FdStatus.CLOSED, pastMaturity, today));
+        FdStatus.PREMATURELY_WITHDRAWN,
+        fixedDepositService.computeLiveStatus(FdStatus.PREMATURELY_WITHDRAWN, pastMaturity, today));
   }
 
   @Test
@@ -218,21 +219,7 @@ class FixedDepositServiceTest {
   }
 
   @Test
-  @DisplayName("5. Close endpoint sticky override logic")
-  void testCloseFixedDeposit() {
-    when(fixedDepositRepository.findByIdAndUserId("fd_100", "user_A"))
-        .thenReturn(Optional.of(sampleDepositUserA));
-    when(fixedDepositRepository.save(any(FixedDeposit.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-
-    FixedDepositResponseDTO response = fixedDepositService.closeFixedDeposit("fd_100", "user_A");
-
-    assertEquals(FdStatus.CLOSED, response.getStatus());
-    assertNull(response.getHighlight());
-  }
-
-  @Test
-  @DisplayName("6. Nearest-first mode pages server-side via aggregation (no full-ledger load)")
+  @DisplayName("5. Nearest-first mode pages server-side via aggregation (no full-ledger load)")
   void testNearestFirstUsesAggregationPaging() {
     when(mongoTemplate.count(
             any(org.springframework.data.mongodb.core.query.Query.class), any(Class.class)))
@@ -268,11 +255,14 @@ class FixedDepositServiceTest {
             .issueAmount(new BigDecimal("100000"))
             .maturityAmount(new BigDecimal("141477"))
             .fdType(FdType.CUMULATIVE)
-            .compoundingFrequency(CompoundingFrequency.QUARTERLY)
-            .isSeniorCitizen(true)
-            .isTaxSaver(false)
-            .hasPan(true)
-            .form15g15hSubmitted(false)
+            // [DEPRECATED-SEC-04-05] compoundingFrequency / isSeniorCitizen / isTaxSaver fields
+            // were removed from the DTO along with Sections 04/05.
+            // .compoundingFrequency(CompoundingFrequency.QUARTERLY)
+            // .isSeniorCitizen(true)
+            // .isTaxSaver(false)
+            // [DEPRECATED-TDS] hasPan / form15g15hSubmitted fields removed from the DTO.
+            // .hasPan(true)
+            // .form15g15hSubmitted(false)
             .build();
 
     when(fixedDepositRepository.save(any(FixedDeposit.class)))
@@ -287,18 +277,53 @@ class FixedDepositServiceTest {
 
     assertNotNull(response);
     assertEquals(FdType.CUMULATIVE, response.getFdType());
-    assertEquals(CompoundingFrequency.QUARTERLY, response.getCompoundingFrequency());
-    assertEquals(true, response.getIsSeniorCitizen());
-    assertEquals(false, response.getIsTaxSaver());
-    assertEquals(true, response.getHasPan());
-    assertEquals(false, response.getForm15g15hSubmitted());
+    // [DEPRECATED-SEC-04-05] Response fields removed; server now always uses fixed defaults
+    // (QUARTERLY / AT_MATURITY / non-senior / non-tax-saver).
+    // assertEquals(CompoundingFrequency.QUARTERLY, response.getCompoundingFrequency());
+    // assertEquals(true, response.getIsSeniorCitizen());
+    // assertEquals(false, response.getIsTaxSaver());
+    // [DEPRECATED-TDS] hasPan / form15g15hSubmitted assertions removed (fields gone from DTO).
+    // assertEquals(true, response.getHasPan());
+    // assertEquals(false, response.getForm15g15hSubmitted());
     assertNotNull(response.getServerComputedMaturityAmount());
     verify(transactionSequenceService).reorderFixedDeposits("user_A");
   }
 
   @Test
-  @DisplayName("8. Server-side maturity validation: auto-mode overrides client value")
+  @DisplayName("8. AUTOMATIC mode overrides a divergent client maturity with the server value")
   void testAutoModeOverridesMaturity() {
+    FixedDepositRequestDTO dto =
+        FixedDepositRequestDTO.builder()
+            .place("SBI")
+            .holderName("Alice")
+            .interestRate(new BigDecimal("7.00"))
+            .issueDate(LocalDate.now())
+            .maturityDate(LocalDate.now().plusYears(5))
+            .issueAmount(new BigDecimal("100000"))
+            .maturityAmount(new BigDecimal("200000"))
+            .maturityMode(MaturityMode.AUTOMATIC)
+            .build();
+
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(
+            inv -> {
+              FixedDeposit saved = inv.getArgument(0);
+              saved.setId("auto_fd_1");
+              return saved;
+            });
+
+    FixedDepositResponseDTO response = fixedDepositService.createFixedDeposit(dto, "user_A");
+
+    assertNotNull(response);
+    assertTrue(response.getMaturityAmount().compareTo(new BigDecimal("200000")) != 0);
+    assertTrue(response.getMaturityAmount().compareTo(BigDecimal.ZERO) > 0);
+    assertEquals(true, response.getMaturityAmountOverridden());
+    assertEquals(MaturityMode.AUTOMATIC, response.getMaturityMode());
+  }
+
+  @Test
+  @DisplayName("8b. Legacy 0-sentinel with no maturityMode defaults to AUTOMATIC (backward-compat)")
+  void testLegacyZeroSentinelDefaultsToAutoMode() {
     FixedDepositRequestDTO dto =
         FixedDepositRequestDTO.builder()
             .place("SBI")
@@ -323,10 +348,11 @@ class FixedDepositServiceTest {
     assertNotNull(response);
     assertTrue(response.getMaturityAmount().compareTo(BigDecimal.ZERO) > 0);
     assertEquals(true, response.getMaturityAmountOverridden());
+    assertEquals(MaturityMode.AUTOMATIC, response.getMaturityMode());
   }
 
   @Test
-  @DisplayName("9. Server-side maturity validation: manual mode flags discrepancy but accepts")
+  @DisplayName("9. MANUAL mode flags discrepancy but preserves the client value")
   void testManualModeFlagsDiscrepancy() {
     FixedDepositRequestDTO dto =
         FixedDepositRequestDTO.builder()
@@ -337,6 +363,7 @@ class FixedDepositServiceTest {
             .maturityDate(LocalDate.now().plusYears(5))
             .issueAmount(new BigDecimal("100000"))
             .maturityAmount(new BigDecimal("200000"))
+            .maturityMode(MaturityMode.MANUAL)
             .build();
 
     when(fixedDepositRepository.save(any(FixedDeposit.class)))
@@ -353,34 +380,90 @@ class FixedDepositServiceTest {
     assertEquals(0, response.getMaturityAmount().compareTo(new BigDecimal("200000")));
     assertEquals(false, response.getMaturityAmountOverridden());
     assertNotNull(response.getMaturityDifference());
+    assertEquals(MaturityMode.MANUAL, response.getMaturityMode());
   }
 
   @Test
-  @DisplayName("10. Tax-saver FD validation: exactly 5-year tenure required")
-  void testTaxSaverTenureValidation() {
+  @DisplayName("9b. Update WITHOUT maturityMode preserves the persisted MANUAL mode (no silent auto-flip)")
+  void testUpdateWithoutModePreservesStoredManual() {
+    FixedDeposit stored = sampleDepositUserA.toBuilder().maturityMode(MaturityMode.MANUAL).build();
+    when(fixedDepositRepository.findByIdAndUserId("fd_100", "user_A"))
+        .thenReturn(Optional.of(stored));
+    when(fixedDepositRepository.save(any(FixedDeposit.class))).thenAnswer(inv -> inv.getArgument(0));
+
     FixedDepositRequestDTO dto =
         FixedDepositRequestDTO.builder()
             .place("SBI")
             .holderName("Alice")
             .interestRate(new BigDecimal("7.00"))
-            .issueDate(LocalDate.of(2024, 1, 1))
-            .maturityDate(LocalDate.of(2028, 1, 1))
+            .issueDate(LocalDate.now())
+            .maturityDate(LocalDate.now().plusYears(5))
             .issueAmount(new BigDecimal("100000"))
-            .maturityAmount(new BigDecimal("141477"))
-            .isTaxSaver(true)
+            .maturityAmount(new BigDecimal("200000"))
             .build();
 
-    assertThrows(
-        com.urva.myfinance.coinTrack.common.exception.ValidationException.class,
-        () -> fixedDepositService.createFixedDeposit(dto, "user_A"));
+    FixedDepositResponseDTO response = fixedDepositService.updateFixedDeposit("fd_100", dto, "user_A");
+
+    assertEquals(MaturityMode.MANUAL, response.getMaturityMode());
+    assertEquals(0, response.getMaturityAmount().compareTo(new BigDecimal("200000")));
   }
 
   @Test
+  @DisplayName("9c. Update WITH explicit AUTOMATIC flips a stored MANUAL FD to AUTOMATIC and overrides")
+  void testUpdateWithAutoModeFlipsStoredManual() {
+    FixedDeposit stored = sampleDepositUserA.toBuilder().maturityMode(MaturityMode.MANUAL).build();
+    when(fixedDepositRepository.findByIdAndUserId("fd_100", "user_A"))
+        .thenReturn(Optional.of(stored));
+    when(fixedDepositRepository.save(any(FixedDeposit.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    FixedDepositRequestDTO dto =
+        FixedDepositRequestDTO.builder()
+            .place("SBI")
+            .holderName("Alice")
+            .interestRate(new BigDecimal("7.00"))
+            .issueDate(LocalDate.now())
+            .maturityDate(LocalDate.now().plusYears(5))
+            .issueAmount(new BigDecimal("100000"))
+            .maturityAmount(new BigDecimal("200000"))
+            .maturityMode(MaturityMode.AUTOMATIC)
+            .build();
+
+    FixedDepositResponseDTO response = fixedDepositService.updateFixedDeposit("fd_100", dto, "user_A");
+
+    assertEquals(MaturityMode.AUTOMATIC, response.getMaturityMode());
+    assertTrue(response.getMaturityAmount().compareTo(new BigDecimal("200000")) != 0);
+    assertEquals(true, response.getMaturityAmountOverridden());
+  }
+
+  // [DEPRECATED-SEC-04-05] Tax-saver 5-year tenure validation is DISABLED along with the
+  // isTaxSaver field (Sections 04/05). Re-enable the field + validateTaxSaverFd() to restore.
+  // @Test
+  // @DisplayName("10. Tax-saver FD validation: exactly 5-year tenure required")
+  // void testTaxSaverTenureValidation() {
+  //   FixedDepositRequestDTO dto =
+  //       FixedDepositRequestDTO.builder()
+  //           .place("SBI")
+  //           .holderName("Alice")
+  //           .interestRate(new BigDecimal("7.00"))
+  //           .issueDate(LocalDate.of(2024, 1, 1))
+  //           .maturityDate(LocalDate.of(2028, 1, 1))
+  //           .issueAmount(new BigDecimal("100000"))
+  //           .maturityAmount(new BigDecimal("141477"))
+  //           .isTaxSaver(true)
+  //           .build();
+  //
+  //   assertThrows(
+  //       com.urva.myfinance.coinTrack.common.exception.ValidationException.class,
+  //       () -> fixedDepositService.createFixedDeposit(dto, "user_A"));
+  // }
+
+  // [DEPRECATED-TDS] testSummaryIncludesTdsTotals is DISABLED — it asserted
+  // FixedDepositSummaryDTO.getTotalTdsDeducted()/getTotalNetReturns() and used the removed
+  // hasPan/form15g15hSubmitted builder fields. Re-enable with the TDS feature.
+  /*
+  @Test
   @DisplayName("11. getSummary includes TDS totals (current-FY accrual)")
   void testSummaryIncludesTdsTotals() {
-    // Large principals so the CURRENT financial year's accrual (≥ ~8 months at 7.25%) crosses
-    // the ₹50k regular threshold → TDS > 0. (TDS is per-FY, so this uses accrued interest,
-    // not the lifetime maturity − issue figures above.)
     FixedDeposit fd1 =
         sampleDepositUserA.toBuilder()
             .id("fd_1")
@@ -409,6 +492,7 @@ class FixedDepositServiceTest {
     assertNotNull(summary.getTotalNetReturns());
     assertTrue(summary.getTotalTdsDeducted().compareTo(BigDecimal.ZERO) > 0);
   }
+  */
 
   @Test
   @DisplayName("12. computeLiveStatus handles PREMATURELY_WITHDRAWN as sticky")
@@ -443,20 +527,26 @@ class FixedDepositServiceTest {
             .issueAmount(new BigDecimal("100000"))
             .maturityAmount(new BigDecimal("107250"))
             .fdType(FdType.NON_CUMULATIVE)
-            .compoundingFrequency(CompoundingFrequency.MONTHLY)
-            .isSeniorCitizen(true)
-            .isTaxSaver(false)
-            .hasPan(false)
-            .form15g15hSubmitted(true)
+            // [DEPRECATED-SEC-04-05] compoundingFrequency / isSeniorCitizen / isTaxSaver fields
+            // were removed from the DTO along with Sections 04/05.
+            // .compoundingFrequency(CompoundingFrequency.MONTHLY)
+            // .isSeniorCitizen(true)
+            // .isTaxSaver(false)
+            // [DEPRECATED-TDS] hasPan / form15g15hSubmitted fields removed from the DTO.
+            // .hasPan(false)
+            // .form15g15hSubmitted(true)
             .build();
 
     FixedDepositResponseDTO response =
         fixedDepositService.updateFixedDeposit("fd_100", dto, "user_A");
 
     assertEquals(FdType.NON_CUMULATIVE, response.getFdType());
-    assertEquals(CompoundingFrequency.MONTHLY, response.getCompoundingFrequency());
-    assertEquals(true, response.getIsSeniorCitizen());
-    assertEquals(false, response.getHasPan());
-    assertEquals(true, response.getForm15g15hSubmitted());
+    // [DEPRECATED-SEC-04-05] Response fields removed; server always uses fixed defaults
+    // (QUARTERLY / non-senior) regardless of any previously stored values.
+    // assertEquals(CompoundingFrequency.MONTHLY, response.getCompoundingFrequency());
+    // assertEquals(true, response.getIsSeniorCitizen());
+    // [DEPRECATED-TDS] hasPan / form15g15hSubmitted assertions removed (fields gone from DTO).
+    // assertEquals(false, response.getHasPan());
+    // assertEquals(true, response.getForm15g15hSubmitted());
   }
 }

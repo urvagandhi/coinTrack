@@ -1,14 +1,15 @@
 package com.urva.myfinance.coinTrack.fixeddeposit.util;
 
 import com.urva.myfinance.coinTrack.common.util.ExcelExportUtil;
-import com.urva.myfinance.coinTrack.common.util.OwnerGrouping;
+// [DEPRECATED-TDS] OwnerGrouping was used only by the removed computeBankTdsForExport.
+// import com.urva.myfinance.coinTrack.common.util.OwnerGrouping;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
 import java.io.ByteArrayOutputStream;
-import java.math.BigDecimal;
-import java.util.LinkedHashMap;
+// [DEPRECATED-TDS] LinkedHashMap / Map were used only by the removed computeBankTdsForExport.
+// import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+// import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -93,16 +94,16 @@ public class FixedDepositExcelExporter {
             currencyStyle,
             percentStyle);
 
-      // Tab 5: Closed
-      List<FixedDepositResponseDTO> closed =
+      // Tab 5: Withdrawn
+      List<FixedDepositResponseDTO> withdrawn =
           allFds.stream()
-              .filter(f -> f.getStatus() == FdStatus.CLOSED)
+              .filter(f -> f.getStatus() == FdStatus.PREMATURELY_WITHDRAWN)
               .collect(Collectors.toList());
-      if (!closed.isEmpty())
+      if (!withdrawn.isEmpty())
         createSheet(
             workbook,
-            "Closed",
-            closed,
+            "Withdrawn",
+            withdrawn,
             headerStyle,
             dataStyle,
             rightAlignStyle,
@@ -154,19 +155,16 @@ public class FixedDepositExcelExporter {
       "Status",
       "Days To Maturity",
       "Remarks",
-      // New fields
+      // New fields — FD Type stays exported (live). Columns for the Interest Structure /
+      // Eligibility fields (Sections 04/05) are [DEPRECATED-SEC-04-05] removed so the later
+      // columns keep their fixed indices.
       "FD Type",
-      "Compounding Frequency",
-      "Payout Frequency",
-      "Senior Citizen",
-      "Tax Saver",
-      "Has PAN",
-      "Form 15G/15H",
-      "TDS Threshold",
-      "Taxable Interest",
-      "TDS Rate",
-      "TDS Deducted",
-      "Net Interest",
+      // [DEPRECATED-SEC-04-05] "Compounding Frequency", "Payout Frequency", "Senior Citizen",
+      // "Tax Saver" columns were removed along with Sections 04/05 (compounding/payout/senior/
+      // tax-saver are fixed defaults now).
+      // [DEPRECATED-TDS] The following columns were REMOVED along with the TDS feature:
+      // "Has PAN", "Form 15G/15H", "TDS Threshold", "Taxable Interest", "TDS Rate",
+      // "TDS Deducted", "Net Interest"
       "Withdrawal Date",
       "Realized Maturity",
       "Penalty Amount",
@@ -184,9 +182,8 @@ public class FixedDepositExcelExporter {
       cell.setCellStyle(headerStyle);
     }
 
-    // Bank-level TDS: the ₹50k/₹1L threshold applies to the TOTAL interest across all FDs
-    // at the SAME bank, so precompute per-FD TDS by grouping the sheet's rows by place.
-    Map<Long, FdMath.BankTdsResult> tdsByFdNo = computeBankTdsForExport(data);
+    // [DEPRECATED-TDS] Bank-level TDS precomputation removed — the TDS columns were dropped.
+    // Map<Long, FdMath.BankTdsResult> tdsByFdNo = computeBankTdsForExport(data);
 
     for (int i = 0; i < data.size(); i++) {
       FixedDepositResponseDTO dto = data.get(i);
@@ -223,7 +220,6 @@ public class FixedDepositExcelExporter {
       String days =
           (dto.getDaysToMaturity() <= 0
                   || dto.getStatus() == FdStatus.MATURED
-                  || dto.getStatus() == FdStatus.CLOSED
                   || dto.getStatus() == FdStatus.DUE
                   || dto.getStatus() == FdStatus.PREMATURELY_WITHDRAWN)
               ? "-"
@@ -231,86 +227,76 @@ public class FixedDepositExcelExporter {
       createCell(row, 12, days, dataStyle);
       createCell(row, 13, dto.getRemarks(), dataStyle);
 
-      // New fields
+      // New fields — FD Type stays exported (live).
       createCell(
           row, 14, dto.getFdType() != null ? dto.getFdType().name() : "CUMULATIVE", dataStyle);
-      createCell(
-          row,
-          15,
-          dto.getCompoundingFrequency() != null
-              ? dto.getCompoundingFrequency().name()
-              : "QUARTERLY",
-          dataStyle);
-      createCell(
-          row,
-          16,
-          dto.getPayoutFrequency() != null ? dto.getPayoutFrequency().name() : "AT_MATURITY",
-          dataStyle);
-      createCell(
-          row,
-          17,
-          dto.getIsSeniorCitizen() != null && dto.getIsSeniorCitizen() ? "Yes" : "No",
-          dataStyle);
-      createCell(
-          row, 18, dto.getIsTaxSaver() != null && dto.getIsTaxSaver() ? "Yes" : "No", dataStyle);
-      createCell(row, 19, dto.getHasPan() != null && dto.getHasPan() ? "Yes" : "No", dataStyle);
-      createCell(
-          row,
-          20,
-          dto.getForm15g15hSubmitted() != null && dto.getForm15g15hSubmitted() ? "Yes" : "No",
-          dataStyle);
+      // [DEPRECATED-SEC-04-05] Compounding Frequency (col 15), Payout Frequency (col 16),
+      // Senior Citizen (col 17) and Tax Saver (col 18) cells were removed along with Sections
+      // 04/05; the later withdrawal/stale columns keep their fixed indices (19+).
+      // createCell(
+      //     row,
+      //     15,
+      //     dto.getCompoundingFrequency() != null
+      //         ? dto.getCompoundingFrequency().name()
+      //         : "QUARTERLY",
+      //     dataStyle);
+      // createCell(
+      //     row,
+      //     16,
+      //     dto.getPayoutFrequency() != null ? dto.getPayoutFrequency().name() : "AT_MATURITY",
+      //     dataStyle);
+      // createCell(
+      //     row,
+      //     17,
+      //     dto.getIsSeniorCitizen() != null && dto.getIsSeniorCitizen() ? "Yes" : "No",
+      //     dataStyle);
+      // createCell(
+      //     row, 18, dto.getIsTaxSaver() != null && dto.getIsTaxSaver() ? "Yes" : "No", dataStyle);
 
-      // TDS fields (bank-level computation)
-      FdMath.BankTdsResult tds = dto.getFdNo() != null ? tdsByFdNo.get(dto.getFdNo()) : null;
-      if (tds != null) {
-        createNumericCell(row, 21, tds.tdsThreshold().doubleValue(), currencyStyle);
-        createNumericCell(row, 22, tds.taxableInterest().doubleValue(), currencyStyle);
-        createNumericCell(row, 23, tds.tdsRate().doubleValue(), percentStyle);
-        createNumericCell(row, 24, tds.tdsDeducted().doubleValue(), currencyStyle);
-        createNumericCell(row, 25, tds.netInterest().doubleValue(), currencyStyle);
-      }
+      // [DEPRECATED-TDS] Has PAN (col 19), Form 15G/15H (col 20) and the TDS columns (21–25) were
+      // removed along with the TDS feature. The later withdrawal/stale columns moved down by 7.
 
       createCell(
           row,
-          26,
+          19,
           dto.getWithdrawalDate() != null ? dto.getWithdrawalDate().toString() : "",
           dataStyle);
       createNumericCell(
           row,
-          27,
+          20,
           dto.getRealizedMaturityAmount() != null
               ? dto.getRealizedMaturityAmount().doubleValue()
               : null,
           currencyStyle);
       createNumericCell(
           row,
-          28,
+          21,
           dto.getPenaltyAmount() != null ? dto.getPenaltyAmount().doubleValue() : null,
           currencyStyle);
       createNumericCell(
           row,
-          29,
+          22,
           dto.getEffectiveRateApplied() != null
               ? dto.getEffectiveRateApplied().doubleValue()
               : null,
           percentStyle);
       createNumericCell(
           row,
-          30,
+          23,
           dto.getServerComputedMaturityAmount() != null
               ? dto.getServerComputedMaturityAmount().doubleValue()
               : null,
           currencyStyle);
       createCell(
           row,
-          31,
+          24,
           dto.getMaturityAmountOverridden() != null && dto.getMaturityAmountOverridden()
               ? "Yes"
               : "No",
           dataStyle);
       createNumericCell(
           row,
-          32,
+          25,
           dto.getMaturityDifference() != null ? dto.getMaturityDifference().doubleValue() : null,
           currencyStyle);
     }
@@ -368,12 +354,12 @@ public class FixedDepositExcelExporter {
     ExcelExportUtil.autoSizeColumns(sheet, headers.length);
   }
 
-  /**
-   * Group the sheet's FDs by (place, holderName) and compute TDS for each FD, keyed by fdNo.
-   * Mirrors the module's Section 194A semantics: the threshold is checked on the TOTAL interest one
-   * holder earns at one bank, then allocated proportionally per FD. Distinct holders at the same
-   * bank are separate taxpayers with independent thresholds.
-   */
+  // =====================================================================================
+  // [DEPRECATED-TDS] computeBankTdsForExport is DISABLED along with the TDS export columns.
+  // Re-enable with the TDS feature (and restore the removed imports: OwnerGrouping, LinkedHashMap,
+  // Map, Collectors, FdMath).
+  // =====================================================================================
+  /*
   private static Map<Long, FdMath.BankTdsResult> computeBankTdsForExport(
       List<FixedDepositResponseDTO> data) {
     Map<Long, FdMath.BankTdsResult> tdsByFdNo = new LinkedHashMap<>();
@@ -422,6 +408,7 @@ public class FixedDepositExcelExporter {
 
     return tdsByFdNo;
   }
+  */
 
   private static void createCell(Row row, int column, String value, CellStyle style) {
     Cell cell = row.createCell(column);

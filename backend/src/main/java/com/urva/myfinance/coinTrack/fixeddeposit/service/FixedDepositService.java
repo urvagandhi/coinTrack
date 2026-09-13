@@ -2,7 +2,8 @@ package com.urva.myfinance.coinTrack.fixeddeposit.service;
 
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.FixedDepositRequestDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.PrematureWithdrawalRequestDTO;
-import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
+// [DEPRECATED-TDS] FdTdsDetailDTO import disabled — TDS detail/summary removed from the API.
+// import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FdTdsDetailDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositResponseDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.FixedDepositSummaryDTO;
 import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.PrematureWithdrawalResponseDTO;
@@ -32,8 +33,6 @@ public interface FixedDepositService {
   FixedDepositResponseDTO updateFixedDeposit(
       String id, FixedDepositRequestDTO requestDTO, String userId);
 
-  FixedDepositResponseDTO closeFixedDeposit(String id, String userId);
-
   void deleteFixedDeposit(String id, String userId);
 
   FixedDepositSummaryDTO getSummary(String userId);
@@ -54,7 +53,10 @@ public interface FixedDepositService {
   PrematureWithdrawalResponseDTO prematureWithdraw(
       String id, PrematureWithdrawalRequestDTO requestDTO, String userId);
 
-  FdTdsDetailDTO getTdsDetail(String id, Integer financialYear, String userId);
-
-  List<FdTdsDetailDTO> getTdsSummary(Integer financialYear, String userId);
+  // [DEPRECATED-TDS] getTdsDetail / getTdsSummary removed from the service contract.
+  // Re-enabling requires restoring these method signatures AND their implementations in
+  // FixedDepositServiceImpl alongside FdTdsDetailDTO.
+  // FdTdsDetailDTO getTdsDetail(String id, Integer financialYear, String userId);
+  //
+  // List<FdTdsDetailDTO> getTdsSummary(Integer financialYear, String userId);
 }
