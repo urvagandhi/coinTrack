@@ -801,3 +801,61 @@ written. Key evolutions tracked authoritatively in PROJECT_CONTEXT_PART2.md:
   loan `>= 2 && <= 5`. Only the count formula was ever wrong. See Part 2 ppf-card
   discrepancy D4 + `local/TODOs/PPF_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md` §GAP 1.
 
+---
+
+## ADDENDUM (2026-09-12, login path optimization + GoogleOAuthService JWKS fix)
+
+### Login path (`POST /api/auth/login`)
+
+- **Before**: `authenticate(identifier, password)` issued three sequential DB queries
+  (`findByUsername` → `findByEmail` → `findByPhoneNumber`) then Spring Security's
+  `DaoAuthenticationProvider` re-fetched the same user to verify BCrypt — **four DB reads** plus
+  an unnecessary Spring Security round-trip.
+- **After**: `UserRepository.findByIdentifier(username, email, phoneNumber)` resolves the
+  account in a **single `$or` MongoDB query**. `UserAuthenticationService.authenticate` calls
+  `passwordEncoder.matches` directly (no `AuthenticationManager` / `DaoAuthenticationProvider`).
+  Unknown identifiers and OAuth-only accounts verify against a timing-safe `DUMMY_HASH`
+  (`NO_MATCH_SENTINEL = "__CT__NO_IDENTIFIER_MATCH__"` keeps the phone `$or` branch inert
+  when blank/empty phone is normalized to the sentinel — `{phoneNumber: null}` never matches
+  docs with a missing phone field). Result: **one DB read + one constant-time BCrypt verify**,
+  regardless of which identifier type was supplied. Tests: 74 auth tests pass, full suite 958 green.
+- **Status note**: `CustomerUserDetailService` (used by `JwtFilter` for token-validated requests)
+  still uses `findByUsername` + `findByEmail` fallback — this path is NOT the login path and was
+  intentionally left unchanged.
+
+### GoogleOAuthService JWKS key cache
+
+The previous `ConcurrentHashMap` implementation had four correctness/performance defects:
+
+1. **TOCTOU race** (`containsKey()` then `get()`) — a second thread could see an empty key
+   between the two calls and fail even though the key existed.
+2. **Clear-before-fetch** — the old code cleared the cache *before* fetching the new keys,
+   creating a window where concurrent requests found no keys and failed.
+3. **No TTL** — Google rotates OIDC signing keys roughly daily; the old code cached them forever
+   (until the next rotation triggered a refetch that briefly exposed an empty cache).
+4. **No single-flight** — every unknown-kid miss triggered an independent outbound fetch.
+
+**New implementation** (`getOrLoadPublicKey` → `synchronized refreshAndLookup` →
+`refreshKeysFromGoogle`):
+
+| Aspect | Detail |
+|--------|--------|
+| Cache type | `volatile Map<String,PublicKey>` keyed by `kid`. Only ever **atomically swapped** — never cleared or mutated — so no TOCTOU gap. |
+| TTL | `JWKS_TTL_MILLIS = 12h`. Keys are refetched only when expired. |
+| Rotation | Unknown `kid` against a **healthy** cache triggers a bounded refresh (`JWKS_UNKNOWN_KID_COOLDOWN_MILLIS = 5s`). Real rotations are picked up within seconds; bogus-kid bursts are capped at one fetch per 5s. |
+| Failure backoff | `JWKS_FAILURE_BACKOFF_MILLIS = 60s`. A dead network is not hammered. |
+| Single-flight | All refresh logic serialized (`synchronized`), so N concurrent misses share one fetch. |
+| `exchangeCodeForIdToken` | Documents the inherent ~1–2s blocking latency of the Google token-exchange call. |
+
+Tests: `GoogleOAuthServiceTest` (9 tests — first-fetch+cache reuse, rotation refresh, unknown-kid
+backoff, expired-cache lazy refresh, failed-refresh keeps old keys, concurrent single-flight,
+wrong issuer, missing id_token, mismatched redirect) — all green.
+
+### Files changed
+
+- `security/service/GoogleOAuthService.java` (301 lines, +~12KB)
+- `security/service/GoogleOAuthServiceTest.java` (280 lines, new)
+- `user/repository/UserRepository.java` — added `findByIdentifier` $or query
+- `user/service/UserAuthenticationService.java` — removed `AuthenticationManager`, direct BCrypt
+- `security/README.md` → v3.2.0, `user/README.md` → v3.4.0, `backend/README.md` → v3.2.0, root `README.md` updated
+

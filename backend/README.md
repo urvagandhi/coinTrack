@@ -1,9 +1,9 @@
 # CoinTrack Backend Architecture & Developer Guide
 
-> **Version**: 3.1.0
+> **Version**: 3.2.0
 > **Status**: Production-Ready
 > **Tech Stack**: Java 21, Spring Boot 3.5.5, MongoDB Atlas, Spring Security (JWT + MFA MFA)
-> **Last Updated**: 2026-07-25
+> **Last Updated**: 2026-09-12
 
 ---
 
@@ -319,6 +319,8 @@ Security is stateless and JWT-based with mandatory MFA MFA.
 
 | Component | File | Purpose |
 |-----------|------|---------|
+| **UserAuthenticationService** | `user/service/UserAuthenticationService.java` | Login: single `$or` identifier lookup (`UserRepository.findByIdentifier`) + direct timing-safe BCrypt |
+| **GoogleOAuthService** | `security/service/GoogleOAuthService.java` | Google OIDC code exchange & JWKS verification with a TTL-bounded atomic key cache (single-flight refresh) |
 | **JWTService** | `security/service/JWTService.java` | Sign/validate tokens (HMAC-SHA256) |
 | **JwtFilter** | `security/filter/JwtFilter.java` | Extract Bearer token, validate, set SecurityContext |
 | **SecurityConfig** | `security/config/SecurityConfig.java` | Define public/protected routes, filter chain |
@@ -345,6 +347,12 @@ stateDiagram-v2
 
 - **Manual Parsing Forbidden**: Never manually parse `Authorization` headers. Use `@AuthenticationPrincipal UserPrincipal` to access `getUserId()` (the MongoDB `_id`).
 - **Public Routes**: Explicitly whitelisted in `SecurityConfig` (e.g., `/login`, `/register`, `/api/calculators/**`). All others are deny-by-default.
+
+### Authentication Performance (2026-09-12)
+
+- **Identifier lookup is 1 RTT**: `UserRepository.findByIdentifier(username, email, phoneNumber)` resolves the account in a single `$or` query. Previously the login path issued three sequential queries (username → email → phone) and then re-fetched the user again inside Spring Security's `DaoAuthenticationProvider`. Removing that provider round-trip makes `POST /api/auth/login` a constant **one DB read + one BCrypt verify**.
+- **Timing-safe password verify**: unknown identifiers and OAuth-only accounts verify against a constant-time `DUMMY_HASH` so failures and successes take identical time.
+- **Google JWKS caching**: `GoogleOAuthService` caches Google's RSA signing keys in an atomically-swapped `volatile` map — 12h TTL, 5s unknown-`kid` rotation cooldown (no refetch-storm on token with bogus `kid`s), 60s failure backoff, and a single-flight `synchronized` refresh so N concurrent login requests share one certs fetch. Token signature verification is local after the (one-time) fetch.
 
 ---
 

@@ -131,7 +131,7 @@ Supplemented on 2026-08-23 (post-audit fix round by owner): discrepancies **1, 2
 Second round same day: **all 3 open questions resolved with code evidence**; dead `CounterRepository` deleted and README bumped to v2.1.1.
 Third round same day: discrepancy **#10 closed** (calculator README self-contained note), **#6 formally accepted** as monolith architecture decision, and every watch-list item verified-or-fixed — including completing the partially-applied ExcelExportUtil fix (branch + dead style objects removed from both export methods).
 
-**Supplement 2026-08-28 (HolderName attribution fix — `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`):** two new stateless utils added to common `util/` — `HolderName.java` (canonical owner-name `normalize` used on-save and on-read by FD + MF) and `OwnerGrouping.java` (shared `groupKey(placeOrPlatform, holderName)`). `common` adds no new business logic and takes no new outbound dependency edges (both are pure/static). Common README bumped to **v2.2.0**; module now **36 Java files / 11 utils**. All six FD/MF consumers route through them so owner grouping stays DRY across FD TDS summary, Excel export, MF aggregation/summary/dashboard.
+**Supplement 2026-08-28 (HolderName attribution fix — `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`):** two new stateless utils added to common `util/` — `HolderName.java` (canonical owner-name `normalize` used on-save and on-read by FD + MF) and `OwnerGrouping.java` (shared `groupKey(placeOrPlatform, holderName)`). `common` adds no new business logic and takes no new outbound dependency edges (both are pure/static). Common README bumped to **v2.2.0**; module now **36 Java files / 11 utils**. All six FD/MF consumers route through them so owner grouping stays DRY across FD TDS summary, Excel export, MF aggregation/summary/dashboard. <!-- [DEPRECATED-TDS] the "FD TDS summary" consumer was later commented out with the TDS feature; retained for traceability -->
 
 **Module `common`: 10/10 discrepancies resolved · 5/5 watch-list items resolved · 3/3 open questions answered. ZERO open items remaining.**
 
@@ -920,10 +920,10 @@ Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): give
 
 **✅ All 6 gaps IMPLEMENTED (2026-08-27):**
 
-1. **TDS modeling** — §194A rules with FY 2025-26 thresholds (₹50k regular / ₹1L senior), 10% with PAN / 20% without, Form 15G/15H exemption. `GET /api/fixed-deposits/{id}/tds?fy=`, `GET /api/fixed-deposits/tds-summary?fy=`, net-of-TDS fields in summary + Excel export. Thresholds externalized to config. **REVISED 2026-08-28:** threshold applied **per (place, holderName)** (grouped by `(place, holderName)`, not per-FD, not per-bank only), with **proportional per-FD allocation** from the group TDS total (rounding-reconciliation so lines sum exactly); bank-level context (`bankName`, `bankTotalGrossInterest`, `bankTaxableInterest`, `bankTotalTdsDeducted`) surfaced on every TDS row. Form 15G/15H on ANY FD exempts the whole holder's bank group; senior ₹1L threshold only when ALL non-exempt FDs in the group are senior; no-PAN rate (20%) takes priority. `holderName` normalized on save (trim + whitespace-collapse + title-case) so a person's FDs never split into under-threshold groups.
+1. **TDS modeling** — §194A rules with FY 2025-26 thresholds (₹50k regular / ₹1L senior), 10% with PAN / 20% without, Form 15G/15H exemption. `GET /api/fixed-deposits/{id}/tds?fy=`, `GET /api/fixed-deposits/tds-summary?fy=`, net-of-TDS fields in summary + Excel export. Thresholds externalized to config. **REVISED 2026-08-28:** threshold applied **per (place, holderName)** <!-- [DEPRECATED-TDS] → The TDS modeling feature described here (Section 194A endpoints, FdTdsDetailDTO, TdsComputationException, hasPan/form15g15hSubmitted/financialYear fields, totalTdsDeducted/totalNetReturns) has been **commented out** of the codebase. Retain for re-enabling. --> (grouped by `(place, holderName)`, not per-FD, not per-bank only), with **proportional per-FD allocation** from the group TDS total (rounding-reconciliation so lines sum exactly); bank-level context (`bankName`, `bankTotalGrossInterest`, `bankTaxableInterest`, `bankTotalTdsDeducted`) surfaced on every TDS row. Form 15G/15H on ANY FD exempts the whole holder's bank group; senior ₹1L threshold only when ALL non-exempt FDs in the group are senior; no-PAN rate (20%) takes priority. `holderName` normalized on save (trim + whitespace-collapse + title-case) so a person's FDs never split into under-threshold groups.
 2. **Premature withdrawal** — `POST /api/fixed-deposits/{id}/withdraw` with penalty matrix (0.5% ≤₹5L / 1% >₹5L, <7 days zero interest). `WITHDRAWN` status, realized/penalty/effective-rate fields persisted. `PATCH /close` kept as sticky record-keeping flag.
 3. **Cumulative vs Non-Cumulative** — `FdType` enum (CUMULATIVE/NON_CUMULATIVE) + `InterestPayoutFrequency` (MONTHLY/QUARTERLY/HALF_YEARLY/YEARLY/AT_MATURITY). Non-cumulative uses simple interest on principal; auto-calc switches formula.
-4. **Senior Citizen / Tax-Saver flags** — `isSeniorCitizen` (higher TDS threshold ₹1L, 80TTB — **no automatic rate bonus**; the contracted rate already embeds any bank senior bonus of 0.25–0.75% and is entered as-is), `isTaxSaver` (5-year lock-in, no premature withdraw, 80C eligible old regime). Lock-in validated on create/update. **REVISED 2026-08-28:** removed the hardcoded +0.50% senior bonus from rate math (`FdMath` + `FdDialog`); `interestRate` is now the final contracted rate and `isSeniorCitizen` drives only TDS threshold logic.
+4. **Senior Citizen / Tax-Saver flags** — `isSeniorCitizen` (higher TDS threshold ₹1L, 80TTB — **no automatic rate bonus**; the contracted rate already embeds any bank senior bonus of 0.25–0.75% and is entered as-is), `isTaxSaver` (5-year lock-in, no premature withdraw, 80C eligible old regime). Lock-in validated on create/update. **REVISED 2026-08-28:** removed the hardcoded +0.50% senior bonus from rate math (`FdMath` + `FdDialog`); `interestRate` is now the final contracted rate and `isSeniorCitizen` drives only TDS threshold logic. <!-- [DEPRECATED-TDS] the TDS threshold logic (`isSeniorCitizen` → ₹1L threshold) belongs to the now-deprecated TDS feature (commented out); retained for traceability -->
 5. **Configurable Compounding Frequency** — `CompoundingFrequency` enum (MONTHLY/QUARTERLY/HALF_YEARLY/YEARLY, default QUARTERLY). Full formula `A = P(1+r/n)^(n*t)` with n=periods/year.
 6. **Server-side Maturity Validation** — Recomputes maturity on create/update via `FdMath`; ±₹1 tolerance; auto-override in auto-mode (client sends 0); manual mode flags discrepancy + logs. Response includes `serverComputedMaturityAmount`, `maturityAmountOverridden`, `maturityDifference`.
 
@@ -953,7 +953,7 @@ Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): give
 1. Should close capture realized value/penalty (premature-withdrawal economics) or is sticky-CLOSED the intended terminal state?
    → ✅ **RESOLVED & IMPLEMENTED**: Gap #2 — `PATCH /close` kept as sticky record-keeping flag; separate `POST /{id}/withdraw` for premature-withdrawal economics with penalty matrix (0.5% ≤₹5L / 1% >₹5L, <7 days zero interest), `WITHDRAWN` status, realized/penalty/effective-rate fields persisted.
 2. Is TDS/net-returns modeling wanted on the roadmap, or explicitly out of scope for a manual tracker?
-   → ✅ **RESOLVED & IMPLEMENTED**: Gap #1 — §194A rules with FY 2025-26 thresholds (₹50k regular / ₹1L senior), 10% with PAN / 20% without, Form 15G/15H exemption. `/tds` endpoints, net-of-TDS summary + Excel export, thresholds externalized to config. **REVISED 2026-08-28:** threshold applied **per (place, holderName)** (not per-FD, not per-bank only), with proportional per-FD allocation from the group TDS total.
+   → ✅ **RESOLVED & IMPLEMENTED**: Gap #1 — §194A rules with FY 2025-26 thresholds (₹50k regular / ₹1L senior), 10% with PAN / 20% without, Form 15G/15H exemption. `/tds` endpoints <!-- [DEPRECATED-TDS] → the `/tds` endpoints and net-of-TDS summary fields were later commented out of the codebase (TDS feature deprecated) -->, net-of-TDS summary + Excel export, thresholds externalized to config. **REVISED 2026-08-28:** threshold applied **per (place, holderName)** (not per-FD, not per-bank only), with proportional per-FD allocation from the group TDS total.
 
 > ✅ All specs live in one document covering **all 6 tracker-level gaps** — **ALL IMPLEMENTED (2026-08-27)**: 24/24 backend tests pass, frontend build clean.
 
@@ -971,6 +971,10 @@ Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): give
 > row; (2) **senior-citizen rate bonus removed** — `interestRate` is now the final contracted rate
 > (no auto +0.50%); `isSeniorCitizen` drives the ₹1L TDS threshold and 80TTB only. See module README §5.5
 > and `local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md` REVISION note.
+> **[DEPRECATED-TDS]** (1) above describes the now-deprecated TDS computation feature — the
+> `GET /{id}/tds` / `GET /tds-summary` endpoints, `FdTdsDetailDTO`, `TdsComputationException`, and
+> `hasPan`/`form15g15hSubmitted`/`financialYear` fields were **commented out** of the codebase.
+> Retained for re-enabling.
 
 | #  | Item                                                   | Status                                                                                                |
 | -- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
@@ -989,7 +993,7 @@ Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): give
 
 - **Coverage**: one plan document speccing **all 6 tracker-level gaps** end-to-end — **ALL IMPLEMENTED**.
   - Close-economics (Q1) → Gap #2: `POST /{id}/withdraw` with penalty matrix, lower-of-rates rule, <7-day zero-interest, `WITHDRAWN` status; `/close` stays sticky record-keeping.
-  - TDS/net-returns (Q2) → Gap #1: §194A rules, `/tds` endpoints, net-of-TDS summary + export columns. **REVISED 2026-08-28:** per-**`(place, holderName)`** threshold (not per-bank only) with proportional per-FD allocation and rounding reconciliation.
+  - TDS/net-returns (Q2) → Gap #1: §194A rules, `/tds` endpoints, net-of-TDS summary + export columns. <!-- [DEPRECATED-TDS] `/tds` endpoints and net-of-TDS summary/export fields later commented out --> **REVISED 2026-08-28:** per-**`(place, holderName)`** threshold (not per-bank only) with proportional per-FD allocation and rounding reconciliation.
   - Plus gaps #3–#6: cumulative/non-cumulative · senior-citizen/tax-saver flags · configurable compounding frequency · server-side maturity recompute.
 - **Status**: **IMPLEMENTED & VERIFIED (2026-08-27)** — 24/24 backend tests pass, frontend build clean, data migration script ready.
 
@@ -1008,14 +1012,16 @@ Reverse path inside AUTOMATIC (`Calc Rate` button / manual maturity entry): give
 **Industry-standard audit**:
 
 - Core math ✅ aligned with RBI quarterly-compounding norm incl. <181-day simple-interest rule.
-- 6 tracker-level gaps catalogued: TDS · premature-penalty · cumulative/non-cumulative · senior/tax-saver variants · compounding options · server-side recompute — ✅ **ALL 6 IMPLEMENTED (2026-08-27)** per `local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`.
+- 6 tracker-level gaps catalogued: TDS · premature-penalty · cumulative/non-cumulative · senior/tax-saver variants · compounding options · server-side recompute — ✅ **ALL 6 IMPLEMENTED (2026-08-27)** per `local/TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md`. <!-- [DEPRECATED-TDS] the TDS gap was later commented out of the codebase -->
 - Both frontend flows (automatic + manual) verified working-as-designed against backend contract; server-side maturity validation added; new fields integrated in FdDialog with auto-recalc.
 
 **Test evidence**: FD suite **24/24** (including new FdMathTest, PrematureWithdrawalTest, TdsComputationTest, extended FixedDepositServiceTest, FixedDepositControllerTest) · probe **3/3** · cross-module **64/64** · relocation run **26/26** — all BUILD SUCCESS.
 
-> **REVISION 2026-08-28 — HolderName Attribution fix (`local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`)**: owner grouping is now DRY across FD **and** MF via two new shared common utils: `util/HolderName.java` (canonical `normalize` — trim + whitespace-collapse + title-case; extracted from FD's `normalizeHolderName`, which now delegates) and `util/OwnerGrouping.java` (`groupKey(placeOrPlatform, holderName)` = whitespace-collapsed place + "|" + normalized holder, `Unknown` fallback). This module's TDS summary grouping and Excel export both call `OwnerGrouping.groupKey`, so **export == screen** by construction (the previous duplication-drift risk is gone). The MF module's same-class bucket bug and all filter sites were fixed in the same pass (see the MF deep-dive/supplement). Backfill migration `migration/HolderNameBackfillMigration.java` (idempotent, ApplicationRunner) normalizes existing holderName values across `mf_schemes`, `fixed_deposits`, `mf_valuation_snapshots`, `mf_sip_mandates`. Backend **974/974 run green** (only the pre-existing environmental `MongoTransactionSupportTest` excluded — needs a Mongo replica set).
+> **REVISION 2026-08-28 — HolderName Attribution fix (`local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`)**: owner grouping is now DRY across FD **and** MF via two new shared common utils: `util/HolderName.java` (canonical `normalize` — trim + whitespace-collapse + title-case; extracted from FD's `normalizeHolderName`, which now delegates) and `util/OwnerGrouping.java` (`groupKey(placeOrPlatform, holderName)` = whitespace-collapsed place + "|" + normalized holder, `Unknown` fallback). This module's TDS summary grouping and Excel export both call `OwnerGrouping.groupKey`, so **export == screen** by construction (the previous duplication-drift risk is gone). <!-- [DEPRECATED-TDS] this module's TDS summary grouping consumer was later commented out with the TDS feature; the Excel export grouping remains; OwnerGrouping itself is shared/active --> The MF module's same-class bucket bug and all filter sites were fixed in the same pass (see the MF deep-dive/supplement). Backfill migration `migration/HolderNameBackfillMigration.java` (idempotent, ApplicationRunner) normalizes existing holderName values across `mf_schemes`, `fixed_deposits`, `mf_valuation_snapshots`, `mf_sip_mandates`. Backend **974/974 run green** (only the pre-existing environmental `MongoTransactionSupportTest` excluded — needs a Mongo replica set).
 
 **Module pass COMPLETE and CLOSED. Next in processing order: ppf (holderName attribution fix also closed the FD+MF owner-grouping drift item).**
+
+> **REVISION 2026-08-30 — Single terminal status (`CLOSED` removed)**: the FD lifecycle's standalone `CLOSED` terminal state is **removed** — user-initiated termination is now modelled solely as `PREMATURELY_WITHDRAWN`, which already carries withdrawal economics (`withdrawalDate`, `realizedMaturityAmount`, `penaltyAmount`, `effectiveRateApplied`, `isPrematurelyWithdrawn`). The earlier audit text in this card describing `CLOSED` as a lightweight sticky override (`/close` endpoint, "no payout recalculation — see industry-gaps section", CLOSED excluded from totals) is **superseded**. Concrete deltas: `FdStatus.CLOSED` value deleted from the enum (773); Excel "Closed" tab → "Withdrawn" (205/README); `PATCH /{id}/close` endpoint removed (872); status-derivation sticky check is now `isPrematurelyWithdrawn`-only (179); summary/export/TDS use `PREMATURELY_WITHDRAWN` for exclusion; frontend CLOSE button/badge/filter and its api.js `close` route removed (WITHDRAW is the sole termination action). Existing DB `status=CLOSED` docs are migrated by idempotent `migration/FdV131Migration.java` (`fd_v131`, `@Order(11)`) → `PREMATURELY_WITHDRAWN` + `isPrematurelyWithdrawn=true`. Module README updated to **v1.3.3** (changelog row).
 
 **Supplement — `mutualfund` holderName attribution (2026-08-28).** No full MF deep-dive card exists yet (deferred), but the holderName attribution fix touched it heavily — captured here for the audit trail:
 
@@ -1296,3 +1302,21 @@ Legend: ✅ = FIXED this session · 📌 = OPEN / tracked for follow-up
 **Test evidence**: `PpfTransactionServiceTest` + `PpfBalanceRecalculationServiceTest` exist in test tree (not re-run during this read-only audit).
 
 **Module pass COMPLETE. Next in processing order: epf.**
+
+---
+
+## Addendum (2026-09-12) — security/user cards: login optimization + GoogleOAuthService JWKS fix
+
+Follow-up to the `security` and `user` synthesis cards (round tracked in PART1 addendum 2026-09-12):
+
+- **user card note**: the `authenticate` flow diagram's "findByUsername / findByEmail / findByPhoneNumber"
+  steps are **superseded**. Login now uses `UserRepository.findByIdentifier(username, email, phoneNumber)`
+  — a single `$or` query — and `UserAuthenticationService` verifies BCrypt directly (no
+  `AuthenticationManager`/`DaoAuthenticationProvider`, which previously re-fetched the user). Unknown
+  identifiers and Google-only accounts verify against `DUMMY_HASH` (`NO_MATCH_SENTINEL`). `findByUsername`
+  + `findByEmail` remain in use by `CustomerUserDetailService` (JWT-filter path) — unchanged.
+- **security card note**: the GoogleOAuthService entry is **superseded**. JWKS keys now live in a
+  `volatile Map<String,PublicKey>` with atomic swap (no TOCTOU / no clear-before-refetch gap), 12h TTL,
+  5s unknown-`kid` cooldown for rotations, 60s failure backoff, and a `synchronized` single-flight refresh.
+  Previously the key cache was a `ConcurrentHashMap` cleared before refetch. See PART1 addendum for the
+  full table. New test: `GoogleOAuthServiceTest` (9 tests).

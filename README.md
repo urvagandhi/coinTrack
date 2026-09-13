@@ -180,7 +180,8 @@ sequenceDiagram
 
     Note over C,E: Login (MFA Mandatory)
     C->>B: POST /api/auth/login {email, password}
-    B->>DB: Verify credentials
+    B->>DB: findByIdentifier(...) — single $or query (1 RTT)
+    B->>B: Direct timing-safe BCrypt (constant-time, no provider re-fetch)
     B-->>C: 200 {totpRequired: true}
 
     C->>B: POST /api/auth/login {email, password, totpCode}
@@ -396,10 +397,11 @@ graph LR
 ### Security
 
 - **Mandatory MFA** — MFA-based (Google Authenticator, Authy)
-- **Google SSO** — One-click login and registration with Google OAuth2
+- **Google SSO** — One-click login and registration with Google OAuth2 (JWKS signing keys cached: 12h TTL, atomic swap, single-flight refresh — no per-login cert fetch)
 - **10 backup codes** — One-time recovery codes generated at setup
 - **AES-256-GCM encryption** — All broker API secrets and access tokens encrypted at rest
 - **JWT authentication** — Stateless auth with refresh token rotation
+- **Fast login** — Identifier resolved in a single `$or` query + one direct timing-safe BCrypt verification
 - **Rate limiting** — Brute-force protection on login and sensitive endpoints
 - **Request correlation** — Every request tagged with a unique ID (MDC logging)
 
