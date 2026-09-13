@@ -521,29 +521,14 @@ export default function FdDialog({
   };
 
   const handleMaturityAmountChange = e => {
+    // Manual mode trusts the user: the typed certificate value is stored verbatim and the
+    // interest rate is NEVER recomputed from it. The server only validates (and preserves the
+    // manual value unless it is edited on the certificate).
     const val = e.target.value;
-    const parsedVal = parseShortcutAmount(val);
-    setFormData(prev => {
-      const next = { ...prev, maturityAmount: parsedVal };
-      if (
-        entryMode === 'manual' &&
-        next.issueAmount &&
-        next.issueDate &&
-        next.maturityDate &&
-        !isNaN(parseFloat(parsedVal)) &&
-        parseFloat(parsedVal) > parseFloat(next.issueAmount)
-      ) {
-        const rate = calcRate(
-          next.issueAmount,
-          parsedVal,
-          next.issueDate,
-          next.maturityDate,
-          next
-        );
-        if (rate !== null) next.interestRate = String(rate);
-      }
-      return next;
-    });
+    setFormData(prev => ({
+      ...prev,
+      maturityAmount: parseShortcutAmount(val),
+    }));
   };
 
   const handleDateChange = (field, val) => {

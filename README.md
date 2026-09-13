@@ -352,7 +352,7 @@ flowchart LR
 - **Gold & Silver** — Physical metal tracking with live purity-based market rates.
 - **EPF & EPS** — Statutory provident fund ledger with dual-balance interest simulation.
 - **PPF** — Public Provident Fund ledger with strict withdrawal and maturity rules enforcement.
-- **Fixed Deposits** — Track FDs across banks with live maturity status and Excel export.
+- **Fixed Deposits** — Track FDs across banks with live maturity status, bank-aware premature-withdrawal penalty, and Excel export.
 
 ### Broker Integration
 
@@ -849,7 +849,12 @@ graph LR
 | `GET`    | `/api/fixed-deposits/export`     | JWT  | Export filtered FDs to 14-column Excel (.xlsx)                  |
 | `GET`    | `/api/fixed-deposits/{id}`       | JWT  | Get single FD by ID                                             |
 | `PUT`    | `/api/fixed-deposits/{id}`       | JWT  | Update FD details                                               |
-| `PATCH`  | `/api/fixed-deposits/{id}/close` | JWT  | Mark FD as CLOSED (sticky override)                             |
+| `POST`   | `/api/fixed-deposits/{id}/withdraw` | JWT  | Premature withdrawal (bank-aware penalty, persists economics)     |
+| `POST`   | `/api/fixed-deposits/{id}/withdraw/preview` | JWT  | Dry-run premature-withdrawal penalty preview (no persist)    |
+| `PUT`    | `/api/fixed-deposits/{id}/withdraw` | JWT  | Edit an existing premature withdrawal (recompute + persist)      |
+| `PUT`    | `/api/fixed-deposits/{id}/withdraw/preview` | JWT  | Dry-run penalty preview for an edited withdrawal (no persist) |
+| `GET`    | `/api/fixed-deposits/{id}/tds`   | JWT  | TDS computation for a single FD                                  |
+| `GET`    | `/api/fixed-deposits/tds-summary` | JWT | Aggregated TDS summary across holdings                            |
 | `DELETE` | `/api/fixed-deposits/{id}`       | JWT  | Delete FD                                                       |
 
 > **Key FD Module Features:**
@@ -858,6 +863,7 @@ graph LR
 > - **6-Mode Sorting Engine**: `maturityDate:asc`, `maturityDate:desc`, `issueDate:desc`, `issueDate:asc` (Export Default), `issueAmount:desc`, `issueAmount:asc`.
 > - **Excel (XLSX) Export Formatting**: 14-column output via `ExcelExportUtil` with bold headers, right alignment, and auto column widths. Formats `Days To Maturity` as `-` for matured/due/closed FDs.
 > - **Dual View UI**: Switch seamlessly between Card Grid View (`FdCard`) and Financial Table View (`FdTable`).
+> - **Bank-Aware Premature Withdrawal**: penalty rate derived per bank/type (`BankPenaltyResolver`, all ~1,511 banks) with a manual override clamped to `[0, interestRate]`; economics (`withdrawalDate`, `realizedMaturityAmount`, `penaltyAmount`, `effectiveRateApplied`, `penaltyRateApplied`) persisted and editable via `PUT /{id}/withdraw`.
 
 ### Public Provident Fund (PPF)
 

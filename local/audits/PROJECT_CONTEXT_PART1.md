@@ -132,6 +132,20 @@ ppf, epf, goldsilver, security, user, mutualfund — **all 13 found, no mismatch
   `common/util/HolderName.normalize` (`normalizeHolderName` now delegates to it). The Excel exporter
   calls the **same** `OwnerGrouping` helper as the service, so **export == screen** by construction
   (see `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`).
+  ✅ Updated 2026-09-13 (bank-aware editable premature-withdrawal penalty + withdrawal editing):
+  `PATCH /{id}/close` no longer exists (per the 2026-08-30 single-terminal-status change, `CLOSED`
+  is removed from `FdStatus`; the sole terminal status is `PREMATURELY_WITHDRAWN`). Withdrawal
+  economics are persisted on the FD doc as `withdrawalDate`, `realizedMaturityAmount`,
+  `penaltyAmount`, `effectiveRateApplied`, `penaltyRateApplied`, `isPrematurelyWithdrawn`, and are
+  **editable**: `PUT /{id}/withdraw` (recompute + persist) + `PUT /{id}/withdraw/preview` (dry run).
+  Penalty default is bank/type-aware via new `fixeddeposit/util/BankPenaltyResolver.java` (coverage
+  incl. ~1,511 SBI bank codes; tenure tiers for Kotak/Yes; co-op 0.5, small-finance/RRB 1.0, payments
+  bank 0, Post Office 2.0, NBFC Bajaj 2.0, catch-all "bank" → 1.0, empty → amount-tier 0.5/1.0);
+  the stored `penaltyRateApplied` takes precedence on reconstruction (legacy rows reverse-compute from
+  `interestRate − effectiveRateApplied`). Manual override is clamped to `[0, interestRate]` and
+  persisted. Also present: `GET /{id}/tds` + `GET /tds-summary`. Test evidence 2026-09-13:
+  PrematureWithdrawalTest **18/18**, FdMathTest **14/14**, FixedDepositServiceTest **13/13** — BUILD
+  SUCCESS (module README bumped to **v1.4.0**).
 
 ### email (v3.0.0, 2026-03-19)
 - **Responsibility**: transactional email via Brevo REST API + Thymeleaf rendering.

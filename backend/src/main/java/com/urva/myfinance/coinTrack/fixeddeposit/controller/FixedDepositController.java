@@ -181,6 +181,43 @@ public class FixedDepositController {
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
+  @Operation(summary = "Dry-run premature withdrawal preview (no persistence)")
+  @PostMapping("/{id}/withdraw/preview")
+  public ResponseEntity<ApiResponse<PrematureWithdrawalResponseDTO>> previewPrematureWithdraw(
+      @PathVariable String id,
+      @Valid @RequestBody PrematureWithdrawalRequestDTO requestDTO,
+      @AuthenticationPrincipal UserPrincipal principal) {
+    logger.info("Premature withdrawal preview for FD {} by user: {}", id, principal.getUsername());
+    PrematureWithdrawalResponseDTO response =
+        fixedDepositService.previewPrematureWithdraw(id, requestDTO, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Operation(summary = "Edit an already-withdrawn FD's premature-withdrawal record")
+  @PutMapping("/{id}/withdraw")
+  public ResponseEntity<ApiResponse<PrematureWithdrawalResponseDTO>> updatePrematureWithdraw(
+      @PathVariable String id,
+      @Valid @RequestBody PrematureWithdrawalRequestDTO requestDTO,
+      @AuthenticationPrincipal UserPrincipal principal) {
+    logger.info("Update premature withdrawal for FD {} by user: {}", id, principal.getUsername());
+    PrematureWithdrawalResponseDTO response =
+        fixedDepositService.updatePrematureWithdrawal(id, requestDTO, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Operation(summary = "Dry-run edit of an already-withdrawn FD's withdrawal record (no persistence)")
+  @PutMapping("/{id}/withdraw/preview")
+  public ResponseEntity<ApiResponse<PrematureWithdrawalResponseDTO>> updatePrematureWithdrawPreview(
+      @PathVariable String id,
+      @Valid @RequestBody PrematureWithdrawalRequestDTO requestDTO,
+      @AuthenticationPrincipal UserPrincipal principal) {
+    logger.info(
+        "Update premature withdrawal preview for FD {} by user: {}", id, principal.getUsername());
+    PrematureWithdrawalResponseDTO response =
+        fixedDepositService.updatePrematureWithdrawalPreview(id, requestDTO, principal.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
   // =====================================================================================
   // [DEPRECATED-TDS] Section 194A TDS detail & summary are DISABLED.
   //

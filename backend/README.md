@@ -1,9 +1,9 @@
 # CoinTrack Backend Architecture & Developer Guide
 
-> **Version**: 3.2.0
+> **Version**: 3.3.0
 > **Status**: Production-Ready
 > **Tech Stack**: Java 21, Spring Boot 3.5.5, MongoDB Atlas, Spring Security (JWT + MFA MFA)
-> **Last Updated**: 2026-09-12
+> **Last Updated**: 2026-09-13
 
 ---
 
@@ -162,7 +162,7 @@ Each module has its own comprehensive README documentation.
 | **calculator** | 33 financial calculators, config-driven, rate-limited | 1500+ lines | [calculator/README.md](src/main/java/com/urva/myfinance/coinTrack/calculator/README.md) |
 | **common** | Shared infrastructure, exceptions, encryption utils | 400+ lines | [common/README.md](src/main/java/com/urva/myfinance/coinTrack/common/README.md) |
 | **email** | Brevo transactional email, strategy-based sender | 300+ lines | [email/README.md](src/main/java/com/urva/myfinance/coinTrack/email/README.md) |
-| **fixeddeposit** | Fixed Deposit manual ledger & Excel exports | 1000+ lines | [fixeddeposit/README.md](src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/README.md) |
+| **fixeddeposit** | Fixed Deposit manual ledger, bank-aware premature-withdrawal penalty, Excel exports | 1000+ lines | [fixeddeposit/README.md](src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/README.md) |
 | **notes** | Personal investment journal (CRUD) | 200+ lines | [notes/README.md](src/main/java/com/urva/myfinance/coinTrack/notes/README.md) |
 | **portfolio** | Aggregation, sync engine, P&L calculation | 2000+ lines | [portfolio/README.md](src/main/java/com/urva/myfinance/coinTrack/portfolio/README.md) |
 | **ppf** | PPF transactions, ledger balance recalculating, withdrawal validation | 800+ lines | [ppf/README.md](src/main/java/com/urva/myfinance/coinTrack/ppf/README.md) |

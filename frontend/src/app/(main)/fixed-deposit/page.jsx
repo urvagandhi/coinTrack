@@ -2,6 +2,7 @@
 
 import FdDialog from '@/components/fixeddeposit/FdDialog';
 import WithdrawDialog from '@/components/fixeddeposit/WithdrawDialog';
+import WithdrawnFdDialog from '@/components/fixeddeposit/WithdrawnFdDialog';
 // ============================================================
 // SECTION 05 / TDS — TdsSummary import COMMENTED OUT (intentional)
 // Re-enable when the TDS Summary feature is un-commented.
@@ -34,7 +35,7 @@ import {
   List,
   Loader2,
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 
 const PAGE_SIZE = 20;
 
@@ -90,9 +91,12 @@ function StatusBadge({ status }) {
 function FdCard({ fd, onEdit, onWithdraw }) {
   const canWithdraw =
     fd.status !== 'PREMATURELY_WITHDRAWN' && fd.status !== 'MATURED';
+  const isWithdrawn = fd.status === 'PREMATURELY_WITHDRAWN';
   return (
     <article
-      className='ed-card relative group cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md p-5 flex flex-col justify-between'
+      className={`ed-card relative group cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md p-5 flex flex-col justify-between ${
+        isWithdrawn ? 'border-orange-500/25 bg-orange-500/[0.03]' : ''
+      }`}
       onClick={() => onEdit(fd)}
     >
       <span className='corner-mark corner-tl' />
@@ -122,9 +126,21 @@ function FdCard({ fd, onEdit, onWithdraw }) {
             </p>
           </div>
           <div>
-            <p className='eyebrow text-muted-foreground mb-0.5'>Maturity</p>
-            <p className='font-mono text-[14px] text-[hsl(var(--gain))] font-semibold'>
-              {fd.maturityAmount ? formatCurrency(fd.maturityAmount) : 'N/A'}
+            <p className='eyebrow text-muted-foreground mb-0.5'>
+              {isWithdrawn ? 'Realized' : 'Maturity'}
+            </p>
+            <p
+              className={`font-mono text-[14px] font-semibold ${
+                isWithdrawn ? 'text-orange-500' : 'text-[hsl(var(--gain))]'
+              }`}
+            >
+              {isWithdrawn
+                ? fd.realizedMaturityAmount
+                  ? formatCurrency(fd.realizedMaturityAmount)
+                  : '—'
+                : fd.maturityAmount
+                  ? formatCurrency(fd.maturityAmount)
+                  : 'N/A'}
             </p>
           </div>
         </div>
@@ -136,11 +152,39 @@ function FdCard({ fd, onEdit, onWithdraw }) {
           </div>
           <div>
             <p className='eyebrow text-muted-foreground mb-0.5'>
-              Maturity Date
+              {isWithdrawn ? 'Withdrawn On' : 'Maturity Date'}
             </p>
-            <p className='text-[12px] text-foreground'>{fd.maturityDate}</p>
+            <p
+              className={`text-[12px] ${
+                isWithdrawn ? 'text-orange-500 font-medium' : 'text-foreground'
+              }`}
+            >
+              {isWithdrawn ? fd.withdrawalDate || '—' : fd.maturityDate}
+            </p>
           </div>
         </div>
+
+        {isWithdrawn && (
+          <div className='pt-2 space-y-0.5 text-[11px] font-mono text-muted-foreground'>
+            {fd.effectiveRateApplied != null && (
+              <p>
+                Effective rate:{' '}
+                <span className='text-orange-500 font-medium'>
+                  {fd.effectiveRateApplied}% p.a.
+                </span>{' '}
+                <s className='opacity-50'>({fd.interestRate}%)</s>
+              </p>
+            )}
+            {fd.penaltyAmount != null && (
+              <p>
+                Interest foregone:{' '}
+                <span className='text-[hsl(var(--loss))]'>
+                  −{formatCurrency(Math.abs(Number(fd.penaltyAmount)))}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
 
         {fd.investmentPeriod && (
           <div className='pt-2 text-[11px] font-mono text-muted-foreground'>
@@ -173,18 +217,34 @@ function FdCard({ fd, onEdit, onWithdraw }) {
           )}
         </div> */}
 
-        {fd.remarks && (
-          <p className='text-[11px] text-muted-foreground italic mt-2 line-clamp-1'>
-            "{fd.remarks}"
-          </p>
+        {(fd.nominee || fd.remarks) && (
+          <div className='pt-2 space-y-0.5'>
+            {fd.nominee && (
+              <p className='text-[11px] text-muted-foreground'>
+                Nominee: <span className='text-foreground'>{fd.nominee}</span>
+              </p>
+            )}
+            {fd.remarks && (
+              <p className='text-[11px] text-muted-foreground italic line-clamp-1'>
+                "{fd.remarks}"
+              </p>
+            )}
+          </div>
         )}
       </div>
 
       <div className='mt-4 pt-3 border-t border-hairline flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <span className='text-[12px] font-medium text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10 px-2 py-0.5 rounded-sm'>
-            {fd.interestRate}% p.a.
-          </span>
+          {isWithdrawn ? (
+            <span className='text-[12px] font-medium text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-sm font-mono'>
+              <s className='opacity-50 mr-1'>{fd.interestRate}%</s>→{' '}
+              {fd.effectiveRateApplied ?? fd.interestRate}% p.a.
+            </span>
+          ) : (
+            <span className='text-[12px] font-medium text-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10 px-2 py-0.5 rounded-sm'>
+              {fd.interestRate}% p.a.
+            </span>
+          )}
         </div>
         <div className='flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity'>
           {canWithdraw && (
@@ -226,6 +286,9 @@ function FdTable({ fds, onEdit, onWithdraw }) {
                 Holder
               </th>
               <th className='py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground'>
+                Nominee / Remarks
+              </th>
+              <th className='py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground'>
                 Issue Date
               </th>
               <th className='py-3 px-4 font-mono text-[10px] uppercase tracking-[0.05em] text-muted-foreground'>
@@ -262,39 +325,84 @@ function FdTable({ fds, onEdit, onWithdraw }) {
             </tr>
           </thead>
           <tbody>
-            {fds.map(fd => (
-              <tr
-                key={fd.id}
-                onClick={() => onEdit(fd)}
-                className='border-b border-hairline hover:bg-muted/30 cursor-pointer transition-colors group'
-              >
-                <td className='py-3 px-4'>
-                  <p className='text-[14px] font-medium text-foreground group-hover:text-[hsl(var(--accent))] transition-colors'>
-                    {fd.place}
-                  </p>
-                  {fd.accountNumber && (
-                    <p className='text-[11px] font-mono text-muted-foreground'>
-                      A/C: {fd.accountNumber}
+            {fds.map(fd => {
+              const isWithdrawn = fd.status === 'PREMATURELY_WITHDRAWN';
+              return (
+                <tr
+                  key={fd.id}
+                  onClick={() => onEdit(fd)}
+                  className={`border-b border-hairline hover:bg-muted/30 cursor-pointer transition-colors group ${
+                    isWithdrawn ? 'bg-orange-500/[0.03]' : ''
+                  }`}
+                >
+                  <td className='py-3 px-4'>
+                    <p className='text-[14px] font-medium text-foreground group-hover:text-[hsl(var(--accent))] transition-colors'>
+                      {fd.place}
                     </p>
-                  )}
-                </td>
-                <td className='py-3 px-4 text-[13px] text-foreground'>
-                  {fd.holderName}
-                </td>
-                <td className='py-3 px-4 text-[13px] font-mono text-muted-foreground'>
-                  {fd.issueDate}
-                </td>
-                <td className='py-3 px-4 text-[13px] font-mono text-muted-foreground'>
-                  {fd.maturityDate}
-                </td>
-                <td className='py-3 px-4 text-[13px] font-mono text-[hsl(var(--accent))] font-medium'>
-                  {fd.interestRate}%
-                </td>
-                {/* ============================================================
+                    {fd.accountNumber && (
+                      <p className='text-[11px] font-mono text-muted-foreground'>
+                        A/C: {fd.accountNumber}
+                      </p>
+                    )}
+                  </td>
+                  <td className='py-3 px-4 text-[13px] text-foreground'>
+                    {fd.holderName}
+                  </td>
+                  <td className='py-3 px-4'>
+                    {fd.nominee ? (
+                      <p className='text-[13px] text-foreground'>
+                        {fd.nominee}
+                      </p>
+                    ) : (
+                      <p className='text-[13px] text-muted-foreground/40'>—</p>
+                    )}
+                    {fd.remarks && (
+                      <p
+                        className='text-[11px] text-muted-foreground/70 italic line-clamp-1 max-w-[220px]'
+                        title={fd.remarks}
+                      >
+                        "{fd.remarks}"
+                      </p>
+                    )}
+                  </td>
+                  <td className='py-3 px-4 text-[13px] font-mono text-muted-foreground'>
+                    {fd.issueDate}
+                  </td>
+                  <td className='py-3 px-4 text-[13px] font-mono text-muted-foreground'>
+                    {isWithdrawn ? (
+                      <>
+                        <p className='line-through opacity-50'>
+                          {fd.maturityDate}
+                        </p>
+                        <p className='text-orange-500 font-medium'>
+                          {fd.withdrawalDate || '—'}
+                        </p>
+                      </>
+                    ) : (
+                      fd.maturityDate
+                    )}
+                  </td>
+                  <td className='py-3 px-4 text-[13px] font-mono font-medium'>
+                    {isWithdrawn ? (
+                      <>
+                        <p className='text-muted-foreground line-through opacity-50'>
+                          {fd.interestRate}%
+                        </p>
+                        <p className='text-orange-500 font-semibold'>
+                          {fd.effectiveRateApplied ?? fd.interestRate}%
+                        </p>
+                      </>
+                    ) : (
+                      <span className='text-[hsl(var(--accent))]'>
+                        {fd.interestRate}%
+                      </span>
+                    )}
+                  </td>
+                  {/* ============================================================
                      SECTION 04 — table cells FD Type / Compounding /
                      Interest Payout COMMENTED OUT (intentional).
                      ============================================================ */}
-                {/* <td className='py-3 px-4 text-[12px] font-mono text-muted-foreground'>
+                  {/* <td className='py-3 px-4 text-[12px] font-mono text-muted-foreground'>
                   {fd.fdType === 'CUMULATIVE' ? 'Cumulative' : 'Non-Cumulative'}
                 </td>
                 <td className='py-3 px-4 text-[12px] font-mono text-muted-foreground'>
@@ -307,32 +415,52 @@ function FdTable({ fds, onEdit, onWithdraw }) {
                     ? 'At Maturity'
                     : fd.payoutFrequency}
                 </td> */}
-                <td className='py-3 px-4 text-right font-mono text-[13px] font-medium text-foreground'>
-                  {formatCurrency(fd.issueAmount)}
-                </td>
-                <td className='py-3 px-4 text-right font-mono text-[13px] font-semibold text-[hsl(var(--gain))]'>
-                  {fd.maturityAmount ? formatCurrency(fd.maturityAmount) : '—'}
-                </td>
-                <td className='py-3 px-4 text-center'>
-                  <StatusBadge status={fd.status} />
-                </td>
-                <td
-                  className='py-3 px-4 text-right'
-                  onClick={e => e.stopPropagation()}
-                >
-                  <div className='flex gap-2 justify-end'>
-                    {canWithdraw(fd) && (
-                      <button
-                        onClick={() => onWithdraw(fd)}
-                        className='text-[11px] font-mono text-muted-foreground hover:text-[hsl(var(--accent))] border border-border bg-card px-2 py-1 rounded-sm transition-colors hover:border-[hsl(var(--accent))]/50'
-                      >
-                        WITHDRAW
-                      </button>
+                  <td className='py-3 px-4 text-right font-mono text-[13px] font-medium text-foreground'>
+                    {formatCurrency(fd.issueAmount)}
+                  </td>
+                  <td className='py-3 px-4 text-right font-mono text-[13px]'>
+                    {isWithdrawn ? (
+                      <>
+                        <p className='text-muted-foreground line-through opacity-50 font-normal'>
+                          {fd.maturityAmount
+                            ? formatCurrency(fd.maturityAmount)
+                            : '—'}
+                        </p>
+                        <p className='text-orange-500 font-semibold'>
+                          {fd.realizedMaturityAmount
+                            ? formatCurrency(fd.realizedMaturityAmount)
+                            : '—'}
+                        </p>
+                      </>
+                    ) : fd.maturityAmount ? (
+                      <span className='text-[13px] font-semibold text-[hsl(var(--gain))]'>
+                        {formatCurrency(fd.maturityAmount)}
+                      </span>
+                    ) : (
+                      '—'
                     )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className='py-3 px-4 text-center'>
+                    <StatusBadge status={fd.status} />
+                  </td>
+                  <td
+                    className='py-3 px-4 text-right'
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className='flex gap-2 justify-end'>
+                      {canWithdraw(fd) && (
+                        <button
+                          onClick={() => onWithdraw(fd)}
+                          className='text-[11px] font-mono text-muted-foreground hover:text-[hsl(var(--accent))] border border-border bg-card px-2 py-1 rounded-sm transition-colors hover:border-[hsl(var(--accent))]/50'
+                        >
+                          WITHDRAW
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -350,6 +478,7 @@ export default function FixedDepositPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFd, setEditingFd] = useState(null);
   const [withdrawFd, setWithdrawFd] = useState(null);
+  const [withdrawnFd, setWithdrawnFd] = useState(null);
   // ============================================================
   // SECTION 05 / TDS — tdsYear state COMMENTED OUT (intentional)
   // const [tdsYear, setTdsYear] = useState('');
@@ -475,6 +604,21 @@ export default function FixedDepositPage() {
     },
     onError: onErr,
   });
+  const { mutateAsync: withdrawAsync } = withdrawMutation;
+
+  const updateWithdrawMutation = useMutation({
+    mutationFn: ({ id, data }) => fdAPI.updateWithdraw(id, data),
+    onSuccess: () => {
+      toast({
+        title: 'Withdrawal Updated',
+        description: 'Withdrawal details corrected.',
+        variant: 'success',
+      });
+      invalidate();
+    },
+    onError: onErr,
+  });
+  const { mutateAsync: updateWithdrawAsync } = updateWithdrawMutation;
 
   const handleSave = async fdData => {
     if (editingFd) {
@@ -484,26 +628,26 @@ export default function FixedDepositPage() {
     }
   };
 
-  const handleDelete = () => {
-    if (editingFd) {
-      toast({
-        title: 'Delete Fixed Deposit?',
-        description: 'This action cannot be undone.',
-        variant: 'warning',
-        action: (
-          <button
-            onClick={() => {
-              deleteMutation.mutate(editingFd.id);
-              setIsDialogOpen(false);
-              setEditingFd(null);
-            }}
-            className='text-[11px] font-medium text-[hsl(var(--loss))] hover:underline'
-          >
-            Confirm
-          </button>
-        ),
-      });
-    }
+  const handleDelete = fd => {
+    if (!fd) return;
+    toast({
+      title: 'Delete Fixed Deposit?',
+      description: 'This action cannot be undone.',
+      variant: 'warning',
+      action: (
+        <button
+          onClick={() => {
+            deleteMutation.mutate(fd.id);
+            setIsDialogOpen(false);
+            setEditingFd(null);
+            setWithdrawnFd(null);
+          }}
+          className='text-[11px] font-medium text-[hsl(var(--loss))] hover:underline'
+        >
+          Confirm
+        </button>
+      ),
+    });
   };
 
   const openCreate = () => {
@@ -511,6 +655,10 @@ export default function FixedDepositPage() {
     setIsDialogOpen(true);
   };
   const openEdit = fd => {
+    if (fd.status === 'PREMATURELY_WITHDRAWN') {
+      setWithdrawnFd(fd);
+      return;
+    }
     setEditingFd(fd);
     setIsDialogOpen(true);
   };
@@ -519,12 +667,37 @@ export default function FixedDepositPage() {
     setWithdrawFd(fd);
   };
 
-  const handleWithdraw = async withdrawalDate => {
-    const res = await withdrawMutation.mutateAsync({
-      id: withdrawFd.id,
-      data: { withdrawalDate },
-    });
-    return res;
+  const openEditWithdrawal = fd => {
+    setWithdrawnFd(null);
+    setWithdrawFd(fd);
+  };
+
+  const handleWithdraw = useCallback(
+    async (withdrawalDate, penaltyRateOverride) => {
+      const data = { withdrawalDate, penaltyRateOverride };
+      const res =
+        withdrawFd.status === 'PREMATURELY_WITHDRAWN'
+          ? await updateWithdrawAsync({ id: withdrawFd.id, data })
+          : await withdrawAsync({ id: withdrawFd.id, data });
+      return res;
+    },
+    [withdrawFd, withdrawAsync, updateWithdrawAsync]
+  );
+
+  const handleWithdrawPreview = useCallback(
+    async (withdrawalDate, penaltyRateOverride) => {
+      const payload = { withdrawalDate, penaltyRateOverride };
+      return withdrawFd.status === 'PREMATURELY_WITHDRAWN'
+        ? fdAPI.updateWithdrawPreview(withdrawFd.id, payload)
+        : fdAPI.previewWithdraw(withdrawFd.id, payload);
+    },
+    [withdrawFd]
+  );
+
+  const openEditFromView = fd => {
+    setWithdrawnFd(null);
+    setEditingFd(fd);
+    setIsDialogOpen(true);
   };
 
   const gridClass = 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6';
@@ -872,11 +1045,21 @@ export default function FixedDepositPage() {
            ============================================================ */}
       {/* <TdsSummary financialYear={tdsYear} onYearChange={setTdsYear} /> */}
 
+      <WithdrawnFdDialog
+        isOpen={!!withdrawnFd}
+        fd={withdrawnFd}
+        onClose={() => setWithdrawnFd(null)}
+        onEdit={openEditFromView}
+        onEditWithdrawal={openEditWithdrawal}
+        onDelete={handleDelete}
+      />
+
       <WithdrawDialog
         isOpen={!!withdrawFd}
         onClose={() => setWithdrawFd(null)}
         fd={withdrawFd}
         onWithdrawn={handleWithdraw}
+        onPreview={handleWithdrawPreview}
       />
 
       <FdDialog
@@ -886,7 +1069,7 @@ export default function FixedDepositPage() {
           setEditingFd(null);
         }}
         onSave={handleSave}
-        onDelete={editingFd ? handleDelete : undefined}
+        onDelete={editingFd ? () => handleDelete(editingFd) : undefined}
         initialData={editingFd}
       />
     </div>

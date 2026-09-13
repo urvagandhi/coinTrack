@@ -230,7 +230,8 @@ Track non-broker assets with comprehensive ledger UI and dedicated dashboards:
 - **Mutual Funds** — Manual tracking with automated SIPs, live NAV, and FIFO capital gains
 - **Gold & Silver** — Manage physical metal investments with live purity-based pricing
 - **Provident Funds** — Dedicated EPF and PPF ledgers with interest simulation
-- **Fixed Deposits** — Track FDs across banks with live maturity status and Excel export
+- **Fixed Deposits** — Track FDs across banks with live maturity status, bank-aware
+  premature-withdrawal penalty, and Excel export
 
 ### Financial Calculators (32 pages)
 

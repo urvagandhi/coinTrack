@@ -344,6 +344,7 @@ export const endpoints = {
     update: id => `/api/fixed-deposits/${id}`,
     delete: id => `/api/fixed-deposits/${id}`,
     withdraw: id => `/api/fixed-deposits/${id}/withdraw`,
+    withdrawPreview: id => `/api/fixed-deposits/${id}/withdraw/preview`,
     // ============================================================
     // SECTION 05 / TDS — endpoints COMMENTED OUT (intentional)
     // tdsDetail: id => `/api/fixed-deposits/${id}/tds`,
@@ -897,6 +898,18 @@ export const fdAPI = {
   },
   withdraw: async (id, payload) => {
     const { data } = await api.post(endpoints.fd.withdraw(id), payload);
+    return unwrapResponse(data);
+  },
+  previewWithdraw: async (id, payload) => {
+    const { data } = await api.post(endpoints.fd.withdrawPreview(id), payload);
+    return unwrapResponse(data);
+  },
+  updateWithdraw: async (id, payload) => {
+    const { data } = await api.put(endpoints.fd.withdraw(id), payload);
+    return unwrapResponse(data);
+  },
+  updateWithdrawPreview: async (id, payload) => {
+    const { data } = await api.put(endpoints.fd.withdrawPreview(id), payload);
     return unwrapResponse(data);
   },
   // ============================================================

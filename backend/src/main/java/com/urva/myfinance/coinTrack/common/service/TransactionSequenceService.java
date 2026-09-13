@@ -17,6 +17,11 @@ import com.urva.myfinance.coinTrack.ppf.repository.PpfTransactionRepository;
 import java.util.Comparator;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.BulkOperations;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +32,7 @@ public class TransactionSequenceService {
   @Autowired private RedemptionTransactionRepository redemptionRepo;
   @Autowired private SipContributionRepository sipRepo;
   @Autowired private FixedDepositRepository fdRepo;
+  @Autowired private MongoTemplate mongoTemplate;
   @Autowired private GoldSilverInvestmentRepository gsRepo;
   @Autowired private PpfTransactionRepository ppfRepo;
   @Autowired private EpfTransactionRepository epfRepo;
@@ -41,10 +47,16 @@ public class TransactionSequenceService {
             .thenComparing(
                 LumpsumTransaction::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
     long seq = 1;
+    BulkOperations bulk =
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, LumpsumTransaction.class);
     for (LumpsumTransaction t : list) {
-      t.setTransactionNo(seq++);
+      bulk.updateOne(
+          Query.query(Criteria.where("id").is(t.getId())),
+          Update.update("transactionNo", seq++));
     }
-    lumpsumRepo.saveAll(list);
+    if (seq > 1) {
+      bulk.execute();
+    }
   }
 
   @Async
@@ -58,10 +70,16 @@ public class TransactionSequenceService {
                 RedemptionTransaction::getCreatedAt,
                 Comparator.nullsLast(Comparator.naturalOrder())));
     long seq = 1;
+    BulkOperations bulk =
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, RedemptionTransaction.class);
     for (RedemptionTransaction t : list) {
-      t.setTransactionNo(seq++);
+      bulk.updateOne(
+          Query.query(Criteria.where("id").is(t.getId())),
+          Update.update("transactionNo", seq++));
     }
-    redemptionRepo.saveAll(list);
+    if (seq > 1) {
+      bulk.execute();
+    }
   }
 
   @Async
@@ -74,10 +92,16 @@ public class TransactionSequenceService {
             .thenComparing(
                 SipContribution::getId, Comparator.nullsLast(Comparator.naturalOrder())));
     long seq = 1;
+    BulkOperations bulk =
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, SipContribution.class);
     for (SipContribution t : list) {
-      t.setTransactionNo(seq++);
+      bulk.updateOne(
+          Query.query(Criteria.where("id").is(t.getId())),
+          Update.update("transactionNo", seq++));
     }
-    sipRepo.saveAll(list);
+    if (seq > 1) {
+      bulk.execute();
+    }
   }
 
   @Async
@@ -89,10 +113,16 @@ public class TransactionSequenceService {
             .thenComparing(
                 FixedDeposit::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
     long seq = 1;
+    BulkOperations bulk =
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, FixedDeposit.class);
     for (FixedDeposit t : list) {
-      t.setFdNo(seq++);
+      bulk.updateOne(
+          Query.query(Criteria.where("id").is(t.getId())),
+          Update.update("fdNo", seq++));
     }
-    fdRepo.saveAll(list);
+    if (seq > 1) {
+      bulk.execute();
+    }
   }
 
   @Async
@@ -106,10 +136,16 @@ public class TransactionSequenceService {
                 GoldSilverInvestment::getCreatedAt,
                 Comparator.nullsLast(Comparator.naturalOrder())));
     long seq = 1;
+    BulkOperations bulk =
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, GoldSilverInvestment.class);
     for (GoldSilverInvestment t : list) {
-      t.setItemNo(seq++);
+      bulk.updateOne(
+          Query.query(Criteria.where("id").is(t.getId())),
+          Update.update("itemNo", seq++));
     }
-    gsRepo.saveAll(list);
+    if (seq > 1) {
+      bulk.execute();
+    }
   }
 
   @Async
@@ -122,10 +158,16 @@ public class TransactionSequenceService {
             .thenComparing(
                 PpfTransaction::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
     long seq = 1;
+    BulkOperations bulk =
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, PpfTransaction.class);
     for (PpfTransaction t : list) {
-      t.setTransactionNo(seq++);
+      bulk.updateOne(
+          Query.query(Criteria.where("id").is(t.getId())),
+          Update.update("transactionNo", seq++));
     }
-    ppfRepo.saveAll(list);
+    if (seq > 1) {
+      bulk.execute();
+    }
   }
 
   @Async
@@ -138,9 +180,15 @@ public class TransactionSequenceService {
             .thenComparing(
                 EpfTransaction::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
     long seq = 1;
+    BulkOperations bulk =
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, EpfTransaction.class);
     for (EpfTransaction t : list) {
-      t.setTransactionNo(seq++);
+      bulk.updateOne(
+          Query.query(Criteria.where("id").is(t.getId())),
+          Update.update("transactionNo", seq++));
     }
-    epfRepo.saveAll(list);
+    if (seq > 1) {
+      bulk.execute();
+    }
   }
 }

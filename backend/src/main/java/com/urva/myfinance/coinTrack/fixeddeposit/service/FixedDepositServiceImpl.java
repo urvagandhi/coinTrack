@@ -25,6 +25,7 @@ import com.urva.myfinance.coinTrack.fixeddeposit.model.FixedDeposit;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.InterestPayoutFrequency;
 import com.urva.myfinance.coinTrack.fixeddeposit.model.MaturityMode;
 import com.urva.myfinance.coinTrack.fixeddeposit.repository.FixedDepositRepository;
+import com.urva.myfinance.coinTrack.fixeddeposit.util.BankPenaltyResolver;
 import com.urva.myfinance.coinTrack.fixeddeposit.util.FdMath;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -514,6 +515,21 @@ public class FixedDepositServiceImpl implements FixedDepositService {
     logger.info("Scheduled batch job completed. Updated {} FD status(es)", updatedCount);
   }
 
+  /** Dry-run premature-withdrawal calculation — computes the same result as {@link
+   * #prematureWithdraw} but never mutates or persists the FD. */
+  @Override
+  public PrematureWithdrawalResponseDTO previewPrematureWithdraw(
+      String id, PrematureWithdrawalRequestDTO requestDTO, String userId) {
+    logger.info("Previewing premature withdrawal for FD {} by user: {}", id, userId);
+    FixedDeposit fd = findAndVerifyOwnership(id, userId);
+
+    if (fd.getStatus() == FdStatus.PREMATURELY_WITHDRAWN) {
+      return toWithdrawalResponse(fd);
+    }
+
+    return computeWithdrawalResponse(fd, requestDTO);
+  }
+
   @Override
   @Transactional
   public PrematureWithdrawalResponseDTO prematureWithdraw(
@@ -531,6 +547,66 @@ public class FixedDepositServiceImpl implements FixedDepositService {
     }
 
     LocalDate withdrawalDate = requestDTO.getWithdrawalDate();
+
+    PrematureWithdrawalResponseDTO response = computeWithdrawalResponse(fd, requestDTO);
+
+    fd.setStatus(FdStatus.PREMATURELY_WITHDRAWN);
+    fd.setIsPrematurelyWithdrawn(true);
+    fd.setWithdrawalDate(withdrawalDate);
+    fd.setRealizedMaturityAmount(response.getRealizedMaturityAmount());
+    fd.setPenaltyAmount(response.getPenaltyAmount());
+    fd.setPenaltyRateApplied(response.getPenaltyRate());
+    fd.setEffectiveRateApplied(response.getEffectiveRate());
+    fd.setUpdatedAt(Instant.now());
+
+    fixedDepositRepository.save(fd);
+    transactionSequenceService.reorderFixedDeposits(userId);
+
+    return response;
+  }
+
+  @Override
+  @Transactional
+  public PrematureWithdrawalResponseDTO updatePrematureWithdrawal(
+      String id, PrematureWithdrawalRequestDTO requestDTO, String userId) {
+    logger.info("Updating premature withdrawal for FD {} by user: {}", id, userId);
+    FixedDeposit fd = findAndVerifyOwnership(id, userId);
+
+    if (fd.getStatus() != FdStatus.PREMATURELY_WITHDRAWN) {
+      throw new InvalidWithdrawalException("FD has not been withdrawn prematurely");
+    }
+
+    PrematureWithdrawalResponseDTO response = computeWithdrawalResponse(fd, requestDTO);
+
+    fd.setWithdrawalDate(requestDTO.getWithdrawalDate());
+    fd.setRealizedMaturityAmount(response.getRealizedMaturityAmount());
+    fd.setPenaltyAmount(response.getPenaltyAmount());
+    fd.setPenaltyRateApplied(response.getPenaltyRate());
+    fd.setEffectiveRateApplied(response.getEffectiveRate());
+    fd.setUpdatedAt(Instant.now());
+
+    fixedDepositRepository.save(fd);
+    transactionSequenceService.reorderFixedDeposits(userId);
+
+    return response;
+  }
+
+  @Override
+  public PrematureWithdrawalResponseDTO updatePrematureWithdrawalPreview(
+      String id, PrematureWithdrawalRequestDTO requestDTO, String userId) {
+    logger.info("Previewing withdrawal update for FD {} by user: {}", id, userId);
+    FixedDeposit fd = findAndVerifyOwnership(id, userId);
+
+    if (fd.getStatus() != FdStatus.PREMATURELY_WITHDRAWN) {
+      throw new InvalidWithdrawalException("FD has not been withdrawn prematurely");
+    }
+
+    return computeWithdrawalResponse(fd, requestDTO);
+  }
+
+  private PrematureWithdrawalResponseDTO computeWithdrawalResponse(
+      FixedDeposit fd, PrematureWithdrawalRequestDTO requestDTO) {
+    LocalDate withdrawalDate = requestDTO.getWithdrawalDate();
     if (withdrawalDate.isBefore(fd.getIssueDate())
         || withdrawalDate.isAfter(fd.getMaturityDate())) {
       throw new InvalidWithdrawalException(
@@ -538,11 +614,18 @@ public class FixedDepositServiceImpl implements FixedDepositService {
     }
 
     BigDecimal penaltyRate = requestDTO.getPenaltyRateOverride();
-    if (penaltyRate == null) {
+    long actualTenorDays = ChronoUnit.DAYS.between(fd.getIssueDate(), withdrawalDate);
+    if (penaltyRate != null) {
+      BigDecimal contracted = fd.getInterestRate();
+      if (penaltyRate.signum() < 0) {
+        penaltyRate = BigDecimal.ZERO;
+      }
+      if (contracted != null && penaltyRate.compareTo(contracted) > 0) {
+        penaltyRate = contracted;
+      }
+    } else {
       penaltyRate =
-          fd.getIssueAmount() != null && fd.getIssueAmount().compareTo(new BigDecimal("500000")) > 0
-              ? new BigDecimal("1.00")
-              : new BigDecimal("0.50");
+          BankPenaltyResolver.resolve(fd.getPlace(), fd.getIssueAmount(), actualTenorDays);
     }
 
     FdType fdType = fd.getFdType() != null ? fd.getFdType() : FdType.CUMULATIVE;
@@ -563,20 +646,43 @@ public class FixedDepositServiceImpl implements FixedDepositService {
             penaltyRate,
             isSeniorCitizen);
 
-    fd.setStatus(FdStatus.PREMATURELY_WITHDRAWN);
-    fd.setIsPrematurelyWithdrawn(true);
-    fd.setWithdrawalDate(withdrawalDate);
-    fd.setRealizedMaturityAmount(result.realizedMaturityAmount());
-    fd.setPenaltyAmount(result.penaltyAmount());
-    fd.setEffectiveRateApplied(result.effectiveRate());
-    fd.setUpdatedAt(Instant.now());
+    return toWithdrawalResponse(fd, withdrawalDate, result);
+  }
 
-    FixedDeposit saved = fixedDepositRepository.save(fd);
-    transactionSequenceService.reorderFixedDeposits(userId);
-
+  /** Response for an already-withdrawn FD, reconstructed from stored values. */
+  private PrematureWithdrawalResponseDTO toWithdrawalResponse(FixedDeposit fd) {
     return PrematureWithdrawalResponseDTO.builder()
-        .fdId(saved.getId())
-        .fdNo(saved.getFdNo())
+        .fdId(fd.getId())
+        .fdNo(fd.getFdNo())
+        .withdrawalDate(fd.getWithdrawalDate())
+        .contractedRate(fd.getInterestRate())
+        .applicableRate(fd.getInterestRate())
+        .penaltyRate(fd.getPenaltyRateApplied() != null
+            ? fd.getPenaltyRateApplied()
+            : (fd.getEffectiveRateApplied() != null
+                ? fd.getInterestRate().subtract(fd.getEffectiveRateApplied())
+                : new BigDecimal("0.50")))
+        .effectiveRate(fd.getEffectiveRateApplied())
+        .contractedMaturityAmount(
+            fd.getMaturityAmount() != null ? fd.getMaturityAmount() : fd.getIssueAmount())
+        .realizedMaturityAmount(fd.getRealizedMaturityAmount())
+        .penaltyAmount(fd.getPenaltyAmount())
+        .actualTenorDays(
+            fd.getWithdrawalDate() != null
+                ? ChronoUnit.DAYS.between(fd.getIssueDate(), fd.getWithdrawalDate())
+                : 0)
+        .interestEarned(
+            fd.getRealizedMaturityAmount() != null
+                ? fd.getRealizedMaturityAmount().subtract(fd.getIssueAmount())
+                : null)
+        .build();
+  }
+
+  private PrematureWithdrawalResponseDTO toWithdrawalResponse(
+      FixedDeposit fd, LocalDate withdrawalDate, FdMath.PrematureWithdrawalResult result) {
+    return PrematureWithdrawalResponseDTO.builder()
+        .fdId(fd.getId())
+        .fdNo(fd.getFdNo())
         .withdrawalDate(withdrawalDate)
         .contractedRate(result.contractedRate())
         .applicableRate(result.applicableRate())
@@ -908,6 +1014,7 @@ public class FixedDepositServiceImpl implements FixedDepositService {
         .withdrawalDate(fd.getWithdrawalDate())
         .realizedMaturityAmount(fd.getRealizedMaturityAmount())
         .penaltyAmount(fd.getPenaltyAmount())
+        .penaltyRateApplied(fd.getPenaltyRateApplied())
         .effectiveRateApplied(fd.getEffectiveRateApplied())
         .serverComputedMaturityAmount(fd.getServerComputedMaturityAmount())
         .maturityAmountOverridden(fd.getMaturityAmountOverridden())

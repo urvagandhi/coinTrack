@@ -53,6 +53,22 @@ public interface FixedDepositService {
   PrematureWithdrawalResponseDTO prematureWithdraw(
       String id, PrematureWithdrawalRequestDTO requestDTO, String userId);
 
+  /** Dry-run premature-withdrawal calculation: same math as {@link #prematureWithdraw} but does
+   * not mutate or persist the FD. Used by the UI to preview the result while picking a date. */
+  PrematureWithdrawalResponseDTO previewPrematureWithdraw(
+      String id, PrematureWithdrawalRequestDTO requestDTO, String userId);
+
+  /** Corrections an already-withdrawn FD's premature-withdrawal record (date, penalty override)
+   * by recomputing the realized amounts and persisting them. Requires the FD to be in
+   * PREMATURELY_WITHDRAWN status. */
+  PrematureWithdrawalResponseDTO updatePrematureWithdrawal(
+      String id, PrematureWithdrawalRequestDTO requestDTO, String userId);
+
+  /** Dry-run of {@link #updatePrematureWithdrawal}: recomputes the withdrawal math for an
+   * already-withdrawn FD without persisting. Used by the UI to preview the corrected record. */
+  PrematureWithdrawalResponseDTO updatePrematureWithdrawalPreview(
+      String id, PrematureWithdrawalRequestDTO requestDTO, String userId);
+
   // [DEPRECATED-TDS] getTdsDetail / getTdsSummary removed from the service contract.
   // Re-enabling requires restoring these method signatures AND their implementations in
   // FixedDepositServiceImpl alongside FdTdsDetailDTO.

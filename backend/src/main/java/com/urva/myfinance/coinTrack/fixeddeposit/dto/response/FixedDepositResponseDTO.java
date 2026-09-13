@@ -75,6 +75,7 @@ public class FixedDepositResponseDTO {
   private LocalDate withdrawalDate;
   private BigDecimal realizedMaturityAmount;
   private BigDecimal penaltyAmount;
+  private BigDecimal penaltyRateApplied;
   private BigDecimal effectiveRateApplied;
 
   // Server-side validation
