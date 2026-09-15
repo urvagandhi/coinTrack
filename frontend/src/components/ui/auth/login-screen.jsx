@@ -110,9 +110,9 @@ function PortfolioPhoneMockup() {
                 <Image
                   src='/coinTrack.png'
                   alt='coinTrack'
-                  fill
-                  sizes='12px'
-                  className='object-contain'
+                  width={12}
+                  height={12}
+                  className='object-contain w-auto h-auto'
                 />
               </span>
               <span className='font-serif italic font-semibold text-xs text-white dark:text-zinc-900'>
@@ -219,6 +219,9 @@ export function LoginSplitScreen({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [localError, setLocalError] = useState('');
+
+  const activeError = errorMessage || localError;
 
   useDynamicDocumentTitle('Sign In | coinTrack');
 
@@ -227,7 +230,18 @@ export function LoginSplitScreen({
   const handleSubmit = useCallback(
     e => {
       e.preventDefault();
+      setLocalError('');
       if (isLoading) return;
+
+      const trimmed = email.trim();
+      if (trimmed.length > 0 && /^[0-9+\s()-]+$/.test(trimmed)) {
+        const digitsOnly = trimmed.replace(/\D/g, '');
+        if (digitsOnly.length !== 10) {
+          setLocalError('Mobile number must be exactly 10 digits.');
+          return;
+        }
+      }
+
       onLogin?.({ email, password, rememberMe });
     },
     [email, password, rememberMe, isLoading, onLogin]
@@ -285,12 +299,13 @@ export function LoginSplitScreen({
             Enter your credentials to access your unified wealth dashboard.
           </p>
 
-          {errorMessage && (
+          {/* Error Message */}
+          {activeError && (
             <div
               className='mb-3.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium'
               role='alert'
             >
-              {errorMessage}
+              {activeError}
             </div>
           )}
 

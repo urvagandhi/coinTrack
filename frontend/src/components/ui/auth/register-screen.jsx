@@ -115,9 +115,9 @@ const RegisterPortfolioMockup = memo(function RegisterPortfolioMockup() {
                 <Image
                   src='/coinTrack.png'
                   alt='coinTrack'
-                  fill
-                  sizes='12px'
-                  className='object-contain'
+                  width={12}
+                  height={12}
+                  className='object-contain w-auto h-auto'
                 />
               </span>
               <span className='font-serif italic font-semibold text-xs text-white dark:text-zinc-900'>
@@ -311,8 +311,8 @@ export function RegisterSplitScreen({
     if (!emailRegex.test(email)) {
       return 'Please enter a valid email address';
     }
-    if (phoneNumber.length < 10) {
-      return 'Please enter a valid 10-digit mobile number';
+    if (phoneNumber.length !== 10) {
+      return 'Mobile number must be exactly 10 digits';
     }
     if (!dateOfBirth) {
       return 'Please enter your date of birth';
@@ -576,7 +576,12 @@ export function RegisterSplitScreen({
                     className='flex items-center gap-1 pl-3 text-muted-foreground select-none'
                     aria-hidden='true'
                   >
-                    <span className='text-xs'>🇮🇳</span>
+                    <img
+                      src='https://flagcdn.com/in.svg'
+                      width='16'
+                      alt='India'
+                      className='w-4 h-3 rounded-[2px] shadow-sm flex-shrink-0'
+                    />
                     <span className='text-xs font-medium text-foreground'>
                       +91
                     </span>

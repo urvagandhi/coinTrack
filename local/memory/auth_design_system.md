@@ -25,8 +25,15 @@ We successfully passed strict security gates across all auth forms:
 - **Modularity**: Primitive base components (from `frontend/src/components/ui/primitives`) are composed into complex molecules inside `frontend/src/components/ui/auth/`.
 
 ## 4. Current State & Routing
-- Built `login-screen.jsx` and `register-screen.jsx`.
-- Verified them interactively in `design-lab/login` and `design-lab/register` wrappers using `next/navigation`'s `useRouter()` to seamlessly link the "Sign In" and "Create Account" flows.
+- Built `login-screen.jsx`, `register-screen.jsx`, and `forgot-password-screen.jsx`.
+- Verified them interactively in `design-lab/login`, `design-lab/register`, and `design-lab/forgot-password` wrappers using `next/navigation`'s `useRouter()` to seamlessly link the flows.
+
+## 5. Explicit User Preferences & Lessons Learned
+- **Country Flags**: Never use native emojis (e.g., 🇮🇳) because they do not render properly on Windows. Always use external SVGs like FlagCDN (e.g., `https://flagcdn.com/in.svg`).
+- **Legal/Content UIs**: Prefer flat, smooth, scrollable lists over complex accordions for terms and privacy policies, ensuring a highly polished and straightforward aesthetic.
+- **Phone Number Validation**: Any phone number input across the app MUST be strictly validated to exactly 10 digits. Validation errors must be displayed using the native inline local error UI (matching the design system), NEVER using native browser `alert()` popups.
+- **Animations**: Animations (like flying paper airplanes) should prioritize buttery-smooth keyframe curves over complexity. Avoid adding over-the-top effects like `tsparticles` sparkles or jarring vapor trails unless explicitly requested; a clean, standalone SVG animation is preferred.
+- **Component Reuse**: STRICTLY use components from `frontend/src/components/ui/`. If a component does not exist, build it there. Do not create isolated components elsewhere or rely on heavy external libraries when native UI primitives exist.
 
 ## How to Resume
-When starting a new chat, refer to this file (`local/memory/auth_design_system.md`) to instantly load the context of our design philosophy, security gates, and component structure without needing to explain the entire history!
+When starting a new chat, refer to this file (`local/memory/auth_design_system.md`) to instantly load the context of our design philosophy, security gates, component structure, and specific user preferences without needing to explain the entire history!

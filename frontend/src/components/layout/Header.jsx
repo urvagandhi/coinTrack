@@ -125,9 +125,9 @@ export default function Header({ onMenuClick }) {
             <Image
               src='/coinTrack.png'
               alt='coinTrack'
-              fill
-              sizes='28px'
-              className='object-contain'
+              width={28}
+              height={28}
+              className='object-contain w-auto h-auto'
             />
           </span>
         </Link>

@@ -74,10 +74,10 @@ export function AuthHeader({ className }) {
           <Image
             src='/coinTrack.png'
             alt='coinTrack logo'
-            fill
-            sizes='28px'
+            width={28}
+            height={28}
             priority
-            className='object-contain'
+            className='object-contain w-auto h-auto'
           />
         </span>
         <span className='font-serif italic font-bold text-2xl tracking-tight text-foreground'>

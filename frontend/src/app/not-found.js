@@ -75,11 +75,11 @@ export default function NotFound() {
             <span className='relative h-8 w-8 block transition-transform duration-300 group-hover:scale-110'>
               <Image
                 src='/coinTrack.png'
-                alt='coinTrack'
-                fill
-                sizes='32px'
+                alt='coinTrack logo'
+                width={36}
+                height={36}
                 priority
-                className='object-contain'
+                className='object-contain w-auto h-auto'
               />
             </span>
             <span className='font-serif italic text-[24px] leading-none tracking-tight'>

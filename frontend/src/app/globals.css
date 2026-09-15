@@ -670,48 +670,24 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
    ───────────────────────────────────────────────────────────────── */
 
 @keyframes airplane-fly {
-  /* 0% to 18%: Gentle floating in place (zero jerk) */
   0% {
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
     opacity: 1;
   }
-  16% {
-    transform: translate3d(-3px, 3px, 0) rotate(-3deg) scale(0.98);
+  15% {
+    transform: translate3d(-5px, 5px, 0) rotate(-5deg) scale(0.98);
     opacity: 1;
   }
-  /* 28% to 50%: Smooth, uninterrupted acceleration into flight */
-  28% {
-    transform: translate3d(6px, -6px, 0) rotate(2deg) scale(1.02);
-    opacity: 1;
-  }
-  38% {
-    transform: translate3d(28px, -26px, 0) rotate(7deg) scale(1.05);
-    opacity: 1;
-  }
-  48% {
-    transform: translate3d(65px, -60px, 0) rotate(12deg) scale(0.95);
-    opacity: 0.8;
-  }
-  56% {
-    transform: translate3d(120px, -110px, 0) rotate(16deg) scale(0.65);
+  45% {
+    transform: translate3d(150px, -150px, 0) rotate(25deg) scale(0.5);
     opacity: 0;
   }
-  /* 57%: Instant repositioning off-screen while fully transparent */
-  57% {
-    transform: translate3d(-100px, 90px, 0) rotate(-8deg) scale(0.65);
+  50% {
+    transform: translate3d(-150px, 150px, 0) rotate(-25deg) scale(0.5);
     opacity: 0;
   }
-  /* 68% to 100%: Smooth glide back in on a continuous deceleration curve */
-  68% {
-    transform: translate3d(-40px, 36px, 0) rotate(-5deg) scale(0.85);
-    opacity: 0.85;
-  }
-  82% {
-    transform: translate3d(-6px, 5px, 0) rotate(-1deg) scale(0.98);
-    opacity: 1;
-  }
-  92% {
-    transform: translate3d(2px, -2px, 0) rotate(1deg) scale(1.01);
+  85% {
+    transform: translate3d(5px, -5px, 0) rotate(5deg) scale(1.02);
     opacity: 1;
   }
   100% {
@@ -725,34 +701,21 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     transform: translate3d(0, 0, 0) scale(1);
     opacity: 0.22;
   }
-  16% {
-    transform: translate3d(-2px, 0, 0) scale(1.04);
+  15% {
+    transform: translate3d(-2px, 0, 0) scale(1.02);
     opacity: 0.25;
   }
-  28% {
-    transform: translate3d(4px, 0, 0) scale(0.95);
-    opacity: 0.2;
-  }
-  38% {
-    transform: translate3d(18px, 0, 0) scale(0.7);
-    opacity: 0.12;
-  }
-  48% {
-    transform: translate3d(40px, 0, 0) scale(0.4);
-    opacity: 0.05;
-  }
-  54%,
-  60% {
-    transform: translate3d(70px, 0, 0) scale(0.1);
+  45% {
+    transform: translate3d(50px, 0, 0) scale(0.3);
     opacity: 0;
   }
-  68% {
-    transform: translate3d(-25px, 0, 0) scale(0.65);
-    opacity: 0.1;
+  50% {
+    transform: translate3d(-50px, 0, 0) scale(0.3);
+    opacity: 0;
   }
-  82% {
-    transform: translate3d(-4px, 0, 0) scale(0.95);
-    opacity: 0.18;
+  85% {
+    transform: translate3d(2px, 0, 0) scale(0.98);
+    opacity: 0.22;
   }
   100% {
     transform: translate3d(0, 0, 0) scale(1);
@@ -762,60 +725,60 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
 
 @keyframes airplane-trail-1 {
   0%,
-  20% {
+  15% {
     transform: translate3d(0, 0, 0) scaleX(0);
     opacity: 0;
   }
-  28% {
-    transform: translate3d(-6px, 4px, 0) scaleX(1);
+  25% {
+    transform: translate3d(-10px, 10px, 0) scaleX(1);
     opacity: 0.8;
   }
-  42% {
-    transform: translate3d(-40px, 28px, 0) scaleX(2.2);
+  45% {
+    transform: translate3d(-40px, 40px, 0) scaleX(2.2);
     opacity: 0;
   }
   100% {
-    transform: translate3d(-40px, 28px, 0) scaleX(0);
+    transform: translate3d(-40px, 40px, 0) scaleX(0);
     opacity: 0;
   }
 }
 
 @keyframes airplane-trail-2 {
   0%,
-  22% {
+  15% {
     transform: translate3d(0, 0, 0) scaleX(0);
     opacity: 0;
   }
-  30% {
-    transform: translate3d(-5px, 3px, 0) scaleX(1);
+  25% {
+    transform: translate3d(-5px, 5px, 0) scaleX(1);
     opacity: 0.65;
   }
-  44% {
-    transform: translate3d(-32px, 22px, 0) scaleX(1.8);
+  45% {
+    transform: translate3d(-32px, 32px, 0) scaleX(1.8);
     opacity: 0;
   }
   100% {
-    transform: translate3d(-32px, 22px, 0) scaleX(0);
+    transform: translate3d(-32px, 32px, 0) scaleX(0);
     opacity: 0;
   }
 }
 
 @keyframes airplane-trail-3 {
   0%,
-  24% {
+  15% {
     transform: translate3d(0, 0, 0) scaleX(0);
     opacity: 0;
   }
-  32% {
-    transform: translate3d(-4px, 2px, 0) scaleX(1);
+  25% {
+    transform: translate3d(-4px, 4px, 0) scaleX(1);
     opacity: 0.5;
   }
-  46% {
-    transform: translate3d(-24px, 16px, 0) scaleX(1.4);
+  45% {
+    transform: translate3d(-24px, 24px, 0) scaleX(1.4);
     opacity: 0;
   }
   100% {
-    transform: translate3d(-24px, 16px, 0) scaleX(0);
+    transform: translate3d(-24px, 24px, 0) scaleX(0);
     opacity: 0;
   }
 }

@@ -616,7 +616,12 @@ export function SmartAuthInput({
                 role='img'
                 aria-label='India flag'
               >
-                🇮🇳
+                <img
+                  src='https://flagcdn.com/in.svg'
+                  width='16'
+                  alt='India'
+                  className='w-4 h-3 rounded-[2px] shadow-sm flex-shrink-0'
+                />
               </span>
               <span className='text-[13px] font-medium text-foreground tracking-wide'>
                 +91

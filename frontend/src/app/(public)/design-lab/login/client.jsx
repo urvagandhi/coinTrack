@@ -9,6 +9,7 @@ export default function DesignLabLoginClient() {
   return (
     <main className='w-full min-h-screen md:h-screen overflow-x-hidden md:overflow-hidden'>
       <LoginScreen
+        onLogin={() => router.push('/design-lab/verify-2fa')}
         onRegister={() => router.push('/design-lab/register')}
         onForgotPassword={() => router.push('/design-lab/forgot-password')}
       />

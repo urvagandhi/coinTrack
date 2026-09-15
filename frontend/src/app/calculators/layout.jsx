@@ -51,10 +51,10 @@ export default function CalculatorsLayout({ children }) {
               <Image
                 src='/coinTrack.png'
                 alt='coinTrack'
-                fill
-                sizes='36px'
+                width={36}
+                height={36}
                 priority
-                className='object-contain'
+                className='object-contain w-auto h-auto'
               />
             </span>
             <span className='flex items-baseline gap-0.5'>
@@ -181,9 +181,9 @@ export default function CalculatorsLayout({ children }) {
                   <Image
                     src='/coinTrack.png'
                     alt='coinTrack'
-                    fill
-                    sizes='28px'
-                    className='object-contain'
+                    width={36}
+                    height={36}
+                    className='object-contain w-auto h-auto'
                   />
                 </span>
                 <span className='flex items-baseline gap-0.5'>

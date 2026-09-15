@@ -1,27 +1,27 @@
 'use client';
 
-import { useState, useCallback, useId, memo } from 'react';
-import Image from 'next/image';
 import {
+  AuthFooter,
+  AuthHeader,
+  useDynamicDocumentTitle,
+} from '@/components/ui/auth/auth-shared';
+import { SmartAuthInput } from '@/components/ui/auth/security-inputs';
+import { Button } from '@/components/ui/primitives/button';
+import { cn } from '@/lib/utils';
+import {
+  AlertCircle,
   ArrowLeft,
   ArrowUpRight,
+  Battery,
   KeyRound,
   Lock,
   ShieldCheck,
   Signal,
-  Wifi,
-  Battery,
   Timer,
-  AlertCircle,
+  Wifi,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { SmartAuthInput } from '@/components/ui/auth/security-inputs';
-import { Button } from '@/components/ui/primitives/button';
-import {
-  AuthHeader,
-  AuthFooter,
-  useDynamicDocumentTitle,
-} from '@/components/ui/auth/auth-shared';
+import Image from 'next/image';
+import { memo, useCallback, useId, useState } from 'react';
 
 // ───────────────────────────────────────────────────────────────
 //  SUBCOMPONENTS & MOCKUPS
@@ -105,9 +105,9 @@ const RecoveryMockup = memo(function RecoveryMockup() {
                 <Image
                   src='/coinTrack.png'
                   alt='coinTrack'
-                  fill
-                  sizes='12px'
-                  className='object-contain'
+                  width={12}
+                  height={12}
+                  className='object-contain w-auto h-auto'
                 />
               </span>
               <span className='font-serif italic font-semibold text-[11px] text-white dark:text-zinc-900'>
@@ -186,6 +186,14 @@ export function ForgotPasswordScreen({
         return;
       }
 
+      if (/^[0-9+\s()-]+$/.test(cleanIdentifier)) {
+        const digitsOnly = cleanIdentifier.replace(/\D/g, '');
+        if (digitsOnly.length !== 10) {
+          setLocalError('Mobile number must be exactly 10 digits.');
+          return;
+        }
+      }
+
       onSubmit?.({ identifier: cleanIdentifier });
     },
     [identifier, onSubmit]
@@ -197,10 +205,40 @@ export function ForgotPasswordScreen({
     onResetSubmitted?.();
   }, [onResetSubmitted]);
 
+  const handleOpenEmail = useCallback(e => {
+    e.preventDefault();
+    if (typeof window === 'undefined') return;
+
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isAndroid = /Android/.test(ua);
+
+    if (isIOS) {
+      window.location.href = 'googlegmail://';
+      // Fallback for iOS if Gmail app is not installed
+      setTimeout(() => {
+        window.open('https://mail.google.com', '_blank');
+      }, 2000);
+    } else if (isAndroid) {
+      const intent =
+        `intent:#Intent;` +
+        `action=android.intent.action.MAIN;` +
+        `category=android.intent.category.LAUNCHER;` +
+        `package=com.google.android.gm;` +
+        `S.browser_fallback_url=${ 
+        encodeURIComponent('https://mail.google.com/mail/u/0/#inbox') 
+        };end`;
+      window.location.href = intent;
+    } else {
+      // Desktop fallback
+      window.open('https://mail.google.com', '_blank');
+    }
+  }, []);
+
   return (
     <div
       className={cn(
-        'w-full min-h-screen md:h-screen md:max-h-screen overflow-x-hidden md:overflow-hidden bg-background flex flex-col md:flex-row transition-colors duration-300',
+        'w-full min-h-screen md:h-screen md:max-h-screen overflow-y-auto md:overflow-hidden bg-background flex flex-col md:flex-row transition-colors duration-300',
         className
       )}
     >
@@ -348,26 +386,6 @@ export function ForgotPasswordScreen({
                   />
                 </svg>
 
-                {/* Subtle, synchronized vapor trails */}
-                <span
-                  className='absolute left-[14%] top-[56%] w-5 h-[2px] rounded-full bg-emerald-500/70'
-                  style={{
-                    animation: 'airplane-trail-1 4.2s ease-in-out infinite',
-                  }}
-                />
-                <span
-                  className='absolute left-[18%] top-[64%] w-3.5 h-[1.5px] rounded-full bg-emerald-500/50'
-                  style={{
-                    animation: 'airplane-trail-2 4.2s ease-in-out infinite',
-                  }}
-                />
-                <span
-                  className='absolute left-[22%] top-[70%] w-2.5 h-[1px] rounded-full bg-emerald-500/35'
-                  style={{
-                    animation: 'airplane-trail-3 4.2s ease-in-out infinite',
-                  }}
-                />
-
                 {/* Ground shadow beneath the plane */}
                 <div
                   className='absolute bottom-1 left-1/2 -translate-x-1/2 w-14 h-2 rounded-full bg-emerald-500/25 blur-xs'
@@ -408,18 +426,12 @@ export function ForgotPasswordScreen({
               <div className='flex flex-col w-full gap-2.5 pt-1 max-w-[340px]'>
                 {/* Open Email — Primary coinTrack Button */}
                 <Button
-                  asChild
+                  onClick={handleOpenEmail}
                   variant='default'
                   className='group w-full rounded-[14px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 py-6 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/25 active:translate-y-0 active:scale-[0.99]'
                 >
-                  <a
-                    href='https://mail.google.com'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                  >
-                    <span>Open Email</span>
-                    <ArrowUpRight className='size-4 text-white/70 dark:text-zinc-900/70 group-hover:text-emerald-400 dark:group-hover:text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300' />
-                  </a>
+                  <span>Open Email</span>
+                  <ArrowUpRight className='size-4 text-white/70 dark:text-zinc-900/70 group-hover:text-emerald-400 dark:group-hover:text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300' />
                 </Button>
 
                 {/* Back to sign in — secondary link matching login/forgot screen */}

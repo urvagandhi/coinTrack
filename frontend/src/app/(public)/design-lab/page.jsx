@@ -31,7 +31,6 @@ import {
   CardFooter,
 } from '@/components/ui/primitives/card';
 
-
 import { Progress } from '@/components/ui/primitives/progress';
 import {
   Dialog,
@@ -2022,6 +2021,18 @@ export default function DesignLabPage() {
                         className='inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-secondary/80'
                       >
                         Forgot Password Demo
+                      </a>
+                      <a
+                        href='/design-lab/setup-2fa'
+                        className='inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-secondary/80'
+                      >
+                        Setup 2FA Demo
+                      </a>
+                      <a
+                        href='/design-lab/verify-2fa'
+                        className='inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-secondary/80'
+                      >
+                        Verify 2FA Demo
                       </a>
                     </div>
                   </div>

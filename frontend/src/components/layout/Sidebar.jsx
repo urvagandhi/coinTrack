@@ -165,10 +165,10 @@ export default function Sidebar({ onNavigate }) {
           <Image
             src='/coinTrack.png'
             alt='coinTrack'
-            fill
-            sizes='32px'
+            width={32}
+            height={32}
             priority
-            className='object-contain'
+            className='object-contain w-auto h-auto'
           />
         </span>
         <span className='flex items-baseline gap-0.5'>

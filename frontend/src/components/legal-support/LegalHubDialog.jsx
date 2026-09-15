@@ -340,38 +340,15 @@ export default function LegalHubDialog() {
 
       {/* Section Cards */}
       {filteredSections.length > 0 ? (
-        <div className='relative overflow-hidden rounded-[24px] bg-card/60 backdrop-blur-xl border border-border/60 shadow-sm divide-y divide-border/30 text-left'>
+        <div className='space-y-6 pt-2 pb-4 text-left'>
           {filteredSections.map((section, index) => (
-            <div
-              key={section.number}
-              className='group relative p-4 sm:p-5 hover:bg-muted/15 transition-all duration-300'
-            >
-              <div className='absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-emerald-500 transition-colors duration-300' />
-
-              <div className='flex items-start gap-4'>
-                <div className='flex flex-col items-center gap-1.5 mt-0.5 shrink-0'>
-                  <Badge
-                    variant='success'
-                    className='rounded-md font-mono text-[10px] sm:text-xs'
-                  >
-                    {section.number}
-                  </Badge>
-                  {index !== filteredSections.length - 1 && (
-                    <div className='w-[1.5px] h-full min-h-[40px] bg-border/40 group-hover:bg-emerald-500/20 transition-colors duration-300 rounded-full' />
-                  )}
-                </div>
-
-                <div className='space-y-1.5 pb-2'>
-                  <div className='flex items-center justify-between gap-2'>
-                    <h4 className='font-sans font-bold text-foreground text-sm sm:text-base tracking-tight group-hover:text-emerald-500 transition-colors'>
-                      {section.heading}
-                    </h4>
-                  </div>
-                  <p className='text-muted-foreground font-sans text-xs sm:text-sm leading-relaxed pr-4'>
-                    {section.body}
-                  </p>
-                </div>
-              </div>
+            <div key={section.number} className='space-y-2'>
+              <h4 className='font-sans font-bold text-emerald-600 dark:text-emerald-500 text-sm sm:text-base tracking-tight'>
+                {parseInt(section.number, 10)} - {section.heading}
+              </h4>
+              <p className='text-muted-foreground font-sans text-xs sm:text-sm leading-relaxed'>
+                {section.body}
+              </p>
             </div>
           ))}
         </div>

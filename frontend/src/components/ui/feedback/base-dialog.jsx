@@ -49,9 +49,9 @@ export function BaseDialog({
                 <Image
                   src='/coinTrack.png'
                   alt='coinTrack'
-                  fill
-                  sizes='24px'
-                  className='object-contain'
+                  width={24}
+                  height={24}
+                  className='object-contain w-auto h-auto'
                 />
               </span>
               {badgeText && (
