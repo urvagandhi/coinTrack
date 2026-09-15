@@ -1,6 +1,6 @@
 'use client';
 
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/feedback/Skeleton';
 
 export function TabLoadingSkeleton({ rows = 8, columns = 6 }) {
   return (

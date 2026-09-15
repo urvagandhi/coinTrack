@@ -641,3 +641,225 @@ input::-webkit-clear-button {
   display: none;
   visibility: hidden;
 }
+
+/* Styled native date picker indicator */
+input[type='date']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px;
+  opacity: 0.6;
+  transition:
+    opacity 0.2s ease,
+    filter 0.2s ease;
+}
+input[type='date']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+.dark input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.85) hue-rotate(180deg);
+  opacity: 0.75;
+}
+.dark input[type='date']::-webkit-calendar-picker-indicator:hover {
+  filter: invert(1) hue-rotate(180deg);
+  opacity: 1;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   PAPER AIRPLANE DISPATCH ANIMATION
+   Used on the forgot-password success screen
+   ───────────────────────────────────────────────────────────────── */
+
+@keyframes airplane-fly {
+  /* 0% to 18%: Gentle floating in place (zero jerk) */
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  16% {
+    transform: translate3d(-3px, 3px, 0) rotate(-3deg) scale(0.98);
+    opacity: 1;
+  }
+  /* 28% to 50%: Smooth, uninterrupted acceleration into flight */
+  28% {
+    transform: translate3d(6px, -6px, 0) rotate(2deg) scale(1.02);
+    opacity: 1;
+  }
+  38% {
+    transform: translate3d(28px, -26px, 0) rotate(7deg) scale(1.05);
+    opacity: 1;
+  }
+  48% {
+    transform: translate3d(65px, -60px, 0) rotate(12deg) scale(0.95);
+    opacity: 0.8;
+  }
+  56% {
+    transform: translate3d(120px, -110px, 0) rotate(16deg) scale(0.65);
+    opacity: 0;
+  }
+  /* 57%: Instant repositioning off-screen while fully transparent */
+  57% {
+    transform: translate3d(-100px, 90px, 0) rotate(-8deg) scale(0.65);
+    opacity: 0;
+  }
+  /* 68% to 100%: Smooth glide back in on a continuous deceleration curve */
+  68% {
+    transform: translate3d(-40px, 36px, 0) rotate(-5deg) scale(0.85);
+    opacity: 0.85;
+  }
+  82% {
+    transform: translate3d(-6px, 5px, 0) rotate(-1deg) scale(0.98);
+    opacity: 1;
+  }
+  92% {
+    transform: translate3d(2px, -2px, 0) rotate(1deg) scale(1.01);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes airplane-shadow {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.22;
+  }
+  16% {
+    transform: translate3d(-2px, 0, 0) scale(1.04);
+    opacity: 0.25;
+  }
+  28% {
+    transform: translate3d(4px, 0, 0) scale(0.95);
+    opacity: 0.2;
+  }
+  38% {
+    transform: translate3d(18px, 0, 0) scale(0.7);
+    opacity: 0.12;
+  }
+  48% {
+    transform: translate3d(40px, 0, 0) scale(0.4);
+    opacity: 0.05;
+  }
+  54%,
+  60% {
+    transform: translate3d(70px, 0, 0) scale(0.1);
+    opacity: 0;
+  }
+  68% {
+    transform: translate3d(-25px, 0, 0) scale(0.65);
+    opacity: 0.1;
+  }
+  82% {
+    transform: translate3d(-4px, 0, 0) scale(0.95);
+    opacity: 0.18;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.22;
+  }
+}
+
+@keyframes airplane-trail-1 {
+  0%,
+  20% {
+    transform: translate3d(0, 0, 0) scaleX(0);
+    opacity: 0;
+  }
+  28% {
+    transform: translate3d(-6px, 4px, 0) scaleX(1);
+    opacity: 0.8;
+  }
+  42% {
+    transform: translate3d(-40px, 28px, 0) scaleX(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(-40px, 28px, 0) scaleX(0);
+    opacity: 0;
+  }
+}
+
+@keyframes airplane-trail-2 {
+  0%,
+  22% {
+    transform: translate3d(0, 0, 0) scaleX(0);
+    opacity: 0;
+  }
+  30% {
+    transform: translate3d(-5px, 3px, 0) scaleX(1);
+    opacity: 0.65;
+  }
+  44% {
+    transform: translate3d(-32px, 22px, 0) scaleX(1.8);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(-32px, 22px, 0) scaleX(0);
+    opacity: 0;
+  }
+}
+
+@keyframes airplane-trail-3 {
+  0%,
+  24% {
+    transform: translate3d(0, 0, 0) scaleX(0);
+    opacity: 0;
+  }
+  32% {
+    transform: translate3d(-4px, 2px, 0) scaleX(1);
+    opacity: 0.5;
+  }
+  46% {
+    transform: translate3d(-24px, 16px, 0) scaleX(1.4);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(-24px, 16px, 0) scaleX(0);
+    opacity: 0;
+  }
+}
+
+@keyframes glow-ring-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(52, 211, 153, 0.2),
+      0 0 20px 4px rgba(52, 211, 153, 0.06);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px rgba(52, 211, 153, 0),
+      0 0 32px 8px rgba(52, 211, 153, 0.1);
+    transform: scale(1.03);
+  }
+}
+
+@keyframes email-dots {
+  0%,
+  80%,
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes check-scale-in {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}

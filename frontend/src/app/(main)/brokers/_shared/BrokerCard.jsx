@@ -1,6 +1,6 @@
 'use client';
 
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/feedback/Skeleton';
 import { useBrokerConnection } from '@/hooks/useBrokerConnection';
 import { cn } from '@/lib/utils';
 import { ArrowRight, Check, Clock } from 'lucide-react';

@@ -3,9 +3,9 @@
 import EpfInterestRateDialog from '@/components/epf/EpfInterestRateDialog';
 import EpfSettingsDialog from '@/components/epf/EpfSettingsDialog';
 import EpfTransactionDialog from '@/components/epf/EpfTransactionDialog';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/use-toast';
-import FilterDropdown from '@/components/ui/FilterDropdown';
+import { Skeleton } from '@/components/ui/feedback/Skeleton';
+import { useToast } from '@/components/ui/feedback/use-toast';
+import FilterDropdown from '@/components/ui/forms/FilterDropdown';
 import { epfAPI, userAPI } from '@/lib/api';
 import { generateFinancialYearOptions, getFinancialYear } from '@/lib/format';
 import { cn } from '@/lib/utils';

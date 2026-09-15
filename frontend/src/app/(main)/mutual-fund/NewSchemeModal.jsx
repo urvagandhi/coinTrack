@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { mutualFundAPI } from '@/lib/api';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import CategoryDropdown from '@/components/ui/CategoryDropdown';
-import SchemeSearchCombobox from '@/components/ui/SchemeSearchCombobox';
-import BankSearchCombobox from '@/components/ui/BankSearchCombobox';
+import CategoryDropdown from '@/components/ui/forms/CategoryDropdown';
+import SchemeSearchCombobox from '@/components/ui/search/SchemeSearchCombobox';
+import BankSearchCombobox from '@/components/ui/search/BankSearchCombobox';
 import {
   Dialog,
   DialogContent,
@@ -15,8 +15,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '@/components/ui/primitives/dialog';
+import { Button } from '@/components/ui/primitives/button';
 
 function autoExtractCategory(name) {
   if (!name) return '';

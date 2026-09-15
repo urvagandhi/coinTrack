@@ -1,6 +1,6 @@
 'use client';
 
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import { Loader2, X, Sliders, Info, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { goldSilverAPI } from '@/lib/api';

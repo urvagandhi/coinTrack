@@ -1,7 +1,7 @@
 'use client';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/primitives/alert';
+import { Card, CardContent } from '@/components/ui/primitives/card';
 import { brokerAPI, BROKERS } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
@@ -90,7 +90,7 @@ function CallbackInner() {
           )}
           {state.status === 'error' && (
             <Alert variant='destructive' className='text-left'>
-              <AlertCircle className='h-4 w-4' />
+              <AlertCircle />
               <AlertDescription>{state.message}</AlertDescription>
             </Alert>
           )}

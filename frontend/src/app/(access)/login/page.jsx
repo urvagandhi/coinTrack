@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useDynamicDocumentTitle } from '@/components/ui/auth/auth-shared';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 const FIELD_BASE =
@@ -17,6 +18,7 @@ const FIELD_BASE =
   'transition-colors placeholder:text-muted-foreground/60';
 
 function LoginForm() {
+  useDynamicDocumentTitle('Sign In | coinTrack');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, googleLogin, verifyTotpLogin, verifyRecoveryLogin } =

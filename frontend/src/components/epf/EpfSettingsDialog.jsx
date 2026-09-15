@@ -1,6 +1,6 @@
 'use client';
 
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import { Loader2, Settings, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 

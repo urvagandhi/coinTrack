@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2, IndianRupee } from 'lucide-react';
 import { mutualFundAPI } from '@/lib/api';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/feedback/use-toast';
 
 export default function UpdateValuationModal({
   isOpen,

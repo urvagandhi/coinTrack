@@ -1,5 +1,5 @@
-import ModalManager from '@/components/modals/ModalManager';
-import { Toaster } from '@/components/ui/sonner';
+import LegalSupportDialogManager from '@/components/legal-support/LegalSupportDialogManager';
+import { Toaster } from '@/components/ui/feedback/sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ModalProvider } from '@/contexts/ModalContext';
 import QueryProvider from '@/providers/QueryProvider';
@@ -43,7 +43,7 @@ export default function RootLayout({ children }) {
             <AuthProvider>
               <ModalProvider>
                 {children}
-                <ModalManager />
+                <LegalSupportDialogManager />
                 <Toaster richColors position='bottom-right' />
               </ModalProvider>
             </AuthProvider>

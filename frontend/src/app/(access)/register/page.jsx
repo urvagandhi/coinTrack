@@ -11,6 +11,7 @@ import { Calendar, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useDynamicDocumentTitle } from '@/components/ui/auth/auth-shared';
 
 const FIELD_BASE =
   'w-full h-11 px-3 bg-transparent border border-hairline text-foreground text-[14px] ' +
@@ -47,6 +48,7 @@ const STRENGTH_LABELS = {
 };
 
 export default function RegisterPage() {
+  useDynamicDocumentTitle('Create Account | coinTrack');
   const [formData, setFormData] = useState({
     username: '',
     name: '',

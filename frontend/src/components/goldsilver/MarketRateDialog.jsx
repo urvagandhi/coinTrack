@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from '@/components/ui/primitives/dialog';
 import { Loader2 } from 'lucide-react';
 
 export default function MarketRateDialog({

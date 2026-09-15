@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { X, Loader2, Info } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { mutualFundAPI } from '@/lib/api';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import DataAccuracyWarning from '@/components/portfolio/tabs/DataAccuracyWarning';
 
 export default function RedemptionModal({

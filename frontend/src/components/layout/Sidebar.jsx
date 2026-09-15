@@ -16,6 +16,7 @@ import {
   PiggyBank,
   Coins,
   PieChart,
+  PenTool,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -42,6 +43,8 @@ const PRIMARY_NAV = [
 
 const BOTTOM_NAV = [
   { idx: '011', label: 'Profile', href: '/profile', icon: User },
+  // [TRIAL] Design-lab confirmation dialog page — remove before shipping.
+  { idx: '012', label: 'Design Lab', href: '/design-lab', icon: PenTool },
 ];
 
 const isActive = (href, pathname) =>

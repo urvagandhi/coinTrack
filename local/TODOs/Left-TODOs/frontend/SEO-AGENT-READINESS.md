@@ -157,6 +157,7 @@ Markdown, <= ~100 technical lines, defines the site for agents:
 
 ## Tech / deploy
 - Frontend: Next.js 16 (App Router) · Tailwind 3 · shadcn/ui · recharts · TanStack Query
+- UI layer: `components/ui/` split into `primitives/`, `feedback/`, `forms/`, `search/`, `data-display/`, `auth/` (design system folder removed)
 - Backend: Spring Boot at https://cointrack-backend-1g44.onrender.com/api (JWT, isolated tenants)
 - Deploy: Vercel (frontend), Render (backend), Docker compose
 
@@ -176,7 +177,7 @@ Contact + policy URLs (`Contact:<url>`, `Expires:` ISO date). Cheap trust signal
 
 ### 3.4 `frontend/AGENTS.md`
 
-Extend repo-root agent rules with frontend specifics (already present at repo root — ensure the Next-16 docs warning + test commands are mirrored): commands, architecture summary, convention pointers (`lib/motion.js`, `ed-*` classes, `globals.css` is the design system), and *"read Next docs before writing code"*.
+Extend repo-root agent rules with frontend specifics (already present at repo root — ensure the Next-16 docs warning + test commands are mirrored): commands, architecture summary, convention pointers (`lib/motion.js`, `ed-*` classes, `globals.css` token set — the design-system folder was removed; styled components now live in `components/ui/{primitives,feedback,forms,search,data-display,auth}/`), and *"read Next docs before writing code"*.
 
 ### 3.5 Optional (phase 2)
 

@@ -1,6 +1,10 @@
 'use client';
 
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from '@/components/ui/primitives/sheet';
 import { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';

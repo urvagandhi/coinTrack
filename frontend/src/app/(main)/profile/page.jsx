@@ -1,6 +1,6 @@
 'use client';
 
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { emailAPI, portfolioAPI, totpAPI, twofaAPI, userAPI } from '@/lib/api';

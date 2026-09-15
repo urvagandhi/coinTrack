@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2, LineChart } from 'lucide-react';
 import { mutualFundAPI } from '@/lib/api';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -11,8 +11,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '@/components/ui/primitives/dialog';
+import { Button } from '@/components/ui/primitives/button';
 
 export default function ValuationSnapshotModal({
   isOpen,

@@ -176,6 +176,30 @@ module.exports = {
           from: { transform: 'translateX(0)' },
           to: { transform: 'translateX(-100%)' },
         },
+        'draw-circle': {
+          from: { strokeDashoffset: '100' },
+          to: { strokeDashoffset: '0' },
+        },
+        'draw-check': {
+          from: { strokeDashoffset: '50' },
+          to: { strokeDashoffset: '0' },
+        },
+        'draw-triangle': {
+          from: { strokeDashoffset: '120' },
+          to: { strokeDashoffset: '0' },
+        },
+        'draw-arrow': {
+          from: { strokeDashoffset: '20' },
+          to: { strokeDashoffset: '0' },
+        },
+        'draw-line': {
+          from: { strokeDashoffset: '10' },
+          to: { strokeDashoffset: '0' },
+        },
+        'draw-dot': {
+          from: { strokeDashoffset: '2' },
+          to: { strokeDashoffset: '0' },
+        },
       },
       spacing: {
         18: '4.5rem',

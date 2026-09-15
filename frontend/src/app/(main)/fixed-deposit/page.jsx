@@ -8,8 +8,8 @@ import WithdrawnFdDialog from '@/components/fixeddeposit/WithdrawnFdDialog';
 // Re-enable when the TDS Summary feature is un-commented.
 // import TdsSummary from '@/components/fixeddeposit/TdsSummary';
 // ============================================================
-import { Skeleton } from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/use-toast';
+import { Skeleton } from '@/components/ui/feedback/Skeleton';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/primitives/dropdown-menu';
 import { fdAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

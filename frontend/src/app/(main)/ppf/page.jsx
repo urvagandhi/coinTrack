@@ -2,9 +2,9 @@
 
 import PpfDialog from '@/components/ppf/PpfDialog';
 import PpfSettingsDialog from '@/components/ppf/PpfSettingsDialog';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/use-toast';
-import FilterDropdown from '@/components/ui/FilterDropdown';
+import { Skeleton } from '@/components/ui/feedback/Skeleton';
+import { useToast } from '@/components/ui/feedback/use-toast';
+import FilterDropdown from '@/components/ui/forms/FilterDropdown';
 import { ppfAPI } from '@/lib/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {

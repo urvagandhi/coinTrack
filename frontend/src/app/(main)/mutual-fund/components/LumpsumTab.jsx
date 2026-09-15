@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { mutualFundAPI } from '@/lib/api';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/feedback/Skeleton';
 import { List, Plus } from 'lucide-react';
 import LumpsumTransactionModal from '../LumpsumTransactionModal';
-import FilterDropdown from '@/components/ui/FilterDropdown';
+import FilterDropdown from '@/components/ui/forms/FilterDropdown';
 
 function getFinancialYear(dateString) {
   if (!dateString) return 'Unknown';

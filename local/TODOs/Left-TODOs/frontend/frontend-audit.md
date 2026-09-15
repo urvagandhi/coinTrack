@@ -1,9 +1,9 @@
 # Frontend Audit — Phase 0 (cointrack-frontend)
 
 > **STATUS: ✅ COMPLETE — filled report (unlocked on explicit request).**
-> This is the filled-in audit, living HERE (beside `DESIGN-SYSTEM.md`), not under `frontend/docs/`.
+> This is the filled-in audit, living HERE in `local/TODOs/Left-TODOs/frontend/`.
 > Legend: ☐ pending · ✅ verified clean · ⚠️ action needed (fix noted under "Evidence / Notes").
-> Gate: this report now feeds the **Definition of Done** in `DESIGN-SYSTEM.md` and may gate migration step 2 (`scaffolding`).
+> Gate: this report feeds the **Definition of Done** and may gate migration step 2 (`scaffolding`).
 
 ## 0. Scan metadata
 
@@ -59,29 +59,40 @@ Sections: `(access)` public-login/noindex · `(main)` protected shell · `app/ca
 
 ## 2. Component inventory + duplicates
 
-**Key structural fact:** the `ui/` primitives exist but are **massively under-consumed**; feature code hand-rolls parallel implementations. Fully 12 `ui/` primitives have **zero importers**: `badge`, `select`, `tabs`, `table`, `label`, `command`, `progress`, `tooltip`, `separator`, `scroll-area`, `chart`, `PageTransition`.
+> **Update (2026-09-14):** UI components reorganized into logical subfolders under `components/ui/`:
+> - `primitives/` (21 files): button, card, dialog, input, badge, tabs, table, label, tooltip, separator, scroll-area, etc.
+> - `feedback/` (7 files): sonner, use-toast, Skeleton, animated-icons, confirm-dialog, PageTransition, toast-card
+> - `forms/` (5 files): dropdown-select, currency-stepper, CategoryDropdown, FilterDropdown, utility-inputs
+> - `search/` (3 files): BankSearchCombobox, SchemeSearchCombobox, search-combobox
+> - `data-display/` (2 files): announcement-card, chart
+> - `auth/` (2 files): login-screen, security-inputs
+> - Root: `inset-form-card.jsx` (ambiguous placement)
+>
+> All 54+ call sites updated with new import paths (e.g., `@/components/ui/primitives/button`). **Design system folder deleted.**
+
+**Key structural fact:** the `ui/primitives/` components exist but are **massively under-consumed**; feature code hand-rolls parallel implementations. Fully 12 `ui/primitives/` components have **zero importers**: `badge`, `select`, `tabs`, `table`, `label`, `command`, `progress`, `tooltip`, `separator`, `scroll-area`, `chart`, `PageTransition`.
 
 | Component | Canonical in | Duplicates found at | Action |
 |---|---|---|---|
-| Dialog / Modal | `ui/dialog.jsx` | **23 bespoke `fixed inset-0` overlays**: `goldsilver/{GoldSilverDialog,RateSettingsDialog}`, `fixeddeposit/{FdDialog,WithdrawDialog}`, `epf/{EpfTransactionDialog,EpfSettingsDialog,EpfInterestRateDialog}`, `ppf/{PpfDialog,PpfSettingsDialog}`, `notes/NoteDialog`, `brokers/ConnectBrokerDialog`, `modals/{ContactModal,LegalModals}`, `mutual-fund/{RedemptionModal,LumpsumTransactionModal,SipContributionModal,SipMandateModal,NewSchemeModal}`, `mutual-fund/components/{ValuationSnapshotModal,UpdateValuationModal,OverrideUnitsModal,SipTab(inline)}` | Retarget all → thin form-wrappers over `ui/dialog` |
-| Status badge / pill | `ui/badge.jsx` (never used) | gold-silver `StatusBadge`+`RateModeBadge`, fixed-deposit `StatusBadge`, SchemeSummaryTab `StatusBadge`, BrokerCard/ProfileTab `StatusPill`, LumpsumTab/RedemptionTab `getStatusBadge`, `.ed-pill*` CSS, inline `bg-green-500/10` pills | One `StatusBadge` + `DiscrepancyBadge`; drop `.ed-pill` |
-| Table | `ui/table.jsx` (never used) | `.ed-table` CSS (8 components), 20+ bespoke `<table>` (epf/fd/gs/ppf pages, all MF tabs, TdsSummary, CalculatorComponents) | Compose `.ed-table` → `ui/table` variants |
-| Toast | `sonner` + `ui/sonner.jsx` (mounted `layout.js`) | legacy `ui/use-toast.js` adapter (24 files) + direct `import {toast}` (~9 files); **`mutual-fund/page.jsx` imports both** | Delete `use-toast.js`; single sonner API |
-| Button | `ui/button.jsx` (6 importers) | `.ed-btn*` CSS (56 files); `AuthSubmitButton`, CalculatorComponents, `RefreshButton`, `BrokerCard`, MF modal footers | Fold `.ed-btn*` into `ui/button` CVA |
-| Card | `ui/card.jsx` (1 importer) | `.ed-card*` CSS (~60 files); `StatsCard`, `PortfolioSummary`, `BrokerCard` | Fold `.ed-card` → `ui/card` variants |
+| Dialog / Modal | `ui/primitives/dialog.jsx` | **23 bespoke `fixed inset-0` overlays**: `goldsilver/{GoldSilverDialog,RateSettingsDialog}`, `fixeddeposit/{FdDialog,WithdrawDialog}`, `epf/{EpfTransactionDialog,EpfSettingsDialog,EpfInterestRateDialog}`, `ppf/{PpfDialog,PpfSettingsDialog}`, `notes/NoteDialog`, `brokers/ConnectBrokerDialog`, `modals/{ContactModal,LegalModals}`, `mutual-fund/{RedemptionModal,LumpsumTransactionModal,SipContributionModal,SipMandateModal,NewSchemeModal}`, `mutual-fund/components/{ValuationSnapshotModal,UpdateValuationModal,OverrideUnitsModal,SipTab(inline)}` | Retarget all → thin form-wrappers over `ui/primitives/dialog` |
+| Status badge / pill | `ui/primitives/badge.jsx` (never used) | gold-silver `StatusBadge`+`RateModeBadge`, fixed-deposit `StatusBadge`, SchemeSummaryTab `StatusBadge`, BrokerCard/ProfileTab `StatusPill`, LumpsumTab/RedemptionTab `getStatusBadge`, `.ed-pill*` CSS, inline `bg-green-500/10` pills | One `StatusBadge` + `DiscrepancyBadge`; drop `.ed-pill` |
+| Table | `ui/primitives/table.jsx` (never used) | `.ed-table` CSS (8 components), 20+ bespoke `<table>` (epf/fd/gs/ppf pages, all MF tabs, TdsSummary, CalculatorComponents) | Compose `.ed-table` → `ui/primitives/table` variants |
+| Toast | `sonner` + `ui/feedback/sonner.jsx` (mounted `layout.js`) | legacy `ui/feedback/use-toast.js` adapter (24 files) + direct `import {toast}` (~9 files); **`mutual-fund/page.jsx` imports both** | Delete `use-toast.js`; single sonner API |
+| Button | `ui/primitives/button.jsx` (6 importers) | `.ed-btn*` CSS (56 files); `AuthSubmitButton`, CalculatorComponents, `RefreshButton`, `BrokerCard`, MF modal footers | Fold `.ed-btn*` into `ui/primitives/button` CVA |
+| Card | `ui/primitives/card.jsx` (1 importer) | `.ed-card*` CSS (~60 files); `StatsCard`, `PortfolioSummary`, `BrokerCard` | Fold `.ed-card` → `ui/primitives/card` variants |
 | Currency display | `lib/formatters/currency` (planned) | ~22 `formatCurrency`-family defs (see §3) | Single `CurrencyDisplay` + `lib/formatters` |
 | Date display | `lib/formatters/date` (planned) | ~20 inline sites, 9× clock-line copy, wrong locales (see §3) | Single `DateDisplay` + `lib/formatters` |
-| Select | `ui/select.jsx` (never used) | 13+ native `<select>` (FdDialog, EpfDialog, PpfDialog, TDS calc, SIP modals, SchemeSummaryTab) | Retarget → `ui/select` |
-| Tabs | `ui/tabs.jsx` (never used) | `PortfolioTabBar` (framer), MF query-string tabs, profile bespoke | Retarget → `ui/tabs` |
-| Skeleton | `ui/Skeleton.jsx` (16 importers) | local `Skeleton` ×2 (dashboard), `EpfTableSkeleton`, `PpfTableSkeleton`, `NoteCardSkeleton`, `TabLoadingSkeleton`, `ResultSkeleton` | Single `Skeleton`; one `EmptyState`/`ErrorState` |
-| Form field / input | `ui/input-group.jsx`/`ui/input.jsx` | `AuthFormField`, framework `FormField`, 44 direct `<input>`, `.ed-input` CSS (26 files) | One `Field` wrapper in `components/forms/` |
-| Alert / banner | `ui/alert.jsx` (1 importer) | AuthAlert, DisclaimerBanner, DataAccuracyWarning, BrokerStatusBanner, BrokerInfoBanner, RateDisclosureBanner, inline banners | Compose alert variants into one |
+| Select | `ui/primitives/select.jsx` (never used) | 13+ native `<select>` (FdDialog, EpfDialog, PpfDialog, TDS calc, SIP modals, SchemeSummaryTab) | Retarget → `ui/primitives/select` |
+| Tabs | `ui/primitives/tabs.jsx` (never used) | `PortfolioTabBar` (framer), MF query-string tabs, profile bespoke | Retarget → `ui/primitives/tabs` |
+| Skeleton | `ui/feedback/Skeleton.jsx` (16 importers) | local `Skeleton` ×2 (dashboard), `EpfTableSkeleton`, `PpfTableSkeleton`, `NoteCardSkeleton`, `TabLoadingSkeleton`, `ResultSkeleton` | Single `Skeleton`; one `EmptyState`/`ErrorState` |
+| Form field / input | `ui/primitives/input-group.jsx`/`ui/primitives/input.jsx` | `AuthFormField`, framework `FormField`, 44 direct `<input>`, `.ed-input` CSS (26 files) | One `Field` wrapper in `components/forms/` |
+| Alert / banner | `ui/primitives/alert.jsx` (1 importer) | AuthAlert, DisclaimerBanner, DataAccuracyWarning, BrokerStatusBanner, BrokerInfoBanner, RateDisclosureBanner, inline banners | Compose alert variants into one |
 
 ---
 
 ## 3. Duplicated formatting / business logic
 
-**Top finding:** the design-system-required `src/lib/formatters/` **does not exist.** Three competing "canonical" modules have **different rounding + null handling**, plus ~18 local copies.
+**Top finding:** a proper `src/lib/formatters/` module **does not exist.** Three competing "canonical" modules have **different rounding + null handling**, plus ~18 local copies.
 
 | Logic | Found at | Consolidates to |
 |---|---|---|
@@ -100,7 +111,7 @@ Sections: `(access)` public-login/noindex · `(main)` protected shell · `app/ca
 
 ## 4. Client components convertible to Server
 
-> Scope note: **every** page is Client today. Full conversion is step-5-of-migration territory; this section flags the *cheap, high-value* wins (they align with DESIGN-SYSTEM §6 "Server Components are the default").
+> Scope note: **every** page is Client today. Full conversion is step-5-of-migration territory; this section flags the *cheap, high-value* wins (they align with the migration plan §6 "Server Components are the default").
 
 | File | Currently | Convertible to | Why |
 |---|---|---|---|
@@ -118,8 +129,8 @@ Sections: `(access)` public-login/noindex · `(main)` protected shell · `app/ca
 
 | File | Fetches | Should go through |
 |---|---|---|
-| `ui/SchemeSearchCombobox.jsx:55,81,98` | direct `fetch` to **external** `api.mfapi.in` + `/api/mf-search` | `mutualFundAPI`/service + React Query; **never external domain from client** |
-| `ui/BankSearchCombobox.jsx:37` | direct `fetch('/api/ifsc')` + own sessionStorage cache | service + query cache |
+| `ui/search/SchemeSearchCombobox.jsx:55,81,98` | direct `fetch` to **external** `api.mfapi.in` + `/api/mf-search` | `mutualFundAPI`/service + React Query; **never external domain from client** |
+| `ui/search/BankSearchCombobox.jsx:37` | direct `fetch('/api/ifsc')` + own sessionStorage cache | service + query cache |
 | `dashboard/HoldingsTable.jsx` | inline `useQuery`+`portfolioAPI` despite `usePortfolioHoldings` existing | `usePortfolioHoldings` hook |
 | `dashboard/RefreshButton.jsx`, `BrokerStatusBanner.jsx` | inline `portfolioAPI`/`brokerAPI` useMutation/useQuery | existing hook (`useBrokerSummary`, `useBrokerConnection`) |
 | `portfolio/tabs/{TradesTab,ProfileTab,MfTimelineTab,MfSipsTab,MfOrdersTab,MfInstrumentsTab,MfHoldingsTab}` | inline `useQuery`+`portfolioAPI` | portfolio-tab hooks (extend `usePortfolio*` set) |
@@ -158,8 +169,10 @@ Sections: `(access)` public-login/noindex · `(main)` protected shell · `app/ca
 | `components/auth/AuthDivider.jsx` | never imported | delete |
 | `components/brokers/ConnectBrokerDialog.jsx` | legacy; broker setup lives in `app/(main)/brokers/*/page.jsx` | delete (also removes ~50 raw-palette colors) |
 | `components/calculators/CalculatorComponents.jsx` | 0 importers (all 33 pages use `framework/`) | delete |
-| `components/ui/{command,input-group,PageTransition,progress,scroll-area}.jsx` | 0 importers | delete (command/input-group only feed each other) |
-| `components/ui/{chart,badge,select,tabs,table,label,tooltip,separator}.jsx` | 0 importers | keep-or-activate per §2 retarget |
+| `components/ui/primitives/{command,input-group,PageTransition,progress,scroll-area}.jsx` | 0 importers | delete (command/input-group only feed each other) |
+| `components/ui/primitives/{chart,badge,tabs,table,label,tooltip,separator}.jsx` | 0 importers | keep-or-activate per §2 retarget |
+| `components/ui/feedback/PageTransition.jsx` | 0 importers | delete |
+| `components/ui/feedback/toast-card.jsx` | 0 importers | delete |
 | `utils/formatters.js` (257 lines) | **entire module orphaned** (0 importers) despite being most complete; holds dead `#22c55e` hex colors | fold `currency/date/percentage` into `lib/formatters/`, then delete |
 | `hooks/useZerodhaDashboard.js` | deprecated stub, never imported | delete |
 | blue AuthGuard spinner + duplicate | hardcoded `border-blue-200 border-t-blue-600` | tokenize (see §6) |
@@ -177,20 +190,20 @@ Sections: `(access)` public-login/noindex · `(main)` protected shell · `app/ca
 |---|---|---|
 | `DataAccuracyWarning` (in `portfolio/tabs/`) imported by 3 mutual-fund modals (`RedemptionModal:6`, `SipContributionModal:5`, `LumpsumTransactionModal:6`) | cross-domain: MF → portfolio internals | hoist `DataAccuracyWarning` (and `BrokerInfoBanner`) to shared `components/feedback` or `ui/` |
 | MF feature split between `app/(main)/mutual-fund/**` and `components/portfolio/{MfTimeline,MfSipList,MfInstrumentList}` | feature not isolated in one home | consolidate MF display components under one MF feature dir |
-| Feature pickers in shared `ui/`: `SchemeSearchCombobox` (only MF), `BankSearchCombobox` (fd+MF), `FilterDropdown` (ppf/epf/MF), `CategoryDropdown` | shared-layer pollution | move to owning feature `components/` |
+| Feature pickers in shared `ui/`: `ui/search/SchemeSearchCombobox` (only MF), `ui/search/BankSearchCombobox` (fd+MF), `ui/forms/FilterDropdown` (ppf/epf/MF), `ui/forms/CategoryDropdown` | shared-layer pollution | move to owning feature `components/` |
 | Broker brand-accent map (`hsl(var(--broker-*))`) copy-pasted ~7 places: `BrokerStatusBanner:14-16`, `HoldingsTable:22-24`, `HoldingsTab:19-21`, `PositionsTab:18-20`, `ProfileTab:31,45,52`, `BrokerCard:20-22`, `BrokerSetupLayout:7-9` | duplicated business lookup | use `lib/brokerConfig.js` (exists, bypassed) |
 
 ---
 
 ## 9. Radix vs shadcn overlap
 
-> ✅ **Zero direct `@radix-ui/*` imports in `src/`** — all 14 `ui/` wrappers import the umbrella `radix-ui` (1.4.3). No component bypasses shadcn wrappers. This section is about **redundant deps + unused wrappers**, not overlap.
+> ✅ **Zero direct `@radix-ui/*` imports in `src/`** — all 14 `ui/primitives/` wrappers import the umbrella `radix-ui` (1.4.3). No component bypasses shadcn wrappers. This section is about **redundant deps + unused wrappers**, not overlap.
 
 | Primitive | Sources found at | Canonical pick |
 |---|---|---|
-| All radix-backed primitives (dialog, dropdown, select, tabs, tooltip, sheet, separator, scroll-area, progress, avatar, popover, label, button Slot, badge Slot) | only `ui/*` (via umbrella `radix-ui`) | `ui/*` wrappers (keep) |
+| All radix-backed primitives (dialog, dropdown, select, tabs, tooltip, sheet, separator, scroll-area, progress, avatar, popover, label, button Slot, badge Slot) | only `ui/primitives/*` (via umbrella `radix-ui`) | `ui/primitives/*` wrappers (keep) |
 | Direct `@radix-ui/react-{dialog,dropdown-menu,select,switch,tabs,tooltip}` + `cmdk` | **declared but nothing imports directly** | remove from package.json (transitively covered by umbrella) |
-| `ui/select.jsx`, `ui/tabs.jsx`, `ui/tooltip.jsx` | exist but 0 consumers (native `<select>`, bespoke PortfolioTabBar/profile toggle) | activate via §2 retarget, then `react-select`/`react-tabs`/`react-switch`/`react-tooltip` deps become removable |
+| `ui/primitives/{select,tabs,tooltip}.jsx` | exist but 0 consumers (native `<select>`, bespoke PortfolioTabBar/profile toggle) | activate via §2 retarget, then `react-select`/`react-tabs`/`react-switch`/`react-tooltip` deps become removable |
 
 ---
 
@@ -198,10 +211,11 @@ Sections: `(access)` public-login/noindex · `(main)` protected shell · `app/ca
 
 - ✅ Every section above scanned and filled.
 - ✅ Routing map verified against `app/` tree (4 explorers + read-only traversal).
-- ✅ Duplicates list finalized → feeds **Definition of Done** in `DESIGN-SYSTEM.md` step 2.
+- ✅ Duplicates list finalized → feeds **Definition of Done** (replacing the deleted `DESIGN-SYSTEM.md`).
+- ✅ **UI components reorganized into subfolders** (`primitives/`, `feedback/`, `forms/`, `search/`, `data-display/`, `auth/`) — import paths fully migrated, design-system folder deleted.
 - ☐ **Signed off** → audit may now gate migration step 2 (`scaffolding`).
 
-> **Recommended immediate (low-risk) landmine fixes before/with step 2** (aligns with DESIGN-SYSTEM §11.3 #5):
+> **Recommended immediate (low-risk) landmine fixes before/with step 2** (aligns with migration plan §11.3 #5):
 > 1. AuthGuard + zerodha-callback blue spinner → tokens.
 > 2. Define `bg-hairline`; remove undefined `ed-muted-text`.
 > 3. Delete confirmed orphans (AuthDivider, ConnectBrokerDialog, legacy CalculatorComponents, PageTransition, dead `ui/` wrappers, `useZerodhaDashboard`, `utils/formatters.js` after fold, `ct-*` palettes, dead CSS).

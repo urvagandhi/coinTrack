@@ -1,10 +1,10 @@
 'use client';
 
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import { Loader2, X, RefreshCw, Calendar, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import BankSearchCombobox from '@/components/ui/BankSearchCombobox';
+import BankSearchCombobox from '@/components/ui/search/BankSearchCombobox';
 
 const INITIAL_STATE = {
   place: '',

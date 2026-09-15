@@ -1,8 +1,8 @@
 'use client';
 
 import NoteDialog from '@/components/notes/NoteDialog';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { useToast } from '@/components/ui/use-toast';
+import { Skeleton } from '@/components/ui/feedback/Skeleton';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import { notesAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

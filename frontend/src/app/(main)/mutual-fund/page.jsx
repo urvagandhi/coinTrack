@@ -9,7 +9,7 @@ import {
   useIsMutating,
 } from '@tanstack/react-query';
 import { mutualFundAPI } from '@/lib/api';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/feedback/use-toast';
 import { toast as sonnerToast } from 'sonner';
 import { Download, Plus, AlertTriangle, Loader2 } from 'lucide-react';
 import NewSchemeModal from './NewSchemeModal';
