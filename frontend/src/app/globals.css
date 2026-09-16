@@ -199,12 +199,14 @@
     font-family: var(--font-serif);
     font-feature-settings: 'ss01' on;
   }
+
   .display-serif {
     font-family: var(--font-serif);
     font-style: italic;
     letter-spacing: -0.02em;
     line-height: 0.95;
   }
+
   .display-num {
     font-family: var(--font-geist-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
@@ -221,6 +223,7 @@
     font-weight: 500;
     color: hsl(var(--muted-foreground));
   }
+
   .eyebrow-strong {
     font-size: 10px;
     line-height: 1;
@@ -229,6 +232,7 @@
     font-weight: 600;
     color: hsl(var(--foreground));
   }
+
   .index-num {
     font-family: var(--font-geist-mono), ui-monospace, monospace;
     font-size: 10px;
@@ -241,12 +245,15 @@
   .rule-h {
     border-bottom: 1px solid hsl(var(--border));
   }
+
   .rule-v {
     border-right: 1px solid hsl(var(--border));
   }
+
   .rule-strong-h {
     border-bottom: 1px solid hsl(var(--hairline));
   }
+
   .rule-double {
     border-bottom: 1px solid hsl(var(--border));
     box-shadow: 0 3px 0 -2px hsl(var(--border));
@@ -259,6 +266,7 @@
     border-radius: var(--radius);
     position: relative;
   }
+
   .ed-card-flat {
     background: hsl(var(--card));
     border-top: 1px solid hsl(var(--hairline));
@@ -276,13 +284,16 @@
     box-shadow: 0 0 0 0 hsl(var(--gain) / 0.6);
     animation: ct-pulse 2s ease-out infinite;
   }
+
   @keyframes ct-pulse {
     0% {
       box-shadow: 0 0 0 0 hsl(var(--gain) / 0.55);
     }
+
     70% {
       box-shadow: 0 0 0 6px hsl(var(--gain) / 0);
     }
+
     100% {
       box-shadow: 0 0 0 0 hsl(var(--gain) / 0);
     }
@@ -295,14 +306,17 @@
     white-space: nowrap;
     animation: ct-ticker 60s linear infinite;
   }
+
   @keyframes ct-ticker {
     from {
       transform: translateX(0);
     }
+
     to {
       transform: translateX(-50%);
     }
   }
+
   @media (prefers-reduced-motion: reduce) {
     .ticker-track {
       animation: none;
@@ -321,9 +335,11 @@
     width: 100%;
     transition: border-color 0.15s ease;
   }
+
   .ed-input::placeholder {
     color: hsl(var(--muted-foreground));
   }
+
   .ed-input:focus {
     outline: none;
     border-bottom-color: hsl(var(--accent));
@@ -347,30 +363,36 @@
     border: 1px solid transparent;
     cursor: pointer;
   }
+
   .ed-btn-primary {
     background: hsl(var(--foreground));
     color: hsl(var(--background));
     border-color: hsl(var(--foreground));
   }
+
   .ed-btn-primary:hover {
     background: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
     border-color: hsl(var(--accent));
   }
+
   .ed-btn-ghost {
     background: transparent;
     color: hsl(var(--foreground));
     border-color: hsl(var(--border));
   }
+
   .ed-btn-ghost:hover {
     border-color: hsl(var(--hairline));
     background: hsl(var(--muted));
   }
+
   .ed-btn-accent {
     background: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
     border-color: hsl(var(--accent));
   }
+
   .ed-btn-accent:hover {
     filter: brightness(0.94);
   }
@@ -381,6 +403,7 @@
     color: hsl(var(--neutral));
     border-color: hsl(var(--neutral) / 0.4);
   }
+
   .ed-btn-info:hover {
     background: hsl(var(--neutral));
     color: hsl(var(--background));
@@ -392,6 +415,7 @@
     color: hsl(var(--gain));
     border-color: hsl(var(--gain) / 0.4);
   }
+
   .ed-btn-gain:hover {
     background: hsl(var(--gain));
     color: hsl(var(--background));
@@ -403,6 +427,7 @@
     color: hsl(var(--chart-4));
     border-color: hsl(var(--chart-4) / 0.4);
   }
+
   .ed-btn-warn:hover {
     background: hsl(var(--chart-4));
     color: hsl(var(--background));
@@ -414,6 +439,7 @@
     color: hsl(var(--loss));
     border-color: hsl(var(--loss) / 0.4);
   }
+
   .ed-btn-loss:hover {
     background: hsl(var(--loss));
     color: hsl(var(--background));
@@ -432,24 +458,28 @@
     height: 8px;
     border-color: hsl(var(--hairline));
   }
+
   .corner-tl {
     top: -1px;
     left: -1px;
     border-top: 1px solid;
     border-left: 1px solid;
   }
+
   .corner-tr {
     top: -1px;
     right: -1px;
     border-top: 1px solid;
     border-right: 1px solid;
   }
+
   .corner-bl {
     bottom: -1px;
     left: -1px;
     border-bottom: 1px solid;
     border-left: 1px solid;
   }
+
   .corner-br {
     bottom: -1px;
     right: -1px;
@@ -466,6 +496,7 @@
     text-underline-offset: 4px;
     transition: text-decoration-thickness 0.15s ease;
   }
+
   .ed-link:hover {
     text-decoration-thickness: 2px;
   }
@@ -480,6 +511,7 @@
     font-variant-numeric: tabular-nums;
     table-layout: auto;
   }
+
   :where(.ed-table) thead th {
     text-align: left;
     font-size: 10px;
@@ -493,16 +525,20 @@
     white-space: nowrap;
     vertical-align: middle;
   }
+
   :where(.ed-table) tbody tr {
     border-bottom: 1px solid hsl(var(--border));
     transition: background 0.12s ease;
   }
+
   :where(.ed-table) tbody tr:hover {
     background: hsl(var(--accent-muted) / 0.4);
   }
+
   :where(.ed-table) tbody tr:last-child {
     border-bottom: 1px solid hsl(var(--hairline));
   }
+
   :where(.ed-table) tbody td {
     padding: 0.875rem 1rem;
     font-size: 0.8125rem;
@@ -527,21 +563,25 @@
     background: hsl(var(--card));
     color: hsl(var(--muted-foreground));
   }
+
   .ed-pill-gain {
     color: hsl(var(--gain));
     background: hsl(var(--gain) / 0.08);
     border-color: hsl(var(--gain) / 0.25);
   }
+
   .ed-pill-loss {
     color: hsl(var(--loss));
     background: hsl(var(--loss) / 0.08);
     border-color: hsl(var(--loss) / 0.25);
   }
+
   .ed-pill-accent {
     color: hsl(var(--accent-foreground));
     background: hsl(var(--accent));
     border-color: hsl(var(--accent));
   }
+
   .ed-pill-warn {
     color: hsl(var(--chart-4));
     background: hsl(var(--chart-4) / 0.1);
@@ -562,13 +602,16 @@
     width: 8px;
     height: 8px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
     background: hsl(var(--border));
     border-radius: 999px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
   }
@@ -578,54 +621,70 @@
   .tnum {
     font-variant-numeric: tabular-nums;
   }
+
   .text-gain {
     color: hsl(var(--gain));
   }
+
   .text-loss {
     color: hsl(var(--loss));
   }
+
   .bg-gain {
     background-color: hsl(var(--gain));
   }
+
   .bg-loss {
     background-color: hsl(var(--loss));
   }
+
   .border-hairline {
     border-color: hsl(var(--hairline));
   }
+
   .stagger-fade > * {
     opacity: 0;
     animation: ct-fade-up 0.5s ease forwards;
   }
+
   .stagger-fade > *:nth-child(1) {
     animation-delay: 0.02s;
   }
+
   .stagger-fade > *:nth-child(2) {
     animation-delay: 0.06s;
   }
+
   .stagger-fade > *:nth-child(3) {
     animation-delay: 0.1s;
   }
+
   .stagger-fade > *:nth-child(4) {
     animation-delay: 0.14s;
   }
+
   .stagger-fade > *:nth-child(5) {
     animation-delay: 0.18s;
   }
+
   .stagger-fade > *:nth-child(6) {
     animation-delay: 0.22s;
   }
+
   .stagger-fade > *:nth-child(7) {
     animation-delay: 0.26s;
   }
+
   .stagger-fade > *:nth-child(8) {
     animation-delay: 0.3s;
   }
+
   @keyframes ct-fade-up {
     from {
       opacity: 0;
       transform: translateY(8px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -652,13 +711,16 @@ input[type='date']::-webkit-calendar-picker-indicator {
     opacity 0.2s ease,
     filter 0.2s ease;
 }
+
 input[type='date']::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
+
 .dark input[type='date']::-webkit-calendar-picker-indicator {
   filter: invert(0.85) hue-rotate(180deg);
   opacity: 0.75;
 }
+
 .dark input[type='date']::-webkit-calendar-picker-indicator:hover {
   filter: invert(1) hue-rotate(180deg);
   opacity: 1;
@@ -674,22 +736,27 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
     opacity: 1;
   }
+
   15% {
     transform: translate3d(-5px, 5px, 0) rotate(-5deg) scale(0.98);
     opacity: 1;
   }
+
   45% {
     transform: translate3d(150px, -150px, 0) rotate(25deg) scale(0.5);
     opacity: 0;
   }
+
   50% {
     transform: translate3d(-150px, 150px, 0) rotate(-25deg) scale(0.5);
     opacity: 0;
   }
+
   85% {
     transform: translate3d(5px, -5px, 0) rotate(5deg) scale(1.02);
     opacity: 1;
   }
+
   100% {
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
     opacity: 1;
@@ -701,22 +768,27 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     transform: translate3d(0, 0, 0) scale(1);
     opacity: 0.22;
   }
+
   15% {
     transform: translate3d(-2px, 0, 0) scale(1.02);
     opacity: 0.25;
   }
+
   45% {
     transform: translate3d(50px, 0, 0) scale(0.3);
     opacity: 0;
   }
+
   50% {
     transform: translate3d(-50px, 0, 0) scale(0.3);
     opacity: 0;
   }
+
   85% {
     transform: translate3d(2px, 0, 0) scale(0.98);
     opacity: 0.22;
   }
+
   100% {
     transform: translate3d(0, 0, 0) scale(1);
     opacity: 0.22;
@@ -729,14 +801,17 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     transform: translate3d(0, 0, 0) scaleX(0);
     opacity: 0;
   }
+
   25% {
     transform: translate3d(-10px, 10px, 0) scaleX(1);
     opacity: 0.8;
   }
+
   45% {
     transform: translate3d(-40px, 40px, 0) scaleX(2.2);
     opacity: 0;
   }
+
   100% {
     transform: translate3d(-40px, 40px, 0) scaleX(0);
     opacity: 0;
@@ -749,14 +824,17 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     transform: translate3d(0, 0, 0) scaleX(0);
     opacity: 0;
   }
+
   25% {
     transform: translate3d(-5px, 5px, 0) scaleX(1);
     opacity: 0.65;
   }
+
   45% {
     transform: translate3d(-32px, 32px, 0) scaleX(1.8);
     opacity: 0;
   }
+
   100% {
     transform: translate3d(-32px, 32px, 0) scaleX(0);
     opacity: 0;
@@ -769,14 +847,17 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     transform: translate3d(0, 0, 0) scaleX(0);
     opacity: 0;
   }
+
   25% {
     transform: translate3d(-4px, 4px, 0) scaleX(1);
     opacity: 0.5;
   }
+
   45% {
     transform: translate3d(-24px, 24px, 0) scaleX(1.4);
     opacity: 0;
   }
+
   100% {
     transform: translate3d(-24px, 24px, 0) scaleX(0);
     opacity: 0;
@@ -791,6 +872,7 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
       0 0 20px 4px rgba(52, 211, 153, 0.06);
     transform: scale(1);
   }
+
   50% {
     box-shadow:
       0 0 0 8px rgba(52, 211, 153, 0),
@@ -806,6 +888,7 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     opacity: 0;
     transform: translateY(0);
   }
+
   40% {
     opacity: 1;
     transform: translateY(-3px);
@@ -817,12 +900,192 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     transform: scale(0) rotate(-45deg);
     opacity: 0;
   }
+
   60% {
     transform: scale(1.2) rotate(0deg);
     opacity: 1;
   }
+
   100% {
     transform: scale(1) rotate(0deg);
     opacity: 1;
   }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   LOTTIE ANIMATION ENHANCEMENTS
+   Ultra-smooth luminous radial gradients & crisp natural line-art
+   Preserves crisp original illustration line-art while providing
+   harmonious ambient backlight glows for dark and light themes
+   ─────────────────────────────────────────────────────────────── */
+
+.lottie-wrapper {
+  overflow: visible !important;
+}
+
+.lottie-wrapper svg {
+  overflow: visible !important;
+  transition:
+    filter 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Pure luminous color breathing keyframes (no black shadow mixture to prevent muddy halos) */
+@keyframes lottie-amber-breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.35))
+      drop-shadow(0 0 24px rgba(245, 158, 11, 0.18));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.55))
+      drop-shadow(0 0 36px rgba(245, 158, 11, 0.28));
+  }
+}
+
+@keyframes lottie-cyan-breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.32))
+      drop-shadow(0 0 24px rgba(56, 189, 248, 0.16));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.5))
+      drop-shadow(0 0 36px rgba(56, 189, 248, 0.26));
+  }
+}
+
+@keyframes lottie-emerald-breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.3))
+      drop-shadow(0 0 24px rgba(52, 211, 153, 0.15));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 16px rgba(52, 211, 153, 0.48))
+      drop-shadow(0 0 36px rgba(52, 211, 153, 0.24));
+  }
+}
+
+/* Subtle organic breathing for radial halo backdrops */
+@keyframes lottie-halo-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.96);
+    opacity: 0.75;
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.06);
+    opacity: 1;
+  }
+}
+
+/* Multi-stop mathematical radial gradient halos (ease-out cubic falloff, zero banding) */
+.lottie-halo-amber {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(245, 158, 11, 0.28) 0%,
+    rgba(245, 158, 11, 0.18) 22%,
+    rgba(245, 158, 11, 0.09) 44%,
+    rgba(245, 158, 11, 0.02) 66%,
+    transparent 82%
+  );
+  animation: lottie-halo-pulse 5s ease-in-out infinite;
+}
+
+.lottie-halo-cyan {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(56, 189, 248, 0.26) 0%,
+    rgba(56, 189, 248, 0.16) 22%,
+    rgba(56, 189, 248, 0.08) 44%,
+    rgba(56, 189, 248, 0.02) 66%,
+    transparent 82%
+  );
+  animation: lottie-halo-pulse 5s ease-in-out infinite;
+}
+
+.lottie-halo-emerald {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(52, 211, 153, 0.24) 0%,
+    rgba(52, 211, 153, 0.15) 22%,
+    rgba(52, 211, 153, 0.07) 44%,
+    rgba(52, 211, 153, 0.02) 66%,
+    transparent 82%
+  );
+  animation: lottie-halo-pulse 5s ease-in-out infinite;
+}
+
+/* Coin Stack in dark mode */
+.dark .lottie-coin-glow svg {
+  animation: lottie-amber-breathe 4.5s ease-in-out infinite;
+}
+
+:root:not(.dark) .lottie-coin-glow svg {
+  filter: drop-shadow(0 4px 12px rgba(217, 119, 6, 0.12));
+}
+
+/* Card Payment in dark mode */
+.dark .lottie-card-glow svg {
+  animation: lottie-cyan-breathe 4.5s ease-in-out infinite;
+}
+
+:root:not(.dark) .lottie-card-glow svg {
+  filter: drop-shadow(0 4px 12px rgba(2, 132, 199, 0.1));
+}
+
+/* Business Investor in dark mode */
+.dark .lottie-investor-glow svg {
+  animation: lottie-emerald-breathe 4.5s ease-in-out infinite;
+}
+
+:root:not(.dark) .lottie-investor-glow svg {
+  filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.1));
+}
+
+/* Hover expansion effects */
+.dark .group:hover .lottie-coin-glow svg,
+.dark .lottie-coin-glow:hover svg {
+  animation-play-state: paused;
+  filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.65))
+    drop-shadow(0 0 44px rgba(245, 158, 11, 0.35)) !important;
+}
+
+.dark .group:hover .lottie-card-glow svg,
+.dark .lottie-card-glow:hover svg {
+  animation-play-state: paused;
+  filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.6))
+    drop-shadow(0 0 44px rgba(56, 189, 248, 0.32)) !important;
+}
+
+.dark .group:hover .lottie-investor-glow svg,
+.dark .lottie-investor-glow:hover svg {
+  animation-play-state: paused;
+  filter: drop-shadow(0 0 20px rgba(52, 211, 153, 0.58))
+    drop-shadow(0 0 44px rgba(52, 211, 153, 0.3)) !important;
+}
+
+/* Halo backdrop hover expansion */
+.group:hover .lottie-halo-amber,
+.group:hover .lottie-halo-cyan,
+.group:hover .lottie-halo-emerald {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) scale(1.14) !important;
+  transition:
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.6s ease;
+}
+
+/* Generic subtle ambient illumination fallback */
+.dark .lottie-theme-aware svg {
+  filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.45));
+}
+
+:root:not(.dark) .lottie-theme-aware svg {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.05));
 }

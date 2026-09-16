@@ -5,7 +5,7 @@ import {
   AuthHeader,
   useDynamicDocumentTitle,
 } from '@/components/ui/auth/auth-shared';
-import { FintechLoader } from '@/components/ui/feedback/FintechLoader';
+import { FintechLoader } from '@/components/ui/loaders/FintechLoader';
 import { Button } from '@/components/ui/primitives/button';
 import { cn } from '@/lib/utils';
 import {
@@ -332,16 +332,30 @@ function VerifyFinalizing({
         }}
       />
 
-      <div className='relative z-10 flex flex-col items-center'>
-        <FintechLoader
-          isLoading={isLoaderActive}
-          showText={true}
-          title='Verification Successful'
-          subtitle='Initializing secure session...'
-          completeTitle='Verification Complete'
-          completeSubtitle='Redirecting to dashboard...'
-          brandName='coinTrack'
-        />
+      <div className='relative z-10 flex flex-col items-center w-full'>
+        {/* FintechLoader Animation */}
+        <div className='w-full flex justify-center -mt-8 mb-2'>
+          <FintechLoader
+            size='md'
+            isLoading={isLoaderActive}
+            showText={false}
+          />
+        </div>
+
+        {/* Loading text below the animation */}
+        <div className='text-center space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700'>
+          <h3 className='text-2xl font-bold text-foreground'>
+            {isLoaderActive
+              ? 'Verification Successful'
+              : 'Verification Complete'}
+          </h3>
+          <p className='text-sm font-medium text-muted-foreground'>
+            {isLoaderActive
+              ? 'Initializing secure session...'
+              : 'Redirecting to dashboard...'}
+          </p>
+        </div>
+
         {userIdentifier && (
           <div className='mt-6 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-card/80 border border-hairline text-[11px] font-mono text-muted-foreground shadow-sm backdrop-blur-sm'>
             <span className='size-1.5 rounded-full bg-emerald-500' />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useId, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useId, memo } from 'react';
 import Image from 'next/image';
 import {
   Bell,
@@ -228,6 +228,9 @@ export function RegisterSplitScreen({
   onLoginRedirect,
   isLoading = false,
   errorMessage,
+  mode = 'register', // 'register' or 'complete-profile'
+  initialData = {},
+  isGoogleLoading = false,
 }) {
   useDynamicDocumentTitle('Create Account | coinTrack');
   const { openModal } = useModal();
@@ -253,14 +256,32 @@ export function RegisterSplitScreen({
 
   // Form State
   const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    phoneNumber: '',
-    dateOfBirth: '',
+    name: initialData.name || '',
+    username: initialData.username || '',
+    email: initialData.email || '',
+    phoneNumber: initialData.phoneNumber || '',
+    dateOfBirth: initialData.dateOfBirth || '',
     password: '',
     confirmPassword: '',
   });
+
+  // Sync initial data if it changes after mount
+  useEffect(() => {
+    if (Object.keys(initialData).length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        name: initialData.name || prev.name,
+        username: initialData.username || prev.username,
+        email: initialData.email || prev.email,
+        phoneNumber: initialData.phoneNumber || prev.phoneNumber,
+      }));
+    }
+  }, [
+    initialData.name,
+    initialData.username,
+    initialData.email,
+    initialData.phoneNumber,
+  ]);
 
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -433,10 +454,14 @@ export function RegisterSplitScreen({
         {/* Main Body */}
         <div className='w-full max-w-[340px] sm:max-w-md md:max-w-[340px] lg:max-w-md xl:max-w-lg mx-auto my-auto flex flex-col justify-center shrink-0 py-2'>
           <h1 className='text-2xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-1 tracking-tight text-left'>
-            Create your account
+            {mode === 'complete-profile'
+              ? 'Complete your profile'
+              : 'Create your account'}
           </h1>
           <p className='text-xs sm:text-sm text-muted-foreground mb-2.5 text-left'>
-            Join thousands of verified investors managing unified portfolios.
+            {mode === 'complete-profile'
+              ? 'Choose a unique username and finalize your details to finish setting up your account.'
+              : 'Join thousands of verified investors managing unified portfolios.'}
           </p>
 
           {displayedError && (
@@ -449,27 +474,41 @@ export function RegisterSplitScreen({
             </div>
           )}
 
-          {/* Social Sign-up Button */}
-          <Button
-            type='button'
-            variant='outline'
-            onClick={onGoogleSignUp}
-            className='group w-full rounded-[14px] bg-muted/50 hover:bg-muted/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-900 border-border/40 text-foreground py-5 sm:py-6 px-4 text-xs sm:text-sm font-medium flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 active:translate-y-0 active:scale-[0.99] mb-3 sm:mb-3.5'
-          >
-            <GoogleIcon className='transition-transform duration-300 group-hover:scale-110' />
-            <span>Sign up with Google</span>
-          </Button>
+          {/* Social Sign-up Button (Hidden in complete-profile mode) */}
+          {mode !== 'complete-profile' && (
+            <>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={onGoogleSignUp}
+                disabled={isGoogleLoading}
+                className='group w-full rounded-[14px] bg-muted/50 hover:bg-muted/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-900 border-border/40 text-foreground py-5 sm:py-6 px-4 text-xs sm:text-sm font-medium flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 active:translate-y-0 active:scale-[0.99] mb-3 sm:mb-3.5 disabled:opacity-70 disabled:pointer-events-none'
+              >
+                {isGoogleLoading ? (
+                  <>
+                    <div className='size-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground animate-spin' />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <GoogleIcon className='transition-transform duration-300 group-hover:scale-110' />
+                    <span>Sign up with Google</span>
+                  </>
+                )}
+              </Button>
 
-          {/* Divider */}
-          <div
-            className='relative flex items-center justify-center mb-3 sm:mb-3.5'
-            aria-hidden='true'
-          >
-            <div className='w-full border-t border-border/50' />
-            <span className='bg-card dark:bg-[#0d0f12] px-3 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 shrink-0'>
-              OR REGISTER DIRECTLY
-            </span>
-          </div>
+              {/* Divider */}
+              <div
+                className='relative flex items-center justify-center mb-3 sm:mb-3.5'
+                aria-hidden='true'
+              >
+                <div className='w-full border-t border-border/50' />
+                <span className='bg-card dark:bg-[#0d0f12] px-3 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 shrink-0'>
+                  OR REGISTER DIRECTLY
+                </span>
+              </div>
+            </>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className='space-y-2.5 sm:space-y-3'>
@@ -525,9 +564,13 @@ export function RegisterSplitScreen({
                   value={formData.email}
                   onChange={e => handleFieldChange('email', e.target.value)}
                   placeholder='urva@cointrack.in'
-                  disabled={isLoading}
+                  disabled={isLoading || mode === 'complete-profile'}
                   required
-                  className='!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 w-full min-w-0 pr-3'
+                  className={cn(
+                    '!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 w-full min-w-0 pr-3',
+                    mode === 'complete-profile' &&
+                      'text-muted-foreground cursor-not-allowed opacity-70'
+                  )}
                 />
               </div>
             </div>
@@ -745,22 +788,30 @@ export function RegisterSplitScreen({
               className='group w-full rounded-[14px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 py-5 sm:py-6 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/25 active:translate-y-0 active:scale-[0.99] mt-2.5 sm:mt-3'
             >
               <span>
-                {isLoading ? 'Creating Ledger...' : 'Create coinTrack Account'}
+                {isLoading
+                  ? mode === 'complete-profile'
+                    ? 'Saving profile...'
+                    : 'Creating Ledger...'
+                  : mode === 'complete-profile'
+                    ? 'Complete Registration'
+                    : 'Create coinTrack Account'}
               </span>
               <ArrowUpRight className='size-4 text-white/70 dark:text-zinc-900/70 group-hover:text-emerald-400 dark:group-hover:text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300' />
             </Button>
 
             {/* Switch to Login */}
-            <div className='pt-2 sm:pt-3 text-center text-xs text-muted-foreground'>
-              Already have an account?{' '}
-              <button
-                type='button'
-                onClick={onLoginRedirect}
-                className='font-semibold text-foreground hover:text-emerald-500 transition-colors cursor-pointer outline-none focus-visible:underline'
-              >
-                Sign in here
-              </button>
-            </div>
+            {mode !== 'complete-profile' && (
+              <div className='pt-2 sm:pt-3 text-center text-xs text-muted-foreground'>
+                Already have an account?{' '}
+                <button
+                  type='button'
+                  onClick={onLoginRedirect}
+                  className='font-semibold text-foreground hover:text-emerald-500 transition-colors cursor-pointer outline-none focus-visible:underline'
+                >
+                  Sign in here
+                </button>
+              </div>
+            )}
           </form>
         </div>
 
