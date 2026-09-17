@@ -8,6 +8,7 @@ import {
 import { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import { PendingVerificationBanner } from '@/components/ui/data-display/pending-verification-banner';
 
 export default function MainLayout({ children }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -32,6 +33,12 @@ export default function MainLayout({ children }) {
 
       <div className='md:pl-64 flex min-h-screen flex-col relative z-10'>
         <Header onMenuClick={() => setIsMobileOpen(true)} />
+
+        {/* Verification Banner - displays if user is authenticated but not verified */}
+        <PendingVerificationBanner
+          isVerified={false} // Will be replaced with user?.isEmailVerified when API supports it
+        />
+
         <main className='flex-1 px-4 md:px-10 lg:px-14 py-8 md:py-12 max-w-[1600px] w-full'>
           {children}
         </main>

@@ -357,7 +357,7 @@ function VerifyFinalizing({
         </div>
 
         {userIdentifier && (
-          <div className='mt-6 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-card/80 border border-hairline text-[11px] font-mono text-muted-foreground shadow-sm backdrop-blur-sm'>
+          <div className='mt-6 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-card/80 border border-border/50 text-[11px] font-mono text-muted-foreground shadow-sm backdrop-blur-sm'>
             <span className='size-1.5 rounded-full bg-emerald-500' />
             <span className='max-w-[240px] truncate'>{userIdentifier}</span>
           </div>
@@ -375,6 +375,7 @@ export function TwoFactorVerifyScreen({
   className,
   onSubmit,
   onBackToLogin,
+  onNavigateToSetup,
   userIdentifier,
   isLoading = false,
   isFinalizing = false,
@@ -476,9 +477,9 @@ export function TwoFactorVerifyScreen({
             <ShieldCheck className='size-3.5' />
             <span>Step 2 · Bank-Grade Security</span>
           </div>
-          <h2 className='text-3xl lg:text-4xl font-bold text-white dark:text-zinc-900 tracking-tight leading-snug'>
+          <h2 className='font-display text-3xl lg:text-4xl font-extrabold text-white dark:text-zinc-900 tracking-tight leading-snug'>
             Verify it&apos;s{' '}
-            <span className='font-serif italic font-normal text-emerald-400 dark:text-emerald-600'>
+            <span className='font-display font-extrabold text-emerald-400 dark:text-emerald-600'>
               You.
             </span>
           </h2>
@@ -502,10 +503,10 @@ export function TwoFactorVerifyScreen({
             <div className='animate-in fade-in slide-in-from-bottom-4 duration-500'>
               {/* Heading */}
               <div className='text-center mb-6'>
-                <h1 className='text-2xl font-bold text-foreground tracking-tight mb-1.5'>
+                <h1 className='font-display text-2xl font-extrabold text-foreground tracking-tight mb-1.5'>
                   Two-factor verification
                 </h1>
-                <p className='text-xs text-muted-foreground'>
+                <p className='font-sans text-xs text-neutral-700/90 dark:text-neutral-400 leading-relaxed'>
                   {isRecoveryMode
                     ? 'Enter one of your recovery codes to continue.'
                     : 'Enter the six-digit code from your authenticator app to continue.'}
@@ -655,6 +656,20 @@ export function TwoFactorVerifyScreen({
                     </>
                   )}
                 </p>
+
+                {onNavigateToSetup && (
+                  <p className='text-center text-xs text-muted-foreground pt-1'>
+                    Need to reconfigure?{' '}
+                    <button
+                      type='button'
+                      onClick={onNavigateToSetup}
+                      disabled={isBusy}
+                      className='font-semibold text-foreground hover:text-emerald-500 transition-colors cursor-pointer outline-none focus-visible:underline'
+                    >
+                      Set up new 2FA authenticator
+                    </button>
+                  </p>
+                )}
               </form>
             </div>
           </div>

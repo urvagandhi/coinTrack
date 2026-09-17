@@ -140,6 +140,13 @@ module.exports = {
           'SFMono-Regular',
           'monospace',
         ],
+        display: [
+          '"Inter Tight"',
+          'var(--font-geist-sans)',
+          'system-ui',
+          'sans-serif',
+        ],
+        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',

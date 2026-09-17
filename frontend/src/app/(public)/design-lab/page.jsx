@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+// abcd
 import ConfirmDialog from '@/components/ui/feedback/confirm-dialog';
 import AnnouncementCard from '@/components/ui/data-display/announcement-card';
 import { useToast } from '@/components/ui/feedback/use-toast';
@@ -190,7 +191,7 @@ import {
   EmailValidationBadge,
   InsetDropdownRow,
   InsetTextareaRow,
-} from '@/components/ui/inset-form-card';
+} from '@/components/ui/forms/inset-form-card';
 import { CurrencyStepper } from '@/components/ui/forms/currency-stepper';
 import { PasswordStrengthInput } from '@/components/ui/auth/security-inputs';
 import { CopyableKey, TagInput } from '@/components/ui/forms/utility-inputs';
@@ -198,6 +199,9 @@ import {
   SpotlightInput,
   SlugInput,
 } from '@/components/ui/primitives/spotlight-input';
+import { CoinTrackNavbar } from '@/components/ui/coinTrack/cointrack-navbar';
+import { CoinTrackFooter } from '@/components/ui/coinTrack/cointrack-footer';
+import { CoinTrackSkyBackground } from '@/components/ui/coinTrack/cointrack-sky-background';
 
 // ───────────────────────────────────────────────────────────────
 //  DESIGN LAB — confirmation dialog showcase data
@@ -478,33 +482,43 @@ export default function DesignLabPage() {
 
   return (
     <TooltipProvider>
-      <main className='w-full min-h-screen overflow-x-hidden'>
-        <div className='max-w-screen-2xl mx-auto w-full px-4 md:px-10 lg:px-14 py-8 md:py-12 space-y-12'>
+      <main className='w-full min-h-screen bg-[#e8f1fb] text-neutral-900 selection:bg-neutral-900 selection:text-white font-sans relative overflow-x-hidden'>
+        {/* Pinned cloudy sky background layer for Cirrus UI ambiance */}
+        <CoinTrackSkyBackground />
+
+        {/* Floating transparent navbar */}
+        <CoinTrackNavbar />
+
+        <div className='relative z-10 max-w-screen-2xl mx-auto w-full px-4 md:px-10 lg:px-14 pt-28 sm:pt-36 md:pt-40 pb-8 md:pb-12 space-y-12'>
           {/* Masthead */}
-          <header className='relative pb-6 border-b border-hairline'>
+          <header className='relative pb-6 border-b border-border/50'>
             <div className='flex items-center justify-between gap-4 mb-5'>
               <div className='flex items-center gap-3'>
-                <span className='index-num'>TRIAL-02</span>
-                <span className='font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground'>
-                  Interface Lab · UI Components
+                <span className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 font-mono text-[11px] font-semibold tracking-wider'>
+                  INTERFACE LAB
+                </span>
+                <span className='font-mono text-[11px] uppercase tracking-[0.16em] text-neutral-500 dark:text-neutral-400'>
+                  UI Component Library · Cirrus
                 </span>
               </div>
-              <span className='text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground'>
-                Draft · not live
+              <span className='text-[11px] font-mono uppercase tracking-[0.16em] text-neutral-500 dark:text-neutral-400'>
+                Design Tokens Active
               </span>
             </div>
             <div className='flex flex-col md:flex-row md:items-end md:justify-between gap-3'>
-              <h1 className='display-serif text-[44px] md:text-[52px] text-foreground'>
-                Design <span className='text-[hsl(var(--accent))]'>System</span>
+              <h1 className='font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl text-neutral-950 dark:text-white tracking-tight leading-[1.08]'>
+                Design{' '}
+                <span className='text-blue-600 dark:text-blue-400'>Lab</span>
               </h1>
-              <p className='text-[13px] text-muted-foreground max-w-sm md:text-right leading-relaxed font-serif italic'>
-                Showcasing the complete, unified coinTrack UI component library.
+              <p className='font-sans text-sm text-neutral-700/90 dark:text-neutral-400 max-w-sm md:text-right leading-relaxed font-normal'>
+                Showcasing the complete, unified coinTrack Cirrus UI component
+                system.
               </p>
             </div>
           </header>
 
           <Tabs defaultValue='buttons' className='w-full'>
-            <TabsList className='mb-8 flex flex-wrap h-auto gap-1'>
+            <TabsList className='mb-8 flex flex-wrap h-auto gap-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-border/50 p-1.5 rounded-2xl shadow-sm'>
               <TabsTrigger value='buttons'>Actions & Navigation</TabsTrigger>
               <TabsTrigger value='forms'>Forms & Inputs</TabsTrigger>
               <TabsTrigger value='search'>Search & Menus</TabsTrigger>
@@ -524,7 +538,7 @@ export default function DesignLabPage() {
               {/* Button Variants */}
               <section className='space-y-4'>
                 <div>
-                  <h2 className='text-lg font-semibold tracking-tight'>
+                  <h2 className='font-display text-xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                     Mac / Apple Button Hierarchy
                   </h2>
                   <p className='text-sm text-muted-foreground'>
@@ -533,10 +547,12 @@ export default function DesignLabPage() {
                   </p>
                 </div>
 
-                <div className='p-8 rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm space-y-8'>
+                <div className='p-8 rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm space-y-8'>
                   {/* Standard Variants */}
                   <div>
-                    <h3 className='eyebrow-strong mb-3'>Core Variants</h3>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 mb-3'>
+                      Core Variants
+                    </h3>
                     <div className='flex flex-wrap items-center gap-3'>
                       <Button variant='default'>Primary Black</Button>
                       <Button variant='secondary'>Frosted Secondary</Button>
@@ -550,7 +566,7 @@ export default function DesignLabPage() {
 
                   {/* Semantic Status Variants (Matching Badges) */}
                   <div>
-                    <h3 className='eyebrow-strong mb-3'>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 mb-3'>
                       Status Variants (Animated Icons)
                     </h3>
                     <div className='flex flex-wrap items-center gap-3'>
@@ -577,7 +593,7 @@ export default function DesignLabPage() {
 
                   {/* Sizes */}
                   <div>
-                    <h3 className='eyebrow-strong mb-3'>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 mb-3'>
                       Button Scales & Squircles
                     </h3>
                     <div className='flex flex-wrap items-center gap-3'>
@@ -604,7 +620,7 @@ export default function DesignLabPage() {
 
                   {/* Icons & Action Groups */}
                   <div>
-                    <h3 className='eyebrow-strong mb-3'>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 mb-3'>
                       Icon Buttons & Tooltips
                     </h3>
                     <div className='flex flex-wrap items-center gap-3'>
@@ -684,7 +700,7 @@ export default function DesignLabPage() {
               {/* Header / Intro */}
               <div className='flex flex-col md:flex-row md:items-end md:justify-between gap-4'>
                 <div>
-                  <h2 className='text-xl font-bold tracking-tight text-foreground'>
+                  <h2 className='font-display text-2xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                     Form Controls & Smart Inputs
                   </h2>
                   <p className='text-sm text-muted-foreground mt-1'>
@@ -839,7 +855,7 @@ export default function DesignLabPage() {
               {/* Header / Intro */}
               <div className='flex flex-col md:flex-row md:items-end md:justify-between gap-4'>
                 <div>
-                  <h2 className='text-xl font-bold tracking-tight text-foreground'>
+                  <h2 className='font-display text-2xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                     Search, Spotlight & Menus
                   </h2>
                   <p className='text-sm text-muted-foreground mt-1'>
@@ -878,7 +894,7 @@ export default function DesignLabPage() {
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                     <div className='space-y-2 relative z-30'>
                       <div className='flex items-center justify-between'>
-                        <Label className='eyebrow-strong'>
+                        <Label className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
                           Spotlight Search & Filter Bar
                         </Label>
                         <span className='text-[11px] font-mono text-muted-foreground'>
@@ -896,7 +912,7 @@ export default function DesignLabPage() {
 
                     <div className='space-y-2 relative z-10'>
                       <div className='flex items-center justify-between'>
-                        <Label className='eyebrow-strong'>
+                        <Label className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
                           Command Deep-Link & Route Bar
                         </Label>
                         <span className='text-[11px] font-mono text-muted-foreground'>
@@ -935,10 +951,12 @@ export default function DesignLabPage() {
                   </div>
                 </div>
 
-                <div className='relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm'>
+                <div className='relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm'>
                   {/* Bank Combobox */}
                   <div className='space-y-3'>
-                    <h3 className='eyebrow-strong'>Bank Search Combobox</h3>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
+                      Bank Search Combobox
+                    </h3>
                     <BankSearchCombobox
                       value={bankValue}
                       onChange={setBankValue}
@@ -948,7 +966,9 @@ export default function DesignLabPage() {
 
                   {/* Scheme Combobox */}
                   <div className='space-y-3'>
-                    <h3 className='eyebrow-strong'>Scheme Search Combobox</h3>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
+                      Scheme Search Combobox
+                    </h3>
                     <SchemeSearchCombobox
                       value={schemeValue}
                       onChange={setSchemeValue}
@@ -958,7 +978,7 @@ export default function DesignLabPage() {
 
                   {/* Category Dropdown */}
                   <div className='space-y-3'>
-                    <h3 className='eyebrow-strong'>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
                       Category Dropdown (Hierarchical)
                     </h3>
                     <CategoryDropdown
@@ -969,7 +989,7 @@ export default function DesignLabPage() {
 
                   {/* Filter Dropdown Pill */}
                   <div className='space-y-3'>
-                    <h3 className='eyebrow-strong'>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
                       Filter Dropdown (Pill Style)
                     </h3>
                     <FilterDropdown
@@ -987,7 +1007,9 @@ export default function DesignLabPage() {
 
                   {/* Popover */}
                   <div className='space-y-3'>
-                    <h3 className='eyebrow-strong'>Popover Card</h3>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
+                      Popover Card
+                    </h3>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -1030,7 +1052,7 @@ export default function DesignLabPage() {
 
                   {/* Advanced Dropdown Menu with Submenus */}
                   <div className='space-y-3'>
-                    <h3 className='eyebrow-strong'>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
                       Dropdown Menu (Submenus & Checkboxes)
                     </h3>
                     <DropdownMenu>
@@ -1095,7 +1117,7 @@ export default function DesignLabPage() {
               <section className='space-y-4'>
                 <div className='flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
                   <div>
-                    <h2 className='text-lg font-semibold tracking-tight'>
+                    <h2 className='font-display text-xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                       Confirm Dialogs
                     </h2>
                     <p className='mt-1 text-[12px] text-muted-foreground'>
@@ -1132,10 +1154,10 @@ export default function DesignLabPage() {
 
                 {/* Standard Modal & Sheet Triggers */}
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-6 pt-6'>
-                  <div className='p-6 rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm space-y-4'>
+                  <div className='p-6 rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm space-y-4'>
                     <div className='flex items-center justify-between'>
                       <div>
-                        <h3 className='eyebrow-strong'>
+                        <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
                           Dynamic Asset Modals (Add & Edit)
                         </h3>
                         <p className='text-xs text-muted-foreground mt-0.5'>
@@ -1149,7 +1171,7 @@ export default function DesignLabPage() {
                     <div className='space-y-3 pt-1'>
                       {/* Add Mode Switcher */}
                       <div className='space-y-1.5'>
-                        <span className='eyebrow-strong block text-[11px] text-muted-foreground'>
+                        <span className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 block text-[11px] text-muted-foreground'>
                           Add New Record
                         </span>
                         <div className='flex flex-wrap gap-2'>
@@ -1183,7 +1205,7 @@ export default function DesignLabPage() {
 
                       {/* Edit Mode Switcher */}
                       <div className='space-y-1.5 pt-1'>
-                        <span className='eyebrow-strong block text-[11px] text-muted-foreground'>
+                        <span className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 block text-[11px] text-muted-foreground'>
                           Edit Existing Record (Pre-filled)
                         </span>
                         <div className='flex flex-wrap gap-2'>
@@ -1436,8 +1458,10 @@ export default function DesignLabPage() {
                     </Dialog>
                   </div>
 
-                  <div className='p-6 rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm space-y-4'>
-                    <h3 className='eyebrow-strong'>Slide-over Sheet Drawer</h3>
+                  <div className='p-6 rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm space-y-4'>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
+                      Slide-over Sheet Drawer
+                    </h3>
                     <p className='text-xs text-muted-foreground'>
                       Slide out side drawer for viewing record history.
                     </p>
@@ -1467,7 +1491,7 @@ export default function DesignLabPage() {
                         </SheetHeader>
 
                         <div className='relative z-10 flex-1 px-6 py-4 space-y-3 overflow-y-auto'>
-                          <span className='eyebrow-strong block text-[10px] text-muted-foreground uppercase tracking-wider mb-2'>
+                          <span className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 block text-[10px] text-muted-foreground uppercase tracking-wider mb-2'>
                             Recent Contributions
                           </span>
 
@@ -1534,7 +1558,7 @@ export default function DesignLabPage() {
 
                 {/* Toast Triggers */}
                 <div className='pt-6'>
-                  <h3 className='eyebrow-strong mb-3'>
+                  <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 mb-3'>
                     Toasts & Notification Triggers
                   </h3>
                   <div className='flex flex-wrap gap-3'>
@@ -1605,7 +1629,7 @@ export default function DesignLabPage() {
               {/* Feature Cards */}
               <section className='space-y-4'>
                 <div>
-                  <h2 className='text-lg font-semibold tracking-tight'>
+                  <h2 className='font-display text-xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                     Cards & Announcement Banners
                   </h2>
                   <p className='text-sm text-muted-foreground'>
@@ -1613,7 +1637,7 @@ export default function DesignLabPage() {
                   </p>
                 </div>
 
-                <div className='flex flex-col md:flex-row gap-6 p-6 rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm'>
+                <div className='flex flex-col md:flex-row gap-6 p-6 rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm'>
                   <AnnouncementCard variant='light' />
                   <AnnouncementCard variant='dark' />
                 </div>
@@ -1622,7 +1646,7 @@ export default function DesignLabPage() {
               {/* Standard Card */}
               <section className='space-y-4'>
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                  <Card className='rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm'>
+                  <Card className='rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm'>
                     <CardHeader>
                       <CardTitle>Fixed Deposit Summary</CardTitle>
                       <CardDescription>
@@ -1660,8 +1684,10 @@ export default function DesignLabPage() {
                   </Card>
 
                   {/* Scroll Area */}
-                  <div className='rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm p-6 space-y-3'>
-                    <h3 className='eyebrow-strong'>Custom Scroll Area</h3>
+                  <div className='rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm p-6 space-y-3'>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
+                      Custom Scroll Area
+                    </h3>
                     <ScrollArea className='h-44 w-full rounded-xl border border-border/40 p-4'>
                       <div className='space-y-3 text-xs'>
                         {Array.from({ length: 10 }).map((_, i) => (
@@ -1686,7 +1712,7 @@ export default function DesignLabPage() {
               {/* Table */}
               <section className='space-y-4'>
                 <div>
-                  <h2 className='text-lg font-semibold tracking-tight'>
+                  <h2 className='font-display text-xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                     Data Table
                   </h2>
                   <p className='text-sm text-muted-foreground'>
@@ -1694,7 +1720,7 @@ export default function DesignLabPage() {
                   </p>
                 </div>
 
-                <div className='rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden p-2'>
+                <div className='rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm overflow-hidden p-2'>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1755,7 +1781,7 @@ export default function DesignLabPage() {
               {/* Badges & Avatars */}
               <section className='space-y-6'>
                 <div>
-                  <h2 className='text-lg font-semibold tracking-tight'>
+                  <h2 className='font-display text-xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                     Badges & Avatars
                   </h2>
                   <p className='text-sm text-muted-foreground'>
@@ -1763,7 +1789,7 @@ export default function DesignLabPage() {
                   </p>
                 </div>
 
-                <div className='grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 p-5 md:p-8 rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm'>
+                <div className='grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 p-5 md:p-8 rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm'>
                   <div className='flex flex-col items-center gap-2'>
                     <Badge variant='default'>Default</Badge>
                     <span className='text-xs text-muted-foreground mt-2'>
@@ -1808,9 +1834,11 @@ export default function DesignLabPage() {
                   </div>
                 </div>
 
-                <div className='flex flex-col gap-8 p-6 md:p-8 rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm'>
+                <div className='flex flex-col gap-8 p-6 md:p-8 rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm'>
                   <div className='space-y-4'>
-                    <h3 className='eyebrow-strong'>Circle & Square Avatars</h3>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
+                      Circle & Square Avatars
+                    </h3>
                     <div className='flex items-end gap-6 md:gap-8 flex-wrap'>
                       <div className='flex flex-col items-center gap-2'>
                         <Avatar size='sm' shape='circle'>
@@ -1864,7 +1892,7 @@ export default function DesignLabPage() {
               {/* Alerts */}
               <section className='space-y-4'>
                 <div>
-                  <h2 className='text-lg font-semibold tracking-tight'>
+                  <h2 className='font-display text-xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                     Alert Banners
                   </h2>
                   <p className='text-sm text-muted-foreground'>
@@ -1922,7 +1950,7 @@ export default function DesignLabPage() {
               {/* Progress & Skeletons */}
               <section className='space-y-4'>
                 <div>
-                  <h2 className='text-lg font-semibold tracking-tight'>
+                  <h2 className='font-display text-xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                     Progress Bars & Skeleton Loaders
                   </h2>
                   <p className='text-sm text-muted-foreground'>
@@ -1930,10 +1958,12 @@ export default function DesignLabPage() {
                   </p>
                 </div>
 
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[20px] bg-popover/80 backdrop-blur-xl border border-border/50 shadow-sm'>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[20px] bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-border/50 shadow-sm'>
                   {/* Progress */}
                   <div className='space-y-4'>
-                    <h3 className='eyebrow-strong'>Progress Indicator</h3>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
+                      Progress Indicator
+                    </h3>
                     <div className='space-y-2'>
                       <div className='flex justify-between text-xs font-medium'>
                         <span>Annual 80C Investment Limit</span>
@@ -1953,7 +1983,9 @@ export default function DesignLabPage() {
 
                   {/* Skeletons */}
                   <div className='space-y-4'>
-                    <h3 className='eyebrow-strong'>Skeleton Placeholders</h3>
+                    <h3 className='font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400'>
+                      Skeleton Placeholders
+                    </h3>
                     <div className='flex items-center gap-3'>
                       <Skeleton className='h-10 w-10 rounded-full' />
                       <div className='space-y-2 flex-1'>
@@ -1976,7 +2008,7 @@ export default function DesignLabPage() {
             >
               <section className='space-y-4'>
                 <div>
-                  <h2 className='text-xl font-bold tracking-tight text-foreground'>
+                  <h2 className='font-display text-2xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                     Split-Screen Authentication
                   </h2>
                   <p className='text-sm text-muted-foreground mt-1'>
@@ -2003,7 +2035,7 @@ export default function DesignLabPage() {
                         </p>
                       </div>
                     </div>
-                    <div className='flex gap-3'>
+                    <div className='flex flex-wrap gap-2 sm:gap-3'>
                       <a
                         href='/design-lab/login'
                         className='inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background shadow-sm transition hover:bg-foreground/90'
@@ -2023,6 +2055,12 @@ export default function DesignLabPage() {
                         Forgot Password Demo
                       </a>
                       <a
+                        href='/design-lab/reset-password'
+                        className='inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-secondary/80'
+                      >
+                        Reset Password Demo
+                      </a>
+                      <a
                         href='/design-lab/setup-2fa'
                         className='inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-secondary/80'
                       >
@@ -2033,6 +2071,18 @@ export default function DesignLabPage() {
                         className='inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-secondary/80'
                       >
                         Verify 2FA Demo
+                      </a>
+                      <a
+                        href='/design-lab/verify-email'
+                        className='inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-secondary/80'
+                      >
+                        Verify Email Demo
+                      </a>
+                      <a
+                        href='/design-lab/dashboard'
+                        className='inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-secondary/80'
+                      >
+                        Dashboard Demo
                       </a>
                     </div>
                   </div>
@@ -2077,6 +2127,8 @@ export default function DesignLabPage() {
           />
         </div>
       </main>
+
+      <CoinTrackFooter />
     </TooltipProvider>
   );
 }

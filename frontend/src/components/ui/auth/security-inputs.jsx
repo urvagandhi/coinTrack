@@ -11,7 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/primitives/badge';
 import { Input } from '@/components/ui/primitives/input';
-import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User, AlertCircle } from 'lucide-react';
 
 // ───────────────────────────────────────────────────────────────
 //  PLATFORM COMPATIBILITY MATRIX & LIMITATIONS
@@ -337,12 +337,14 @@ export function PasswordStrengthInput({
   name,
   disabled = false,
   required = false,
+  error,
   onModifierError,
   ...rest
 }) {
   const generatedId = useId();
   const inputId = id || generatedId;
   const inputRef = useRef(null);
+  const containerRef = useRef(null);
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -356,33 +358,56 @@ export function PasswordStrengthInput({
     [safeValue]
   );
 
+  useEffect(() => {
+    if (error && containerRef.current) {
+      containerRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      inputRef.current?.focus();
+    }
+  }, [error]);
+
   return (
-    <div className={cn('w-full min-w-0 space-y-2', className)}>
+    <div
+      ref={containerRef}
+      className={cn('w-full min-w-0 space-y-2', className)}
+    >
       {label && (
-        <div className='flex flex-wrap items-center justify-between gap-1 min-w-0'>
+        <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1'>
           <label
             htmlFor={inputId}
             className={cn(
-              'text-[13px] font-semibold text-foreground shrink-0 cursor-pointer',
+              'text-[13px] font-semibold text-foreground shrink-0 cursor-pointer sm:pt-0.5',
               labelClassName
             )}
           >
             {label}
           </label>
-          {showRules && (
-            <span
-              className={cn('text-xs font-medium shrink-0', color)}
-              aria-live='polite'
-            >
-              {text}
+          {error ? (
+            <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+              <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+              <span className='leading-tight'>{error}</span>
             </span>
+          ) : (
+            showRules && (
+              <span
+                className={cn('text-xs font-medium shrink-0 sm:pt-0.5', color)}
+                aria-live='polite'
+              >
+                {text}
+              </span>
+            )
           )}
         </div>
       )}
 
       <div
         className={cn(
-          'relative flex items-center w-full min-w-0 rounded-xl bg-card/60 hover:bg-card/90 focus-within:bg-background backdrop-blur-xl border border-border/50 focus-within:border-foreground/30 shadow-xs transition-all duration-200',
+          'relative flex items-center w-full min-w-0 rounded-xl transition-all duration-200',
+          error
+            ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+            : 'bg-card/60 hover:bg-card/90 focus-within:bg-background backdrop-blur-xl border border-border/50 focus-within:border-foreground/30 shadow-xs',
           disabled && 'opacity-60 pointer-events-none',
           containerClassName
         )}
@@ -533,10 +558,13 @@ export function SmartAuthInput({
   autoComplete = 'username',
   disabled = false,
   required = false,
+  error,
   ...rest
 }) {
   const generatedId = useId();
   const inputId = id || generatedId;
+  const inputRef = useRef(null);
+  const containerRef = useRef(null);
 
   const rawValue = typeof value === 'string' ? value : '';
 
@@ -585,22 +613,46 @@ export function SmartAuthInput({
     [onChange]
   );
 
+  useEffect(() => {
+    if (error && containerRef.current) {
+      containerRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      inputRef.current?.focus();
+    }
+  }, [error]);
+
   return (
-    <div className={cn('w-full min-w-0 space-y-2', className)}>
+    <div
+      ref={containerRef}
+      className={cn('w-full min-w-0 space-y-2', className)}
+    >
       {label && (
-        <label
-          htmlFor={inputId}
-          className={cn(
-            'block text-[13px] font-semibold text-foreground ml-1 cursor-pointer',
-            labelClassName
+        <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-1'>
+          <label
+            htmlFor={inputId}
+            className={cn(
+              'text-[13px] font-semibold text-foreground cursor-pointer sm:pt-0.5',
+              labelClassName
+            )}
+          >
+            {label}
+          </label>
+          {error && (
+            <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+              <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+              <span className='leading-tight'>{error}</span>
+            </span>
           )}
-        >
-          {label}
-        </label>
+        </div>
       )}
       <div
         className={cn(
-          'relative flex items-center w-full min-w-0 rounded-xl bg-card/60 hover:bg-card/90 focus-within:bg-background backdrop-blur-xl border border-border/50 focus-within:border-foreground/30 shadow-xs transition-all duration-200',
+          'relative flex items-center w-full min-w-0 rounded-xl transition-all duration-200',
+          error
+            ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+            : 'bg-card/60 hover:bg-card/90 focus-within:bg-background backdrop-blur-xl border border-border/50 focus-within:border-foreground/30 shadow-xs',
           disabled && 'opacity-60 pointer-events-none',
           containerClassName
         )}
@@ -637,6 +689,7 @@ export function SmartAuthInput({
           )}
         </div>
         <Input
+          ref={inputRef}
           id={inputId}
           name={name}
           type='text'

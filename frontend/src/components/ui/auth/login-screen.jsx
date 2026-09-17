@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
+import { AnimatedSuccessIcon } from '@/components/ui/feedback/animated-icons';
 import {
   Bell,
   ChevronRight,
@@ -11,6 +12,8 @@ import {
   Wallet,
   TrendingUp,
   ArrowUpRight,
+  ShieldCheck,
+  AlertCircle,
   // Fingerprint,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -115,7 +118,7 @@ function PortfolioPhoneMockup() {
                   className='object-contain w-auto h-auto'
                 />
               </span>
-              <span className='font-serif italic font-semibold text-xs text-white dark:text-zinc-900'>
+              <span className='font-display font-bold text-xs text-white dark:text-zinc-900'>
                 coinTrack
               </span>
             </div>
@@ -212,7 +215,9 @@ export function LoginSplitScreen({
   onForgotPassword,
   onRegister,
   isLoading = false,
+  isGoogleLoading = false,
   errorMessage,
+  successMessage,
   // showSecurityBanner = true,
   // showPasskey = true,
 }) {
@@ -221,11 +226,64 @@ export function LoginSplitScreen({
   const [rememberMe, setRememberMe] = useState(false);
   const [localError, setLocalError] = useState('');
 
+  // Google Simulation State
+  const [googleSimState, setGoogleSimState] = useState('idle'); // 'idle' | 'connecting' | 'connected' | 'signing-in'
+  const [dotCount, setDotCount] = useState(0);
+
+  useEffect(() => {
+    if (googleSimState === 'connecting' || isGoogleLoading) {
+      const interval = setInterval(() => {
+        setDotCount(c => (c + 1) % 4);
+      }, 400);
+      return () => clearInterval(interval);
+    }
+  }, [googleSimState, isGoogleLoading]);
+
+  const handleGoogleMockClick = () => {
+    if (googleSimState !== 'idle' || isGoogleLoading) return;
+    setGoogleSimState('connecting');
+    setTimeout(() => {
+      setGoogleSimState('connected');
+      setTimeout(() => {
+        setGoogleSimState('signing-in');
+        setTimeout(() => {
+          setGoogleSimState('idle');
+          onGoogleLogin?.();
+        }, 900);
+      }, 1000);
+    }, 1400);
+  };
+
   const activeError = errorMessage || localError;
 
-  useDynamicDocumentTitle('Sign In | coinTrack');
+  const fieldErrors = useMemo(() => {
+    if (!activeError) return {};
+    const lower = activeError.toLowerCase();
+    if (lower.includes('password') || lower.includes('credential'))
+      return { password: activeError };
+    if (
+      lower.includes('email') ||
+      lower.includes('username') ||
+      lower.includes('mobile') ||
+      lower.includes('phone') ||
+      lower.includes('user not found')
+    )
+      return { identifier: activeError };
+    return { global: activeError };
+  }, [activeError]);
 
-  const currentYear = useMemo(() => new Date().getFullYear(), []);
+  const globalErrorContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (fieldErrors.global && globalErrorContainerRef.current) {
+      globalErrorContainerRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [fieldErrors]);
+
+  useDynamicDocumentTitle('Sign In | coinTrack');
 
   const handleSubmit = useCallback(
     e => {
@@ -270,9 +328,9 @@ export function LoginSplitScreen({
             <TrendingUp className='size-3' />
             <span>Multi-Broker Portfolio Intelligence</span>
           </div>
-          <h2 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-white dark:text-zinc-900 tracking-tight leading-snug'>
+          <h2 className='font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white dark:text-zinc-900 tracking-tight leading-snug'>
             Track Smarter.{' '}
-            <span className='font-serif italic font-normal text-emerald-400 dark:text-emerald-600'>
+            <span className='font-display font-extrabold text-emerald-400 dark:text-emerald-600'>
               Wealth, Unified.
             </span>
           </h2>
@@ -292,20 +350,33 @@ export function LoginSplitScreen({
 
         {/* Form Main Body */}
         <div className='w-full max-w-[340px] sm:max-w-md md:max-w-[340px] lg:max-w-md xl:max-w-lg mx-auto my-auto flex flex-col justify-center shrink-0 py-2'>
-          <h1 className='text-2xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-1.5 sm:mb-1 tracking-tight text-left'>
+          <h1 className='font-display text-2xl sm:text-2xl lg:text-3xl font-extrabold text-foreground mb-1.5 sm:mb-1 tracking-tight text-left'>
             Welcome back
           </h1>
-          <p className='text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-4 text-left'>
+          <p className='font-sans text-xs sm:text-sm text-neutral-700/90 dark:text-neutral-400 mb-4 sm:mb-4 text-left leading-relaxed'>
             Enter your credentials to access your unified wealth dashboard.
           </p>
 
-          {/* Error Message */}
-          {activeError && (
+          {/* Success / Status Message */}
+          {successMessage && (
             <div
-              className='mb-3.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium'
+              className='mb-3.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 text-xs font-medium flex items-center gap-2'
+              role='status'
+            >
+              <ShieldCheck className='size-4 shrink-0' />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {fieldErrors.global && (
+            <div
+              ref={globalErrorContainerRef}
+              className='flex items-start gap-2 mb-3.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium'
               role='alert'
             >
-              {activeError}
+              <AlertCircle className='size-4 shrink-0 mt-0.5' />
+              <span>{fieldErrors.global}</span>
             </div>
           )}
 
@@ -335,11 +406,49 @@ export function LoginSplitScreen({
           <Button
             type='button'
             variant='outline'
-            onClick={onGoogleLogin}
-            className='group w-full rounded-[14px] bg-muted/50 hover:bg-muted/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-900 border-border/40 text-foreground py-6 px-4 text-xs sm:text-sm font-medium flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 active:translate-y-0 active:scale-[0.99] mb-3 sm:mb-3.5'
+            onClick={handleGoogleMockClick}
+            disabled={isGoogleLoading || googleSimState !== 'idle'}
+            className='group w-full rounded-[14px] bg-muted/50 hover:bg-muted/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-900 border-border/40 text-foreground py-5 sm:py-6 px-4 text-xs sm:text-sm font-medium flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 active:translate-y-0 active:scale-[0.99] mb-3 sm:mb-3.5 disabled:opacity-70 disabled:pointer-events-none'
           >
-            <GoogleIcon className='transition-transform duration-300 group-hover:scale-110' />
-            <span>Continue with Google</span>
+            {isGoogleLoading || googleSimState === 'connecting' ? (
+              <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
+                <div className='size-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground animate-spin' />
+                <span className='min-w-[85px] text-left'>
+                  Connecting{'.'.repeat(dotCount)}
+                </span>
+              </span>
+            ) : googleSimState === 'connected' ? (
+              <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
+                <AnimatedSuccessIcon className='size-5 text-emerald-500 dark:text-emerald-400' />
+                <span className='text-emerald-600 dark:text-emerald-400 font-semibold'>
+                  Google Connected
+                </span>
+              </span>
+            ) : googleSimState === 'signing-in' ? (
+              <span className='flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300'>
+                <span className='relative size-4 block shrink-0 animate-spin duration-[3000ms]'>
+                  <Image
+                    src='/coinTrack.png'
+                    alt='coinTrack'
+                    width={16}
+                    height={16}
+                    className='object-contain w-auto h-auto'
+                  />
+                </span>
+                <span className='font-semibold text-foreground tracking-tight'>
+                  Signing in to{' '}
+                  <span className='font-display font-bold text-emerald-600 dark:text-emerald-400'>
+                    coinTrack
+                  </span>
+                  {'.'.repeat(dotCount)}
+                </span>
+              </span>
+            ) : (
+              <span className='flex items-center gap-2.5 transition-transform duration-300'>
+                <GoogleIcon className='transition-transform duration-300 group-hover:scale-110' />
+                <span>Continue with Google</span>
+              </span>
+            )}
           </Button>
 
           {/* Divider */}
@@ -366,6 +475,7 @@ export function LoginSplitScreen({
               inputClassName='py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 bg-transparent'
               disabled={isLoading}
               required
+              error={fieldErrors.identifier}
             />
 
             <PasswordStrengthInput
@@ -378,11 +488,12 @@ export function LoginSplitScreen({
               showRules={false}
               showCapsBadge={true}
               showNumBadge={true}
+              showStrengthBar={false}
               containerClassName='bg-muted/40 dark:bg-zinc-900/60 border-border/40 rounded-[14px] focus-within:ring-2 focus-within:ring-emerald-500/20'
               inputClassName='py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 bg-transparent'
-              className='space-y-1'
               disabled={isLoading}
               required
+              error={fieldErrors.password}
             />
 
             {/* Remember me & Forgot Password */}

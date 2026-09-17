@@ -1,6 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useId, memo } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useId,
+  memo,
+  useRef,
+} from 'react';
 import Image from 'next/image';
 import {
   Bell,
@@ -10,6 +18,7 @@ import {
   Signal,
   Wallet,
   TrendingUp,
+  ArrowLeft,
   ArrowUpRight,
   User,
   Mail,
@@ -29,6 +38,7 @@ import {
   useDynamicDocumentTitle,
 } from '@/components/ui/auth/auth-shared';
 import { useModal } from '@/contexts/ModalContext';
+import { AnimatedSuccessIcon } from '@/components/ui/feedback/animated-icons';
 
 // ───────────────────────────────────────────────────────────────
 //  CONSTANTS & DATA
@@ -120,7 +130,7 @@ const RegisterPortfolioMockup = memo(function RegisterPortfolioMockup() {
                   className='object-contain w-auto h-auto'
                 />
               </span>
-              <span className='font-serif italic font-semibold text-xs text-white dark:text-zinc-900'>
+              <span className='font-display font-bold text-xs text-white dark:text-zinc-900'>
                 coinTrack
               </span>
             </div>
@@ -235,7 +245,6 @@ export function RegisterSplitScreen({
   useDynamicDocumentTitle('Create Account | coinTrack');
   const { openModal } = useModal();
 
-  const currentYear = useMemo(() => new Date().getFullYear(), []);
   const maxDobDate = useMemo(() => {
     const today = new Date();
     const eighteenYearsAgo = new Date(
@@ -254,7 +263,6 @@ export function RegisterSplitScreen({
   const dobId = useId();
   const confirmPasswordId = useId();
 
-  // Form State
   const [formData, setFormData] = useState({
     name: initialData.name || '',
     username: initialData.username || '',
@@ -264,6 +272,55 @@ export function RegisterSplitScreen({
     password: '',
     confirmPassword: '',
   });
+
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+  const usernameRef = useRef(null);
+  const phoneRef = useRef(null);
+  const dobRef = useRef(null);
+  const termsRef = useRef(null);
+  const globalErrorContainerRef = useRef(null);
+
+  const [internalMode, setInternalMode] = useState(mode);
+
+  useEffect(() => {
+    setInternalMode(mode);
+  }, [mode]);
+
+  // Google Simulation State
+  const [googleSimState, setGoogleSimState] = useState('idle'); // 'idle' | 'connecting' | 'connected' | 'preparing'
+  const [dotCount, setDotCount] = useState(0);
+
+  useEffect(() => {
+    if (googleSimState === 'connecting' || isGoogleLoading) {
+      const interval = setInterval(() => {
+        setDotCount(c => (c + 1) % 4);
+      }, 400);
+      return () => clearInterval(interval);
+    }
+  }, [googleSimState, isGoogleLoading]);
+
+  const handleGoogleMockClick = () => {
+    if (googleSimState !== 'idle') return;
+
+    setGoogleSimState('connecting');
+    setTimeout(() => {
+      setGoogleSimState('connected');
+      setTimeout(() => {
+        setGoogleSimState('preparing');
+        setTimeout(() => {
+          setGoogleSimState('idle');
+          handleFieldChange('name', 'Urva Gandhi');
+          handleFieldChange('username', 'urvagandhi');
+          handleFieldChange('email', 'urva@cointrack.in');
+          handleFieldChange('phoneNumber', '9876543210');
+          handleFieldChange('dateOfBirth', '2000-01-01');
+          setInternalMode('complete-profile');
+          onGoogleSignUp?.();
+        }, 900);
+      }, 800);
+    }, 1500);
+  };
 
   // Sync initial data if it changes after mount
   useEffect(() => {
@@ -284,8 +341,79 @@ export function RegisterSplitScreen({
   ]);
 
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [clientError, setClientError] = useState('');
+
+  const displayedError = errorMessage || clientError;
+
+  const fieldErrors = useMemo(() => {
+    let errors = {};
+    if (
+      formData.confirmPassword &&
+      formData.confirmPassword !== formData.password
+    ) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!displayedError) return errors;
+
+    const lower = displayedError.toLowerCase();
+    if (lower.includes('name') && !lower.includes('username'))
+      errors.name = displayedError;
+    else if (lower.includes('username')) errors.username = displayedError;
+    else if (lower.includes('email')) errors.email = displayedError;
+    else if (
+      lower.includes('mobile') ||
+      lower.includes('phone') ||
+      lower.includes('digit')
+    )
+      errors.phoneNumber = displayedError;
+    else if (
+      lower.includes('birth') ||
+      lower.includes('18 years') ||
+      lower.includes('age')
+    )
+      errors.dateOfBirth = displayedError;
+    else if (lower.includes('password') && !lower.includes('match'))
+      errors.password = displayedError;
+    else if (
+      lower.includes('match') ||
+      lower.includes('passwords do not match')
+    )
+      errors.confirmPassword = displayedError;
+    else if (lower.includes('terms') || lower.includes('agree'))
+      errors.terms = displayedError;
+    else errors.global = displayedError;
+
+    return errors;
+  }, [displayedError, formData.password, formData.confirmPassword]);
+
+  useEffect(() => {
+    if (fieldErrors.name && nameRef.current) {
+      nameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById(nameId)?.focus();
+    } else if (fieldErrors.email && emailRef.current) {
+      emailRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById(emailId)?.focus();
+    } else if (fieldErrors.username && usernameRef.current) {
+      usernameRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      document.getElementById(usernameId)?.focus();
+    } else if (fieldErrors.phoneNumber && phoneRef.current) {
+      phoneRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById(phoneId)?.focus();
+    } else if (fieldErrors.dateOfBirth && dobRef.current) {
+      dobRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (fieldErrors.terms && termsRef.current) {
+      termsRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (fieldErrors.global && globalErrorContainerRef.current) {
+      globalErrorContainerRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [fieldErrors, nameId, emailId, usernameId, phoneId]);
 
   // Field change handler with security sanitization
   const handleFieldChange = useCallback((field, value) => {
@@ -409,7 +537,7 @@ export function RegisterSplitScreen({
     [isLoading, validateForm, onRegister, formData]
   );
 
-  const displayedError = errorMessage || clientError;
+  // const displayedError = errorMessage || clientError;
 
   return (
     <div
@@ -430,9 +558,9 @@ export function RegisterSplitScreen({
             <TrendingUp className='size-3' />
             <span>Institutional Wealth Aggregation</span>
           </div>
-          <h2 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-white dark:text-zinc-900 tracking-tight leading-snug'>
+          <h2 className='font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white dark:text-zinc-900 tracking-tight leading-snug'>
             Your Ledger.{' '}
-            <span className='font-serif italic font-normal text-emerald-400 dark:text-emerald-600'>
+            <span className='font-display font-extrabold text-emerald-400 dark:text-emerald-600'>
               Built To Scale.
             </span>
           </h2>
@@ -453,47 +581,134 @@ export function RegisterSplitScreen({
 
         {/* Main Body */}
         <div className='w-full max-w-[340px] sm:max-w-md md:max-w-[340px] lg:max-w-md xl:max-w-lg mx-auto my-auto flex flex-col justify-center shrink-0 py-2'>
-          <h1 className='text-2xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-1 tracking-tight text-left'>
-            {mode === 'complete-profile'
+          <h1 className='font-display text-2xl sm:text-2xl lg:text-3xl font-extrabold text-foreground mb-1 tracking-tight text-left'>
+            {internalMode === 'complete-profile'
               ? 'Complete your profile'
               : 'Create your account'}
           </h1>
-          <p className='text-xs sm:text-sm text-muted-foreground mb-2.5 text-left'>
-            {mode === 'complete-profile'
+          <p className='font-sans text-xs sm:text-sm text-neutral-700/90 dark:text-neutral-400 mb-2.5 text-left leading-relaxed'>
+            {internalMode === 'complete-profile'
               ? 'Choose a unique username and finalize your details to finish setting up your account.'
               : 'Join thousands of verified investors managing unified portfolios.'}
           </p>
 
-          {displayedError && (
+          {/* Global Error Alert */}
+          {fieldErrors.global && (
             <div
+              ref={globalErrorContainerRef}
               className='flex items-start gap-2 mb-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium'
               role='alert'
             >
               <AlertCircle className='size-4 shrink-0 mt-0.5' />
-              <span>{displayedError}</span>
+              <span>{fieldErrors.global}</span>
+            </div>
+          )}
+
+          {/* Developer Debug Buttons */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className='flex flex-wrap gap-1.5 mb-3 bg-muted/20 p-2 rounded-xl border border-border/40'>
+              <span className='text-[9px] font-mono font-semibold text-muted-foreground/70 w-full uppercase tracking-wider pl-1'>
+                DEV: Trigger Error
+              </span>
+              <button
+                type='button'
+                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
+                onClick={() => setClientError('Invalid username provided')}
+              >
+                Username
+              </button>
+              <button
+                type='button'
+                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
+                onClick={() =>
+                  setClientError('Please enter a valid email address')
+                }
+              >
+                Email
+              </button>
+              <button
+                type='button'
+                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
+                onClick={() =>
+                  setClientError('Mobile number must be exactly 10 digits')
+                }
+              >
+                Phone
+              </button>
+              <button
+                type='button'
+                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
+                onClick={() =>
+                  setClientError('Password must contain at least one number')
+                }
+              >
+                Password
+              </button>
+              <button
+                type='button'
+                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
+                onClick={() => setClientError('General server error occurred')}
+              >
+                Global
+              </button>
+              <button
+                type='button'
+                className='bg-destructive/10 text-destructive hover:bg-destructive/20 text-[10px] rounded-md px-2 py-1 transition-colors ml-auto font-medium'
+                onClick={() => setClientError('')}
+              >
+                Clear
+              </button>
             </div>
           )}
 
           {/* Social Sign-up Button (Hidden in complete-profile mode) */}
-          {mode !== 'complete-profile' && (
+          {internalMode !== 'complete-profile' && (
             <>
               <Button
                 type='button'
                 variant='outline'
-                onClick={onGoogleSignUp}
-                disabled={isGoogleLoading}
+                onClick={handleGoogleMockClick}
+                disabled={isGoogleLoading || googleSimState !== 'idle'}
                 className='group w-full rounded-[14px] bg-muted/50 hover:bg-muted/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-900 border-border/40 text-foreground py-5 sm:py-6 px-4 text-xs sm:text-sm font-medium flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 active:translate-y-0 active:scale-[0.99] mb-3 sm:mb-3.5 disabled:opacity-70 disabled:pointer-events-none'
               >
-                {isGoogleLoading ? (
-                  <>
+                {isGoogleLoading || googleSimState === 'connecting' ? (
+                  <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
                     <div className='size-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground animate-spin' />
-                    <span>Connecting...</span>
-                  </>
+                    <span className='min-w-[85px] text-left'>
+                      Connecting{'.'.repeat(dotCount)}
+                    </span>
+                  </span>
+                ) : googleSimState === 'connected' ? (
+                  <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
+                    <AnimatedSuccessIcon className='size-5 text-emerald-500 dark:text-emerald-400' />
+                    <span className='text-emerald-600 dark:text-emerald-400 font-semibold'>
+                      Google Connected
+                    </span>
+                  </span>
+                ) : googleSimState === 'preparing' ? (
+                  <span className='flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300'>
+                    <span className='relative size-4 block shrink-0 animate-spin duration-[3000ms]'>
+                      <Image
+                        src='/coinTrack.png'
+                        alt='coinTrack'
+                        width={16}
+                        height={16}
+                        className='object-contain w-auto h-auto'
+                      />
+                    </span>
+                    <span className='font-semibold text-foreground tracking-tight'>
+                      Preparing{' '}
+                      <span className='font-display font-bold text-emerald-600 dark:text-emerald-400'>
+                        coinTrack
+                      </span>{' '}
+                      profile{'.'.repeat(dotCount)}
+                    </span>
+                  </span>
                 ) : (
-                  <>
+                  <span className='flex items-center gap-2.5 transition-transform duration-300'>
                     <GoogleIcon className='transition-transform duration-300 group-hover:scale-110' />
                     <span>Sign up with Google</span>
-                  </>
+                  </span>
                 )}
               </Button>
 
@@ -513,14 +728,29 @@ export function RegisterSplitScreen({
           {/* Form */}
           <form onSubmit={handleSubmit} className='space-y-2.5 sm:space-y-3'>
             {/* Full Name */}
-            <div className='space-y-1 text-left'>
-              <label
-                htmlFor={nameId}
-                className='text-xs font-semibold text-foreground/80 ml-0.5'
+            <div ref={nameRef} className='space-y-1 text-left'>
+              <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
+                <label
+                  htmlFor={nameId}
+                  className='text-xs font-semibold text-foreground/80 sm:pt-0.5'
+                >
+                  Full Name
+                </label>
+                {fieldErrors.name && (
+                  <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                    <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                    <span className='leading-tight'>{fieldErrors.name}</span>
+                  </span>
+                )}
+              </div>
+              <div
+                className={cn(
+                  'relative flex items-center rounded-[14px] transition-all duration-200',
+                  fieldErrors.name
+                    ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                    : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'
+                )}
               >
-                Full Name
-              </label>
-              <div className='relative flex items-center rounded-[14px] bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'>
                 <User
                   className='size-4 text-muted-foreground ml-3 shrink-0'
                   aria-hidden='true'
@@ -541,16 +771,36 @@ export function RegisterSplitScreen({
             </div>
 
             {/* Email Address */}
-            <div className='space-y-1 text-left'>
-              <label
-                htmlFor={emailId}
-                className='text-xs font-semibold text-foreground/80 ml-0.5'
+            <div ref={emailRef} className='space-y-1 text-left'>
+              <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
+                <label
+                  htmlFor={emailId}
+                  className='text-xs font-semibold text-foreground/80 sm:pt-0.5'
+                >
+                  Email Address
+                </label>
+                {fieldErrors.email && (
+                  <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                    <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                    <span className='leading-tight'>{fieldErrors.email}</span>
+                  </span>
+                )}
+              </div>
+              <div
+                className={cn(
+                  'relative flex items-center rounded-[14px] transition-all duration-200',
+                  fieldErrors.email
+                    ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                    : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20',
+                  internalMode === 'complete-profile' &&
+                    'opacity-60 bg-muted/60 dark:bg-zinc-800/60 cursor-not-allowed border-dashed'
+                )}
               >
-                Email Address
-              </label>
-              <div className='relative flex items-center rounded-[14px] bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'>
                 <Mail
-                  className='size-4 text-muted-foreground ml-3 shrink-0'
+                  className={cn(
+                    'size-4 text-muted-foreground ml-3 shrink-0',
+                    internalMode === 'complete-profile' && 'opacity-70'
+                  )}
                   aria-hidden='true'
                 />
                 <Input
@@ -564,12 +814,13 @@ export function RegisterSplitScreen({
                   value={formData.email}
                   onChange={e => handleFieldChange('email', e.target.value)}
                   placeholder='urva@cointrack.in'
-                  disabled={isLoading || mode === 'complete-profile'}
+                  readOnly={internalMode === 'complete-profile'}
+                  disabled={isLoading}
                   required
                   className={cn(
                     '!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 w-full min-w-0 pr-3',
-                    mode === 'complete-profile' &&
-                      'text-muted-foreground cursor-not-allowed opacity-70'
+                    internalMode === 'complete-profile' &&
+                      'text-muted-foreground cursor-not-allowed pointer-events-none'
                   )}
                 />
               </div>
@@ -577,14 +828,31 @@ export function RegisterSplitScreen({
 
             {/* Username & Phone Number */}
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3'>
-              <div className='space-y-1 text-left'>
-                <label
-                  htmlFor={usernameId}
-                  className='text-xs font-semibold text-foreground/80 ml-0.5'
+              <div ref={usernameRef} className='space-y-1 text-left'>
+                <div className='flex flex-col lg:flex-row lg:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
+                  <label
+                    htmlFor={usernameId}
+                    className='text-xs font-semibold text-foreground/80 lg:pt-0.5'
+                  >
+                    Username
+                  </label>
+                  {fieldErrors.username && (
+                    <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                      <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                      <span className='leading-tight'>
+                        {fieldErrors.username}
+                      </span>
+                    </span>
+                  )}
+                </div>
+                <div
+                  className={cn(
+                    'relative flex items-center rounded-[14px] transition-all duration-200',
+                    fieldErrors.username
+                      ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                      : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'
+                  )}
                 >
-                  Username
-                </label>
-                <div className='relative flex items-center rounded-[14px] bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'>
                   <span className='text-xs font-semibold text-muted-foreground ml-3 select-none'>
                     @
                   </span>
@@ -607,14 +875,31 @@ export function RegisterSplitScreen({
                 </div>
               </div>
 
-              <div className='space-y-1 text-left'>
-                <label
-                  htmlFor={phoneId}
-                  className='text-xs font-semibold text-foreground/80 ml-0.5'
+              <div ref={phoneRef} className='space-y-1 text-left'>
+                <div className='flex flex-col lg:flex-row lg:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
+                  <label
+                    htmlFor={phoneId}
+                    className='text-xs font-semibold text-foreground/80 lg:pt-0.5'
+                  >
+                    Mobile Number
+                  </label>
+                  {fieldErrors.phoneNumber && (
+                    <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                      <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                      <span className='leading-tight'>
+                        {fieldErrors.phoneNumber}
+                      </span>
+                    </span>
+                  )}
+                </div>
+                <div
+                  className={cn(
+                    'relative flex items-center rounded-[14px] transition-all duration-200',
+                    fieldErrors.phoneNumber
+                      ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                      : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'
+                  )}
                 >
-                  Mobile Number
-                </label>
-                <div className='relative flex items-center rounded-[14px] bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'>
                   <div
                     className='flex items-center gap-1 pl-3 text-muted-foreground select-none'
                     aria-hidden='true'
@@ -650,38 +935,56 @@ export function RegisterSplitScreen({
             </div>
 
             {/* Date of Birth */}
-            <div className='space-y-1 text-left'>
-              <div className='flex items-center justify-between'>
+            <div ref={dobRef} className='space-y-1 text-left'>
+              <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 mb-1 ml-0.5'>
                 <label
                   htmlFor={dobId}
-                  className='text-xs font-semibold text-foreground/80 ml-0.5'
+                  className='text-xs font-semibold text-foreground/80 sm:pt-0.5'
                 >
                   Date of Birth
                 </label>
-                <span className='text-[10px] font-medium text-muted-foreground/70'>
-                  Must be 18+ years
-                </span>
+                {fieldErrors.dateOfBirth ? (
+                  <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                    <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                    <span className='leading-tight'>
+                      {fieldErrors.dateOfBirth}
+                    </span>
+                  </span>
+                ) : (
+                  <span className='text-[10px] font-medium text-muted-foreground/70 sm:pt-0.5'>
+                    Must be 18+ years
+                  </span>
+                )}
               </div>
-              <DatePicker
-                id={dobId}
-                name='dateOfBirth'
-                max={maxDobDate}
-                value={formData.dateOfBirth}
-                onChange={val => handleFieldChange('dateOfBirth', val)}
-                disabled={isLoading}
-                required
-              />
+              <div
+                className={cn(
+                  'transition-all duration-200 rounded-[14px]',
+                  fieldErrors.dateOfBirth
+                    ? 'ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                    : ''
+                )}
+              >
+                <DatePicker
+                  id={dobId}
+                  name='dateOfBirth'
+                  max={maxDobDate}
+                  value={formData.dateOfBirth}
+                  onChange={val => handleFieldChange('dateOfBirth', val)}
+                  disabled={isLoading}
+                  required
+                />
+              </div>
             </div>
 
             {/* Password with Bank-Grade Strength Meter & Real-Time Modifier Warnings */}
             <div className='space-y-1 text-left'>
               <PasswordStrengthInput
                 autoComplete='new-password'
-                label='Master Password'
+                label='New Password'
                 labelClassName='text-xs font-semibold text-foreground/80 ml-0.5 mb-0.5 normal-case'
                 value={formData.password}
                 onChange={e => handleFieldChange('password', e.target.value)}
-                placeholder='Choose a strong password'
+                placeholder='Enter your new password'
                 showRules={true}
                 showCapsBadge={true}
                 showNumBadge={true}
@@ -689,61 +992,36 @@ export function RegisterSplitScreen({
                 inputClassName='py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 bg-transparent'
                 disabled={isLoading}
                 required
+                error={fieldErrors.password}
               />
             </div>
 
             {/* Confirm Password */}
             <div className='space-y-1 text-left'>
-              <label
-                htmlFor={confirmPasswordId}
-                className='text-xs font-semibold text-foreground/80 ml-0.5'
-              >
-                Confirm Password
-              </label>
-              <div className='relative flex items-center rounded-[14px] bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'>
-                <Lock
-                  className='size-4 text-muted-foreground ml-3 shrink-0'
-                  aria-hidden='true'
-                />
-                <Input
-                  id={confirmPasswordId}
-                  name='confirmPassword'
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  autoComplete='new-password'
-                  autoCapitalize='none'
-                  autoCorrect='off'
-                  spellCheck={false}
-                  value={formData.confirmPassword}
-                  onChange={e =>
-                    handleFieldChange('confirmPassword', e.target.value)
-                  }
-                  placeholder='Re-enter your password'
-                  disabled={isLoading}
-                  required
-                  className='!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 pl-2'
-                />
-                <button
-                  type='button'
-                  onClick={() => setShowConfirmPassword(v => !v)}
-                  className='p-2.5 pr-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 rounded-lg'
-                  aria-label={
-                    showConfirmPassword
-                      ? 'Hide confirm password'
-                      : 'Show confirm password'
-                  }
-                  aria-pressed={showConfirmPassword}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className='size-4' aria-hidden='true' />
-                  ) : (
-                    <Eye className='size-4' aria-hidden='true' />
-                  )}
-                </button>
-              </div>
+              <PasswordStrengthInput
+                id={confirmPasswordId}
+                autoComplete='new-password'
+                label='Confirm Password'
+                labelClassName='text-xs font-semibold text-foreground/80 ml-0.5 mb-0.5 normal-case'
+                value={formData.confirmPassword}
+                onChange={e =>
+                  handleFieldChange('confirmPassword', e.target.value)
+                }
+                placeholder='Re-enter your new password'
+                showRules={false}
+                showStrengthBar={false}
+                showCapsBadge={true}
+                showNumBadge={true}
+                containerClassName='bg-muted/40 dark:bg-zinc-900/60 border-border/40 rounded-[14px] focus-within:ring-2 focus-within:ring-emerald-500/20'
+                inputClassName='py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 bg-transparent'
+                disabled={isLoading}
+                required
+                error={fieldErrors.confirmPassword}
+              />
             </div>
 
             {/* Terms of Service Checkbox */}
-            <div className='pt-1 text-left'>
+            <div ref={termsRef} className='pt-1 text-left space-y-1'>
               <label className='flex items-start gap-2.5 cursor-pointer select-none group'>
                 <input
                   type='checkbox'
@@ -778,6 +1056,12 @@ export function RegisterSplitScreen({
                   .
                 </span>
               </label>
+              {fieldErrors.terms && (
+                <div className='text-[10px] font-medium text-destructive animate-in fade-in flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-md mt-1'>
+                  <AlertCircle className='size-3 shrink-0' />
+                  <span>{fieldErrors.terms}</span>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
@@ -785,14 +1069,14 @@ export function RegisterSplitScreen({
               type='submit'
               variant='default'
               disabled={isLoading}
-              className='group w-full rounded-[14px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 py-5 sm:py-6 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/25 active:translate-y-0 active:scale-[0.99] mt-2.5 sm:mt-3'
+              className='group w-full rounded-[14px] bg-black text-white dark:bg-white dark:text-black py-5 sm:py-6 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/25 active:translate-y-0 active:scale-[0.99] mt-2.5 sm:mt-3'
             >
               <span>
                 {isLoading
-                  ? mode === 'complete-profile'
+                  ? internalMode === 'complete-profile'
                     ? 'Saving profile...'
                     : 'Creating Ledger...'
-                  : mode === 'complete-profile'
+                  : internalMode === 'complete-profile'
                     ? 'Complete Registration'
                     : 'Create coinTrack Account'}
               </span>
@@ -801,15 +1085,28 @@ export function RegisterSplitScreen({
 
             {/* Switch to Login */}
             {mode !== 'complete-profile' && (
-              <div className='pt-2 sm:pt-3 text-center text-xs text-muted-foreground'>
-                Already have an account?{' '}
-                <button
-                  type='button'
-                  onClick={onLoginRedirect}
-                  className='font-semibold text-foreground hover:text-emerald-500 transition-colors cursor-pointer outline-none focus-visible:underline'
-                >
-                  Sign in here
-                </button>
+              <div className='pt-2 sm:pt-3 text-center space-y-2'>
+                <div className='text-xs text-muted-foreground'>
+                  Already have an account?{' '}
+                  <button
+                    type='button'
+                    onClick={onLoginRedirect}
+                    className='font-semibold text-foreground hover:text-emerald-500 transition-colors cursor-pointer outline-none focus-visible:underline'
+                  >
+                    Sign in here
+                  </button>
+                </div>
+
+                {/* <div className='flex justify-center'>
+                  <button
+                    type='button'
+                    onClick={onLoginRedirect}
+                    className='text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 p-1'
+                  >
+                    <ArrowLeft className='size-3.5' />
+                    <span>Return to sign in</span>
+                  </button>
+                </div> */}
               </div>
             )}
           </form>

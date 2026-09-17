@@ -2085,11 +2085,11 @@ export function FintechLoader({
                 </div>
 
                 {/* Primary Auth Heading */}
-                <h3 className='text-lg sm:text-xl font-bold tracking-tight text-foreground'>
+                <h3 className='font-display text-lg sm:text-xl font-extrabold tracking-tight text-foreground'>
                   {title.includes(' ') ? (
                     <>
                       {title.substring(0, title.lastIndexOf(' '))}{' '}
-                      <span className='font-serif italic font-normal text-amber-500 dark:text-amber-400'>
+                      <span className='font-display font-extrabold text-amber-500 dark:text-amber-400'>
                         {title.substring(title.lastIndexOf(' ') + 1)}
                       </span>
                     </>
@@ -2118,14 +2118,14 @@ export function FintechLoader({
                 </div>
 
                 {/* Success Heading */}
-                <h3 className='text-lg sm:text-xl font-bold tracking-tight text-foreground'>
+                <h3 className='font-display text-lg sm:text-xl font-extrabold tracking-tight text-foreground'>
                   {completeTitle.includes(' ') ? (
                     <>
                       {completeTitle.substring(
                         0,
                         completeTitle.lastIndexOf(' ')
                       )}{' '}
-                      <span className='font-serif italic font-normal text-emerald-500 dark:text-emerald-400'>
+                      <span className='font-display font-extrabold text-emerald-500 dark:text-emerald-400'>
                         {completeTitle.substring(
                           completeTitle.lastIndexOf(' ') + 1
                         )}
@@ -2152,7 +2152,7 @@ export function FintechLoader({
   if (overlay) {
     return (
       <div className='fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md transition-all duration-300'>
-        <div className='p-6 sm:p-8 rounded-2xl border border-hairline bg-card/90 shadow-2xl flex flex-col items-center'>
+        <div className='p-6 sm:p-8 rounded-2xl border border-border/50 bg-card/90 shadow-2xl flex flex-col items-center'>
           {content}
         </div>
       </div>

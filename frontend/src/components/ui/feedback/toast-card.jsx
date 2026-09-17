@@ -85,7 +85,7 @@ export default function ToastCard({
         </div>
 
         {title && (
-          <h3 className='font-sans text-[15px] font-semibold text-foreground mb-0.5 leading-tight tracking-tight'>
+          <h3 className='font-display text-[15px] font-bold text-foreground mb-0.5 leading-tight tracking-tight'>
             {title}
           </h3>
         )}

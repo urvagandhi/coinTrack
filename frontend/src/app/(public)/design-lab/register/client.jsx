@@ -1,19 +1,44 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { RegisterScreen } from '@/components/ui/auth/register-screen';
+import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
-export default function DesignLabRegisterClient() {
+function RegisterContent() {
   const router = useRouter();
-  const [mode, setMode] = useState('register');
-  const [initialData, setInitialData] = useState({});
+  const searchParams = useSearchParams();
+  const isGoogleSource = searchParams.get('source') === 'google';
+
+  const [mode, setMode] = useState(
+    isGoogleSource ? 'complete-profile' : 'register'
+  );
+  const [initialData, setInitialData] = useState(
+    isGoogleSource
+      ? {
+          name: 'Urva Gandhi',
+          email: 'urva@cointrack.in',
+          username: 'urva_gandhi',
+        }
+      : {}
+  );
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    if (isGoogleSource) {
+      setMode('complete-profile');
+      setInitialData({
+        name: 'Urva Gandhi',
+        email: 'urva@cointrack.in',
+        username: 'urva_gandhi',
+      });
+    }
+  }, [isGoogleSource]);
+
   const handleGoogleSignUp = () => {
     setIsGoogleLoading(true);
-    // Simulate network request to Google and our backend
+    // Simulate network request to Google OAuth
     setTimeout(() => {
       setInitialData({
         name: 'Urva Gandhi',
@@ -22,7 +47,7 @@ export default function DesignLabRegisterClient() {
       });
       setMode('complete-profile');
       setIsGoogleLoading(false);
-    }, 1500);
+    }, 1000);
   };
 
   const handleRegister = data => {
@@ -30,12 +55,17 @@ export default function DesignLabRegisterClient() {
     // Simulate form submission
     setTimeout(() => {
       setIsLoading(false);
-      router.push('/design-lab/setup-2fa');
-    }, 1500);
+      const email = data.email || initialData.email || 'urva@cointrack.in';
+      const provider = mode === 'complete-profile' ? 'google' : 'manual';
+      // Mandatory 2FA setup on first registration for both Google and Manual
+      router.push(
+        `/design-lab/setup-2fa?provider=${provider}&email=${encodeURIComponent(email)}`
+      );
+    }, 1200);
   };
 
   return (
-    <main className='w-full min-h-screen md:h-screen overflow-x-hidden md:overflow-hidden'>
+    <main className='w-full min-h-screen md:h-screen overflow-x-hidden md:overflow-hidden relative'>
       <RegisterScreen
         mode={mode}
         initialData={initialData}
@@ -45,6 +75,15 @@ export default function DesignLabRegisterClient() {
         onRegister={handleRegister}
         onLoginRedirect={() => router.push('/design-lab/login')}
       />
+      <DesignLabAuthNav />
     </main>
+  );
+}
+
+export default function DesignLabRegisterClient() {
+  return (
+    <Suspense fallback={<div className='min-h-screen bg-background' />}>
+      <RegisterContent />
+    </Suspense>
   );
 }

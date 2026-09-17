@@ -41,7 +41,7 @@ function AlertTitle({ className, ...props }) {
     <h5
       data-slot='alert-title'
       className={cn(
-        'font-sans text-[15px] font-semibold text-foreground mb-1 leading-tight tracking-tight',
+        'font-display text-[15px] font-bold text-foreground mb-1 leading-tight tracking-tight',
         className
       )}
       {...props}

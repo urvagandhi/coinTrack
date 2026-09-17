@@ -2,9 +2,10 @@
 
 import { useMemo, useEffect } from 'react';
 import Image from 'next/image';
-import { ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useModal } from '@/contexts/ModalContext';
+import { ShieldCheck } from 'lucide-react';
 
 /**
  * Custom hook to dynamically set and lock the browser tab title.
@@ -80,7 +81,7 @@ export function AuthHeader({ className }) {
             className='object-contain w-auto h-auto'
           />
         </span>
-        <span className='font-serif italic font-bold text-2xl tracking-tight text-foreground'>
+        <span className='font-display font-extrabold text-2xl tracking-tight text-foreground'>
           coinTrack
         </span>
       </div>
@@ -89,15 +90,14 @@ export function AuthHeader({ className }) {
 }
 
 /**
- * Shared Auth Footer component for login and registration screens.
- * Displays dynamic copyright, Privacy & Terms links, and Bank-Grade Security badge
- * with identical horizontal padding and hairline border alignment across screens.
+ * Shared Auth Footer component for auth screens.
+ * Displays the canonical copyright line plus Privacy, Terms, and Security
+ * Dossier links — visually identical to the site-wide CoinTrackFooter.
  *
  * @param {Object} props
  * @param {string} [props.className]
- * @param {string} [props.badgeText='Bank-Grade Encryption']
  */
-export function AuthFooter({ className, badgeText = 'Bank-Grade Encryption' }) {
+export function AuthFooter({ className }) {
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const { openModal } = useModal();
 
@@ -110,7 +110,10 @@ export function AuthFooter({ className, badgeText = 'Bank-Grade Encryption' }) {
     >
       <div>
         © {currentYear}{' '}
-        <span className='font-semibold text-foreground/80'>coinTrack</span>
+        <span className='font-semibold text-foreground/80'>
+          coinTrack Systems
+        </span>
+        . All rights reserved.
       </div>
       <div className='flex items-center gap-3'>
         <button
@@ -121,7 +124,7 @@ export function AuthFooter({ className, badgeText = 'Bank-Grade Encryption' }) {
           }}
           className='hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:underline'
         >
-          Privacy
+          Privacy Policy
         </button>
         <span>•</span>
         <button
@@ -132,13 +135,20 @@ export function AuthFooter({ className, badgeText = 'Bank-Grade Encryption' }) {
           }}
           className='hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:underline'
         >
-          Terms
+          Terms of Service
         </button>
         <span>•</span>
-        <span className='flex items-center gap-1 text-muted-foreground/70'>
-          <ShieldCheck className='size-3 text-emerald-500/80' />
-          <span>{badgeText}</span>
-        </span>
+        <button
+          type='button'
+          onClick={e => {
+            e.preventDefault();
+            openModal('security');
+          }}
+          className='hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:underline flex items-center gap-1'
+        >
+          <ShieldCheck className='size-3.5 text-emerald-500' />
+          Bank-Grade Security
+        </button>
       </div>
     </footer>
   );

@@ -6,8 +6,12 @@ import { usePathname } from 'next/navigation';
 export default function Layout({ children }) {
   const pathname = usePathname();
 
-  // For testing /design-lab routes in clean isolation without sidebar or header
-  if (pathname?.startsWith('/design-lab')) {
+  // For testing /design-lab, /landing, or public isolated marketing pages without sidebar or header
+  if (
+    pathname?.startsWith('/design-lab') ||
+    pathname?.startsWith('/landing') ||
+    pathname?.startsWith('/cirrus')
+  ) {
     return <>{children}</>;
   }
 

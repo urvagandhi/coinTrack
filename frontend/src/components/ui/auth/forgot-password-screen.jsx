@@ -5,6 +5,7 @@ import {
   AuthHeader,
   useDynamicDocumentTitle,
 } from '@/components/ui/auth/auth-shared';
+import { AnimatedKeyIcon } from '@/components/ui/feedback/animated-icons';
 import { SmartAuthInput } from '@/components/ui/auth/security-inputs';
 import { Button } from '@/components/ui/primitives/button';
 import { cn } from '@/lib/utils';
@@ -21,7 +22,15 @@ import {
   Wifi,
 } from 'lucide-react';
 import Image from 'next/image';
-import { memo, useCallback, useId, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useId,
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react';
 
 // ───────────────────────────────────────────────────────────────
 //  SUBCOMPONENTS & MOCKUPS
@@ -110,8 +119,8 @@ const RecoveryMockup = memo(function RecoveryMockup() {
                   className='object-contain w-auto h-auto'
                 />
               </span>
-              <span className='font-serif italic font-semibold text-[11px] text-white dark:text-zinc-900'>
-                coinTrack Auth
+              <span className='font-display font-bold text-[11px] text-white dark:text-zinc-900'>
+                coinTrack
               </span>
             </div>
             <span className='text-[9px] font-mono text-zinc-400 dark:text-zinc-500'>
@@ -175,6 +184,31 @@ export function ForgotPasswordScreen({
 
   const activeError = errorMessage || localError;
 
+  const fieldErrors = useMemo(() => {
+    if (!activeError) return {};
+    const lower = activeError.toLowerCase();
+    if (
+      lower.includes('email') ||
+      lower.includes('username') ||
+      lower.includes('mobile') ||
+      lower.includes('phone') ||
+      lower.includes('user not found')
+    )
+      return { identifier: activeError };
+    return { global: activeError };
+  }, [activeError]);
+
+  const globalErrorContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (fieldErrors.global && globalErrorContainerRef.current) {
+      globalErrorContainerRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [fieldErrors]);
+
   const handleSubmit = useCallback(
     e => {
       e.preventDefault();
@@ -225,9 +259,9 @@ export function ForgotPasswordScreen({
         `action=android.intent.action.MAIN;` +
         `category=android.intent.category.LAUNCHER;` +
         `package=com.google.android.gm;` +
-        `S.browser_fallback_url=${ 
-        encodeURIComponent('https://mail.google.com/mail/u/0/#inbox') 
-        };end`;
+        `S.browser_fallback_url=${encodeURIComponent(
+          'https://mail.google.com/mail/u/0/#inbox'
+        )};end`;
       window.location.href = intent;
     } else {
       // Desktop fallback
@@ -254,9 +288,9 @@ export function ForgotPasswordScreen({
             <ShieldCheck className='size-3' />
             <span>Bank-Grade Identity Protection</span>
           </div>
-          <h2 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-white dark:text-zinc-900 tracking-tight leading-snug'>
+          <h2 className='font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white dark:text-zinc-900 tracking-tight leading-snug'>
             Recover Access.{' '}
-            <span className='font-serif italic font-normal text-emerald-400 dark:text-emerald-600'>
+            <span className='font-display font-extrabold text-emerald-400 dark:text-emerald-600'>
               Securely.
             </span>
           </h2>
@@ -279,23 +313,29 @@ export function ForgotPasswordScreen({
         <div className='w-full max-w-[340px] sm:max-w-md md:max-w-[340px] lg:max-w-md xl:max-w-lg mx-auto my-auto flex flex-col justify-center shrink-0 py-2'>
           {!isSubmitted ? (
             <>
-              <div className='text-left mb-5'>
-                <h1 className='text-2xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-1.5 sm:mb-1 tracking-tight'>
-                  Reset password
+              {/* Reference Signpost Illustration */}
+              <div className='flex justify-center mb-4 sm:mb-6'>
+                <AnimatedKeyIcon className='w-32 h-32 sm:w-40 sm:h-40 text-zinc-900 dark:text-white drop-shadow-sm' />
+              </div>
+
+              <div className='text-center mb-5'>
+                <h1 className='font-display text-2xl sm:text-2xl lg:text-3xl font-extrabold text-foreground mb-1.5 sm:mb-1 tracking-tight'>
+                  Forgot your password?
                 </h1>
-                <p className='text-xs sm:text-sm text-muted-foreground'>
-                  Enter your email, phone, or username — we will dispatch a
+                <p className='font-sans text-xs sm:text-sm text-neutral-700/90 dark:text-neutral-400 max-w-sm mx-auto leading-relaxed'>
+                  Enter your email, phone, or username so that we can dispatch a
                   secure recovery link.
                 </p>
               </div>
 
-              {activeError && (
+              {fieldErrors.global && (
                 <div
+                  ref={globalErrorContainerRef}
                   className='mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium flex items-center gap-2'
                   role='alert'
                 >
                   <AlertCircle className='size-4 shrink-0' />
-                  <span>{activeError}</span>
+                  <span>{fieldErrors.global}</span>
                 </div>
               )}
 
@@ -315,6 +355,7 @@ export function ForgotPasswordScreen({
                   inputClassName='py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 bg-transparent'
                   disabled={isLoading}
                   required
+                  error={fieldErrors.identifier}
                 />
 
                 <Button

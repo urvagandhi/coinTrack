@@ -121,12 +121,12 @@ export default function ConfirmDialog({
 
             <h2
               id='confirm-dialog-title'
-              className='font-sans text-[20px] font-semibold leading-tight text-foreground tracking-tight'
+              className='font-display text-[20px] font-bold leading-tight text-foreground tracking-tight'
             >
               {title}
             </h2>
             {description && (
-              <p className='mt-2 text-[14px] leading-snug text-muted-foreground'>
+              <p className='mt-2 font-sans text-[14px] leading-relaxed text-neutral-700/90 dark:text-neutral-400'>
                 {description}
               </p>
             )}

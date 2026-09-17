@@ -188,6 +188,36 @@ const LEGAL_DOCUMENTS = {
       },
     ],
   },
+  security: {
+    id: 'security',
+    kicker: 'Bank-Grade Security Architecture',
+    title: 'Security Dossier',
+    shortName: 'Security',
+    lede: "Comprehensive overview of coinTrack's end-to-end encryption, OAuth integrations, and strict data defense protocols.",
+    icon: ShieldCheck,
+    badgeText: 'AES-256 Encryption · OAuth 2.0',
+    lastUpdated: 'Updated Sept 2026',
+    sections: [
+      {
+        number: '01',
+        heading: 'Hardware-Backed Encryption Standard',
+        body: 'All sensitive user data, including API tokens and financial telemetry, is encrypted at rest using AES-256 and in transit via TLS 1.3 protocols. This ensures state-of-the-art protection against interception.',
+        keywords: ['aes-256', 'tls', 'encryption', 'security'],
+      },
+      {
+        number: '02',
+        heading: 'Strict Read-Only Access',
+        body: 'coinTrack only requests read-only permissions from integrated brokers. We physically cannot place trades, transfer funds, or modify your portfolio. Your assets remain secure with your broker.',
+        keywords: ['read-only', 'broker', 'trades', 'funds'],
+      },
+      {
+        number: '03',
+        heading: 'Two-Factor Authentication & Anomaly Detection',
+        body: 'Account access is protected by mandatory TOTP 2FA. Our systems actively monitor for unauthorized logins, anomalous IP addresses, and irregular access patterns to pre-emptively lock compromised sessions.',
+        keywords: ['2fa', 'totp', 'anomalies', 'monitoring', 'login'],
+      },
+    ],
+  },
   cookies: {
     id: 'cookies',
     kicker: 'Cookie & Local Storage Policy',
@@ -234,7 +264,8 @@ export default function LegalHubDialog() {
   const isOpen =
     activeModal === 'privacy' ||
     activeModal === 'terms' ||
-    activeModal === 'cookies';
+    activeModal === 'cookies' ||
+    activeModal === 'security';
   const currentDocKey = isOpen ? activeModal : 'privacy';
   const data = LEGAL_DOCUMENTS[currentDocKey] || LEGAL_DOCUMENTS.privacy;
 
@@ -261,7 +292,7 @@ export default function LegalHubDialog() {
       }}
       className='w-full sm:w-fit'
     >
-      <TabsList className='w-full sm:w-fit rounded-xl p-1 bg-muted/50 border border-border/40 gap-1 h-auto'>
+      <TabsList className='w-full sm:w-fit rounded-xl p-1 bg-muted/50 border border-border/40 gap-1 h-auto overflow-x-auto no-scrollbar'>
         {Object.values(LEGAL_DOCUMENTS).map(doc => {
           const isActive = doc.id === currentDocKey;
           const DocIcon = doc.icon;
@@ -274,10 +305,10 @@ export default function LegalHubDialog() {
               <DocIcon
                 className={cn(
                   'size-3.5',
-                  isActive ? 'text-emerald-500' : 'text-muted-foreground/70'
+                  isActive ? 'text-blue-600' : 'text-muted-foreground/70'
                 )}
               />
-              <span>{doc.shortName}</span>
+              <span className='whitespace-nowrap'>{doc.shortName}</span>
             </TabsTrigger>
           );
         })}
@@ -323,15 +354,16 @@ export default function LegalHubDialog() {
       onClose={closeModal}
       maxWidth='max-w-3xl lg:max-w-4xl'
       badgeText={data.badgeText}
-      badgeVariant='success'
+      badgeVariant='default'
       badgeIcon={ShieldCheck}
       headerExtra={headerTabs}
       subheader={subheaderContent}
       footerRight={footerRightContent}
+      className='bg-white dark:bg-slate-950 shadow-2xl'
     >
       {/* Lede / Summary Banner */}
-      <div className='p-4 rounded-2xl bg-muted/30 border border-border/40 text-xs sm:text-sm text-muted-foreground leading-relaxed flex items-start gap-3'>
-        <Info className='size-4 text-emerald-500 shrink-0 mt-0.5' />
+      <div className='p-4 rounded-2xl bg-muted/40 border border-border/40 text-xs sm:text-sm text-foreground/80 leading-relaxed flex items-start gap-3 shadow-sm'>
+        <Info className='size-4 text-blue-600 shrink-0 mt-0.5' />
         <div className='space-y-1 text-left'>
           <p className='font-semibold text-foreground'>{data.kicker}</p>
           <p>{data.lede}</p>
@@ -343,18 +375,18 @@ export default function LegalHubDialog() {
         <div className='space-y-6 pt-2 pb-4 text-left'>
           {filteredSections.map((section, index) => (
             <div key={section.number} className='space-y-2'>
-              <h4 className='font-sans font-bold text-emerald-600 dark:text-emerald-500 text-sm sm:text-base tracking-tight'>
+              <h4 className='font-sans font-bold text-blue-600 dark:text-blue-500 text-sm sm:text-base tracking-tight'>
                 {parseInt(section.number, 10)} - {section.heading}
               </h4>
-              <p className='text-muted-foreground font-sans text-xs sm:text-sm leading-relaxed'>
+              <p className='text-foreground/80 font-sans text-xs sm:text-sm leading-relaxed font-medium'>
                 {section.body}
               </p>
             </div>
           ))}
         </div>
       ) : (
-        <div className='p-10 rounded-[24px] bg-card/60 backdrop-blur-xl border border-border/60 text-center text-xs text-muted-foreground space-y-3'>
-          <Info className='size-6 text-muted-foreground/40 mx-auto' />
+        <div className='p-10 rounded-[24px] bg-muted/30 border border-border/40 text-center text-xs text-foreground/80 space-y-3'>
+          <Info className='size-6 text-foreground/60 mx-auto' />
           <p className='font-semibold text-foreground text-sm'>
             No matching clauses found for "{searchQuery}"
           </p>
@@ -374,8 +406,8 @@ export default function LegalHubDialog() {
       )}
 
       {/* Legal Assistance Callout */}
-      <div className='mt-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3 text-xs text-muted-foreground'>
-        <Scale className='size-4 text-emerald-500 shrink-0 mt-0.5' />
+      <div className='mt-6 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-3 text-xs text-foreground/90'>
+        <Scale className='size-4 text-blue-600 shrink-0 mt-0.5' />
         <p className='leading-relaxed text-left font-sans'>
           <strong className='font-semibold text-foreground'>
             Questions or Data Grievances?
@@ -383,7 +415,7 @@ export default function LegalHubDialog() {
           Contact our Data Protection & Grievance Officer at{' '}
           <a
             href='mailto:privacy@cointrack.app'
-            className='font-medium text-emerald-600 dark:text-emerald-400 underline underline-offset-2 hover:opacity-80'
+            className='font-medium text-blue-600 dark:text-blue-500 underline underline-offset-2 hover:opacity-80'
           >
             privacy@cointrack.app
           </a>

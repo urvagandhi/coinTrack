@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ForgotPasswordScreen } from '@/components/ui/auth/forgot-password-screen';
+import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
 export default function DesignLabForgotPasswordClient() {
   const router = useRouter();
@@ -17,11 +18,11 @@ export default function DesignLabForgotPasswordClient() {
     setTimeout(() => {
       setLoading(false);
       setSubmitted(true);
-    }, 900);
+    }, 800);
   };
 
   return (
-    <main className='w-full min-h-screen md:h-screen overflow-x-hidden md:overflow-hidden'>
+    <main className='w-full min-h-screen md:h-screen overflow-x-hidden md:overflow-hidden relative'>
       <ForgotPasswordScreen
         onSubmit={handleSubmit}
         onBackToLogin={() => router.push('/design-lab/login')}
@@ -33,6 +34,7 @@ export default function DesignLabForgotPasswordClient() {
           setSubmittedIdentifier('');
         }}
       />
+      <DesignLabAuthNav />
     </main>
   );
 }

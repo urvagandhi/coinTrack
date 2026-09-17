@@ -259,6 +259,7 @@ export function TwoFactorSetupScreen({
   className,
   onComplete,
   onCancel,
+  onNavigateToVerify,
   userEmail = 'user@example.com',
   secretKey = 'JBSWY3DPEHPK3PXP',
 }) {
@@ -408,9 +409,9 @@ CoinTrack - Your Portfolio, Secured`;
             <ShieldCheck className='size-3.5' />
             <span>Bank-Grade Security</span>
           </div>
-          <h2 className='text-3xl lg:text-4xl font-bold text-white dark:text-zinc-900 tracking-tight leading-snug'>
+          <h2 className='font-display text-3xl lg:text-4xl font-extrabold text-white dark:text-zinc-900 tracking-tight leading-snug'>
             Protect Your{' '}
-            <span className='font-serif italic font-normal text-emerald-400 dark:text-emerald-600'>
+            <span className='font-display font-extrabold text-emerald-400 dark:text-emerald-600'>
               Wealth.
             </span>
           </h2>
@@ -456,10 +457,10 @@ CoinTrack - Your Portfolio, Secured`;
           {step === 1 && (
             <div className='animate-in fade-in slide-in-from-bottom-4 duration-500'>
               <div className='text-center mb-6'>
-                <h1 className='text-2xl font-bold text-foreground tracking-tight mb-1.5'>
+                <h1 className='font-display text-2xl font-extrabold text-foreground tracking-tight mb-1.5'>
                   Enable 2-Step Verification
                 </h1>
-                <p className='text-xs text-muted-foreground'>
+                <p className='font-sans text-xs text-neutral-700/90 dark:text-neutral-400 leading-relaxed'>
                   Scan the QR code with your Authenticator app (like Google
                   Authenticator or Authy) to link your account.
                 </p>
@@ -568,6 +569,19 @@ CoinTrack - Your Portfolio, Secured`;
                     )}
                   </Button>
                 </div>
+
+                {onNavigateToVerify && (
+                  <p className='text-center text-xs text-muted-foreground pt-1'>
+                    Already configured?{' '}
+                    <button
+                      type='button'
+                      onClick={onNavigateToVerify}
+                      className='font-semibold text-foreground hover:text-emerald-500 transition-colors cursor-pointer outline-none focus-visible:underline'
+                    >
+                      Verify existing 2FA code
+                    </button>
+                  </p>
+                )}
               </form>
             </div>
           )}

@@ -32,7 +32,17 @@ export function AnimatedSuccessIcon({ className, ...props }) {
   );
 }
 
-export function AnimatedWarningIcon({ className, ...props }) {
+export function AnimatedWarningIcon({ className, loop = false, ...props }) {
+  const triangleClass = loop
+    ? 'animate-[draw-triangle_1.2s_ease-in-out_infinite_alternate]'
+    : 'animate-[draw-triangle_0.8s_ease-in-out_forwards]';
+  const lineClass = loop
+    ? 'animate-[draw-line_1.2s_ease-out_0.2s_infinite_alternate]'
+    : 'animate-[draw-line_0.3s_ease-out_0.6s_forwards]';
+  const dotClass = loop
+    ? 'animate-[draw-dot_1.2s_ease-out_0.4s_infinite_alternate]'
+    : 'animate-[draw-dot_0.2s_ease-out_0.9s_forwards]';
+
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
@@ -50,19 +60,19 @@ export function AnimatedWarningIcon({ className, ...props }) {
     >
       <path
         d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'
-        className='animate-[draw-triangle_0.8s_ease-in-out_forwards]'
+        className={triangleClass}
         strokeDasharray='120'
         strokeDashoffset='120'
       />
       <path
         d='M12 9v4'
-        className='animate-[draw-line_0.3s_ease-out_0.6s_forwards]'
+        className={lineClass}
         strokeDasharray='10'
         strokeDashoffset='10'
       />
       <path
         d='M12 17h.01'
-        className='animate-[draw-dot_0.2s_ease-out_0.9s_forwards]'
+        className={dotClass}
         strokeDasharray='2'
         strokeDashoffset='2'
       />
@@ -108,7 +118,17 @@ export function AnimatedInfoIcon({ className, ...props }) {
   );
 }
 
-export function AnimatedErrorIcon({ className, ...props }) {
+export function AnimatedErrorIcon({ className, loop = false, ...props }) {
+  const circleClass = loop
+    ? 'animate-[draw-circle_1.2s_ease-in-out_infinite_alternate]'
+    : 'animate-[draw-circle_0.8s_ease-in-out_forwards]';
+  const line1Class = loop
+    ? 'animate-[draw-line_1.2s_ease-out_0.2s_infinite_alternate]'
+    : 'animate-[draw-line_0.3s_ease-out_0.6s_forwards]';
+  const line2Class = loop
+    ? 'animate-[draw-line_1.2s_ease-out_0.4s_infinite_alternate]'
+    : 'animate-[draw-line_0.3s_ease-out_0.8s_forwards]';
+
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
@@ -128,19 +148,19 @@ export function AnimatedErrorIcon({ className, ...props }) {
         cx='12'
         cy='12'
         r='10'
-        className='animate-[draw-circle_0.8s_ease-in-out_forwards]'
+        className={circleClass}
         strokeDasharray='100'
         strokeDashoffset='100'
       />
       <path
         d='m15 9-6 6'
-        className='animate-[draw-line_0.3s_ease-out_0.6s_forwards]'
+        className={line1Class}
         strokeDasharray='10'
         strokeDashoffset='10'
       />
       <path
         d='m9 9 6 6'
-        className='animate-[draw-line_0.3s_ease-out_0.8s_forwards]'
+        className={line2Class}
         strokeDasharray='10'
         strokeDashoffset='10'
       />
@@ -412,3 +432,185 @@ export function AnimatedDownloadIcon({ className, ...props }) {
     </svg>
   );
 }
+
+export function AnimatedKeyIcon({ className, ...props }) {
+  return (
+    <svg
+      viewBox='0 0 160 130'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+      className={cn(
+        'w-32 h-32 sm:w-36 sm:h-36 overflow-visible transition-transform duration-200 group-hover/button:scale-105',
+        className
+      )}
+      aria-hidden='true'
+      {...props}
+    >
+      {/* Flat Arrow Ground Shadow - fades in early */}
+      <path
+        d='M58 102 L112 102 L120 106 L112 110 L58 110 Z'
+        className='fill-foreground/90 dark:fill-zinc-800 animate-in fade-in duration-700 delay-200 fill-mode-both'
+      />
+
+      {/* Small stone under the shadow */}
+      <path
+        d='M86 110 C 86 112, 90 112, 90 110'
+        stroke='currentColor'
+        strokeWidth='2'
+        fill='none'
+        className='animate-[draw-dot_0.3s_ease-out_0.8s_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+
+      {/* Left grass tuft */}
+      <path
+        d='M30 88 Q 32 94 36 94 Q 38 94 40 88'
+        stroke='currentColor'
+        strokeWidth='2'
+        strokeLinecap='round'
+        fill='none'
+        className='animate-[draw-line_0.5s_ease-out_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+      <path
+        d='M36 94 L 36 86'
+        stroke='currentColor'
+        strokeWidth='2'
+        strokeLinecap='round'
+        className='animate-[draw-line_0.3s_ease-out_0.2s_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+
+      {/* Right grass tuft */}
+      <path
+        d='M104 84 Q 106 88 108 88 Q 110 88 112 84'
+        stroke='currentColor'
+        strokeWidth='2'
+        strokeLinecap='round'
+        fill='none'
+        className='animate-[draw-line_0.5s_ease-out_0.1s_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+      <path
+        d='M108 88 L 108 82'
+        stroke='currentColor'
+        strokeWidth='2'
+        strokeLinecap='round'
+        className='animate-[draw-line_0.3s_ease-out_0.3s_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+
+      {/* Left wavy ground line */}
+      <path
+        d='M18 112 Q 28 106 38 114 T 62 112'
+        stroke='currentColor'
+        strokeWidth='2'
+        strokeLinecap='round'
+        fill='none'
+        className='animate-[draw-line_0.6s_ease-out_0.1s_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+
+      {/* Vertical Post (Lower) */}
+      <path
+        d='M58 54 L58 106 M66 54 L66 106'
+        stroke='currentColor'
+        strokeWidth='2.2'
+        strokeLinecap='round'
+        className='animate-[draw-line_0.6s_ease-out_0.2s_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+
+      {/* Vertical Post (Top Knob) - fades in as the post hits it */}
+      <path
+        d='M58 32 L58 24 C 58 22, 66 22, 66 24 L66 32'
+        stroke='currentColor'
+        strokeWidth='2.2'
+        strokeLinejoin='round'
+        className='fill-background animate-in fade-in duration-300 delay-500 fill-mode-both'
+      />
+      <circle
+        cx='62'
+        cy='28'
+        r='1.5'
+        fill='currentColor'
+        className='animate-in fade-in duration-300 delay-600 fill-mode-both'
+      />
+
+      {/* Wooden Direction Arrow Board */}
+      <path
+        d='M50 32 L108 32 L122 43 L108 54 L50 54 Z'
+        stroke='currentColor'
+        strokeWidth='2.4'
+        strokeLinejoin='round'
+        className='fill-background animate-[draw-triangle_0.8s_ease-out_0.4s_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+
+      {/* Inner plank text lines */}
+      <line
+        x1='64'
+        y1='39'
+        x2='96'
+        y2='39'
+        stroke='currentColor'
+        strokeWidth='2.4'
+        strokeLinecap='round'
+        className='animate-[draw-line_0.4s_ease-out_0.8s_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+      <line
+        x1='72'
+        y1='47'
+        x2='96'
+        y2='47'
+        stroke='currentColor'
+        strokeWidth='2.4'
+        strokeLinecap='round'
+        className='animate-[draw-line_0.4s_ease-out_0.9s_forwards]'
+        strokeDasharray='1000'
+        strokeDashoffset='1000'
+      />
+    </svg>
+  );
+}
+
+export function AnimatedMailboxIcon({ className, size = 160, ...props }) {
+  return (
+    <div
+      className={cn(
+        'relative inline-flex items-center justify-center select-none pointer-events-none transition-transform duration-300 hover:scale-105',
+        className
+      )}
+      {...props}
+    >
+      <img
+        src='/mail-box.webp'
+        alt='Animated Mailbox'
+        width={size}
+        height={size}
+        className='w-full h-full object-contain dark:hidden'
+        loading='eager'
+      />
+      <img
+        src='/mail-box-dark.webp'
+        alt='Animated Mailbox'
+        width={size}
+        height={size}
+        className='w-full h-full object-contain hidden dark:block'
+        loading='eager'
+      />
+    </div>
+  );
+}
+
+export const AnimatedUnlockIcon = AnimatedMailboxIcon;

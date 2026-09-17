@@ -13,7 +13,7 @@ import {
   InsetEmailInput,
   EmailValidationBadge,
   InsetTextareaRow,
-} from '@/components/ui/inset-form-card';
+} from '@/components/ui/forms/inset-form-card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/primitives/tabs';
 import {
   Mail,

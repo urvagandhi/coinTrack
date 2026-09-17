@@ -81,7 +81,7 @@ export default function AnnouncementCard({
       </button>
 
       <div className='relative z-10 max-w-[280px]'>
-        <h3 className='font-sans text-[19px] font-semibold tracking-tight mb-2.5'>
+        <h3 className='font-display text-[19px] font-bold tracking-tight mb-2.5'>
           {title}
         </h3>
         <p
