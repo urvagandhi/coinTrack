@@ -2,7 +2,6 @@
 
 import { useMemo, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useModal } from '@/contexts/ModalContext';
 import { ShieldCheck } from 'lucide-react';

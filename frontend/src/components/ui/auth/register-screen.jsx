@@ -18,13 +18,9 @@ import {
   Signal,
   Wallet,
   TrendingUp,
-  ArrowLeft,
   ArrowUpRight,
   User,
   Mail,
-  Lock,
-  Eye,
-  EyeOff,
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -346,7 +342,7 @@ export function RegisterSplitScreen({
   const displayedError = errorMessage || clientError;
 
   const fieldErrors = useMemo(() => {
-    let errors = {};
+    const errors = {};
     if (
       formData.confirmPassword &&
       formData.confirmPassword !== formData.password

@@ -22,8 +22,6 @@ import {
   ArrowRight,
   Battery,
   KeyRound,
-  Loader2,
-  Lock,
   LockKeyhole,
   ShieldCheck,
   Signal,
@@ -202,7 +200,7 @@ export function ResetPasswordScreen({
   const activeError = errorMessage || localError;
 
   const fieldErrors = useMemo(() => {
-    let errors = {};
+    const errors = {};
     if (confirmPassword && confirmPassword !== password) {
       errors.confirmPassword = 'Passwords do not match';
     }
