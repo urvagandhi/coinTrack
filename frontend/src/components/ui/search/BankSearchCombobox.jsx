@@ -10,7 +10,6 @@ export default function BankSearchCombobox({ value, onChange, onSelectBank }) {
   const [results, setResults] = useState([]); // Filtered list
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [apiFailed, setApiFailed] = useState(false);
 
   const debouncedQuery = useDebounce(query, 200);
   const ignoreSearchRef = useRef(false);
@@ -24,7 +23,6 @@ export default function BankSearchCombobox({ value, onChange, onSelectBank }) {
         const cachedBanks = sessionStorage.getItem('all_banks_cache');
         if (cachedBanks) {
           setBanks(JSON.parse(cachedBanks));
-          setApiFailed(false);
           setLoading(false);
           return;
         }
@@ -37,9 +35,6 @@ export default function BankSearchCombobox({ value, onChange, onSelectBank }) {
             'all_banks_cache',
             JSON.stringify(data.data.banks)
           );
-          setApiFailed(false);
-        } else {
-          setApiFailed(true);
         }
       } catch (err) {
         console.error('Failed to load banks:', err);

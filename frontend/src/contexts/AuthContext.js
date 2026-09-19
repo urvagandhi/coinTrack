@@ -14,6 +14,23 @@ import { logger } from '../lib/logger';
 
 const AuthContext = createContext(null);
 
+// Single, deliberately vague message for any credential failure.
+// Combined with the backend returning "Invalid credentials" for both an
+// unknown identifier and a wrong password, this prevents account enumeration.
+const GENERIC_CREDENTIAL_ERROR = 'Email or password is incorrect.';
+
+// Backend lockout contract (UserAuthenticationService):
+// 5 failures -> 15 min, 10 failures -> 1 hour. The 401 message is
+// "Too many failed attempts. Try again in N minute(s)."
+const LOCKOUT_PATTERN =
+  /too many failed attempts.*?try again in\s+(\d+)\s*minute/i;
+
+function buildLockoutNotice(message) {
+  const match = LOCKOUT_PATTERN.exec(message || '');
+  if (!match) return null;
+  return { message, minutes: Number(match[1]) };
+}
+
 const AUTH_ACTIONS = {
   SET_LOADING: 'SET_LOADING',
   SET_USER: 'SET_USER',
@@ -211,9 +228,26 @@ export function AuthProvider({ children }) {
 
       throw new Error('Invalid server response during login');
     } catch (error) {
-      logger.error('Login failed', { error: error.message });
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: error.message });
-      return { success: false, error: error.message };
+      const status = error?.status;
+      const lockout = buildLockoutNotice(error?.message);
+
+      let message;
+      if (lockout) {
+        // Account lockout is not an enumeration risk — surface it verbatim.
+        message = error.message;
+      } else if (status === 400 && error?.fieldErrors?.length) {
+        // Request-format validation (blank/too short) — safe to be specific.
+        message = error.fieldErrors[0].message;
+      } else if (status === undefined || status >= 500) {
+        // Network / server fault — never leak internals.
+        message = 'Something went wrong. Please try again in a moment.';
+      } else {
+        message = GENERIC_CREDENTIAL_ERROR;
+      }
+
+      logger.error('Login failed', { error: error.message, status });
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: message });
+      return { success: false, error: message, lockout };
     }
   }, []);
 
@@ -286,9 +320,12 @@ export function AuthProvider({ children }) {
 
       throw new Error('Invalid server response during Google login');
     } catch (error) {
+      const status = error?.status;
       const errorMessage =
-        error.response?.data?.message || error.message || 'Google Login failed';
-      logger.error('Google Login failed', { error: errorMessage });
+        status === undefined || status >= 500
+          ? 'Google sign-in is unavailable right now. Please try again or use your password.'
+          : error.message || 'Google sign-in failed. Please try again.';
+      logger.error('Google Login failed', { error: error.message, status });
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
       return { success: false, error: errorMessage };
     }

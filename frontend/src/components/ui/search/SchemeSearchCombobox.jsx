@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useDebounce } from '@/lib/hooks';
+import { logger } from '@/lib/logger';
 import { SearchCombobox } from '@/components/ui/search/search-combobox';
 
 export default function SchemeSearchCombobox({
@@ -106,9 +107,12 @@ export default function SchemeSearchCombobox({
         }
       } catch (err) {
         if (err.name === 'AbortError') {
-          console.log('Fetch aborted for:', debouncedQuery);
+          // Normal lifecycle — previous request cancelled by newer keystroke
         } else {
-          console.error('Failed to search schemes:', err);
+          logger.error('SchemeSearch: fetch failed', {
+            query: debouncedQuery,
+            error: err.message,
+          });
         }
       } finally {
         // Only set loading false if this isn't an aborted request, otherwise the next request's loading state might be overwritten

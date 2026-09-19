@@ -6,7 +6,7 @@ import QueryProvider from '@/providers/QueryProvider';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { ThemeProvider } from 'next-themes';
+import { ThemeProvider } from '@/providers/ThemeProvider';
 import './globals.css';
 
 const geistSans = Geist({

@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-// abcd
 import ConfirmDialog from '@/components/ui/feedback/confirm-dialog';
 import AnnouncementCard from '@/components/ui/data-display/announcement-card';
 import { useToast } from '@/components/ui/feedback/use-toast';
@@ -294,26 +293,6 @@ const MODULES = [
     confirmLabel: 'Delete Note',
   },
 ];
-
-const API_SNIPPET = `import ConfirmDialog from '@/components/ui/feedback/confirm-dialog';
-
-<ConfirmDialog
-  open={open}
-  onOpenChange={setOpen}
-  tone="destructive"          // destructive | warning | info
-  title="Delete Fixed Deposit?"
-  description="Erases the deposit and everything the ledger kept."
-  refNo="FD-104"
-  rows={[
-    { label: 'Bank', value: 'HDFC Bank' },
-    { label: 'Issue Amount', value: '₹5,00,000' },
-  ]}
-  note="Withdrawal history and TDS notes are erased too."
-  confirmLabel="Delete Fixed Deposit"
-  cancelLabel="Keep Record"
-  onConfirm={onConfirm}
-  confirmLoading={isDeleting}
-/>`;
 
 export default function DesignLabPage() {
   const { toast } = useToast();

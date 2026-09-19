@@ -3,6 +3,8 @@
 > **Priority:** HIGH  
 > **Files Affected:** Profile Page, Contact Modal, Notifications, Account Deletion
 
+> **Implementation Status (verified 2026-09-19):** NOT YET IMPLEMENTED as shared utilities. All normalization rules below are target specs. The `app/(main)/profile/page.jsx` line references are **approximate / UNVERIFIED**. No shared normalization module exists (`utils/normalization.js` reference in §13 is a TARGET, not current).
+
 ---
 
 ## 1. Editable Profile Fields

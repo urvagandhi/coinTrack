@@ -2,10 +2,26 @@ import { spawn } from 'child_process';
 import process from 'process';
 
 const steps = [
-  { name: '1. ESLint Code Quality Inspection', command: 'npx', args: ['eslint', '.'] },
-  { name: '2. Prettier Formatting Verification', command: 'npx', args: ['prettier', '--check', '"**/*.{js,jsx,ts,tsx,json,css,md}"'] },
-  { name: '3. Automated Unit Testing', command: 'npx', args: ['jest', '--passWithNoTests'] },
-  { name: '4. Next.js Production Build', command: 'npx', args: ['next', 'build', '--webpack'] },
+  {
+    name: '1. ESLint Code Quality Inspection',
+    command: 'npx',
+    args: ['eslint', '.'],
+  },
+  {
+    name: '2. Prettier Formatting Verification',
+    command: 'npx',
+    args: ['prettier', '--check', '"**/*.{js,jsx,ts,tsx,json,css,md}"'],
+  },
+  {
+    name: '3. Automated Unit Testing',
+    command: 'npx',
+    args: ['jest', '--passWithNoTests'],
+  },
+  {
+    name: '4. Next.js Production Build',
+    command: 'npx',
+    args: ['next', 'build', '--webpack'],
+  },
 ];
 
 const colors = {
@@ -28,7 +44,9 @@ function logBox(title, color = colors.cyan) {
 function runStep(step) {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
-    console.log(`${colors.bright}${colors.cyan}▶ Executing: ${step.name}${colors.reset}`);
+    console.log(
+      `${colors.bright}${colors.cyan}▶ Executing: ${step.name}${colors.reset}`
+    );
 
     const proc = spawn(step.command, step.args, {
       stdio: 'inherit',
@@ -38,10 +56,14 @@ function runStep(step) {
     proc.on('close', code => {
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       if (code === 0) {
-        console.log(`${colors.green}✔ ${step.name} passed cleanly in ${duration}s${colors.reset}\n`);
+        console.log(
+          `${colors.green}✔ ${step.name} passed cleanly in ${duration}s${colors.reset}\n`
+        );
         resolve({ step: step.name, duration, success: true });
       } else {
-        console.error(`${colors.red}✖ ${step.name} failed with exit code ${code} (${duration}s)${colors.reset}\n`);
+        console.error(
+          `${colors.red}✖ ${step.name} failed with exit code ${code} (${duration}s)${colors.reset}\n`
+        );
         reject(new Error(`Step "${step.name}" failed.`));
       }
     });
@@ -60,15 +82,27 @@ async function main() {
     }
 
     const totalTime = ((Date.now() - overallStart) / 1000).toFixed(2);
-    logBox('🎉 ALL PIPELINE PHASES PASSED! FRONTEND IS PRODUCTION READY', colors.green);
+    logBox(
+      '🎉 ALL PIPELINE PHASES PASSED! FRONTEND IS PRODUCTION READY',
+      colors.green
+    );
 
-    console.log(`${colors.bright}${colors.blue}Pipeline Summary Report:${colors.reset}`);
+    console.log(
+      `${colors.bright}${colors.blue}Pipeline Summary Report:${colors.reset}`
+    );
     results.forEach(r => {
-      console.log(`  ✔ ${r.step.padEnd(40)} : ${colors.green}PASSED${colors.reset} (${r.duration}s)`);
+      console.log(
+        `  ✔ ${r.step.padEnd(40)} : ${colors.green}PASSED${colors.reset} (${r.duration}s)`
+      );
     });
-    console.log(`\n${colors.bright}Total Duration:${colors.reset} ${totalTime}s\n`);
+    console.log(
+      `\n${colors.bright}Total Duration:${colors.reset} ${totalTime}s\n`
+    );
   } catch (err) {
-    logBox('💥 PIPELINE FAILED - PLEASE RESOLVE ERRORS BEFORE DEPLOYING', colors.red);
+    logBox(
+      '💥 PIPELINE FAILED - PLEASE RESOLVE ERRORS BEFORE DEPLOYING',
+      colors.red
+    );
     process.exit(1);
   }
 }

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/primitives/button';
 import { AnimatedWarningIcon } from '@/components/ui/feedback/animated-icons';
 import { Badge } from '@/components/ui/primitives/badge';
+import { detectWebmailProvider, openWebmailProvider } from '@/lib/webmail';
 
 export function PendingVerificationBanner({
   isVerified = false,
@@ -33,33 +34,17 @@ export function PendingVerificationBanner({
     return () => clearInterval(interval);
   }, [cooldown]);
 
-  const handleOpenEmail = useCallback(e => {
-    e.preventDefault();
-    if (typeof window === 'undefined') return;
-
-    const ua = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(ua);
-    const isAndroid = /Android/.test(ua);
-
-    if (isIOS) {
-      window.location.href = 'googlegmail://';
-      setTimeout(() => {
+  const handleOpenEmail = useCallback(
+    e => {
+      e.preventDefault();
+      const provider = detectWebmailProvider(userEmail);
+      if (openWebmailProvider(provider)) return;
+      if (typeof window !== 'undefined') {
         window.open('https://mail.google.com', '_blank');
-      }, 2000);
-    } else if (isAndroid) {
-      const intent =
-        `intent:#Intent;` +
-        `action=android.intent.action.MAIN;` +
-        `category=android.intent.category.LAUNCHER;` +
-        `package=com.google.android.gm;` +
-        `S.browser_fallback_url=${encodeURIComponent(
-          'https://mail.google.com/mail/u/0/#inbox'
-        )};end`;
-      window.location.href = intent;
-    } else {
-      window.open('https://mail.google.com', '_blank');
-    }
-  }, []);
+      }
+    },
+    [userEmail]
+  );
 
   if (isVerified) return null;
 

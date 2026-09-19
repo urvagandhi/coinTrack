@@ -21,8 +21,6 @@ export function FintechLoader({
   subtitle = 'Securing ledger state...',
   showText = true,
   overlay = false,
-  brandName = 'coinTrack',
-  variant = 'gold', // Hardcoded requirement
   isLoading = true, // Controls the eject/inject lifecycle
   completeTitle = 'Transaction Complete',
   completeSubtitle = 'Redirecting to dashboard...',

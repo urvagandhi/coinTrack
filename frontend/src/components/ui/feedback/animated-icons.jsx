@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 export function AnimatedSuccessIcon({ className, ...props }) {
@@ -593,7 +594,7 @@ export function AnimatedMailboxIcon({ className, size = 160, ...props }) {
       )}
       {...props}
     >
-      <img
+      <Image
         src='/mail-box.webp'
         alt='Animated Mailbox'
         width={size}
@@ -601,7 +602,7 @@ export function AnimatedMailboxIcon({ className, size = 160, ...props }) {
         className='w-full h-full object-contain dark:hidden'
         loading='eager'
       />
-      <img
+      <Image
         src='/mail-box-dark.webp'
         alt='Animated Mailbox'
         width={size}

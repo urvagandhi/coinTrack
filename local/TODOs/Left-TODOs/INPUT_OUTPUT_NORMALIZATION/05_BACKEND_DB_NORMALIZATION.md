@@ -3,6 +3,8 @@
 > **Priority:** HIGH  
 > **Scope:** API schemas, middleware, database constraints, migrations
 
+> **Implementation Status (verified 2026-09-19):** NOT YET IMPLEMENTED. This spec is entirely target state. No Zod schemas, normalization middleware, DB constraints, or migrations described here exist today. (Backend verification was NOT performed for this update — marked **UNVERIFIED** against backend code.)
+
 ---
 
 ## 1. API Input Validation Architecture

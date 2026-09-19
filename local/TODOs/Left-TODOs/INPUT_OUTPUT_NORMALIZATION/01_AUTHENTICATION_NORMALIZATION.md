@@ -3,6 +3,11 @@
 > **Priority:** HIGH  
 > **Files Affected:** Registration, Login, Forgot Password, Reset Password, Complete Profile, 2FA
 
+> **Implementation Status (verified 2026-09-19):** NOT YET IMPLEMENTED as shared utilities. Observed inline behavior only:
+> - Phone: `login/page.jsx` has an inline `normalizeIdentifier()` (`+91` prefix for 10-digit inputs) — there is **no** shared `normalizePhoneIndia()` utility.
+> - There is **no** `app/(access)/register/page.jsx (complete-profile step)` route. The Google-OAuth "complete profile" step lives inside `app/(access)/register/page.jsx` (uses `sessionStorage` `tempToken`/`tempEmail`/`tempName`); shared auth screens are in `src/components/ui/auth/`.
+> - Remaining line references below are **approximate / UNVERIFIED**.
+
 ---
 
 ## 1. Full Name
@@ -38,7 +43,7 @@ STEP 5: Store as-is (preserve original casing for legal names)
 
 ### Files to Update
 - `app/(access)/register/page.jsx:157` - Registration name
-- `app/(access)/complete-profile/page.jsx:204` - Complete profile name
+- `app/(access)/register/page.jsx (complete-profile step):204` - Complete profile name
 - `app/(main)/profile/page.jsx:848-857` - Profile edit name
 
 ---
@@ -78,7 +83,7 @@ STEP 6: Store as lowercase
 
 ### Files to Update
 - `app/(access)/register/page.jsx:164` - Registration
-- `app/(access)/complete-profile/page.jsx:211` - Complete profile
+- `app/(access)/register/page.jsx (complete-profile step):211` - Complete profile
 
 ---
 
@@ -117,7 +122,7 @@ STEP 6: For comparison: always compare lowercase
 - `app/(access)/register/page.jsx:177` - Registration
 - `app/(access)/login/page.jsx:304-313` - Login (also accepts email)
 - `app/(access)/forgot-password/page.jsx:71-79` - Forgot password
-- `app/(access)/complete-profile/page.jsx:224-231` - Complete profile
+- `app/(access)/register/page.jsx (complete-profile step):224-231` - Complete profile
 - `app/(main)/profile/page.jsx:848-857` - Profile edit
 - `components/modals/ContactModal.jsx:151-163` - Contact form
 
@@ -157,7 +162,7 @@ STEP 7: For international: store as E.164 "+919876543210"
 
 ### Files to Update
 - `app/(access)/register/page.jsx:188` - Registration
-- `app/(access)/complete-profile/page.jsx:241-246` - Complete profile
+- `app/(access)/register/page.jsx (complete-profile step):241-246` - Complete profile
 - `app/(main)/profile/page.jsx:848-857` - Profile edit
 
 ---
@@ -197,7 +202,7 @@ STEP 7: For display: "15 Mar 1995" or "03/15/1995" based on locale
 
 ### Files to Update
 - `app/(access)/register/page.jsx:202` - Registration
-- `app/(access)/complete-profile/page.jsx:256` - Complete profile
+- `app/(access)/register/page.jsx (complete-profile step):256` - Complete profile
 - `app/(main)/profile/page.jsx:848-857` - Profile edit
 
 ---
@@ -246,7 +251,7 @@ STEP 7: NEVER log, return, or expose the plaintext password
 ### Files to Update
 - `app/(access)/register/page.jsx:215` - Registration
 - `app/(access)/reset-password/page.jsx:153-156` - Reset password
-- `app/(access)/complete-profile/page.jsx:269` - Complete profile
+- `app/(access)/register/page.jsx (complete-profile step):269` - Complete profile
 - `app/(main)/profile/page.jsx:543-547` - Change password
 
 ---

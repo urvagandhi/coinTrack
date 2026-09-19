@@ -1,6 +1,6 @@
 'use client';
 
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/primitives/theme-toggle';
 import { FintechLoader } from '@/components/ui/loaders/FintechLoader';
 import {
   ArrowLeft,

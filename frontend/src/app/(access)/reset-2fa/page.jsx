@@ -1,18 +1,32 @@
-// src/app/(access)/reset-2fa/page.jsx
 'use client';
 
-import { AuthPageShell } from '@/components/auth/AuthPageShell';
-import { twofaAPI } from '@/lib/api';
-import { ShieldOff, XCircle } from 'lucide-react';
-import Link from 'next/link';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { twofaAPI } from '@/lib/api';
+import { ShieldOff } from 'lucide-react';
+import Link from 'next/link';
+import { AuthLayout } from '@/components/ui/auth/auth-layout';
+import { AnimatedErrorIcon } from '@/components/ui/feedback/animated-icons';
+import { Suspense } from 'react';
 
 function Reset2FAContent() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState('verifying');
   const [message, setMessage] = useState('');
   const verificationStarted = useRef(false);
+
+  const verifyToken = useCallback(async token => {
+    try {
+      const result = await twofaAPI.verifyRecovery(token);
+      setStep('success');
+      setMessage(
+        result.message || '2-Factor Authentication has been disabled.'
+      );
+    } catch (err) {
+      setStep('error');
+      setMessage(err.message || 'Recovery link has expired or is invalid.');
+    }
+  }, []);
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -26,107 +40,107 @@ function Reset2FAContent() {
     verificationStarted.current = true;
 
     verifyToken(token);
-  }, [searchParams]);
-
-  const verifyToken = async token => {
-    try {
-      const result = await twofaAPI.verifyRecovery(token);
-      setStep('success');
-      setMessage(
-        result.message || '2-Factor Authentication has been disabled.'
-      );
-    } catch (err) {
-      setStep('error');
-      setMessage(err.message || 'Recovery link has expired or is invalid.');
-    }
-  };
-
-  const titles = {
-    verifying: 'Processing recovery…',
-    success: '2FA disabled',
-    error: 'Recovery failed',
-  };
-
-  const subtitles = {
-    verifying: 'Hold on while we process your recovery request.',
-    success: 'Two-factor authentication has been removed from your account.',
-    error: message,
-  };
+  }, [searchParams, verifyToken]);
 
   return (
-    <AuthPageShell
-      title={titles[step]}
-      subtitle={subtitles[step]}
-      index='VI'
-      kicker='2FA Recovery'
-      showFooterLinks={step !== 'verifying'}
-      asideQuote={'"Security restored is a quiet kind of relief."'}
+    <AuthLayout
+      badgeText='2FA Recovery'
+      badgeIcon={ShieldOff}
+      title={
+        <>
+          Recovery{' '}
+          <span className='font-display font-extrabold text-amber-500 dark:text-amber-400'>
+            Complete.
+          </span>
+        </>
+      }
+      subtitle={
+        step === 'verifying'
+          ? 'Hold on while we process your recovery request.'
+          : step === 'success'
+            ? 'Two-factor authentication has been removed from your account.'
+            : message
+      }
+      mockupContent={null}
     >
-      {step === 'verifying' && (
-        <div className='flex flex-col items-center gap-3 py-6'>
-          <div className='w-8 h-8 rounded-full border border-hairline border-t-foreground animate-spin' />
-          <p className='eyebrow'>Disabling 2FA</p>
-        </div>
-      )}
+      <div className='w-full max-w-[340px] sm:max-w-md mx-auto my-auto flex flex-col justify-center shrink-0 py-2'>
+        {step === 'verifying' && (
+          <div className='flex flex-col items-center animate-in fade-in zoom-in-95 duration-500 space-y-4'>
+            <div className='w-16 h-16 rounded-full border-4 border-border/40 border-t-emerald-500 animate-spin' />
+            <p className='text-xs font-semibold text-muted-foreground'>
+              Processing recovery…
+            </p>
+          </div>
+        )}
 
-      {step === 'success' && (
-        <div className='space-y-6'>
-          <div className='flex items-start gap-4 border-l-2 border-[hsl(var(--chart-4))] bg-[hsl(var(--chart-4)/0.08)] px-4 py-4'>
-            <ShieldOff
-              size={20}
-              className='text-[hsl(var(--chart-4))] flex-shrink-0 mt-0.5'
-            />
-            <div>
-              <p className='eyebrow text-[hsl(var(--chart-4))] mb-1'>
-                Account less secure
-              </p>
-              <p className='text-[13px] text-foreground leading-snug'>
-                You will be required to set up two-factor authentication on your
-                next sign in.
+        {step === 'success' && (
+          <div className='flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-400 space-y-6 pt-1'>
+            <div className='space-y-1'>
+              <h1 className='font-display text-2xl font-extrabold tracking-tight text-foreground'>
+                2FA Disabled
+              </h1>
+              <p className='font-sans text-xs text-neutral-700/90 dark:text-neutral-400 max-w-xs mx-auto leading-relaxed'>
+                Two-factor authentication has been removed from your account.
               </p>
             </div>
-          </div>
 
-          <Link href='/login' className='block'>
-            <button type='button' className='ed-btn ed-btn-primary w-full h-11'>
-              Sign In
-            </button>
-          </Link>
-        </div>
-      )}
+            <div className='relative flex items-center justify-center w-32 h-32 my-0.5'>
+              <div className='absolute inset-2 rounded-full bg-amber-500/15 dark:bg-amber-500/20 blur-xl pointer-events-none' />
+              <ShieldOff className='size-20 text-amber-500' />
+            </div>
 
-      {step === 'error' && (
-        <div className='space-y-6'>
-          <div className='flex items-start gap-4 border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.06)] px-4 py-4'>
-            <XCircle
-              size={20}
-              className='text-[hsl(var(--loss))] flex-shrink-0 mt-0.5'
-            />
-            <div>
-              <p className='eyebrow text-[hsl(var(--loss))] mb-1'>
-                Recovery failed
-              </p>
-              <p className='text-[13px] text-foreground leading-snug'>
-                {message}
-              </p>
+            <div className='flex flex-col w-full gap-3 pt-4 max-w-[340px]'>
+              <Link href='/login' className='block'>
+                <button
+                  type='button'
+                  className='group w-full rounded-[14px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 py-6 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/25 active:translate-y-0 active:scale-[0.99]'
+                >
+                  <span>Sign In</span>
+                </button>
+              </Link>
             </div>
           </div>
+        )}
 
-          <div className='flex flex-col sm:flex-row gap-2'>
-            <a href='mailto:support@cointrack.app' className='flex-1'>
-              <button type='button' className='ed-btn ed-btn-info w-full h-11'>
-                Contact Support
-              </button>
-            </a>
-            <Link href='/login' className='flex-1'>
-              <button type='button' className='ed-btn ed-btn-ghost w-full h-11'>
-                Return to Sign In
-              </button>
-            </Link>
+        {step === 'error' && (
+          <div className='flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-400 space-y-6 pt-1'>
+            <div className='space-y-1'>
+              <h1 className='text-2xl font-bold tracking-tight text-foreground'>
+                Recovery Failed
+              </h1>
+              <p className='text-xs sm:text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed'>
+                {message || 'The recovery link is invalid or has expired.'}
+              </p>
+            </div>
+
+            <div className='relative flex items-center justify-center w-32 h-32 my-0.5'>
+              <div className='absolute inset-2 rounded-full bg-destructive/15 dark:bg-destructive/20 blur-xl pointer-events-none' />
+              <AnimatedErrorIcon className='size-20 text-destructive/80' loop />
+            </div>
+
+            <div className='flex flex-col w-full gap-3 pt-4 max-w-[340px]'>
+              <a href='mailto:support@cointrack.app' className='block'>
+                <button
+                  type='button'
+                  className='group w-full rounded-[14px] bg-blue-600 text-white py-6 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/25 active:translate-y-0 active:scale-[0.99]'
+                >
+                  <span>Contact Support</span>
+                </button>
+              </a>
+
+              <Link href='/login' className='block'>
+                <button
+                  type='button'
+                  className='group w-full rounded-[14px] border border-border/60 bg-background text-foreground py-6 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-sm hover:bg-muted active:translate-y-0 active:scale-[0.99]'
+                >
+                  <span>Return to Sign In</span>
+                </button>
+              </Link>
+            </div>
           </div>
-        </div>
-      )}
-    </AuthPageShell>
+        )}
+      </div>
+    </AuthLayout>
   );
 }
 

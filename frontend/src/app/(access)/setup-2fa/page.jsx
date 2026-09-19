@@ -1,18 +1,21 @@
-// src/app/(access)/setup-2fa/page.jsx
 'use client';
 
-import { AuthPageShell } from '@/components/auth/AuthPageShell';
-import TotpSetup from '@/components/TotpSetup';
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { tokenManager, totpAPI } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { TwoFactorSetupScreen } from '@/components/ui/auth/two-factor-setup-screen';
+import { Suspense } from 'react';
 
 function Setup2FAContent() {
   const router = useRouter();
   const [isRegistration, setIsRegistration] = useState(false);
   const [tempToken, setTempToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [secretKey, setSecretKey] = useState('');
+  const [qrUri, setQrUri] = useState('');
+  const [backupCodes, setBackupCodes] = useState([]);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     const registrationToken = sessionStorage.getItem('totpSetupToken');
@@ -44,10 +47,12 @@ function Setup2FAContent() {
     }
   }, [router]);
 
-  const registrationSetup = async () => {
+  const fetchSetup = useCallback(async () => {
+    if (!tempToken || qrUri) return;
     try {
       const data = await totpAPI.registerSetup(tempToken);
-      return { success: true, data };
+      setSecretKey(data.secretKey);
+      setQrUri(data.qrUri);
     } catch (error) {
       const msg = error.message || '';
       if (msg.toLowerCase().includes('expired')) {
@@ -57,32 +62,44 @@ function Setup2FAContent() {
           '/register?error=Registration expired. Please register again.'
         );
       }
-      return { success: false, error: msg || 'Setup failed' };
     }
-  };
+  }, [tempToken, qrUri, router]);
 
-  const registrationVerify = async code => {
-    try {
-      const data = await totpAPI.registerVerify(tempToken, code);
-      if (data.token) {
-        tokenManager.setToken(data.token);
-        if (data.refreshToken) tokenManager.setRefreshToken(data.refreshToken);
-      }
-      return { success: true, backupCodes: data.backupCodes || [] };
-    } catch (error) {
-      const msg = error.message || '';
-      if (msg.toLowerCase().includes('expired')) {
-        sessionStorage.removeItem('totpSetupToken');
-        sessionStorage.removeItem('totpSetupUsername');
-        router.push(
-          '/register?error=Registration expired. Please register again.'
-        );
-      }
-      return { success: false, error: msg || 'Verification failed' };
-    }
-  };
+  // Fetch QR code and secret from backend
+  useEffect(() => {
+    fetchSetup();
+  }, [fetchSetup]);
 
-  const handleComplete = () => {
+  const handleVerify = useCallback(
+    async code => {
+      setIsVerifying(true);
+      try {
+        const data = await totpAPI.registerVerify(tempToken, code);
+        if (data.token) {
+          tokenManager.setToken(data.token);
+          if (data.refreshToken)
+            tokenManager.setRefreshToken(data.refreshToken);
+        }
+        setBackupCodes(data.backupCodes || []);
+        return { success: true, backupCodes: data.backupCodes || [] };
+      } catch (error) {
+        const msg = error.message || '';
+        if (msg.toLowerCase().includes('expired')) {
+          sessionStorage.removeItem('totpSetupToken');
+          sessionStorage.removeItem('totpSetupUsername');
+          router.push(
+            '/register?error=Registration expired. Please register again.'
+          );
+        }
+        return { success: false, error: msg || 'Verification failed' };
+      } finally {
+        setIsVerifying(false);
+      }
+    },
+    [tempToken, router]
+  );
+
+  const handleComplete = useCallback(() => {
     if (isRegistration) {
       sessionStorage.removeItem('totpSetupToken');
       sessionStorage.removeItem('totpSetupUsername');
@@ -92,7 +109,7 @@ function Setup2FAContent() {
       tokenManager.removeToken();
       router.push('/login?message=Setup%20Complete%20Please%20Login');
     }
-  };
+  }, [isRegistration, router]);
 
   if (loading) {
     return (
@@ -103,24 +120,16 @@ function Setup2FAContent() {
   }
 
   return (
-    <AuthPageShell
-      title='Secure your account'
-      subtitle='Two-factor authentication is mandatory for all CoinTrack accounts. Scan, verify, and store your backup codes.'
-      index='VII'
-      kicker='Two-Factor Setup'
-      maxWidth='md'
-      asideQuote={
-        '"Security is the editor of every great ledger — quiet, unceasing, essential."'
-      }
-    >
-      <TotpSetup
-        isMandatory
-        onComplete={handleComplete}
-        onCancel={() => router.push('/login')}
-        setupAction={isRegistration ? registrationSetup : undefined}
-        verifyAction={isRegistration ? registrationVerify : undefined}
-      />
-    </AuthPageShell>
+    <TwoFactorSetupScreen
+      userEmail={sessionStorage.getItem('totpSetupUsername') || 'Account'}
+      secretKey={secretKey}
+      qrUri={qrUri}
+      onVerify={handleVerify}
+      backupCodes={backupCodes.length > 0 ? backupCodes : undefined}
+      isLoading={isVerifying}
+      onComplete={handleComplete}
+      onCancel={() => router.push('/login')}
+    />
   );
 }
 

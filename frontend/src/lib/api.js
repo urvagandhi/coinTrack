@@ -133,16 +133,24 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
-    // Helper: normalize any error into { message, status, original }
-    const normalize = err => ({
-      message:
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        'An unexpected error occurred',
-      status: err.response?.status,
-      original: err,
-    });
+    // Helper: normalize any error into { message, status, errorCode, fieldErrors, original }.
+    // Handles both backend envelopes:
+    //  - ApiResponse:       { success, data, message, timestamp, requestId }
+    //  - ApiErrorResponse:  { status, errorCode, message, path, fieldErrors }
+    const normalize = err => {
+      const data = err.response?.data;
+      return {
+        message:
+          data?.message ||
+          data?.error ||
+          err.message ||
+          'An unexpected error occurred',
+        status: err.response?.status,
+        errorCode: data?.errorCode,
+        fieldErrors: data?.fieldErrors,
+        original: err,
+      };
+    };
 
     // ── Layer 1: Auto-retry for cold starts (5xx, timeout, network) ──
     // Skip retry for auth endpoints (__skipRetry flag)

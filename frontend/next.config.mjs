@@ -7,8 +7,8 @@ const bundleAnalyzer = withBundleAnalyzer({
 
 const networkOrigins = Object.values(os.networkInterfaces())
   .flat()
-  .filter((iface) => iface && iface.family === 'IPv4' && !iface.internal)
-  .map((iface) => iface.address);
+  .filter(iface => iface && iface.family === 'IPv4' && !iface.internal)
+  .map(iface => iface.address);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

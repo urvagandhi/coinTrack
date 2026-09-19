@@ -3,6 +3,11 @@
 > **Priority:** MEDIUM  
 > **Files Affected:** 32+ calculator pages, shared FormField component
 
+> **Implementation Status (verified 2026-09-19):** NOT YET IMPLEMENTED. Confirmed current facts:
+> - All 32+ calculator pages import the shared component from `components/calculators/framework/CalculatorComponents.jsx` (32 importers).
+> - The current `FormField` takes `type`, `label`, `prefix`, `suffix`, `min`, `max`, `step`, `placeholder` — it does **NOT** yet support `inputMode`, `normalize`, or `validate`; no WCAG 2.2 SC 3.3.1 error announcement; errors are not shown inline.
+> - No shared validators/normalizers exist (`utils/calculatorValidation.js` in §8 is a TARGET).
+
 ---
 
 ## 1. Overview

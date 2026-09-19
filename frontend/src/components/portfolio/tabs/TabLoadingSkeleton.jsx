@@ -2,6 +2,8 @@
 
 import { Skeleton } from '@/components/ui/feedback/Skeleton';
 
+const COLUMN_WIDTHS = ['12rem', '8rem', '10rem', '6rem', '9rem', '7rem'];
+
 export function TabLoadingSkeleton({ rows = 8, columns = 6 }) {
   return (
     <div className='ed-card relative'>
@@ -19,7 +21,12 @@ export function TabLoadingSkeleton({ rows = 8, columns = 6 }) {
                 key={j}
                 className='h-3.5 rounded-sm'
                 style={{
-                  width: j === 0 ? '12rem' : `${4 + Math.random() * 4}rem`,
+                  width:
+                    j === 0
+                      ? '12rem'
+                      : COLUMN_WIDTHS[
+                          ((i + j) % (COLUMN_WIDTHS.length - 1)) + 1
+                        ],
                 }}
               />
             ))}

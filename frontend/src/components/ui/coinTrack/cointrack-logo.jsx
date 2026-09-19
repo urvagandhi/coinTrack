@@ -6,7 +6,7 @@ export function CoinTrackLogo({
   showBadge = false,
   badgeText = 'Live',
   className = '',
-  iconSize = 'size-8',
+  iconSize = 'size-10',
 }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
@@ -14,14 +14,14 @@ export function CoinTrackLogo({
         <Image
           src='/coinTrack.png'
           alt='coinTrack'
-          width={36}
-          height={36}
+          width={48}
+          height={48}
           priority
           className='w-full h-full object-contain'
         />
       </span>
       <div className='flex items-baseline gap-1.5'>
-        <span className='font-display font-bold tracking-tight text-xl text-neutral-950 leading-none'>
+        <span className='font-display font-bold tracking-tight text-2xl text-neutral-950 leading-none'>
           coinTrack
         </span>
         {showBadge && (

@@ -10,7 +10,7 @@ import { CoinTrackSkyBackground } from '@/components/ui/coinTrack/cointrack-sky-
 import { CoinTrackHeroMockup } from '@/components/ui/coinTrack/cointrack-hero-mockup';
 import { CoinTrackFeatures } from '@/components/ui/coinTrack/cointrack-features';
 import { CoinTrackInboxSection } from '@/components/ui/coinTrack/cointrack-inbox-section';
-import { CoinTrackDesignTokens } from '@/components/ui/coinTrack/cointrack-design-tokens';
+// import { CoinTrackDesignTokens } from '@/components/ui/coinTrack/cointrack-design-tokens';
 import { CoinTrackPricing } from '@/components/ui/coinTrack/cointrack-pricing';
 import { CoinTrackFooter } from '@/components/ui/coinTrack/cointrack-footer';
 
@@ -186,10 +186,17 @@ export default function CoinTrackLandingPage() {
         {/* ── SECTION 3: PORTFOLIO INTELLIGENCE (On cloudy sky) ── */}
         <CoinTrackInboxSection />
 
-        {/* ── SECTION 4: SEAMLESS TRANSITION FROM CLOUD TO CRISP WHITE ── */}
-        <div className='relative z-10 bg-gradient-to-b from-transparent via-white/80 to-white pt-10'>
+        {/* ── SEAMLESS TRANSITION FROM CLOUD TO CRISP WHITE ── */}
+        <div
+          aria-hidden='true'
+          className='relative z-10 h-[30vh] min-h-[300px] bg-gradient-to-b from-transparent via-white/60 to-white pointer-events-none'
+          style={{ marginBottom: '-1px' }}
+        />
+
+        {/* ── SECTION 4: DESIGN TOKENS (Now safely inside the white area) ── */}
+        {/* <div className='relative z-10 bg-white pb-10'>
           <CoinTrackDesignTokens />
-        </div>
+        </div> */}
 
         {/* ── SECTION 5: PRICING (On pure crisp white backdrop) ── */}
         <div id='pricing' className='relative z-10 bg-white scroll-mt-28'>

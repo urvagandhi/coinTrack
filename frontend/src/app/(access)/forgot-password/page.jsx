@@ -36,6 +36,7 @@ export default function ForgotPasswordPage() {
     router.push('/login');
   }, [router]);
 
+  // Lets the user start over with a different identifier from the confirmation view.
   const handleResetSubmitted = useCallback(() => {
     setSubmitted(false);
     setSubmittedIdentifier('');

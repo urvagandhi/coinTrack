@@ -13,9 +13,6 @@ import Image from 'next/image';
 import {
   Bell,
   ChevronRight,
-  Wifi,
-  Battery,
-  Signal,
   Wallet,
   TrendingUp,
   ArrowUpRight,
@@ -28,13 +25,9 @@ import { PasswordStrengthInput } from '@/components/ui/auth/security-inputs';
 import { Button } from '@/components/ui/primitives/button';
 import { Input } from '@/components/ui/primitives/input';
 import { DatePicker } from '@/components/ui/forms/date-picker';
-import {
-  AuthHeader,
-  AuthFooter,
-  useDynamicDocumentTitle,
-} from '@/components/ui/auth/auth-shared';
+import { useDynamicDocumentTitle } from '@/components/ui/auth/auth-shared';
+import { AuthLayout } from '@/components/ui/auth/auth-layout';
 import { useModal } from '@/contexts/ModalContext';
-import { AnimatedSuccessIcon } from '@/components/ui/feedback/animated-icons';
 
 // ───────────────────────────────────────────────────────────────
 //  CONSTANTS & DATA
@@ -73,138 +66,113 @@ const GoogleIcon = memo(function GoogleIcon({ className }) {
   );
 });
 
-const RegisterPortfolioMockup = memo(function RegisterPortfolioMockup() {
+const RegisterMockupContent = memo(function RegisterMockupContent() {
   return (
-    <div className='relative z-10 scale-[0.8] sm:scale-[0.85] md:scale-[0.78] lg:scale-[0.88] xl:scale-100 origin-center transition-transform duration-300'>
-      <div className='w-[300px] h-[520px] bg-[#12151a] dark:bg-white rounded-[44px] border-[7px] border-[#222731] dark:border-slate-200 shadow-2xl shadow-black/80 dark:shadow-slate-300/50 overflow-hidden flex flex-col p-4 isolate select-none'>
-        {/* Dynamic Island / Notch */}
-        <div className='w-full flex justify-between items-center text-zinc-400 dark:text-zinc-500 pt-0.5 pb-3 px-2'>
-          <span className='text-[11px] font-mono font-semibold tracking-wider text-zinc-300 dark:text-zinc-700'>
-            09:41
+    <div className='w-full h-full flex flex-col gap-3 select-none text-left'>
+      {/* Balance & Header */}
+      <div className='flex items-start justify-between mb-3 px-1'>
+        <div className='text-left'>
+          <p className='text-zinc-400 text-[10px] font-medium tracking-wider uppercase'>
+            New Portfolio Ledger
+          </p>
+          <h3 className='text-[26px] font-bold text-white tracking-tight flex items-baseline gap-1 mt-0.5'>
+            ₹0
+            <span className='text-xs text-zinc-400 font-normal'>.00</span>
+          </h3>
+          <span className='inline-flex items-center text-[10px] font-semibold text-emerald-400 mt-0.5'>
+            Ready to sync 4+ brokers
           </span>
-          <div className='w-16 h-3.5 bg-black/40 dark:bg-zinc-200 rounded-full flex items-center justify-end px-1.5'>
-            <div className='size-1.5 rounded-full bg-emerald-500 animate-pulse' />
-          </div>
-          <div className='flex items-center gap-1'>
-            <Signal className='size-3' />
-            <Wifi className='size-3' />
-            <Battery className='size-3.5' />
-          </div>
         </div>
-
-        {/* Balance & Header */}
-        <div className='flex items-start justify-between mb-3 px-1'>
-          <div className='text-left'>
-            <p className='text-zinc-400 dark:text-zinc-500 text-[10px] font-medium tracking-wider uppercase'>
-              New Portfolio Ledger
-            </p>
-            <h3 className='text-[26px] font-bold text-white dark:text-zinc-900 tracking-tight flex items-baseline gap-1 mt-0.5'>
-              ₹0
-              <span className='text-xs text-zinc-400 dark:text-zinc-500 font-normal'>
-                .00
-              </span>
-            </h3>
-            <span className='inline-flex items-center text-[10px] font-semibold text-emerald-400 dark:text-emerald-600 mt-0.5'>
-              Ready to sync 4+ brokers
-            </span>
-          </div>
-          <div className='size-8 rounded-full bg-zinc-800/80 dark:bg-zinc-100 flex items-center justify-center text-zinc-300 dark:text-zinc-700 shadow-sm'>
-            <Bell className='size-3.5' />
-          </div>
+        <div className='size-8 rounded-full bg-zinc-800/80 flex items-center justify-center text-zinc-300 shadow-sm'>
+          <Bell className='size-3.5' />
         </div>
+      </div>
 
-        {/* In-Phone coinTrack Card */}
-        <div className='w-full bg-zinc-900/90 dark:bg-zinc-50 border border-zinc-800 dark:border-zinc-200 rounded-2xl p-3 mb-2.5 shadow-md'>
-          <div className='flex justify-between items-center mb-2'>
-            <div className='flex items-center gap-1.5'>
-              <span className='size-3 relative block'>
-                <Image
-                  src='/coinTrack.png'
-                  alt='coinTrack'
-                  width={12}
-                  height={12}
-                  className='object-contain w-auto h-auto'
-                />
-              </span>
-              <span className='font-display font-bold text-xs text-white dark:text-zinc-900'>
-                coinTrack
-              </span>
-            </div>
-            <span className='text-[9px] font-bold tracking-wider uppercase bg-emerald-500/20 dark:bg-emerald-100 text-emerald-400 dark:text-emerald-700 px-1.5 py-0.5 rounded-full'>
-              Instant Setup
-            </span>
-          </div>
-          <div className='space-y-1'>
-            <div className='text-[10px] text-zinc-400 dark:text-zinc-500'>
-              Auto-broker Aggregation
-            </div>
-            <div className='flex items-center justify-between text-[11px] font-mono text-zinc-300 dark:text-zinc-700'>
-              <span>ZERODHA • UPSTOX • GROWW</span>
-              <span className='text-emerald-400 dark:text-emerald-600 font-bold'>
-                1-Click
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Demat Sync Pill */}
-        <div className='w-full bg-[#1b2028] dark:bg-slate-100 border border-emerald-500/30 dark:border-emerald-500/40 rounded-xl p-2.5 flex items-center justify-between mb-3 shadow-sm'>
-          <div className='flex items-center gap-2'>
-            <div className='size-7 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-400 dark:text-emerald-600'>
-              <Wallet className='size-3.5' />
-            </div>
-            <div className='text-left'>
-              <p className='text-[11px] font-semibold text-white dark:text-zinc-900 leading-tight'>
-                Instant TOTP 2FA
-              </p>
-              <p className='text-[9px] text-zinc-400 dark:text-zinc-500'>
-                Hardware & Authenticator Ready
-              </p>
-            </div>
-          </div>
-          <div className='size-2 rounded-full bg-emerald-400 animate-pulse' />
-        </div>
-
-        {/* Performance Preview Widget */}
-        <div className='w-full mt-auto bg-zinc-900/60 dark:bg-zinc-50 border border-zinc-800/80 dark:border-zinc-200 rounded-2xl p-3 text-left'>
-          <div className='flex justify-between items-center mb-2'>
-            <span className='text-[11px] font-semibold text-zinc-300 dark:text-zinc-700 uppercase tracking-wider'>
-              Analytics Engine
-            </span>
-            <span className='text-[10px] font-medium text-emerald-400 dark:text-emerald-600 flex items-center gap-0.5'>
-              Live Insights <ChevronRight className='size-2.5' />
-            </span>
-          </div>
-
-          <div className='flex gap-4 mb-2.5'>
-            <div>
-              <p className='text-white dark:text-zinc-900 text-xs font-bold'>
-                0% Broker Lock-in
-              </p>
-              <p className='text-[9px] text-emerald-400 dark:text-emerald-600 font-medium'>
-                Unified taxation
-              </p>
-            </div>
-            <div>
-              <p className='text-white dark:text-zinc-900 text-xs font-bold'>
-                256-bit AES
-              </p>
-              <p className='text-[9px] text-zinc-400 dark:text-zinc-500 font-medium'>
-                At-rest encryption
-              </p>
-            </div>
-          </div>
-
-          {/* Dynamic Chart Bars */}
-          <div className='h-12 w-full flex items-end justify-between gap-1 opacity-90'>
-            {PERFORMANCE_CHART_BARS.map((h, i) => (
-              <div
-                key={i}
-                className='w-[8%] bg-gradient-to-t from-emerald-950 to-emerald-400 dark:from-emerald-200 dark:to-emerald-500 rounded-t-sm transition-all hover:brightness-125'
-                style={{ height: `${h}%` }}
+      {/* In-Phone coinTrack Card */}
+      <div className='w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 mb-2.5 shadow-md'>
+        <div className='flex justify-between items-center mb-2'>
+          <div className='flex items-center gap-1.5'>
+            <span className='size-3 relative block'>
+              <Image
+                src='/coinTrack.png'
+                alt='coinTrack'
+                width={12}
+                height={12}
+                className='object-contain w-auto h-auto'
               />
-            ))}
+            </span>
+            <span className='font-display font-bold text-xs text-white'>
+              coinTrack
+            </span>
           </div>
+          <span className='text-[9px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full'>
+            Instant Setup
+          </span>
+        </div>
+        <div className='space-y-1'>
+          <div className='text-[10px] text-zinc-400'>
+            Auto-broker Aggregation
+          </div>
+          <div className='flex items-center justify-between text-[11px] font-mono text-zinc-300'>
+            <span>ZERODHA • UPSTOX • GROWW</span>
+            <span className='text-emerald-400 font-bold'>1-Click</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Demat Sync Pill */}
+      <div className='w-full bg-[#1b2028] border border-emerald-500/30 rounded-xl p-2.5 flex items-center justify-between mb-3 shadow-sm'>
+        <div className='flex items-center gap-2'>
+          <div className='size-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400'>
+            <Wallet className='size-3.5' />
+          </div>
+          <div className='text-left'>
+            <p className='text-[11px] font-semibold text-white leading-tight'>
+              Instant TOTP 2FA
+            </p>
+            <p className='text-[9px] text-zinc-400'>
+              Hardware & Authenticator Ready
+            </p>
+          </div>
+        </div>
+        <div className='size-2 rounded-full bg-emerald-400 animate-pulse' />
+      </div>
+
+      {/* Performance Preview Widget */}
+      <div className='w-full mt-auto bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-3 text-left'>
+        <div className='flex justify-between items-center mb-2'>
+          <span className='text-[11px] font-semibold text-zinc-300 uppercase tracking-wider'>
+            Analytics Engine
+          </span>
+          <span className='text-[10px] font-medium text-emerald-400 flex items-center gap-0.5'>
+            Live Insights <ChevronRight className='size-2.5' />
+          </span>
+        </div>
+
+        <div className='flex gap-4 mb-2.5'>
+          <div>
+            <p className='text-white text-xs font-bold'>0% Broker Lock-in</p>
+            <p className='text-[9px] text-emerald-400 font-medium'>
+              Unified taxation
+            </p>
+          </div>
+          <div>
+            <p className='text-white text-xs font-bold'>256-bit AES</p>
+            <p className='text-[9px] text-zinc-400 font-medium'>
+              At-rest encryption
+            </p>
+          </div>
+        </div>
+
+        {/* Dynamic Chart Bars */}
+        <div className='h-12 w-full flex items-end justify-between gap-1 opacity-90'>
+          {PERFORMANCE_CHART_BARS.map((h, i) => (
+            <div
+              key={i}
+              className='w-[8%] bg-gradient-to-t from-emerald-950 to-emerald-400 rounded-t-sm transition-all hover:brightness-125'
+              style={{ height: `${h}%` }}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -226,6 +194,10 @@ const RegisterPortfolioMockup = memo(function RegisterPortfolioMockup() {
  * @param {() => void} [props.onLoginRedirect]
  * @param {boolean} [props.isLoading=false]
  * @param {string} [props.errorMessage]
+ * @param {string} [props.mode='register'] // 'register' or 'complete-profile'
+ * @param {Object} [props.initialData={}]
+ * @param {boolean} [props.isGoogleLoading=false]
+ * @param {string} [props.tempToken] // Used in complete-profile mode
  */
 export function RegisterSplitScreen({
   className,
@@ -237,6 +209,7 @@ export function RegisterSplitScreen({
   mode = 'register', // 'register' or 'complete-profile'
   initialData = {},
   isGoogleLoading = false,
+  tempToken = '',
 }) {
   useDynamicDocumentTitle('Create Account | coinTrack');
   const { openModal } = useModal();
@@ -283,39 +256,9 @@ export function RegisterSplitScreen({
     setInternalMode(mode);
   }, [mode]);
 
-  // Google Simulation State
-  const [googleSimState, setGoogleSimState] = useState('idle'); // 'idle' | 'connecting' | 'connected' | 'preparing'
-  const [dotCount, setDotCount] = useState(0);
-
-  useEffect(() => {
-    if (googleSimState === 'connecting' || isGoogleLoading) {
-      const interval = setInterval(() => {
-        setDotCount(c => (c + 1) % 4);
-      }, 400);
-      return () => clearInterval(interval);
-    }
-  }, [googleSimState, isGoogleLoading]);
-
-  const handleGoogleMockClick = () => {
-    if (googleSimState !== 'idle') return;
-
-    setGoogleSimState('connecting');
-    setTimeout(() => {
-      setGoogleSimState('connected');
-      setTimeout(() => {
-        setGoogleSimState('preparing');
-        setTimeout(() => {
-          setGoogleSimState('idle');
-          handleFieldChange('name', 'Urva Gandhi');
-          handleFieldChange('username', 'urvagandhi');
-          handleFieldChange('email', 'urva@cointrack.in');
-          handleFieldChange('phoneNumber', '9876543210');
-          handleFieldChange('dateOfBirth', '2000-01-01');
-          setInternalMode('complete-profile');
-          onGoogleSignUp?.();
-        }, 900);
-      }, 800);
-    }, 1500);
+  const handleGoogleClick = () => {
+    if (isLoading || isGoogleLoading) return;
+    onGoogleSignUp?.();
   };
 
   // Sync initial data if it changes after mount
@@ -329,12 +272,7 @@ export function RegisterSplitScreen({
         phoneNumber: initialData.phoneNumber || prev.phoneNumber,
       }));
     }
-  }, [
-    initialData.name,
-    initialData.username,
-    initialData.email,
-    initialData.phoneNumber,
-  ]);
+  }, [initialData]);
 
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [clientError, setClientError] = useState('');
@@ -519,7 +457,7 @@ export function RegisterSplitScreen({
       }
 
       setClientError('');
-      onRegister?.({
+      const payload = {
         username: formData.username,
         email: formData.email,
         password: formData.password,
@@ -528,572 +466,456 @@ export function RegisterSplitScreen({
         firstName: formData.name.split(' ')[0] || '',
         lastName: formData.name.split(' ').slice(1).join(' ') || '',
         dateOfBirth: formData.dateOfBirth,
-      });
+      };
+      // Include tempToken for complete-profile (Google OAuth) flow
+      if (internalMode === 'complete-profile' && tempToken) {
+        payload.tempToken = tempToken;
+      }
+      onRegister?.(payload);
     },
-    [isLoading, validateForm, onRegister, formData]
+    [isLoading, validateForm, onRegister, formData, internalMode, tempToken]
   );
 
   // const displayedError = errorMessage || clientError;
 
   return (
-    <div
-      className={cn(
-        'w-full min-h-screen md:h-screen md:max-h-screen overflow-x-hidden md:overflow-hidden bg-background flex flex-col md:flex-row transition-colors duration-300',
-        className
-      )}
+    <AuthLayout
+      className={className}
+      badgeText='Institutional Wealth Aggregation'
+      badgeIcon={TrendingUp}
+      title={
+        <>
+          Your Ledger.{' '}
+          <span className='font-display font-extrabold text-blue-600 dark:text-blue-500'>
+            Built To Scale.
+          </span>
+        </>
+      }
+      subtitle='Connect Zerodha, Upstox, Groww, EPF, Gold & Silver in one secure vault.'
+      mockupContent={<RegisterMockupContent />}
     >
-      {/* LEFT SIDE - VISUAL (coinTrack Portfolio Showcase) */}
-      <div className='hidden md:flex md:w-1/2 h-full bg-[#0d0f12] dark:bg-slate-100 relative overflow-hidden flex-col items-center justify-center p-4 sm:p-6 lg:p-8 text-center border-b md:border-b-0 md:border-r border-border/30 transition-colors duration-300 select-none'>
-        {/* Ambient Glow Effects */}
-        <div className='absolute top-[5%] left-[10%] w-[350px] md:w-[450px] h-[350px] md:h-[450px] bg-emerald-500/15 dark:bg-emerald-500/20 rounded-full blur-[90px] md:blur-[120px] pointer-events-none' />
-        <div className='absolute bottom-[5%] right-[5%] w-[300px] md:w-[400px] h-[300px] md:h-[400px] bg-blue-500/10 dark:bg-blue-500/15 rounded-full blur-[100px] md:blur-[130px] pointer-events-none' />
+      <h1 className='font-display text-2xl sm:text-2xl lg:text-3xl font-extrabold text-foreground mb-1 tracking-tight text-left'>
+        {internalMode === 'complete-profile'
+          ? 'Complete your profile'
+          : 'Create your account'}
+      </h1>
+      <p className='font-sans text-xs sm:text-sm text-neutral-700/90 dark:text-neutral-400 mb-2.5 text-left leading-relaxed'>
+        {internalMode === 'complete-profile'
+          ? 'Choose a unique username and finalize your details to finish setting up your account.'
+          : 'Join thousands of verified investors managing unified portfolios.'}
+      </p>
 
-        {/* Brand Catchphrase & Header */}
-        <div className='relative z-10 space-y-1 mb-3 md:mb-5 mt-1 max-w-sm'>
-          <div className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 dark:text-emerald-700 text-[11px] font-medium mb-1'>
-            <TrendingUp className='size-3' />
-            <span>Institutional Wealth Aggregation</span>
-          </div>
-          <h2 className='font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white dark:text-zinc-900 tracking-tight leading-snug'>
-            Your Ledger.{' '}
-            <span className='font-display font-extrabold text-emerald-400 dark:text-emerald-600'>
-              Built To Scale.
+      {/* Global Error Alert */}
+      {fieldErrors.global && (
+        <div
+          ref={globalErrorContainerRef}
+          className='flex items-start gap-2 mb-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium'
+          role='alert'
+        >
+          <AlertCircle className='size-4 shrink-0 mt-0.5' />
+          <span>{fieldErrors.global}</span>
+        </div>
+      )}
+
+      {/* Social Sign-up Button (Hidden in complete-profile mode) */}
+      {internalMode !== 'complete-profile' && (
+        <>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={handleGoogleClick}
+            disabled={isGoogleLoading || isLoading}
+            className='group w-full rounded-[14px] bg-muted/50 hover:bg-muted/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-900 border-border/40 text-foreground py-5 sm:py-6 px-4 text-xs sm:text-sm font-medium flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 active:translate-y-0 active:scale-[0.99] mb-3 sm:mb-3.5 disabled:opacity-70 disabled:pointer-events-none'
+          >
+            {isGoogleLoading ? (
+              <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
+                <div className='size-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground animate-spin' />
+                <span className='min-w-[85px] text-left'>Connecting...</span>
+              </span>
+            ) : (
+              <span className='flex items-center gap-2.5 transition-transform duration-300'>
+                <GoogleIcon className='transition-transform duration-300 group-hover:scale-110' />
+                <span>Sign up with Google</span>
+              </span>
+            )}
+          </Button>
+
+          {/* Divider */}
+          <div
+            className='relative flex items-center justify-center mb-3 sm:mb-3.5'
+            aria-hidden='true'
+          >
+            <div className='w-full border-t border-border/50' />
+            <span className='bg-card dark:bg-[#0d0f12] px-3 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 shrink-0'>
+              OR REGISTER DIRECTLY
             </span>
-          </h2>
-          <p className='text-zinc-400 dark:text-zinc-600 text-xs max-w-xs mx-auto leading-relaxed hidden sm:block'>
-            Connect Zerodha, Upstox, Groww, EPF, Gold & Silver in one secure
-            vault.
-          </p>
+          </div>
+        </>
+      )}
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className='space-y-2.5 sm:space-y-3'>
+        {/* Full Name */}
+        <div ref={nameRef} className='space-y-1 text-left'>
+          <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
+            <label
+              htmlFor={nameId}
+              className='text-xs font-semibold text-foreground/80 sm:pt-0.5'
+            >
+              Full Name
+            </label>
+            {fieldErrors.name && (
+              <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                <span className='leading-tight'>{fieldErrors.name}</span>
+              </span>
+            )}
+          </div>
+          <div
+            className={cn(
+              'relative flex items-center rounded-[14px] transition-all duration-200',
+              fieldErrors.name
+                ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'
+            )}
+          >
+            <User
+              className='size-4 text-muted-foreground ml-3 shrink-0'
+              aria-hidden='true'
+            />
+            <Input
+              id={nameId}
+              name='name'
+              autoComplete='name'
+              spellCheck={false}
+              value={formData.name}
+              onChange={e => handleFieldChange('name', e.target.value)}
+              placeholder='Urva Gandhi'
+              disabled={isLoading}
+              required
+              className='!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 w-full min-w-0 pr-3'
+            />
+          </div>
         </div>
 
-        {/* Mock Phone App UI */}
-        <RegisterPortfolioMockup />
-      </div>
-
-      {/* RIGHT SIDE - REGISTRATION FORM */}
-      <div className='w-full md:w-1/2 min-h-screen md:min-h-0 md:h-full px-5 py-6 sm:px-8 sm:py-8 md:px-6 md:py-6 lg:px-12 lg:py-8 xl:px-16 xl:py-10 flex flex-col bg-card dark:bg-[#0d0f12] relative justify-between overflow-y-auto transition-colors duration-300'>
-        {/* Header with Centered coinTrack Logo */}
-        <AuthHeader />
-
-        {/* Main Body */}
-        <div className='w-full max-w-[340px] sm:max-w-md md:max-w-[340px] lg:max-w-md xl:max-w-lg mx-auto my-auto flex flex-col justify-center shrink-0 py-2'>
-          <h1 className='font-display text-2xl sm:text-2xl lg:text-3xl font-extrabold text-foreground mb-1 tracking-tight text-left'>
-            {internalMode === 'complete-profile'
-              ? 'Complete your profile'
-              : 'Create your account'}
-          </h1>
-          <p className='font-sans text-xs sm:text-sm text-neutral-700/90 dark:text-neutral-400 mb-2.5 text-left leading-relaxed'>
-            {internalMode === 'complete-profile'
-              ? 'Choose a unique username and finalize your details to finish setting up your account.'
-              : 'Join thousands of verified investors managing unified portfolios.'}
-          </p>
-
-          {/* Global Error Alert */}
-          {fieldErrors.global && (
-            <div
-              ref={globalErrorContainerRef}
-              className='flex items-start gap-2 mb-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium'
-              role='alert'
+        {/* Email Address */}
+        <div ref={emailRef} className='space-y-1 text-left'>
+          <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
+            <label
+              htmlFor={emailId}
+              className='text-xs font-semibold text-foreground/80 sm:pt-0.5'
             >
-              <AlertCircle className='size-4 shrink-0 mt-0.5' />
-              <span>{fieldErrors.global}</span>
-            </div>
-          )}
-
-          {/* Developer Debug Buttons */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className='flex flex-wrap gap-1.5 mb-3 bg-muted/20 p-2 rounded-xl border border-border/40'>
-              <span className='text-[9px] font-mono font-semibold text-muted-foreground/70 w-full uppercase tracking-wider pl-1'>
-                DEV: Trigger Error
+              Email Address
+            </label>
+            {fieldErrors.email && (
+              <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                <span className='leading-tight'>{fieldErrors.email}</span>
               </span>
-              <button
-                type='button'
-                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
-                onClick={() => setClientError('Invalid username provided')}
+            )}
+          </div>
+          <div
+            className={cn(
+              'relative flex items-center rounded-[14px] transition-all duration-200',
+              fieldErrors.email
+                ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20',
+              internalMode === 'complete-profile' &&
+                'opacity-60 bg-muted/60 dark:bg-zinc-800/60 cursor-not-allowed border-dashed'
+            )}
+          >
+            <Mail
+              className={cn(
+                'size-4 text-muted-foreground ml-3 shrink-0',
+                internalMode === 'complete-profile' && 'opacity-70'
+              )}
+              aria-hidden='true'
+            />
+            <Input
+              id={emailId}
+              name='email'
+              type='email'
+              autoComplete='email'
+              autoCapitalize='none'
+              autoCorrect='off'
+              spellCheck={false}
+              value={formData.email}
+              onChange={e => handleFieldChange('email', e.target.value)}
+              placeholder='urva@cointrack.in'
+              readOnly={internalMode === 'complete-profile'}
+              disabled={isLoading}
+              required
+              className={cn(
+                '!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 w-full min-w-0 pr-3',
+                internalMode === 'complete-profile' &&
+                  'text-muted-foreground cursor-not-allowed pointer-events-none'
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Username & Phone Number */}
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3'>
+          <div ref={usernameRef} className='space-y-1 text-left'>
+            <div className='flex flex-col lg:flex-row lg:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
+              <label
+                htmlFor={usernameId}
+                className='text-xs font-semibold text-foreground/80 lg:pt-0.5'
               >
                 Username
-              </button>
-              <button
-                type='button'
-                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
-                onClick={() =>
-                  setClientError('Please enter a valid email address')
-                }
-              >
-                Email
-              </button>
-              <button
-                type='button'
-                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
-                onClick={() =>
-                  setClientError('Mobile number must be exactly 10 digits')
-                }
-              >
-                Phone
-              </button>
-              <button
-                type='button'
-                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
-                onClick={() =>
-                  setClientError('Password must contain at least one number')
-                }
-              >
-                Password
-              </button>
-              <button
-                type='button'
-                className='bg-background hover:bg-muted text-[10px] border border-border rounded-md px-2 py-1 transition-colors'
-                onClick={() => setClientError('General server error occurred')}
-              >
-                Global
-              </button>
-              <button
-                type='button'
-                className='bg-destructive/10 text-destructive hover:bg-destructive/20 text-[10px] rounded-md px-2 py-1 transition-colors ml-auto font-medium'
-                onClick={() => setClientError('')}
-              >
-                Clear
-              </button>
-            </div>
-          )}
-
-          {/* Social Sign-up Button (Hidden in complete-profile mode) */}
-          {internalMode !== 'complete-profile' && (
-            <>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={handleGoogleMockClick}
-                disabled={isGoogleLoading || googleSimState !== 'idle'}
-                className='group w-full rounded-[14px] bg-muted/50 hover:bg-muted/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-900 border-border/40 text-foreground py-5 sm:py-6 px-4 text-xs sm:text-sm font-medium flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 active:translate-y-0 active:scale-[0.99] mb-3 sm:mb-3.5 disabled:opacity-70 disabled:pointer-events-none'
-              >
-                {isGoogleLoading || googleSimState === 'connecting' ? (
-                  <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
-                    <div className='size-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground animate-spin' />
-                    <span className='min-w-[85px] text-left'>
-                      Connecting{'.'.repeat(dotCount)}
-                    </span>
-                  </span>
-                ) : googleSimState === 'connected' ? (
-                  <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
-                    <AnimatedSuccessIcon className='size-5 text-emerald-500 dark:text-emerald-400' />
-                    <span className='text-emerald-600 dark:text-emerald-400 font-semibold'>
-                      Google Connected
-                    </span>
-                  </span>
-                ) : googleSimState === 'preparing' ? (
-                  <span className='flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300'>
-                    <span className='relative size-4 block shrink-0 animate-spin duration-[3000ms]'>
-                      <Image
-                        src='/coinTrack.png'
-                        alt='coinTrack'
-                        width={16}
-                        height={16}
-                        className='object-contain w-auto h-auto'
-                      />
-                    </span>
-                    <span className='font-semibold text-foreground tracking-tight'>
-                      Preparing{' '}
-                      <span className='font-display font-bold text-emerald-600 dark:text-emerald-400'>
-                        coinTrack
-                      </span>{' '}
-                      profile{'.'.repeat(dotCount)}
-                    </span>
-                  </span>
-                ) : (
-                  <span className='flex items-center gap-2.5 transition-transform duration-300'>
-                    <GoogleIcon className='transition-transform duration-300 group-hover:scale-110' />
-                    <span>Sign up with Google</span>
-                  </span>
-                )}
-              </Button>
-
-              {/* Divider */}
-              <div
-                className='relative flex items-center justify-center mb-3 sm:mb-3.5'
-                aria-hidden='true'
-              >
-                <div className='w-full border-t border-border/50' />
-                <span className='bg-card dark:bg-[#0d0f12] px-3 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 shrink-0'>
-                  OR REGISTER DIRECTLY
-                </span>
-              </div>
-            </>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className='space-y-2.5 sm:space-y-3'>
-            {/* Full Name */}
-            <div ref={nameRef} className='space-y-1 text-left'>
-              <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
-                <label
-                  htmlFor={nameId}
-                  className='text-xs font-semibold text-foreground/80 sm:pt-0.5'
-                >
-                  Full Name
-                </label>
-                {fieldErrors.name && (
-                  <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
-                    <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
-                    <span className='leading-tight'>{fieldErrors.name}</span>
-                  </span>
-                )}
-              </div>
-              <div
-                className={cn(
-                  'relative flex items-center rounded-[14px] transition-all duration-200',
-                  fieldErrors.name
-                    ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
-                    : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'
-                )}
-              >
-                <User
-                  className='size-4 text-muted-foreground ml-3 shrink-0'
-                  aria-hidden='true'
-                />
-                <Input
-                  id={nameId}
-                  name='name'
-                  autoComplete='name'
-                  spellCheck={false}
-                  value={formData.name}
-                  onChange={e => handleFieldChange('name', e.target.value)}
-                  placeholder='Urva Gandhi'
-                  disabled={isLoading}
-                  required
-                  className='!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 w-full min-w-0 pr-3'
-                />
-              </div>
-            </div>
-
-            {/* Email Address */}
-            <div ref={emailRef} className='space-y-1 text-left'>
-              <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
-                <label
-                  htmlFor={emailId}
-                  className='text-xs font-semibold text-foreground/80 sm:pt-0.5'
-                >
-                  Email Address
-                </label>
-                {fieldErrors.email && (
-                  <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
-                    <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
-                    <span className='leading-tight'>{fieldErrors.email}</span>
-                  </span>
-                )}
-              </div>
-              <div
-                className={cn(
-                  'relative flex items-center rounded-[14px] transition-all duration-200',
-                  fieldErrors.email
-                    ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
-                    : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20',
-                  internalMode === 'complete-profile' &&
-                    'opacity-60 bg-muted/60 dark:bg-zinc-800/60 cursor-not-allowed border-dashed'
-                )}
-              >
-                <Mail
-                  className={cn(
-                    'size-4 text-muted-foreground ml-3 shrink-0',
-                    internalMode === 'complete-profile' && 'opacity-70'
-                  )}
-                  aria-hidden='true'
-                />
-                <Input
-                  id={emailId}
-                  name='email'
-                  type='email'
-                  autoComplete='email'
-                  autoCapitalize='none'
-                  autoCorrect='off'
-                  spellCheck={false}
-                  value={formData.email}
-                  onChange={e => handleFieldChange('email', e.target.value)}
-                  placeholder='urva@cointrack.in'
-                  readOnly={internalMode === 'complete-profile'}
-                  disabled={isLoading}
-                  required
-                  className={cn(
-                    '!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 w-full min-w-0 pr-3',
-                    internalMode === 'complete-profile' &&
-                      'text-muted-foreground cursor-not-allowed pointer-events-none'
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Username & Phone Number */}
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3'>
-              <div ref={usernameRef} className='space-y-1 text-left'>
-                <div className='flex flex-col lg:flex-row lg:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
-                  <label
-                    htmlFor={usernameId}
-                    className='text-xs font-semibold text-foreground/80 lg:pt-0.5'
-                  >
-                    Username
-                  </label>
-                  {fieldErrors.username && (
-                    <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
-                      <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
-                      <span className='leading-tight'>
-                        {fieldErrors.username}
-                      </span>
-                    </span>
-                  )}
-                </div>
-                <div
-                  className={cn(
-                    'relative flex items-center rounded-[14px] transition-all duration-200',
-                    fieldErrors.username
-                      ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
-                      : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'
-                  )}
-                >
-                  <span className='text-xs font-semibold text-muted-foreground ml-3 select-none'>
-                    @
-                  </span>
-                  <Input
-                    id={usernameId}
-                    name='username'
-                    autoComplete='username'
-                    autoCapitalize='none'
-                    autoCorrect='off'
-                    spellCheck={false}
-                    value={formData.username}
-                    onChange={e =>
-                      handleFieldChange('username', e.target.value)
-                    }
-                    placeholder='urva_gandhi'
-                    disabled={isLoading}
-                    required
-                    className='!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 w-full min-w-0 pr-2'
-                  />
-                </div>
-              </div>
-
-              <div ref={phoneRef} className='space-y-1 text-left'>
-                <div className='flex flex-col lg:flex-row lg:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
-                  <label
-                    htmlFor={phoneId}
-                    className='text-xs font-semibold text-foreground/80 lg:pt-0.5'
-                  >
-                    Mobile Number
-                  </label>
-                  {fieldErrors.phoneNumber && (
-                    <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
-                      <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
-                      <span className='leading-tight'>
-                        {fieldErrors.phoneNumber}
-                      </span>
-                    </span>
-                  )}
-                </div>
-                <div
-                  className={cn(
-                    'relative flex items-center rounded-[14px] transition-all duration-200',
-                    fieldErrors.phoneNumber
-                      ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
-                      : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'
-                  )}
-                >
-                  <div
-                    className='flex items-center gap-1 pl-3 text-muted-foreground select-none'
-                    aria-hidden='true'
-                  >
-                    <img
-                      src='https://flagcdn.com/in.svg'
-                      width='16'
-                      alt='India'
-                      className='w-4 h-3 rounded-[2px] shadow-sm flex-shrink-0'
-                    />
-                    <span className='text-xs font-medium text-foreground'>
-                      +91
-                    </span>
-                    <div className='h-3.5 w-px bg-border/80 ml-0.5' />
-                  </div>
-                  <Input
-                    id={phoneId}
-                    name='phoneNumber'
-                    type='tel'
-                    autoComplete='tel'
-                    spellCheck={false}
-                    value={formData.phoneNumber}
-                    onChange={e =>
-                      handleFieldChange('phoneNumber', e.target.value)
-                    }
-                    placeholder='9876543210'
-                    disabled={isLoading}
-                    required
-                    className='!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 pl-2 w-full min-w-0 pr-2'
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Date of Birth */}
-            <div ref={dobRef} className='space-y-1 text-left'>
-              <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 mb-1 ml-0.5'>
-                <label
-                  htmlFor={dobId}
-                  className='text-xs font-semibold text-foreground/80 sm:pt-0.5'
-                >
-                  Date of Birth
-                </label>
-                {fieldErrors.dateOfBirth ? (
-                  <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
-                    <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
-                    <span className='leading-tight'>
-                      {fieldErrors.dateOfBirth}
-                    </span>
-                  </span>
-                ) : (
-                  <span className='text-[10px] font-medium text-muted-foreground/70 sm:pt-0.5'>
-                    Must be 18+ years
-                  </span>
-                )}
-              </div>
-              <div
-                className={cn(
-                  'transition-all duration-200 rounded-[14px]',
-                  fieldErrors.dateOfBirth
-                    ? 'ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
-                    : ''
-                )}
-              >
-                <DatePicker
-                  id={dobId}
-                  name='dateOfBirth'
-                  max={maxDobDate}
-                  value={formData.dateOfBirth}
-                  onChange={val => handleFieldChange('dateOfBirth', val)}
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Password with Bank-Grade Strength Meter & Real-Time Modifier Warnings */}
-            <div className='space-y-1 text-left'>
-              <PasswordStrengthInput
-                autoComplete='new-password'
-                label='New Password'
-                labelClassName='text-xs font-semibold text-foreground/80 ml-0.5 mb-0.5 normal-case'
-                value={formData.password}
-                onChange={e => handleFieldChange('password', e.target.value)}
-                placeholder='Enter your new password'
-                showRules={true}
-                showCapsBadge={true}
-                showNumBadge={true}
-                containerClassName='bg-muted/40 dark:bg-zinc-900/60 border-border/40 rounded-[14px] focus-within:ring-2 focus-within:ring-emerald-500/20'
-                inputClassName='py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 bg-transparent'
-                disabled={isLoading}
-                required
-                error={fieldErrors.password}
-              />
-            </div>
-
-            {/* Confirm Password */}
-            <div className='space-y-1 text-left'>
-              <PasswordStrengthInput
-                id={confirmPasswordId}
-                autoComplete='new-password'
-                label='Confirm Password'
-                labelClassName='text-xs font-semibold text-foreground/80 ml-0.5 mb-0.5 normal-case'
-                value={formData.confirmPassword}
-                onChange={e =>
-                  handleFieldChange('confirmPassword', e.target.value)
-                }
-                placeholder='Re-enter your new password'
-                showRules={false}
-                showStrengthBar={false}
-                showCapsBadge={true}
-                showNumBadge={true}
-                containerClassName='bg-muted/40 dark:bg-zinc-900/60 border-border/40 rounded-[14px] focus-within:ring-2 focus-within:ring-emerald-500/20'
-                inputClassName='py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 bg-transparent'
-                disabled={isLoading}
-                required
-                error={fieldErrors.confirmPassword}
-              />
-            </div>
-
-            {/* Terms of Service Checkbox */}
-            <div ref={termsRef} className='pt-1 text-left space-y-1'>
-              <label className='flex items-start gap-2.5 cursor-pointer select-none group'>
-                <input
-                  type='checkbox'
-                  checked={acceptTerms}
-                  onChange={e => setAcceptTerms(e.target.checked)}
-                  disabled={isLoading}
-                  className='size-4 mt-0.5 rounded border-border/60 text-emerald-600 focus:ring-emerald-500 cursor-pointer'
-                />
-                <span className='text-[11px] sm:text-xs text-muted-foreground leading-relaxed'>
-                  I agree to the{' '}
-                  <button
-                    type='button'
-                    onClick={e => {
-                      e.preventDefault();
-                      openModal('terms');
-                    }}
-                    className='font-semibold text-foreground hover:text-emerald-500 underline underline-offset-2 transition-colors cursor-pointer outline-none'
-                  >
-                    Terms of Service
-                  </button>{' '}
-                  and{' '}
-                  <button
-                    type='button'
-                    onClick={e => {
-                      e.preventDefault();
-                      openModal('privacy');
-                    }}
-                    className='font-semibold text-foreground hover:text-emerald-500 underline underline-offset-2 transition-colors cursor-pointer outline-none'
-                  >
-                    Privacy Policy
-                  </button>
-                  .
-                </span>
               </label>
-              {fieldErrors.terms && (
-                <div className='text-[10px] font-medium text-destructive animate-in fade-in flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-md mt-1'>
-                  <AlertCircle className='size-3 shrink-0' />
-                  <span>{fieldErrors.terms}</span>
-                </div>
+              {fieldErrors.username && (
+                <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                  <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                  <span className='leading-tight'>{fieldErrors.username}</span>
+                </span>
               )}
             </div>
-
-            {/* Submit Button */}
-            <Button
-              type='submit'
-              variant='default'
-              disabled={isLoading}
-              className='group w-full rounded-[14px] bg-black text-white dark:bg-white dark:text-black py-5 sm:py-6 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/25 active:translate-y-0 active:scale-[0.99] mt-2.5 sm:mt-3'
+            <div
+              className={cn(
+                'relative flex items-center rounded-[14px] transition-all duration-200',
+                fieldErrors.username
+                  ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                  : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'
+              )}
             >
-              <span>
-                {isLoading
-                  ? internalMode === 'complete-profile'
-                    ? 'Saving profile...'
-                    : 'Creating Ledger...'
-                  : internalMode === 'complete-profile'
-                    ? 'Complete Registration'
-                    : 'Create coinTrack Account'}
+              <span className='text-xs font-semibold text-muted-foreground ml-3 select-none'>
+                @
               </span>
-              <ArrowUpRight className='size-4 text-white/70 dark:text-zinc-900/70 group-hover:text-emerald-400 dark:group-hover:text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300' />
-            </Button>
+              <Input
+                id={usernameId}
+                name='username'
+                autoComplete='username'
+                autoCapitalize='none'
+                autoCorrect='off'
+                spellCheck={false}
+                value={formData.username}
+                onChange={e => handleFieldChange('username', e.target.value)}
+                placeholder='urva_gandhi'
+                disabled={isLoading}
+                required
+                className='!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 w-full min-w-0 pr-2'
+              />
+            </div>
+          </div>
 
-            {/* Switch to Login */}
-            {mode !== 'complete-profile' && (
-              <div className='pt-2 sm:pt-3 text-center space-y-2'>
-                <div className='text-xs text-muted-foreground'>
-                  Already have an account?{' '}
-                  <button
-                    type='button'
-                    onClick={onLoginRedirect}
-                    className='font-semibold text-foreground hover:text-emerald-500 transition-colors cursor-pointer outline-none focus-visible:underline'
-                  >
-                    Sign in here
-                  </button>
-                </div>
+          <div ref={phoneRef} className='space-y-1 text-left'>
+            <div className='flex flex-col lg:flex-row lg:items-start justify-between gap-1 sm:gap-2 min-w-0 mb-1 ml-0.5'>
+              <label
+                htmlFor={phoneId}
+                className='text-xs font-semibold text-foreground/80 lg:pt-0.5'
+              >
+                Mobile Number
+              </label>
+              {fieldErrors.phoneNumber && (
+                <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                  <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                  <span className='leading-tight'>
+                    {fieldErrors.phoneNumber}
+                  </span>
+                </span>
+              )}
+            </div>
+            <div
+              className={cn(
+                'relative flex items-center rounded-[14px] transition-all duration-200',
+                fieldErrors.phoneNumber
+                  ? 'border-destructive bg-destructive/5 text-destructive ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                  : 'bg-muted/40 dark:bg-zinc-900/60 border border-border/40 focus-within:ring-2 focus-within:ring-emerald-500/20'
+              )}
+            >
+              <div
+                className='flex items-center gap-1 pl-3 text-muted-foreground select-none'
+                aria-hidden='true'
+              >
+                <Image
+                  src='https://flagcdn.com/in.svg'
+                  width={16}
+                  height={12}
+                  alt='India'
+                  unoptimized
+                  className='w-4 h-3 rounded-[2px] shadow-sm flex-shrink-0'
+                />
+                <span className='text-xs font-medium text-foreground'>+91</span>
+                <div className='h-3.5 w-px bg-border/80 ml-0.5' />
+              </div>
+              <Input
+                id={phoneId}
+                name='phoneNumber'
+                type='tel'
+                autoComplete='tel'
+                spellCheck={false}
+                value={formData.phoneNumber}
+                onChange={e => handleFieldChange('phoneNumber', e.target.value)}
+                placeholder='9876543210'
+                disabled={isLoading}
+                required
+                className='!bg-transparent !border-0 !shadow-none !ring-0 focus-visible:!ring-0 !outline-none py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 pl-2 w-full min-w-0 pr-2'
+              />
+            </div>
+          </div>
+        </div>
 
-                {/* <div className='flex justify-center'>
+        {/* Date of Birth */}
+        <div ref={dobRef} className='space-y-1 text-left'>
+          <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 mb-1 ml-0.5'>
+            <label
+              htmlFor={dobId}
+              className='text-xs font-semibold text-foreground/80 sm:pt-0.5'
+            >
+              Date of Birth
+            </label>
+            {fieldErrors.dateOfBirth ? (
+              <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-start gap-1 bg-destructive/10 px-2 py-1 rounded-md text-left break-words'>
+                <AlertCircle className='size-3 shrink-0 mt-[1.5px]' />
+                <span className='leading-tight'>{fieldErrors.dateOfBirth}</span>
+              </span>
+            ) : (
+              <span className='text-[10px] font-medium text-muted-foreground/70 sm:pt-0.5'>
+                Must be 18+ years
+              </span>
+            )}
+          </div>
+          <div
+            className={cn(
+              'transition-all duration-200 rounded-[14px]',
+              fieldErrors.dateOfBirth
+                ? 'ring-2 ring-destructive/20 shadow-destructive/10 shadow-md animate-[shake_0.4s_ease-in-out]'
+                : ''
+            )}
+          >
+            <DatePicker
+              id={dobId}
+              name='dateOfBirth'
+              max={maxDobDate}
+              value={formData.dateOfBirth}
+              onChange={val => handleFieldChange('dateOfBirth', val)}
+              disabled={isLoading}
+              required
+            />
+          </div>
+        </div>
+
+        {/* Password with Bank-Grade Strength Meter & Real-Time Modifier Warnings */}
+        <div className='space-y-1 text-left'>
+          <PasswordStrengthInput
+            autoComplete='new-password'
+            label='New Password'
+            labelClassName='text-xs font-semibold text-foreground/80 ml-0.5 mb-0.5 normal-case'
+            value={formData.password}
+            onChange={e => handleFieldChange('password', e.target.value)}
+            placeholder='Enter your new password'
+            showRules={true}
+            showCapsBadge={true}
+            showNumBadge={true}
+            containerClassName='bg-muted/40 dark:bg-zinc-900/60 border-border/40 rounded-[14px] focus-within:ring-2 focus-within:ring-emerald-500/20'
+            inputClassName='py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 bg-transparent'
+            disabled={isLoading}
+            required
+            error={fieldErrors.password}
+          />
+        </div>
+
+        {/* Confirm Password */}
+        <div className='space-y-1 text-left'>
+          <PasswordStrengthInput
+            id={confirmPasswordId}
+            autoComplete='new-password'
+            label='Confirm Password'
+            labelClassName='text-xs font-semibold text-foreground/80 ml-0.5 mb-0.5 normal-case'
+            value={formData.confirmPassword}
+            onChange={e => handleFieldChange('confirmPassword', e.target.value)}
+            placeholder='Re-enter your new password'
+            showRules={false}
+            showStrengthBar={false}
+            showCapsBadge={true}
+            showNumBadge={true}
+            containerClassName='bg-muted/40 dark:bg-zinc-900/60 border-border/40 rounded-[14px] focus-within:ring-2 focus-within:ring-emerald-500/20'
+            inputClassName='py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-foreground placeholder:text-muted-foreground/50 bg-transparent'
+            disabled={isLoading}
+            required
+            error={fieldErrors.confirmPassword}
+          />
+        </div>
+
+        {/* Terms of Service Checkbox */}
+        <div ref={termsRef} className='pt-1 text-left space-y-1'>
+          <label className='flex items-start gap-2.5 cursor-pointer select-none group'>
+            <input
+              type='checkbox'
+              checked={acceptTerms}
+              onChange={e => setAcceptTerms(e.target.checked)}
+              disabled={isLoading}
+              className='size-4 mt-0.5 rounded border-border/60 text-emerald-600 focus:ring-emerald-500 cursor-pointer'
+            />
+            <span className='text-[11px] sm:text-xs text-muted-foreground leading-relaxed'>
+              I agree to the{' '}
+              <button
+                type='button'
+                onClick={e => {
+                  e.preventDefault();
+                  openModal('terms');
+                }}
+                className='font-semibold text-foreground hover:text-emerald-500 underline underline-offset-2 transition-colors cursor-pointer outline-none'
+              >
+                Terms of Service
+              </button>{' '}
+              and{' '}
+              <button
+                type='button'
+                onClick={e => {
+                  e.preventDefault();
+                  openModal('privacy');
+                }}
+                className='font-semibold text-foreground hover:text-emerald-500 underline underline-offset-2 transition-colors cursor-pointer outline-none'
+              >
+                Privacy Policy
+              </button>
+              .
+            </span>
+          </label>
+          {fieldErrors.terms && (
+            <div className='text-[10px] font-medium text-destructive animate-in fade-in flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-md mt-1'>
+              <AlertCircle className='size-3 shrink-0' />
+              <span>{fieldErrors.terms}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <Button
+          type='submit'
+          variant='default'
+          disabled={isLoading}
+          className='group w-full rounded-[14px] bg-black text-white dark:bg-white dark:text-black py-5 sm:py-6 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/25 active:translate-y-0 active:scale-[0.99] mt-2.5 sm:mt-3'
+        >
+          <span>
+            {isLoading
+              ? internalMode === 'complete-profile'
+                ? 'Saving profile...'
+                : 'Creating Ledger...'
+              : internalMode === 'complete-profile'
+                ? 'Complete Registration'
+                : 'Create coinTrack Account'}
+          </span>
+          <ArrowUpRight className='size-4 text-white/70 dark:text-zinc-900/70 group-hover:text-emerald-400 dark:group-hover:text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300' />
+        </Button>
+
+        {/* Switch to Login */}
+        {mode !== 'complete-profile' && (
+          <div className='pt-2 sm:pt-3 text-center space-y-2'>
+            <div className='text-xs text-muted-foreground'>
+              Already have an account?{' '}
+              <button
+                type='button'
+                onClick={onLoginRedirect}
+                className='font-semibold text-foreground hover:text-emerald-500 transition-colors cursor-pointer outline-none focus-visible:underline'
+              >
+                Sign in here
+              </button>
+            </div>
+
+            {/* <div className='flex justify-center'>
                   <button
                     type='button'
                     onClick={onLoginRedirect}
@@ -1103,15 +925,10 @@ export function RegisterSplitScreen({
                     <span>Return to sign in</span>
                   </button>
                 </div> */}
-              </div>
-            )}
-          </form>
-        </div>
-
-        {/* Footer */}
-        <AuthFooter />
-      </div>
-    </div>
+          </div>
+        )}
+      </form>
+    </AuthLayout>
   );
 }
 

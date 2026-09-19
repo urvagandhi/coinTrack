@@ -1089,3 +1089,115 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
 :root:not(.dark) .lottie-theme-aware svg {
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.05));
 }
+
+/* ── Theme Toggle Switch ─────────────────────────────────────── */
+.ct-theme-switch {
+  display: block;
+  --width-of-switch: 3.5em;
+  --height-of-switch: 2em;
+  --size-of-icon: 1.4em;
+  --slider-offset: 0.3em;
+  position: relative;
+  width: var(--width-of-switch);
+  height: var(--height-of-switch);
+  cursor: pointer;
+}
+
+.ct-theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.ct-theme-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #f4f4f5;
+  transition: background-color 0.4s ease;
+  border-radius: 30px;
+}
+
+.ct-theme-slider::before {
+  position: absolute;
+  content: '';
+  height: var(--size-of-icon, 1.4em);
+  width: var(--size-of-icon, 1.4em);
+  border-radius: 20px;
+  left: var(--slider-offset, 0.3em);
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(40deg, #ff0080, #ff8c00 70%);
+  transition:
+    left 0.4s ease,
+    background 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+.ct-theme-switch input:checked + .ct-theme-slider {
+  background-color: #303136;
+}
+
+.ct-theme-switch input:checked + .ct-theme-slider::before {
+  left: calc(100% - (var(--size-of-icon, 1.4em) + var(--slider-offset, 0.3em)));
+  background: #303136;
+  box-shadow:
+    inset -3px -2px 5px -2px #8983f7,
+    inset -10px -4px 0 0 #a3dafb;
+}
+
+/* ── Auth Form Animations ─────────────────────────────────────── */
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-4px);
+  }
+
+  40% {
+    transform: translateX(4px);
+  }
+
+  60% {
+    transform: translateX(-4px);
+  }
+
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: -5%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 105%;
+    opacity: 0;
+  }
+}

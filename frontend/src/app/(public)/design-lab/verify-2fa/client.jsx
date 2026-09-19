@@ -42,9 +42,7 @@ function Verify2FAContent() {
       // Trigger the retract animation inside the loader
       setIsLoaderActive(false);
     } else {
-      setError(
-        'Invalid code. Please try again. (Hint: 123456 or recovery code 8F2A9B3C)'
-      );
+      setError('Invalid code. Please try again.');
     }
   }, []);
 

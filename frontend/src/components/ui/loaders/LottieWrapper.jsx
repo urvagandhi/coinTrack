@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  forwardRef,
-  useEffect,
-  useRef,
-  useImperativeHandle,
-} from 'react';
+import { forwardRef, useEffect, useRef, useImperativeHandle } from 'react';
 
 const LottieWrapper = forwardRef(function LottieWrapper(
   {
@@ -54,7 +49,7 @@ const LottieWrapper = forwardRef(function LottieWrapper(
       if (animInstanceRef.current) {
         try {
           animInstanceRef.current.destroy();
-        } catch (_) {}
+        } catch {}
         animInstanceRef.current = null;
       }
 
@@ -112,16 +107,28 @@ const LottieWrapper = forwardRef(function LottieWrapper(
       if (anim) {
         try {
           anim.destroy();
-        } catch (_) {}
+        } catch {}
       }
       if (animInstanceRef.current) {
         try {
           animInstanceRef.current.destroy();
-        } catch (_) {}
+        } catch {}
         animInstanceRef.current = null;
       }
     };
-  }, [animationData, src, loop, autoplay, renderer, speed, direction]);
+  }, [
+    animationData,
+    src,
+    loop,
+    autoplay,
+    renderer,
+    speed,
+    direction,
+    lottieRef,
+    onComplete,
+    onLoopComplete,
+    rendererSettings,
+  ]);
 
   const rawData = animationData || src;
   const dataObj =

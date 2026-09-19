@@ -5,6 +5,8 @@
 > **Created:** 2026-08-25  
 > **Estimated Effort:** Large (touches every layer of the application)
 
+> **Implementation Status (verified 2026-09-19):** NONE of the shared normalization libraries described in this suite exist yet. All sections below are target specs to implement. Current code scatters the logic inline (see per-file banners in `01`–`06`).
+
 ---
 
 ## 1. Why Normalize?
@@ -126,6 +128,7 @@ Currently, CoinTrack accepts raw user input across ~200+ input fields with incon
 | `03_FINANCIAL_NORMALIZATION.md` | EPF, PPF, FD, Gold/Silver, Mutual Funds, Broker Connection |
 | `04_CALCULATOR_NORMALIZATION.md` | All 32+ calculator page inputs |
 | `05_BACKEND_DB_NORMALIZATION.md` | API schemas, database constraints, migration plan |
+| `06_FRONTEND_INTEGRATION_SPEC.md` | Client normalizers, input masks (Phone, Currency, PAN), Zod bridge, WCAG 2.2 |
 
 ---
 

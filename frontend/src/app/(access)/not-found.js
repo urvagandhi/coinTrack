@@ -56,7 +56,6 @@ export default function NotFound() {
         hour12: false,
       })
     : '--:--';
-  const year = now ? now.getFullYear() : '';
   const refNo = now
     ? `404-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
     : '404-NF';

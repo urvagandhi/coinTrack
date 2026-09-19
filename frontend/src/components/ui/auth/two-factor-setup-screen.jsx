@@ -1,15 +1,11 @@
 'use client';
 
-import {
-  AuthFooter,
-  AuthHeader,
-  useDynamicDocumentTitle,
-} from '@/components/ui/auth/auth-shared';
+import { useDynamicDocumentTitle } from '@/components/ui/auth/auth-shared';
+import { AuthLayout } from '@/components/ui/auth/auth-layout';
 import { Button } from '@/components/ui/primitives/button';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
-  Battery,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -18,9 +14,7 @@ import {
   Loader2,
   Lock,
   ShieldCheck,
-  Signal,
   Smartphone,
-  Wifi,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -30,28 +24,13 @@ import QRCode from 'react-qr-code';
 //  SUBCOMPONENTS
 // ───────────────────────────────────────────────────────────────
 
-function AuthenticatorPhoneMockup() {
+function AuthenticatorMockupContent() {
   return (
-    <div className='relative z-10 w-full flex justify-center items-center perspective-[1000px]'>
-      <div className='relative w-[280px] h-[480px] bg-[#12151a] dark:bg-white rounded-[40px] border-[6px] border-[#222731] dark:border-slate-200 shadow-2xl shadow-black/80 dark:shadow-slate-300/50 overflow-hidden flex flex-col p-4 isolate select-none transform rotate-y-[-15deg] rotate-x-[5deg] hover:rotate-y-0 hover:rotate-x-0 transition-transform duration-1000 ease-out'>
-        {/* Dynamic Island / Notch */}
-        <div className='w-full flex justify-between items-center text-zinc-400 dark:text-zinc-500 pt-0.5 pb-4 px-2'>
-          <span className='text-[10px] font-mono font-semibold tracking-wider text-zinc-300 dark:text-zinc-700'>
-            09:41
-          </span>
-          <div className='w-14 h-3 bg-black/40 dark:bg-zinc-200 rounded-full flex items-center justify-end px-1.5'>
-            <div className='size-1 rounded-full bg-emerald-500 animate-pulse' />
-          </div>
-          <div className='flex items-center gap-1'>
-            <Signal className='size-[10px]' />
-            <Wifi className='size-[10px]' />
-            <Battery className='size-3' />
-          </div>
-        </div>
-
+    <div className='w-full h-full flex flex-col justify-center items-center'>
+      <div className='relative w-full max-w-[320px] bg-transparent flex flex-col py-4 select-none'>
         {/* Header */}
         <div className='flex items-center justify-between mb-6 px-1'>
-          <h3 className='text-lg font-bold text-white dark:text-zinc-900 tracking-tight'>
+          <h3 className='text-lg font-bold text-white tracking-tight'>
             Authenticator
           </h3>
           <div className='size-7 rounded-full bg-emerald-500/10 flex items-center justify-center shadow-sm'>
@@ -61,9 +40,9 @@ function AuthenticatorPhoneMockup() {
 
         {/* Existing Accounts Mock */}
         <div className='space-y-3 mb-4 opacity-40'>
-          <div className='w-full bg-zinc-900/60 dark:bg-zinc-50 border border-zinc-800 dark:border-zinc-200 rounded-2xl p-3 flex flex-col gap-1.5'>
+          <div className='w-full bg-zinc-900/60 border border-zinc-800 rounded-2xl p-3 flex flex-col gap-1.5'>
             <div className='flex justify-between items-center'>
-              <span className='text-[11px] font-semibold text-white dark:text-zinc-800'>
+              <span className='text-[11px] font-semibold text-white'>
                 Google
               </span>
               <span className='size-3 rounded-full border-2 border-zinc-700' />
@@ -75,7 +54,7 @@ function AuthenticatorPhoneMockup() {
         </div>
 
         {/* coinTrack Active Account */}
-        <div className='w-full bg-gradient-to-br from-emerald-500/15 to-emerald-900/20 dark:from-emerald-50 dark:to-emerald-100 border border-emerald-500/30 dark:border-emerald-500/40 rounded-2xl p-4 shadow-lg relative overflow-hidden group'>
+        <div className='w-full bg-gradient-to-br from-emerald-500/15 to-emerald-900/20 border border-emerald-500/30 rounded-2xl p-4 shadow-lg relative overflow-hidden group'>
           <div className='absolute -right-4 -top-4 size-24 bg-emerald-500/20 blur-xl rounded-full pointer-events-none' />
           <div className='flex justify-between items-center mb-3 relative z-10'>
             <div className='flex items-center gap-2'>
@@ -89,10 +68,8 @@ function AuthenticatorPhoneMockup() {
                 />
               </div>
               <div>
-                <div className='text-xs font-bold text-white dark:text-zinc-900'>
-                  coinTrack
-                </div>
-                <div className='text-[9px] text-zinc-400 dark:text-zinc-500 font-mono'>
+                <div className='text-xs font-bold text-white'>coinTrack</div>
+                <div className='text-[9px] text-zinc-400 font-mono'>
                   urva.gandhi
                 </div>
               </div>
@@ -122,15 +99,15 @@ function AuthenticatorPhoneMockup() {
               </svg>
             </div>
           </div>
-          <div className='text-[26px] font-mono font-bold tracking-[0.25em] text-emerald-400 dark:text-emerald-600 relative z-10 leading-none'>
+          <div className='text-[26px] font-mono font-bold tracking-[0.25em] text-emerald-400 relative z-10 leading-none'>
             482 195
           </div>
         </div>
 
         {/* Info text */}
-        <div className='mt-auto flex flex-col items-center gap-2 text-center pb-2 opacity-60'>
+        <div className='mt-8 flex flex-col items-center gap-2 text-center pb-2 opacity-60'>
           <Smartphone className='size-5 text-zinc-500' />
-          <p className='text-[9px] text-zinc-400 max-w-[180px] leading-relaxed'>
+          <p className='text-[10px] text-zinc-500 max-w-[180px] leading-relaxed'>
             Scan the QR code to link your coinTrack account securely.
           </p>
         </div>
@@ -255,40 +232,55 @@ function OTPInput({
 //  MAIN COMPONENT
 // ───────────────────────────────────────────────────────────────
 
+/**
+ * Two-Factor Authentication Setup Screen
+ * Supports both demo mode (design-lab) and production mode with API integration.
+ *
+ * @param {Object} props
+ * @param {string} [props.className]
+ * @param {() => void} [props.onComplete] - Called when setup is complete
+ * @param {() => void} [props.onCancel] - Called when user cancels
+ * @param {string} [props.userEmail='user@example.com'] - User email for QR code
+ * @param {string} [props.secretKey='JBSWY3DPEHPK3PXP'] - TOTP secret (used if qrUri not provided)
+ * @param {string} [props.qrUri] - Pre-generated QR URI from backend (production mode)
+ * @param {Function} [props.onVerify] - Async callback for OTP verification (production mode)
+ * @param {string[]} [props.backupCodes] - Backup codes from backend (production mode)
+ * @param {boolean} [props.isLoading=false] - Loading state
+ */
 export function TwoFactorSetupScreen({
   className,
   onComplete,
   onCancel,
-  onNavigateToVerify,
-  userEmail = 'user@example.com',
-  secretKey = 'JBSWY3DPEHPK3PXP',
+  userEmail = '',
+  secretKey = '',
+  qrUri,
+  onVerify,
+  backupCodes = [],
+  isLoading = false,
 }) {
   const [step, setStep] = useState(1); // 1: QR Setup & Verify, 2: Backup Codes
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [internalLoading, setInternalLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [backupCodesCopied, setBackupCodesCopied] = useState(false);
   const [isSavingTxt, setIsSavingTxt] = useState(false);
   const [isSavedTxt, setIsSavedTxt] = useState(false);
 
+  const isLoadingCombined = isLoading || internalLoading;
+
   useDynamicDocumentTitle('Setup 2FA | coinTrack');
 
-  const backupCodes = useMemo(
-    () => [
-      '8F2A-9B3C',
-      '1E4D-7C5F',
-      '3A9B-2E8D',
-      '6C1F-4B7A',
-      '9D5E-2A1B',
-      '4F8C-3E7D',
-      '2B6A-9F4C',
-      '7E1D-5C8B',
-    ],
-    []
-  );
+  const generatedQrUri =
+    qrUri ||
+    (secretKey
+      ? `otpauth://totp/coinTrack:${userEmail}?secret=${secretKey}&issuer=coinTrack`
+      : '');
 
-  const qrUri = `otpauth://totp/coinTrack:${userEmail}?secret=${secretKey}&issuer=coinTrack`;
+  const activeBackupCodes = useMemo(
+    () => (Array.isArray(backupCodes) ? backupCodes : []),
+    [backupCodes]
+  );
 
   const handleCopySecret = useCallback(() => {
     navigator.clipboard.writeText(secretKey);
@@ -297,10 +289,10 @@ export function TwoFactorSetupScreen({
   }, [secretKey]);
 
   const handleCopyBackupCodes = useCallback(() => {
-    navigator.clipboard.writeText(backupCodes.join('\n'));
+    navigator.clipboard.writeText(activeBackupCodes.join('\n'));
     setBackupCodesCopied(true);
     setTimeout(() => setBackupCodesCopied(false), 2000);
-  }, [backupCodes]);
+  }, [activeBackupCodes]);
 
   const handleSaveTxt = useCallback(() => {
     setIsSavingTxt(true);
@@ -317,9 +309,9 @@ export function TwoFactorSetupScreen({
         });
         const textContent = `COINTRACK BACKUP CODES
 Generated: ${formattedDate}
-Total: ${backupCodes.length} codes (each can only be used once)
+Total: ${activeBackupCodes.length} codes (each can only be used once)
 
-${backupCodes.map((code, i) => `  ${String(i + 1).padStart(2, '0')}. ${code}`).join('\n')}
+${activeBackupCodes.map((code, i) => `  ${String(i + 1).padStart(2, '0')}. ${code}`).join('\n')}
 
 IMPORTANT:
 - Keep these codes in a safe place (password manager, safe)
@@ -346,10 +338,10 @@ CoinTrack - Your Portfolio, Secured`;
         setTimeout(() => setIsSavedTxt(false), 2000);
       }
     }, 800);
-  }, [backupCodes]);
+  }, [activeBackupCodes]);
 
   const handleVerify = useCallback(
-    e => {
+    async e => {
       e?.preventDefault();
       setError('');
 
@@ -358,26 +350,40 @@ CoinTrack - Your Portfolio, Secured`;
         return;
       }
 
-      setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-        if (otp === '123456') {
+      setInternalLoading(true);
+
+      try {
+        let verified = false;
+
+        if (onVerify) {
+          const result = await onVerify(otp);
+          verified = Boolean(result?.success);
+        } else {
+          setError('Verification service is unavailable. Please try again.');
+          setInternalLoading(false);
+          return;
+        }
+
+        setInternalLoading(false);
+
+        if (verified) {
           setStep(2);
         } else {
           setError('Invalid code. Please try again.');
-          // Auto clear OTP after short delay when invalid
           setTimeout(() => setOtp(''), 1000);
         }
-      }, 800);
+      } catch (err) {
+        setInternalLoading(false);
+        setError(err.message || 'Verification failed. Please try again.');
+        setTimeout(() => setOtp(''), 1000);
+      }
     },
-    [otp]
+    [otp, onVerify]
   );
 
   const handleComplete = useCallback(() => {
     if (onComplete) {
       onComplete();
-    } else {
-      console.log('2FA setup complete');
     }
   }, [onComplete]);
 
@@ -389,48 +395,22 @@ CoinTrack - Your Portfolio, Secured`;
   }, [otp, handleVerify]);
 
   return (
-    <div
-      className={cn(
-        'w-full min-h-screen md:h-screen md:max-h-screen overflow-y-auto md:overflow-hidden bg-background flex flex-col md:flex-row transition-colors duration-300',
-        className
-      )}
-    >
-      {/* ───────────────────────────────────────────────────────── */}
-      {/* LEFT SIDE - VISUAL (coinTrack Portfolio Showcase)         */}
-      {/* ───────────────────────────────────────────────────────── */}
-      <div className='hidden md:flex md:w-1/2 h-full bg-[#0d0f12] dark:bg-slate-100 relative overflow-hidden flex-col items-center justify-center p-4 sm:p-6 lg:p-8 text-center border-b md:border-b-0 md:border-r border-border/30 transition-colors duration-300 select-none'>
-        {/* Ambient Glow Effects */}
-        <div className='absolute top-[10%] left-[10%] w-[350px] md:w-[450px] h-[350px] md:h-[450px] bg-emerald-500/15 dark:bg-emerald-500/20 rounded-full blur-[100px] pointer-events-none animate-pulse duration-[8000ms]' />
-        <div className='absolute bottom-[10%] right-[10%] w-[300px] md:w-[400px] h-[300px] md:h-[400px] bg-blue-500/10 dark:bg-blue-500/15 rounded-full blur-[120px] pointer-events-none animate-pulse duration-[10000ms]' />
-
-        {/* Brand Catchphrase & Header */}
-        <div className='relative z-10 space-y-1.5 mb-8 max-w-sm'>
-          <div className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 dark:text-emerald-700 text-[11px] font-medium mb-1 backdrop-blur-sm'>
-            <ShieldCheck className='size-3.5' />
-            <span>Bank-Grade Security</span>
-          </div>
-          <h2 className='font-display text-3xl lg:text-4xl font-extrabold text-white dark:text-zinc-900 tracking-tight leading-snug'>
+    <>
+      <AuthLayout
+        className={className}
+        badgeText='Bank-Grade Security'
+        badgeIcon={ShieldCheck}
+        title={
+          <>
             Protect Your{' '}
-            <span className='font-display font-extrabold text-emerald-400 dark:text-emerald-600'>
+            <span className='font-display font-extrabold text-blue-600 dark:text-blue-500'>
               Wealth.
             </span>
-          </h2>
-          <p className='text-zinc-400 dark:text-zinc-600 text-xs max-w-[260px] mx-auto leading-relaxed'>
-            Add an extra layer of defense with Two-Factor Authentication.
-          </p>
-        </div>
-
-        {/* Sleeker, Tilted Mock Phone App UI */}
-        <AuthenticatorPhoneMockup />
-      </div>
-
-      {/* ───────────────────────────────────────────────────────── */}
-      {/* RIGHT SIDE - FORM                                         */}
-      {/* ───────────────────────────────────────────────────────── */}
-      <div className='w-full md:w-1/2 min-h-[100dvh] md:min-h-0 md:h-full px-5 py-4 sm:px-8 sm:py-6 md:px-6 md:py-6 lg:px-12 lg:py-8 xl:px-16 xl:py-8 flex flex-col bg-card dark:bg-[#0d0f12] relative justify-between overflow-y-auto transition-colors duration-300'>
-        {/* Header with Centered coinTrack Logo */}
-        <AuthHeader />
-
+          </>
+        }
+        subtitle='Add an extra layer of defense with Two-Factor Authentication.'
+        mockupContent={<AuthenticatorMockupContent />}
+      >
         {/* Form Main Body */}
         <div className='w-full max-w-[340px] sm:max-w-md md:max-w-[360px] lg:max-w-md xl:max-w-md mx-auto my-auto flex flex-col justify-center shrink-0 py-2'>
           {/* Step Indicator */}
@@ -474,7 +454,7 @@ CoinTrack - Your Portfolio, Secured`;
                   <div className='absolute -inset-0.5 bg-gradient-to-br from-emerald-500/30 to-blue-500/30 rounded-2xl blur-sm opacity-50 group-hover:opacity-100 transition duration-500' />
                   <div className='relative w-full h-full bg-white rounded-xl p-3 shadow-md ring-1 ring-black/5 overflow-hidden flex items-center justify-center'>
                     <QRCode
-                      value={qrUri}
+                      value={generatedQrUri}
                       size={120}
                       level='M'
                       fgColor='#000000'
@@ -519,12 +499,7 @@ CoinTrack - Your Portfolio, Secured`;
                       <span className='size-5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center'>
                         <Lock className='size-3' />
                       </span>
-                      <span>
-                        Verification Code{' '}
-                        <span className='text-[10px] font-mono text-muted-foreground/60 ml-1 font-medium'>
-                          (Hint: 123456)
-                        </span>
-                      </span>
+                      <span>Verification Code</span>
                     </label>
                     {error ? (
                       <span className='text-[10px] font-medium text-destructive animate-in fade-in flex items-center gap-1 bg-destructive/10 px-2 py-0.5 rounded-full'>
@@ -543,7 +518,7 @@ CoinTrack - Your Portfolio, Secured`;
                       setOtp(val);
                       if (error) setError('');
                     }}
-                    disabled={isLoading}
+                    disabled={isLoadingCombined}
                     hasError={!!error}
                   />
                 </div>
@@ -553,24 +528,26 @@ CoinTrack - Your Portfolio, Secured`;
                     type='button'
                     variant='ghost'
                     onClick={onCancel}
-                    disabled={isLoading}
+                    disabled={isLoadingCombined}
                     className='w-1/3 rounded-[14px] text-xs font-medium h-12 hover:bg-muted'
                   >
                     Cancel
                   </Button>
                   <Button
                     type='submit'
-                    disabled={isLoading || otp.length !== 6}
+                    disabled={isLoadingCombined || otp.length !== 6}
                     className='group flex-1 rounded-[14px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 h-12 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/25 active:translate-y-0 active:scale-[0.99] disabled:opacity-50 disabled:hover:translate-y-0'
                   >
-                    <span>{isLoading ? 'Verifying...' : 'Verify Code'}</span>
-                    {!isLoading && (
+                    <span>
+                      {isLoadingCombined ? 'Verifying...' : 'Verify Code'}
+                    </span>
+                    {!isLoadingCombined && (
                       <ChevronRight className='size-4 opacity-70 group-hover:translate-x-0.5 transition-transform' />
                     )}
                   </Button>
                 </div>
 
-                {onNavigateToVerify && (
+                {/* {onNavigateToVerify && (
                   <p className='text-center text-xs text-muted-foreground pt-1'>
                     Already configured?{' '}
                     <button
@@ -581,7 +558,7 @@ CoinTrack - Your Portfolio, Secured`;
                       Verify existing 2FA code
                     </button>
                   </p>
-                )}
+                )} */}
               </form>
             </div>
           )}
@@ -644,7 +621,7 @@ CoinTrack - Your Portfolio, Secured`;
               {/* Secure Vault Card Representation (Like the Email Highlight in Forgot Password) */}
               <div className='w-full bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-3 mb-1'>
                 <div className='grid grid-cols-2 gap-1.5 relative z-10'>
-                  {backupCodes.map((code, index) => (
+                  {activeBackupCodes.map((code, index) => (
                     <div
                       key={index}
                       className='bg-background/80 border border-border/40 rounded-md p-1.5 text-center font-mono text-[10px] sm:text-[11px] font-bold tracking-widest text-emerald-600 dark:text-emerald-400'
@@ -726,38 +703,8 @@ CoinTrack - Your Portfolio, Secured`;
             </div>
           )}
         </div>
-
-        {/* Sleek Split Footer Bar */}
-        <div className='mt-auto pt-4 pb-2 w-full'>
-          <AuthFooter />
-        </div>
-      </div>
-
-      {/* Global Style for Scanner Animation */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes scan {
-          0% { top: -5%; opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { top: 105%; opacity: 0; }
-        }
-        @keyframes glow-ring-pulse {
-          0%, 100% { transform: scale(0.9); opacity: 0.6; }
-          50% { transform: scale(1.1); opacity: 1; }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-4px); }
-          40% { transform: translateX(4px); }
-          60% { transform: translateX(-4px); }
-          80% { transform: translateX(4px); }
-        }
-      `,
-        }}
-      />
-    </div>
+      </AuthLayout>
+    </>
   );
 }
 

@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { VerifyEmailScreen } from '@/components/ui/auth/verify-email-screen';
 import { FintechLoaderOverlay } from '@/components/ui/loaders/FintechLoaderOverlay';
 import { toast } from '@/components/ui/feedback/use-toast';
-import { Button } from '@/components/ui/primitives/button';
 import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
 function VerifyEmailContent() {
@@ -17,9 +16,6 @@ function VerifyEmailContent() {
   const [status, setStatus] = useState(queryStatus || 'loading'); // 'loading', 'success', 'already', 'error'
   const [isResending, setIsResending] = useState(false);
   const [resent, setResent] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    searchParams.get('loggedIn') === 'true'
-  );
 
   // FintechLoader overlay state when redirecting to dashboard
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -110,48 +106,6 @@ function VerifyEmailContent() {
           onComplete={handleFinalized}
         />
       )}
-
-      {/* Quick Debug Controls for UI Testing */}
-      <div className='fixed bottom-16 sm:bottom-4 left-1/2 -translate-x-1/2 z-40 bg-background/90 backdrop-blur-md border border-border/70 p-2 sm:p-2.5 rounded-2xl shadow-xl flex items-center gap-1.5 sm:gap-2'>
-        <span className='text-[11px] font-semibold text-muted-foreground mr-1'>
-          Test State:
-        </span>
-        <Button
-          variant={status === 'loading' ? 'default' : 'outline'}
-          size='sm'
-          className='h-7 text-xs px-2.5'
-          onClick={() => setStatus('loading')}
-        >
-          Loading
-        </Button>
-        <Button
-          variant={status === 'success' ? 'default' : 'outline'}
-          size='sm'
-          className='h-7 text-xs px-2.5'
-          onClick={() => setStatus('success')}
-        >
-          Success
-        </Button>
-        <Button
-          variant={status === 'error' ? 'default' : 'outline'}
-          size='sm'
-          className='h-7 text-xs px-2.5'
-          onClick={() => setStatus('error')}
-        >
-          Error
-        </Button>
-
-        <div className='w-px h-5 bg-border mx-1' />
-
-        <Button
-          variant={isLoggedIn ? 'default' : 'outline'}
-          size='sm'
-          className='h-7 text-xs px-2.5'
-          onClick={() => setIsLoggedIn(!isLoggedIn)}
-        >
-          {isLoggedIn ? 'Logged In' : 'Logged Out'}
-        </Button>
-      </div>
 
       <DesignLabAuthNav />
     </div>

@@ -1,5 +1,3 @@
-/* global cy, describe, it, beforeEach */
-
 // [DEPRECATED-TDS] This test exercised the removed TDS endpoints. Re-enable with the TDS feature.
 /*
 describe('Fixed Deposits — TDS Summary', () => {

@@ -6,7 +6,6 @@ import { ArrowLeft, Compass, LogIn, ChevronDown } from 'lucide-react';
 import { CoinTrackNavbar } from '@/components/ui/coinTrack/cointrack-navbar';
 import { CoinTrackFooter } from '@/components/ui/coinTrack/cointrack-footer';
 import { CoinTrackSkyBackground } from '@/components/ui/coinTrack/cointrack-sky-background';
-import { useAuth } from '@/contexts/AuthContext';
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SpotlightInput } from '@/components/ui/primitives/spotlight-input';
@@ -36,7 +35,6 @@ const SEARCH_SUGGESTIONS = [
 ];
 
 export function NotFoundPage() {
-  const { isAuthenticated } = useAuth() || {};
   const footerRef = useRef(null);
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');

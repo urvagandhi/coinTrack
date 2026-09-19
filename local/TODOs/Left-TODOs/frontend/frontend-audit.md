@@ -35,7 +35,7 @@ Sections: `(access)` public-login/noindex · `(main)` protected shell · `app/ca
 | `/login` | Public (noindex) | Client page + **Server layout** | layout exports `title: 'Login'` |
 | `/register` | Public (noindex) | Client page + **Server layout** | layout exports `title: 'Register'` |
 | `/forgot-password` | Public (noindex) | Client page + **Server layout** | layout exports `title: 'Forget Password'` |
-| `/complete-profile` | Public (noindex) | Client | no layout/metadata → root title |
+| `/complete-profile` | Public (noindex) | Client | no layout/metadata → root title · **CORRECTION (verified 2026-09-19):** no such route exists — `complete-profile` is a **mode** of `src/components/ui/auth/register-screen.jsx`, triggered by `tempToken` on `app/(access)/register/page.jsx` |
 | `/reset-password` | Public (noindex) | Client | no layout/metadata → root title |
 | `/reset-2fa` | Public (noindex) | Client | no layout/metadata → root title |
 | `/setup-2fa` | Public (noindex) | Client | no layout/metadata → root title |
@@ -213,9 +213,10 @@ Sections: `(access)` public-login/noindex · `(main)` protected shell · `app/ca
 - ✅ Routing map verified against `app/` tree (4 explorers + read-only traversal).
 - ✅ Duplicates list finalized → feeds **Definition of Done** (replacing the deleted `DESIGN-SYSTEM.md`).
 - ✅ **UI components reorganized into subfolders** (`primitives/`, `feedback/`, `forms/`, `search/`, `data-display/`, `auth/`) — import paths fully migrated, design-system folder deleted.
-- ☐ **Signed off** → audit may now gate migration step 2 (`scaffolding`).
+- ✅ **Master Implementation Plan Ready:** Complete step-by-step roadmap available in [`FRONTEND_REFACTORING_IMPLEMENTATION.md`](./FRONTEND_REFACTORING_IMPLEMENTATION.md) (bridged with [`INPUT_OUTPUT_NORMALIZATION`](../INPUT_OUTPUT_NORMALIZATION/06_FRONTEND_INTEGRATION_SPEC.md)).
+- ✅ **Signed off** → ready for OpenCode step-by-step implementation.
 
-> **Recommended immediate (low-risk) landmine fixes before/with step 2** (aligns with migration plan §11.3 #5):
+> **Recommended immediate (low-risk) landmine fixes in Phase 1** (see `FRONTEND_REFACTORING_IMPLEMENTATION.md`):
 > 1. AuthGuard + zerodha-callback blue spinner → tokens.
 > 2. Define `bg-hairline`; remove undefined `ed-muted-text`.
 > 3. Delete confirmed orphans (AuthDivider, ConnectBrokerDialog, legacy CalculatorComponents, PageTransition, dead `ui/` wrappers, `useZerodhaDashboard`, `utils/formatters.js` after fold, `ct-*` palettes, dead CSS).

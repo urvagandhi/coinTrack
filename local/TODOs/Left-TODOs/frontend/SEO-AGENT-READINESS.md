@@ -61,6 +61,8 @@ Known Next-16 constraints → **verify in `node_modules/next/dist/docs/`** befor
 
 `metadata` can be exported from a **server `layout.js`** even when the page underneath is a client component — layouts are resolved as part of the route segment. Create/append:
 
+> ⚠️ **Current state (verified 2026-09-19):** `src/app/(main)/layout.js` (AuthGuard + MainLayout), `src/app/(access)/layout.js` (auth redirect), and `src/app/calculators/layout.jsx` are all **`'use client'`** today and cannot export `metadata`/`robots`. Each must be converted to a Server Component (or given a sibling server layout where a client provider wrapper is required) before these exports work. The access routes already have per-route server `layout.js` files (e.g. `login/layout.js`) exporting titles.
+
 | File | Export |
 |---|---|
 | `src/app/layout.js` (root) | Global metadata + `robots` for whole site |

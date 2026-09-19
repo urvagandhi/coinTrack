@@ -373,7 +373,7 @@ export default function LegalHubDialog() {
       {/* Section Cards */}
       {filteredSections.length > 0 ? (
         <div className='space-y-6 pt-2 pb-4 text-left'>
-          {filteredSections.map((section, index) => (
+          {filteredSections.map(section => (
             <div key={section.number} className='space-y-2'>
               <h4 className='font-sans font-bold text-blue-600 dark:text-blue-500 text-sm sm:text-base tracking-tight'>
                 {parseInt(section.number, 10)} - {section.heading}

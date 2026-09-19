@@ -4,6 +4,7 @@ import { useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useModal } from '@/contexts/ModalContext';
+import { ThemeToggle } from '@/components/ui/primitives/theme-toggle';
 import { ShieldCheck } from 'lucide-react';
 
 /**
@@ -65,25 +66,27 @@ export function AuthHeader({ className }) {
   return (
     <div
       className={cn(
-        'w-full flex items-center justify-center pt-2 sm:pt-1 mb-4 sm:mb-4 lg:mb-5 shrink-0',
+        'w-full flex items-center justify-between pt-2 sm:pt-1 mb-4 sm:mb-4 lg:mb-5 shrink-0',
         className
       )}
     >
-      <div className='flex items-center gap-2 sm:gap-2.5'>
-        <span className='relative size-7 block'>
+      <div className='flex items-center gap-3 sm:gap-3.5 relative'>
+        <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[80px] bg-gradient-to-r from-sky-400/20 via-sky-400/10 to-blue-500/20 dark:from-sky-500/20 dark:to-blue-500/20 rounded-full blur-[40px] pointer-events-none' />
+        <span className='relative size-9 block'>
           <Image
             src='/coinTrack.png'
             alt='coinTrack logo'
-            width={28}
-            height={28}
+            width={36}
+            height={36}
             priority
             className='object-contain w-auto h-auto'
           />
         </span>
-        <span className='font-display font-extrabold text-2xl tracking-tight text-foreground'>
+        <span className='relative font-display font-extrabold text-3xl tracking-tight text-foreground'>
           coinTrack
         </span>
       </div>
+      <ThemeToggle />
     </div>
   );
 }
@@ -103,47 +106,47 @@ export function AuthFooter({ className }) {
   return (
     <footer
       className={cn(
-        'w-full pt-4 pb-2 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground/60 border-t border-border/20 shrink-0',
+        'w-full pt-4 pb-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-[11px] text-muted-foreground/70 border-t border-border/20 shrink-0',
         className
       )}
     >
-      <div>
+      <div className='whitespace-nowrap'>
         © {currentYear}{' '}
         <span className='font-semibold text-foreground/80'>
           coinTrack Systems
         </span>
         . All rights reserved.
       </div>
-      <div className='flex items-center gap-3'>
+      <div className='flex items-center gap-2.5 sm:gap-3 flex-wrap sm:flex-nowrap justify-center'>
         <button
           type='button'
           onClick={e => {
             e.preventDefault();
             openModal('privacy');
           }}
-          className='hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:underline'
+          className='hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:underline whitespace-nowrap'
         >
           Privacy Policy
         </button>
-        <span>•</span>
+        <span className='text-muted-foreground/40'>•</span>
         <button
           type='button'
           onClick={e => {
             e.preventDefault();
             openModal('terms');
           }}
-          className='hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:underline'
+          className='hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:underline whitespace-nowrap'
         >
           Terms of Service
         </button>
-        <span>•</span>
+        <span className='text-muted-foreground/40'>•</span>
         <button
           type='button'
           onClick={e => {
             e.preventDefault();
             openModal('security');
           }}
-          className='hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:underline flex items-center gap-1'
+          className='hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:underline flex items-center gap-1 whitespace-nowrap'
         >
           <ShieldCheck className='size-3.5 text-emerald-500' />
           Bank-Grade Security

@@ -8,6 +8,7 @@ import {
   useMemo,
   useCallback,
 } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/primitives/badge';
 import { Input } from '@/components/ui/primitives/input';
@@ -668,10 +669,12 @@ export function SmartAuthInput({
                 role='img'
                 aria-label='India flag'
               >
-                <img
+                <Image
                   src='https://flagcdn.com/in.svg'
-                  width='16'
+                  width={16}
+                  height={12}
                   alt='India'
+                  unoptimized
                   className='w-4 h-3 rounded-[2px] shadow-sm flex-shrink-0'
                 />
               </span>

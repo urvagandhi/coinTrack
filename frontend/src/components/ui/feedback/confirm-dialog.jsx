@@ -116,7 +116,9 @@ export default function ConfirmDialog({
                 t.iconBg
               )}
             >
-              <ToneIcon className={cn('h-7 w-7', t.text)} strokeWidth={1.5} />
+              {confirmIcon || (
+                <ToneIcon className={cn('h-7 w-7', t.text)} strokeWidth={1.5} />
+              )}
             </div>
 
             <h2

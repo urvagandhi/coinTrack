@@ -3,6 +3,11 @@
 > **Priority:** HIGH  
 > **Files Affected:** EPF, PPF, Fixed Deposits, Gold/Silver, Mutual Funds, Broker Connection
 
+> **Implementation Status (verified 2026-09-19):** NOT YET IMPLEMENTED as shared utilities. Current inline behavior:
+> - Amount shortcuts (`L`/`Cr`/`K`), `formatIndianCurrency`, and `formatInIndianWords` are **duplicated inline** in `components/epf/EpfTransactionDialog.jsx`, `components/ppf/PpfDialog.jsx`, and `components/goldsilver/GoldSilverDialog.jsx`. There is **no** shared `parseAmount()`/`formatCurrency()` in a common lib.
+> - The search comboboxes referenced below live at `src/components/ui/search/BankSearchCombobox.jsx` and `src/components/ui/search/SchemeSearchCombobox.jsx` (not `components/ui/` root). `components/brokers/ConnectBrokerDialog.jsx` is legacy/0-importers.
+> - Remaining line references below are **approximate / UNVERIFIED**.
+
 ---
 
 ## 1. Monetary Amounts

@@ -9,6 +9,7 @@ export default [
   {
     ignores: [
       '**/.next/**',
+      '**/tmp/**',
       '**/node_modules/**',
       '**/out/**',
       '**/build/**',

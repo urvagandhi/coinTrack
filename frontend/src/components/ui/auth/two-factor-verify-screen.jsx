@@ -1,24 +1,18 @@
 'use client';
 
-import {
-  AuthFooter,
-  AuthHeader,
-  useDynamicDocumentTitle,
-} from '@/components/ui/auth/auth-shared';
+import { useDynamicDocumentTitle } from '@/components/ui/auth/auth-shared';
+import { AuthLayout } from '@/components/ui/auth/auth-layout';
 import { FintechLoader } from '@/components/ui/loaders/FintechLoader';
 import { Button } from '@/components/ui/primitives/button';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
-  Battery,
   ChevronRight,
   KeyRound,
   Loader2,
   Lock,
   ShieldCheck,
-  Signal,
   UserRound,
-  Wifi,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,110 +21,92 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 //  SUBCOMPONENTS
 // ───────────────────────────────────────────────────────────────
 
+// Mockup content for the AuthLayout phone frame (no outer bezel needed)
 function VerifyPhoneMockup() {
   return (
-    <div className='relative z-10 w-full flex justify-center items-center perspective-[1000px]'>
-      <div className='relative w-[280px] h-[480px] bg-[#12151a] dark:bg-white rounded-[40px] border-[6px] border-[#222731] dark:border-slate-200 shadow-2xl shadow-black/80 dark:shadow-slate-300/50 overflow-hidden flex flex-col p-4 isolate select-none transform rotate-y-[-15deg] rotate-x-[5deg] hover:rotate-y-0 hover:rotate-x-0 transition-transform duration-1000 ease-out'>
-        {/* Dynamic Island / Notch */}
-        <div className='w-full flex justify-between items-center text-zinc-400 dark:text-zinc-500 pt-0.5 pb-4 px-2'>
-          <span className='text-[10px] font-mono font-semibold tracking-wider text-zinc-300 dark:text-zinc-700'>
-            09:41
+    <div className='w-full h-full flex flex-col select-none text-left'>
+      {/* Header */}
+      <div className='flex items-center justify-between mb-6 px-1'>
+        <h3 className='text-lg font-bold text-white tracking-tight'>
+          Authenticator
+        </h3>
+        <div className='size-7 rounded-full bg-emerald-500/10 flex items-center justify-center shadow-sm'>
+          <ShieldCheck className='size-3.5 text-emerald-500' />
+        </div>
+      </div>
+
+      {/* Stale Approval Request (muted) */}
+      <div className='w-full bg-zinc-900/60 border border-zinc-800 rounded-2xl p-3 mb-3 text-left opacity-40'>
+        <div className='text-[10px] text-zinc-400 mb-1.5'>
+          Previous approval
+        </div>
+        <div className='flex items-center gap-2'>
+          <div className='size-5 rounded-md border border-zinc-700 flex items-center justify-center text-zinc-500'>
+            <KeyRound className='size-2.5' />
+          </div>
+          <span className='text-[11px] text-zinc-300 font-mono'>
+            Google · 894312
           </span>
-          <div className='w-14 h-3 bg-black/40 dark:bg-zinc-200 rounded-full flex items-center justify-end px-1.5'>
-            <div className='size-1 rounded-full bg-emerald-500 animate-pulse' />
-          </div>
-          <div className='flex items-center gap-1'>
-            <Signal className='size-[10px]' />
-            <Wifi className='size-[10px]' />
-            <Battery className='size-3' />
-          </div>
         </div>
+      </div>
 
-        {/* Header */}
-        <div className='flex items-center justify-between mb-6 px-1'>
-          <h3 className='text-lg font-bold text-white dark:text-zinc-900 tracking-tight'>
-            Authenticator
-          </h3>
-          <div className='size-7 rounded-full bg-emerald-500/10 flex items-center justify-center shadow-sm'>
-            <ShieldCheck className='size-3.5 text-emerald-500' />
-          </div>
-        </div>
-
-        {/* Stale Approval Request (muted) */}
-        <div className='w-full bg-zinc-900/60 dark:bg-zinc-50 border border-zinc-800 dark:border-zinc-200 rounded-2xl p-3 mb-3 text-left opacity-40'>
-          <div className='text-[10px] text-zinc-400 dark:text-zinc-500 mb-1.5'>
-            Previous approval
-          </div>
+      {/* coinTrack Active Sign-in */}
+      <div className='w-full bg-gradient-to-br from-emerald-500/15 to-emerald-900/20 border border-emerald-500/30 rounded-2xl p-4 shadow-lg relative overflow-hidden group'>
+        <div className='absolute -right-4 -top-4 size-24 bg-emerald-500/20 blur-xl rounded-full pointer-events-none' />
+        <div className='flex justify-between items-center mb-3 relative z-10'>
           <div className='flex items-center gap-2'>
-            <div className='size-5 rounded-md border border-zinc-700 flex items-center justify-center text-zinc-500'>
-              <KeyRound className='size-2.5' />
+            <div className='size-6 rounded-md bg-white flex items-center justify-center shadow-sm p-1'>
+              <Image
+                src='/coinTrack.png'
+                alt='coinTrack'
+                width={16}
+                height={16}
+                className='object-contain w-auto h-auto'
+              />
             </div>
-            <span className='text-[11px] text-zinc-300 dark:text-zinc-700 font-mono'>
-              Google · 894312
-            </span>
-          </div>
-        </div>
-
-        {/* coinTrack Active Sign-in */}
-        <div className='w-full bg-gradient-to-br from-emerald-500/15 to-emerald-900/20 dark:from-emerald-50 dark:to-emerald-100 border border-emerald-500/30 dark:border-emerald-500/40 rounded-2xl p-4 shadow-lg relative overflow-hidden group'>
-          <div className='absolute -right-4 -top-4 size-24 bg-emerald-500/20 blur-xl rounded-full pointer-events-none' />
-          <div className='flex justify-between items-center mb-3 relative z-10'>
-            <div className='flex items-center gap-2'>
-              <div className='size-6 rounded-md bg-white flex items-center justify-center shadow-sm p-1'>
-                <Image
-                  src='/coinTrack.png'
-                  alt='coinTrack'
-                  width={16}
-                  height={16}
-                  className='object-contain w-auto h-auto'
-                />
-              </div>
-              <div>
-                <div className='text-xs font-bold text-white dark:text-zinc-900'>
-                  coinTrack
-                </div>
-                <div className='text-[9px] text-zinc-400 dark:text-zinc-500 font-mono'>
-                  Sign in approval
-                </div>
+            <div>
+              <div className='text-xs font-bold text-white'>coinTrack</div>
+              <div className='text-[9px] text-zinc-400 font-mono'>
+                Sign in approval
               </div>
             </div>
-            <div className='relative size-4'>
-              <svg className='size-full -rotate-90' viewBox='0 0 24 24'>
-                <circle
-                  cx='12'
-                  cy='12'
-                  r='10'
-                  fill='none'
-                  stroke='currentColor'
-                  strokeWidth='4'
-                  className='text-emerald-500/30'
-                />
-                <circle
-                  cx='12'
-                  cy='12'
-                  r='10'
-                  fill='none'
-                  stroke='currentColor'
-                  strokeWidth='4'
-                  strokeDasharray='62.8'
-                  strokeDashoffset='25'
-                  className='text-emerald-500 transition-all duration-1000'
-                />
-              </svg>
-            </div>
           </div>
-          <div className='text-[26px] font-mono font-bold tracking-[0.25em] text-emerald-400 dark:text-emerald-600 relative z-10 leading-none'>
-            482 195
+          <div className='relative size-4'>
+            <svg className='size-full -rotate-90' viewBox='0 0 24 24'>
+              <circle
+                cx='12'
+                cy='12'
+                r='10'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='4'
+                className='text-emerald-500/30'
+              />
+              <circle
+                cx='12'
+                cy='12'
+                r='10'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='4'
+                strokeDasharray='62.8'
+                strokeDashoffset='25'
+                className='text-emerald-500 transition-all duration-1000'
+              />
+            </svg>
           </div>
         </div>
+        <div className='text-[26px] font-mono font-bold tracking-[0.25em] text-emerald-400 relative z-10 leading-none'>
+          482 195
+        </div>
+      </div>
 
-        {/* Bottom hint */}
-        <div className='mt-auto flex flex-col items-center gap-2 text-center pb-2 opacity-60'>
-          <KeyRound className='size-5 text-zinc-500' />
-          <p className='text-[9px] text-zinc-400 max-w-[180px] leading-relaxed'>
-            Enter the rotating code below to unlock your portfolio.
-          </p>
-        </div>
+      {/* Bottom hint */}
+      <div className='mt-auto flex flex-col items-center gap-2 text-center pb-2 opacity-60'>
+        <KeyRound className='size-5 text-zinc-500' />
+        <p className='text-[9px] text-zinc-400 max-w-[180px] leading-relaxed'>
+          Enter the rotating code below to unlock your portfolio.
+        </p>
       </div>
     </div>
   );
@@ -261,7 +237,7 @@ function OTPBoxes({
 //  RECOVERY CODES USED INDICATOR (8 segmented dots + label)
 // ───────────────────────────────────────────────────────────────
 
-function RecoveryCodesUsedIndicator({ codesUsed = 3 }) {
+function RecoveryCodesUsedIndicator({ codesUsed = 0 }) {
   const remaining = 8 - codesUsed;
   const afterUse = remaining - 1;
 
@@ -302,17 +278,11 @@ function VerifyFinalizing({
   isLoaderActive,
   onFinalizationComplete,
 }) {
-  // We don't control the loading state internally anymore, we use the prop
-  // However, we need to detect when the loader FINISHES its retract animation
-
   useEffect(() => {
-    // When the parent signals completion (isLoaderActive === false),
-    // allow the cards to retract and keep "Verification Complete / Redirecting to dashboard..."
-    // visibly displayed for ~2 seconds before executing final redirect callback.
     if (isLoaderActive === false) {
       const timer = setTimeout(() => {
         onFinalizationComplete?.();
-      }, 1000); // 1000ms gives ample time to read the completion status
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [isLoaderActive, onFinalizationComplete]);
@@ -323,7 +293,7 @@ function VerifyFinalizing({
       <div className='absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] bg-amber-500/10 dark:bg-amber-500/15 rounded-full blur-[110px] pointer-events-none animate-pulse duration-[8000ms]' />
       <div className='absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[480px] h-[480px] bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-[130px] pointer-events-none animate-pulse duration-[10000ms]' />
 
-      {/* Theme-Aware Dot Matrix Grid Pattern (Exact match to auth design in user screenshot) */}
+      {/* Theme-Aware Dot Matrix Grid Pattern */}
       <div
         className='absolute inset-0 pointer-events-none opacity-[0.06] dark:opacity-[0.08]'
         style={{
@@ -375,7 +345,6 @@ export function TwoFactorVerifyScreen({
   className,
   onSubmit,
   onBackToLogin,
-  onNavigateToSetup,
   userIdentifier,
   isLoading = false,
   isFinalizing = false,
@@ -383,7 +352,7 @@ export function TwoFactorVerifyScreen({
   onFinalizationComplete,
   errorMessage,
   onClearError,
-  recoveryCodesUsed = 3,
+  recoveryCodesUsed,
 }) {
   const [code, setCode] = useState('');
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
@@ -459,47 +428,25 @@ export function TwoFactorVerifyScreen({
   const isComplete = effectiveCount === suiteLength;
 
   return (
-    <div
-      className={cn(
-        'w-full min-h-screen md:h-screen md:max-h-screen overflow-y-auto md:overflow-hidden bg-background flex flex-col md:flex-row transition-colors duration-300',
-        className
-      )}
-    >
-      {/* ───────────────────────────────────────────────────────── */}
-      {/* LEFT SIDE - VISUAL                                       */}
-      {/* ───────────────────────────────────────────────────────── */}
-      <div className='hidden md:flex md:w-1/2 h-full bg-[#0d0f12] dark:bg-slate-100 relative overflow-hidden flex-col items-center justify-center p-4 sm:p-6 lg:p-8 text-center border-b md:border-b-0 md:border-r border-border/30 transition-colors duration-300 select-none'>
-        <div className='absolute top-[10%] left-[10%] w-[350px] md:w-[450px] h-[350px] md:h-[450px] bg-emerald-500/15 dark:bg-emerald-500/20 rounded-full blur-[100px] pointer-events-none animate-pulse duration-[8000ms]' />
-        <div className='absolute bottom-[10%] right-[10%] w-[300px] md:w-[400px] h-[300px] md:h-[400px] bg-blue-500/10 dark:bg-blue-500/15 rounded-full blur-[120px] pointer-events-none animate-pulse duration-[10000ms]' />
-
-        <div className='relative z-10 space-y-1.5 mb-8 max-w-sm'>
-          <div className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 dark:text-emerald-700 text-[11px] font-medium mb-1 backdrop-blur-sm'>
-            <ShieldCheck className='size-3.5' />
-            <span>Step 2 · Bank-Grade Security</span>
-          </div>
-          <h2 className='font-display text-3xl lg:text-4xl font-extrabold text-white dark:text-zinc-900 tracking-tight leading-snug'>
+    <>
+      <AuthLayout
+        className={className}
+        badgeText='Step 2 · Bank-Grade Security'
+        badgeIcon={ShieldCheck}
+        title={
+          <>
             Verify it&apos;s{' '}
             <span className='font-display font-extrabold text-emerald-400 dark:text-emerald-600'>
               You.
             </span>
-          </h2>
-          <p className='text-zinc-400 dark:text-zinc-600 text-xs max-w-[260px] mx-auto leading-relaxed'>
-            A quick two-factor check keeps intruders out of your portfolio.
-          </p>
-        </div>
-
-        <VerifyPhoneMockup />
-      </div>
-
-      {/* ───────────────────────────────────────────────────────── */}
-      {/* RIGHT SIDE - FORM                                         */}
-      {/* ───────────────────────────────────────────────────────── */}
-      <div className='w-full md:w-1/2 min-h-[100dvh] md:min-h-0 md:h-full px-5 py-4 sm:px-8 sm:py-6 md:px-6 md:py-6 lg:px-12 lg:py-8 xl:px-16 xl:py-8 flex flex-col bg-card dark:bg-[#0d0f12] relative justify-between overflow-y-auto transition-colors duration-300'>
-        <AuthHeader />
-
-        {/* Form body — hidden behind overlay when finalizing */}
-        {!isFinalizing && (
-          <div className='w-full max-w-[340px] sm:max-w-md md:max-w-[360px] lg:max-w-md xl:max-w-md mx-auto my-auto flex flex-col justify-center shrink-0 py-2'>
+          </>
+        }
+        subtitle='A quick two-factor check keeps intruders out of your portfolio.'
+        mockupContent={<VerifyPhoneMockup />}
+      >
+        <div className='w-full max-w-[340px] sm:max-w-md md:max-w-[360px] lg:max-w-md xl:max-w-md mx-auto my-auto flex flex-col justify-center shrink-0 py-2'>
+          {/* Form body — hidden behind overlay when finalizing */}
+          {!isFinalizing && (
             <div className='animate-in fade-in slide-in-from-bottom-4 duration-500'>
               {/* Heading */}
               <div className='text-center mb-6'>
@@ -542,16 +489,6 @@ export function TwoFactorVerifyScreen({
                       </span>
                       <span>
                         {isRecoveryMode ? 'Backup Code' : 'Authentication Code'}
-                        {!isRecoveryMode && (
-                          <span className='text-[10px] font-mono text-muted-foreground/60 ml-1 font-medium'>
-                            (Hint: 123456)
-                          </span>
-                        )}
-                        {isRecoveryMode && (
-                          <span className='text-[10px] font-mono text-muted-foreground/60 ml-1 font-medium'>
-                            (Hint: 8F2A-9B3C)
-                          </span>
-                        )}
                       </span>
                     </label>
                     {activeError ? (
@@ -592,7 +529,7 @@ export function TwoFactorVerifyScreen({
                   )}
 
                   {/* Recovery used-codes indicator */}
-                  {isRecoveryMode && (
+                  {isRecoveryMode && recoveryCodesUsed != null && (
                     <div className='mt-3'>
                       <RecoveryCodesUsedIndicator
                         codesUsed={recoveryCodesUsed}
@@ -656,58 +593,21 @@ export function TwoFactorVerifyScreen({
                     </>
                   )}
                 </p>
-
-                {onNavigateToSetup && (
-                  <p className='text-center text-xs text-muted-foreground pt-1'>
-                    Need to reconfigure?{' '}
-                    <button
-                      type='button'
-                      onClick={onNavigateToSetup}
-                      disabled={isBusy}
-                      className='font-semibold text-foreground hover:text-emerald-500 transition-colors cursor-pointer outline-none focus-visible:underline'
-                    >
-                      Set up new 2FA authenticator
-                    </button>
-                  </p>
-                )}
               </form>
             </div>
-          </div>
-        )}
-
-        {/* Finalizing overlay — covers right panel during post-verify loading */}
-        {isFinalizing && (
-          <VerifyFinalizing
-            userIdentifier={userIdentifier}
-            isLoaderActive={isLoaderActive}
-            onFinalizationComplete={onFinalizationComplete}
-          />
-        )}
-
-        <div className='mt-auto pt-4 pb-2 w-full'>
-          <AuthFooter />
+          )}
         </div>
-      </div>
+      </AuthLayout>
 
-      {/* Global Style for Animations */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-4px); }
-          40% { transform: translateX(4px); }
-          60% { transform: translateX(-4px); }
-          80% { transform: translateX(4px); }
-        }
-        @keyframes indeterminate {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(350%); }
-        }
-      `,
-        }}
-      />
-    </div>
+      {/* Finalizing overlay — covers entire screen during post-verify loading */}
+      {isFinalizing && (
+        <VerifyFinalizing
+          userIdentifier={userIdentifier}
+          isLoaderActive={isLoaderActive}
+          onFinalizationComplete={onFinalizationComplete}
+        />
+      )}
+    </>
   );
 }
 

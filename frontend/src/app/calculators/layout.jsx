@@ -1,7 +1,7 @@
 // src/app/calculators/layout.jsx — Public calculator layout, no auth required
 'use client';
 
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/primitives/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useModal } from '@/contexts/ModalContext';
 import { ArrowRight, ChevronLeft } from 'lucide-react';

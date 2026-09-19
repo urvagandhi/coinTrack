@@ -33,21 +33,23 @@ export function CoinTrackNavbar() {
 
   return (
     <header className='fixed top-0 inset-x-0 z-50 py-4 sm:py-5 px-4 sm:px-6 pointer-events-none bg-transparent'>
-      <div className='max-w-6xl mx-auto flex items-center justify-between pointer-events-auto'>
+      <div className='w-full flex items-center justify-between pointer-events-auto'>
         {/* 1. Left: Brand Logo */}
-        <div className='relative'>
-          {/* Unbounded gradient blur that appears on scroll */}
-          <div
-            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180px] h-[100px] bg-sky-400/20 dark:bg-sky-500/20 rounded-full blur-[30px] pointer-events-none transition-opacity duration-500 ${
-              scrolled ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
-          <Link
-            href='/'
-            className='relative z-10 block py-2 transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]'
-          >
-            <CoinTrackLogo />
-          </Link>
+        <div className='flex-1 flex justify-start pl-4 sm:pl-8 lg:pl-12'>
+          <div className='relative'>
+            {/* Unbounded gradient blur that appears on scroll */}
+            <div
+              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220px] h-[100px] bg-sky-400/20 dark:bg-sky-500/20 rounded-full blur-[30px] pointer-events-none transition-opacity duration-500 ${
+                scrolled ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+            <Link
+              href='/'
+              className='relative z-10 block py-2 transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]'
+            >
+              <CoinTrackLogo />
+            </Link>
+          </div>
         </div>
 
         {/* 2. Center: Floating Pill Navigation */}
@@ -77,7 +79,7 @@ export function CoinTrackNavbar() {
         </nav>
 
         {/* 3. Right: Action Buttons (Built from primitive Button component) */}
-        <div className='hidden md:flex items-center gap-2.5'>
+        <div className='hidden md:flex flex-1 items-center justify-end gap-2.5 pr-4 sm:pr-8 lg:pr-12'>
           {!isInitializing &&
             (isAuthenticated ? (
               <Button
@@ -117,7 +119,7 @@ export function CoinTrackNavbar() {
         </div>
 
         {/* Mobile Controls */}
-        <div className='md:hidden flex items-center gap-2'>
+        <div className='md:hidden flex flex-1 items-center justify-end gap-2 pr-4 sm:pr-8 lg:pr-12'>
           {!isInitializing && !isAuthenticated && (
             <Button
               asChild
