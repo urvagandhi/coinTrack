@@ -67,7 +67,7 @@ export function CoinTrackHeroMockup() {
   };
 
   return (
-    <div className='w-full max-w-5xl mx-auto rounded-[32px] md:rounded-[40px] bg-white border border-black/[0.08] shadow-[0_30px_90px_-20px_rgba(15,23,42,0.16)] p-4 sm:p-6 md:p-8 text-neutral-900 transition-all relative overflow-hidden'>
+    <div className='w-full max-w-5xl mx-auto rounded-2xl min-[400px]:rounded-[32px] md:rounded-[40px] bg-white dark:bg-neutral-950 border border-black/[0.08] dark:border-white/[0.08] shadow-[0_30px_90px_-20px_rgba(15,23,42,0.16)] p-3 min-[400px]:p-4 sm:p-6 md:p-8 text-neutral-900 dark:text-white transition-all relative overflow-hidden'>
       {/* Toast alert */}
       <AnimatePresence>
         {shareToast && (
@@ -75,7 +75,7 @@ export function CoinTrackHeroMockup() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className='absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-neutral-950 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg flex items-center gap-2'
+            className='absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-semibold px-4 py-2 rounded-full shadow-lg flex items-center gap-2'
           >
             <span>✨ Live dashboard link copied to clipboard!</span>
           </motion.div>
@@ -83,9 +83,9 @@ export function CoinTrackHeroMockup() {
       </AnimatePresence>
 
       {/* ── TOP HEADER SHELL NAVIGATION ── */}
-      <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-neutral-100'>
+      <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-neutral-100 dark:border-neutral-800'>
         {/* Left Tabs (Apple-style segmented pill) */}
-        <div className='flex items-center gap-1 overflow-x-auto p-1 rounded-full bg-neutral-100/70 border border-neutral-200/60 shrink-0 scrollbar-none'>
+        <div className='flex items-center gap-1 overflow-x-auto p-1 rounded-full bg-neutral-100 dark:bg-neutral-800/70 border border-neutral-200/60 dark:border-neutral-800 shrink-0 scrollbar-none max-w-full'>
           {TOP_TABS.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -94,10 +94,10 @@ export function CoinTrackHeroMockup() {
                 key={tab.id}
                 type='button'
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 shrink-0 transition-all ${
+                className={`relative px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium flex items-center gap-1 sm:gap-1.5 shrink-0 transition-all ${
                   isActive
                     ? 'text-white'
-                    : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100/70'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:text-white hover:bg-neutral-100 dark:bg-neutral-800/70'
                 }`}
               >
                 {isActive && (
@@ -134,21 +134,21 @@ export function CoinTrackHeroMockup() {
               type='text'
               readOnly
               placeholder='Search threads, contacts...'
-              className='pl-8 pr-3 py-1.5 text-xs rounded-full bg-neutral-100/70 border border-neutral-200/60 text-neutral-600 w-44 md:w-56 focus:outline-none'
+              className='pl-8 pr-3 py-1.5 text-xs rounded-full bg-neutral-100 dark:bg-neutral-800/70 border border-neutral-200/60 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 w-44 md:w-56 focus:outline-none'
             />
           </div>
 
           {/* Notification bell */}
           <button
             type='button'
-            className='size-8 rounded-full border border-neutral-200/70 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 transition-colors'
+            className='size-8 rounded-full border border-neutral-200/70 flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:bg-neutral-900 transition-colors'
             aria-label='Notifications'
           >
             <Bell className='size-3.5' />
           </button>
 
           {/* User badge */}
-          <div className='size-8 rounded-full bg-neutral-100 border border-neutral-200/80 text-[11px] font-bold text-neutral-700 flex items-center justify-center shadow-xs'>
+          <div className='size-8 rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200/80 text-[11px] font-bold text-neutral-700 dark:text-neutral-300 flex items-center justify-center shadow-xs'>
             EM
           </div>
         </div>
@@ -157,45 +157,45 @@ export function CoinTrackHeroMockup() {
       {/* ── MAIN BODY: LEFT FLOATING RAIL + CENTER BOX + RIGHT COLUMN ── */}
       <div className='pt-6 flex flex-col md:flex-row gap-5 items-start'>
         {/* Left Floating Rail (as in screenshot) */}
-        <div className='hidden xl:flex flex-col items-center gap-4 py-3 px-1.5 rounded-full bg-neutral-50/90 border border-neutral-200/70 shrink-0 shadow-2xs'>
+        <div className='hidden xl:flex flex-col items-center gap-4 py-3 px-1.5 rounded-full bg-neutral-50/90 dark:bg-neutral-900/50 border border-neutral-200/70 shrink-0 shadow-2xs'>
           <button
             type='button'
-            className='size-7 rounded-full bg-neutral-950 text-white flex items-center justify-center shadow-xs'
+            className='size-7 rounded-full bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shadow-xs'
             title='Home'
           >
             <Home className='size-3.5' />
           </button>
           <button
             type='button'
-            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
+            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
             title='Chat'
           >
             <MessageSquare className='size-3.5' />
           </button>
           <button
             type='button'
-            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
+            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
             title='Contacts'
           >
             <User className='size-3.5' />
           </button>
           <button
             type='button'
-            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
+            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
             title='Workflows'
           >
             <GitFork className='size-3.5' />
           </button>
           <button
             type='button'
-            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
+            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
             title='History'
           >
             <Clock className='size-3.5' />
           </button>
           <button
             type='button'
-            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
+            className='size-7 rounded-full text-neutral-400 hover:text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 flex items-center justify-center transition-colors'
             title='Settings'
           >
             <SlidersHorizontal className='size-3.5' />
@@ -203,20 +203,20 @@ export function CoinTrackHeroMockup() {
         </div>
 
         {/* Center Main Card: Business Overview */}
-        <div className='flex-1 min-w-0 rounded-[28px] border border-neutral-200/80 bg-white p-5 sm:p-6 space-y-6'>
+        <div className='flex-1 min-w-0 rounded-2xl min-[400px]:rounded-[28px] border border-neutral-200/80 bg-white dark:bg-neutral-950 p-4 min-[400px]:p-5 sm:p-6 space-y-6 w-full'>
           {/* Header Row */}
           <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
             <div>
-              <h3 className='font-display font-bold text-xl sm:text-2xl text-neutral-950 tracking-tight leading-tight'>
+              <h3 className='font-display font-bold text-lg min-[400px]:text-xl sm:text-2xl text-neutral-950 dark:text-white tracking-tight leading-tight'>
                 Business overview
               </h3>
-              <p className='text-xs text-neutral-500 mt-0.5'>
+              <p className='text-xs text-neutral-500 dark:text-neutral-500 mt-0.5'>
                 Real-time signals from every channel you sell on.
               </p>
             </div>
 
             {/* Actions: 7 days, Export, Share */}
-            <div className='flex items-center gap-2 self-start sm:self-auto'>
+            <div className='flex flex-wrap items-center gap-2 self-start sm:self-auto'>
               <Button
                 variant='outline'
                 size='xs'
@@ -225,7 +225,7 @@ export function CoinTrackHeroMockup() {
                     activeRange === '7 days' ? '30 days' : '7 days'
                   )
                 }
-                className='rounded-full border-neutral-200 text-neutral-700 hover:bg-neutral-50 px-3'
+                className='rounded-full border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:bg-neutral-900 px-3'
               >
                 <Calendar className='size-3 text-neutral-400 mr-1' />
                 <span>{activeRange}</span>
@@ -234,7 +234,7 @@ export function CoinTrackHeroMockup() {
               <Button
                 variant='outline'
                 size='xs'
-                className='rounded-full border-neutral-200 text-neutral-700 hover:bg-neutral-50 px-3'
+                className='rounded-full border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:bg-neutral-900 px-3'
               >
                 <Upload className='size-3 text-neutral-400 mr-1' />
                 <span>Export</span>
@@ -253,88 +253,88 @@ export function CoinTrackHeroMockup() {
           </div>
 
           {/* 4 Key Metrics */}
-          <div className='grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 pt-1'>
+          <div className='grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 pt-1'>
             {/* Stat 1: Hot leads today */}
-            <div className='space-y-1'>
-              <div className='flex items-center gap-1.5 text-neutral-500 text-xs'>
-                <Flame className='size-3.5 text-neutral-400' />
+            <div className='space-y-1 p-2 min-[380px]:p-0 rounded-xl bg-neutral-50/50 min-[380px]:bg-transparent dark:bg-neutral-900/30 min-[380px]:dark:bg-transparent'>
+              <div className='flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 text-xs'>
+                <Flame className='size-3.5 text-neutral-400 dark:text-neutral-500' />
                 <span>Hot leads today</span>
               </div>
-              <div className='font-display text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950'>
+              <div className='font-display text-xl min-[400px]:text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                 {activeRange === '7 days' ? '382' : '1,420'}
               </div>
-              <div className='text-xs font-medium text-emerald-600 flex items-center gap-0.5'>
+              <div className='text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5'>
                 <span>↑ 18% wow</span>
               </div>
             </div>
 
             {/* Stat 2: Pending replies */}
-            <div className='space-y-1'>
-              <div className='flex items-center gap-1.5 text-neutral-500 text-xs'>
-                <CornerUpLeft className='size-3.5 text-neutral-400' />
+            <div className='space-y-1 p-2 min-[380px]:p-0 rounded-xl bg-neutral-50/50 min-[380px]:bg-transparent dark:bg-neutral-900/30 min-[380px]:dark:bg-transparent'>
+              <div className='flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 text-xs'>
+                <CornerUpLeft className='size-3.5 text-neutral-400 dark:text-neutral-500' />
                 <span>Pending replies</span>
               </div>
-              <div className='font-display text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950'>
+              <div className='font-display text-xl min-[400px]:text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                 4
               </div>
-              <div className='text-xs font-medium text-orange-600 flex items-center gap-0.5'>
+              <div className='text-xs font-medium text-orange-600 dark:text-orange-400 flex items-center gap-0.5'>
                 <span>↓ 2 since am</span>
               </div>
             </div>
 
             {/* Stat 3: Avg response */}
-            <div className='space-y-1'>
-              <div className='flex items-center gap-1.5 text-neutral-500 text-xs'>
-                <Timer className='size-3.5 text-neutral-400' />
+            <div className='space-y-1 p-2 min-[380px]:p-0 rounded-xl bg-neutral-50/50 min-[380px]:bg-transparent dark:bg-neutral-900/30 min-[380px]:dark:bg-transparent'>
+              <div className='flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 text-xs'>
+                <Timer className='size-3.5 text-neutral-400 dark:text-neutral-500' />
                 <span>Avg response</span>
               </div>
-              <div className='font-display text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950'>
+              <div className='font-display text-xl min-[400px]:text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                 2m 09s
               </div>
-              <div className='text-xs font-medium text-emerald-600 flex items-center gap-0.5'>
+              <div className='text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5'>
                 <span>↑ 12% faster</span>
               </div>
             </div>
 
             {/* Stat 4: Revenue from chats */}
-            <div className='space-y-1'>
-              <div className='flex items-center gap-1.5 text-neutral-500 text-xs'>
-                <CreditCard className='size-3.5 text-neutral-400' />
+            <div className='space-y-1 p-2 min-[380px]:p-0 rounded-xl bg-neutral-50/50 min-[380px]:bg-transparent dark:bg-neutral-900/30 min-[380px]:dark:bg-transparent'>
+              <div className='flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 text-xs'>
+                <CreditCard className='size-3.5 text-neutral-400 dark:text-neutral-500' />
                 <span>Revenue from chats</span>
               </div>
-              <div className='font-display text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950'>
+              <div className='font-display text-xl min-[400px]:text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950 dark:text-white'>
                 $97,418
               </div>
-              <div className='text-xs font-medium text-emerald-600 flex items-center gap-0.5'>
+              <div className='text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5'>
                 <span>↑ 18% mom</span>
               </div>
             </div>
           </div>
 
           {/* Continuous Segmented Bar */}
-          <div className='w-full h-2 rounded-full overflow-hidden flex gap-0.5 mt-2 bg-neutral-100'>
+          <div className='w-full h-2 rounded-full overflow-hidden flex gap-0.5 mt-2 bg-neutral-100 dark:bg-neutral-800'>
             <div className='h-full bg-[#2563eb] w-[30%] rounded-l-full' />
             <div className='h-full bg-[#f97316] w-[30%]' />
             <div className='h-full bg-[#10b981] w-[25%]' />
-            <div className='h-full bg-[repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1_3px,#f1f5f9_3px,#f1f5f9_6px)] w-[15%] rounded-r-full border-l border-white/50' />
+            <div className='h-full bg-[repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1_3px,#f1f5f9_3px,#f1f5f9_6px)] dark:bg-[repeating-linear-gradient(45deg,#334155,#334155_3px,#1e293b_3px,#1e293b_6px)] w-[15%] rounded-r-full border-l border-white/50 dark:border-neutral-800' />
           </div>
 
           {/* Divider */}
-          <div className='border-t border-neutral-100 pt-4' />
+          <div className='border-t border-neutral-100 dark:border-neutral-800 pt-4' />
 
           {/* Messages vs. sales Header */}
           <div className='flex flex-wrap items-center justify-between gap-3'>
             <div>
-              <span className='font-display font-bold text-sm text-neutral-900 block'>
+              <span className='font-display font-bold text-sm text-neutral-900 dark:text-white block'>
                 Messages vs. sales
               </span>
-              <span className='text-xs font-medium text-emerald-600'>
+              <span className='text-xs font-medium text-emerald-600 dark:text-emerald-400'>
                 ↑ 18% more than last month
               </span>
             </div>
 
             {/* Legend */}
-            <div className='flex items-center gap-3 text-xs text-neutral-600'>
+            <div className='flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs text-neutral-600 dark:text-neutral-400'>
               <span className='flex items-center gap-1.5'>
                 <span className='size-2 rounded-full bg-[#2563eb]' />
                 <span>Messenger</span>
@@ -349,7 +349,7 @@ export function CoinTrackHeroMockup() {
               </span>
               <button
                 type='button'
-                className='flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-neutral-200 text-neutral-700 hover:bg-neutral-50 text-[11px] font-medium'
+                className='flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 text-[11px] font-medium'
               >
                 <span>View</span>
                 <ArrowUpRight className='size-3 text-neutral-400' />
@@ -358,10 +358,10 @@ export function CoinTrackHeroMockup() {
           </div>
 
           {/* Bar Chart Canvas with Y-Axis */}
-          <div className='relative pt-4 pb-2'>
-            <div className='flex gap-3 h-52'>
+          <div className='relative pt-4 pb-2 overflow-x-auto scrollbar-none'>
+            <div className='flex gap-2 sm:gap-3 h-52 min-w-[340px]'>
               {/* Y-Axis scale */}
-              <div className='flex flex-col justify-between text-[10px] font-mono text-neutral-400 pb-6 select-none shrink-0 w-8 text-right'>
+              <div className='flex flex-col justify-between text-[10px] font-mono text-neutral-400 dark:text-neutral-500 pb-6 select-none shrink-0 w-8 text-right'>
                 <span>10,500</span>
                 <span>7,100</span>
                 <span>4,800</span>
@@ -373,16 +373,16 @@ export function CoinTrackHeroMockup() {
               <div className='flex-1 flex flex-col justify-between relative'>
                 {/* Horizontal Guide Lines */}
                 <div className='absolute inset-0 flex flex-col justify-between pointer-events-none pb-6 opacity-40'>
-                  <div className='border-b border-dashed border-neutral-200 w-full' />
-                  <div className='border-b border-dashed border-neutral-200 w-full' />
-                  <div className='border-b border-dashed border-neutral-200 w-full' />
-                  <div className='border-b border-dashed border-neutral-200 w-full' />
-                  <div className='border-b border-neutral-200 w-full' />
+                  <div className='border-b border-dashed border-neutral-200 dark:border-neutral-800 w-full' />
+                  <div className='border-b border-dashed border-neutral-200 dark:border-neutral-800 w-full' />
+                  <div className='border-b border-dashed border-neutral-200 dark:border-neutral-800 w-full' />
+                  <div className='border-b border-dashed border-neutral-200 dark:border-neutral-800 w-full' />
+                  <div className='border-b border-neutral-200 dark:border-neutral-800 w-full' />
                 </div>
 
                 {/* Bars Row */}
                 <div className='flex items-end justify-between gap-1 sm:gap-2 h-full pb-6 px-1 relative z-10'>
-                  {CHART_MONTHS.map(item => {
+                  {CHART_MONTHS.map((item, idx) => {
                     const maxScale = 12000;
                     const messengerHeight = Math.min(
                       78,
@@ -393,6 +393,12 @@ export function CoinTrackHeroMockup() {
                       (item.sales / maxScale) * 100
                     );
                     const isSelected = selectedMonth === item.month;
+                    const tooltipPosClass =
+                      idx < 2
+                        ? 'left-0'
+                        : idx > CHART_MONTHS.length - 3
+                          ? 'right-0'
+                          : '-left-1/2 translate-x-1/4';
 
                     return (
                       <div
@@ -404,7 +410,7 @@ export function CoinTrackHeroMockup() {
                         {isSelected && !item.isHatched && (
                           <motion.div
                             layoutId='chart-tooltip'
-                            className='absolute -top-16 z-30 bg-white rounded-xl shadow-lg border border-neutral-200/90 p-2 text-left min-w-[110px] pointer-events-none'
+                            className={`absolute -top-16 z-30 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200/90 dark:border-neutral-800 p-2 text-left min-w-[110px] pointer-events-none ${tooltipPosClass}`}
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{
@@ -413,21 +419,21 @@ export function CoinTrackHeroMockup() {
                               damping: 25,
                             }}
                           >
-                            <span className='font-display font-bold text-[11px] text-neutral-900 block'>
+                            <span className='font-display font-bold text-[11px] text-neutral-900 dark:text-white block'>
                               {item.month === 'Jun'
                                 ? 'June 2026'
                                 : `${item.month} 2026`}
                             </span>
-                            <div className='flex items-center gap-1.5 text-[10px] text-neutral-600 mt-1'>
+                            <div className='flex items-center gap-1.5 text-[10px] text-neutral-600 dark:text-neutral-400 mt-1'>
                               <span className='size-1.5 rounded-full bg-[#2563eb]' />
                               <span>Messenger</span>
                             </div>
-                            <div className='flex items-center justify-between gap-2 text-[10px] text-neutral-600 mt-0.5'>
+                            <div className='flex items-center justify-between gap-2 text-[10px] text-neutral-600 dark:text-neutral-400 mt-0.5'>
                               <div className='flex items-center gap-1.5'>
                                 <span className='size-1.5 rounded-full bg-[#f97316]' />
                                 <span>Sales</span>
                               </div>
-                              <span className='font-mono font-semibold text-neutral-900'>
+                              <span className='font-mono font-semibold text-neutral-900 dark:text-white'>
                                 ${item.sales.toLocaleString()}
                               </span>
                             </div>
@@ -437,7 +443,7 @@ export function CoinTrackHeroMockup() {
                         {/* Bar Structure */}
                         {item.isHatched ? (
                           /* Oct Hatched Bar */
-                          <div className='w-full max-w-[32px] h-[48%] rounded-t-xl bg-[repeating-linear-gradient(45deg,#f1f5f9,#f1f5f9_4px,#e2e8f0_4px,#e2e8f0_8px)] border border-dashed border-slate-300 transition-transform group-hover:scale-105' />
+                          <div className='w-full max-w-[32px] h-[48%] rounded-t-xl bg-[repeating-linear-gradient(45deg,#f1f5f9,#f1f5f9_4px,#e2e8f0_4px,#e2e8f0_8px)] dark:bg-[repeating-linear-gradient(45deg,#1e293b,#1e293b_4px,#334155_4px,#334155_8px)] border border-dashed border-slate-300 dark:border-slate-700 transition-transform group-hover:scale-105' />
                         ) : (
                           /* Stacked Bars */
                           <div className='w-full max-w-[32px] flex flex-col items-center gap-1 transition-transform duration-200 group-hover:scale-105'>
@@ -460,10 +466,10 @@ export function CoinTrackHeroMockup() {
 
                         {/* Month Label */}
                         <span
-                          className={`absolute -bottom-5 text-[10px] sm:text-[11px] transition-colors ${
+                          className={`absolute -bottom-5 text-[9px] min-[400px]:text-[10px] sm:text-[11px] transition-colors ${
                             isSelected
-                              ? 'font-bold text-neutral-950'
-                              : 'text-neutral-400 group-hover:text-neutral-700'
+                              ? 'font-bold text-neutral-950 dark:text-white'
+                              : 'text-neutral-400 group-hover:text-neutral-700 dark:text-neutral-400 dark:group-hover:text-neutral-200'
                           }`}
                         >
                           {item.month}
@@ -480,32 +486,32 @@ export function CoinTrackHeroMockup() {
         {/* ── RIGHT COLUMN (2 STACKED CARDS) ── */}
         <div className='w-full md:w-72 lg:w-80 space-y-4 shrink-0'>
           {/* Card 1: AI reply suggestions */}
-          <div className='rounded-[28px] border border-neutral-200/80 bg-white overflow-hidden shadow-xs'>
+          <div className='rounded-[28px] border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden shadow-xs'>
             {/* Top Mock Area with sky blue gradient */}
-            <div className='bg-gradient-to-b from-[#e8f1fb] to-[#f4f7fa] p-4 sm:p-5 space-y-2.5'>
+            <div className='bg-gradient-to-b from-[#e8f1fb] to-[#f4f7fa] dark:from-neutral-900 dark:to-neutral-900/60 p-4 sm:p-5 space-y-2.5'>
               {/* Bubble 1 */}
-              <div className='bg-white rounded-2xl p-3 text-xs font-medium text-neutral-800 shadow-xs max-w-[85%] ml-auto text-right leading-relaxed border border-blue-50/60'>
+              <div className='bg-white dark:bg-neutral-950/80 rounded-2xl p-3 text-xs font-medium text-neutral-800 dark:text-neutral-200 shadow-xs max-w-[85%] ml-auto text-right leading-relaxed border border-blue-50/60 dark:border-neutral-800'>
                 You have to be replying to chats faster.
               </div>
 
               {/* Bubble 2 */}
-              <div className='bg-white rounded-2xl p-3 text-xs font-medium text-neutral-800 shadow-xs max-w-[80%] ml-auto text-right leading-relaxed border border-blue-50/60'>
+              <div className='bg-white dark:bg-neutral-950/80 rounded-2xl p-3 text-xs font-medium text-neutral-800 dark:text-neutral-200 shadow-xs max-w-[80%] ml-auto text-right leading-relaxed border border-blue-50/60 dark:border-neutral-800'>
                 This is the perfect comment.
               </div>
 
               {/* Generating pill */}
-              <div className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-xs text-blue-600 text-[11px] font-medium shadow-xs border border-blue-100'>
-                <Sparkles className='size-3 text-blue-500 animate-spin' />
+              <div className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 dark:bg-neutral-950/90 backdrop-blur-xs text-blue-600 dark:text-blue-400 text-[11px] font-medium shadow-xs border border-blue-100 dark:border-neutral-800'>
+                <Sparkles className='size-3 text-blue-500 dark:text-blue-400 animate-spin' />
                 <span>Generating reply...</span>
               </div>
             </div>
 
             {/* Bottom Text Area */}
             <div className='p-5 space-y-1.5'>
-              <h4 className='font-display font-bold text-sm text-neutral-950 tracking-tight'>
+              <h4 className='font-display font-bold text-sm text-neutral-950 dark:text-white tracking-tight'>
                 AI reply suggestions
               </h4>
-              <p className='text-xs text-neutral-500 leading-relaxed'>
+              <p className='text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed'>
                 Drafts a tone-matched response in two seconds whenever the inbox
                 queue tips over five threads.
               </p>
@@ -513,15 +519,15 @@ export function CoinTrackHeroMockup() {
           </div>
 
           {/* Card 2: Lead quality */}
-          <div className='rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-xs'>
+          <div className='rounded-[28px] border border-neutral-200/80 bg-white dark:bg-neutral-950 p-5 shadow-xs'>
             {/* Header */}
             <div className='flex items-center justify-between mb-3'>
-              <span className='font-display font-bold text-sm text-neutral-950'>
+              <span className='font-display font-bold text-sm text-neutral-950 dark:text-white'>
                 Lead quality
               </span>
               <button
                 type='button'
-                className='text-neutral-400 hover:text-neutral-700'
+                className='text-neutral-400 hover:text-neutral-700 dark:text-neutral-300'
                 aria-label='Options'
               >
                 <MoreHorizontal className='size-4' />
@@ -584,7 +590,7 @@ export function CoinTrackHeroMockup() {
 
               {/* Center Counter */}
               <div className='absolute bottom-1 flex flex-col items-center leading-tight'>
-                <span className='font-display text-2xl font-extrabold text-neutral-950 tracking-tight'>
+                <span className='font-display text-2xl font-extrabold text-neutral-950 dark:text-white tracking-tight'>
                   1,000
                 </span>
                 <span className='text-[10px] text-neutral-400 font-medium'>

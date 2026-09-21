@@ -112,7 +112,7 @@ export default function NotFound() {
           </div>
         </header>
 
-        <main className='flex-1 flex flex-col justify-center px-4 sm:px-8 py-10 sm:py-16 relative z-10'>
+        <main className='flex-1 flex flex-col justify-center px-4 sm:px-8 pt-10 pb-36 sm:pt-16 sm:pb-44 lg:pb-48 relative z-10'>
           <div className='w-full max-w-6xl mx-auto'>
             <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10'>
               <section className='lg:col-span-7 relative'>
@@ -260,14 +260,16 @@ export default function NotFound() {
         </main>
 
         {/* Scroll Down Button */}
-        <div
-          className='absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 animate-bounce cursor-pointer'
-          onClick={scrollToFooter}
-        >
-          <span className='text-[10px] uppercase tracking-widest text-muted-foreground'>
-            Scroll
-          </span>
-          <ChevronDown className='size-5 text-muted-foreground' />
+        <div className='fixed bottom-3 sm:bottom-4 lg:bottom-6 inset-x-0 z-20 flex justify-center pointer-events-none'>
+          <div
+            className='flex flex-col items-center gap-1.5 sm:gap-2 animate-bounce cursor-pointer pointer-events-auto'
+            onClick={scrollToFooter}
+          >
+            <span className='text-[10px] uppercase tracking-widest text-muted-foreground font-semibold'>
+              Scroll
+            </span>
+            <ChevronDown className='size-4 sm:size-5 text-muted-foreground' />
+          </div>
         </div>
       </div>
 

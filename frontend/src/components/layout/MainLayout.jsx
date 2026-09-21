@@ -9,9 +9,20 @@ import { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { PendingVerificationBanner } from '@/components/ui/data-display/pending-verification-banner';
+import { useAuth } from '@/contexts/AuthContext';
+import { authAPI } from '@/lib/api';
 
 export default function MainLayout({ children }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { user } = useAuth();
+
+  const handleResendVerification = async () => {
+    try {
+      await authAPI.resendEmailVerification();
+    } catch (err) {
+      console.error('Failed to resend verification:', err);
+    }
+  };
 
   return (
     <div className='relative min-h-screen bg-background text-foreground'>
@@ -35,9 +46,13 @@ export default function MainLayout({ children }) {
         <Header onMenuClick={() => setIsMobileOpen(true)} />
 
         {/* Verification Banner - displays if user is authenticated but not verified */}
-        <PendingVerificationBanner
-          isVerified={false} // Will be replaced with user?.isEmailVerified when API supports it
-        />
+        {user && !user.emailVerified && (
+          <PendingVerificationBanner
+            isVerified={user.emailVerified}
+            userEmail={user.email}
+            onResend={handleResendVerification}
+          />
+        )}
 
         <main className='flex-1 px-4 md:px-10 lg:px-14 py-8 md:py-12 max-w-[1600px] w-full'>
           {children}

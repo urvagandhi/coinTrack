@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Runs against the embedded Mongo (test profile). Requires the deployment (or embedded instance)
  * to be a replica set for transactions to be supported.
  */
-@SpringBootTest
+@SpringBootTest(classes = com.urva.myfinance.coinTrack.FinanceDashboardApplication.class)
 @ActiveProfiles("test")
 @Import(MongoTransactionSupportTest.ProbeService.class)
 class MongoTransactionSupportTest {

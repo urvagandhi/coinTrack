@@ -68,7 +68,7 @@ export default function CoinTrackLandingPage() {
   return (
     <div
       ref={containerRef}
-      className='min-h-screen scroll-smooth bg-[#e8f1fb] text-neutral-900 selection:bg-neutral-900 selection:text-white font-sans relative overflow-x-hidden'
+      className='min-h-screen scroll-smooth bg-[#e8f1fb] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white font-sans relative overflow-x-hidden'
     >
       {/* ── TOP SCROLL PROGRESS BAR ── */}
       <motion.div
@@ -114,7 +114,7 @@ export default function CoinTrackLandingPage() {
             {/* Headline */}
             <motion.h1
               variants={fadeInUp}
-              className='font-display font-extrabold text-4xl sm:text-6xl md:text-7xl lg:text-[82px] text-neutral-950 tracking-tight leading-[1.04]'
+              className='font-display font-extrabold text-3xl min-[380px]:text-4xl sm:text-6xl md:text-7xl lg:text-[82px] text-neutral-950 dark:text-white tracking-tight leading-[1.06] sm:leading-[1.04]'
             >
               See your entire wealth in one clear, quiet view.
             </motion.h1>
@@ -122,7 +122,7 @@ export default function CoinTrackLandingPage() {
             {/* Subtitle */}
             <motion.p
               variants={fadeInUp}
-              className='text-neutral-700/90 text-sm sm:text-base md:text-lg lg:text-xl font-normal max-w-2xl mx-auto mt-6 leading-relaxed'
+              className='text-neutral-700/90 dark:text-neutral-300/90 text-xs min-[380px]:text-sm sm:text-base md:text-lg lg:text-xl font-normal max-w-2xl mx-auto mt-4 sm:mt-6 leading-relaxed'
             >
               Connect Zerodha, Upstox, and Angel One with your statutory EPF,
               PPF, mutual funds, and gold bullion. coinTrack unifies your
@@ -133,12 +133,12 @@ export default function CoinTrackLandingPage() {
             {/* Call to Action Buttons (Linking only to Design Lab sandbox) */}
             <motion.div
               variants={fadeInUp}
-              className='flex flex-col sm:flex-row items-center justify-center gap-3.5 mt-8'
+              className='flex flex-col sm:flex-row items-center justify-center gap-3.5 mt-6 sm:mt-8'
             >
               <Button
                 asChild
                 size='xl'
-                className='w-full sm:w-auto rounded-full bg-neutral-950 hover:bg-neutral-850 text-white font-semibold text-sm px-7 py-3.5 shadow-lg hover:shadow-xl transition-all active:scale-[0.97]'
+                className='w-full sm:w-auto rounded-full bg-neutral-950 hover:bg-neutral-850 dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 text-white font-semibold text-xs sm:text-sm px-6 sm:px-7 py-3 sm:py-3.5 shadow-lg hover:shadow-xl transition-all active:scale-[0.97]'
               >
                 <Link href='/design-lab/dashboard'>
                   <span>Launch Interactive Demo</span>
@@ -150,11 +150,11 @@ export default function CoinTrackLandingPage() {
                 asChild
                 variant='secondary'
                 size='xl'
-                className='w-full sm:w-auto rounded-full bg-white/90 hover:bg-white text-neutral-900 font-semibold text-sm px-6 py-3.5 border border-neutral-200/90 shadow-sm transition-all active:scale-[0.97]'
+                className='w-full sm:w-auto rounded-full bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-neutral-900 dark:text-neutral-100 font-semibold text-xs sm:text-sm px-5 sm:px-6 py-3 sm:py-3.5 border border-neutral-200/90 dark:border-neutral-800 shadow-sm transition-all active:scale-[0.97]'
               >
                 <Link href='/design-lab'>
                   <span>Explore Design Lab Primitives</span>
-                  <ArrowUpRight className='size-4 ml-1 text-neutral-500' />
+                  <ArrowUpRight className='size-4 ml-1 text-neutral-500 dark:text-neutral-400' />
                 </Link>
               </Button>
             </motion.div>
@@ -164,7 +164,7 @@ export default function CoinTrackLandingPage() {
           <div
             ref={heroRef}
             id='overview'
-            className='mt-14 sm:mt-20 scroll-mt-28'
+            className='relative mt-10 sm:mt-20 scroll-mt-28'
             style={{ perspective: 1200 }}
           >
             <motion.div
@@ -189,7 +189,7 @@ export default function CoinTrackLandingPage() {
         {/* ── SEAMLESS TRANSITION FROM CLOUD TO CRISP WHITE ── */}
         <div
           aria-hidden='true'
-          className='relative z-10 h-[30vh] min-h-[300px] bg-gradient-to-b from-transparent via-white/60 to-white pointer-events-none'
+          className='relative z-10 h-[30vh] min-h-[300px] bg-gradient-to-b from-transparent via-white/60 to-white dark:via-neutral-950/60 dark:to-neutral-950 pointer-events-none'
           style={{ marginBottom: '-1px' }}
         />
 
@@ -199,13 +199,16 @@ export default function CoinTrackLandingPage() {
         </div> */}
 
         {/* ── SECTION 5: PRICING (On pure crisp white backdrop) ── */}
-        <div id='pricing' className='relative z-10 bg-white scroll-mt-28'>
+        <div
+          id='pricing'
+          className='relative z-10 bg-white dark:bg-neutral-950 scroll-mt-28'
+        >
           <CoinTrackPricing />
         </div>
 
         {/* ── SECTION 6: READY CTA BANNER (Links strictly to Design Lab) ── */}
-        <section className='py-16 px-4 sm:px-6 relative z-10 bg-white'>
-          <div className='max-w-5xl mx-auto rounded-[36px] bg-neutral-950 text-white p-8 sm:p-12 md:p-16 text-center relative overflow-hidden shadow-2xl'>
+        <section className='py-12 sm:py-16 px-3 sm:px-6 relative z-10 bg-white dark:bg-neutral-950'>
+          <div className='max-w-5xl mx-auto rounded-2xl min-[400px]:rounded-[32px] sm:rounded-[36px] bg-neutral-950 text-white p-6 min-[400px]:p-8 sm:p-12 md:p-16 text-center relative overflow-hidden shadow-2xl'>
             <div className='absolute -right-20 -bottom-20 w-80 h-80 bg-blue-600/30 rounded-full blur-3xl pointer-events-none' />
             <div className='absolute -left-20 -top-20 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl pointer-events-none' />
 

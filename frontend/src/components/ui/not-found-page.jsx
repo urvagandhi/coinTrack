@@ -1,14 +1,20 @@
 'use client';
 
-import Link from 'next/link';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { ArrowLeft, Compass, LogIn, ChevronDown } from 'lucide-react';
-import { CoinTrackNavbar } from '@/components/ui/coinTrack/cointrack-navbar';
 import { CoinTrackFooter } from '@/components/ui/coinTrack/cointrack-footer';
+import { CoinTrackNavbar } from '@/components/ui/coinTrack/cointrack-navbar';
 import { CoinTrackSkyBackground } from '@/components/ui/coinTrack/cointrack-sky-background';
-import { useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { SpotlightInput } from '@/components/ui/primitives/spotlight-input';
+import {
+  motion,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+} from 'framer-motion';
+import { ArrowLeft, ChevronDown, Compass, LogIn } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useRef, useState } from 'react';
 
 const SEARCH_SUGGESTIONS = [
   {
@@ -76,11 +82,14 @@ export function NotFoundPage() {
     mouseY.set(0);
   };
 
+  const { scrollY } = useScroll();
+  const scrollOpacity = useTransform(scrollY, [0, 50], [1, 0]);
+
   return (
     <div
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className='min-h-screen w-full bg-[#e8f1fb] text-neutral-900 selection:bg-neutral-900 selection:text-white font-sans relative overflow-x-hidden flex flex-col'
+      className='min-h-screen w-full bg-[#e8f1fb] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white font-sans relative overflow-x-hidden flex flex-col'
     >
       {/* ─────────────────────────────────────────────────────────────
           PINNED CLOUDY SKY BACKGROUND LAYER (LANDING PAGE STYLE)
@@ -93,7 +102,7 @@ export function NotFoundPage() {
         <CoinTrackNavbar />
 
         {/* ── MAIN 404 HERO CONTENT ── */}
-        <main className='flex-1 flex flex-col items-center justify-center text-center px-4 pt-16 pb-24 sm:pt-20 sm:pb-32'>
+        <main className='flex-1 flex flex-col items-center justify-center text-center px-4 pt-20 pb-44 sm:pt-28 sm:pb-56 lg:pb-64'>
           {/* Big 404 Display with PERFECT HARMONIC SPACING */}
           <div className='relative flex items-center justify-center gap-1 sm:gap-2.5 md:gap-3.5 lg:gap-4 tracking-tighter font-extrabold select-none'>
             {/* Shared SVG Filters for Fluffy Fur Texture */}
@@ -145,29 +154,29 @@ export function NotFoundPage() {
             </svg>
 
             {/* LEFT FLUFFY HAIRY '4' */}
-            <div className='relative w-[110px] h-[150px] sm:w-[170px] sm:h-[220px] md:w-[210px] md:h-[270px] lg:w-[240px] lg:h-[310px] flex items-center justify-center drop-shadow-[0_15px_30px_rgba(37,99,235,0.35)]'>
+            <div className='relative w-[65px] h-[85px] min-[360px]:w-[80px] min-[360px]:h-[110px] min-[420px]:w-[100px] min-[420px]:h-[135px] sm:w-[140px] sm:h-[180px] md:w-[170px] md:h-[215px] lg:w-[200px] lg:h-[255px] xl:w-[230px] xl:h-[295px] flex items-center justify-center drop-shadow-[0_15px_30px_rgba(37,99,235,0.35)]'>
               <svg
                 viewBox='0 0 200 260'
                 className='w-full h-full overflow-visible'
               >
                 <path
-                  d='M 130 20 
-                   L 30 150 
-                   C 25 158, 25 170, 35 170 
-                   L 130 170 
-                   L 130 225 
-                   C 130 235, 140 245, 150 245 
-                   C 160 245, 170 235, 170 225 
-                   L 170 170 
-                   L 190 170 
-                   C 200 170, 205 160, 205 150 
-                   C 205 140, 200 135, 190 135 
-                   L 170 135 
-                   L 170 30 
-                   C 170 20, 160 10, 150 10 
-                   C 140 10, 130 20, 130 20 Z 
-                   M 130 75 
-                   L 130 135 
+                  d='M 130 20
+                   L 30 150
+                   C 25 158, 25 170, 35 170
+                   L 130 170
+                   L 130 225
+                   C 130 235, 140 245, 150 245
+                   C 160 245, 170 235, 170 225
+                   L 170 170
+                   L 190 170
+                   C 200 170, 205 160, 205 150
+                   C 205 140, 200 135, 190 135
+                   L 170 135
+                   L 170 30
+                   C 170 20, 160 10, 150 10
+                   C 140 10, 130 20, 130 20 Z
+                   M 130 75
+                   L 130 135
                    L 75 135 Z'
                   fill='url(#fluffyGradient3D)'
                   filter='url(#fluffyFurFour)'
@@ -187,7 +196,7 @@ export function NotFoundPage() {
             {/* MIDDLE 3D MASCOT CHARACTER */}
             <motion.div
               style={{ rotate: headRotate }}
-              className='relative w-[110px] h-[150px] sm:w-[170px] sm:h-[220px] md:w-[210px] md:h-[270px] lg:w-[240px] lg:h-[310px] flex items-center justify-center z-10'
+              className='relative w-[65px] h-[85px] min-[360px]:w-[80px] min-[360px]:h-[110px] min-[420px]:w-[100px] min-[420px]:h-[135px] sm:w-[140px] sm:h-[180px] md:w-[170px] md:h-[215px] lg:w-[200px] lg:h-[255px] xl:w-[230px] xl:h-[295px] flex items-center justify-center z-10'
             >
               {/* Ambient Shadow under Mascot */}
               <div className='absolute bottom-2 inset-x-4 h-7 bg-blue-950/30 blur-xl rounded-full' />
@@ -211,10 +220,10 @@ export function NotFoundPage() {
 
                 {/* Main 3D Fluffy Body */}
                 <path
-                  d='M 150 35 
-                   C 225 35, 255 75, 255 155 
-                   C 255 230, 225 265, 150 265 
-                   C 75 265, 45 230, 45 155 
+                  d='M 150 35
+                   C 225 35, 255 75, 255 155
+                   C 255 230, 225 265, 150 265
+                   C 75 265, 45 230, 45 155
                    C 45 75, 75 35, 150 35 Z'
                   fill='url(#fluffyGradient3D)'
                   filter='url(#fluffyFurFour)'
@@ -320,29 +329,29 @@ export function NotFoundPage() {
             </motion.div>
 
             {/* RIGHT FLUFFY HAIRY '4' (BALANCED SUBTLE OFFSET) */}
-            <div className='relative w-[110px] h-[150px] sm:w-[170px] sm:h-[220px] md:w-[210px] md:h-[270px] lg:w-[240px] lg:h-[310px] flex items-center justify-center drop-shadow-[0_15px_30px_rgba(37,99,235,0.35)] -ml-1 sm:-ml-2 md:-ml-3 lg:-ml-4'>
+            <div className='relative w-[65px] h-[85px] min-[360px]:w-[80px] min-[360px]:h-[110px] min-[420px]:w-[100px] min-[420px]:h-[135px] sm:w-[140px] sm:h-[180px] md:w-[170px] md:h-[215px] lg:w-[200px] lg:h-[255px] xl:w-[230px] xl:h-[295px] flex items-center justify-center drop-shadow-[0_15px_30px_rgba(37,99,235,0.35)] -ml-1 sm:-ml-2 md:-ml-3 lg:-ml-4'>
               <svg
                 viewBox='0 0 200 260'
                 className='w-full h-full overflow-visible'
               >
                 <path
-                  d='M 130 20 
-                   L 30 150 
-                   C 25 158, 25 170, 35 170 
-                   L 130 170 
-                   L 130 225 
-                   C 130 235, 140 245, 150 245 
-                   C 160 245, 170 235, 170 225 
-                   L 170 170 
-                   L 190 170 
-                   C 200 170, 205 160, 205 150 
-                   C 205 140, 200 135, 190 135 
-                   L 170 135 
-                   L 170 30 
-                   C 170 20, 160 10, 150 10 
-                   C 140 10, 130 20, 130 20 Z 
-                   M 130 75 
-                   L 130 135 
+                  d='M 130 20
+                   L 30 150
+                   C 25 158, 25 170, 35 170
+                   L 130 170
+                   L 130 225
+                   C 130 235, 140 245, 150 245
+                   C 160 245, 170 235, 170 225
+                   L 170 170
+                   L 190 170
+                   C 200 170, 205 160, 205 150
+                   C 205 140, 200 135, 190 135
+                   L 170 135
+                   L 170 30
+                   C 170 20, 160 10, 150 10
+                   C 140 10, 130 20, 130 20 Z
+                   M 130 75
+                   L 130 135
                    L 75 135 Z'
                   fill='url(#fluffyGradient3D)'
                   filter='url(#fluffyFurFour)'
@@ -361,16 +370,16 @@ export function NotFoundPage() {
           </div>
 
           {/* Heading & Subtitle */}
-          <div className='mt-4 sm:mt-6 space-y-2 max-w-2xl mx-auto relative z-20'>
-            <h1 className='text-3xl sm:text-4xl md:text-5xl font-extrabold text-neutral-950 tracking-tight leading-tight'>
+          <div className='mt-3 sm:mt-6 space-y-1.5 sm:space-y-2 max-w-2xl mx-auto relative z-20'>
+            <h1 className='text-xl min-[360px]:text-2xl min-[420px]:text-3xl sm:text-4xl md:text-5xl font-extrabold text-neutral-950 dark:text-white tracking-tight leading-tight'>
               Sorry, that page cannot be found
             </h1>
-            <p className='text-neutral-600 font-medium text-base sm:text-xl'>
+            <p className='text-neutral-600 dark:text-neutral-300 font-medium text-xs min-[400px]:text-sm sm:text-xl'>
               Let&apos;s get you back to somewhere familiar
             </p>
           </div>
 
-          <div className='mt-8 max-w-md w-full mx-auto text-left relative z-40'>
+          <div className='mt-4 sm:mt-8 max-w-md w-full mx-auto text-left relative z-40'>
             <SpotlightInput
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
@@ -386,31 +395,39 @@ export function NotFoundPage() {
           </div>
 
           {/* Action Button */}
-          <div className='mt-8 flex flex-wrap items-center justify-center gap-3 relative z-30'>
+          <div className='mt-4 sm:mt-8 flex flex-wrap items-center justify-center gap-3 relative z-30'>
             <Link
               href='/'
-              className='inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-neutral-950 hover:bg-neutral-800 text-white font-bold text-base shadow-[0_10px_30px_rgba(0,0,0,0.15)] hover:shadow-[0_14px_40px_rgba(0,0,0,0.25)] transition-all transform hover:-translate-y-0.5 active:translate-y-0'
+              className='inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-full bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 font-bold text-sm sm:text-base shadow-[0_10px_30px_rgba(0,0,0,0.15)] hover:shadow-[0_14px_40px_rgba(0,0,0,0.25)] transition-all transform hover:-translate-y-0.5 active:translate-y-0'
             >
-              <ArrowLeft className='w-5 h-5 text-white/90' />
+              <ArrowLeft className='w-4 h-4 sm:w-5 sm:h-5 text-white/90 dark:text-neutral-950/90' />
               <span>Go to Home</span>
             </Link>
           </div>
         </main>
 
         {/* Scroll Down Button */}
-        <div
-          className='absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 animate-bounce cursor-pointer'
-          onClick={scrollToFooter}
+        <motion.div
+          style={{ opacity: scrollOpacity }}
+          className='fixed bottom-0 sm:bottom-0 lg:bottom-0 inset-x-0 z-20 flex justify-center pointer-events-none'
         >
-          <span className='text-[10px] uppercase tracking-widest text-neutral-600 font-semibold'>
-            Scroll
-          </span>
-          <ChevronDown className='size-5 text-neutral-600' />
-        </div>
+          <div
+            className='flex flex-col items-center gap-1.5 sm:gap-2 animate-bounce cursor-pointer pointer-events-auto'
+            onClick={scrollToFooter}
+          >
+            <span className='text-[10px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400 font-semibold'>
+              Scroll
+            </span>
+            <ChevronDown className='size-4 sm:size-5 text-neutral-600 dark:text-neutral-400' />
+          </div>
+        </motion.div>
       </div>
 
       {/* ── FOOTER ── */}
-      <div ref={footerRef} className='w-full relative z-10 bg-white'>
+      <div
+        ref={footerRef}
+        className='w-full relative z-10 bg-white dark:bg-neutral-950'
+      >
         <CoinTrackFooter />
       </div>
     </div>

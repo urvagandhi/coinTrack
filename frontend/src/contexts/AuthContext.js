@@ -261,7 +261,11 @@ export function AuthProvider({ children }) {
       if (response.success && response.data) response = response.data;
 
       // CASE 0: Profile Completion Required
-      if (response.profileComplete === false && response.tempToken) {
+      if (
+        response.profileComplete === false &&
+        response.tempToken &&
+        !response.requireTotpSetup
+      ) {
         logger.info('Google Login requires profile completion', {
           userId: response.userId,
         });
@@ -272,9 +276,27 @@ export function AuthProvider({ children }) {
           tempToken: response.tempToken,
           userId: response.userId,
           email: response.email,
-          name: response.firstName
-            ? `${response.firstName} ${response.lastName || ''}`.trim()
-            : '',
+          name: response.name
+            ? response.name
+            : response.firstName
+              ? `${response.firstName} ${response.lastName || ''}`.trim()
+              : '',
+        };
+      }
+
+      // CASE 0.5: TOTP setup required (resumed pending registration)
+      if (response.requireTotpSetup && response.tempToken) {
+        logger.info('Google Login requires TOTP setup', {
+          username: response.username,
+        });
+        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+        return {
+          success: true,
+          requireTotpSetup: true,
+          tempToken: response.tempToken,
+          userId: response.userId,
+          username: response.username,
+          message: response.message,
         };
       }
 
@@ -382,7 +404,11 @@ export function AuthProvider({ children }) {
         'Profile completion failed';
       logger.error('Profile completion failed', { error: errorMessage });
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
-      return { success: false, error: errorMessage };
+      return {
+        success: false,
+        error: errorMessage,
+        fieldErrors: error.fieldErrors,
+      };
     }
   }, []);
 

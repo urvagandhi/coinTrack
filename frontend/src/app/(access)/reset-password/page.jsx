@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { passwordAPI } from '@/lib/api';
 import { ResetPasswordScreen } from '@/components/ui/auth/reset-password-screen';
+import { passwordAPI } from '@/lib/api';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [step, setStep] = useState('verifying');
   const [tempToken, setTempToken] = useState('');
   const [error, setError] = useState('');
@@ -40,36 +41,54 @@ function ResetPasswordContent() {
     verifyToken(token);
   }, [searchParams, verifyToken]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = useCallback(
     async ({ password }) => {
       setError('');
       if (!tempToken) return;
 
+      setIsSubmitting(true);
       try {
         await passwordAPI.reset(tempToken, password);
-        setStep('success');
+        router.push(
+          '/login?message=Password reset successful. You can now log in.'
+        );
       } catch (err) {
-        setError(err.message || 'Failed to reset password. Please try again.');
+        setError(
+          err.message ||
+            'Failed to reset password. Please check password requirements and try again.'
+        );
+        setIsSubmitting(false);
       }
     },
-    [tempToken]
+    [tempToken, router]
   );
 
   const handleBackToLogin = useCallback(() => {
-    window.location.href = '/login';
-  }, []);
+    router.push('/login');
+  }, [router]);
 
   return (
     <ResetPasswordScreen
       isTokenValid={step !== 'error'}
       onSubmit={step === 'form' ? handleSubmit : undefined}
       onBackToLogin={handleBackToLogin}
-      isLoading={step === 'verifying'}
+      isLoading={step === 'verifying' || isSubmitting}
       errorMessage={step === 'form' ? error : message || undefined}
     />
   );
 }
-
 export default function ResetPasswordPage() {
-  return <ResetPasswordContent />;
+  return (
+    <Suspense
+      fallback={
+        <div className='min-h-screen flex items-center justify-center bg-background'>
+          <div className='w-5 h-5 border border-hairline border-t-foreground rounded-full animate-spin' />
+        </div>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
+  );
 }

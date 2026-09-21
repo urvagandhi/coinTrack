@@ -9,6 +9,7 @@ import com.urva.myfinance.coinTrack.email.model.EmailToken;
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmailTokenException;
+import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 import com.urva.myfinance.coinTrack.user.service.TotpService;
@@ -37,6 +38,7 @@ class TwoFactorRecoveryControllerTest {
   @Mock private EmailConfigProperties emailConfig;
   @Mock private UserRepository userRepository;
   @Mock private TotpService totpService;
+  @Mock private JWTService jwtService;
   @Mock private HttpServletRequest httpRequest;
 
   @InjectMocks private TwoFactorRecoveryController controller;

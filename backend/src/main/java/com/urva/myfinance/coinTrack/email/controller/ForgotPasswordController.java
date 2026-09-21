@@ -1,5 +1,21 @@
 package com.urva.myfinance.coinTrack.email.controller;
 
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.crypto.SecretKey;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.urva.myfinance.coinTrack.common.response.ApiResponse;
 import com.urva.myfinance.coinTrack.common.util.RequestUtils;
 import com.urva.myfinance.coinTrack.common.util.UserLookupUtil;
@@ -11,35 +27,28 @@ import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmail
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Date;
-import java.util.Map;
-import java.util.Optional;
-import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Controller for forgot password flow.
  *
- * <p>Flow: 1. POST /auth/forgot-password - Request password reset (email/username/mobile) 2. POST
- * /auth/forgot-password/verify - Verify reset token, return temp JWT 3. POST /auth/reset-password -
+ * <p>
+ * Flow: 1. POST /auth/forgot-password - Request password reset
+ * (email/username/mobile) 2. POST
+ * /auth/forgot-password/verify - Verify reset token, return temp JWT 3. POST
+ * /auth/reset-password -
  * Reset password with temp JWT
  *
- * <p>Security: - Always return neutral response (no user enumeration) - Token is single-use and
+ * <p>
+ * Security: - Always return neutral response (no user enumeration) - Token is
+ * single-use and
  * short-lived - All sessions invalidated on password reset
  */
 @RestController
@@ -59,7 +68,8 @@ public class ForgotPasswordController {
   private final JWTService jwtService;
 
   /**
-   * Request password reset. Accepts email, username, or mobile number. Always returns success
+   * Request password reset. Accepts email, username, or mobile number. Always
+   * returns success
    * message (no user enumeration).
    */
   @Operation(summary = "Request a password reset link")
@@ -81,8 +91,7 @@ public class ForgotPasswordController {
       User user = userOpt.get();
 
       // Create token and send email
-      String token =
-          emailTokenService.createToken(user, EmailToken.PURPOSE_PASSWORD_RESET, httpRequest);
+      String token = emailTokenService.createToken(user, EmailToken.PURPOSE_PASSWORD_RESET, httpRequest);
       String magicLink = emailConfig.getPasswordResetUrl(token);
 
       // Send email (non-blocking - don't fail if email fails)
@@ -93,12 +102,18 @@ public class ForgotPasswordController {
       }
 
       logger.info("Password reset requested: userId={}", user.getId());
+
+      return ResponseEntity.ok(
+          ApiResponse.success(
+              Map.of(
+                  "message",
+                  "If an account exists with this identifier, you will receive a password reset link")));
     } else {
       // Log but don't reveal to user (prevent enumeration)
       logger.info("Password reset requested for unknown identifier: {}", identifier);
     }
 
-    // Always return same response (no enumeration)
+    // Always return same generic response for unknown users to prevent enumeration
     return ResponseEntity.ok(
         ApiResponse.success(
             Map.of(
@@ -107,7 +122,8 @@ public class ForgotPasswordController {
   }
 
   /**
-   * Verify password reset token and return temporary JWT. The temp JWT is used to authorize the
+   * Verify password reset token and return temporary JWT. The temp JWT is used to
+   * authorize the
    * actual password reset.
    */
   @Operation(summary = "Verify password reset token")
@@ -121,15 +137,13 @@ public class ForgotPasswordController {
 
     try {
       // Validate token
-      EmailToken emailToken =
-          emailTokenService.validateToken(token, EmailToken.PURPOSE_PASSWORD_RESET);
+      EmailToken emailToken = emailTokenService.validateToken(token, EmailToken.PURPOSE_PASSWORD_RESET);
 
       // Get user
       @SuppressWarnings("null")
-      User user =
-          userRepository
-              .findById(emailToken.getUserId())
-              .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
+      User user = userRepository
+          .findById(emailToken.getUserId())
+          .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
 
       // Mark token as used
       emailTokenService.markUsed(emailToken.getId());
@@ -190,10 +204,9 @@ public class ForgotPasswordController {
       String userId = claims.getSubject();
 
       // Get user
-      User user =
-          userRepository
-              .findById(userId)
-              .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
+      User user = userRepository
+          .findById(userId)
+          .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
 
       // Update password
       user.setPassword(passwordEncoder.encode(newPassword));
@@ -227,7 +240,10 @@ public class ForgotPasswordController {
     }
   }
 
-  /** Create temporary JWT for password reset. Short-lived (5 minutes), purpose-bound. */
+  /**
+   * Create temporary JWT for password reset. Short-lived (5 minutes),
+   * purpose-bound.
+   */
   private String createTempResetJwt(User user) {
     SecretKey key = Keys.hmacShaKeyFor(emailConfig.getMagicLinkSecret().getBytes());
 
@@ -257,7 +273,8 @@ public class ForgotPasswordController {
 
   /** Validate password strength. */
   private boolean isValidPassword(String password) {
-    if (password == null || password.length() < 8) return false;
-    return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#]).*$");
+    if (password == null || password.length() < 8 || password.length() > 100)
+      return false;
+    return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#^~_+=<>/-]).*$");
   }
 }

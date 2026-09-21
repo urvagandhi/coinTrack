@@ -11,18 +11,18 @@ export function CoinTrackFooter() {
   const { openModal } = useModal();
 
   return (
-    <footer className='border-t border-neutral-100 bg-white pt-16 pb-12 px-4 sm:px-6 relative z-10 text-neutral-800'>
+    <footer className='border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-950 pt-12 sm:pt-16 pb-8 sm:pb-12 px-3 sm:px-6 relative z-10 text-neutral-800 dark:text-neutral-200'>
       <div className='max-w-6xl mx-auto'>
-        <div className='grid grid-cols-1 md:grid-cols-12 gap-10 pb-12 border-b border-neutral-100'>
+        <div className='grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 pb-10 sm:pb-12 border-b border-neutral-100 dark:border-neutral-800'>
           {/* Brand Col: 5 cols */}
           <div className='md:col-span-5 space-y-4'>
             <CoinTrackLogo />
-            <p className='text-xs sm:text-sm text-neutral-500 max-w-sm leading-relaxed'>
+            <p className='text-xs sm:text-sm text-neutral-500 dark:text-neutral-500 max-w-sm leading-relaxed'>
               Institutional wealth tracking engineered for clarity. Synchronize
               Zerodha, Upstox, Angel One, mutual funds, EPF, PPF, gold, and
               fixed deposits in one quiet terminal.
             </p>
-            <div className='pt-2 flex items-center gap-2 text-xs text-neutral-500'>
+            <div className='pt-2 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-500'>
               <span className='size-2 rounded-full bg-emerald-500' />
               <span>
                 All broker connectors operational · 99.98% sync uptime
@@ -31,17 +31,17 @@ export function CoinTrackFooter() {
           </div>
 
           {/* Links Cols: 7 cols */}
-          <div className='md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8'>
+          <div className='md:col-span-7 grid grid-cols-2 min-[480px]:grid-cols-3 gap-6 sm:gap-8'>
             {/* Col 1: Platform */}
             <div>
-              <span className='font-display font-bold text-xs uppercase tracking-wider text-neutral-900 block mb-3.5'>
+              <span className='font-display font-bold text-xs uppercase tracking-wider text-neutral-900 dark:text-white block mb-3.5'>
                 Platform
               </span>
-              <ul className='space-y-2.5 text-xs text-neutral-600'>
+              <ul className='space-y-2.5 text-xs text-neutral-600 dark:text-neutral-400'>
                 <li>
                   <a
                     href='#features'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Broker Sync
                   </a>
@@ -49,7 +49,7 @@ export function CoinTrackFooter() {
                 <li>
                   <a
                     href='#intelligence'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Portfolio Copilot
                   </a>
@@ -57,7 +57,7 @@ export function CoinTrackFooter() {
                 <li>
                   <a
                     href='#overview'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Holdings Overview
                   </a>
@@ -65,7 +65,7 @@ export function CoinTrackFooter() {
                 <li>
                   <a
                     href='#pricing'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Plans &amp; Pricing
                   </a>
@@ -75,14 +75,14 @@ export function CoinTrackFooter() {
 
             {/* Col 2: Assets */}
             <div>
-              <span className='font-display font-bold text-xs uppercase tracking-wider text-neutral-900 block mb-3.5'>
+              <span className='font-display font-bold text-xs uppercase tracking-wider text-neutral-900 dark:text-white block mb-3.5'>
                 Asset Ledgers
               </span>
-              <ul className='space-y-2.5 text-xs text-neutral-600'>
+              <ul className='space-y-2.5 text-xs text-neutral-600 dark:text-neutral-400'>
                 <li>
                   <Link
                     href='/design-lab/dashboard'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Equities &amp; Demats
                   </Link>
@@ -90,7 +90,7 @@ export function CoinTrackFooter() {
                 <li>
                   <Link
                     href='/design-lab/dashboard'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Mutual Funds SIP
                   </Link>
@@ -98,7 +98,7 @@ export function CoinTrackFooter() {
                 <li>
                   <Link
                     href='/design-lab/dashboard'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     EPF &amp; PPF
                   </Link>
@@ -106,7 +106,7 @@ export function CoinTrackFooter() {
                 <li>
                   <Link
                     href='/design-lab/dashboard'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Gold &amp; Silver
                   </Link>
@@ -116,14 +116,14 @@ export function CoinTrackFooter() {
 
             {/* Col 3: Design Lab */}
             <div>
-              <span className='font-display font-bold text-xs uppercase tracking-wider text-neutral-900 block mb-3.5'>
+              <span className='font-display font-bold text-xs uppercase tracking-wider text-neutral-900 dark:text-white block mb-3.5'>
                 Design Lab
               </span>
-              <ul className='space-y-2.5 text-xs text-neutral-600'>
+              <ul className='space-y-2.5 text-xs text-neutral-600 dark:text-neutral-400'>
                 <li>
                   <Link
                     href='/design-lab'
-                    className='hover:text-neutral-950 transition-colors font-medium text-neutral-900'
+                    className='hover:text-neutral-950 dark:text-white transition-colors font-medium text-neutral-900 dark:text-white'
                   >
                     Design Lab Home
                   </Link>
@@ -131,7 +131,7 @@ export function CoinTrackFooter() {
                 <li>
                   <Link
                     href='/design-lab/dashboard'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Terminal Sandbox
                   </Link>
@@ -139,7 +139,7 @@ export function CoinTrackFooter() {
                 <li>
                   <Link
                     href='/design-lab/components'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     UI Primitives
                   </Link>
@@ -147,7 +147,7 @@ export function CoinTrackFooter() {
                 <li>
                   <Link
                     href='/design-lab/loaders'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Fluid Loaders
                   </Link>
@@ -155,7 +155,7 @@ export function CoinTrackFooter() {
                 <li>
                   <Link
                     href='/design-lab/login'
-                    className='hover:text-neutral-950 transition-colors'
+                    className='hover:text-neutral-950 dark:text-white transition-colors'
                   >
                     Auth Sandbox
                   </Link>
@@ -166,33 +166,33 @@ export function CoinTrackFooter() {
         </div>
 
         {/* Bottom Bar */}
-        <div className='flex flex-col sm:flex-row items-center justify-between pt-8 text-[11px] text-neutral-500 gap-4'>
+        <div className='flex flex-col sm:flex-row items-center justify-between pt-6 sm:pt-8 text-[11px] text-neutral-500 dark:text-neutral-500 gap-3 sm:gap-4 text-center sm:text-left'>
           <p>
             © {currentYear}{' '}
-            <span className='font-semibold text-neutral-900'>
+            <span className='font-semibold text-neutral-900 dark:text-white'>
               coinTrack Systems
             </span>
             . All rights reserved.
           </p>
-          <div className='flex items-center gap-4 sm:gap-6'>
+          <div className='flex flex-wrap items-center justify-center sm:justify-end gap-3.5 sm:gap-6'>
             <button
               type='button'
               onClick={() => openModal('privacy')}
-              className='hover:text-neutral-900 transition-colors cursor-pointer outline-none'
+              className='hover:text-neutral-900 dark:text-white transition-colors cursor-pointer outline-none'
             >
               Privacy Policy
             </button>
             <button
               type='button'
               onClick={() => openModal('terms')}
-              className='hover:text-neutral-900 transition-colors cursor-pointer outline-none'
+              className='hover:text-neutral-900 dark:text-white transition-colors cursor-pointer outline-none'
             >
               Terms of Service
             </button>
             <button
               type='button'
               onClick={() => openModal('security')}
-              className='hover:text-neutral-900 transition-colors cursor-pointer outline-none flex items-center gap-1.5'
+              className='hover:text-neutral-900 dark:text-white transition-colors cursor-pointer outline-none flex items-center gap-1.5'
             >
               <ShieldCheck className='size-3.5 text-emerald-500' />
               Bank-Grade Security

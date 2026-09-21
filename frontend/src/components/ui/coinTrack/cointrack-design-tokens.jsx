@@ -22,11 +22,11 @@ export function CoinTrackDesignTokens() {
                 className='w-full h-full object-contain'
               />
             </span>
-            <h2 className='font-display font-extrabold text-4xl sm:text-5xl text-neutral-950 tracking-tight leading-none'>
+            <h2 className='font-display font-extrabold text-4xl sm:text-5xl text-neutral-950 dark:text-white tracking-tight leading-none'>
               coinTrack
             </h2>
           </div>
-          <p className='text-neutral-700 text-sm sm:text-base font-medium pl-13'>
+          <p className='text-neutral-700 dark:text-neutral-300 text-sm sm:text-base font-medium pl-13'>
             A modern, high-fidelity wealth operating system engineered for
             institutional clarity, speed, and precision.
           </p>
@@ -35,32 +35,32 @@ export function CoinTrackDesignTokens() {
         {/* 3 Design Token Cards */}
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch'>
           {/* Token Card 1: Typography System */}
-          <div className='bg-white rounded-3xl p-6 border border-black/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col justify-between hover:shadow-lg transition-shadow'>
+          <div className='bg-white dark:bg-neutral-950 rounded-3xl p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col justify-between hover:shadow-lg transition-shadow'>
             <div>
-              <div className='flex items-center justify-between text-xs text-neutral-500 mb-4'>
-                <span className='font-medium text-neutral-600'>
+              <div className='flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-500 mb-4'>
+                <span className='font-medium text-neutral-600 dark:text-neutral-400'>
                   Type Architecture
                 </span>
-                <span className='bg-neutral-950 text-white font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-full'>
+                <span className='bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-full'>
                   82 / 1.04
                 </span>
               </div>
 
               <div className='py-4 flex items-baseline gap-4'>
                 <span
-                  className='font-display font-extrabold text-5xl sm:text-6xl text-neutral-950 tracking-tight'
+                  className='font-display font-extrabold text-5xl sm:text-6xl text-neutral-950 dark:text-white tracking-tight'
                   title='Inter Tight 800'
                 >
                   Aa
                 </span>
                 <span
-                  className='font-sans font-medium text-4xl sm:text-5xl text-neutral-500'
+                  className='font-sans font-medium text-4xl sm:text-5xl text-neutral-500 dark:text-neutral-500'
                   title='Inter 500'
                 >
                   Aa
                 </span>
                 <span
-                  className='font-mono font-semibold text-3xl sm:text-4xl text-neutral-800'
+                  className='font-mono font-semibold text-3xl sm:text-4xl text-neutral-800 dark:text-neutral-200'
                   title='Geist Mono 600'
                 >
                   01
@@ -68,15 +68,15 @@ export function CoinTrackDesignTokens() {
               </div>
             </div>
 
-            <div className='pt-6 border-t border-neutral-100 grid grid-cols-3 gap-2 text-xs'>
+            <div className='pt-6 border-t border-neutral-100 dark:border-neutral-800 grid grid-cols-3 gap-2 text-xs'>
               <div>
                 <span className='text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold'>
                   Display
                 </span>
-                <span className='font-display font-bold text-neutral-950 text-xs sm:text-sm mt-0.5 block'>
+                <span className='font-display font-bold text-neutral-950 dark:text-white text-xs sm:text-sm mt-0.5 block'>
                   Inter Tight
                 </span>
-                <span className='text-[10px] text-neutral-500 font-mono'>
+                <span className='text-[10px] text-neutral-500 dark:text-neutral-500 font-mono'>
                   700 / 800
                 </span>
               </div>
@@ -84,10 +84,10 @@ export function CoinTrackDesignTokens() {
                 <span className='text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold'>
                   Interface
                 </span>
-                <span className='font-sans font-medium text-neutral-950 text-xs sm:text-sm mt-0.5 block'>
+                <span className='font-sans font-medium text-neutral-950 dark:text-white text-xs sm:text-sm mt-0.5 block'>
                   Inter
                 </span>
-                <span className='text-[10px] text-neutral-500 font-mono'>
+                <span className='text-[10px] text-neutral-500 dark:text-neutral-500 font-mono'>
                   400 / 500
                 </span>
               </div>
@@ -95,10 +95,10 @@ export function CoinTrackDesignTokens() {
                 <span className='text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold'>
                   Numerics
                 </span>
-                <span className='font-mono font-bold text-neutral-950 text-xs sm:text-sm mt-0.5 block'>
+                <span className='font-mono font-bold text-neutral-950 dark:text-white text-xs sm:text-sm mt-0.5 block'>
                   Geist Mono
                 </span>
-                <span className='text-[10px] text-neutral-500 font-mono'>
+                <span className='text-[10px] text-neutral-500 dark:text-neutral-500 font-mono'>
                   Tabular nums
                 </span>
               </div>
@@ -106,9 +106,9 @@ export function CoinTrackDesignTokens() {
           </div>
 
           {/* Token Card 2: Net Worth & Semantic Colors */}
-          <div className='bg-white rounded-3xl p-6 border border-black/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col justify-between hover:shadow-lg transition-shadow'>
+          <div className='bg-white dark:bg-neutral-950 rounded-3xl p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col justify-between hover:shadow-lg transition-shadow'>
             <div>
-              <div className='flex items-center justify-between text-xs font-medium text-neutral-500 mb-3'>
+              <div className='flex items-center justify-between text-xs font-medium text-neutral-500 dark:text-neutral-500 mb-3'>
                 <div className='flex items-center gap-1.5'>
                   <TrendingUp className='size-3.5 text-emerald-600' />
                   <span>Consolidated Wealth</span>
@@ -134,7 +134,7 @@ export function CoinTrackDesignTokens() {
               </div>
 
               <div className='my-2'>
-                <span className='font-display font-extrabold text-4xl sm:text-5xl text-neutral-950 tracking-tight'>
+                <span className='font-display font-extrabold text-4xl sm:text-5xl text-neutral-950 dark:text-white tracking-tight'>
                   ₹48,92,400
                 </span>
               </div>
@@ -147,7 +147,7 @@ export function CoinTrackDesignTokens() {
 
             {/* Segmented bar for asset allocation */}
             <div className='pt-8'>
-              <div className='w-full h-2.5 bg-neutral-100 rounded-full overflow-hidden flex gap-1 p-0.5'>
+              <div className='w-full h-2.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden flex gap-1 p-0.5'>
                 <div
                   className='h-full bg-blue-600 w-[52%] rounded-l-full'
                   title='Equities (52%)'
@@ -165,7 +165,7 @@ export function CoinTrackDesignTokens() {
                   title='Gold & FDs (8%)'
                 />
               </div>
-              <div className='flex justify-between text-[10px] text-neutral-500 mt-2 font-medium'>
+              <div className='flex justify-between text-[10px] text-neutral-500 dark:text-neutral-500 mt-2 font-medium'>
                 <span className='text-blue-600 font-semibold'>
                   Equities 52%
                 </span>
@@ -177,9 +177,9 @@ export function CoinTrackDesignTokens() {
           </div>
 
           {/* Token Card 3: Elevation, Motion & Zero-Trust */}
-          <div className='bg-white rounded-3xl p-6 border border-black/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col justify-between hover:shadow-lg transition-shadow'>
+          <div className='bg-white dark:bg-neutral-950 rounded-3xl p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col justify-between hover:shadow-lg transition-shadow'>
             <div>
-              <div className='flex items-center justify-between text-xs font-medium text-neutral-500 mb-3'>
+              <div className='flex items-center justify-between text-xs font-medium text-neutral-500 dark:text-neutral-500 mb-3'>
                 <div className='flex items-center gap-1.5'>
                   <Landmark className='size-3.5 text-neutral-400' />
                   <span>Coverage &amp; Security</span>
@@ -190,7 +190,7 @@ export function CoinTrackDesignTokens() {
               </div>
 
               <div className='my-2'>
-                <span className='font-display font-extrabold text-4xl sm:text-5xl text-neutral-950 tracking-tight'>
+                <span className='font-display font-extrabold text-4xl sm:text-5xl text-neutral-950 dark:text-white tracking-tight'>
                   99.98%
                 </span>
               </div>
@@ -201,12 +201,12 @@ export function CoinTrackDesignTokens() {
               </div>
             </div>
 
-            <div className='pt-6 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600'>
+            <div className='pt-6 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400'>
               <span className='flex items-center gap-1 font-medium'>
                 <span className='size-1.5 rounded-full bg-blue-600' />
                 FIFO Tax Engine
               </span>
-              <span className='font-mono font-bold text-neutral-950 bg-neutral-100 px-2 py-0.5 rounded-md text-[11px]'>
+              <span className='font-mono font-bold text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md text-[11px]'>
                 &lt;1ms latency
               </span>
             </div>

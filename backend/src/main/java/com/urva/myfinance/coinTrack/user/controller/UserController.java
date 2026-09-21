@@ -1,20 +1,7 @@
 package com.urva.myfinance.coinTrack.user.controller;
 
-import com.urva.myfinance.coinTrack.common.response.ApiResponse;
-import com.urva.myfinance.coinTrack.common.service.NotificationService;
-import com.urva.myfinance.coinTrack.common.util.RequestUtils;
-import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
-import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
-import com.urva.myfinance.coinTrack.user.dto.DeleteAccountRequest;
-import com.urva.myfinance.coinTrack.user.dto.UpdateProfileRequest;
-import com.urva.myfinance.coinTrack.user.dto.UserProfileResponse;
-import com.urva.myfinance.coinTrack.user.model.User;
-import com.urva.myfinance.coinTrack.user.service.UserService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +15,25 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.common.service.NotificationService;
+import com.urva.myfinance.coinTrack.common.util.RequestUtils;
+import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
+import com.urva.myfinance.coinTrack.security.model.UserPrincipal;
+import com.urva.myfinance.coinTrack.user.dto.DeleteAccountRequest;
+import com.urva.myfinance.coinTrack.user.dto.UpdateProfileRequest;
+import com.urva.myfinance.coinTrack.user.dto.UserProfileResponse;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.service.UserService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+
 /**
- * Profile management controller — /api/users/me endpoints only. Auth endpoints moved to
+ * Profile management controller — /api/users/me endpoints only. Auth endpoints
+ * moved to
  * AuthController.
  */
 @RestController
@@ -135,9 +139,15 @@ public class UserController {
       if (oldPassword == null || oldPassword.isEmpty()) {
         return ResponseEntity.badRequest().body(ApiResponse.error("Current password is required"));
       }
-      if (newPassword == null || newPassword.length() < 8) {
+      if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 100) {
         return ResponseEntity.badRequest()
-            .body(ApiResponse.error("New password must be at least 8 characters"));
+            .body(ApiResponse.error("New password must be between 8 and 100 characters"));
+      }
+      if (!isValidPassword(newPassword)) {
+        return ResponseEntity.badRequest()
+            .body(
+                ApiResponse.error(
+                    "New password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&#^~_+=<>/-)"));
       }
       if (newPassword.equals(oldPassword)) {
         return ResponseEntity.badRequest()
@@ -182,14 +192,14 @@ public class UserController {
       UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
       String userId = principal.getUserId();
 
-      // Fetched while the account is still alive so a goodbye alert can be queued after success
+      // Fetched while the account is still alive so a goodbye alert can be queued
+      // after success
       User user = userService.getUserById(userId);
       String ip = RequestUtils.extractIpAddress(httpRequest);
       String userAgent = httpRequest.getHeader("User-Agent");
 
-      boolean deleted =
-          userService.deleteAccount(
-              userId, request != null ? request.password() : null, ip, userAgent);
+      boolean deleted = userService.deleteAccount(
+          userId, request != null ? request.password() : null, ip, userAgent);
       if (!deleted) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(ApiResponse.error("User not found"));
@@ -211,5 +221,11 @@ public class UserController {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body(ApiResponse.error("Failed to delete account"));
     }
+  }
+
+  private boolean isValidPassword(String password) {
+    if (password == null || password.length() < 8 || password.length() > 100)
+      return false;
+    return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#^~_+=<>/-]).*$");
   }
 }

@@ -5,6 +5,14 @@ import { useRouter } from 'next/navigation';
 import { passwordAPI } from '@/lib/api';
 import { ForgotPasswordScreen } from '@/components/ui/auth/forgot-password-screen';
 
+function normalizeIdentifier(value) {
+  const trimmed = value.trim();
+  if (/^\d{10}$/.test(trimmed)) return `+91${trimmed}`;
+  if (/^[\d\s\-+()]+$/.test(trimmed) && /\d/.test(trimmed))
+    return trimmed.replace(/[^0-9+]/g, '');
+  return trimmed;
+}
+
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -13,18 +21,21 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
 
   const handleSubmit = useCallback(async ({ identifier }) => {
+    const normalizedId = normalizeIdentifier(identifier);
     setError('');
     setLoading(true);
-    setSubmittedIdentifier(identifier);
+    setSubmittedIdentifier(normalizedId);
 
     try {
-      await passwordAPI.forgot(identifier);
+      await passwordAPI.forgot(normalizedId);
+      setSubmittedIdentifier(identifier);
       setSubmitted(true);
     } catch (err) {
       if (err?.status >= 500) {
         setError('Something went wrong. Please try again later.');
       } else {
         // Anti-enumeration: treat non-500 errors as successful submission
+        setSubmittedIdentifier(identifier);
         setSubmitted(true);
       }
     } finally {

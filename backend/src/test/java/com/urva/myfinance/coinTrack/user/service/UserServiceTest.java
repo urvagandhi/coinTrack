@@ -102,10 +102,17 @@ class UserServiceTest {
   }
 
   @Test
-  @DisplayName("registerUser: username exists in pending → throws")
+  @DisplayName("registerUser: username exists in pending (different user) → throws")
   void registerUser_usernamePending_throws() {
     when(userRepository.existsByUsername("testuser")).thenReturn(false);
-    when(pendingRegistrationRepository.existsByUsername("testuser")).thenReturn(true);
+    PendingRegistration otherPending =
+        PendingRegistration.builder()
+            .username("testuser")
+            .email("other@example.com")
+            .passwordHash("otherhash")
+            .build();
+    when(pendingRegistrationRepository.findByUsername("testuser"))
+        .thenReturn(Optional.of(otherPending));
     assertThrows(RuntimeException.class, () -> userService.registerUser(sampleUser));
   }
 
@@ -113,18 +120,25 @@ class UserServiceTest {
   @DisplayName("registerUser: email exists in users → throws")
   void registerUser_emailExists_throws() {
     when(userRepository.existsByUsername("testuser")).thenReturn(false);
-    when(pendingRegistrationRepository.existsByUsername("testuser")).thenReturn(false);
+    when(pendingRegistrationRepository.findByUsername("testuser")).thenReturn(Optional.empty());
     when(userRepository.existsByEmail("test@example.com")).thenReturn(true);
     assertThrows(RuntimeException.class, () -> userService.registerUser(sampleUser));
   }
 
   @Test
-  @DisplayName("registerUser: email exists in pending → throws")
+  @DisplayName("registerUser: email exists in pending (different user) → throws")
   void registerUser_emailPending_throws() {
     when(userRepository.existsByUsername("testuser")).thenReturn(false);
-    when(pendingRegistrationRepository.existsByUsername("testuser")).thenReturn(false);
+    when(pendingRegistrationRepository.findByUsername("testuser")).thenReturn(Optional.empty());
     when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
-    when(pendingRegistrationRepository.existsByEmail("test@example.com")).thenReturn(true);
+    PendingRegistration otherPending =
+        PendingRegistration.builder()
+            .username("otheruser")
+            .email("test@example.com")
+            .passwordHash("otherhash")
+            .build();
+    when(pendingRegistrationRepository.findByEmail("test@example.com"))
+        .thenReturn(Optional.of(otherPending));
     assertThrows(RuntimeException.class, () -> userService.registerUser(sampleUser));
   }
 

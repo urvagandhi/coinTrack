@@ -70,8 +70,35 @@ public class UserAuthenticationService {
 
     User foundUser = findUserByUsernameEmailOrMobile(identifier);
 
-    // Timing-safe: always run BCrypt even if user not found
+    // Timing-safe: check pending registration if main user not found
     if (foundUser == null) {
+      String clean = identifier != null ? identifier.trim() : "";
+      String normalized = normalizePhoneNumber(clean);
+      com.urva.myfinance.coinTrack.user.model.PendingRegistration pending =
+          userService.getPendingRegistrationByIdentifier(clean, normalized);
+
+      if (pending != null && pending.getExpiresAt() != null && pending.getExpiresAt().isBefore(Instant.now())) {
+        userService.deletePendingRegistration(pending);
+        pending = null;
+      }
+
+      if (pending != null && pending.getPasswordHash() != null && pending.getUsername() != null) {
+        if (passwordEncoder.matches(password, pending.getPasswordHash())) {
+          String tempToken = jwtService.generateTempToken(pending.getUsername(), "TOTP_REGISTRATION");
+          pending.setTempToken(tempToken);
+          pending.setExpiresAt(Instant.now().plusSeconds(15 * 60));
+          userService.savePendingRegistration(pending);
+
+          logger.info("Resumed active pending registration for user: {}", pending.getUsername());
+          LoginResponse response = new LoginResponse();
+          response.setRequireTotpSetup(true);
+          response.setTempToken(tempToken);
+          response.setUsername(pending.getUsername());
+          response.setMessage("Registration resumed. Please set up 2-Factor Authentication.");
+          return response;
+        }
+      }
+
       passwordEncoder.matches(password, DUMMY_HASH);
       logger.warn(LoggingConstants.AUTH_LOGIN_FAILED, identifier, "invalid credentials");
       return null;
@@ -310,11 +337,29 @@ public class UserAuthenticationService {
       throw new RuntimeException("Invalid Google token payload");
     }
 
-    // b. If user exists, log them in (Link if necessary)
+    // b. If user exists, log them in (enforce TOTP if configured)
     User existingUser = userRepository.findByGoogleId(sub).orElse(null);
     if (existingUser != null) {
       logger.info("Existing Google user found, logging in. UserId: {}", existingUser.getId());
-      return generateFinalLoginResponse(existingUser, deviceInfo, ipAddress);
+      if (existingUser.isTotpEnabled() && existingUser.isTotpVerified()) {
+        String tempToken = jwtService.generateTempToken(existingUser, "TOTP_LOGIN", 10);
+        LoginResponse response = new LoginResponse();
+        response.setRequireTotpSetup(false);
+        response.setTempToken(tempToken);
+        response.setUserId(existingUser.getId());
+        response.setUsername(existingUser.getUsername());
+        response.setMessage("Please verify TOTP to complete login.");
+        return response;
+      } else {
+        String setupToken = jwtService.generateTempToken(existingUser, "TOTP_SETUP", 30);
+        LoginResponse response = new LoginResponse();
+        response.setRequireTotpSetup(true);
+        response.setTempToken(setupToken);
+        response.setUserId(existingUser.getId());
+        response.setUsername(existingUser.getUsername());
+        response.setMessage("TOTP Setup is mandatory. Redirecting to setup...");
+        return response;
+      }
     }
 
     // b. Existing user with matching email
@@ -333,17 +378,63 @@ public class UserAuthenticationService {
       userRepository.save(userByEmail);
 
       logger.info("Linked existing local user to Google account. UserId: {}", userByEmail.getId());
-      return generateFinalLoginResponse(userByEmail, deviceInfo, ipAddress);
+      if (userByEmail.isTotpEnabled() && userByEmail.isTotpVerified()) {
+        String tempToken = jwtService.generateTempToken(userByEmail, "TOTP_LOGIN", 10);
+        LoginResponse response = new LoginResponse();
+        response.setRequireTotpSetup(false);
+        response.setTempToken(tempToken);
+        response.setUserId(userByEmail.getId());
+        response.setUsername(userByEmail.getUsername());
+        response.setMessage("Please verify TOTP to complete login.");
+        return response;
+      } else {
+        String setupToken = jwtService.generateTempToken(userByEmail, "TOTP_SETUP", 30);
+        LoginResponse response = new LoginResponse();
+        response.setRequireTotpSetup(true);
+        response.setTempToken(setupToken);
+        response.setUserId(userByEmail.getId());
+        response.setUsername(userByEmail.getUsername());
+        response.setMessage("TOTP Setup is mandatory. Redirecting to setup...");
+        return response;
+      }
     }
 
-    // d. Auto-register brand new user (creates pending doc)
+    // d. Check if active pending registration already exists with profile step 1 completed
     com.urva.myfinance.coinTrack.user.model.PendingRegistration pending =
-        userService.upsertPendingGoogleRegistration(sub, email, name);
+        userService.getPendingRegistrationByGoogleId(sub);
+    if (pending == null) {
+      pending = userService.getPendingRegistrationByIdentifier(email, null);
+    }
+
+    if (pending != null && pending.getExpiresAt() != null && pending.getExpiresAt().isBefore(Instant.now())) {
+      userService.deletePendingRegistration(pending);
+      pending = null;
+    }
+
+    if (pending != null && pending.getUsername() != null && !pending.getUsername().isBlank()) {
+      String totpSetupToken = jwtService.generateTempToken(pending.getUsername(), "TOTP_REGISTRATION");
+      pending.setTempToken(totpSetupToken);
+      pending.setExpiresAt(Instant.now().plusSeconds(15 * 60));
+      userService.savePendingRegistration(pending);
+
+      logger.info("Resuming Google user TOTP registration setup for username: {}", pending.getUsername());
+      LoginResponse response = new LoginResponse();
+      response.setProfileComplete(true);
+      response.setRequireTotpSetup(true);
+      response.setTempToken(totpSetupToken);
+      response.setUsername(pending.getUsername());
+      response.setMessage("Please complete 2FA setup to finish registration.");
+      return response;
+    }
+
+    // Otherwise, create/upsert pending Google registration (needs profile completion)
+    pending = userService.upsertPendingGoogleRegistration(sub, email, name);
 
     logger.info("Created/upserted pending Google registration for: {}", email);
 
     LoginResponse response = new LoginResponse();
     response.setEmail(email);
+    response.setFirstName(name);
     response.setProfileComplete(false);
     response.setTempToken(pending.getTempToken());
     response.setMessage("Please choose a username to complete your profile.");
@@ -377,30 +468,45 @@ public class UserAuthenticationService {
     }
 
     String chosenUsername = request.getUsername().trim();
-    if (userRepository.existsByUsername(chosenUsername)
-        || userService.getPendingRegistrationUser(chosenUsername) != null) {
+    if (userRepository.existsByUsername(chosenUsername)) {
       throw new RuntimeException("Username already exists. Please choose a different username.");
     }
 
+    com.urva.myfinance.coinTrack.user.model.PendingRegistration existingPendingUser =
+        userService.getPendingRegistrationByIdentifier(chosenUsername, null);
+    if (existingPendingUser != null && !existingPendingUser.getId().equals(pending.getId())) {
+      if (existingPendingUser.getExpiresAt() != null && existingPendingUser.getExpiresAt().isBefore(Instant.now())) {
+        userService.deletePendingRegistration(existingPendingUser);
+      } else {
+        throw new RuntimeException("Username already exists. Please choose a different username.");
+      }
+    }
+
     String normalizedPhone = normalizePhoneNumber(request.getPhoneNumber());
-    // Null/empty phone can never be "taken" (also guards existsByPhoneNumber(null)
-    // matching documents with a null phone field); pending registrations included.
-    if (userService.isPhoneNumberRegistered(normalizedPhone)) {
-      throw new RuntimeException("Phone number is already registered.");
+    if (normalizedPhone != null && !normalizedPhone.isBlank()) {
+      if (userRepository.existsByPhoneNumber(normalizedPhone)) {
+        throw new RuntimeException("Phone number is already registered.");
+      }
+      com.urva.myfinance.coinTrack.user.model.PendingRegistration existingPendingPhone =
+          userService.getPendingRegistrationByIdentifier(normalizedPhone, normalizedPhone);
+      if (existingPendingPhone != null && !existingPendingPhone.getId().equals(pending.getId())) {
+        if (existingPendingPhone.getExpiresAt() != null && existingPendingPhone.getExpiresAt().isBefore(Instant.now())) {
+          userService.deletePendingRegistration(existingPendingPhone);
+        } else {
+          throw new RuntimeException("Phone number is already registered.");
+        }
+      }
     }
 
     // Update the pending registration document
     pending.setUsername(chosenUsername);
     pending.setPhoneNumber(normalizedPhone);
     pending.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+    pending.setExpiresAt(Instant.now().plusSeconds(15 * 60));
 
     if (request.getName() != null && !request.getName().isBlank()) {
       pending.setName(request.getName().trim());
     }
-
-    // Convert DateOfBirth to pending if needed (but pending model doesn't have dob)
-    // I will just ignore it for now since PendingRegistration doesn't store dob.
-    // We can add dob to PendingRegistration or skip it for now.
 
     userService.savePendingRegistration(pending);
 

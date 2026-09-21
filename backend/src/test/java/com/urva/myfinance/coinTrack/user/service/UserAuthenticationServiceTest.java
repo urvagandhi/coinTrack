@@ -328,21 +328,23 @@ class UserAuthenticationServiceTest {
   // ── authenticateGoogle ─────────────────────────────────────────
 
   @Test
-  @DisplayName("authenticateGoogle: existing Google user → returns tokens")
+  @DisplayName("authenticateGoogle: existing Google user (TOTP enabled) → returns TOTP login tempToken")
   void authenticateGoogle_existingGoogleUser_returnsTokens() {
+    sampleUser.setTotpEnabled(true);
+    sampleUser.setTotpVerified(true);
     when(googleOAuthService.exchangeCodeForIdToken("code", "redirect")).thenReturn("idToken");
     Map<String, Object> googleUser =
         Map.of(
             "email", "g@gmail.com", "sub", "google123", "email_verified", true, "name", "G User");
     when(googleOAuthService.verifyIdToken("idToken")).thenReturn(googleUser);
     when(userRepository.findByGoogleId("google123")).thenReturn(Optional.of(sampleUser));
-    when(jwtService.generateToken(sampleUser)).thenReturn("jwt");
-    when(jwtService.generateRefreshToken("u1", "d", "ip")).thenReturn("rt");
+    when(jwtService.generateTempToken(sampleUser, "TOTP_LOGIN", 10)).thenReturn("totp-login-token");
 
     LoginResponse response = authService.authenticateGoogle("code", "redirect", "d", "ip");
 
     assertNotNull(response);
-    assertEquals("jwt", response.getToken());
+    assertEquals("totp-login-token", response.getTempToken());
+    assertFalse(response.getRequireTotpSetup());
   }
 
   @Test
@@ -372,7 +374,7 @@ class UserAuthenticationServiceTest {
   }
 
   @Test
-  @DisplayName("authenticateGoogle: email collision (verified) → links account")
+  @DisplayName("authenticateGoogle: email collision (verified) → links account and requires TOTP setup")
   void authenticateGoogle_emailCollision_verifiedLinks() {
     when(googleOAuthService.exchangeCodeForIdToken("code", "redirect")).thenReturn("idToken");
     Map<String, Object> googleUser =
@@ -380,13 +382,13 @@ class UserAuthenticationServiceTest {
     when(googleOAuthService.verifyIdToken("idToken")).thenReturn(googleUser);
     when(userRepository.findByGoogleId("goog789")).thenReturn(Optional.empty());
     when(userRepository.findByEmail("test@example.com")).thenReturn(sampleUser);
-    when(jwtService.generateToken(sampleUser)).thenReturn("jwt");
-    when(jwtService.generateRefreshToken("u1", "d", "ip")).thenReturn("rt");
+    when(jwtService.generateTempToken(sampleUser, "TOTP_SETUP", 30)).thenReturn("setup-tok");
 
     LoginResponse response = authService.authenticateGoogle("code", "redirect", "d", "ip");
 
     assertNotNull(response);
-    assertEquals("jwt", response.getToken());
+    assertEquals("setup-tok", response.getTempToken());
+    assertTrue(response.getRequireTotpSetup());
     assertEquals(AuthProvider.GOOGLE, sampleUser.getAuthProvider());
     assertEquals("goog789", sampleUser.getGoogleId());
   }

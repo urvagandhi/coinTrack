@@ -515,6 +515,10 @@ export const authAPI = {
     );
     return unwrapResponse(data);
   },
+  resendEmailVerification: async () => {
+    const { data } = await api.post(endpoints.email.resend, null, noRetry);
+    return unwrapResponse(data);
+  },
 };
 
 // ============================================================================
@@ -802,15 +806,25 @@ export const contactAPI = {
 // ============================================================================
 
 export const totpAPI = {
-  setup: async () => {
-    const { data } = await api.post(endpoints.auth.totp.setup, null, noRetry);
+  setup: async tempToken => {
+    const config = tempToken
+      ? { headers: { Authorization: `Bearer ${tempToken}` }, ...noRetry }
+      : noRetry;
+    const { data } = await api.post(
+      endpoints.auth.totp.setup,
+      tempToken ? { tempToken } : null,
+      config
+    );
     return unwrapResponse(data);
   },
-  verify: async code => {
+  verify: async (code, tempToken) => {
+    const config = tempToken
+      ? { headers: { Authorization: `Bearer ${tempToken}` }, ...noRetry }
+      : noRetry;
     const { data } = await api.post(
       endpoints.auth.totp.verify,
-      { code },
-      noRetry
+      { code, tempToken },
+      config
     );
     return unwrapResponse(data);
   },

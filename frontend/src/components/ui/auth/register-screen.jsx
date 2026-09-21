@@ -1,33 +1,33 @@
 'use client';
 
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useId,
-  memo,
-  useRef,
-} from 'react';
-import Image from 'next/image';
-import {
-  Bell,
-  ChevronRight,
-  Wallet,
-  TrendingUp,
-  ArrowUpRight,
-  User,
-  Mail,
-  AlertCircle,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { AuthLayout } from '@/components/ui/auth/auth-layout';
+import { useDynamicDocumentTitle } from '@/components/ui/auth/auth-shared';
 import { PasswordStrengthInput } from '@/components/ui/auth/security-inputs';
+import { DatePicker } from '@/components/ui/forms/date-picker';
 import { Button } from '@/components/ui/primitives/button';
 import { Input } from '@/components/ui/primitives/input';
-import { DatePicker } from '@/components/ui/forms/date-picker';
-import { useDynamicDocumentTitle } from '@/components/ui/auth/auth-shared';
-import { AuthLayout } from '@/components/ui/auth/auth-layout';
 import { useModal } from '@/contexts/ModalContext';
+import { cn } from '@/lib/utils';
+import {
+  AlertCircle,
+  ArrowUpRight,
+  Bell,
+  ChevronRight,
+  Mail,
+  TrendingUp,
+  User,
+  Wallet,
+} from 'lucide-react';
+import Image from 'next/image';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 // ───────────────────────────────────────────────────────────────
 //  CONSTANTS & DATA
@@ -204,11 +204,13 @@ export function RegisterSplitScreen({
   onRegister,
   onGoogleSignUp,
   onLoginRedirect,
+  onClearPrefill,
   isLoading = false,
   errorMessage,
   mode = 'register', // 'register' or 'complete-profile'
   initialData = {},
   isGoogleLoading = false,
+  googleState = 'idle',
   tempToken = '',
 }) {
   useDynamicDocumentTitle('Create Account | coinTrack');
@@ -461,7 +463,7 @@ export function RegisterSplitScreen({
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        mobile: formData.phoneNumber,
+        phoneNumber: formData.phoneNumber,
         name: formData.name,
         firstName: formData.name.split(' ')[0] || '',
         lastName: formData.name.split(' ').slice(1).join(' ') || '',
@@ -505,6 +507,27 @@ export function RegisterSplitScreen({
           : 'Join thousands of verified investors managing unified portfolios.'}
       </p>
 
+      {/* Google Account Verified Info Banner (Shown in complete-profile mode) */}
+      {internalMode === 'complete-profile' && formData.email && (
+        <div className='flex items-center justify-between gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium mb-3'>
+          <div className='flex items-center gap-2 min-w-0'>
+            <GoogleIcon className='size-4 shrink-0' />
+            <span className='truncate'>
+              Pre-filled from Google: <strong>{formData.email}</strong>
+            </span>
+          </div>
+          {onClearPrefill && (
+            <button
+              type='button'
+              onClick={onClearPrefill}
+              className='text-[11px] font-semibold underline shrink-0 hover:text-foreground transition-colors cursor-pointer'
+            >
+              Change
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Global Error Alert */}
       {fieldErrors.global && (
         <div
@@ -527,10 +550,15 @@ export function RegisterSplitScreen({
             disabled={isGoogleLoading || isLoading}
             className='group w-full rounded-[14px] bg-muted/50 hover:bg-muted/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-900 border-border/40 text-foreground py-5 sm:py-6 px-4 text-xs sm:text-sm font-medium flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 active:translate-y-0 active:scale-[0.99] mb-3 sm:mb-3.5 disabled:opacity-70 disabled:pointer-events-none'
           >
-            {isGoogleLoading ? (
+            {isGoogleLoading || googleState !== 'idle' ? (
               <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
+                {' '}
                 <div className='size-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground animate-spin' />
-                <span className='min-w-[85px] text-left'>Connecting...</span>
+                <span className='min-w-[85px] text-left'>
+                  {googleState === 'signing-in'
+                    ? 'Signing in...'
+                    : 'Connecting...'}
+                </span>
               </span>
             ) : (
               <span className='flex items-center gap-2.5 transition-transform duration-300'>

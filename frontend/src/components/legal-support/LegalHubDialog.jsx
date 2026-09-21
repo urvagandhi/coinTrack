@@ -106,6 +106,19 @@ const LEGAL_DOCUMENTS = {
           'contact',
         ],
       },
+      {
+        number: '06',
+        heading: 'Google OAuth & Third-Party Authentication Usage',
+        body: 'When you choose to "Continue with Google", coinTrack requests access to your basic Google profile (name and profile picture) and verified email address. This Google user data is strictly used for account creation, secure authentication, and communication. We do not share your Google data with any third parties, and you can revoke this access at any time from your Google Account settings.',
+        keywords: [
+          'google',
+          'oauth',
+          'authentication',
+          'profile',
+          'email',
+          'third-party',
+        ],
+      },
     ],
   },
   terms: {

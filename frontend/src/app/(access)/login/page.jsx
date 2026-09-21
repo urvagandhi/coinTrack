@@ -143,40 +143,52 @@ function LoginContent() {
 
   const handleGoogleRedirect = useCallback(
     async code => {
-      setIsGoogleLoading(true);
-      setGoogleState('signing-in');
+      // Step 1: User just got redirected back with code. Show "Successfully Verified" immediately.
+      setIsGoogleLoading(false);
+      setGoogleState('connected');
       setError('');
+
+      // Let user see the green checkmark for a bit longer so it's not missed
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      // Step 2: Transition to "Signing in to coinTrack..." logo state
+      setGoogleState('signing-in');
 
       const redirectUri = `${
         process.env.NEXT_PUBLIC_APP_URL || window.location.origin
       }/login`;
 
+      let result;
       try {
-        const result = await googleLogin(code, redirectUri);
-
-        if (result.requiresProfileCompletion) {
-          sessionStorage.setItem('tempToken', result.tempToken);
-          if (result.email) sessionStorage.setItem('tempEmail', result.email);
-          if (result.name) sessionStorage.setItem('tempName', result.name);
-          router.push('/register');
-        } else if (result.requiresTotp) {
-          openTotp(result.tempToken, result.username || result.email);
-        } else if (result.success) {
-          router.push(redirectPath);
-        } else {
-          setGoogleState('idle');
-          setIsGoogleLoading(false);
-          router.replace('/login');
-          setError(result.error || 'Google login failed.');
-        }
+        result = await googleLogin(code, redirectUri);
       } catch {
         setGoogleState('idle');
-        setIsGoogleLoading(false);
         router.replace('/login');
         setError('Google login failed. Please try again.');
+        return;
+      }
+
+      if (result.requiresProfileCompletion) {
+        sessionStorage.setItem('tempToken', result.tempToken);
+        if (result.email) sessionStorage.setItem('tempEmail', result.email);
+        if (result.name) sessionStorage.setItem('tempName', result.name);
+        router.push('/register');
+      } else if (result.requireTotpSetup) {
+        sessionStorage.setItem('tempToken', result.tempToken);
+        router.push('/setup-2fa');
+      } else if (result.requiresTotp) {
+        openTotp(result.tempToken, result.username || result.email);
+      } else if (result.success) {
+        // Step 3: Global AccessLayout takes over automatically here!
+        // The moment AuthContext is updated by googleLogin(), AccessLayout will unmount this page
+        // and render the FintechLoaderOverlay seamlessly before navigating to /dashboard.
+      } else {
+        setGoogleState('idle');
+        router.replace('/login');
+        setError(result.error || 'Google login failed.');
       }
     },
-    [googleLogin, openTotp, redirectPath, router]
+    [googleLogin, openTotp, router]
   );
 
   useEffect(() => {
@@ -198,7 +210,7 @@ function LoginContent() {
           : await verifyTotpLogin(tempToken, code);
 
         if (result.success) {
-          router.push(redirectPath);
+          // Success! AccessLayout takes over.
         } else {
           setTotpError(result.error || 'Invalid code. Please try again.');
         }
@@ -208,7 +220,7 @@ function LoginContent() {
         setTotpLoading(false);
       }
     },
-    [verifyRecoveryLogin, verifyTotpLogin, tempToken, redirectPath, router]
+    [verifyRecoveryLogin, verifyTotpLogin, tempToken]
   );
 
   const goBackToLogin = useCallback(() => {
@@ -218,31 +230,42 @@ function LoginContent() {
     setScreenKey(k => k + 1);
   }, []);
 
-  return showTotpInput ? (
-    <TwoFactorVerifyScreen
-      userIdentifier={totpIdentifier}
-      onSubmit={handleTotpSubmit}
-      onBackToLogin={goBackToLogin}
-      isLoading={totpLoading}
-      errorMessage={totpError}
-      onClearError={() => setTotpError('')}
-    />
-  ) : (
-    <LoginScreen
-      key={screenKey}
-      onLogin={handleLogin}
-      onGoogleLogin={handleGoogleLogin}
-      onForgotPassword={() => router.push('/forgot-password')}
-      onRegister={() => router.push('/register')}
-      isLoading={isLoading}
-      isGoogleLoading={isGoogleLoading}
-      googleState={googleState}
-      errorMessage={error}
-      successMessage={successMessage}
-      lockout={lockout}
-      initialIdentifier={prefill.identifier}
-      initialRememberMe={prefill.rememberMe}
-    />
+  return (
+    <>
+      {showTotpInput ? (
+        <TwoFactorVerifyScreen
+          userIdentifier={totpIdentifier}
+          onSubmit={handleTotpSubmit}
+          onBackToLogin={goBackToLogin}
+          isLoading={totpLoading}
+          errorMessage={totpError}
+          onClearError={() => setTotpError('')}
+        />
+      ) : (
+        <LoginScreen
+          key={screenKey}
+          onLogin={handleLogin}
+          onGoogleLogin={handleGoogleLogin}
+          onForgotPassword={() => router.push('/forgot-password')}
+          onRegister={() => {
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem('tempToken');
+              sessionStorage.removeItem('tempEmail');
+              sessionStorage.removeItem('tempName');
+            }
+            router.push('/register');
+          }}
+          isLoading={isLoading}
+          isGoogleLoading={isGoogleLoading}
+          googleState={googleState}
+          errorMessage={error}
+          successMessage={successMessage}
+          lockout={lockout}
+          initialIdentifier={prefill.identifier}
+          initialRememberMe={prefill.rememberMe}
+        />
+      )}
+    </>
   );
 }
 

@@ -240,11 +240,11 @@ export function ForgotPasswordScreen({
 
   const handleResend = useCallback(() => {
     if (cooldown > 0) return;
-    const cleanIdentifier = (submittedIdentifier || identifier).trim();
+    const cleanIdentifier = identifier.trim();
     if (!cleanIdentifier) return;
     setCooldown(RESEND_COOLDOWN_SECONDS);
     onSubmit?.({ identifier: cleanIdentifier });
-  }, [cooldown, submittedIdentifier, identifier, onSubmit]);
+  }, [cooldown, identifier, onSubmit]);
 
   const handleOpenEmail = useCallback(
     e => {

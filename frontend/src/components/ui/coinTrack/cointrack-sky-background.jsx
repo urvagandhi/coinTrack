@@ -16,7 +16,7 @@ export function CoinTrackSkyBackground() {
       {/* Pinned cloudy sky background layer for Cirrus UI ambiance with scroll parallax */}
       <motion.div
         aria-hidden
-        className='fixed inset-0 pointer-events-none z-0'
+        className='fixed inset-0 pointer-events-none z-0 dark:brightness-[0.35] dark:saturate-50 transition-all duration-700'
         style={{
           backgroundImage: "url('/sky.jpg')",
           backgroundSize: 'cover',
@@ -27,10 +27,10 @@ export function CoinTrackSkyBackground() {
         }}
       />
 
-      {/* Soft warm ambient sun glow */}
+      {/* Soft warm ambient sun glow (cool moonlight in dark mode) */}
       <div
         aria-hidden
-        className='fixed -top-40 right-0 w-[600px] h-[600px] bg-amber-100/30 rounded-full blur-3xl pointer-events-none z-0'
+        className='fixed -top-40 right-0 w-[600px] h-[600px] bg-amber-100/30 dark:bg-indigo-500/20 rounded-full blur-3xl pointer-events-none z-0 transition-colors duration-700'
       />
     </>
   );

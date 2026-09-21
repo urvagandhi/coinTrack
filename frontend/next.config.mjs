@@ -14,7 +14,6 @@ const networkOrigins = Object.values(os.networkInterfaces())
 const nextConfig = {
   allowedDevOrigins: [...networkOrigins, 'localhost', '127.0.0.1', '0.0.0.0'],
   output: 'standalone',
-  transpilePackages: ['lucide-react'],
 
   experimental: {
     optimizePackageImports: [
@@ -22,12 +21,6 @@ const nextConfig = {
       'recharts',
       'date-fns',
       'framer-motion',
-      '@radix-ui/react-dialog',
-      '@radix-ui/react-dropdown-menu',
-      '@radix-ui/react-select',
-      '@radix-ui/react-switch',
-      '@radix-ui/react-tabs',
-      '@radix-ui/react-tooltip',
     ],
   },
 

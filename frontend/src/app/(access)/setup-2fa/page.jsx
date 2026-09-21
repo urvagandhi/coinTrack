@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { TwoFactorSetupScreen } from '@/components/ui/auth/two-factor-setup-screen';
 import { tokenManager, totpAPI } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
-import { TwoFactorSetupScreen } from '@/components/ui/auth/two-factor-setup-screen';
-import { Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 function Setup2FAContent() {
   const router = useRouter();
@@ -50,20 +49,31 @@ function Setup2FAContent() {
   const fetchSetup = useCallback(async () => {
     if (!tempToken || qrUri) return;
     try {
-      const data = await totpAPI.registerSetup(tempToken);
-      setSecretKey(data.secretKey);
-      setQrUri(data.qrUri);
+      const data = isRegistration
+        ? await totpAPI.registerSetup(tempToken)
+        : await totpAPI.setup(tempToken);
+
+      setSecretKey(data.secret || data.secretKey || '');
+      setQrUri(data.qrCodeUri || data.qrUri || data.qrCodeBase64 || '');
     } catch (error) {
       const msg = error.message || '';
-      if (msg.toLowerCase().includes('expired')) {
-        sessionStorage.removeItem('totpSetupToken');
-        sessionStorage.removeItem('totpSetupUsername');
-        router.push(
-          '/register?error=Registration expired. Please register again.'
-        );
+      if (
+        msg.toLowerCase().includes('expired') ||
+        msg.toLowerCase().includes('unauthorized')
+      ) {
+        if (isRegistration) {
+          sessionStorage.removeItem('totpSetupToken');
+          sessionStorage.removeItem('totpSetupUsername');
+          router.push(
+            '/register?error=Registration expired. Please register again.'
+          );
+        } else {
+          sessionStorage.removeItem('tempToken');
+          router.push('/login?error=Session expired. Please login again.');
+        }
       }
     }
-  }, [tempToken, qrUri, router]);
+  }, [tempToken, qrUri, isRegistration, router]);
 
   // Fetch QR code and secret from backend
   useEffect(() => {
@@ -74,42 +84,51 @@ function Setup2FAContent() {
     async code => {
       setIsVerifying(true);
       try {
-        const data = await totpAPI.registerVerify(tempToken, code);
+        const data = isRegistration
+          ? await totpAPI.registerVerify(tempToken, code)
+          : await totpAPI.verify(code, tempToken);
+
         if (data.token) {
-          tokenManager.setToken(data.token);
-          if (data.refreshToken)
+          tokenManager.setToken(data.token, true);
+          if (data.refreshToken) {
             tokenManager.setRefreshToken(data.refreshToken);
+          }
         }
         setBackupCodes(data.backupCodes || []);
         return { success: true, backupCodes: data.backupCodes || [] };
       } catch (error) {
         const msg = error.message || '';
         if (msg.toLowerCase().includes('expired')) {
-          sessionStorage.removeItem('totpSetupToken');
-          sessionStorage.removeItem('totpSetupUsername');
-          router.push(
-            '/register?error=Registration expired. Please register again.'
-          );
+          if (isRegistration) {
+            sessionStorage.removeItem('totpSetupToken');
+            sessionStorage.removeItem('totpSetupUsername');
+            router.push(
+              '/register?error=Registration expired. Please register again.'
+            );
+          } else {
+            sessionStorage.removeItem('tempToken');
+            router.push('/login?error=Session expired. Please login again.');
+          }
         }
         return { success: false, error: msg || 'Verification failed' };
       } finally {
         setIsVerifying(false);
       }
     },
-    [tempToken, router]
+    [tempToken, isRegistration, router]
   );
 
   const handleComplete = useCallback(() => {
-    if (isRegistration) {
-      sessionStorage.removeItem('totpSetupToken');
-      sessionStorage.removeItem('totpSetupUsername');
+    sessionStorage.removeItem('totpSetupToken');
+    sessionStorage.removeItem('totpSetupUsername');
+    sessionStorage.removeItem('tempToken');
+
+    if (tokenManager.getToken()) {
       router.push('/dashboard');
     } else {
-      sessionStorage.removeItem('tempToken');
-      tokenManager.removeToken();
       router.push('/login?message=Setup%20Complete%20Please%20Login');
     }
-  }, [isRegistration, router]);
+  }, [router]);
 
   if (loading) {
     return (

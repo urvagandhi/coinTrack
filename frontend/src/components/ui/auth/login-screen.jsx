@@ -74,21 +74,7 @@ export function GoogleAuthButton({
       disabled={isBusy}
       className={cn(GOOGLE_BUTTON_BASE_CLASSES, className)}
     >
-      {isLoading || state === 'connecting' ? (
-        <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
-          <div className='size-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground animate-spin' />
-          <span className='min-w-[85px] text-left'>
-            Connecting{'.'.repeat(dotCount)}
-          </span>
-        </span>
-      ) : state === 'connected' ? (
-        <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
-          <AnimatedSuccessIcon className='size-5 text-emerald-500 dark:text-emerald-400' />
-          <span className='text-emerald-600 dark:text-emerald-400 font-semibold'>
-            Google Connected
-          </span>
-        </span>
-      ) : state === 'signing-in' ? (
+      {state === 'signing-in' ? (
         <span className='flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300'>
           <span className='relative size-4 block shrink-0'>
             <Image
@@ -105,6 +91,20 @@ export function GoogleAuthButton({
               coinTrack
             </span>
             {'.'.repeat(dotCount)}
+          </span>
+        </span>
+      ) : state === 'connected' ? (
+        <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
+          <AnimatedSuccessIcon className='size-5 text-emerald-500 dark:text-emerald-400' />
+          <span className='text-emerald-600 dark:text-emerald-400 font-semibold'>
+            Google Connected
+          </span>
+        </span>
+      ) : isLoading || state === 'connecting' ? (
+        <span className='flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200'>
+          <div className='size-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground animate-spin' />
+          <span className='min-w-[85px] text-left'>
+            Connecting{'.'.repeat(dotCount)}
           </span>
         </span>
       ) : (

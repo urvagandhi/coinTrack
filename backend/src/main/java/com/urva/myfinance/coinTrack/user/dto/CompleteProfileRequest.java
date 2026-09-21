@@ -1,9 +1,10 @@
 package com.urva.myfinance.coinTrack.user.dto;
 
+import java.time.LocalDate;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDate;
 
 /** DTO for completing user profile registration for OAuth2/Google SSO users. */
 public class CompleteProfileRequest {
@@ -13,9 +14,7 @@ public class CompleteProfileRequest {
 
   @NotBlank(message = "Username is required")
   @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-  @Pattern(
-      regexp = "^[a-zA-Z0-9_]+$",
-      message = "Username can only contain letters, numbers, and underscores")
+  @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers, and underscores")
   private String username;
 
   private String name;
@@ -23,23 +22,19 @@ public class CompleteProfileRequest {
   private LocalDate dateOfBirth;
 
   @NotBlank(message = "Phone number is required")
-  @Pattern(
-      regexp = "^\\+91\\d{10}$",
-      message = "Phone number must be an Indian number starting with +91 followed by 10 digits")
+  @Pattern(regexp = "^(\\+91)?[6-9]\\d{9}$", message = "Please provide a valid 10-digit mobile number")
   private String phoneNumber;
 
   @NotBlank(message = "Password is required")
-  @Size(min = 8, message = "Password must be at least 8 characters long")
-  @Pattern(
-      regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$",
-      message =
-          "Password must contain at least one digit, one lowercase, one uppercase, and one special character")
+  @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
+  @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#^~_+=<>/-]).*$", message = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&#^~_+=<>/-)")
   private String password;
 
   @NotBlank(message = "Confirm password is required")
   private String confirmPassword;
 
-  public CompleteProfileRequest() {}
+  public CompleteProfileRequest() {
+  }
 
   public CompleteProfileRequest(
       String tempToken, String username, String name, LocalDate dateOfBirth) {

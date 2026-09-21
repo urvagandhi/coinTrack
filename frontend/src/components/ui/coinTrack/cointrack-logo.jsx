@@ -21,7 +21,7 @@ export function CoinTrackLogo({
         />
       </span>
       <div className='flex items-baseline gap-1.5'>
-        <span className='font-display font-bold tracking-tight text-2xl text-neutral-950 leading-none'>
+        <span className='font-display font-bold tracking-tight text-2xl text-neutral-950 dark:text-white leading-none'>
           coinTrack
         </span>
         {showBadge && (

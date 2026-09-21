@@ -15,6 +15,10 @@ public interface PendingRegistrationRepository
 
   Optional<PendingRegistration> findByUsername(String username);
 
+  Optional<PendingRegistration> findByEmail(String email);
+
+  Optional<PendingRegistration> findByPhoneNumber(String phoneNumber);
+
   void deleteByTempToken(String tempToken);
 
   void deleteByUsername(String username);

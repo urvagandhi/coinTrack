@@ -1,21 +1,8 @@
 package com.urva.myfinance.coinTrack.email.controller;
 
-import com.urva.myfinance.coinTrack.common.response.ApiResponse;
-import com.urva.myfinance.coinTrack.common.util.UserLookupUtil;
-import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
-import com.urva.myfinance.coinTrack.email.model.EmailToken;
-import com.urva.myfinance.coinTrack.email.service.EmailService;
-import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
-import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmailTokenException;
-import com.urva.myfinance.coinTrack.user.model.User;
-import com.urva.myfinance.coinTrack.user.repository.UserRepository;
-import com.urva.myfinance.coinTrack.user.service.TotpService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -24,13 +11,34 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.urva.myfinance.coinTrack.common.response.ApiResponse;
+import com.urva.myfinance.coinTrack.common.util.UserLookupUtil;
+import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
+import com.urva.myfinance.coinTrack.email.model.EmailToken;
+import com.urva.myfinance.coinTrack.email.service.EmailService;
+import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
+import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmailTokenException;
+import com.urva.myfinance.coinTrack.security.service.JWTService;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.UserRepository;
+import com.urva.myfinance.coinTrack.user.service.TotpService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+
 /**
  * Controller for Lost MFA Recovery flow.
  *
- * <p>Flow: 1. POST /auth/mfa/email-recovery - Request MFA recovery (email/username/mobile) 2. POST
+ * <p>
+ * Flow: 1. POST /auth/mfa/email-recovery - Request MFA recovery
+ * (email/username/mobile) 2. POST
  * /auth/mfa/email-recovery/verify - Verify recovery token, disable MFA
  *
- * <p>Security: - Only works if user has verified email - Token is single-use and short-lived -
+ * <p>
+ * Security: - Only works if user has verified email - Token is single-use and
+ * short-lived -
  * Security alert sent after MFA is disabled
  */
 @RestController
@@ -46,9 +54,11 @@ public class TwoFactorRecoveryController {
   private final EmailConfigProperties emailConfig;
   private final UserRepository userRepository;
   private final TotpService totpService;
+  private final JWTService jwtService;
 
   /**
-   * Request MFA recovery. Sends magic link to the user's verified email. Only works if user has MFA
+   * Request MFA recovery. Sends magic link to the user's verified email. Only
+   * works if user has MFA
    * enabled and email is verified.
    */
   @Operation(summary = "Request MFA recovery via email")
@@ -93,8 +103,7 @@ public class TwoFactorRecoveryController {
       }
 
       // Create token and send email
-      String token =
-          emailTokenService.createToken(user, EmailToken.PURPOSE_2FA_RECOVERY, httpRequest);
+      String token = emailTokenService.createToken(user, EmailToken.PURPOSE_2FA_RECOVERY, httpRequest);
       String magicLink = emailConfig.get2FARecoveryUrl(token);
       try {
         emailService.send2FARecoveryLink(user, magicLink);
@@ -117,7 +126,8 @@ public class TwoFactorRecoveryController {
   }
 
   /**
-   * Verify MFA recovery token and disable MFA. Returns a temporary JWT to allow completing the
+   * Verify MFA recovery token and disable MFA. Returns a temporary JWT to allow
+   * completing the
    * reset.
    */
   @Operation(summary = "Verify MFA recovery token and disable MFA")
@@ -131,21 +141,22 @@ public class TwoFactorRecoveryController {
 
     try {
       // Validate token
-      EmailToken emailToken =
-          emailTokenService.validateToken(token, EmailToken.PURPOSE_2FA_RECOVERY);
+      EmailToken emailToken = emailTokenService.validateToken(token, EmailToken.PURPOSE_2FA_RECOVERY);
 
       // Get user
       @SuppressWarnings("null")
-      User user =
-          userRepository
-              .findById(emailToken.getUserId())
-              .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
+      User user = userRepository
+          .findById(emailToken.getUserId())
+          .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
 
       // Mark token as used
       emailTokenService.markUsed(emailToken.getId());
 
       // Disable 2FA
       totpService.disable2FA(user);
+
+      // Revoke all refresh tokens on 2FA recovery (attacker session revocation)
+      jwtService.revokeAllRefreshTokens(user.getId());
 
       // Invalidate all email tokens
       emailTokenService.invalidateAllForUser(user.getId());
