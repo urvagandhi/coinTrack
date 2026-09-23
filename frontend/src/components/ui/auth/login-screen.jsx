@@ -279,15 +279,22 @@ export function LoginSplitScreen({
     onGoogleLogin?.();
   };
 
-  // Countdown for the account-lockout notice.
+  // Countdown for the account-lockout / rate-limit cooldown notice.
   useEffect(() => {
-    if (!lockout?.minutes) {
+    const totalSeconds =
+      lockout?.seconds != null
+        ? lockout.seconds
+        : lockout?.minutes != null
+          ? lockout.minutes * 60
+          : 0;
+
+    if (!totalSeconds) {
       setLockoutSeconds(0);
       setLockoutExpired(false);
       return;
     }
     setLockoutExpired(false);
-    setLockoutSeconds(lockout.minutes * 60);
+    setLockoutSeconds(totalSeconds);
     const interval = setInterval(() => {
       setLockoutSeconds(seconds => {
         if (seconds <= 1) {

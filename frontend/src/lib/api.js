@@ -133,21 +133,32 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
-    // Helper: normalize any error into { message, status, errorCode, fieldErrors, original }.
+    // Helper: normalize any error into { message, status, errorCode, fieldErrors, isRateLimited, retryAfter, original }.
     // Handles both backend envelopes:
     //  - ApiResponse:       { success, data, message, timestamp, requestId }
     //  - ApiErrorResponse:  { status, errorCode, message, path, fieldErrors }
+    //  - RateLimitResponse: { success: false, error: { code, message, retryAfter } }
     const normalize = err => {
       const data = err.response?.data;
+      const status = err.response?.status;
+      const retryHeader = err.response?.headers?.['retry-after'];
+      const retryAfterSec =
+        retryHeader != null
+          ? parseInt(retryHeader, 10)
+          : data?.error?.retryAfter || data?.retryAfter || null;
+
       return {
         message:
+          data?.error?.message ||
           data?.message ||
           data?.error ||
           err.message ||
           'An unexpected error occurred',
-        status: err.response?.status,
-        errorCode: data?.errorCode,
+        status,
+        errorCode: data?.error?.code || data?.errorCode,
         fieldErrors: data?.fieldErrors,
+        isRateLimited: status === 429,
+        retryAfter: retryAfterSec,
         original: err,
       };
     };

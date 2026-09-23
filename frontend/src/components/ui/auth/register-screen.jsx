@@ -13,7 +13,9 @@ import {
   ArrowUpRight,
   Bell,
   ChevronRight,
+  Lock,
   Mail,
+  ShieldAlert,
   TrendingUp,
   User,
   Wallet,
@@ -293,7 +295,19 @@ export function RegisterSplitScreen({
     if (!displayedError) return errors;
 
     const lower = displayedError.toLowerCase();
-    if (lower.includes('name') && !lower.includes('username'))
+    if (
+      lower.includes('already exist') ||
+      lower.includes('may already exist') ||
+      lower.includes('associated with these details')
+    ) {
+      errors.collision = displayedError;
+    } else if (
+      lower.includes('rate limit') ||
+      lower.includes('too many requests') ||
+      lower.includes('security cooldown')
+    ) {
+      errors.rateLimit = displayedError;
+    } else if (lower.includes('name') && !lower.includes('username'))
       errors.name = displayedError;
     else if (lower.includes('username')) errors.username = displayedError;
     else if (lower.includes('email')) errors.email = displayedError;
@@ -528,17 +542,80 @@ export function RegisterSplitScreen({
         </div>
       )}
 
-      {/* Global Error Alert */}
-      {fieldErrors.global && (
+      {/* FinTech Account Collision Helpful Notice Card */}
+      {fieldErrors.collision && (
         <div
           ref={globalErrorContainerRef}
-          className='flex items-start gap-2 mb-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium'
+          className='flex flex-col gap-3 mb-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs shadow-sm animate-in fade-in duration-300'
           role='alert'
         >
-          <AlertCircle className='size-4 shrink-0 mt-0.5' />
-          <span>{fieldErrors.global}</span>
+          <div className='flex items-start gap-2.5'>
+            <ShieldAlert className='size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5' />
+            <div className='space-y-1 text-left'>
+              <h4 className='font-semibold text-sm text-foreground'>
+                Account May Already Exist
+              </h4>
+              <p className='text-muted-foreground leading-relaxed text-xs'>
+                An account associated with these contact details may already
+                exist. If you already have an account, please sign in or recover
+                your access below.
+              </p>
+            </div>
+          </div>
+          <div className='flex flex-wrap items-center gap-2 pt-1'>
+            <Button
+              type='button'
+              size='sm'
+              onClick={onLoginRedirect}
+              className='bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-xl px-3.5 py-1.5 shadow-sm cursor-pointer'
+            >
+              Sign In to Existing Account
+            </Button>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/forgot-password';
+                }
+              }}
+              className='border-amber-500/30 text-foreground hover:bg-amber-500/10 font-medium text-xs rounded-xl px-3.5 py-1.5 cursor-pointer'
+            >
+              Recover Account
+            </Button>
+          </div>
         </div>
       )}
+
+      {/* Security Cooldown Rate-Limit Alert */}
+      {fieldErrors.rateLimit && (
+        <div
+          ref={globalErrorContainerRef}
+          className='flex items-start gap-2.5 mb-3.5 p-3.5 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs font-medium'
+          role='alert'
+        >
+          <Lock className='size-4 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-left'>
+            <p className='font-semibold'>Security Cooldown Active</p>
+            <p className='opacity-90'>{fieldErrors.rateLimit}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Global Error Alert */}
+      {!fieldErrors.collision &&
+        !fieldErrors.rateLimit &&
+        fieldErrors.global && (
+          <div
+            ref={globalErrorContainerRef}
+            className='flex items-start gap-2 mb-2.5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium'
+            role='alert'
+          >
+            <AlertCircle className='size-4 shrink-0 mt-0.5' />
+            <span>{fieldErrors.global}</span>
+          </div>
+        )}
 
       {/* Social Sign-up Button (Hidden in complete-profile mode) */}
       {internalMode !== 'complete-profile' && (

@@ -40,6 +40,11 @@ public class PendingRegistration {
 
   @CreatedDate private Instant createdAt;
 
+  @Builder.Default
+  private int totpFailedAttempts = 0;
+
+  private Instant totpLockedUntil;
+
   /** MongoDB TTL index field — document auto-deleted when this time passes. */
   @Indexed(expireAfter = "0s")
   private Instant expiresAt;

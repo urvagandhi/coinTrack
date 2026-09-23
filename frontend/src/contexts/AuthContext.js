@@ -231,6 +231,20 @@ export function AuthProvider({ children }) {
       const status = error?.status;
       const lockout = buildLockoutNotice(error?.message);
 
+      if (error?.isRateLimited || status === 429) {
+        const retrySec = error?.retryAfter || 60;
+        const msg =
+          error?.message ||
+          `Too many attempts. For your security, please wait ${retrySec} seconds.`;
+        dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: msg });
+        return {
+          success: false,
+          error: msg,
+          isRateLimited: true,
+          retryAfter: retrySec,
+        };
+      }
+
       let message;
       if (lockout) {
         // Account lockout is not an enumeration risk — surface it verbatim.

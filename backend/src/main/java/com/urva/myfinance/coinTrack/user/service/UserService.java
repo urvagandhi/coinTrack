@@ -123,24 +123,52 @@ public class UserService {
     if (userRepository.existsByUsername(cleanUsername)) {
       throw new RuntimeException("Username already exists. Please choose a different username.");
     }
-    if (cleanEmail != null && userRepository.existsByEmail(cleanEmail)) {
-      throw new RuntimeException("Email already exists. Please use a different email.");
-    }
-    if (normalizedPhone != null && !normalizedPhone.isEmpty() && userRepository.existsByPhoneNumber(normalizedPhone)) {
-      throw new RuntimeException("Phone number already exists. Please use a different number.");
+
+    boolean emailExists = cleanEmail != null && userRepository.existsByEmail(cleanEmail);
+    boolean phoneExists = normalizedPhone != null
+        && !normalizedPhone.isEmpty()
+        && userRepository.existsByPhoneNumber(normalizedPhone);
+
+    if (emailExists || phoneExists) {
+      // FinTech Anti-Enumeration & Account Protection:
+      // Do not disclose whether email or phone collided to prevent reconnaissance.
+      // Dispatch asynchronous security alert to existing user if email is matched.
+      if (emailExists && emailService != null) {
+        try {
+          User existing = userRepository.findByEmail(cleanEmail);
+          if (existing != null) {
+            emailService.sendSecurityAlert(
+                existing,
+                "Sign-up Attempt Detected",
+                java.util.Map.of(
+                    "Notice",
+                    "A registration attempt was initiated with this email address. If you already"
+                        + " have an account, you can sign in or reset your password."));
+          }
+        } catch (Exception ex) {
+          logger.warn("Could not dispatch registration security alert: {}", ex.getMessage());
+        }
+      }
+      throw new RuntimeException(
+          "An account associated with these details may already exist. If you already have an"
+              + " account, please sign in or recover access.");
     }
 
     // 2. Check pending registrations collection
-    PendingRegistration existingPending = pendingRegistrationRepository.findByUsername(cleanUsername)
+    PendingRegistration existingPending = pendingRegistrationRepository
+        .findByUsername(cleanUsername)
         .orElseGet(
-            () -> cleanEmail != null ? pendingRegistrationRepository.findByEmail(cleanEmail).orElse(null) : null);
+            () -> cleanEmail != null
+                ? pendingRegistrationRepository.findByEmail(cleanEmail).orElse(null)
+                : null);
     if (existingPending == null && normalizedPhone != null && !normalizedPhone.isEmpty()) {
       existingPending = pendingRegistrationRepository.findByPhoneNumber(normalizedPhone).orElse(null);
     }
 
     if (existingPending != null) {
       // Auto-purge if expired
-      if (existingPending.getExpiresAt() != null && existingPending.getExpiresAt().isBefore(Instant.now())) {
+      if (existingPending.getExpiresAt() != null
+          && existingPending.getExpiresAt().isBefore(Instant.now())) {
         pendingRegistrationRepository.delete(existingPending);
         existingPending = null;
       }
@@ -174,18 +202,14 @@ public class UserService {
         return response;
       }
 
-      // If details don't match, enforce strict uniqueness conflict errors
-      if (existingPending.getUsername() != null && existingPending.getUsername().equalsIgnoreCase(cleanUsername)) {
+      // If details don't match, enforce username error or uniform collision error
+      if (existingPending.getUsername() != null
+          && existingPending.getUsername().equalsIgnoreCase(cleanUsername)) {
         throw new RuntimeException("Username already exists. Please choose a different username.");
       }
-      if (cleanEmail != null && existingPending.getEmail() != null
-          && existingPending.getEmail().equalsIgnoreCase(cleanEmail)) {
-        throw new RuntimeException("Email already exists. Please use a different email.");
-      }
-      if (normalizedPhone != null && existingPending.getPhoneNumber() != null
-          && existingPending.getPhoneNumber().equals(normalizedPhone)) {
-        throw new RuntimeException("Phone number already exists. Please use a different number.");
-      }
+      throw new RuntimeException(
+          "An account associated with these details may already exist. If you already have an"
+              + " account, please sign in or recover access.");
     }
 
     // Generate temp token for TOTP setup
@@ -254,6 +278,27 @@ public class UserService {
 
   public void savePendingRegistration(PendingRegistration pending) {
     pendingRegistrationRepository.save(pending);
+  }
+
+  public void recordPendingTotpFailure(String username) {
+    if (username == null || username.isBlank())
+      return;
+    pendingRegistrationRepository
+        .findByUsername(username)
+        .ifPresent(
+            pending -> {
+              int attempts = pending.getTotpFailedAttempts() + 1;
+              pending.setTotpFailedAttempts(attempts);
+              if (attempts >= 5) {
+                pendingRegistrationRepository.delete(pending);
+                logger.warn(
+                    "Pending registration for user '{}' deleted due to exceeding maximum allowed"
+                        + " TOTP verification attempts (brute-force prevention).",
+                    username);
+              } else {
+                pendingRegistrationRepository.save(pending);
+              }
+            });
   }
 
   @Transactional

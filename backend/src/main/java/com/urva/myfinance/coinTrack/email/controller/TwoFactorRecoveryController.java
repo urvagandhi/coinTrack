@@ -49,12 +49,16 @@ public class TwoFactorRecoveryController {
 
   private static final Logger logger = LoggerFactory.getLogger(TwoFactorRecoveryController.class);
 
+  private static final String DUMMY_HASH =
+      "$2a$10$AAAAAAAAAAAAAAAAAAAAAO8kI2R6x9YpFKeMMxaq0JZm2DOiCm9eK";
+
   private final EmailTokenService emailTokenService;
   private final EmailService emailService;
   private final EmailConfigProperties emailConfig;
   private final UserRepository userRepository;
   private final TotpService totpService;
   private final JWTService jwtService;
+  private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
   /**
    * Request MFA recovery. Sends magic link to the user's verified email. Only
@@ -80,21 +84,10 @@ public class TwoFactorRecoveryController {
       User user = userOpt.get();
 
       // Check if user has 2FA enabled
-      if (!user.isTotpEnabled()) {
-        // Don't reveal that 2FA is not enabled (prevent enumeration)
-        logger.info("2FA recovery requested but 2FA not enabled: userId={}", user.getId());
-        return ResponseEntity.ok(
-            ApiResponse.success(
-                Map.of(
-                    "message",
-                    "If an account exists with this identifier and has 2FA enabled, you will receive a recovery link")));
-      }
-
-      // Check if email is verified
-      if (!user.isEmailVerified()) {
-        // Recovery requires a verified inbox — but respond neutrally so the
-        // endpoint does not leak account existence / 2FA / verification state
-        logger.info("2FA recovery requested but email not verified: userId={}", user.getId());
+      if (!user.isTotpEnabled() || !user.isEmailVerified()) {
+        // Equalize execution timing
+        passwordEncoder.matches("dummy", DUMMY_HASH);
+        logger.info("2FA recovery requested but 2FA not enabled or email not verified: userId={}", user.getId());
         return ResponseEntity.ok(
             ApiResponse.success(
                 Map.of(
@@ -113,8 +106,9 @@ public class TwoFactorRecoveryController {
 
       logger.info("2FA recovery requested: userId={}", user.getId());
     } else {
-      // Log but don't reveal to user (prevent enumeration)
-      logger.info("2FA recovery requested for unknown identifier: {}", identifier);
+      // Timing attack mitigation: run dummy BCrypt verification to equalize CPU execution time
+      passwordEncoder.matches("dummy", DUMMY_HASH);
+      logger.info("2FA recovery requested for unknown identifier");
     }
 
     // Always return same response (no enumeration)

@@ -99,7 +99,14 @@ function LoginContent() {
 
         if (result.requireTotpSetup) {
           saveRememberMe(email, rememberMe);
-          sessionStorage.setItem('tempToken', result.tempToken);
+          const isRegistration = result.message
+            ?.toLowerCase()
+            .includes('registration');
+          if (isRegistration) {
+            sessionStorage.setItem('registrationTempToken', result.tempToken);
+          } else {
+            sessionStorage.setItem('tempToken', result.tempToken);
+          }
           router.push('/setup-2fa');
         } else if (result.requiresTotp) {
           saveRememberMe(email, rememberMe);
@@ -109,7 +116,15 @@ function LoginContent() {
           router.push(redirectPath);
         } else {
           setError(result.error || 'Email or password is incorrect.');
-          setLockout(result.lockout || null);
+          if (result.isRateLimited && result.retryAfter) {
+            setLockout({
+              message: 'Security cooldown active: Too many requests.',
+              seconds: result.retryAfter,
+              isRateLimit: true,
+            });
+          } else {
+            setLockout(result.lockout || null);
+          }
         }
       } catch {
         setError('An unexpected error occurred. Please try again.');
@@ -174,7 +189,14 @@ function LoginContent() {
         if (result.name) sessionStorage.setItem('tempName', result.name);
         router.push('/register');
       } else if (result.requireTotpSetup) {
-        sessionStorage.setItem('tempToken', result.tempToken);
+        const isRegistration = result.message
+          ?.toLowerCase()
+          .includes('registration');
+        if (isRegistration) {
+          sessionStorage.setItem('registrationTempToken', result.tempToken);
+        } else {
+          sessionStorage.setItem('tempToken', result.tempToken);
+        }
         router.push('/setup-2fa');
       } else if (result.requiresTotp) {
         openTotp(result.tempToken, result.username || result.email);

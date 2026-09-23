@@ -67,6 +67,9 @@ public class ForgotPasswordController {
   private final PasswordEncoder passwordEncoder;
   private final JWTService jwtService;
 
+  private static final String DUMMY_HASH =
+      "$2a$10$AAAAAAAAAAAAAAAAAAAAAO8kI2R6x9YpFKeMMxaq0JZm2DOiCm9eK";
+
   /**
    * Request password reset. Accepts email, username, or mobile number. Always
    * returns success
@@ -109,8 +112,9 @@ public class ForgotPasswordController {
                   "message",
                   "If an account exists with this identifier, you will receive a password reset link")));
     } else {
-      // Log but don't reveal to user (prevent enumeration)
-      logger.info("Password reset requested for unknown identifier: {}", identifier);
+      // Timing attack mitigation: run dummy BCrypt verification to equalize CPU execution time
+      passwordEncoder.matches("dummy", DUMMY_HASH);
+      logger.info("Password reset requested for unknown identifier");
     }
 
     // Always return same generic response for unknown users to prevent enumeration

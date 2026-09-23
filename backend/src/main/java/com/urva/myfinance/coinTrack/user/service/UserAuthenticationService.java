@@ -215,7 +215,13 @@ public class UserAuthenticationService {
       throw new RuntimeException("Registration expired. Please register again.");
     }
 
-    List<String> backupCodes = totpService.verifySetupForPendingUser(pendingUser, totpCode);
+    List<String> backupCodes;
+    try {
+      backupCodes = totpService.verifySetupForPendingUser(pendingUser, totpCode);
+    } catch (RuntimeException e) {
+      userService.recordPendingTotpFailure(username);
+      throw e;
+    }
 
     User savedUser = userService.completePendingRegistration(pendingUser);
 
