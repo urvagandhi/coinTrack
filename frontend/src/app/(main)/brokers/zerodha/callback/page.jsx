@@ -31,7 +31,7 @@ export default function ZerodhaCallbackPage() {
     <Suspense
       fallback={
         <div className='min-h-[60vh] flex items-center justify-center'>
-          <div className='w-8 h-8 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin' />
+          <div className='w-8 h-8 rounded-full border-2 border-hairline border-t-foreground animate-spin' />
         </div>
       }
     >

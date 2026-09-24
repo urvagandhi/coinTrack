@@ -38,67 +38,18 @@ export default function SchemeSearchCombobox({
       }
       setLoading(true);
       try {
-        // If query is a 5-6 digit number, try direct lookup first (very robust for AMFI codes)
-        if (/^\d{5,6}$/.test(debouncedQuery)) {
-          try {
-            const directRes = await fetch(
-              `https://api.mfapi.in/mf/${debouncedQuery}/latest`,
-              {
-                signal: abortController.signal,
-              }
-            );
-            const directData = await directRes.json();
-            if (directData && directData.meta && directData.meta.scheme_code) {
-              setResults([
-                {
-                  schemeCode: directData.meta.scheme_code,
-                  schemeName: directData.meta.scheme_name,
-                },
-              ]);
-              if (inputRef.current === document.activeElement) {
-                setOpen(true);
-              }
-              setLoading(false);
-              return; // Skip the general text search if we found an exact code match
-            }
-          } catch {
-            // Ignore direct lookup failure and fallback to general text search
-          }
-        }
-
         let data = [];
         try {
-          // Primary: Hit mfapi.in directly for text search
           const res = await fetch(
-            `https://api.mfapi.in/mf/search?q=${encodeURIComponent(debouncedQuery)}`,
-            {
-              signal: abortController.signal,
-            }
+            `/api/mf-search?q=${encodeURIComponent(debouncedQuery)}`,
+            { signal: abortController.signal }
           );
           if (res.ok) {
             const parsed = await res.json();
             if (Array.isArray(parsed)) data = parsed;
           }
         } catch {
-          // Ignore error and try fallback
-        }
-
-        // Fallback: If mfapi.in fails or returns empty, try local AMFI scraping route
-        if (data.length === 0) {
-          try {
-            const fallbackRes = await fetch(
-              `/api/mf-search?q=${encodeURIComponent(debouncedQuery)}`,
-              {
-                signal: abortController.signal,
-              }
-            );
-            if (fallbackRes.ok) {
-              const fallbackParsed = await fallbackRes.json();
-              if (Array.isArray(fallbackParsed)) data = fallbackParsed;
-            }
-          } catch {
-            // Ignore fallback error
-          }
+          // Ignore cancellation or fetch errors
         }
 
         setResults(data);

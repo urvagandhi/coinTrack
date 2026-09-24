@@ -375,29 +375,19 @@ export const calculatorService = {
       .then(res => res.data),
 };
 
-/**
- * Format currency in Indian Rupee format
- */
+import {
+  formatCurrency as canonicalFormatCurrency,
+  formatPercent as canonicalFormatPercent,
+} from './formatters';
+
 export function formatCurrency(amount) {
-  if (amount === null || amount === undefined) return '₹0';
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return canonicalFormatCurrency(amount, { dp: 0 });
 }
 
-/**
- * Format percentage
- */
 export function formatPercentage(value, decimals = 2) {
-  if (value === null || value === undefined) return '0%';
-  return `${Number(value).toFixed(decimals)}%`;
+  return canonicalFormatPercent(value, { dp: decimals });
 }
 
-/**
- * Format number in Indian format
- */
 export function formatNumber(num) {
   if (num === null || num === undefined) return '0';
   return new Intl.NumberFormat('en-IN').format(num);

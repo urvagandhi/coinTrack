@@ -1,12 +1,24 @@
 import { cn } from '@/lib/utils';
 
-function Card({ className, size = 'default', ...props }) {
+function Card({ className, size = 'default', variant = 'default', ...props }) {
+  const variantStyles = {
+    default: 'bg-card text-card-foreground ring-1 ring-foreground/10',
+    interactive:
+      'bg-card text-card-foreground ring-1 ring-foreground/10 hover:ring-foreground/25 hover:shadow-md cursor-pointer transition-all duration-200',
+    glass:
+      'bg-card/70 text-card-foreground backdrop-blur-md border border-border/50 shadow-xs',
+    flat: 'bg-card/40 text-card-foreground border border-border/60',
+    stat: 'bg-card text-card-foreground border border-hairline/40 rounded-xl shadow-xs',
+  };
+
   return (
     <div
       data-slot='card'
       data-size={size}
+      data-variant={variant}
       className={cn(
-        'group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl',
+        'group/card flex flex-col gap-4 overflow-hidden rounded-xl py-4 text-sm has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl',
+        variantStyles[variant] || variantStyles.default,
         className
       )}
       {...props}
@@ -88,10 +100,10 @@ function CardFooter({ className, ...props }) {
 
 export {
   Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
   CardAction,
-  CardDescription,
   CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 };

@@ -49,7 +49,7 @@ export default function AuthGuard({ children }) {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className='w-10 h-10 rounded-full border-2 border-blue-200 border-t-blue-600'
+          className='w-10 h-10 rounded-full border-2 border-hairline border-t-foreground'
         />
         <span className='text-sm text-muted-foreground'>Loading...</span>
       </div>

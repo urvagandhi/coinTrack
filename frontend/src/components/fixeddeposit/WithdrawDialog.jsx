@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, X, Calendar, Percent, RotateCcw } from 'lucide-react';
 import {
   describeBankPenalty,
   normalisePenaltyOverride,
 } from '@/lib/bankPenalty';
+import { Calendar, Loader2, Percent, RotateCcw, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 function daysBetweenIso(isoFrom, isoTo) {
   if (!isoFrom || !isoTo) return null;
@@ -15,27 +15,11 @@ function daysBetweenIso(isoFrom, isoTo) {
   return Math.round((to - from) / 86400000);
 }
 
-function formatCurrency(amount) {
-  if (amount === null || amount === undefined || isNaN(Number(amount)))
-    return '₹0.00';
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-  }).format(Number(amount));
-}
+import { formatCurrency, formatInIndianWords } from '@/lib/formatters';
 
 function fmtPercent(value) {
   if (value === null || value === undefined || isNaN(Number(value))) return '—';
   return `${Number(value)}`;
-}
-
-function formatInIndianWords(amount) {
-  const num = Number(amount);
-  if (isNaN(num) || num <= 0) return '';
-  if (num >= 10000000) return `${(num / 10000000).toFixed(2)} Cr`;
-  if (num >= 100000) return `${(num / 100000).toFixed(2)} Lakh`;
-  return '';
 }
 
 export default function WithdrawDialog({

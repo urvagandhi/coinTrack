@@ -1201,3 +1201,13 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     opacity: 0;
   }
 }
+
+@layer utilities {
+  .bg-hairline {
+    background-color: hsl(var(--hairline));
+  }
+
+  .border-hairline {
+    border-color: hsl(var(--hairline));
+  }
+}

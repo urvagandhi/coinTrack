@@ -22,8 +22,11 @@ const buttonVariants = cva(
           'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-400/30',
         warning:
           'bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/20 dark:text-amber-400 dark:border-amber-400/30',
-        info: 'bg-foreground/10 text-foreground border border-foreground/20 hover:bg-foreground/15 dark:bg-foreground/15 dark:border-foreground/25',
         link: 'text-blue-600 dark:text-blue-400 font-medium underline-offset-4 hover:underline border border-transparent',
+        gain: 'bg-gain text-gain-foreground hover:bg-gain/90 border border-transparent shadow-xs font-medium',
+        loss: 'bg-loss text-loss-foreground hover:bg-loss/90 border border-transparent shadow-xs font-medium',
+        gainOutline: 'border border-gain/40 text-gain hover:bg-gain/10',
+        lossOutline: 'border border-loss/40 text-loss hover:bg-loss/10',
       },
       size: {
         default:

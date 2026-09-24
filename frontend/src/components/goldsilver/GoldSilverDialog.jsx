@@ -22,17 +22,7 @@ const INITIAL_STATE = {
   remarks: '',
 };
 
-function formatIndianCurrency(amount) {
-  if (amount === null || amount === undefined || amount === '' || isNaN(amount))
-    return '';
-  const num = Number(amount);
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num);
-}
+import { formatCurrency as formatIndianCurrency } from '@/lib/formatters';
 
 export default function GoldSilverDialog({
   isOpen,

@@ -24,6 +24,16 @@ const badgeVariants = cva(
         ghost:
           'border-transparent hover:bg-muted hover:text-foreground dark:hover:bg-muted/50',
         link: 'border-transparent text-primary underline-offset-4 hover:underline',
+        gain: 'bg-gain/15 text-gain border-gain/30 dark:bg-gain/20 hover:bg-gain/25 font-mono tnum',
+        loss: 'bg-loss/15 text-loss border-loss/30 dark:bg-loss/20 hover:bg-loss/25 font-mono tnum',
+        neutral:
+          'bg-neutral/15 text-neutral border-neutral/30 hover:bg-neutral/20 font-mono tnum',
+        brokerZerodha:
+          'bg-broker-zerodha/15 text-broker-zerodha border-broker-zerodha/30',
+        brokerUpstox:
+          'bg-broker-upstox/15 text-broker-upstox border-broker-upstox/30',
+        brokerAngel:
+          'bg-broker-angel/15 text-broker-angel border-broker-angel/30',
       },
     },
     defaultVariants: {

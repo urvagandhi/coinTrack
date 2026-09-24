@@ -1,0 +1,23 @@
+# coinTrack
+
+> Live broker aggregation + manual alternative-asset ledgers (India).
+> Your portfolio, set in clear type.
+
+## What coinTrack does
+- Aggregates Zerodha, Upstox, and Angel One portfolios in real-time
+- Manual ledgers: Gold & Silver (with live bullion rates), EPF, PPF, Fixed Deposits, Mutual Funds (FIFO capital gains engine)
+- Unified net-worth calculation, asset allocation drift, P&L analysis, and tax-ready reports
+- Bank-grade authentication: Google OAuth, TOTP 2FA, session lifecycle management
+
+## Public surfaces (included in sitemap)
+- / — landing page (product overview, integrations, security)
+- /calculators — 32+ financial calculators (SIP, EMI, PPF, EPF, HRA, Income Tax, NPS, etc.)
+
+## Auth & protected endpoints
+- /dashboard, /portfolio, /brokers, /mutual-fund, /fixed-deposit, /ppf, /epf, /gold-silver, /notes, /profile
+
+## Technical Stack
+- Frontend: Next.js 16 (App Router), Tailwind CSS, Radix UI Primitives, TanStack Query
+- Security: Edge route protection, HTTP-only cookie support, zero-trust external domain boundary
+- Backend: Spring Boot enterprise service with multi-tenant isolation
+- Deployment: Vercel (Frontend), Render (Backend)

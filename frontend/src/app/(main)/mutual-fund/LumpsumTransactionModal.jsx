@@ -544,7 +544,7 @@ export default function LumpsumTransactionModal({
                         {calculatedNavData.error}
                       </div>
                     ) : formData.schemeId && formData.investmentDate ? (
-                      <div className='text-xs text-ed-muted-text mt-2 italic'>
+                      <div className='text-xs text-muted-foreground mt-2 italic'>
                         NAV for the applicable date is currently unavailable
                         (e.g., future date).
                       </div>

@@ -1,12 +1,12 @@
-'use client';
+import MainShell from './MainShell';
 
-import AuthGuard from '@/components/auth-guards/AuthGuard';
-import MainLayout from '@/components/layout/MainLayout';
+export const metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function Layout({ children }) {
-  return (
-    <AuthGuard>
-      <MainLayout>{children}</MainLayout>
-    </AuthGuard>
-  );
+  return <MainShell>{children}</MainShell>;
 }

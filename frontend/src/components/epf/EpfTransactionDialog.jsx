@@ -4,35 +4,15 @@ import { useToast } from '@/components/ui/feedback/use-toast';
 import { Loader2, X, Calculator, Info } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-function formatIndianCurrency(amount) {
-  if (amount === null || amount === undefined || amount === '' || isNaN(amount))
-    return '';
-  const num = Number(amount);
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num);
-}
+import {
+  formatCurrency as formatIndianCurrency,
+  parseAmount,
+} from '@/lib/formatters';
 
 function parseShortcutAmount(val) {
   if (!val) return '';
-  const clean = val.toString().trim().replace(/,/g, '');
-
-  if (/[lL]$/i.test(clean)) {
-    const num = parseFloat(clean.substring(0, clean.length - 1));
-    if (!isNaN(num)) return String(num * 100000);
-  }
-  if (/cr$/i.test(clean)) {
-    const num = parseFloat(clean.substring(0, clean.length - 2));
-    if (!isNaN(num)) return String(num * 10000000);
-  }
-  if (/[kK]$/i.test(clean)) {
-    const num = parseFloat(clean.substring(0, clean.length - 1));
-    if (!isNaN(num)) return String(num * 1000);
-  }
-  return val;
+  const parsed = parseAmount(val);
+  return parsed ? String(parsed) : val;
 }
 
 const INITIAL_STATE = {

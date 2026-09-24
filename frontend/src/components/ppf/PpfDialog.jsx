@@ -7,62 +7,16 @@ import { ppfAPI } from '@/lib/api';
 import { getFinancialYear } from '@/lib/format';
 import { useEffect, useState } from 'react';
 
-/**
- * Format currency in Indian standard (en-IN)
- */
-function formatIndianCurrency(amount) {
-  if (amount === null || amount === undefined || amount === '' || isNaN(amount))
-    return '';
-  const num = Number(amount);
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num);
-}
+import {
+  formatCurrency as formatIndianCurrency,
+  formatInIndianWords,
+  parseAmount,
+} from '@/lib/formatters';
 
-/**
- * Helper to display amounts in Indian words (Lakh / Crore)
- */
-function formatInIndianWords(amount) {
-  const num = parseFloat(amount);
-  if (isNaN(num) || num <= 0) return '';
-  if (num >= 10000000) {
-    return `${(num / 10000000).toFixed(2)} Cr`;
-  }
-  if (num >= 100000) {
-    return `${(num / 100000).toFixed(2)} Lakh`;
-  }
-  if (num >= 1000) {
-    return `${(num / 1000).toFixed(1)}k`;
-  }
-  return '';
-}
-
-/**
- * Helper to parse amount shortcuts (e.g. 5L -> 500000)
- */
 function parseShortcutAmount(val) {
   if (!val) return '';
-  const clean = val.toString().trim().replace(/,/g, '');
-
-  // Lakhs
-  if (/[lL]$/i.test(clean)) {
-    const num = parseFloat(clean.substring(0, clean.length - 1));
-    if (!isNaN(num)) return String(num * 100000);
-  }
-  // Crores
-  if (/cr$/i.test(clean)) {
-    const num = parseFloat(clean.substring(0, clean.length - 2));
-    if (!isNaN(num)) return String(num * 10000000);
-  }
-  // Thousands
-  if (/[kK]$/i.test(clean)) {
-    const num = parseFloat(clean.substring(0, clean.length - 1));
-    if (!isNaN(num)) return String(num * 1000);
-  }
-  return val;
+  const parsed = parseAmount(val);
+  return parsed ? String(parsed) : val;
 }
 
 const INITIAL_STATE = {

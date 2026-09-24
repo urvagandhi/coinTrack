@@ -144,16 +144,16 @@ const METRIC_VARIANT = {
     value: 'text-foreground',
   },
   success: {
-    wrap: 'border-l-2 border-[hsl(var(--gain))] bg-[hsl(var(--gain)/0.05)]',
-    value: 'text-[hsl(var(--gain))]',
+    wrap: 'border-l-2 border-gain bg-gain/5',
+    value: 'text-gain',
   },
   warning: {
-    wrap: 'border-l-2 border-[hsl(var(--chart-4))] bg-[hsl(var(--chart-4)/0.06)]',
-    value: 'text-[hsl(var(--chart-4))]',
+    wrap: 'border-l-2 border-chart-4 bg-chart-4/10',
+    value: 'text-chart-4',
   },
   error: {
-    wrap: 'border-l-2 border-[hsl(var(--loss))] bg-[hsl(var(--loss)/0.05)]',
-    value: 'text-[hsl(var(--loss))]',
+    wrap: 'border-l-2 border-loss bg-loss/5',
+    value: 'text-loss',
   },
 };
 
@@ -193,6 +193,7 @@ export function FormField({
   value,
   onChange,
   type = 'number',
+  inputMode,
   placeholder,
   prefix,
   suffix,
@@ -202,6 +203,16 @@ export function FormField({
   error,
   tooltip,
 }) {
+  const resolvedInputMode =
+    inputMode ||
+    (type === 'number'
+      ? 'decimal'
+      : type === 'tel'
+        ? 'tel'
+        : type === 'email'
+          ? 'email'
+          : undefined);
+
   return (
     <div className='space-y-1.5'>
       <div className='flex items-baseline justify-between gap-2'>
@@ -225,6 +236,7 @@ export function FormField({
         )}
         <input
           type={type}
+          inputMode={resolvedInputMode}
           id={name}
           name={name}
           value={value === 0 ? '' : value}
@@ -233,6 +245,8 @@ export function FormField({
           min={min}
           max={max}
           step={step}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${name}-error` : undefined}
           className={cn(
             'w-full h-11 bg-background border font-mono text-[14px] text-foreground',
             'placeholder:text-muted-foreground/60',
@@ -240,7 +254,7 @@ export function FormField({
             prefix ? 'pl-7' : 'pl-3',
             suffix ? 'pr-16' : 'pr-3',
             error
-              ? 'border-[hsl(var(--loss))] focus:border-[hsl(var(--loss))] focus:ring-[hsl(var(--loss))]'
+              ? 'border-loss focus:border-loss focus:ring-loss text-loss'
               : 'border-hairline focus:border-foreground focus:ring-foreground'
           )}
         />
@@ -251,7 +265,11 @@ export function FormField({
         )}
       </div>
       {error && (
-        <p className='flex items-center gap-1.5 text-[11px] font-mono text-[hsl(var(--loss))]'>
+        <p
+          id={`${name}-error`}
+          role='alert'
+          className='flex items-center gap-1.5 text-[11px] font-mono text-loss'
+        >
           <AlertCircle size={11} /> {error}
         </p>
       )}

@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
@@ -39,6 +40,7 @@ class TwoFactorRecoveryControllerTest {
   @Mock private UserRepository userRepository;
   @Mock private TotpService totpService;
   @Mock private JWTService jwtService;
+  @Mock private PasswordEncoder passwordEncoder;
   @Mock private HttpServletRequest httpRequest;
 
   @InjectMocks private TwoFactorRecoveryController controller;
@@ -119,6 +121,7 @@ class TwoFactorRecoveryControllerTest {
   @DisplayName("request2FARecovery: email sending fails → still 200")
   void request2FARecovery_emailFails_200() {
     User user = User.builder().id("u1").totpEnabled(true).emailVerified(true).build();
+    when(userRepository.findByEmail("test@example.com")).thenReturn(user);
     when(httpRequest.getHeader("X-Forwarded-For")).thenReturn(null);
     when(httpRequest.getHeader("User-Agent")).thenReturn("test");
     when(emailTokenService.createToken(any(), anyString(), any())).thenReturn("token");

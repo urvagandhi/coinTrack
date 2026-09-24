@@ -1,36 +1,30 @@
-// Thin Sonner adapter — preserves the legacy useToast() API so existing
-// call sites keep working while toasts route through Sonner.
+// Canonical Sonner adapter — standardizes toasts across the application.
 'use client';
 
 import { toast as sonner } from 'sonner';
-import ToastCard from './toast-card';
 
-const dispatch = ({ title, description, variant, action, duration } = {}) => {
-  const opts = {};
-  if (duration) opts.duration = duration;
+export const toast = (props, maybeOptions) => {
+  if (typeof props === 'string') {
+    return sonner(props, maybeOptions);
+  }
+  const { title, description, variant, duration, ...opts } = props || {};
+  const options = { description, duration, ...opts };
 
-  // We use sonner.custom to render our MAC-Style ToastCard.
-  // sonner provides an 'id' or 't' (the toast object) to dismiss it.
-  return sonner.custom(
-    t => (
-      <ToastCard
-        title={title}
-        description={description}
-        variant={variant}
-        action={action}
-        onDismiss={() => sonner.dismiss(t)}
-      />
-    ),
-    opts
-  );
+  if (variant === 'destructive') {
+    return sonner.error(title || 'Error', options);
+  }
+  if (variant === 'success') {
+    return sonner.success(title || 'Success', options);
+  }
+  return sonner(title, options);
 };
-
-export const toast = dispatch;
 
 export function useToast() {
   return {
-    toast: dispatch,
+    toast,
     dismiss: sonner.dismiss,
     toasts: [],
   };
 }
+
+export default useToast;
