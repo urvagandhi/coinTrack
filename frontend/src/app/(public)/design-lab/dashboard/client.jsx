@@ -3,8 +3,8 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ShieldCheck, CheckCircle2, AlertCircle, LogOut } from 'lucide-react';
-import { PendingVerificationBanner } from '@/components/ui/data-display/pending-verification-banner';
-import { Button } from '@/components/ui/primitives/button';
+import { PendingVerificationBanner } from '@/shared/ui/data-display/pending-verification-banner';
+import { Button } from '@/shared/ui/primitives/button';
 import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
 function DashboardContent() {
@@ -148,3 +148,4 @@ export default function DesignLabDashboardClient() {
     </Suspense>
   );
 }
+

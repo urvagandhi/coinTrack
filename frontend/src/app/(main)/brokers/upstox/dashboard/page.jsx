@@ -1,13 +1,7 @@
-// src/app/(main)/brokers/upstox/dashboard/page.jsx — Redirect to portfolio
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { UpstoxDashboardView } from '@/features/brokers';
 
-export default function UpstoxDashboardRedirect() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace('/portfolio?tab=holdings');
-  }, [router]);
-  return null;
+export default function Page() {
+  return <UpstoxDashboardView />;
 }

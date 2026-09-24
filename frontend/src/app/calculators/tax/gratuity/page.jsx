@@ -7,8 +7,8 @@ import {
   InputCard,
   ResultCard,
   ResultMetric,
-} from '@/components/calculators/framework/CalculatorComponents';
-import { calculatorService, formatCurrency } from '@/lib/calculator.service';
+} from '@/features/calculators';
+import { calculatorService, formatCurrency } from '@/features/calculators';
 import { useState } from 'react';
 
 export default function GratuityCalculatorPage() {

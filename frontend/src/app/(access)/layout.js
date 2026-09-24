@@ -1,11 +1,11 @@
 // src/app/(access)/layout.js
 'use client';
 
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/shared/auth/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FintechLoaderOverlay } from '@/components/ui/loaders/FintechLoaderOverlay';
+import { FintechLoaderOverlay } from '@/shared/ui/loaders/FintechLoaderOverlay';
 
 export default function AccessLayout({ children }) {
   const { isAuthenticated, isInitializing, user } = useAuth();
@@ -60,3 +60,4 @@ export default function AccessLayout({ children }) {
 
   return <div className='min-h-screen bg-background'>{children}</div>;
 }
+

@@ -5,14 +5,14 @@ import {
   FormField,
   InputCard,
   ResultCard,
-} from '@/components/calculators/framework/CalculatorComponents';
-import { cn } from '@/lib/utils';
+} from '@/features/calculators';
+import { cn } from '@/shared/lib/utils';
 import { AlertCircle } from 'lucide-react';
 import {
   calculatorService,
   formatCurrency,
   formatPercentage,
-} from '@/lib/calculator.service';
+} from '@/features/calculators';
 import { useState } from 'react';
 
 function ComparisonPanel({ title, items, highlighted }) {
@@ -221,3 +221,4 @@ export default function FlatVsReducingCalculatorPage() {
     </CalculatorLayout>
   );
 }
+

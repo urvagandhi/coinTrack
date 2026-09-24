@@ -2,8 +2,8 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LoginScreen } from '@/components/ui/auth/login-screen';
-import { FintechLoaderOverlay } from '@/components/ui/loaders/FintechLoaderOverlay';
+import { LoginScreen } from '@/features/auth';
+import { FintechLoaderOverlay } from '@/shared/ui/loaders/FintechLoaderOverlay';
 import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
 function LoginContent() {
@@ -89,3 +89,4 @@ export default function DesignLabLoginClient() {
     </Suspense>
   );
 }
+

@@ -1,6 +1,6 @@
 'use client';
 
-import MainLayout from '@/components/layout/MainLayout';
+import MainLayout from '@/widgets/app-shell/MainLayout';
 import { usePathname } from 'next/navigation';
 
 export default function Layout({ children }) {
@@ -17,3 +17,4 @@ export default function Layout({ children }) {
 
   return <MainLayout>{children}</MainLayout>;
 }
+

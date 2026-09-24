@@ -1,7 +1,7 @@
 'use client';
 
-import { TwoFactorSetupScreen } from '@/components/ui/auth/two-factor-setup-screen';
-import { tokenManager, totpAPI } from '@/lib/api';
+import { TwoFactorSetupScreen } from '@/features/auth';
+import { tokenManager, totpAPI } from '@/shared/api/client';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
@@ -165,3 +165,4 @@ export default function Setup2FAPage() {
     </Suspense>
   );
 }
+

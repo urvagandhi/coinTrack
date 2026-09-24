@@ -1,9 +1,9 @@
-import LegalSupportDialogManager from '@/components/legal-support/LegalSupportDialogManager';
-import { Toaster } from '@/components/ui/feedback/sonner';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { ModalProvider } from '@/contexts/ModalContext';
-import QueryProvider from '@/providers/QueryProvider';
-import { ThemeProvider } from '@/providers/ThemeProvider';
+import { AuthProvider } from '@/shared/auth/AuthContext';
+import { ModalProvider } from '@/shared/providers/ModalContext';
+import QueryProvider from '@/shared/providers/QueryProvider';
+import { ThemeProvider } from '@/shared/providers/ThemeProvider';
+import { Toaster } from '@/shared/ui/feedback/sonner';
+import LegalSupportDialogManager from '@/widgets/legal-support/LegalSupportDialogManager';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Geist, Geist_Mono } from 'next/font/google';
@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-import { JsonLd, generateOrganizationSchema } from '@/components/seo/JsonLd';
+import { JsonLd, generateOrganizationSchema } from '@/shared/ui/seo/JsonLd';
 
 export const metadata = {
   metadataBase: new URL(
@@ -95,3 +95,5 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+
+

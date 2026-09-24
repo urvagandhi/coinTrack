@@ -1,7 +1,7 @@
 'use client';
 
-import AuthGuard from '@/components/auth-guards/AuthGuard';
-import MainLayout from '@/components/layout/MainLayout';
+import AuthGuard from '@/shared/auth/AuthGuard';
+import MainLayout from '@/widgets/app-shell/MainLayout';
 
 export default function MainShell({ children }) {
   return (
@@ -10,3 +10,5 @@ export default function MainShell({ children }) {
     </AuthGuard>
   );
 }
+
+

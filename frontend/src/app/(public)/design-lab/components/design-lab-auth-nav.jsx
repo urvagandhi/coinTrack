@@ -19,7 +19,7 @@ import {
   CheckCircle2,
   ExternalLink,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 export function DesignLabAuthNav() {
   const pathname = usePathname();
@@ -172,3 +172,4 @@ export function DesignLabAuthNav() {
     </aside>
   );
 }
+

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { emailAPI, tokenManager } from '@/lib/api';
-import { VerifyEmailScreen } from '@/components/ui/auth/verify-email-screen';
+import { emailAPI, tokenManager } from '@/shared/api/client';
+import { VerifyEmailScreen } from '@/features/auth';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -106,3 +106,4 @@ function VerifyEmailContent() {
 export default function VerifyEmailPage() {
   return <VerifyEmailContent />;
 }
+

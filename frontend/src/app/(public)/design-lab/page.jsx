@@ -1,27 +1,27 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import ConfirmDialog from '@/components/ui/feedback/confirm-dialog';
-import AnnouncementCard from '@/components/ui/data-display/announcement-card';
-import { useToast } from '@/components/ui/feedback/use-toast';
+import ConfirmDialog from '@/shared/ui/feedback/confirm-dialog';
+import AnnouncementCard from '@/shared/ui/data-display/announcement-card';
+import { useToast } from '@/shared/ui/feedback/use-toast';
 import {
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
-} from '@/components/ui/primitives/tabs';
+} from '@/shared/ui/primitives/tabs';
 import {
   Alert,
   AlertTitle,
   AlertDescription,
-} from '@/components/ui/primitives/alert';
-import { Badge } from '@/components/ui/primitives/badge';
+} from '@/shared/ui/primitives/alert';
+import { Badge } from '@/shared/ui/primitives/badge';
 import {
   Avatar,
   AvatarImage,
   AvatarFallback,
-} from '@/components/ui/primitives/avatar';
-import { Button } from '@/components/ui/primitives/button';
+} from '@/shared/ui/primitives/avatar';
+import { Button } from '@/shared/ui/primitives/button';
 import {
   Card,
   CardHeader,
@@ -29,16 +29,16 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from '@/components/ui/primitives/card';
+} from '@/shared/ui/primitives/card';
 
-import { Progress } from '@/components/ui/primitives/progress';
+import { Progress } from '@/shared/ui/primitives/progress';
 import {
   Dialog,
   DialogTrigger,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/primitives/dialog';
+} from '@/shared/ui/primitives/dialog';
 import {
   Sheet,
   SheetTrigger,
@@ -48,22 +48,22 @@ import {
   SheetDescription,
   SheetFooter,
   SheetClose,
-} from '@/components/ui/primitives/sheet';
+} from '@/shared/ui/primitives/sheet';
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
   PopoverHeader,
   PopoverTitle,
-} from '@/components/ui/primitives/popover';
+} from '@/shared/ui/primitives/popover';
 import {
   TooltipProvider,
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-} from '@/components/ui/primitives/tooltip';
-import { ScrollArea } from '@/components/ui/primitives/scroll-area';
-import { Separator } from '@/components/ui/primitives/separator';
+} from '@/shared/ui/primitives/tooltip';
+import { ScrollArea } from '@/shared/ui/primitives/scroll-area';
+import { Separator } from '@/shared/ui/primitives/separator';
 import {
   Table,
   TableHeader,
@@ -71,13 +71,13 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@/components/ui/primitives/table';
-import { Label } from '@/components/ui/primitives/label';
-import { Skeleton, SkeletonText } from '@/components/ui/feedback/Skeleton';
-import BankSearchCombobox from '@/components/ui/search/BankSearchCombobox';
-import SchemeSearchCombobox from '@/components/ui/search/SchemeSearchCombobox';
-import CategoryDropdown from '@/components/ui/forms/CategoryDropdown';
-import FilterDropdown from '@/components/ui/forms/FilterDropdown';
+} from '@/shared/ui/primitives/table';
+import { Label } from '@/shared/ui/primitives/label';
+import { Skeleton, SkeletonText } from '@/shared/ui/feedback/Skeleton';
+import BankSearchCombobox from '@/shared/ui/search/BankSearchCombobox';
+import SchemeSearchCombobox from '@/shared/ui/search/SchemeSearchCombobox';
+import CategoryDropdown from '@/shared/ui/forms/CategoryDropdown';
+import FilterDropdown from '@/shared/ui/forms/FilterDropdown';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -91,7 +91,7 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-} from '@/components/ui/primitives/dropdown-menu';
+} from '@/shared/ui/primitives/dropdown-menu';
 import {
   Building2,
   Coins,
@@ -181,7 +181,7 @@ import {
   AnimatedPlusIcon,
   AnimatedBellIcon,
   AnimatedDownloadIcon,
-} from '@/components/ui/feedback/animated-icons';
+} from '@/shared/ui/feedback/animated-icons';
 import {
   InsetFormCard,
   InsetFormRow,
@@ -190,17 +190,17 @@ import {
   EmailValidationBadge,
   InsetDropdownRow,
   InsetTextareaRow,
-} from '@/components/ui/forms/inset-form-card';
-import { CurrencyStepper } from '@/components/ui/forms/currency-stepper';
-import { PasswordStrengthInput } from '@/components/ui/auth/security-inputs';
-import { CopyableKey, TagInput } from '@/components/ui/forms/utility-inputs';
+} from '@/shared/ui/forms/inset-form-card';
+import { CurrencyStepper } from '@/shared/ui/forms/currency-stepper';
+import { PasswordStrengthInput } from '@/features/auth';
+import { CopyableKey, TagInput } from '@/shared/ui/forms/utility-inputs';
 import {
   SpotlightInput,
   SlugInput,
-} from '@/components/ui/primitives/spotlight-input';
-import { CoinTrackNavbar } from '@/components/ui/coinTrack/cointrack-navbar';
-import { CoinTrackFooter } from '@/components/ui/coinTrack/cointrack-footer';
-import { CoinTrackSkyBackground } from '@/components/ui/coinTrack/cointrack-sky-background';
+} from '@/shared/ui/primitives/spotlight-input';
+import { CoinTrackNavbar } from '@/shared/ui/brand/cointrack-navbar';
+import { CoinTrackFooter } from '@/shared/ui/brand/cointrack-footer';
+import { CoinTrackSkyBackground } from '@/shared/ui/brand/cointrack-sky-background';
 
 // ───────────────────────────────────────────────────────────────
 //  DESIGN LAB — confirmation dialog showcase data
@@ -2111,3 +2111,4 @@ export default function DesignLabPage() {
     </TooltipProvider>
   );
 }
+

@@ -3,9 +3,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { LoginScreen } from '@/components/ui/auth/login-screen';
-import { TwoFactorVerifyScreen } from '@/components/ui/auth/two-factor-verify-screen';
-import { useAuth } from '@/contexts/AuthContext';
+import { LoginScreen } from '@/features/auth';
+import { TwoFactorVerifyScreen } from '@/features/auth';
+import { useAuth } from '@/shared/auth/AuthContext';
 
 const GOOGLE_AUTH_URL =
   'https://accounts.google.com/o/oauth2/v2/auth?client_id={clientId}&redirect_uri={redirectUri}&response_type=code&scope={scope}';
@@ -304,3 +304,4 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+

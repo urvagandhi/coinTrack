@@ -2,9 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { VerifyEmailScreen } from '@/components/ui/auth/verify-email-screen';
-import { FintechLoaderOverlay } from '@/components/ui/loaders/FintechLoaderOverlay';
-import { toast } from '@/components/ui/feedback/use-toast';
+import { VerifyEmailScreen } from '@/features/auth';
+import { FintechLoaderOverlay } from '@/shared/ui/loaders/FintechLoaderOverlay';
+import { toast } from '@/shared/ui/feedback/use-toast';
 import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
 function VerifyEmailContent() {
@@ -119,3 +119,4 @@ export default function VerifyEmailDesignLab() {
     </Suspense>
   );
 }
+

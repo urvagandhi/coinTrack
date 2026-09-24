@@ -1,13 +1,11 @@
-export { default as LoginScreen } from '@/components/ui/auth/login-screen';
-export { default as SecurityInputs } from '@/components/ui/auth/security-inputs';
-export {
-  normalizeEmail,
-  normalizeName,
-  normalizePhoneIndia,
-  normalizeUsername,
-  validateEmail,
-  validateName,
-  validatePhoneIndia,
-  validateUsername,
-} from '@/lib/validation/identity';
-export { authService } from '@/services/auth.service';
+export * from './components/auth-layout';
+export * from './components/auth-shared';
+export * from './components/forgot-password-screen';
+export * from './components/login-screen';
+export * from './components/register-screen';
+export * from './components/reset-password-screen';
+export * from './components/security-inputs';
+export * from './components/two-factor-setup-screen';
+export * from './components/two-factor-verify-screen';
+export * from './components/verify-email-screen';
+

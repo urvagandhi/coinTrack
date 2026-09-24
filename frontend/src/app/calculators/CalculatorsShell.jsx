@@ -1,9 +1,9 @@
 // src/app/calculators/CalculatorsShell.jsx
 'use client';
 
-import { ThemeToggle } from '@/components/ui/primitives/theme-toggle';
-import { useAuth } from '@/contexts/AuthContext';
-import { useModal } from '@/contexts/ModalContext';
+import { ThemeToggle } from '@/shared/ui/primitives/theme-toggle';
+import { useAuth } from '@/shared/auth/AuthContext';
+import { useModal } from '@/shared/providers/ModalContext';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -353,3 +353,4 @@ export default function CalculatorsShell({ children }) {
     </div>
   );
 }
+

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { RegisterScreen } from '@/components/ui/auth/register-screen';
+import { useAuth } from '@/shared/auth/AuthContext';
+import { RegisterScreen } from '@/features/auth';
 
 function normalizeIdentifier(value) {
   if (!value) return '';
@@ -281,3 +281,4 @@ export default function RegisterPage() {
     </Suspense>
   );
 }
+

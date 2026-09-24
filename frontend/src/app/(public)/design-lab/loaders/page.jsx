@@ -1,7 +1,7 @@
 'use client';
 
-import { ThemeToggle } from '@/components/ui/primitives/theme-toggle';
-import { FintechLoader } from '@/components/ui/loaders/FintechLoader';
+import { ThemeToggle } from '@/shared/ui/primitives/theme-toggle';
+import { FintechLoader } from '@/shared/ui/loaders/FintechLoader';
 import {
   ArrowLeft,
   Check,
@@ -16,11 +16,11 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 
 // Import available Lottie JSON files
-import businessInvestor from '@/components/ui/loaders/business-investor-gaining-profit-from-investment.json';
-import cardPayment from '@/components/ui/loaders/card-payment.json';
-import coinStack from '@/components/ui/loaders/coin-stack.json';
+import businessInvestor from '@/shared/ui/loaders/business-investor-gaining-profit-from-investment.json';
+import cardPayment from '@/shared/ui/loaders/card-payment.json';
+import coinStack from '@/shared/ui/loaders/coin-stack.json';
 
-const Lottie = dynamic(() => import('@/components/ui/loaders/LottieWrapper'), {
+const Lottie = dynamic(() => import('@/shared/ui/loaders/LottieWrapper'), {
   ssr: false,
 });
 
@@ -375,3 +375,4 @@ export default function FintechLoaderDemoPage() {
     </div>
   );
 }
+

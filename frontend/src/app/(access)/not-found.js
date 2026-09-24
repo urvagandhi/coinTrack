@@ -12,7 +12,7 @@ import {
   Search,
   ChevronDown,
 } from 'lucide-react';
-import { CoinTrackFooter } from '@/components/ui/coinTrack/cointrack-footer';
+import { CoinTrackFooter } from '@/shared/ui/brand/cointrack-footer';
 
 function useNow() {
   const [now, setNow] = useState(null);
@@ -280,3 +280,4 @@ export default function NotFound() {
     </div>
   );
 }
+

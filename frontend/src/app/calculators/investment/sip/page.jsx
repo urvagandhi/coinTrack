@@ -7,13 +7,13 @@ import {
   InputCard,
   ResultCard,
   ResultMetric,
-} from '@/components/calculators/framework/CalculatorComponents';
+} from '@/features/calculators';
 import { AlertCircle } from 'lucide-react';
 import {
   calculatorService,
   formatCurrency,
   formatPercentage,
-} from '@/lib/calculator.service';
+} from '@/features/calculators';
 import { useState } from 'react';
 import {
   Area,
