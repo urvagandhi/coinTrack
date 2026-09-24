@@ -1,7 +1,8 @@
+export { ProfileView, default as ProfileViewDefault } from './components/ProfileView';
 export {
   formatPhoneDisplay,
   normalizeEmail,
   normalizeName,
   normalizePhoneIndia,
   sanitizeText,
-} from '@/lib/validation/identity';
+} from '@/shared/validation/identity';

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ForgotPasswordScreen } from '@/components/ui/auth/forgot-password-screen';
+import { ForgotPasswordScreen } from '@/features/auth';
 import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
 export default function DesignLabForgotPasswordClient() {

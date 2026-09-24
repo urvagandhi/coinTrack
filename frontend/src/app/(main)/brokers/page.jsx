@@ -1,8 +1,7 @@
 'use client';
 
-import { BROKER_LIST } from '@/lib/brokerConfig';
+import { BROKER_LIST, BrokerCard } from '@/features/brokers';
 import { ShieldCheck } from 'lucide-react';
-import { BrokerCard } from './_shared/BrokerCard';
 
 export default function BrokersPage() {
   return (

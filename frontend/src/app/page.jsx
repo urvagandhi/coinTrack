@@ -4,15 +4,15 @@ import { useRef } from 'react';
 import Link from 'next/link';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { ArrowRight, CheckCircle2, Sparkles, ArrowUpRight } from 'lucide-react';
-import { Button } from '@/components/ui/primitives/button';
-import { CoinTrackNavbar } from '@/components/ui/coinTrack/cointrack-navbar';
-import { CoinTrackSkyBackground } from '@/components/ui/coinTrack/cointrack-sky-background';
-import { CoinTrackHeroMockup } from '@/components/ui/coinTrack/cointrack-hero-mockup';
-import { CoinTrackFeatures } from '@/components/ui/coinTrack/cointrack-features';
-import { CoinTrackInboxSection } from '@/components/ui/coinTrack/cointrack-inbox-section';
-// import { CoinTrackDesignTokens } from '@/components/ui/coinTrack/cointrack-design-tokens';
-import { CoinTrackPricing } from '@/components/ui/coinTrack/cointrack-pricing';
-import { CoinTrackFooter } from '@/components/ui/coinTrack/cointrack-footer';
+import { Button } from '@/shared/ui/primitives/button';
+import { CoinTrackNavbar } from '@/shared/ui/brand/cointrack-navbar';
+import { CoinTrackSkyBackground } from '@/shared/ui/brand/cointrack-sky-background';
+import { CoinTrackHeroMockup } from '@/shared/ui/brand/cointrack-hero-mockup';
+import { CoinTrackFeatures } from '@/shared/ui/brand/cointrack-features';
+import { CoinTrackInboxSection } from '@/shared/ui/brand/cointrack-inbox-section';
+// import { CoinTrackDesignTokens } from '@/shared/ui/brand/cointrack-design-tokens';
+import { CoinTrackPricing } from '@/shared/ui/brand/cointrack-pricing';
+import { CoinTrackFooter } from '@/shared/ui/brand/cointrack-footer';
 
 // Animation variants for smooth natural entrance without empty gaps
 const fadeInUp = {
@@ -275,3 +275,4 @@ export default function CoinTrackLandingPage() {
     </div>
   );
 }
+

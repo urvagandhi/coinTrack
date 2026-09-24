@@ -1,4 +1,4 @@
-export { default as EpfInterestRateDialog } from '@/components/epf/EpfInterestRateDialog';
-export { default as EpfSettingsDialog } from '@/components/epf/EpfSettingsDialog';
-export { default as EpfTransactionDialog } from '@/components/epf/EpfTransactionDialog';
-export { ledgerService } from '@/services/ledger.service';
+export { EpfView, default as EpfViewDefault } from './components/EpfView';
+export { default as EpfInterestRateDialog } from './components/EpfInterestRateDialog';
+export { default as EpfSettingsDialog } from './components/EpfSettingsDialog';
+export { default as EpfTransactionDialog } from './components/EpfTransactionDialog';

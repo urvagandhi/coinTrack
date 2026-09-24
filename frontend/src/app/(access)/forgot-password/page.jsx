@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { passwordAPI } from '@/lib/api';
-import { ForgotPasswordScreen } from '@/components/ui/auth/forgot-password-screen';
+import { passwordAPI } from '@/shared/api/client';
+import { ForgotPasswordScreen } from '@/features/auth';
 
 function normalizeIdentifier(value) {
   const trimmed = value.trim();
@@ -66,3 +66,4 @@ export default function ForgotPasswordPage() {
     />
   );
 }
+

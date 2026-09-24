@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { twofaAPI } from '@/lib/api';
+import { twofaAPI } from '@/shared/api/client';
 import { ShieldOff } from 'lucide-react';
 import Link from 'next/link';
-import { AuthLayout } from '@/components/ui/auth/auth-layout';
-import { AnimatedErrorIcon } from '@/components/ui/feedback/animated-icons';
+import { AuthLayout } from '@/features/auth';
+import { AnimatedErrorIcon } from '@/shared/ui/feedback/animated-icons';
 import { Suspense } from 'react';
 
 function Reset2FAContent() {
@@ -157,3 +157,4 @@ export default function Reset2FAPage() {
     </Suspense>
   );
 }
+

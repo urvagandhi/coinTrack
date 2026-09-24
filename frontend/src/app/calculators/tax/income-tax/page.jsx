@@ -6,10 +6,10 @@ import {
   FormField,
   InputCard,
   ResultCard,
-} from '@/components/calculators/framework/CalculatorComponents';
-import { cn } from '@/lib/utils';
+} from '@/features/calculators';
+import { cn } from '@/shared/lib/utils';
 import { AlertCircle } from 'lucide-react';
-import { calculatorService, formatCurrency } from '@/lib/calculator.service';
+import { calculatorService, formatCurrency } from '@/features/calculators';
 import { useState } from 'react';
 
 function RegimePanel({ title, items, total, recommended }) {
@@ -254,3 +254,4 @@ export default function IncomeTaxCalculatorPage() {
     </CalculatorLayout>
   );
 }
+

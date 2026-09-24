@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { TwoFactorSetupScreen } from '@/components/ui/auth/two-factor-setup-screen';
+import { TwoFactorSetupScreen } from '@/features/auth';
 import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
 function Setup2FAContent() {

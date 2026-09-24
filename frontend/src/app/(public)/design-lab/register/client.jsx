@@ -2,7 +2,7 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { RegisterScreen } from '@/components/ui/auth/register-screen';
+import { RegisterScreen } from '@/features/auth';
 import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
 function RegisterContent() {

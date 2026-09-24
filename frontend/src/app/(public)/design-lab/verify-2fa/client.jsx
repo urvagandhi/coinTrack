@@ -2,7 +2,7 @@
 
 import { useCallback, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { TwoFactorVerifyScreen } from '@/components/ui/auth/two-factor-verify-screen';
+import { TwoFactorVerifyScreen } from '@/features/auth';
 import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
 
 function Verify2FAContent() {

@@ -1,7 +1,7 @@
 'use client';
 
-import { ResetPasswordScreen } from '@/components/ui/auth/reset-password-screen';
-import { passwordAPI } from '@/lib/api';
+import { ResetPasswordScreen } from '@/features/auth';
+import { passwordAPI } from '@/shared/api/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -92,3 +92,4 @@ export default function ResetPasswordPage() {
     </Suspense>
   );
 }
+

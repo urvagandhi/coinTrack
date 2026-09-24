@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ResetPasswordScreen } from '@/components/ui/auth/reset-password-screen';
-import { FintechLoaderOverlay } from '@/components/ui/loaders/FintechLoaderOverlay';
+import { ResetPasswordScreen } from '@/features/auth';
+import { FintechLoaderOverlay } from '@/shared/ui/loaders/FintechLoaderOverlay';
 import { DesignLabAuthNav } from '../components/design-lab-auth-nav';
-import { Button } from '@/components/ui/primitives/button';
+import { Button } from '@/shared/ui/primitives/button';
 
 export default function DesignLabResetPasswordClient() {
   const router = useRouter();
@@ -94,3 +94,4 @@ export default function DesignLabResetPasswordClient() {
     </main>
   );
 }
+

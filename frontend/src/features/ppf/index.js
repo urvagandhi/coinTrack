@@ -1,3 +1,3 @@
-export { default as PpfDialog } from '@/components/ppf/PpfDialog';
-export { default as PpfSettingsDialog } from '@/components/ppf/PpfSettingsDialog';
-export { ledgerService } from '@/services/ledger.service';
+export { PpfView, default as PpfViewDefault } from './components/PpfView';
+export { default as PpfDialog } from './components/PpfDialog';
+export { default as PpfSettingsDialog } from './components/PpfSettingsDialog';
