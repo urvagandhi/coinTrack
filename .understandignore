@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+backend/target/
+frontend/.next/
+frontend/out/
+
+# Build and temporary files
+dist/
+build/
+*.log
+*.tmp
+
+# Version control & internal IDE cache
+.git/
+.gemini/
+.idea/
+.vscode/
+
+# Local data & logs
+*.pid
+*.seed
+*.pid.lock
