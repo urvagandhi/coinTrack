@@ -7,8 +7,6 @@ backend/build
 .env
 backend/.env
 
-TRY/
-
 # Root level ignores
 HELP.md
 *.log
@@ -63,3 +61,7 @@ migrate-userid.js
 .fuse_hidden*
 
 graphify-out/
+
+# Understand-Anything local scratch
+.ua/intermediate/
+.ua/diff-overlay.json
