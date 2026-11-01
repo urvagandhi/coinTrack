@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "3092e0a171d079287696c433b54a594150ead339",
-  "generatedAt": "2026-11-01T04:13:57.859Z",
+  "gitCommitHash": "d4123ee78e5d6f2e0aa5f0d790fbfe9c0302ce5d",
+  "generatedAt": "2026-11-01T04:25:16.929Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -4475,12 +4475,12 @@
     },
     "DOCKER.md": {
       "filePath": "DOCKER.md",
-      "contentHash": "74094859f8c7fe5e2d0d4269e6cb7eb07beb40785ceb310ad141621e7cb27c70",
+      "contentHash": "e54a55ada047e9eef2bf28e0f2f949458f07d7e754654e14ef177cfcae057e13",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 389,
+      "totalLines": 393,
       "hasStructuralAnalysis": false
     },
     "GEMINI.md": {
@@ -82712,12 +82712,12 @@
     },
     "docker-compose.yml": {
       "filePath": "docker-compose.yml",
-      "contentHash": "204063869e0e50d148e8ce4e675081bfe371ad40dbe2ccfb7781915f60ead7e5",
+      "contentHash": "b710b9f4eeeb767a343f6c2a2ac5809ba03b332af3cebe79e628060cf8cdf10f",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 127,
+      "totalLines": 137,
       "hasStructuralAnalysis": false
     },
     "frontend/.dockerignore": {
@@ -99621,6 +99621,16 @@
       "imports": [],
       "exports": [],
       "totalLines": 83,
+      "hasStructuralAnalysis": false
+    },
+    "scripts/sync-env.sh": {
+      "filePath": "scripts/sync-env.sh",
+      "contentHash": "7ed434bc04b23c69cd67608bc7de88271e2e9cd79b4a06bc6bdb22e03ed3ce32",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 42,
       "hasStructuralAnalysis": false
     }
   }

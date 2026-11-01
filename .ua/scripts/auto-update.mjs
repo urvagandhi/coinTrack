@@ -196,6 +196,21 @@ async function main() {
   log('Merging batch changes into assembled graph...');
   runCmd(`python3 "${path.join(SKILL_DIR, 'merge-batch-graphs.py')}" "${PROJECT_ROOT}"`);
 
+  // Ensure layers.json and tour.json exist if incremental architecture update needs them
+  try {
+    const currentKg = JSON.parse(fs.readFileSync(path.join(UA_DIR, 'knowledge-graph.json'), 'utf8'));
+    const intermediateLayers = path.join(UA_DIR, 'intermediate/layers.json');
+    const intermediateTour = path.join(UA_DIR, 'intermediate/tour.json');
+    if (!fs.existsSync(intermediateLayers) && currentKg.layers) {
+      fs.writeFileSync(intermediateLayers, JSON.stringify(currentKg.layers, null, 2));
+    }
+    if (!fs.existsSync(intermediateTour) && currentKg.tour) {
+      fs.writeFileSync(intermediateTour, JSON.stringify(currentKg.tour, null, 2));
+    }
+  } catch (e) {
+    // Ignore if not readable
+  }
+
   // Finalize incremental update
   log('Finalizing incremental graph, updating fingerprints and metadata...');
   runCmd(`node "${path.join(SKILL_DIR, 'finalize-incremental.mjs')}" "${PROJECT_ROOT}"`);
