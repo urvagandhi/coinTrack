@@ -65,3 +65,5 @@ graphify-out/
 # Understand-Anything local scratch
 .ua/intermediate/
 .ua/diff-overlay.json
+.ua/tmp/
+.ua/.trash-*/
