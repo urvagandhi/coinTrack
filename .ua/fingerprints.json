@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "9ca7465ececd179ea779d168a9f0d573ab36968f",
-  "generatedAt": "2026-11-01T04:49:17.011Z",
+  "gitCommitHash": "7ffb061e3c21c4ebb920874a4f3ede3aa988acad",
+  "generatedAt": "2026-11-01T04:50:50.147Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -4725,27 +4725,27 @@
     },
     ".ua/fingerprints.json": {
       "filePath": ".ua/fingerprints.json",
-      "contentHash": "ccc150982c4575e2849d2398e0c7f49bf697239d412e96a2042b1c822fe13c04",
+      "contentHash": "338622d9f58a99be108e0642fd8f4815337daa57fc08d15f093555deb0a6d009",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 99728,
+      "totalLines": 99853,
       "hasStructuralAnalysis": false
     },
     ".ua/knowledge-graph.json": {
       "filePath": ".ua/knowledge-graph.json",
-      "contentHash": "f15115e2971a06e4bea87dc6e767a1ff90316f9112a59cef4bd0786a8bf2d38e",
+      "contentHash": "6fa5ab11cad557ddb9112b225b1a214deb1d8e158113bf905b69f75a12dcb48f",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 110590,
+      "totalLines": 110464,
       "hasStructuralAnalysis": false
     },
     ".ua/meta.json": {
       "filePath": ".ua/meta.json",
-      "contentHash": "71f898b7b1eb8d39623753cd3d640a587e17c12e332faac3831c2c888460c31e",
+      "contentHash": "1dddbfb7e300cfa38cda876d8b639e8a905874a3588cf5deb4c62820e35032d8",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4755,123 +4755,70 @@
     },
     ".ua/scripts/auto-update.mjs": {
       "filePath": ".ua/scripts/auto-update.mjs",
-      "contentHash": "05ca9d856826193c2b50396b6d9acafc80b4b9b13695cfd230eecf242ab738a1",
-      "functions": [
-        {
-          "name": "log",
-          "params": [
-            "msg"
-          ],
-          "exported": false,
-          "lineCount": 3
-        },
-        {
-          "name": "runCmd",
-          "params": [
-            "cmd"
-          ],
-          "exported": false,
-          "lineCount": 8
-        },
-        {
-          "name": "main",
-          "params": [],
-          "exported": false,
-          "lineCount": 243
-        }
-      ],
+      "contentHash": "63e3e4e9a3c1b36c1aece873dd252f41f3bb507be7ccf83f01fdc73ad9ac2c7c",
+      "functions": [],
       "classes": [],
       "imports": [
-        {
-          "source": "node:fs",
-          "specifiers": [
-            "fs"
-          ]
-        },
-        {
-          "source": "node:path",
-          "specifiers": [
-            "path"
-          ]
-        },
-        {
-          "source": "node:child_process",
-          "specifiers": [
-            "execSync"
-          ]
-        },
-        {
-          "source": "node:url",
-          "specifiers": [
-            "pathToFileURL"
-          ]
-        }
-      ],
-      "exports": [],
-      "totalLines": 284,
-      "hasStructuralAnalysis": true
-    },
-    ".ua/scripts/watch.mjs": {
-      "filePath": ".ua/scripts/watch.mjs",
-      "contentHash": "1b91832d7ee6f6766969b9705d40ff6bb6f8eed9cdfee9e9c15a9c8303fd8cd8",
-      "functions": [
-        {
-          "name": "shouldIgnore",
-          "params": [
-            "filepath"
-          ],
-          "exported": false,
-          "lineCount": 3
-        },
-        {
-          "name": "runAutoUpdate",
-          "params": [],
-          "exported": false,
-          "lineCount": 25
-        },
-        {
-          "name": "handleChange",
-          "params": [
-            "eventType",
-            "filename"
-          ],
-          "exported": false,
-          "lineCount": 10
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "source": "node:fs",
-          "specifiers": [
-            "fs"
-          ]
-        },
-        {
-          "source": "node:path",
-          "specifiers": [
-            "path"
-          ]
-        },
         {
           "source": "node:child_process",
           "specifiers": [
             "fork"
           ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "path"
+          ]
+        },
+        {
+          "source": "node:url",
+          "specifiers": [
+            "fileURLToPath"
+          ]
         }
       ],
       "exports": [],
-      "totalLines": 102,
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
+    ".ua/scripts/watch.mjs": {
+      "filePath": ".ua/scripts/watch.mjs",
+      "contentHash": "69526734570c9548239a7a0c52f1aee75400e4fc339dd04286384985de424ec9",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:child_process",
+          "specifiers": [
+            "fork"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "path"
+          ]
+        },
+        {
+          "source": "node:url",
+          "specifiers": [
+            "fileURLToPath"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 15,
       "hasStructuralAnalysis": true
     },
     "AGENTS.md": {
       "filePath": "AGENTS.md",
-      "contentHash": "58dd4207e7c17fc09847458bd7a38397e92e7178b7c4fbffe41ae7b8168b84c1",
+      "contentHash": "884bd2a07e90b3c1e043c4e5feaff49f685b692683d80c07551cc9f0b424834f",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 93,
+      "totalLines": 102,
       "hasStructuralAnalysis": false
     },
     "DOCKER.md": {

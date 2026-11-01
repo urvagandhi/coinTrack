@@ -1433,8 +1433,8 @@
       "name": "AGENTS.md",
       "path": "AGENTS.md",
       "language": "md",
-      "summary": "docs component with 92 lines (moderate).",
-      "lines": 92,
+      "summary": "docs component with 101 lines (moderate).",
+      "lines": 101,
       "complexity": "moderate",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -1569,8 +1569,8 @@
       "name": "fingerprints.json",
       "path": ".ua/fingerprints.json",
       "language": "json",
-      "summary": "config component with 99728 lines (complex).",
-      "lines": 99728,
+      "summary": "config component with 99853 lines (complex).",
+      "lines": 99853,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -1580,8 +1580,8 @@
       "name": "knowledge-graph.json",
       "path": ".ua/knowledge-graph.json",
       "language": "json",
-      "summary": "config component with 98123 lines (complex).",
-      "lines": 98123,
+      "summary": "config component with 110590 lines (complex).",
+      "lines": 110590,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -5832,46 +5832,10 @@
       "name": "auto-update.mjs",
       "path": ".ua/scripts/auto-update.mjs",
       "language": "mjs",
-      "summary": "code component with 283 lines (complex).",
-      "lines": 283,
-      "complexity": "complex",
+      "summary": "code component with 14 lines (simple).",
+      "lines": 14,
+      "complexity": "simple",
       "reasoning": "Extracted via AST structural analysis."
-    },
-    {
-      "id": "function:.ua/scripts/auto-update.mjs#log",
-      "type": "function",
-      "name": "log",
-      "path": ".ua/scripts/auto-update.mjs",
-      "language": "mjs",
-      "summary": "Function log in auto-update.mjs (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 23,
-      "endLine": 25
-    },
-    {
-      "id": "function:.ua/scripts/auto-update.mjs#runCmd",
-      "type": "function",
-      "name": "runCmd",
-      "path": ".ua/scripts/auto-update.mjs",
-      "language": "mjs",
-      "summary": "Function runCmd in auto-update.mjs (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 27,
-      "endLine": 34
-    },
-    {
-      "id": "function:.ua/scripts/auto-update.mjs#main",
-      "type": "function",
-      "name": "main",
-      "path": ".ua/scripts/auto-update.mjs",
-      "language": "mjs",
-      "summary": "Function main in auto-update.mjs (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 36,
-      "endLine": 278
     },
     {
       "id": "file:.ua/scripts/watch.mjs",
@@ -5879,46 +5843,10 @@
       "name": "watch.mjs",
       "path": ".ua/scripts/watch.mjs",
       "language": "mjs",
-      "summary": "code component with 101 lines (moderate).",
-      "lines": 101,
-      "complexity": "moderate",
+      "summary": "code component with 14 lines (simple).",
+      "lines": 14,
+      "complexity": "simple",
       "reasoning": "Extracted via AST structural analysis."
-    },
-    {
-      "id": "function:.ua/scripts/watch.mjs#shouldIgnore",
-      "type": "function",
-      "name": "shouldIgnore",
-      "path": ".ua/scripts/watch.mjs",
-      "language": "mjs",
-      "summary": "Function shouldIgnore in watch.mjs (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 42,
-      "endLine": 44
-    },
-    {
-      "id": "function:.ua/scripts/watch.mjs#runAutoUpdate",
-      "type": "function",
-      "name": "runAutoUpdate",
-      "path": ".ua/scripts/watch.mjs",
-      "language": "mjs",
-      "summary": "Function runAutoUpdate in watch.mjs (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 46,
-      "endLine": 70
-    },
-    {
-      "id": "function:.ua/scripts/watch.mjs#handleChange",
-      "type": "function",
-      "name": "handleChange",
-      "path": ".ua/scripts/watch.mjs",
-      "language": "mjs",
-      "summary": "Function handleChange in watch.mjs (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 72,
-      "endLine": 81
     },
     {
       "id": "file:backend/.gitattributes",
@@ -71860,60 +71788,6 @@
       "direction": "forward"
     },
     {
-      "source": "file:.ua/scripts/auto-update.mjs",
-      "target": "function:.ua/scripts/auto-update.mjs#log",
-      "relation": "contains",
-      "confidence": 1,
-      "weight": 0.9,
-      "reason": "File contains function definition",
-      "direction": "forward"
-    },
-    {
-      "source": "file:.ua/scripts/auto-update.mjs",
-      "target": "function:.ua/scripts/auto-update.mjs#runCmd",
-      "relation": "contains",
-      "confidence": 1,
-      "weight": 0.9,
-      "reason": "File contains function definition",
-      "direction": "forward"
-    },
-    {
-      "source": "file:.ua/scripts/auto-update.mjs",
-      "target": "function:.ua/scripts/auto-update.mjs#main",
-      "relation": "contains",
-      "confidence": 1,
-      "weight": 0.9,
-      "reason": "File contains function definition",
-      "direction": "forward"
-    },
-    {
-      "source": "file:.ua/scripts/watch.mjs",
-      "target": "function:.ua/scripts/watch.mjs#shouldIgnore",
-      "relation": "contains",
-      "confidence": 1,
-      "weight": 0.9,
-      "reason": "File contains function definition",
-      "direction": "forward"
-    },
-    {
-      "source": "file:.ua/scripts/watch.mjs",
-      "target": "function:.ua/scripts/watch.mjs#runAutoUpdate",
-      "relation": "contains",
-      "confidence": 1,
-      "weight": 0.9,
-      "reason": "File contains function definition",
-      "direction": "forward"
-    },
-    {
-      "source": "file:.ua/scripts/watch.mjs",
-      "target": "function:.ua/scripts/watch.mjs#handleChange",
-      "relation": "contains",
-      "confidence": 1,
-      "weight": 0.9,
-      "reason": "File contains function definition",
-      "direction": "forward"
-    },
-    {
       "source": "file:backend/scripts/01-findUser.js",
       "target": "function:backend/scripts/01-findUser.js#main",
       "relation": "contains",
@@ -110580,11 +110454,11 @@
       ]
     }
   ],
-  "lastUpdated": "2026-11-01T04:49:15.940Z",
+  "lastUpdated": "2026-11-01T04:50:49.205Z",
   "metadata": {
-    "lastCommit": "9ca7465ececd179ea779d168a9f0d573ab36968f",
-    "lastCommitTime": "2026-11-01T04:49:15.940Z",
-    "nodeCount": 5704,
-    "edgeCount": 4462
+    "lastCommit": "7ffb061e3c21c4ebb920874a4f3ede3aa988acad",
+    "lastCommitTime": "2026-11-01T04:50:49.205Z",
+    "nodeCount": 5698,
+    "edgeCount": 4456
   }
 }
