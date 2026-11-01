@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "2b18ab4d6fc6bb5845a85841ee8c4c9daa11c07c",
-  "generatedAt": "2026-11-01T04:36:53.451Z",
+  "gitCommitHash": "9ca7465ececd179ea779d168a9f0d573ab36968f",
+  "generatedAt": "2026-11-01T04:49:17.011Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -171,6 +171,16 @@
       "imports": [],
       "exports": [],
       "totalLines": 33,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/commands/graphify.toml": {
+      "filePath": ".agents/commands/graphify.toml",
+      "contentHash": "572c4c69636187cf59c3835afa524a80a6415dca1629005a7184b29a486d9f71",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 17,
       "hasStructuralAnalysis": false
     },
     ".agents/commands/planning.toml": {
@@ -3803,6 +3813,16 @@
       "totalLines": 237,
       "hasStructuralAnalysis": false
     },
+    ".agents/rules/graphify.md": {
+      "filePath": ".agents/rules/graphify.md",
+      "contentHash": "ff9bc8ed934cb37218cdec5bf079d5a19a764ecd42a71bbd8dbf9ca232f412ae",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": false
+    },
     ".agents/skills/api-and-interface-design/SKILL.md": {
       "filePath": ".agents/skills/api-and-interface-design/SKILL.md",
       "contentHash": "cc5e2166c484b2c297e8253f56e7525e5031f81d66101ca4e760ef378ea6bad0",
@@ -3961,6 +3981,106 @@
       "imports": [],
       "exports": [],
       "totalLines": 356,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/.graphify_version": {
+      "filePath": ".agents/skills/graphify/.graphify_version",
+      "contentHash": "b1aa4bb32ef02a9f860709b51f94ec424e4def5c49dda475f12c84005a6c4720",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/SKILL.md": {
+      "filePath": ".agents/skills/graphify/SKILL.md",
+      "contentHash": "322397dde49d4e0d3c06fc6f480754df2e5c602ff3b830e2b0534af10e1d2968",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 798,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/references/add-watch.md": {
+      "filePath": ".agents/skills/graphify/references/add-watch.md",
+      "contentHash": "1e77351815547334c7e030f018dba513b303d397bf73d11fac47df03ace3b3f4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 57,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/references/exports.md": {
+      "filePath": ".agents/skills/graphify/references/exports.md",
+      "contentHash": "c39a2f8062be9a5ac319220d6e66ca586ed0b0798292b1321206834be74c1b33",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 92,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/references/extraction-spec.md": {
+      "filePath": ".agents/skills/graphify/references/extraction-spec.md",
+      "contentHash": "8e7d65cab59d4c842b56c25ec0af70100cc2d2443e2b0a924f0b4c81080061e4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 87,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/references/github-and-merge.md": {
+      "filePath": ".agents/skills/graphify/references/github-and-merge.md",
+      "contentHash": "e5ebd90c7686f50363ff7a535556bc2f596d4c47ec1e6c8b95e11e36a0dfea2b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 47,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/references/hooks.md": {
+      "filePath": ".agents/skills/graphify/references/hooks.md",
+      "contentHash": "b9a4e9f66813c6fc720589f1071d1a03c95756ab7101447e14e57291fe7844e5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 34,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/references/query.md": {
+      "filePath": ".agents/skills/graphify/references/query.md",
+      "contentHash": "e99011beeff0cf40dc1775b1e0cd2eab0e5f950deeeb8353ae01cbe57adbff00",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 318,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/references/transcribe.md": {
+      "filePath": ".agents/skills/graphify/references/transcribe.md",
+      "contentHash": "676a1e39aa6d43cdfcc416ec56616e36f7bad74066a82bd33a9485515b9a865c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 53,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/graphify/references/update.md": {
+      "filePath": ".agents/skills/graphify/references/update.md",
+      "contentHash": "c76b855ef9380d766b1a0b271b49bc7b40cf5b5b72558be1a021f99f9a9ea1cc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 222,
       "hasStructuralAnalysis": false
     },
     ".agents/skills/idea-refine/SKILL.md": {
@@ -4553,6 +4673,16 @@
       "totalLines": 193,
       "hasStructuralAnalysis": false
     },
+    ".agents/workflows/graphify.md": {
+      "filePath": ".agents/workflows/graphify.md",
+      "contentHash": "6fac30cb201b7be08918aed22940a4e5d122842f7793b077459a63b6ef73265a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 11,
+      "hasStructuralAnalysis": false
+    },
     ".env.docker.example": {
       "filePath": ".env.docker.example",
       "contentHash": "168fe84277614025f1ed4d93813ae24e123fa9862fef060f6fc23574d30cb26a",
@@ -4565,22 +4695,183 @@
     },
     ".gitattributes": {
       "filePath": ".gitattributes",
-      "contentHash": "1e3c7f8b66f1c476e3a9d4a3b3cdf541f2cb4cdc8c6a813e81835ac7a9c9e627",
+      "contentHash": "53488aa05b19774acfd8efd19ee4626e16c360cc2a897013e5917ca9c563fa90",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 43,
+      "totalLines": 44,
       "hasStructuralAnalysis": false
+    },
+    ".ua/config.json": {
+      "filePath": ".ua/config.json",
+      "contentHash": "29781e305ef5e2da466fce83e1f88f648ced8f598a3ee134af66e253235cddac",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": false
+    },
+    ".ua/domain-graph.json": {
+      "filePath": ".ua/domain-graph.json",
+      "contentHash": "6256d632d6b5002b6cdf2ab8ad00c99c3388c5c868aec8cc975671dcf3242974",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1454,
+      "hasStructuralAnalysis": false
+    },
+    ".ua/fingerprints.json": {
+      "filePath": ".ua/fingerprints.json",
+      "contentHash": "ccc150982c4575e2849d2398e0c7f49bf697239d412e96a2042b1c822fe13c04",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 99728,
+      "hasStructuralAnalysis": false
+    },
+    ".ua/knowledge-graph.json": {
+      "filePath": ".ua/knowledge-graph.json",
+      "contentHash": "f15115e2971a06e4bea87dc6e767a1ff90316f9112a59cef4bd0786a8bf2d38e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 110590,
+      "hasStructuralAnalysis": false
+    },
+    ".ua/meta.json": {
+      "filePath": ".ua/meta.json",
+      "contentHash": "71f898b7b1eb8d39623753cd3d640a587e17c12e332faac3831c2c888460c31e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 8,
+      "hasStructuralAnalysis": false
+    },
+    ".ua/scripts/auto-update.mjs": {
+      "filePath": ".ua/scripts/auto-update.mjs",
+      "contentHash": "05ca9d856826193c2b50396b6d9acafc80b4b9b13695cfd230eecf242ab738a1",
+      "functions": [
+        {
+          "name": "log",
+          "params": [
+            "msg"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "runCmd",
+          "params": [
+            "cmd"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": false,
+          "lineCount": 243
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "fs"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "path"
+          ]
+        },
+        {
+          "source": "node:child_process",
+          "specifiers": [
+            "execSync"
+          ]
+        },
+        {
+          "source": "node:url",
+          "specifiers": [
+            "pathToFileURL"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 284,
+      "hasStructuralAnalysis": true
+    },
+    ".ua/scripts/watch.mjs": {
+      "filePath": ".ua/scripts/watch.mjs",
+      "contentHash": "1b91832d7ee6f6766969b9705d40ff6bb6f8eed9cdfee9e9c15a9c8303fd8cd8",
+      "functions": [
+        {
+          "name": "shouldIgnore",
+          "params": [
+            "filepath"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "runAutoUpdate",
+          "params": [],
+          "exported": false,
+          "lineCount": 25
+        },
+        {
+          "name": "handleChange",
+          "params": [
+            "eventType",
+            "filename"
+          ],
+          "exported": false,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "fs"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "path"
+          ]
+        },
+        {
+          "source": "node:child_process",
+          "specifiers": [
+            "fork"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 102,
+      "hasStructuralAnalysis": true
     },
     "AGENTS.md": {
       "filePath": "AGENTS.md",
-      "contentHash": "eef0f98087a7e19bab7776be867a0bb05e1bef970e50d9500cf2407d674ee8d8",
+      "contentHash": "58dd4207e7c17fc09847458bd7a38397e92e7178b7c4fbffe41ae7b8168b84c1",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 80,
+      "totalLines": 93,
       "hasStructuralAnalysis": false
     },
     "DOCKER.md": {
@@ -99153,16 +99444,6 @@
       "totalLines": 184,
       "hasStructuralAnalysis": true
     },
-    "graphify-out/cache/stat-index.json": {
-      "filePath": "graphify-out/cache/stat-index.json",
-      "contentHash": "5b341c73b47f1f0b0c5407c32de155fc3fd6cd88a18a4db37a9267fc94295cfb",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 1,
-      "hasStructuralAnalysis": false
-    },
     "local/TODOs/Completed-TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md": {
       "filePath": "local/TODOs/Completed-TODOs/FD_INDUSTRY_STANDARDS_IMPLEMENTATION_PLAN.md",
       "contentHash": "68ba3c99b2701042c962176b08fa95f0d6ba050d63af3db98d1e1c675c056a09",
@@ -99433,6 +99714,77 @@
       "totalLines": 83,
       "hasStructuralAnalysis": false
     },
+    "scripts/auto-update.mjs": {
+      "filePath": "scripts/auto-update.mjs",
+      "contentHash": "83a2eab610da532e1d50ca1c3683ca644e4a55616a01496612b5481614bb103e",
+      "functions": [
+        {
+          "name": "resolveProjectRoot",
+          "params": [],
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "log",
+          "params": [
+            "module",
+            "msg"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "runCmd",
+          "params": [
+            "cmd"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "updateUnderstandAnything",
+          "params": [],
+          "exported": false,
+          "lineCount": 259
+        },
+        {
+          "name": "updateGraphify",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": false,
+          "lineCount": 24
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "fs"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "path"
+          ]
+        },
+        {
+          "source": "node:child_process",
+          "specifiers": [
+            "execSync"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 370,
+      "hasStructuralAnalysis": true
+    },
     "scripts/sync-env.sh": {
       "filePath": "scripts/sync-env.sh",
       "contentHash": "7ed434bc04b23c69cd67608bc7de88271e2e9cd79b4a06bc6bdb22e03ed3ce32",
@@ -99442,6 +99794,60 @@
       "exports": [],
       "totalLines": 42,
       "hasStructuralAnalysis": false
+    },
+    "scripts/watch.mjs": {
+      "filePath": "scripts/watch.mjs",
+      "contentHash": "573c6fbbff69feaed7d35922f5d7db5ea9bf8c3a3d18e43cb2da7e2f23ed621c",
+      "functions": [
+        {
+          "name": "shouldIgnore",
+          "params": [
+            "filepath"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "runAutoUpdate",
+          "params": [],
+          "exported": false,
+          "lineCount": 25
+        },
+        {
+          "name": "onFileEvent",
+          "params": [
+            "eventType",
+            "filename",
+            "baseDir"
+          ],
+          "exported": false,
+          "lineCount": 24
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "fs"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "path"
+          ]
+        },
+        {
+          "source": "node:child_process",
+          "specifiers": [
+            "fork"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 113,
+      "hasStructuralAnalysis": true
     }
   }
 }

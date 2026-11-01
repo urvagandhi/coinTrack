@@ -57,6 +57,15 @@ CoinTrack integrates a dual-layer knowledge graph architecture for comprehensive
   - `graphify update .` — Incremental AST re-extraction without requiring LLM calls (keeps `graphify-out/` current).
   - **Outputs**: `graphify-out/graph.html` (interactive dependency explorer), `graphify-out/GRAPH_REPORT.md`, and `graphify-out/graph.json`.
 
+### 3.3 Unified Knowledge Graph Synchronization & Auto-Update
+- **Unified Auto-Update Script**: [`scripts/auto-update.mjs`](./scripts/auto-update.mjs)
+  - Synchronizes both Understand Anything (`.ua/`) and Graphify (`graphify-out/`) in a single pass.
+  - Can be invoked via `node scripts/auto-update.mjs` or globally via `graph-auto-update`.
+  - Flags: `--ua-only`, `--graphify-only`, `--force`.
+- **Live File Watcher**: [`scripts/watch.mjs`](./scripts/watch.mjs)
+  - Continuously watches `backend/src`, `frontend/src`, `.agents`, `local`, and `scripts`, debouncing file edits and updating both graphs in the background.
+- **Git Post-Commit Hook**: Automatically updates both knowledge graphs after every git commit.
+
 ---
 
 ## 4. Stack-Specific Best Practices
