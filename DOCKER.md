@@ -106,7 +106,11 @@ cd coinTrack
 ```
 
 ### 2. Prepare Environment Variables
-Copy the provided `.env.docker.example` file to `.env`:
+If you already maintain separate `.env` files in `backend/.env` and `frontend/.env`, run the sync script to assemble them into the root `.env`:
+```bash
+./scripts/sync-env.sh
+```
+Alternatively, copy the template `.env.docker.example` file to `.env`:
 ```bash
 cp .env.docker.example .env
 ```
