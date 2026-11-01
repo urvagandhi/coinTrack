@@ -1569,8 +1569,8 @@
       "name": "fingerprints.json",
       "path": ".ua/fingerprints.json",
       "language": "json",
-      "summary": "config component with 99853 lines (complex).",
-      "lines": 99853,
+      "summary": "config component with 99810 lines (complex).",
+      "lines": 99810,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -1580,8 +1580,8 @@
       "name": "knowledge-graph.json",
       "path": ".ua/knowledge-graph.json",
       "language": "json",
-      "summary": "config component with 110590 lines (complex).",
-      "lines": 110590,
+      "summary": "config component with 110475 lines (complex).",
+      "lines": 110475,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -64159,10 +64159,10 @@
       "complexity": "moderate"
     },
     {
-      "id": "file:scripts/auto-update.mjs",
+      "id": "file:scripts/knowledge-graph/auto-update.mjs",
       "type": "file",
       "name": "auto-update.mjs",
-      "path": "scripts/auto-update.mjs",
+      "path": "scripts/knowledge-graph/auto-update.mjs",
       "language": "mjs",
       "summary": "code component with 369 lines (complex).",
       "lines": 369,
@@ -64170,10 +64170,10 @@
       "reasoning": "Extracted via AST structural analysis."
     },
     {
-      "id": "function:scripts/auto-update.mjs#resolveProjectRoot",
+      "id": "function:scripts/knowledge-graph/auto-update.mjs#resolveProjectRoot",
       "type": "function",
       "name": "resolveProjectRoot",
-      "path": "scripts/auto-update.mjs",
+      "path": "scripts/knowledge-graph/auto-update.mjs",
       "language": "mjs",
       "summary": "Function resolveProjectRoot in auto-update.mjs (1 lines).",
       "lines": 1,
@@ -64182,10 +64182,10 @@
       "endLine": 45
     },
     {
-      "id": "function:scripts/auto-update.mjs#log",
+      "id": "function:scripts/knowledge-graph/auto-update.mjs#log",
       "type": "function",
       "name": "log",
-      "path": "scripts/auto-update.mjs",
+      "path": "scripts/knowledge-graph/auto-update.mjs",
       "language": "mjs",
       "summary": "Function log in auto-update.mjs (1 lines).",
       "lines": 1,
@@ -64194,10 +64194,10 @@
       "endLine": 55
     },
     {
-      "id": "function:scripts/auto-update.mjs#runCmd",
+      "id": "function:scripts/knowledge-graph/auto-update.mjs#runCmd",
       "type": "function",
       "name": "runCmd",
-      "path": "scripts/auto-update.mjs",
+      "path": "scripts/knowledge-graph/auto-update.mjs",
       "language": "mjs",
       "summary": "Function runCmd in auto-update.mjs (1 lines).",
       "lines": 1,
@@ -64206,10 +64206,10 @@
       "endLine": 64
     },
     {
-      "id": "function:scripts/auto-update.mjs#updateUnderstandAnything",
+      "id": "function:scripts/knowledge-graph/auto-update.mjs#updateUnderstandAnything",
       "type": "function",
       "name": "updateUnderstandAnything",
-      "path": "scripts/auto-update.mjs",
+      "path": "scripts/knowledge-graph/auto-update.mjs",
       "language": "mjs",
       "summary": "Function updateUnderstandAnything in auto-update.mjs (1 lines).",
       "lines": 1,
@@ -64218,10 +64218,10 @@
       "endLine": 324
     },
     {
-      "id": "function:scripts/auto-update.mjs#updateGraphify",
+      "id": "function:scripts/knowledge-graph/auto-update.mjs#updateGraphify",
       "type": "function",
       "name": "updateGraphify",
-      "path": "scripts/auto-update.mjs",
+      "path": "scripts/knowledge-graph/auto-update.mjs",
       "language": "mjs",
       "summary": "Function updateGraphify in auto-update.mjs (1 lines).",
       "lines": 1,
@@ -64230,16 +64230,63 @@
       "endLine": 339
     },
     {
-      "id": "function:scripts/auto-update.mjs#main",
+      "id": "function:scripts/knowledge-graph/auto-update.mjs#main",
       "type": "function",
       "name": "main",
-      "path": "scripts/auto-update.mjs",
+      "path": "scripts/knowledge-graph/auto-update.mjs",
       "language": "mjs",
       "summary": "Function main in auto-update.mjs (1 lines).",
       "lines": 1,
       "complexity": "simple",
       "startLine": 341,
       "endLine": 364
+    },
+    {
+      "id": "file:scripts/knowledge-graph/watch.mjs",
+      "type": "file",
+      "name": "watch.mjs",
+      "path": "scripts/knowledge-graph/watch.mjs",
+      "language": "mjs",
+      "summary": "code component with 112 lines (moderate).",
+      "lines": 112,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:scripts/knowledge-graph/watch.mjs#shouldIgnore",
+      "type": "function",
+      "name": "shouldIgnore",
+      "path": "scripts/knowledge-graph/watch.mjs",
+      "language": "mjs",
+      "summary": "Function shouldIgnore in watch.mjs (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 43,
+      "endLine": 45
+    },
+    {
+      "id": "function:scripts/knowledge-graph/watch.mjs#runAutoUpdate",
+      "type": "function",
+      "name": "runAutoUpdate",
+      "path": "scripts/knowledge-graph/watch.mjs",
+      "language": "mjs",
+      "summary": "Function runAutoUpdate in watch.mjs (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 47,
+      "endLine": 71
+    },
+    {
+      "id": "function:scripts/knowledge-graph/watch.mjs#onFileEvent",
+      "type": "function",
+      "name": "onFileEvent",
+      "path": "scripts/knowledge-graph/watch.mjs",
+      "language": "mjs",
+      "summary": "Function onFileEvent in watch.mjs (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 73,
+      "endLine": 96
     },
     {
       "id": "file:scripts/sync-env.sh",
@@ -64256,53 +64303,6 @@
         "sh"
       ],
       "complexity": "simple"
-    },
-    {
-      "id": "file:scripts/watch.mjs",
-      "type": "file",
-      "name": "watch.mjs",
-      "path": "scripts/watch.mjs",
-      "language": "mjs",
-      "summary": "code component with 112 lines (moderate).",
-      "lines": 112,
-      "complexity": "moderate",
-      "reasoning": "Extracted via AST structural analysis."
-    },
-    {
-      "id": "function:scripts/watch.mjs#shouldIgnore",
-      "type": "function",
-      "name": "shouldIgnore",
-      "path": "scripts/watch.mjs",
-      "language": "mjs",
-      "summary": "Function shouldIgnore in watch.mjs (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 43,
-      "endLine": 45
-    },
-    {
-      "id": "function:scripts/watch.mjs#runAutoUpdate",
-      "type": "function",
-      "name": "runAutoUpdate",
-      "path": "scripts/watch.mjs",
-      "language": "mjs",
-      "summary": "Function runAutoUpdate in watch.mjs (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 47,
-      "endLine": 71
-    },
-    {
-      "id": "function:scripts/watch.mjs#onFileEvent",
-      "type": "function",
-      "name": "onFileEvent",
-      "path": "scripts/watch.mjs",
-      "language": "mjs",
-      "summary": "Function onFileEvent in watch.mjs (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 73,
-      "endLine": 96
     },
     {
       "id": "function:frontend/src/app/(main)/brokers/zerodha/callback/page.jsx:Page",
@@ -106591,8 +106591,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:scripts/auto-update.mjs",
-      "target": "function:scripts/auto-update.mjs#resolveProjectRoot",
+      "source": "file:scripts/knowledge-graph/auto-update.mjs",
+      "target": "function:scripts/knowledge-graph/auto-update.mjs#resolveProjectRoot",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106600,8 +106600,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:scripts/auto-update.mjs",
-      "target": "function:scripts/auto-update.mjs#log",
+      "source": "file:scripts/knowledge-graph/auto-update.mjs",
+      "target": "function:scripts/knowledge-graph/auto-update.mjs#log",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106609,8 +106609,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:scripts/auto-update.mjs",
-      "target": "function:scripts/auto-update.mjs#runCmd",
+      "source": "file:scripts/knowledge-graph/auto-update.mjs",
+      "target": "function:scripts/knowledge-graph/auto-update.mjs#runCmd",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106618,8 +106618,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:scripts/auto-update.mjs",
-      "target": "function:scripts/auto-update.mjs#updateUnderstandAnything",
+      "source": "file:scripts/knowledge-graph/auto-update.mjs",
+      "target": "function:scripts/knowledge-graph/auto-update.mjs#updateUnderstandAnything",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106627,8 +106627,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:scripts/auto-update.mjs",
-      "target": "function:scripts/auto-update.mjs#updateGraphify",
+      "source": "file:scripts/knowledge-graph/auto-update.mjs",
+      "target": "function:scripts/knowledge-graph/auto-update.mjs#updateGraphify",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106636,8 +106636,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:scripts/auto-update.mjs",
-      "target": "function:scripts/auto-update.mjs#main",
+      "source": "file:scripts/knowledge-graph/auto-update.mjs",
+      "target": "function:scripts/knowledge-graph/auto-update.mjs#main",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106645,8 +106645,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:scripts/watch.mjs",
-      "target": "function:scripts/watch.mjs#shouldIgnore",
+      "source": "file:scripts/knowledge-graph/watch.mjs",
+      "target": "function:scripts/knowledge-graph/watch.mjs#shouldIgnore",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106654,8 +106654,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:scripts/watch.mjs",
-      "target": "function:scripts/watch.mjs#runAutoUpdate",
+      "source": "file:scripts/knowledge-graph/watch.mjs",
+      "target": "function:scripts/knowledge-graph/watch.mjs#runAutoUpdate",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106663,8 +106663,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:scripts/watch.mjs",
-      "target": "function:scripts/watch.mjs#onFileEvent",
+      "source": "file:scripts/knowledge-graph/watch.mjs",
+      "target": "function:scripts/knowledge-graph/watch.mjs#onFileEvent",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -110454,10 +110454,10 @@
       ]
     }
   ],
-  "lastUpdated": "2026-11-01T04:50:49.205Z",
+  "lastUpdated": "2026-11-01T04:55:30.507Z",
   "metadata": {
-    "lastCommit": "7ffb061e3c21c4ebb920874a4f3ede3aa988acad",
-    "lastCommitTime": "2026-11-01T04:50:49.205Z",
+    "lastCommit": "af0ed9a7a41c0cd30be0b60669c66fdd8d51479d",
+    "lastCommitTime": "2026-11-01T04:55:30.507Z",
     "nodeCount": 5698,
     "edgeCount": 4456
   }
