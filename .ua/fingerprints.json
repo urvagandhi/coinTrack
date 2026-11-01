@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "af0ed9a7a41c0cd30be0b60669c66fdd8d51479d",
-  "generatedAt": "2026-11-01T04:55:31.457Z",
+  "gitCommitHash": "c8069422d911f62d8c117737ac523c400794c198",
+  "generatedAt": "2026-11-01T04:58:47.546Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -4725,17 +4725,17 @@
     },
     ".ua/fingerprints.json": {
       "filePath": ".ua/fingerprints.json",
-      "contentHash": "e75d9ec307cbc0ae2b89300b2f2d8eab64e9205d5bc67af8854d9858e466a6e4",
+      "contentHash": "30db496d12a8c028fb9483a0103517074ff4805d112813cb4aed370b5d08b1c2",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 99810,
+      "totalLines": 99800,
       "hasStructuralAnalysis": false
     },
     ".ua/knowledge-graph.json": {
       "filePath": ".ua/knowledge-graph.json",
-      "contentHash": "9acaaa6503f7d58625efa9688025181c824b29cf3d2e78c4e803852af460200a",
+      "contentHash": "1922b941a20a04a251c5e050a542c738b72edddd126aec471ebab60524c563c5",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4745,7 +4745,7 @@
     },
     ".ua/meta.json": {
       "filePath": ".ua/meta.json",
-      "contentHash": "b07b9b5fe4175f9fea51297dfe716b456e008933c6a737ef68cc2cf3c457b436",
+      "contentHash": "b9bb98e637810c0665dc6f708c0fa9e9e6cc536aea4c6908ea5d68200dc30a75",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -99661,8 +99661,8 @@
       "totalLines": 83,
       "hasStructuralAnalysis": false
     },
-    "scripts/knowledge-graph/auto-update.mjs": {
-      "filePath": "scripts/knowledge-graph/auto-update.mjs",
+    "scripts/auto-update.mjs": {
+      "filePath": "scripts/auto-update.mjs",
       "contentHash": "83a2eab610da532e1d50ca1c3683ca644e4a55616a01496612b5481614bb103e",
       "functions": [
         {
@@ -99732,8 +99732,18 @@
       "totalLines": 370,
       "hasStructuralAnalysis": true
     },
-    "scripts/knowledge-graph/watch.mjs": {
-      "filePath": "scripts/knowledge-graph/watch.mjs",
+    "scripts/sync-env.sh": {
+      "filePath": "scripts/sync-env.sh",
+      "contentHash": "7ed434bc04b23c69cd67608bc7de88271e2e9cd79b4a06bc6bdb22e03ed3ce32",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 42,
+      "hasStructuralAnalysis": false
+    },
+    "scripts/watch.mjs": {
+      "filePath": "scripts/watch.mjs",
       "contentHash": "573c6fbbff69feaed7d35922f5d7db5ea9bf8c3a3d18e43cb2da7e2f23ed621c",
       "functions": [
         {
@@ -99785,16 +99795,6 @@
       "exports": [],
       "totalLines": 113,
       "hasStructuralAnalysis": true
-    },
-    "scripts/sync-env.sh": {
-      "filePath": "scripts/sync-env.sh",
-      "contentHash": "7ed434bc04b23c69cd67608bc7de88271e2e9cd79b4a06bc6bdb22e03ed3ce32",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 42,
-      "hasStructuralAnalysis": false
     }
   }
 }
