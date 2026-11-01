@@ -37,8 +37,8 @@
       "JWT"
     ],
     "description": "Multi-asset personal wealth tracking platform with Spring Boot backend, Next.js frontend, agent skills framework, engineering references, and multi-broker hexagonal integrations.",
-    "analyzedAt": "2026-11-01T04:04:48.592Z",
-    "gitCommitHash": "3e4985a58f27aea776372aa71c16561a6aecbeda"
+    "analyzedAt": "2026-11-01T04:13:57.800Z",
+    "gitCommitHash": "3092e0a171d079287696c433b54a594150ead339"
   },
   "nodes": [
     {
@@ -57610,22 +57610,6 @@
       "complexity": "moderate"
     },
     {
-      "id": "service:backend/Dockerfile",
-      "type": "service",
-      "name": "Dockerfile",
-      "filePath": "backend/Dockerfile",
-      "lineRange": [
-        1,
-        93
-      ],
-      "summary": "Multi-stage Dockerfile producing lightweight, non-root Alpine container for the Java 25 Spring Boot backend.",
-      "tags": [
-        "infrastructure",
-        "containerization"
-      ],
-      "complexity": "moderate"
-    },
-    {
       "id": "resource:frontend/.dockerignore",
       "type": "resource",
       "name": ".dockerignore",
@@ -59398,38 +59382,6 @@
       "complexity": "moderate"
     },
     {
-      "id": "document:AGENTS.md",
-      "type": "document",
-      "name": "AGENTS.md",
-      "filePath": "AGENTS.md",
-      "lineRange": [
-        1,
-        79
-      ],
-      "summary": "Engineering rules, specialist personas, coding standards, and slash command lifecycle guidelines.",
-      "tags": [
-        "documentation"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "document:DOCKER.md",
-      "type": "document",
-      "name": "DOCKER.md",
-      "filePath": "DOCKER.md",
-      "lineRange": [
-        1,
-        388
-      ],
-      "summary": "Containerization documentation detailing multi-service local deployment, health checks, and Alpine builds.",
-      "tags": [
-        "infrastructure",
-        "containerization",
-        "documentation"
-      ],
-      "complexity": "complex"
-    },
-    {
       "id": "document:GEMINI.md",
       "type": "document",
       "name": "GEMINI.md",
@@ -59443,37 +59395,6 @@
         "documentation"
       ],
       "complexity": "simple"
-    },
-    {
-      "id": "document:README.md",
-      "type": "document",
-      "name": "README.md",
-      "filePath": "README.md",
-      "lineRange": [
-        1,
-        1152
-      ],
-      "summary": "Primary architectural documentation, system capabilities, multi-asset tracking modules, and quickstart setup guide.",
-      "tags": [
-        "documentation"
-      ],
-      "complexity": "complex"
-    },
-    {
-      "id": "service:docker-compose.yml",
-      "type": "service",
-      "name": "docker-compose.yml",
-      "filePath": "docker-compose.yml",
-      "lineRange": [
-        1,
-        126
-      ],
-      "summary": "Docker Compose orchestration running CoinTrack Spring Boot backend, Next.js frontend, PostgreSQL database, and internal network.",
-      "tags": [
-        "infrastructure",
-        "containerization"
-      ],
-      "complexity": "moderate"
     },
     {
       "id": "file:restart-dev.sh",
@@ -59795,21 +59716,6 @@
         "infrastructure"
       ],
       "complexity": "simple"
-    },
-    {
-      "id": "document:backend/README.md",
-      "type": "document",
-      "name": "README.md",
-      "filePath": "backend/README.md",
-      "lineRange": [
-        1,
-        980
-      ],
-      "summary": "Primary architectural documentation, system capabilities, multi-asset tracking modules, and quickstart setup guide.",
-      "tags": [
-        "documentation"
-      ],
-      "complexity": "complex"
     },
     {
       "id": "file:backend/mvnw.cmd",
@@ -61330,23 +61236,6 @@
         "documentation"
       ],
       "complexity": "complex"
-    },
-    {
-      "id": "document:.agents/skills/java-pro/SKILL.md",
-      "type": "document",
-      "name": "SKILL.md",
-      "filePath": ".agents/skills/java-pro/SKILL.md",
-      "lineRange": [
-        1,
-        181
-      ],
-      "summary": "Agent engineering skill specification (java-pro) providing automated workflow instructions and reference guides.",
-      "tags": [
-        "agent-skill",
-        "skill-definition",
-        "documentation"
-      ],
-      "complexity": "moderate"
     },
     {
       "id": "document:.agents/skills/nextjs-best-practices/SKILL.md",
@@ -81097,22 +80986,6 @@
       "complexity": "moderate"
     },
     {
-      "id": "document:local/audits/PROJECT_CONTEXT_PART1.md",
-      "type": "document",
-      "name": "PROJECT_CONTEXT_PART1.md",
-      "filePath": "local/audits/PROJECT_CONTEXT_PART1.md",
-      "lineRange": [
-        1,
-        875
-      ],
-      "summary": "System audit and context documentation (PROJECT_CONTEXT_PART1) recording architectural analysis and findings.",
-      "tags": [
-        "local-dev",
-        "documentation"
-      ],
-      "complexity": "complex"
-    },
-    {
       "id": "document:local/audits/PROJECT_CONTEXT_PART2.md",
       "type": "document",
       "name": "PROJECT_CONTEXT_PART2.md",
@@ -81194,6 +81067,134 @@
         "configuration"
       ],
       "complexity": "moderate"
+    },
+    {
+      "id": "service:backend/Dockerfile",
+      "type": "service",
+      "name": "Dockerfile",
+      "filePath": "backend/Dockerfile",
+      "lineRange": [
+        1,
+        93
+      ],
+      "summary": "Source component Dockerfile implementing  logic.",
+      "tags": [
+        "infra",
+        "code"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:AGENTS.md",
+      "type": "document",
+      "name": "AGENTS.md",
+      "filePath": "AGENTS.md",
+      "lineRange": [
+        1,
+        79
+      ],
+      "summary": "Source component AGENTS.md implementing md logic.",
+      "tags": [
+        "docs",
+        "md"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:DOCKER.md",
+      "type": "document",
+      "name": "DOCKER.md",
+      "filePath": "DOCKER.md",
+      "lineRange": [
+        1,
+        388
+      ],
+      "summary": "Source component DOCKER.md implementing md logic.",
+      "tags": [
+        "docs",
+        "md"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "lineRange": [
+        1,
+        1152
+      ],
+      "summary": "Source component README.md implementing md logic.",
+      "tags": [
+        "docs",
+        "md"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "service:docker-compose.yml",
+      "type": "service",
+      "name": "docker-compose.yml",
+      "filePath": "docker-compose.yml",
+      "lineRange": [
+        1,
+        126
+      ],
+      "summary": "Source component docker-compose.yml implementing yml logic.",
+      "tags": [
+        "infra",
+        "yml"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:backend/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "backend/README.md",
+      "lineRange": [
+        1,
+        980
+      ],
+      "summary": "Source component README.md implementing md logic.",
+      "tags": [
+        "docs",
+        "md"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:.agents/skills/java-pro/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "filePath": ".agents/skills/java-pro/SKILL.md",
+      "lineRange": [
+        1,
+        181
+      ],
+      "summary": "Source component SKILL.md implementing md logic.",
+      "tags": [
+        "docs",
+        "md"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:local/audits/PROJECT_CONTEXT_PART1.md",
+      "type": "document",
+      "name": "PROJECT_CONTEXT_PART1.md",
+      "filePath": "local/audits/PROJECT_CONTEXT_PART1.md",
+      "lineRange": [
+        1,
+        875
+      ],
+      "summary": "Source component PROJECT_CONTEXT_PART1.md implementing md logic.",
+      "tags": [
+        "docs",
+        "md"
+      ],
+      "complexity": "complex"
     }
   ],
   "edges": [
@@ -84446,76 +84447,6 @@
       "weight": 1
     },
     {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalFunds.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalHolding.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalMfHolding.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalMfOrder.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalPosition.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/capability/BrokerCapability.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/exception/UnsupportedBrokerOperationException.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/session/BrokerCredentials.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/session/BrokerSession.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/model/Broker.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
       "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/session/AngelOneCredentials.java",
       "target": "class:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/session/AngelOneCredentials.java:AngelOneCredentials",
       "type": "contains",
@@ -86467,118 +86398,6 @@
       "type": "contains",
       "direction": "forward",
       "weight": 1
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalFunds.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalHolding.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalMfHolding.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalPosition.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/capability/BrokerCapability.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/capability/BrokerCapabilityChecker.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/exception/BrokerApiDownException.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/exception/BrokerAuthException.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/exception/BrokerRateLimitException.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/session/BrokerSession.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/model/Broker.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/model/BrokerAccount.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/registry/BrokerAdapterRegistry.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/repository/BrokerAccountRepository.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/common/util/EncryptionUtil.java",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
     },
     {
       "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
@@ -134549,6 +134368,214 @@
     {
       "source": "file:.agents/skills/understand/prepare-symbol-retry.mjs",
       "target": "file:.agents/skills/understand/validate-incremental-symbols.mjs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalFunds.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalHolding.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalMfHolding.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalMfOrder.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalPosition.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/capability/BrokerCapability.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/exception/UnsupportedBrokerOperationException.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/session/BrokerCredentials.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/session/BrokerSession.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/model/Broker.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalFunds.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalHolding.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalMfHolding.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/canonical/CanonicalPosition.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/capability/BrokerCapability.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/capability/BrokerCapabilityChecker.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/exception/BrokerApiDownException.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/exception/BrokerAuthException.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/exception/BrokerRateLimitException.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/session/BrokerSession.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/model/Broker.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/model/BrokerAccount.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/registry/BrokerAdapterRegistry.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/repository/BrokerAccountRepository.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7,
+      "recoveredFromImportMap": true
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
+      "target": "file:backend/src/main/java/com/urva/myfinance/coinTrack/common/util/EncryptionUtil.java",
       "type": "imports",
       "direction": "forward",
       "weight": 0.7,

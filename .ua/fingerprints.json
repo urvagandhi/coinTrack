@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "3e4985a58f27aea776372aa71c16561a6aecbeda",
-  "generatedAt": "2026-11-01T04:04:48.608Z",
+  "gitCommitHash": "3092e0a171d079287696c433b54a594150ead339",
+  "generatedAt": "2026-11-01T04:13:57.859Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -445,7 +445,7 @@
     },
     ".agents/skills/java-pro/SKILL.md": {
       "filePath": ".agents/skills/java-pro/SKILL.md",
-      "contentHash": "3ddaf9d01fa0fb2ea6a5931cff16de872a43779622ed367f25fa1a8847efb080",
+      "contentHash": "6f6a95c16baa79e1e868c1796e0d1d0c4da52b00c32ea9dca49164a8fbf2046c",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4465,7 +4465,7 @@
     },
     "AGENTS.md": {
       "filePath": "AGENTS.md",
-      "contentHash": "744342fe52306446dd866a3f0a41c860b457760b56ed3065286fc32a438d00ef",
+      "contentHash": "a9ac5825b14d552a49744305777047bb67444476db4abc771e3e501656c75c47",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4475,7 +4475,7 @@
     },
     "DOCKER.md": {
       "filePath": "DOCKER.md",
-      "contentHash": "28161580a8b1969e418d6cd7d58657c6ac98590edc534cd00c32cc383ad8ccb2",
+      "contentHash": "74094859f8c7fe5e2d0d4269e6cb7eb07beb40785ceb310ad141621e7cb27c70",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4495,7 +4495,7 @@
     },
     "README.md": {
       "filePath": "README.md",
-      "contentHash": "cbe9c89ac2e1029ac374c241f0e7c08cc569ff39b892db70be2547e28afe0dd8",
+      "contentHash": "dbb107d9e8603a7ae2937cbe5e0f410a4096e16e7c30aef09ca2ca5fa9174f62",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4695,7 +4695,7 @@
     },
     "backend/Dockerfile": {
       "filePath": "backend/Dockerfile",
-      "contentHash": "26e2dec396279e34ba8db3f1183afd2ab9069c2c17b3b50241cdb7fb5dd29735",
+      "contentHash": "a08f4dc52eae51e8e99da055f98ee0b96e2658c579a0d48900f607219755be89",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4715,7 +4715,7 @@
     },
     "backend/README.md": {
       "filePath": "backend/README.md",
-      "contentHash": "fe4226f603d8ca3835139528ef4ea675eae1759977f70a9402ee3b5ebb56188a",
+      "contentHash": "84d92b05b1d93d846d96fe4ef9d51c151bd32e6991a31405d63fcaa4b6153e9e",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -12125,7 +12125,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/core/port/BrokerAdapter.java",
-      "contentHash": "b4764c71668392fab70ff143f96e2ecf40e59e90cde78509c36ca30893f22e0d",
+      "contentHash": "c30a49cc6f680777158b465795eb0bf950530d029e1d4681cc9d2572cd8b00ec",
       "functions": [],
       "classes": [
         {
@@ -50303,7 +50303,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/aggregation/PortfolioAggregationService.java",
-      "contentHash": "3f15a6103f385263c00f53b4b6ce1a44a4193df91d1e77a019b7aa86e615ccec",
+      "contentHash": "2c5836fe449f1e8b4f929a7d8a92c3a7270b1db34f652ad35926c116017e1f7e",
       "functions": [
         {
           "name": "PortfolioAggregationService",
@@ -82712,7 +82712,7 @@
     },
     "docker-compose.yml": {
       "filePath": "docker-compose.yml",
-      "contentHash": "cc2978a5901adf7626bdf246a2cf6f422d9ddf3650a648ec580c8d0d5284f2df",
+      "contentHash": "204063869e0e50d148e8ce4e675081bfe371ad40dbe2ccfb7781915f60ead7e5",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -99455,7 +99455,7 @@
     },
     "local/audits/PROJECT_CONTEXT_PART1.md": {
       "filePath": "local/audits/PROJECT_CONTEXT_PART1.md",
-      "contentHash": "d4d175f7746ed115e2ce320614dba0e80963c8d9276842e3729a0a451e620680",
+      "contentHash": "15ec2526fb72387712c6172bbc8974756b8d9372cb805f480736fce643b41aaf",
       "functions": [],
       "classes": [],
       "imports": [],
