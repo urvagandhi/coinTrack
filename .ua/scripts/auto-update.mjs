@@ -83,18 +83,15 @@ async function main() {
     return;
   }
 
-  if (plan.action === 'FULL_UPDATE') {
-    log('Massive structural shift detected. Triggering full graph update...');
-    execSync(`node "${path.join(UA_DIR, 'tmp/process-all-batches.mjs')}"`, { stdio: 'inherit' });
-    execSync(`python3 "${path.join(SKILL_DIR, 'merge-batch-graphs.py')}" "${PROJECT_ROOT}"`, { stdio: 'inherit' });
-    execSync(`node "${path.join(UA_DIR, 'tmp/finalize-pipeline.mjs')}"`, { stdio: 'inherit' });
-    return;
-  }
+  const isFull = plan.action === 'FULL_UPDATE';
+  if (isFull || (plan.filesToReanalyze && plan.filesToReanalyze.length > 0)) {
+    if (isFull) {
+      log('Massive structural shift detected. Triggering full graph update...');
+    } else {
+      log(`Re-analyzing ${plan.filesToReanalyze.length} changed files...`);
+    }
 
-  // PARTIAL_UPDATE or ARCHITECTURE_UPDATE
-  if (plan.filesToReanalyze && plan.filesToReanalyze.length > 0) {
-    log(`Re-analyzing ${plan.filesToReanalyze.length} changed files...`);
-    const changedFilesArg = `--changed-files="${path.join(UA_DIR, 'intermediate/changed-files.json')}"`;
+    const changedFilesArg = isFull ? '' : `--changed-files="${path.join(UA_DIR, 'intermediate/changed-files.json')}"`;
     runCmd(`node "${path.join(SKILL_DIR, 'compute-batches.mjs')}" "${PROJECT_ROOT}" ${changedFilesArg}`);
 
     const batchesJsonPath = path.join(UA_DIR, 'intermediate/batches.json');
@@ -211,7 +208,54 @@ async function main() {
     // Ignore if not readable
   }
 
-  // Finalize incremental update
+  // Finalize update
+  if (isFull) {
+    log('Finalizing full graph update from assembled graph...');
+    const assembledPath = path.join(UA_DIR, 'intermediate/assembled-graph.json');
+    const assembled = JSON.parse(fs.readFileSync(assembledPath, 'utf8'));
+    const kgPath = path.join(UA_DIR, 'knowledge-graph.json');
+    const prevKg = fs.existsSync(kgPath) ? JSON.parse(fs.readFileSync(kgPath, 'utf8')) : {};
+    
+    const newKg = {
+      ...prevKg,
+      nodes: assembled.nodes,
+      edges: assembled.edges,
+      lastUpdated: new Date().toISOString(),
+      metadata: {
+        ...(prevKg.metadata || {}),
+        lastCommit: currentHead,
+        lastCommitTime: new Date().toISOString(),
+        nodeCount: assembled.nodes.length,
+        edgeCount: assembled.edges.length
+      }
+    };
+    fs.writeFileSync(kgPath, JSON.stringify(newKg, null, 2));
+
+    // Rebuild fingerprints and update baseline
+    const scanResult = JSON.parse(fs.readFileSync(path.join(UA_DIR, 'intermediate/scan-result.json'), 'utf8'));
+    const fpInputPath = path.join(UA_DIR, 'intermediate/fingerprint-input.json');
+    fs.writeFileSync(fpInputPath, JSON.stringify({
+      projectRoot: PROJECT_ROOT,
+      gitCommitHash: currentHead,
+      filePaths: scanResult.files.map(f => f.path)
+    }, null, 2));
+    runCmd(`node "${path.join(SKILL_DIR, 'build-fingerprints.mjs')}" "${fpInputPath}"`);
+    fs.copyFileSync(kgPath, path.join(UA_DIR, 'intermediate/incremental-baseline.json'));
+    
+    // Update meta.json
+    const metaObj = {
+      lastAnalyzedAt: new Date().toISOString(),
+      gitCommitHash: currentHead,
+      version: '1.0.0',
+      fileCount: scanResult.files.length,
+      nodeCount: assembled.nodes.length,
+      edgeCount: assembled.edges.length
+    };
+    fs.writeFileSync(metaPath, JSON.stringify(metaObj, null, 2));
+    log('Full update complete! Knowledge graph is in sync with latest changes.');
+    return;
+  }
+
   log('Finalizing incremental graph, updating fingerprints and metadata...');
   runCmd(`node "${path.join(SKILL_DIR, 'finalize-incremental.mjs')}" "${PROJECT_ROOT}"`);
 
