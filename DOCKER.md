@@ -68,7 +68,7 @@ graph TD
 ```
 
 ### Key Architectural Highlights
-1. **Multi-Stage Builds:** Lightweight runtime images created using Alpine Linux base images (`node:20-alpine`, `eclipse-temurin:21-jre-alpine`).
+1. **Multi-Stage Builds:** Lightweight runtime images created using Alpine Linux base images (`node:20-alpine`, `eclipse-temurin:25-jre-alpine`).
 2. **Layer Caching:** Dependency resolution is isolated from source code changes (Spring Boot `layertools` & NPM cache layering).
 3. **Least Privilege Security:** Containers run as non-root users (`nextjs` UID 1001, `appuser` GID appgroup).
 4. **Resilient Startup & Health Probes:** Services utilize `healthcheck` dependencies ensuring Spring Boot starts only when MongoDB is healthy, and Next.js starts only after Spring Boot is ready.
@@ -198,8 +198,8 @@ The application consumes environment variables injected at container startup. Be
 
 ### 2. Backend Service (`backend`)
 - **Dockerfile Path:** `./backend/Dockerfile`
-- **Base Build Image:** `maven:3.9.9-eclipse-temurin-21-alpine`
-- **Base Runtime Image:** `eclipse-temurin:21-jre-alpine`
+- **Base Build Image:** `maven:3.9.9-eclipse-temurin-25-alpine`
+- **Base Runtime Image:** `eclipse-temurin:25-jre-alpine`
 - **Security Context:** Runs under non-root user `appuser`
 - **JVM Optimization Flags:**
   ```text

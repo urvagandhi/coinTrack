@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
  * on this interface and canonical models. Each broker provides an adapter implementation in
  * broker/adapters/{name}/.
  *
- * <p>All fetch methods return CompletableFuture for parallel execution via Java 21 virtual threads
+ * <p>All fetch methods return CompletableFuture for parallel execution via Java 25 virtual threads
  * in the aggregation layer.
  *
  * <p>Default implementations throw UnsupportedBrokerOperationException, so adapters only override

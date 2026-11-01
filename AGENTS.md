@@ -7,7 +7,7 @@ This file provides instructions for AI coding agents (Antigravity, Codex, Cursor
 ## 1. Project Overview & Architecture
 
 CoinTrack is a multi-asset financial tracking platform:
-- **Backend (`/backend`)**: Java 21, Spring Boot 3.x, Spring Security (JWT + TOTP 2FA), PostgreSQL (JPA/Hibernate), multi-broker hexagonal adapter architecture (Zerodha Kite, Upstox, AngelOne), Docker Alpine containerization.
+- **Backend (`/backend`)**: Java 25, Spring Boot 3.x, Spring Security (JWT + TOTP 2FA), PostgreSQL (JPA/Hibernate), multi-broker hexagonal adapter architecture (Zerodha Kite, Upstox, AngelOne), Docker Alpine containerization.
 - **Frontend (`/frontend`)**: Next.js (App Router), React, Tailwind CSS, shadcn/ui ("Terminal Editorial" design system), TanStack Query, Framer Motion, Lucide icons.
 - **Key Modules**: Stock Portfolio, Mutual Funds (SIP/Lumpsum/Valuation), EPF, PPF, Fixed Deposits, Gold/Silver, Financial Calculators (32 engines), Notes & Margin Annotations, Broker Connections.
 

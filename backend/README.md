@@ -2,7 +2,7 @@
 
 > **Version**: 3.3.0
 > **Status**: Production-Ready
-> **Tech Stack**: Java 21, Spring Boot 3.5.5, MongoDB Atlas, Spring Security (JWT + MFA MFA)
+> **Tech Stack**: Java 25, Spring Boot 3.5.5, MongoDB Atlas, Spring Security (JWT + MFA MFA)
 > **Last Updated**: 2026-09-13
 
 ---
@@ -529,7 +529,7 @@ graph TD
 
     subgraph Aggregation["Aggregation Layer"]
         AGG["PortfolioAggregationService"]
-        AGG -->|"Java 21 Virtual Threads"| Z["Zerodha Adapter"]
+        AGG -->|"Java 25 Virtual Threads"| Z["Zerodha Adapter"]
         AGG -->|"Parallel"| A["AngelOne Adapter"]
         AGG -->|"CompletableFuture"| U["Upstox Adapter"]
     end
@@ -790,7 +790,7 @@ We enforce automated code formatting and static code quality checks via Maven pl
 
 | Command | Purpose | Tool |
 |---------|---------|------|
-| `./mvnw spotless:apply` | Auto-formats all Java code | **Spotless** (Google Java Format v1.24.0) |
+| `./mvnw spotless:apply` | Auto-formats all Java code | **Spotless** (Google Java Format v1.28.0) |
 | `./mvnw spotless:check` | Verifies code formatting compliance | **Spotless** |
 | `./mvnw checkstyle:check` | Runs static code analysis & style checks | **Checkstyle** (`google_checks.xml`) |
 

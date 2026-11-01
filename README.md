@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Java-21-orange?logo=openjdk" alt="Java 21" />
+  <img src="https://img.shields.io/badge/Java-25-orange?logo=openjdk" alt="Java 25" />
   <img src="https://img.shields.io/badge/Spring%20Boot-3.5.5-brightgreen?logo=springboot" alt="Spring Boot" />
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs" alt="Next.js" />
   <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb" alt="MongoDB" />
@@ -292,7 +292,7 @@ flowchart LR
 
 | Technology            | Version  | Purpose                                      |
 | --------------------- | -------- | -------------------------------------------- |
-| Java                  | 21 (LTS) | Runtime                                      |
+| Java                  | 25       | Runtime                                      |
 | Spring Boot           | 3.5.5    | Application framework                        |
 | Spring Security       | 6.5.x    | Authentication & authorization               |
 | Spring Data MongoDB   | 4.x      | Database access                              |
@@ -546,7 +546,7 @@ docker compose up -d --build
 
 | Tool     | Version       | Download                                    |
 | -------- | ------------- | ------------------------------------------- |
-| Java JDK | 21+           | [Eclipse Temurin](https://adoptium.net/)     |
+| Java JDK | 25+           | [Eclipse Temurin](https://adoptium.net/)     |
 | Node.js  | 18.17+        | [nodejs.org](https://nodejs.org/)            |
 | npm      | 9+            | Included with Node.js                       |
 | MongoDB  | 7+ (or Atlas) | [mongodb.com](https://www.mongodb.com/atlas) |
@@ -1147,6 +1147,6 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ---
 
 <p align="center">
-  Built with Java 21, Spring Boot, Next.js, and MongoDB<br/>
+  Built with Java 25, Spring Boot, Next.js, and MongoDB<br/>
   <sub>Designed for Indian retail investors</sub>
 </p>

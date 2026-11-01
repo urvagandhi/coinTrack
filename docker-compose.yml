@@ -32,7 +32,7 @@ services:
       start_period: 15s
 
   # ----------------------------------------------------------------------------
-  # 2. BACKEND SERVICE - Spring Boot Java 21 REST API
+  # 2. BACKEND SERVICE - Spring Boot Java 25 REST API
   # ----------------------------------------------------------------------------
   backend:
     build:

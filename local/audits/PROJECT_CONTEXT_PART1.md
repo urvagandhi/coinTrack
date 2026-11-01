@@ -502,7 +502,7 @@ ppf, epf, goldsilver, security, user, mutualfund — **all 13 found, no mismatch
   scripts include check (lint+format+test) and verify (check+build).
 
 ### backend README (v3.1.0, 2026-07-25)
-- **Stack**: Java 21, Spring Boot 3.5.5, MongoDB Atlas, Spring Security JWT+TOTP.
+- **Stack**: Java 25, Spring Boot 3.5.5, MongoDB Atlas, Spring Security JWT+TOTP.
 - **Critical rules**: manual Authorization-header parsing FORBIDDEN — use
   `@AuthenticationPrincipal UserPrincipal.getUserId()` (MongoDB _id); public routes whitelisted
   only in SecurityConfig; deny-by-default.
@@ -590,7 +590,7 @@ profile; throw-exception-if-no-handler-found=true.
 | NEXT_PUBLIC_ENABLE_WEBSOCKETS / _NOTIFICATIONS / _DEBUG | feature flags | No — no README explains them |
 
 ### pom.xml dependency → capability map
-Spring Boot 3.5.5 parent, Java 21. Starters: web, security, data-mongodb, webflux,
+Spring Boot 3.5.5 parent, Java 25. Starters: web, security, data-mongodb, webflux,
 validation, thymeleaf (+springsecurity6 extras), actuator.
 - jjwt 0.12.5 → JWT sign/validate
 - spring-dotenv 4.0 → loads backend/.env locally
@@ -615,8 +615,8 @@ validation, thymeleaf (+springsecurity6 extras), actuator.
   mongodb driver) — DB maintenance scripts; not part of runtime build.
 
 ### Dockerfile & render.yaml structure
-- Multi-stage build: Maven 3.9.9 Temurin 21 Alpine builder w/ BuildKit m2 cache +
-  dependency-layer caching → layertools extract → JRE 21 Alpine runtime, non-root appuser,
+- Multi-stage build: Maven 3.9.9 Temurin 25 Alpine builder w/ BuildKit m2 cache +
+  dependency-layer caching → layertools extract → JRE 25 Alpine runtime, non-root appuser,
   curl HEALTHCHECK against `/actuator/health`, container-aware JVM flags (G1,
   MaxRAMPercentage=75), exec-form entrypoint honoring PORT.
 - render.yaml: docker runtime, region oregon (comment notes singapore option), plan free,

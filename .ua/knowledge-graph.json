@@ -57618,7 +57618,7 @@
         1,
         93
       ],
-      "summary": "Multi-stage Dockerfile producing lightweight, non-root Alpine container for the Java 21 Spring Boot backend.",
+      "summary": "Multi-stage Dockerfile producing lightweight, non-root Alpine container for the Java 25 Spring Boot backend.",
       "tags": [
         "infrastructure",
         "containerization"
@@ -59836,7 +59836,7 @@
         1,
         238
       ],
-      "summary": "Maven project object model declaring Spring Boot 3, Java 21, JPA/Hibernate, Security, and PostgreSQL dependencies.",
+      "summary": "Maven project object model declaring Spring Boot 3, Java 25, JPA/Hibernate, Security, and PostgreSQL dependencies.",
       "tags": [
         "configuration"
       ],

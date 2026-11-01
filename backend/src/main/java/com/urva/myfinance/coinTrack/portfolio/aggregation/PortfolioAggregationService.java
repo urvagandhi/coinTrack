@@ -64,7 +64,7 @@ public class PortfolioAggregationService {
   }
 
   /**
-   * Aggregates portfolio data from all connected broker accounts for a user. Uses Java 21 virtual
+   * Aggregates portfolio data from all connected broker accounts for a user. Uses Java 25 virtual
    * threads for parallel execution.
    */
   public AggregatedPortfolio aggregateForUser(String userId) {
