@@ -33,9 +33,11 @@ CoinTrack adopts senior engineering workflows via packaged **Agent Skills** loca
 
 ---
 
-## 3. Codebase Understanding (Understand-Anything)
+## 3. Codebase Understanding & Knowledge Graphs
 
-CoinTrack integrates **Understand-Anything** knowledge graph capabilities:
+CoinTrack integrates a dual-layer knowledge graph architecture for comprehensive codebase comprehension:
+
+### 3.1 Understand-Anything (High-Level Architecture & Business Domains)
 - `/understand` — Scans the codebase, analyzes components, layers, and dependencies into `.ua/knowledge-graph.json`.
 - `/understand-dashboard` — Opens the interactive visual web dashboard to explore files, layers, and flows.
 - `/understand-chat <question>` — Query architecture, relationships, and business flows with graph-grounded answers.
@@ -43,6 +45,17 @@ CoinTrack integrates **Understand-Anything** knowledge graph capabilities:
 - `/understand-domain` — Maps code modules to business domain models, process steps, and financial flows.
 - `/understand-explain <path>` — Deep-dive architectural explanation of a specific class or module.
 - `/understand-onboard` — Generates a guided onboarding tour through core architecture paths.
+
+### 3.2 Graphify (Deep AST Dependency Graph, God Nodes & Path Queries)
+- **Skill**: [`graphify`](./.agents/skills/graphify/SKILL.md)
+- **Command**: `/graphify` ([`graphify.toml`](./.agents/commands/graphify.toml))
+- **Key CLI Tools**:
+  - `graphify god-nodes` — Lists top architectural hubs and most-connected symbols.
+  - `graphify query "<question>"` — Breadth-first traversal of `graphify-out/graph.json` for targeted questions.
+  - `graphify path "<source>" "<target>"` — Computes shortest dependency path between two symbols or classes.
+  - `graphify explain "<symbol>"` — Plain-language relationship and inbound/outbound connection breakdown.
+  - `graphify update .` — Incremental AST re-extraction without requiring LLM calls (keeps `graphify-out/` current).
+  - **Outputs**: `graphify-out/graph.html` (interactive dependency explorer), `graphify-out/GRAPH_REPORT.md`, and `graphify-out/graph.json`.
 
 ---
 

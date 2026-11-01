@@ -1,0 +1,16 @@
+description = "Analyze codebase structure and dependencies into a GraphRAG knowledge graph using Graphify"
+
+prompt = """
+Invoke the graphify skill.
+
+Turn the codebase into a navigable knowledge graph with community detection, god-nodes identification, and query/path/explain tooling.
+
+Key operations:
+1. Extraction & Update: Run `graphify extract . --code-only` (or `graphify update .`) to update the AST graph.
+2. Clustering & Report: Run `graphify cluster-only . --no-label` to generate `graphify-out/GRAPH_REPORT.md`, `graph.html`, and `graph.json`.
+3. Architecture Queries:
+   - `graphify god-nodes`: Identify the top architectural hubs.
+   - `graphify query "<question>"`: Traverse the knowledge graph for context.
+   - `graphify path "<source>" "<target>"`: Find shortest dependency path between components.
+   - `graphify explain "<component>"`: Explain relationships and neighbors of a symbol.
+"""

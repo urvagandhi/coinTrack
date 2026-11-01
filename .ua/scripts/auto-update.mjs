@@ -260,6 +260,18 @@ async function main() {
   runCmd(`node "${path.join(SKILL_DIR, 'finalize-incremental.mjs')}" "${PROJECT_ROOT}"`);
 
   log('Incremental update complete! Knowledge graph is in sync with latest changes.');
+
+  // Also keep Graphify updated if graphify CLI and graphify-out exist
+  try {
+    const graphifyOut = path.join(PROJECT_ROOT, 'graphify-out');
+    if (fs.existsSync(graphifyOut)) {
+      log('Updating Graphify knowledge graph...');
+      execSync('export PATH="$HOME/.local/bin:$PATH"; graphify update . 2>&1', { cwd: PROJECT_ROOT, encoding: 'utf8' });
+      log('Graphify knowledge graph updated.');
+    }
+  } catch (err) {
+    log(`Note: Graphify update skipped: ${err.message?.split('\n')[0]}`);
+  }
 }
 
 main().catch(err => {

@@ -40,3 +40,4 @@ gradlew text eol=lf
 *.pdf binary
 *.jar binary
 *.war binary
+graphify-out/graph.json merge=graphify
