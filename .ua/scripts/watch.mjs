@@ -18,10 +18,8 @@ const WATCH_DIRS = [
   path.join(PROJECT_ROOT, 'backend/src'),
   path.join(PROJECT_ROOT, 'frontend/src'),
   path.join(PROJECT_ROOT, '.agents'),
-  path.join(PROJECT_ROOT, 'agents'),
-  path.join(PROJECT_ROOT, 'commands'),
-  path.join(PROJECT_ROOT, 'references'),
-  path.join(PROJECT_ROOT, 'local')
+  path.join(PROJECT_ROOT, 'local'),
+  path.join(PROJECT_ROOT, 'scripts')
 ].filter(d => fs.existsSync(d));
 
 const IGNORE_PATTERNS = [

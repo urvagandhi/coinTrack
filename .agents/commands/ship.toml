@@ -20,7 +20,7 @@ If subagents are unavailable in the current CLI version, invoke each persona's s
 Constraints (from CLI's subagent model):
 - Subagents run in isolated context loops and return only their report to this main session.
 - Do not let one persona delegate to another — keep the fan-out flat.
-- For richer multi-agent collaboration where teammates talk to each other instead of just reporting back, see `references/orchestration-patterns.md`.
+- For richer multi-agent collaboration where teammates talk to each other instead of just reporting back, see `.agents/references/orchestration-patterns.md`.
 
 **Persona resolution.** If you've defined your own `code-reviewer`, `security-auditor`, or `test-engineer` in `agents/` or your global configuration, those take precedence over this plugin's versions — `/ship` picks up your customizations automatically. This is intentional: plugin subagents sit at the bottom of the CLI's scope priority table, so user-level definitions win by design.
 

@@ -60,7 +60,7 @@ When modifying code in specific subsystems, activate the dedicated skill:
 
 ## 5. Specialist Review Personas
 
-When running reviews or evaluations, use the personas in [`agents/`](./agents/):
+When running reviews or evaluations, use the personas in [`.agents/agents/`](./.agents/agents/):
 - `code-reviewer`: Senior staff engineer standard across architecture, logic, maintainability, tests, and style.
 - `security-auditor`: Vulnerability detection, threat modeling, and OWASP assessment.
 - `test-engineer`: QA strategy, coverage verification, edge cases, and regressions.
@@ -70,10 +70,10 @@ When running reviews or evaluations, use the personas in [`agents/`](./agents/):
 
 ## 6. Standing Checklists
 
-Refer to detailed guidance in [`references/`](./references/):
-- [`definition-of-done.md`](./references/definition-of-done.md) — The baseline bar every commit and PR must clear.
-- [`testing-patterns.md`](./references/testing-patterns.md) — Test sizing, naming conventions, and mocking rules.
-- [`security-checklist.md`](./references/security-checklist.md) — Pre-commit auth, input validation, and header audits.
-- [`performance-checklist.md`](./references/performance-checklist.md) — Target latencies and render budgets.
-- [`accessibility-checklist.md`](./references/accessibility-checklist.md) — Keyboard navigation and WCAG 2.1 AA standards.
-- [`observability-checklist.md`](./references/observability-checklist.md) — Logging conventions, actuator endpoints, and metrics.
+Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
+- [`definition-of-done.md`](./.agents/references/definition-of-done.md) — The baseline bar every commit and PR must clear.
+- [`testing-patterns.md`](./.agents/references/testing-patterns.md) — Test sizing, naming conventions, and mocking rules.
+- [`security-checklist.md`](./.agents/references/security-checklist.md) — Pre-commit auth, input validation, and header audits.
+- [`performance-checklist.md`](./.agents/references/performance-checklist.md) — Target latencies and render budgets.
+- [`accessibility-checklist.md`](./.agents/references/accessibility-checklist.md) — Keyboard navigation and WCAG 2.1 AA standards.
+- [`observability-checklist.md`](./.agents/references/observability-checklist.md) — Logging conventions, actuator endpoints, and metrics.
