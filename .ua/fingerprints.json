@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "c8069422d911f62d8c117737ac523c400794c198",
-  "generatedAt": "2026-11-01T04:58:47.546Z",
+  "gitCommitHash": "84400d625aa6f17b49b5c130bd5fb77bff3089dd",
+  "generatedAt": "2026-11-01T05:30:35.598Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -4725,7 +4725,7 @@
     },
     ".ua/fingerprints.json": {
       "filePath": ".ua/fingerprints.json",
-      "contentHash": "30db496d12a8c028fb9483a0103517074ff4805d112813cb4aed370b5d08b1c2",
+      "contentHash": "5574f74a09a07e17c5742c869a94d735453a678b1ef3b1e2b9c7d45242ad1f84",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4735,7 +4735,7 @@
     },
     ".ua/knowledge-graph.json": {
       "filePath": ".ua/knowledge-graph.json",
-      "contentHash": "1922b941a20a04a251c5e050a542c738b72edddd126aec471ebab60524c563c5",
+      "contentHash": "a1215973877cf6bbca6a065a5baf7f359d06532db02ae234c38563c2e7a176fa",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4745,7 +4745,7 @@
     },
     ".ua/meta.json": {
       "filePath": ".ua/meta.json",
-      "contentHash": "b9bb98e637810c0665dc6f708c0fa9e9e6cc536aea4c6908ea5d68200dc30a75",
+      "contentHash": "e0b5b0785ef8ec3b695e73d93c49084c314c6fa17c0d0e59341b41ed8368577b",
       "functions": [],
       "classes": [],
       "imports": [],

@@ -1,0 +1,175 @@
+{
+  "id": "cointrack-env-staging",
+  "name": "CoinTrack Staging Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.staging.cointrack.internal",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "tokenExpiresAt",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "username",
+      "value": "urva_gandhi",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "totpSecret",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "tempToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "noteId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "mfSchemeId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "sipMandateId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "sipContributionId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "lumpsumId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "redemptionId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "epfTransactionId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "ppfTransactionId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "fdId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "goldSilverId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "zerodhaApiKey",
+      "value": "<ENTER_API_KEY>",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "zerodhaApiSecret",
+      "value": "<ENTER_API_SECRET>",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "zerodhaClientId",
+      "value": "<ENTER_CLIENT_ID>",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "upstoxApiKey",
+      "value": "<ENTER_API_KEY>",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "upstoxApiSecret",
+      "value": "<ENTER_API_SECRET>",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "upstoxClientId",
+      "value": "<ENTER_CLIENT_ID>",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "angeloneApiKey",
+      "value": "<ENTER_API_KEY>",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "angeloneClientId",
+      "value": "<ENTER_CLIENT_ID>",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "angelonePin",
+      "value": "<ENTER_PIN>",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "angeloneTotp",
+      "value": "<ENTER_TOTP>",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}
