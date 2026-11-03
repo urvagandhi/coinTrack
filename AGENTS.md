@@ -99,3 +99,67 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
 - [`performance-checklist.md`](./.agents/references/performance-checklist.md) — Target latencies and render budgets.
 - [`accessibility-checklist.md`](./.agents/references/accessibility-checklist.md) — Keyboard navigation and WCAG 2.1 AA standards.
 - [`observability-checklist.md`](./.agents/references/observability-checklist.md) — Logging conventions, actuator endpoints, and metrics.
+
+---
+
+## 7. Recent Context & System State (Session Memory)
+
+### 7.1 Elevated Canvas Card App Shell
+- **App Shell Architecture (`MainLayout.jsx`)**: The authenticated workspace (`(main)/*`) utilizes an elevated island canvas card layout matching modern fintech reference mockups:
+  - **Atmospheric Sky Backdrop**: Interactive Canvas 2D simulation ([`cointrack-sky-background.jsx`](./frontend/src/shared/ui/brand/cointrack-sky-background.jsx)) renders as the outer environmental backdrop.
+  - **Elevated Canvas Card**: The central app container (`bg-white/95 dark:bg-[#121316]/95 backdrop-blur-xl rounded-[24px] sm:rounded-[32px] md:rounded-[40px] border shadow`) encapsulates the entire authenticated experience without edge bleed.
+  - **Top Navigation Bar ([`Header.jsx`](./frontend/src/widgets/app-shell/Header.jsx))**: Consolidated header with asset pill strip (Overview, Stocks, Mutual Funds, Fixed Deposits, PF Ledgers, Gold & Silver), global search, theme switcher (Light/Dark via `useTheme`), notifications, and user avatar. Strict deduplication ensures no duplicate secondary headers appear inside child views.
+  - **Sidebar Dock ([`Sidebar.jsx`](./frontend/src/widgets/app-shell/Sidebar.jsx))**: Slim left vertical dock for core module jumping (Home, Ledgers, Profile, Brokers, Tools).
+  - **App Shell Footer ([`Footer.jsx`](./frontend/src/widgets/app-shell/Footer.jsx))**: Pinned bottom status bar containing copyright, Terms of Service, Privacy Policy, and "Bank-Grade Security" badge.
+
+### 7.2 Dashboard Architecture & Layout
+- **Main Dashboard**: [`DashboardView.jsx`](./frontend/src/features/dashboard/components/DashboardView.jsx) implements a modern SaaS card layout:
+  - **KPI Metrics Row**: 4 primary indicators (Total Net Worth, Today's Return, Unrealized Gain, Invested Capital) with real-time gain/loss indicators.
+  - **Asset Allocation Bar**: Segmented horizontal progress bar displaying distribution across Equities, Mutual Funds, Gold & Silver, and Fixed Income/EPF.
+  - **Two-Column Analytics Grid**:
+    - *Left*: Net worth vs. invested timeline chart with hover tooltips + [`HoldingsTable.jsx`](./frontend/src/features/dashboard/components/HoldingsTable.jsx).
+    - *Right*: AI portfolio suggestion bubbles, rebalancing insights, and semi-circular portfolio health speedometer gauge.
+
+### 7.3 Profile & Settings Subsystem
+- **Two-Column Experience ([`ProfileView.jsx`](./frontend/src/features/profile/components/ProfileView.jsx))**: Built to match the modern two-column settings architecture (Wayline reference design):
+  - **Left Settings Sub-Sidebar (`<aside>`)**: Fixed/docked static navigation (`My Profile`, `Security Options`, `Preferences`, `Notifications`, `Danger Zone`). Does NOT scroll independently.
+  - **Right Main Content Card (`<section>`)**: Dedicated, spacious card displaying active tab content with dynamic vertical scrolling (`overflow-y-auto [scrollbar-width:thin]`).
+  - **Dynamic Scrolling Rules**: To eliminate duplicate scrollbars while preventing bottom cutoff, the left navigation remains docked and static, while only the right card dynamically handles internal overflow. All fields (Bio, password update button, balance mask toggle) remain fully accessible.
+  - **Un-Shrunk Sizing Standards**: Full uncompressed padding and element dimensions are strictly preserved (`p-6 sm:p-8`, `size-16 sm:size-20` avatar, `h-11` inputs, `min-h-11` readonly boxes, `rows={3}` bio).
+  - **Explicit Exclusions**: "Portfolio Snapshot" (Invested Capital, Unrealized P&L, Active Holdings) is permanently removed from the Profile tab.
+  - **Tab Modules**:
+    - *My Profile*: Personal identity details, Dicebear avatar with camera badge, verified email badge, mobile number (`+91`), location, and bio with inline edit/save toggles.
+    - *Security Options*: Full TOTP 2FA status, interactive 3-step reset workflow (verify code -> QR display -> backup codes download), emergency reset link, and password change form.
+    - *Preferences*: Theme selector (Light / Dark / System), base currency selector (INR, USD, EUR, GBP), and balance masking toggle.
+    - *Notifications*: Granular toggles for price alerts, portfolio updates, market news, and weekly digests.
+    - *Danger Zone*: Red-themed account deletion dialog with confirmation password input.
+
+### 7.4 Identity & DTO Synchronization
+- **Email Verification Normalization**:
+  - Backend: [`UserProfileResponse.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/UserProfileResponse.java) and [`LoginResponse.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/LoginResponse.java) explicitly include `@JsonProperty("isEmailVerified")` and `emailVerified` accessors.
+  - Frontend: [`model.js`](./frontend/src/entities/user/model.js) and [`AuthContext.js`](./frontend/src/shared/auth/AuthContext.js) normalize `isEmailVerified` so verification badges and pending banners hydrate accurately without discrepancies.
+
+### 7.5 Authentication Lifecycle & 2FA Recovery
+- **Token Handoff**: [`setup-2fa/page.jsx`](./frontend/src/app/(access)/setup-2fa/page.jsx) sets auth tokens via `tokenManager.setToken(data.token, true)` and invokes `refreshUser()` from [`AuthContext.js`](./frontend/src/shared/auth/AuthContext.js). Completion triggers `window.location.href = '/dashboard'` to guarantee clean cookie and session hydration.
+- **Self-Healing AuthGuard**: [`AuthGuard.jsx`](./frontend/src/shared/auth/AuthGuard.jsx) detects valid unexpired tokens in storage. If in-memory React state is momentarily desynchronized, it displays a loading state and recovers the profile via `refreshUser()`, preventing white-screen lockouts or redirect loops with [`proxy.js`](./frontend/src/proxy.js).
+
+### 7.6 Email Change Lifecycle, Expiry, Mutual Exclusion & Cooldown
+- **Backend Model & Token Revocation**:
+  - **Entity Properties ([`User.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/model/User.java))**: Added `pendingEmail` and `pendingEmailExpiresAt` (10-minute expiry governed by `magicLinkExpiryMinutes = 10` in `EmailConfigProperties.java`).
+  - **Collision Prevention ([`UserRepository.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/repository/UserRepository.java) & [`UserService.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/service/UserService.java))**: Implemented `existsByPendingEmail` and `isPendingEmailActive` to prevent dual-account collisions. Actively pending email changes lock the address across the platform; expired requests release the address automatically.
+  - **Cancellation Endpoint ([`EmailChangeController.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/email/controller/EmailChangeController.java))**: Added `POST /api/auth/email/change/cancel`. Revokes all unexpired `EMAIL_CHANGE_VERIFY` tokens via `emailTokenService.invalidateAllForUserAndPurpose(...)` and resets `pendingEmail` and `pendingEmailExpiresAt`.
+  - **DTO & Auto-Purge ([`UserProfileResponse.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/UserProfileResponse.java) & [`UserController.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/controller/UserController.java))**: DTO exposes `pendingEmail` and `pendingEmailExpiresAt` to the client. `GET /api/users/me` automatically purges stale pending requests older than 24 hours.
+  - **Verification Race Guard ([`EmailVerificationController.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/email/controller/EmailVerificationController.java))**: Verifies `newEmail` availability at token redemption time before committing changes.
+- **Frontend Interaction & State Synchronization ([`ProfileView.jsx`](./frontend/src/features/profile/components/ProfileView.jsx))**:
+  - **Unified Save Button Spinner**: Integrated `isSaveLoading = isSaving || updateProfileMutation.isPending`. When only modifying email, `setIsSaving(true)` ensures the Save Changes button displays `<Loader2 className="animate-spin" /> Saving...` and disables Cancel to prevent concurrent edits.
+  - **Revocation Priority (RFC 7009 / OWASP Standard)**: Cancellation takes strict precedence over resends. Clicking Cancel activates `cancelledRef.current = true` to abort in-flight resend callbacks, disables both actions, and clears `resendCooldown`.
+  - **60-Second Cooldown & Visual Status**: Pending email change banner integrates a 60s countdown timer with `<Clock className="size-3.5 text-white/80" />` matching [`pending-verification-banner.jsx`](./frontend/src/shared/ui/data-display/pending-verification-banner.jsx), with explicit sending and cancelling spinner states.
+  - **Mobile Number Validation**: Enforces 10-digit Indian phone regex (`/^[6-9]\d{9}$/`), stripping non-digits and ensuring standard `+91` prefixing across both profile edits and registration.
+
+### 7.7 UI Feedback, Toasts & Design Lab Alignment
+- **Toast Notifications ([`toaster.jsx`](./frontend/src/shared/ui/feedback/toaster.jsx) & [`use-toast.js`](./frontend/src/shared/ui/feedback/use-toast.js))**:
+  - Dismiss button (`X`) pinned to the top-right corner with proper flex alignment.
+  - Outer ghost borders eliminated in favor of clean Terminal Editorial border tokens (`border-black/[0.08] dark:border-white/[0.08]`).
+  - Animated SVG status icons matching Design Lab alert banners (`AnimatedSuccessIcon`, `AnimatedWarningIcon`, `AnimatedErrorIcon`).
+- **Password Security Meter ([`security-inputs.jsx`](./frontend/src/features/auth/components/security-inputs.jsx))**:
+  - Real-time password strength meter and rule validators (uppercase, lowercase, number, special char `@$!%*?&#`, and 8+ characters) utilized across Registration, Forgot Password, and Settings Security.

@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "84400d625aa6f17b49b5c130bd5fb77bff3089dd",
-  "generatedAt": "2026-11-01T05:30:35.598Z",
+  "gitCommitHash": "2563e83a7b35c7574e3ae50dce29110067b47b8a",
+  "generatedAt": "2026-11-03T14:12:48.091Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -4725,27 +4725,27 @@
     },
     ".ua/fingerprints.json": {
       "filePath": ".ua/fingerprints.json",
-      "contentHash": "5574f74a09a07e17c5742c869a94d735453a678b1ef3b1e2b9c7d45242ad1f84",
+      "contentHash": "b2f2cb66943e24d6b5cbe2fd654cf042244562fc58a2bdfeb5d532b3d4cb094b",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 99800,
+      "totalLines": 100258,
       "hasStructuralAnalysis": false
     },
     ".ua/knowledge-graph.json": {
       "filePath": ".ua/knowledge-graph.json",
-      "contentHash": "a1215973877cf6bbca6a065a5baf7f359d06532db02ae234c38563c2e7a176fa",
+      "contentHash": "c839bfd209260c5748ac616c82ab8c007e0e987a264efc3216b4fc1f0573adf1",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 110464,
+      "totalLines": 109585,
       "hasStructuralAnalysis": false
     },
     ".ua/meta.json": {
       "filePath": ".ua/meta.json",
-      "contentHash": "e0b5b0785ef8ec3b695e73d93c49084c314c6fa17c0d0e59341b41ed8368577b",
+      "contentHash": "b018cc445f4f1446dc2c9171c99a061985268ed4f6c5fc7e2be78241d21761af",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4813,12 +4813,12 @@
     },
     "AGENTS.md": {
       "filePath": "AGENTS.md",
-      "contentHash": "884bd2a07e90b3c1e043c4e5feaff49f685b692683d80c07551cc9f0b424834f",
+      "contentHash": "4892f51055c283d5637f3807a29c282eafb75dd7db382ab5e6967b230fda351a",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 102,
+      "totalLines": 123,
       "hasStructuralAnalysis": false
     },
     "DOCKER.md": {
@@ -26618,7 +26618,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/email/controller/EmailChangeController.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/email/controller/EmailChangeController.java",
-      "contentHash": "3cebe0adb5230fa51c7ab302f05e69fa363e5eb539fa021bdcabfb0ec26d00ed",
+      "contentHash": "cba1f7eb440c6555ddd6a192ba637d856e6169239ee051a3604bd4f8ff626105",
       "functions": [
         {
           "name": "requestEmailChange",
@@ -26629,14 +26629,24 @@
           ],
           "returnType": "ResponseEntity<?>",
           "exported": true,
-          "lineCount": 71
+          "lineCount": 83
+        },
+        {
+          "name": "cancelEmailChange",
+          "params": [
+            "userDetails"
+          ],
+          "returnType": "ResponseEntity<?>",
+          "exported": true,
+          "lineCount": 29
         }
       ],
       "classes": [
         {
           "name": "EmailChangeController",
           "methods": [
-            "requestEmailChange"
+            "requestEmailChange",
+            "cancelEmailChange"
           ],
           "properties": [
             "logger",
@@ -26646,7 +26656,7 @@
             "userRepository"
           ],
           "exported": true,
-          "lineCount": 86
+          "lineCount": 129
         }
       ],
       "imports": [
@@ -26708,6 +26718,12 @@
           "source": "jakarta.servlet.http.HttpServletRequest",
           "specifiers": [
             "HttpServletRequest"
+          ]
+        },
+        {
+          "source": "java.time.LocalDateTime",
+          "specifiers": [
+            "LocalDateTime"
           ]
         },
         {
@@ -26779,14 +26795,15 @@
       ],
       "exports": [
         "requestEmailChange",
+        "cancelEmailChange",
         "EmailChangeController"
       ],
-      "totalLines": 119,
+      "totalLines": 163,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/email/controller/EmailVerificationController.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/email/controller/EmailVerificationController.java",
-      "contentHash": "151746a3a0ff800fc1ada0ed30cb9ac3e861e825e4233a617d95578a286023ff",
+      "contentHash": "b12f928f37a47a7f5d972d4368ea18b103ac76932f7368908ae7fcb78a619aa0",
       "functions": [
         {
           "name": "verifyEmail",
@@ -26796,7 +26813,7 @@
           ],
           "returnType": "ResponseEntity<?>",
           "exported": true,
-          "lineCount": 100
+          "lineCount": 111
         },
         {
           "name": "resendVerification",
@@ -26824,7 +26841,7 @@
             "userRepository"
           ],
           "exported": true,
-          "lineCount": 159
+          "lineCount": 170
         }
       ],
       "imports": [
@@ -26972,7 +26989,7 @@
         "resendVerification",
         "EmailVerificationController"
       ],
-      "totalLines": 192,
+      "totalLines": 203,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/email/controller/ForgotPasswordController.java": {
@@ -28209,7 +28226,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/email/service/EmailTokenService.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/email/service/EmailTokenService.java",
-      "contentHash": "f003b6d83425e1e88495aa29e3c35b7ad265720fe06fcf38d74ed56d8a576ae3",
+      "contentHash": "2ee1306338bb628267fb2da6c25bf7477008729ee8045b42f7b1935da88e55e1",
       "functions": [
         {
           "name": "createToken",
@@ -28263,6 +28280,16 @@
           "lineCount": 4
         },
         {
+          "name": "invalidateAllForUserAndPurpose",
+          "params": [
+            "userId",
+            "purpose"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
           "name": "createJwt",
           "params": [
             "tokenId",
@@ -28293,6 +28320,7 @@
             "validateToken",
             "markUsed",
             "invalidateAllForUser",
+            "invalidateAllForUserAndPurpose",
             "createJwt",
             "parseJwt"
           ],
@@ -28302,7 +28330,7 @@
             "emailConfig"
           ],
           "exported": true,
-          "lineCount": 187
+          "lineCount": 199
         }
       ],
       "imports": [
@@ -28421,9 +28449,10 @@
         "validateToken",
         "markUsed",
         "invalidateAllForUser",
+        "invalidateAllForUserAndPurpose",
         "EmailTokenService"
       ],
-      "totalLines": 220,
+      "totalLines": 232,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/epf/README.md": {
@@ -60640,7 +60669,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/controller/UserController.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/user/controller/UserController.java",
-      "contentHash": "44e0faad41976b4fd57a24e0658013adb6d882e452374a1a02f341d4cb9c5385",
+      "contentHash": "825d0240781a64edf955603c5f52f3ca239433e25b0a56d40193cef01418e7ea",
       "functions": [
         {
           "name": "setNotificationService",
@@ -60675,7 +60704,7 @@
           ],
           "returnType": "ResponseEntity<?>",
           "exported": true,
-          "lineCount": 24
+          "lineCount": 31
         },
         {
           "name": "updateCurrentUser",
@@ -60739,7 +60768,7 @@
             "emailTokenService"
           ],
           "exported": true,
-          "lineCount": 193
+          "lineCount": 200
         }
       ],
       "imports": [
@@ -60916,7 +60945,7 @@
         "deleteCurrentUser",
         "UserController"
       ],
-      "totalLines": 232,
+      "totalLines": 239,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/CompleteProfileRequest.java": {
@@ -61380,7 +61409,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/LoginResponse.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/LoginResponse.java",
-      "contentHash": "6381faf9296d149beaae96058a1d95160dfd3446f7b7c954bbdd44ecd1cf9a30",
+      "contentHash": "0c6ac739e5385e8c296cc002a6f4a45c107f2fb4003af0ab62f8ddb5cf7d3723",
       "functions": [
         {
           "name": "LoginResponse",
@@ -61688,6 +61717,38 @@
           "lineCount": 3
         },
         {
+          "name": "isEmailVerified",
+          "params": [],
+          "returnType": "Boolean",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "getEmailVerified",
+          "params": [],
+          "returnType": "Boolean",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "setEmailVerified",
+          "params": [
+            "emailVerified"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "setIsEmailVerified",
+          "params": [
+            "isEmailVerified"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
           "name": "toString",
           "params": [],
           "returnType": "String",
@@ -61737,6 +61798,10 @@
             "setBackupCodes",
             "getProfileComplete",
             "setProfileComplete",
+            "isEmailVerified",
+            "getEmailVerified",
+            "setEmailVerified",
+            "setIsEmailVerified",
             "toString"
           ],
           "properties": [
@@ -61757,10 +61822,12 @@
             "location",
             "refreshToken",
             "backupCodes",
-            "profileComplete"
+            "profileComplete",
+            "emailVerified",
+            "isEmailVerified"
           ],
           "exported": true,
-          "lineCount": 259
+          "lineCount": 281
         }
       ],
       "imports": [
@@ -61822,10 +61889,14 @@
         "setBackupCodes",
         "getProfileComplete",
         "setProfileComplete",
+        "isEmailVerified",
+        "getEmailVerified",
+        "setEmailVerified",
+        "setIsEmailVerified",
         "toString",
         "LoginResponse"
       ],
-      "totalLines": 267,
+      "totalLines": 289,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/RegisterUserDTO.java": {
@@ -62126,7 +62197,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/UpdateProfileRequest.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/UpdateProfileRequest.java",
-      "contentHash": "7311b04b6a0df080740bd06f628c6052dedb8dc4a4349780cb407af999d4164f",
+      "contentHash": "ae7201a55f5ee1fdd1805cf6249338dbd6d9afc1b25e8affa461dd607fff9eb2",
       "functions": [],
       "classes": [
         {
@@ -62134,7 +62205,7 @@
           "methods": [],
           "properties": [],
           "exported": true,
-          "lineCount": 15
+          "lineCount": 17
         }
       ],
       "imports": [
@@ -62166,13 +62237,20 @@
       "exports": [
         "UpdateProfileRequest"
       ],
-      "totalLines": 28,
+      "totalLines": 30,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/UserProfileResponse.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/UserProfileResponse.java",
-      "contentHash": "e8916fff12dc65f450e5cace77fa4e23b6288d293b489299dd130813430c510d",
+      "contentHash": "4bdc1ca96bf51a00f9ce34f69efc9b69692855b5495654c3d725f8988884fd52",
       "functions": [
+        {
+          "name": "isEmailVerified",
+          "params": [],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 4
+        },
         {
           "name": "from",
           "params": [
@@ -62180,21 +62258,28 @@
           ],
           "returnType": "UserProfileResponse",
           "exported": true,
-          "lineCount": 17
+          "lineCount": 19
         }
       ],
       "classes": [
         {
           "name": "UserProfileResponse",
           "methods": [
+            "isEmailVerified",
             "from"
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 35
+          "lineCount": 44
         }
       ],
       "imports": [
+        {
+          "source": "com.fasterxml.jackson.annotation.JsonProperty",
+          "specifiers": [
+            "JsonProperty"
+          ]
+        },
         {
           "source": "com.urva.myfinance.coinTrack.user.model.AuthProvider",
           "specifiers": [
@@ -62221,10 +62306,11 @@
         }
       ],
       "exports": [
+        "isEmailVerified",
         "from",
         "UserProfileResponse"
       ],
-      "totalLines": 48,
+      "totalLines": 58,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/model/AuthProvider.java": {
@@ -62693,7 +62779,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/model/User.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/user/model/User.java",
-      "contentHash": "b97002182b49f5ece3b52194ea2784c0ccee51c5f8ba45ff38e2f9324fefe8fb",
+      "contentHash": "beef1bc8cb2ef429e278d744096f596de11979999bc76f02b3c306fc702d422d",
       "functions": [],
       "classes": [
         {
@@ -62725,6 +62811,7 @@
             "emailVerified",
             "emailVerifiedAt",
             "pendingEmail",
+            "pendingEmailExpiresAt",
             "authProvider",
             "googleId",
             "epfSettings",
@@ -62732,7 +62819,7 @@
             "metalRateSettings"
           ],
           "exported": true,
-          "lineCount": 85
+          "lineCount": 87
         }
       ],
       "imports": [
@@ -62818,7 +62905,7 @@
       "exports": [
         "User"
       ],
-      "totalLines": 106,
+      "totalLines": 108,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/model/UserDeletionAudit.java": {
@@ -63138,7 +63225,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/repository/UserRepository.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/user/repository/UserRepository.java",
-      "contentHash": "feb49ecc7ba05d964f8e057a92030bfaa25f055edf1dec56bd48f6fa4c603033",
+      "contentHash": "e005ed25481f192f2eb0b20408ed6fac0e508cd297df2fee8bd93bdfb83da4dd",
       "functions": [],
       "classes": [
         {
@@ -63150,15 +63237,17 @@
             "findByPhoneNumber",
             "existsByUsername",
             "existsByEmail",
+            "existsByPendingEmail",
             "existsByPhoneNumber",
             "findOptionalByUsername",
             "findOptionalByEmail",
+            "findOptionalByPendingEmail",
             "findOptionalByPhoneNumber",
             "findByGoogleId"
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 31
+          "lineCount": 35
         }
       ],
       "imports": [
@@ -63190,7 +63279,7 @@
       "exports": [
         "UserRepository"
       ],
-      "totalLines": 39,
+      "totalLines": 43,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/service/TotpService.java": {
@@ -63612,7 +63701,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/service/UserAuthenticationService.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/user/service/UserAuthenticationService.java",
-      "contentHash": "94429d2ce3bd4a8a306b430ba2c07b99e8142f21031c6c8049b289d6d7386c1c",
+      "contentHash": "67f1bc639bf75bc403619a6f5c0d55951b8ca4c6c624f894e890cccaa3d14013",
       "functions": [
         {
           "name": "UserAuthenticationService",
@@ -63671,7 +63760,7 @@
           ],
           "returnType": "LoginResponse",
           "exported": true,
-          "lineCount": 36
+          "lineCount": 37
         },
         {
           "name": "generateFinalLoginResponse",
@@ -63682,7 +63771,7 @@
           ],
           "returnType": "LoginResponse",
           "exported": false,
-          "lineCount": 20
+          "lineCount": 21
         },
         {
           "name": "getUserByToken",
@@ -63834,7 +63923,7 @@
             "googleOAuthService"
           ],
           "exported": true,
-          "lineCount": 528
+          "lineCount": 530
         }
       ],
       "imports": [
@@ -63957,12 +64046,12 @@
         "completeGoogleProfile",
         "UserAuthenticationService"
       ],
-      "totalLines": 557,
+      "totalLines": 559,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/user/service/UserService.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/user/service/UserService.java",
-      "contentHash": "c5a5f383b786abd1c4c5bc3604851cde62b4a5acb9874ea1d3e50bc88e5f1405",
+      "contentHash": "7729eaaff0818b2526187efdfa5101e085cb5fd776dd6b91b938162d814494b1",
       "functions": [
         {
           "name": "UserService",
@@ -64015,7 +64104,7 @@
           ],
           "returnType": "LoginResponse",
           "exported": true,
-          "lineCount": 126
+          "lineCount": 127
         },
         {
           "name": "getPendingRegistrationByIdentifier",
@@ -64149,6 +64238,15 @@
           "lineCount": 54
         },
         {
+          "name": "saveUser",
+          "params": [
+            "user"
+          ],
+          "returnType": "User",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
           "name": "changePassword",
           "params": [
             "userId",
@@ -64215,6 +64313,15 @@
           "lineCount": 21
         },
         {
+          "name": "isPendingEmailActive",
+          "params": [
+            "email"
+          ],
+          "returnType": "boolean",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
           "name": "normalizePhoneNumber",
           "params": [
             "input"
@@ -64247,6 +64354,7 @@
             "isUsernameAvailable",
             "isPhoneNumberRegistered",
             "updateUser",
+            "saveUser",
             "changePassword",
             "deleteAccount",
             "getUserByToken",
@@ -64254,6 +64362,7 @@
             "migrateMixedCaseEmailsToLowerCase",
             "toTransientUser",
             "sendRegistrationEmails",
+            "isPendingEmailActive",
             "normalizePhoneNumber"
           ],
           "properties": [
@@ -64273,7 +64382,7 @@
             "emailConfig"
           ],
           "exported": true,
-          "lineCount": 591
+          "lineCount": 606
         }
       ],
       "imports": [
@@ -64490,6 +64599,7 @@
         "isUsernameAvailable",
         "isPhoneNumberRegistered",
         "updateUser",
+        "saveUser",
         "changePassword",
         "deleteAccount",
         "getUserByToken",
@@ -64497,7 +64607,7 @@
         "migrateMixedCaseEmailsToLowerCase",
         "UserService"
       ],
-      "totalLines": 637,
+      "totalLines": 652,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/resources/application-dev.properties": {
@@ -80304,7 +80414,7 @@
     },
     "backend/src/test/java/com/urva/myfinance/coinTrack/user/dto/LoginResponseTest.java": {
       "filePath": "backend/src/test/java/com/urva/myfinance/coinTrack/user/dto/LoginResponseTest.java",
-      "contentHash": "cda3b361506d2be4daa3b1377d7d85e7fca904bb971f799dbae66162fbd6f2a0",
+      "contentHash": "7c62569d9ce680cc648f1f37bbc6dcf8960872ac522919c45ee9f28b2b671c23",
       "functions": [
         {
           "name": "defaultConstructor_CreatesEmpty",
@@ -80325,7 +80435,7 @@
           "params": [],
           "returnType": "void",
           "exported": false,
-          "lineCount": 36
+          "lineCount": 39
         },
         {
           "name": "toString_MasksToken",
@@ -80362,7 +80472,7 @@
           ],
           "properties": [],
           "exported": false,
-          "lineCount": 97
+          "lineCount": 100
         }
       ],
       "imports": [
@@ -80392,7 +80502,7 @@
         }
       ],
       "exports": [],
-      "totalLines": 106,
+      "totalLines": 109,
       "hasStructuralAnalysis": true
     },
     "backend/src/test/java/com/urva/myfinance/coinTrack/user/dto/RegisterUserDTOTest.java": {
@@ -82858,6 +82968,16 @@
       "totalLines": 2,
       "hasStructuralAnalysis": false
     },
+    "frontend/.npmrc": {
+      "filePath": "frontend/.npmrc",
+      "contentHash": "2e5fbb8c2d48f5111d9b1c0f69e212221cd1eacc65bfb0ab94b8186cb6b8abd9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": false
+    },
     "frontend/.prettierignore": {
       "filePath": "frontend/.prettierignore",
       "contentHash": "808bde9d1eac433baf138e7bcd618875bc20613df3d1554e757c6f367c2bfbb4",
@@ -82880,7 +83000,7 @@
     },
     "frontend/AGENTS.md": {
       "filePath": "frontend/AGENTS.md",
-      "contentHash": "0630e34961a8cc6e95b8453f22ecd63a575a4e7f14122973efb7d6b8745afdb0",
+      "contentHash": "841362a4acf9fdcf59a671856b76895d0604d48ab0a400e3bd2529b64cbb30e2",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -83180,6 +83300,23 @@
       "totalLines": 87,
       "hasStructuralAnalysis": true
     },
+    "frontend/jest.config.mjs": {
+      "filePath": "frontend/jest.config.mjs",
+      "contentHash": "629de59461494a8c15bf5185c35ebb9ce6af226076275b5f313019c3bc96427e",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "next/jest.js",
+          "specifiers": [
+            "nextJest"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
     "frontend/jsconfig.json": {
       "filePath": "frontend/jsconfig.json",
       "contentHash": "79dc0f6a07b2b2554c959e9144daef3041848a6c8a2dfb4773f8219b502be280",
@@ -83215,12 +83352,12 @@
     },
     "frontend/package.json": {
       "filePath": "frontend/package.json",
-      "contentHash": "9bc81287d92bf89e451962ea8ee6ddf5235b85e2abc839e1f59fdc1857bbb0e7",
+      "contentHash": "b778f87c764a4d8787c017b1025ef5794bb675e786afefaf1b12e387a01cb9cd",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 134,
+      "totalLines": 113,
       "hasStructuralAnalysis": false
     },
     "frontend/postcss.config.mjs": {
@@ -83375,7 +83512,7 @@
     },
     "frontend/src/app/(access)/forgot-password/page.jsx": {
       "filePath": "frontend/src/app/(access)/forgot-password/page.jsx",
-      "contentHash": "e67bcc91e3485158817cb360024d61045cfa9ef427317365c60f319f67df1a46",
+      "contentHash": "55ed9bc0d36d148778338b2cda2697601373f84c228a852106b5c2c4e326a369",
       "functions": [
         {
           "name": "normalizeIdentifier",
@@ -83423,12 +83560,12 @@
       "exports": [
         "ForgotPasswordPage"
       ],
-      "totalLines": 70,
+      "totalLines": 69,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(access)/layout.js": {
       "filePath": "frontend/src/app/(access)/layout.js",
-      "contentHash": "81a795b398d4cf0490930f274d20e151f231a85529482bff0ad96db8205fa97f",
+      "contentHash": "03fb3ef3e507d13b5d5edffabe4c7207363138c6c4f2fe4d634d4a61da2f38bd",
       "functions": [
         {
           "name": "AccessLayout",
@@ -83475,7 +83612,7 @@
       "exports": [
         "AccessLayout"
       ],
-      "totalLines": 64,
+      "totalLines": 63,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(access)/login/layout.js": {
@@ -83500,7 +83637,7 @@
     },
     "frontend/src/app/(access)/login/page.jsx": {
       "filePath": "frontend/src/app/(access)/login/page.jsx",
-      "contentHash": "cead2bbd0358027e0ad135e10d42468c699f1ec457544fb1c0e27560e35c3c00",
+      "contentHash": "c92ac81f57538a9c5a2fb4da9ae4b790cc1e150860d4e457746ee9db7ff32376",
       "functions": [
         {
           "name": "normalizeIdentifier",
@@ -83564,12 +83701,12 @@
       "exports": [
         "LoginPage"
       ],
-      "totalLines": 308,
+      "totalLines": 307,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(access)/not-found.js": {
       "filePath": "frontend/src/app/(access)/not-found.js",
-      "contentHash": "e30485846f2aabe311bf349d2b08f4a07630e7df04d0af1ebc32a0b182d59494",
+      "contentHash": "37840e8c543bcd0fad9c339a602031efb0a8e1b6071568a8bd9f99a001480eff",
       "functions": [
         {
           "name": "useNow",
@@ -83632,7 +83769,7 @@
       "exports": [
         "NotFound"
       ],
-      "totalLines": 284,
+      "totalLines": 283,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(access)/register/layout.js": {
@@ -83657,7 +83794,7 @@
     },
     "frontend/src/app/(access)/register/page.jsx": {
       "filePath": "frontend/src/app/(access)/register/page.jsx",
-      "contentHash": "cd20f2b10a08e0124b506fa259fd49489ad878f03c4fc6313cb0626f4043cf0b",
+      "contentHash": "0877ee947efea6594a21e964b6a76e6a46b4d5b89c9c5a3b9a517193c7590545",
       "functions": [
         {
           "name": "normalizeIdentifier",
@@ -83715,7 +83852,7 @@
       "exports": [
         "RegisterPage"
       ],
-      "totalLines": 285,
+      "totalLines": 284,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(access)/reset-2fa/layout.js": {
@@ -83740,7 +83877,7 @@
     },
     "frontend/src/app/(access)/reset-2fa/page.jsx": {
       "filePath": "frontend/src/app/(access)/reset-2fa/page.jsx",
-      "contentHash": "9f6c8a9670836f3993f6d2c2d5a8024e9ad24a17bb46c27118af03a09ed16776",
+      "contentHash": "b0a8d35fb3053c85b0a70bb35e9d863466ee6e03c61da2b9d17c07998d1e4ccb",
       "functions": [
         {
           "name": "Reset2FAContent",
@@ -83812,7 +83949,7 @@
       "exports": [
         "Reset2FAPage"
       ],
-      "totalLines": 161,
+      "totalLines": 160,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(access)/reset-password/layout.js": {
@@ -83837,7 +83974,7 @@
     },
     "frontend/src/app/(access)/reset-password/page.jsx": {
       "filePath": "frontend/src/app/(access)/reset-password/page.jsx",
-      "contentHash": "382a0b5eb228900020e2b3868275d5dd480179d368faba313c142d71e471ccc9",
+      "contentHash": "bf03b6bdecd94bfba46fc262fd608e942c481f28e349147553ea3c8dcc251b9d",
       "functions": [
         {
           "name": "ResetPasswordContent",
@@ -83887,7 +84024,7 @@
       "exports": [
         "ResetPasswordPage"
       ],
-      "totalLines": 96,
+      "totalLines": 95,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(access)/setup-2fa/layout.js": {
@@ -83912,13 +84049,13 @@
     },
     "frontend/src/app/(access)/setup-2fa/page.jsx": {
       "filePath": "frontend/src/app/(access)/setup-2fa/page.jsx",
-      "contentHash": "ab0e42f6419b86c3caa77b2ce8f3b02493263623d9275ab00662674c19dadf58",
+      "contentHash": "a866101a0b0237523cd68e91fa7f9151ba23c745fc9a2a25a16f38789ebc3c92",
       "functions": [
         {
           "name": "Setup2FAContent",
           "params": [],
           "exported": false,
-          "lineCount": 145
+          "lineCount": 175
         },
         {
           "name": "Setup2FAPage",
@@ -83940,6 +84077,12 @@
           "specifiers": [
             "tokenManager",
             "totpAPI"
+          ]
+        },
+        {
+          "source": "@/shared/auth/AuthContext",
+          "specifiers": [
+            "useAuth"
           ]
         },
         {
@@ -83967,7 +84110,7 @@
       "exports": [
         "Setup2FAPage"
       ],
-      "totalLines": 169,
+      "totalLines": 199,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(access)/verify-email/layout.js": {
@@ -83992,7 +84135,7 @@
     },
     "frontend/src/app/(access)/verify-email/page.jsx": {
       "filePath": "frontend/src/app/(access)/verify-email/page.jsx",
-      "contentHash": "74a75e7b4d7b07f6c5db8f690df5b8adbe9af8885df9b457616b49290a398c8d",
+      "contentHash": "430b734158451ea156a82cff5c5b25be9dfbd020393b90c0dd40772a1b1875f7",
       "functions": [
         {
           "name": "VerifyEmailContent",
@@ -84041,12 +84184,12 @@
       "exports": [
         "VerifyEmailPage"
       ],
-      "totalLines": 110,
+      "totalLines": 109,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(main)/MainShell.jsx": {
       "filePath": "frontend/src/app/(main)/MainShell.jsx",
-      "contentHash": "c405cf457758ce5a84fb515ddcbcda9ef2fa0c28eefa8ac6460c4f0396c9a4b0",
+      "contentHash": "d6d018abfc3b6f48a3b89120e91f8bb49c0c343c87d1396df383acceb757936e",
       "functions": [
         {
           "name": "MainShell",
@@ -84073,7 +84216,7 @@
       "exports": [
         "MainShell"
       ],
-      "totalLines": 15,
+      "totalLines": 13,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(main)/brokers/angelone/callback/page.jsx": {
@@ -84156,7 +84299,7 @@
     },
     "frontend/src/app/(main)/brokers/page.jsx": {
       "filePath": "frontend/src/app/(main)/brokers/page.jsx",
-      "contentHash": "99e79205cdaca2dff745f0f7a14c34a24e0f385f8ae8034393d894d6f3721352",
+      "contentHash": "a6a85c814ea3ad39bd239327ee512790c7812533ceb5a48d301fb5a03a81df0b",
       "functions": [
         {
           "name": "BrokersPage",
@@ -84606,7 +84749,7 @@
     },
     "frontend/src/app/(public)/design-lab/components/design-lab-auth-nav.jsx": {
       "filePath": "frontend/src/app/(public)/design-lab/components/design-lab-auth-nav.jsx",
-      "contentHash": "08af2aba4d5dc535f95ad39f0c69fa21597d0411aaf421532fb5417948c4ca93",
+      "contentHash": "b38f99a54af29e89563c9aa9b664814daf037b436db929298f746b9f95818c63",
       "functions": [
         {
           "name": "DesignLabAuthNav",
@@ -84665,12 +84808,12 @@
       "exports": [
         "DesignLabAuthNav"
       ],
-      "totalLines": 176,
+      "totalLines": 175,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/design-lab/dashboard/client.jsx": {
       "filePath": "frontend/src/app/(public)/design-lab/dashboard/client.jsx",
-      "contentHash": "b2bd5c9ecb8723feffcea6a91576464f851235d5685f07823f59d62682a677f5",
+      "contentHash": "fd6fab3526b049192a42ec3ec9a7eeb06b887a532cb61d5b1d41ad8d6e96bd67",
       "functions": [
         {
           "name": "DashboardContent",
@@ -84733,7 +84876,7 @@
       "exports": [
         "DesignLabDashboardClient"
       ],
-      "totalLines": 152,
+      "totalLines": 151,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/design-lab/dashboard/page.jsx": {
@@ -84836,7 +84979,7 @@
     },
     "frontend/src/app/(public)/design-lab/loaders/page.jsx": {
       "filePath": "frontend/src/app/(public)/design-lab/loaders/page.jsx",
-      "contentHash": "2580987c0f07048c54539da902d81cf2a74b227172977a0a82a32b2d55370930",
+      "contentHash": "4177706bab9db91b1b229413663aa96289075b5a854ee01f50ff591fd20878f8",
       "functions": [
         {
           "name": "FintechLoaderDemoPage",
@@ -84911,12 +85054,12 @@
       "exports": [
         "FintechLoaderDemoPage"
       ],
-      "totalLines": 379,
+      "totalLines": 378,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/design-lab/login/client.jsx": {
       "filePath": "frontend/src/app/(public)/design-lab/login/client.jsx",
-      "contentHash": "635560e8074670b63c24b03e042bc15edb452e64adf65225bb99935aeca14a09",
+      "contentHash": "b77839681191a7336f1379f573fb8071a9b0c215f92b97cafd6d16b6e31f8e52",
       "functions": [
         {
           "name": "LoginContent",
@@ -84969,7 +85112,7 @@
       "exports": [
         "DesignLabLoginClient"
       ],
-      "totalLines": 93,
+      "totalLines": 92,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/design-lab/login/page.jsx": {
@@ -85001,7 +85144,7 @@
     },
     "frontend/src/app/(public)/design-lab/page.jsx": {
       "filePath": "frontend/src/app/(public)/design-lab/page.jsx",
-      "contentHash": "e39b6add002f35ccfe3aacb33be6581ef49dc9f0b4b9f8c2de9ab477afb455dd",
+      "contentHash": "43afd383e5baebd84f5c40be6bd62d138d48bc845dac94fca6a840473516f17a",
       "functions": [
         {
           "name": "DesignLabPage",
@@ -85305,7 +85448,7 @@
       "exports": [
         "DesignLabPage"
       ],
-      "totalLines": 2115,
+      "totalLines": 2114,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/design-lab/register/client.jsx": {
@@ -85390,7 +85533,7 @@
     },
     "frontend/src/app/(public)/design-lab/reset-password/client.jsx": {
       "filePath": "frontend/src/app/(public)/design-lab/reset-password/client.jsx",
-      "contentHash": "f1318ba911e46b979b467b1152d9788c35ea11820a8fe4ec321a46a3403e7217",
+      "contentHash": "39f8142e97f40e78991d97d92289611f657e2b1108840f685e4dd50626ce8c5d",
       "functions": [
         {
           "name": "DesignLabResetPasswordClient",
@@ -85443,7 +85586,7 @@
       "exports": [
         "DesignLabResetPasswordClient"
       ],
-      "totalLines": 98,
+      "totalLines": 97,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/design-lab/reset-password/page.jsx": {
@@ -85640,7 +85783,7 @@
     },
     "frontend/src/app/(public)/design-lab/verify-email/page.jsx": {
       "filePath": "frontend/src/app/(public)/design-lab/verify-email/page.jsx",
-      "contentHash": "d590639e1cd86b7f50a9ddb752f004c3c6d85ea1a7565d7a76007041127f83ce",
+      "contentHash": "45e2bf6e7c775c6de56a2efdd7cfdd2c2b88bed8846e13e6111edcd360468b9e",
       "functions": [
         {
           "name": "VerifyEmailContent",
@@ -85700,12 +85843,12 @@
       "exports": [
         "VerifyEmailDesignLab"
       ],
-      "totalLines": 123,
+      "totalLines": 122,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/layout.js": {
       "filePath": "frontend/src/app/(public)/layout.js",
-      "contentHash": "68dfd21c3b82fa74a5f734e29bec3ca01b10269ed0e38a4d7faa33e23819eba8",
+      "contentHash": "a73faa40cb39a0e608b453fd6c3dd0125cea664625f1d503fff5102eb3ac57a2",
       "functions": [
         {
           "name": "Layout",
@@ -85732,12 +85875,12 @@
       "exports": [
         "Layout"
       ],
-      "totalLines": 21,
+      "totalLines": 20,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/not-found.js": {
       "filePath": "frontend/src/app/(public)/not-found.js",
-      "contentHash": "17e7fabcadc75f94dd521092383d655797fc259a326d6b1e9d1b06c9e9d3b5ba",
+      "contentHash": "798a8a8718e976f32456d7e45f5cbc0a06bafeeb2fd491db125e741f8a2afb9f",
       "functions": [
         {
           "name": "PublicNotFound",
@@ -85758,7 +85901,7 @@
       "exports": [
         "PublicNotFound"
       ],
-      "totalLines": 9,
+      "totalLines": 8,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/api/ifsc/route.js": {
@@ -85819,7 +85962,7 @@
     },
     "frontend/src/app/calculators/CalculatorsShell.jsx": {
       "filePath": "frontend/src/app/calculators/CalculatorsShell.jsx",
-      "contentHash": "d40862458f3fddb3ff75a040797b4a59099846511195be60352115c6d6ae22de",
+      "contentHash": "5a103d620b6ea29daeba5c964bd3df8c2ed0a7de22c78a42b346c30b997b13fe",
       "functions": [
         {
           "name": "useNow",
@@ -85890,7 +86033,7 @@
       "exports": [
         "CalculatorsShell"
       ],
-      "totalLines": 357,
+      "totalLines": 356,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/calculators/investment/cagr/page.jsx": {
@@ -86388,7 +86531,7 @@
     },
     "frontend/src/app/calculators/loans/flat-vs-reducing/page.jsx": {
       "filePath": "frontend/src/app/calculators/loans/flat-vs-reducing/page.jsx",
-      "contentHash": "52e1b0152e6189e1e0864a01a34e2a17e50bb959bfe56ead7d7b430c46965e2a",
+      "contentHash": "c1fd488b069855e41710d1858814f264c5fe6cb99b2cf8f09d3a67b129c0a19d",
       "functions": [
         {
           "name": "ComparisonPanel",
@@ -86444,7 +86587,7 @@
       "exports": [
         "FlatVsReducingCalculatorPage"
       ],
-      "totalLines": 225,
+      "totalLines": 224,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/calculators/loans/home-loan-emi/page.jsx": {
@@ -87203,7 +87346,7 @@
     },
     "frontend/src/app/calculators/tax/income-tax/page.jsx": {
       "filePath": "frontend/src/app/calculators/tax/income-tax/page.jsx",
-      "contentHash": "6cc1073fcbc910c3617657846ff5bcb71f71f465f74748452f24b8b44709d834",
+      "contentHash": "42aa52d7eddd0daf3b72381361d30bb31bc7469980cd134e8d01b0a50faf8296",
       "functions": [
         {
           "name": "RegimePanel",
@@ -87259,7 +87402,7 @@
       "exports": [
         "IncomeTaxCalculatorPage"
       ],
-      "totalLines": 258,
+      "totalLines": 257,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/calculators/tax/salary/page.jsx": {
@@ -87440,17 +87583,17 @@
     },
     "frontend/src/app/globals.css": {
       "filePath": "frontend/src/app/globals.css",
-      "contentHash": "10cc64b5e45824837b49c775a767d34334583b131490348ca115b8a27fec39cd",
+      "contentHash": "fdb8b1652d9d55004da6f7cb49b3cad3022f13068838bd63e0497a8ee9773c7d",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 1214,
+      "totalLines": 1232,
       "hasStructuralAnalysis": false
     },
     "frontend/src/app/layout.js": {
       "filePath": "frontend/src/app/layout.js",
-      "contentHash": "05f298c725e8f64ddadc3fb1490ea6f98c115d13a4b4ce82a5ea2e3cdf0c5f16",
+      "contentHash": "289778001b2c48db725307c4ebac51932b89595c5883376f68db1d262635ec75",
       "functions": [
         {
           "name": "RootLayout",
@@ -87532,7 +87675,7 @@
         "metadata",
         "RootLayout"
       ],
-      "totalLines": 100,
+      "totalLines": 98,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/manifest.js": {
@@ -87556,7 +87699,7 @@
     },
     "frontend/src/app/not-found.js": {
       "filePath": "frontend/src/app/not-found.js",
-      "contentHash": "bf62ac8080cdabbc411f80fd723a3e732c4bfa3cac098f6c8c5c1cb44118582d",
+      "contentHash": "33b290583f3db2e557bd941d784a2089893233f63f93b3de7c920f42d7a6535e",
       "functions": [
         {
           "name": "GlobalNotFound",
@@ -87577,12 +87720,12 @@
       "exports": [
         "GlobalNotFound"
       ],
-      "totalLines": 9,
+      "totalLines": 8,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/page.jsx": {
       "filePath": "frontend/src/app/page.jsx",
-      "contentHash": "5fc197cf8e710d0fed80e4c264233dac5322c95b2d3e16b832a1b70198b4c56d",
+      "contentHash": "d00d1ddaa8bd8dae76a7d6bd68a9563dfb9918e3159fc0b2b41699e5d8b6bd57",
       "functions": [
         {
           "name": "CoinTrackLandingPage",
@@ -87675,7 +87818,7 @@
       "exports": [
         "CoinTrackLandingPage"
       ],
-      "totalLines": 279,
+      "totalLines": 278,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/robots.js": {
@@ -87738,13 +87881,13 @@
     },
     "frontend/src/entities/entitlement/model.js": {
       "filePath": "frontend/src/entities/entitlement/model.js",
-      "contentHash": "2d342b5a3f138a980450aee842bb901005289e7dba6cb2c9774e16146d0a0809",
+      "contentHash": "c229b7d51b83f18887e6af61b24356a745bf65ebe62c54eadd94f934a9818f5d",
       "functions": [
         {
           "name": "createEntitlementModel",
           "params": [],
           "exported": true,
-          "lineCount": 8
+          "lineCount": 10
         }
       ],
       "classes": [],
@@ -87753,7 +87896,7 @@
         "TIERS",
         "createEntitlementModel"
       ],
-      "totalLines": 19,
+      "totalLines": 21,
       "hasStructuralAnalysis": true
     },
     "frontend/src/entities/holding/index.js": {
@@ -87768,13 +87911,13 @@
     },
     "frontend/src/entities/holding/model.js": {
       "filePath": "frontend/src/entities/holding/model.js",
-      "contentHash": "26dd3a16e8dc8589dacd82937b5c5fea85ca8f0f4da4ab58ab6515d942f9f7f1",
+      "contentHash": "3a89841a6a1d66e76013d797b6054003627e86d6a9536da76afae2ee84148b65",
       "functions": [
         {
           "name": "createHoldingModel",
           "params": [],
           "exported": true,
-          "lineCount": 14
+          "lineCount": 29
         }
       ],
       "classes": [],
@@ -87782,7 +87925,7 @@
       "exports": [
         "createHoldingModel"
       ],
-      "totalLines": 19,
+      "totalLines": 34,
       "hasStructuralAnalysis": true
     },
     "frontend/src/entities/index.js": {
@@ -87807,13 +87950,13 @@
     },
     "frontend/src/entities/user/model.js": {
       "filePath": "frontend/src/entities/user/model.js",
-      "contentHash": "cff61d11e996f2bcb956d8225c101936fdb22b68031458e17c9c6d1b661f36f1",
+      "contentHash": "22555d70a5a72bb941e14782240661ca81af8262ffa6217a7d1f5a79687b5b97",
       "functions": [
         {
           "name": "createUserModel",
           "params": [],
           "exported": true,
-          "lineCount": 12
+          "lineCount": 13
         }
       ],
       "classes": [],
@@ -87821,12 +87964,12 @@
       "exports": [
         "createUserModel"
       ],
-      "totalLines": 17,
+      "totalLines": 18,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/auth-layout.jsx": {
       "filePath": "frontend/src/features/auth/components/auth-layout.jsx",
-      "contentHash": "2f5fb7e3ab500f92668676043409d2df8a41bad4140c859f5fe34a0f2fed3f3c",
+      "contentHash": "258c82e8647ee47cd8a8a2cf33be0478960e0d2ccb9bc03e4697f683e6346276",
       "functions": [
         {
           "name": "AuthLayout",
@@ -87869,12 +88012,12 @@
       "exports": [
         "AuthLayout"
       ],
-      "totalLines": 129,
+      "totalLines": 128,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/auth-shared.jsx": {
       "filePath": "frontend/src/features/auth/components/auth-shared.jsx",
-      "contentHash": "67b230b0c3bae0f47c55bd2c3d03a9f73181ca344cc8fe1ec8cc74409c6981d1",
+      "contentHash": "c1f774586049913405314a2f00e24d651abf2cffbccd180c55c91fa6d2728c00",
       "functions": [
         {
           "name": "useDynamicDocumentTitle",
@@ -87942,12 +88085,12 @@
         "AuthHeader",
         "AuthFooter"
       ],
-      "totalLines": 159,
+      "totalLines": 158,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/forgot-password-screen.jsx": {
       "filePath": "frontend/src/features/auth/components/forgot-password-screen.jsx",
-      "contentHash": "014d5f989083cf65f463df07f73824a6ff64d40f287b69fe7cadef45ea46af4a",
+      "contentHash": "39d0461d66920f7a5f591f574fcd6fc53e8f58f15654f118cfde233ff8a7a4de",
       "functions": [
         {
           "name": "ForgotPasswordScreen",
@@ -88031,12 +88174,12 @@
         "RecoveryMockupContent",
         "ForgotPasswordScreen"
       ],
-      "totalLines": 493,
+      "totalLines": 495,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/login-screen.jsx": {
       "filePath": "frontend/src/features/auth/components/login-screen.jsx",
-      "contentHash": "335e6f6a17483fa0c381ac4ccb4012ade44aa6e83986c5a797f88ff5a7ff6ad0",
+      "contentHash": "5370a91a2e08de83f7fe4ce1620e86f5d06dd18a0f07545048e39b75caf149a8",
       "functions": [
         {
           "name": "GoogleIcon",
@@ -88139,12 +88282,12 @@
         "LoginSplitScreen",
         "LoginScreen"
       ],
-      "totalLines": 571,
+      "totalLines": 567,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/register-screen.jsx": {
       "filePath": "frontend/src/features/auth/components/register-screen.jsx",
-      "contentHash": "1017c6aeaddc8803dbcb822cc462e7a1d57fd6a877d33d97419dacf9555e3429",
+      "contentHash": "99da3f1de8f31bc1c4dcdfc6816f0d501bc70b666d0fcea1ab4333005e08565b",
       "functions": [
         {
           "name": "RegisterSplitScreen",
@@ -88241,12 +88384,12 @@
         "RegisterSplitScreen",
         "RegisterScreen"
       ],
-      "totalLines": 1043,
+      "totalLines": 1042,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/reset-password-screen.jsx": {
       "filePath": "frontend/src/features/auth/components/reset-password-screen.jsx",
-      "contentHash": "0d54544d9d173e64b7e5c85a62a92371bcb8b5bc9a1a516184d2b69c7169ce62",
+      "contentHash": "7e855079aea44c0ddfb852352875701bcb3ebf5c2aee2c093b0c997127bcdef9",
       "functions": [
         {
           "name": "ResetPasswordScreen",
@@ -88330,12 +88473,12 @@
       "exports": [
         "ResetPasswordScreen"
       ],
-      "totalLines": 385,
+      "totalLines": 384,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/security-inputs.jsx": {
       "filePath": "frontend/src/features/auth/components/security-inputs.jsx",
-      "contentHash": "5b222368aac02f27a300ea93f8ffb59fe8347ccea7376092fbec51a1a570a7ca",
+      "contentHash": "d11aaaec9d530b4ae0f95424e440ed716fd24c7d53148d118ac361ae02bedae3",
       "functions": [
         {
           "name": "useKeyboardModifierState",
@@ -88435,12 +88578,12 @@
         "PasswordStrengthInput",
         "SmartAuthInput"
       ],
-      "totalLines": 719,
+      "totalLines": 718,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/two-factor-setup-screen.jsx": {
       "filePath": "frontend/src/features/auth/components/two-factor-setup-screen.jsx",
-      "contentHash": "a42fdc97600a4dbb478dab2727edd4ce8b66585e72865926319036d37f130234",
+      "contentHash": "33d13ca9360192bc4d0b52a9ab78c0b9a21a5def2018c75b860e0c6115ba33e0",
       "functions": [
         {
           "name": "AuthenticatorMockupContent",
@@ -88458,7 +88601,7 @@
           "name": "TwoFactorSetupScreen",
           "params": [],
           "exported": true,
-          "lineCount": 460
+          "lineCount": 488
         }
       ],
       "classes": [],
@@ -88528,12 +88671,12 @@
       "exports": [
         "TwoFactorSetupScreen"
       ],
-      "totalLines": 713,
+      "totalLines": 740,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/two-factor-verify-screen.jsx": {
       "filePath": "frontend/src/features/auth/components/two-factor-verify-screen.jsx",
-      "contentHash": "e593d8c2e292fe2d5829b29676c344620dc94f6a8421e4cc170f0ef34de6d71c",
+      "contentHash": "1f2ee6bf17e69601fbc4837c7a91ee69e17e1472332aa032c495b857cbad35af",
       "functions": [
         {
           "name": "VerifyPhoneMockup",
@@ -88630,12 +88773,12 @@
         "TwoFactorVerifyScreen",
         "TwoFactorVerifyScreenAlias"
       ],
-      "totalLines": 617,
+      "totalLines": 616,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/components/verify-email-screen.jsx": {
       "filePath": "frontend/src/features/auth/components/verify-email-screen.jsx",
-      "contentHash": "3c0b9ec3ea29794e6b6cee8f8a80190d0ea31bc5bbd550edc08d2fda4f74634d",
+      "contentHash": "3bb7118e7e111cd9b28f9afd5c774ab9aba1a6f65de4ca3e89d7d1dd76559b0c",
       "functions": [
         {
           "name": "VerifyEmailScreen",
@@ -88702,17 +88845,17 @@
       "exports": [
         "VerifyEmailScreen"
       ],
-      "totalLines": 241,
+      "totalLines": 240,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/index.js": {
       "filePath": "frontend/src/features/auth/index.js",
-      "contentHash": "75aa42b18f10bc1d7c5254654b3435672b8fb10b71cba02711cd34c80045a916",
+      "contentHash": "2215ead9e648be30d48bce94b519361804ddf1b8fdd975b5f36ef11206f3f382",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 12,
+      "totalLines": 11,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/auth/services/auth.service.js": {
@@ -88802,7 +88945,7 @@
     },
     "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx": {
       "filePath": "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
-      "contentHash": "56747ec2ad643534a70ae022bcb4d7533edd62d262c038bcbc01dc9e28e7a768",
+      "contentHash": "56e3c34596b1f796814c656c218a416235c7386739f60efff91d31a4c5c369c3",
       "functions": [
         {
           "name": "AngelOneSetupView",
@@ -88882,12 +89025,12 @@
       "exports": [
         "AngelOneSetupView"
       ],
-      "totalLines": 290,
+      "totalLines": 289,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/hooks/useBrokerConnection.js": {
       "filePath": "frontend/src/features/brokers/hooks/useBrokerConnection.js",
-      "contentHash": "6dbd3cb0025e7c14cb3200a8431618524578111e6869857163d79657cf2933c9",
+      "contentHash": "8b781f8c4745757d894cbf920969ca2e21a48f878601f368ff4d79d671b477d6",
       "functions": [
         {
           "name": "useBrokerConnection",
@@ -88921,17 +89064,17 @@
         "useBrokerConnection",
         "useBrokerSummary"
       ],
-      "totalLines": 41,
+      "totalLines": 40,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/index.js": {
       "filePath": "frontend/src/features/brokers/index.js",
-      "contentHash": "059143c6de17bac59f995fa8156bdff692fcbd3e8aee8a582168a354eced2048",
+      "contentHash": "3a74ff28672391ec383045c87eae02caa0ae07c3ca4095d5be9a444167dd41cf",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 21,
+      "totalLines": 20,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/services/brokers.service.js": {
@@ -89010,7 +89153,7 @@
     },
     "frontend/src/features/brokers/shared/BrokerCard.jsx": {
       "filePath": "frontend/src/features/brokers/shared/BrokerCard.jsx",
-      "contentHash": "800732b07717a106e3c3c442d6ac3bbb10cdac6dee7ba7917f6845618e9e4e2e",
+      "contentHash": "d04aa2dc52cc5693986bb531a40443902ff3564df41bf4471cc80763f3d6426e",
       "functions": [
         {
           "name": "relativeTime",
@@ -89071,12 +89214,12 @@
       "exports": [
         "BrokerCard"
       ],
-      "totalLines": 148,
+      "totalLines": 147,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx": {
       "filePath": "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
-      "contentHash": "3dcb920451cc8f7daf70915e963fc73bd6f4b4ea23b0de52f4915c49d6e169c1",
+      "contentHash": "acf237866020f329bc9cd7933233b99a4ab9333eaed9f066c612d6c26bc6ca96",
       "functions": [
         {
           "name": "SetupStep",
@@ -89178,7 +89321,7 @@
     },
     "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx": {
       "filePath": "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
-      "contentHash": "68a51b466d798a674a6b19be5444e93e2bee5a3f9699b512155c1c37fd392ed2",
+      "contentHash": "222d957523973e88832de3d751ef6a1aeb39614ba6848e3cf26f575ec1290e6a",
       "functions": [
         {
           "name": "CallbackInner",
@@ -89256,7 +89399,7 @@
       "exports": [
         "UpstoxCallbackView"
       ],
-      "totalLines": 119,
+      "totalLines": 118,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx": {
@@ -89293,7 +89436,7 @@
     },
     "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx": {
       "filePath": "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
-      "contentHash": "7193d4c3978d9cb1aa68a85dfb806b946aac24bad26885cdc81e475006c509a1",
+      "contentHash": "6a05ba1d50bb4bfe37c148a84afb67acd31264b0ee0435b7ef5800b548066113",
       "functions": [
         {
           "name": "UpstoxSetupView",
@@ -89372,7 +89515,7 @@
       "exports": [
         "UpstoxSetupView"
       ],
-      "totalLines": 281,
+      "totalLines": 280,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx": {
@@ -89460,7 +89603,7 @@
     },
     "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx": {
       "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
-      "contentHash": "f1b480011368ef927911363f841c156384bef31e8ba1e4386e6b655b19195345",
+      "contentHash": "c4715da6f5d48b04404b42ae764d069da9b5394722fadba373b7bb8a0ddff932",
       "functions": [
         {
           "name": "ZerodhaSetupView",
@@ -89533,7 +89676,7 @@
       "exports": [
         "ZerodhaSetupView"
       ],
-      "totalLines": 212,
+      "totalLines": 211,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/calculators/index.js": {
@@ -89560,7 +89703,7 @@
     },
     "frontend/src/features/calculators/shared/CalculatorComponents.jsx": {
       "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "contentHash": "3ec2eeb07e3fe30bd3c1bd1e9b86501b0214c6c857323d028edf119a0ae2dbb3",
+      "contentHash": "d1b407ab7af906e95e26c335e6af82d2523ecb210842bb35e26206de81737f44",
       "functions": [
         {
           "name": "CalculatorLayout",
@@ -89651,7 +89794,7 @@
         "DisclaimerBanner",
         "ResultSkeleton"
       ],
-      "totalLines": 406,
+      "totalLines": 405,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/calculators/shared/calculator.service.js": {
@@ -89710,27 +89853,40 @@
     },
     "frontend/src/features/dashboard/components/DashboardView.jsx": {
       "filePath": "frontend/src/features/dashboard/components/DashboardView.jsx",
-      "contentHash": "f0ee6818777ea060d72ed6c8a2cac439503db5976e072d63bfd4b675e12a0923",
+      "contentHash": "72af25e4c751de956a86c3178b35fc85f0f26b4feb2736eaf92f1de348d65a60",
       "functions": [
-        {
-          "name": "getGreeting",
-          "params": [],
-          "exported": false,
-          "lineCount": 6
-        },
         {
           "name": "DashboardView",
           "params": [],
           "exported": true,
-          "lineCount": 49
+          "lineCount": 413
         }
       ],
       "classes": [],
       "imports": [
         {
+          "source": "@/features/portfolio",
+          "specifiers": [
+            "usePortfolioSummary"
+          ]
+        },
+        {
           "source": "@/shared/auth/AuthContext",
           "specifiers": [
             "useAuth"
+          ]
+        },
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency",
+            "formatPercent"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
           ]
         },
         {
@@ -89740,33 +89896,48 @@
           ]
         },
         {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowDownRight",
+            "ArrowUpRight",
+            "ChevronDown",
+            "Download",
+            "Flame",
+            "History",
+            "PieChart",
+            "Share2",
+            "Sparkles",
+            "TrendingUp"
+          ]
+        },
+        {
+          "source": "next/link",
+          "specifiers": [
+            "Link"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
           "source": "./HoldingsTable",
           "specifiers": [
             "HoldingsTable"
-          ]
-        },
-        {
-          "source": "./PortfolioSummary",
-          "specifiers": [
-            "PortfolioSummary"
-          ]
-        },
-        {
-          "source": "./RefreshButton",
-          "specifiers": [
-            "RefreshButton"
           ]
         }
       ],
       "exports": [
         "DashboardView"
       ],
-      "totalLines": 67,
+      "totalLines": 439,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/dashboard/components/HoldingsTable.jsx": {
       "filePath": "frontend/src/features/dashboard/components/HoldingsTable.jsx",
-      "contentHash": "61e5550fe2004ebdb4ca5f07d0371a4c195dbb5d53cf1ff07275aaf25e3aaa8a",
+      "contentHash": "f91d4bfa0aa33c42bfef1de029ade761c4aa1093c2039a1473bf04b682f5eb41",
       "functions": [
         {
           "name": "Skeleton",
@@ -89827,12 +89998,12 @@
       "exports": [
         "HoldingsTable"
       ],
-      "totalLines": 234,
+      "totalLines": 233,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/dashboard/components/PortfolioSummary.jsx": {
       "filePath": "frontend/src/features/dashboard/components/PortfolioSummary.jsx",
-      "contentHash": "0839f5b3ad4b8a0e0fbbcc8ad012935e88fd6fc76a9c67b13fe365fdaba7b98e",
+      "contentHash": "db8a47d5ace5f4cb7d19cd319800af0603a1854ff74b438f79992586d3fa6125",
       "functions": [
         {
           "name": "Skeleton",
@@ -89894,12 +90065,12 @@
       "exports": [
         "PortfolioSummary"
       ],
-      "totalLines": 200,
+      "totalLines": 203,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/dashboard/components/RefreshButton.jsx": {
       "filePath": "frontend/src/features/dashboard/components/RefreshButton.jsx",
-      "contentHash": "a8fa5110df4070b42a58d372474eebfa81c5d568e26c47b03e32289b5650db2b",
+      "contentHash": "29e505f05707d3e732e58185c97c8944c1052e44a70c67138d988fd48273628c",
       "functions": [
         {
           "name": "RefreshButton",
@@ -89952,12 +90123,12 @@
       "exports": [
         "RefreshButton"
       ],
-      "totalLines": 57,
+      "totalLines": 56,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/dashboard/components/StatsCard.jsx": {
       "filePath": "frontend/src/features/dashboard/components/StatsCard.jsx",
-      "contentHash": "5dd4d3733cc0275786b2bf81d1af6b2fdb72a883a422cc1ee36df3ec80998eb3",
+      "contentHash": "9db4d5b0ad6373c1ab07ad86de503d3c52c7637eabc281610ed5a99fe0a69dfa",
       "functions": [
         {
           "name": "StatsCard",
@@ -89991,7 +90162,7 @@
       "exports": [
         "StatsCard"
       ],
-      "totalLines": 94,
+      "totalLines": 93,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/dashboard/index.js": {
@@ -90040,7 +90211,7 @@
     },
     "frontend/src/features/epf/components/EpfSettingsDialog.jsx": {
       "filePath": "frontend/src/features/epf/components/EpfSettingsDialog.jsx",
-      "contentHash": "b7bc4bfc9b67c6580dbd1eccfb5e2143aef5265437f1f750028a5c47689350e4",
+      "contentHash": "043982911d65c45a49b0db93116a5dcd8b0057a770955ddec0519fad25811711",
       "functions": [
         {
           "name": "parseShortcutAmount",
@@ -90084,12 +90255,12 @@
       "exports": [
         "EpfSettingsDialog"
       ],
-      "totalLines": 245,
+      "totalLines": 244,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/epf/components/EpfTransactionDialog.jsx": {
       "filePath": "frontend/src/features/epf/components/EpfTransactionDialog.jsx",
-      "contentHash": "57368a8db0dd03353d8b2a8226a98bdd11840993b08be23ed66c355b8d9d165e",
+      "contentHash": "a405d00658edccff1097b63aed87df1d8b654ee6a036aa725fd6198a3f4c227e",
       "functions": [
         {
           "name": "parseShortcutAmount",
@@ -90141,12 +90312,12 @@
       "exports": [
         "EpfTransactionDialog"
       ],
-      "totalLines": 592,
+      "totalLines": 591,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/epf/components/EpfView.jsx": {
       "filePath": "frontend/src/features/epf/components/EpfView.jsx",
-      "contentHash": "8d999879a368ab32b0e5cc59957149b84089e8885edd9042d69aae6c99116127",
+      "contentHash": "d4ed2fff823627351615b5a2a04f661c9321bb876fe8b5cec900aade534988ee",
       "functions": [
         {
           "name": "formatCurrency",
@@ -90276,7 +90447,7 @@
       "exports": [
         "EpfView"
       ],
-      "totalLines": 1452,
+      "totalLines": 1453,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/epf/index.js": {
@@ -90297,7 +90468,7 @@
     },
     "frontend/src/features/fixed-deposit/components/FdDialog.jsx": {
       "filePath": "frontend/src/features/fixed-deposit/components/FdDialog.jsx",
-      "contentHash": "71a6ba7d760970b7d8bac4dcd1e9bc1e81a833d2b38f1f7d34aebeaf7df02f2b",
+      "contentHash": "bc4634a9e67ee95ab89dbfd1b1c96fbf5ef01433c5b324c1112aa24452162b9d",
       "functions": [
         {
           "name": "formatIndianCurrency",
@@ -90432,12 +90603,12 @@
       "exports": [
         "FdDialog"
       ],
-      "totalLines": 1280,
+      "totalLines": 1279,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/fixed-deposit/components/FixedDepositView.jsx": {
       "filePath": "frontend/src/features/fixed-deposit/components/FixedDepositView.jsx",
-      "contentHash": "3b5cad38ded07c7af272265d9506aa69466a21b85ee82e4f38fdacdc36549efd",
+      "contentHash": "a41833a3fe13c421b2caea5a67d673bf625cd72118ce838367957e4050af2f61",
       "functions": [
         {
           "name": "formatCurrency",
@@ -90564,12 +90735,12 @@
       "exports": [
         "FixedDepositView"
       ],
-      "totalLines": 1082,
+      "totalLines": 1080,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/fixed-deposit/components/TdsSummary.jsx": {
       "filePath": "frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
-      "contentHash": "399d00fa7e5e1823ece15cde544dc0158318b83d640639d7ea4e913ce160fe23",
+      "contentHash": "63d8c2dc0e878f15acca0258fcf2581d205d96f3135dd840508cd31623edcf47",
       "functions": [
         {
           "name": "formatCurrency",
@@ -90622,12 +90793,12 @@
         }
       ],
       "exports": [],
-      "totalLines": 249,
+      "totalLines": 248,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/fixed-deposit/components/WithdrawDialog.jsx": {
       "filePath": "frontend/src/features/fixed-deposit/components/WithdrawDialog.jsx",
-      "contentHash": "63d4cb8ab7185a187e7cb9eda1eda962ce60b96362f1e4b6f2b4b0033aae6ba2",
+      "contentHash": "aa57fc41e7c3403df8cfd718d2f524042a17cc933c3f4e113ce24d858d9534a1",
       "functions": [
         {
           "name": "daysBetweenIso",
@@ -90692,7 +90863,7 @@
       "exports": [
         "WithdrawDialog"
       ],
-      "totalLines": 558,
+      "totalLines": 557,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/fixed-deposit/components/WithdrawnFdDialog.jsx": {
@@ -90749,7 +90920,7 @@
     },
     "frontend/src/features/fixed-deposit/index.js": {
       "filePath": "frontend/src/features/fixed-deposit/index.js",
-      "contentHash": "c3ab99c9caf6ab5f1f7dc95eca89c95fe8f42677dabd92047b5344bcd51998c4",
+      "contentHash": "6b665d6d7fae4fd6fd2a8dab53b826ef4c08b007ca5ccd91ea9b953d88a926a9",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -90761,12 +90932,12 @@
         "WithdrawDialog",
         "WithdrawnFdDialog"
       ],
-      "totalLines": 6,
+      "totalLines": 9,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/gold-silver/components/GoldSilverDialog.jsx": {
       "filePath": "frontend/src/features/gold-silver/components/GoldSilverDialog.jsx",
-      "contentHash": "55ce7295489c40f81bd6b07e3374933ea03caa2b9df1d337c92ed84f594d8d12",
+      "contentHash": "98b39569fbbc2a73e6772ad8dbe4a0867626450874bc98e2758218f682b34135",
       "functions": [
         {
           "name": "GoldSilverDialog",
@@ -90821,12 +90992,12 @@
       "exports": [
         "GoldSilverDialog"
       ],
-      "totalLines": 621,
+      "totalLines": 620,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/gold-silver/components/GoldSilverView.jsx": {
       "filePath": "frontend/src/features/gold-silver/components/GoldSilverView.jsx",
-      "contentHash": "f123650b40121b8ae88bc224cef7808446f45e72212616519b1031198fee46a0",
+      "contentHash": "bb738ba81c7c19a17f5c0f9241cf70e4126124a1d7ca53c8e804406c2282af5b",
       "functions": [
         {
           "name": "formatCurrency",
@@ -90975,12 +91146,12 @@
       "exports": [
         "GoldSilverView"
       ],
-      "totalLines": 1133,
+      "totalLines": 1131,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/gold-silver/components/MarketRateDialog.jsx": {
       "filePath": "frontend/src/features/gold-silver/components/MarketRateDialog.jsx",
-      "contentHash": "42c6803d76f3f6f40b50c9adcf808ff82ed4de3ce6a7a42cc0756de04b2a8e49",
+      "contentHash": "fd3c5c182f09f075c84e6bf9bb1d82f5f188d4fc79b49db6f6e3e6279f7d3969",
       "functions": [
         {
           "name": "MarketRateDialog",
@@ -91018,12 +91189,12 @@
       "exports": [
         "MarketRateDialog"
       ],
-      "totalLines": 123,
+      "totalLines": 122,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/gold-silver/components/RateDisclosureBanner.jsx": {
       "filePath": "frontend/src/features/gold-silver/components/RateDisclosureBanner.jsx",
-      "contentHash": "81584fb65375c0d144a8f880be4726c835c6e016dd445e1c62060de3f072d126",
+      "contentHash": "3658ab48d6e18427afc42429dd97e2c8c93e8928daca82f8d8428718057a263e",
       "functions": [
         {
           "name": "formatRelativeTime",
@@ -91068,12 +91239,12 @@
         "formatRelativeTime",
         "RateDisclosureBanner"
       ],
-      "totalLines": 101,
+      "totalLines": 100,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/gold-silver/components/RateSettingsDialog.jsx": {
       "filePath": "frontend/src/features/gold-silver/components/RateSettingsDialog.jsx",
-      "contentHash": "f5f764c476ac320b777b0d233792e0f4d0f7c5b2b2d6aea999cf17173bd98ac6",
+      "contentHash": "8d6b4200517cca6155a64eb8aca70fa1354ce960b87d947fea012bfeb105ea74",
       "functions": [
         {
           "name": "RateSettingsDialog",
@@ -91117,12 +91288,12 @@
       "exports": [
         "RateSettingsDialog"
       ],
-      "totalLines": 376,
+      "totalLines": 375,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/gold-silver/index.js": {
       "filePath": "frontend/src/features/gold-silver/index.js",
-      "contentHash": "6b9e713189f1c94569e41d1c20ae94e3c794293bd1580a0eba7c8dcb36319cad",
+      "contentHash": "518801444aec59fe7faa64124c61d4fa642b638f45e9df45751067026ed560db",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -91134,7 +91305,7 @@
         "RateDisclosureBanner",
         "RateSettingsDialog"
       ],
-      "totalLines": 6,
+      "totalLines": 9,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/index.js": {
@@ -91149,7 +91320,7 @@
     },
     "frontend/src/features/mutual-fund/components/DashboardTab.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/DashboardTab.jsx",
-      "contentHash": "686ac885dc604ae29a074532ae4a2a3b935b100d9a10dd3e04ce57d1addac3f1",
+      "contentHash": "6c89b409b63e3c7e5361c443ce9a9b16aa23aac53ba0c5650d1512e4a539e6b0",
       "functions": [
         {
           "name": "formatCurrency",
@@ -91196,7 +91367,7 @@
       "exports": [
         "DashboardTab"
       ],
-      "totalLines": 132,
+      "totalLines": 131,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/components/LumpsumTab.jsx": {
@@ -91341,7 +91512,7 @@
     },
     "frontend/src/features/mutual-fund/components/MutualFundView.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/MutualFundView.jsx",
-      "contentHash": "979d80a9d8d75b20198900407b278fda5da5f365c96bb3d8c5701745f86319a6",
+      "contentHash": "53a34dae14090c0a74d3548efa0748cbe1ed1af6a80e3ab063ef2403fbf02614",
       "functions": [
         {
           "name": "formatCurrency",
@@ -91468,7 +91639,7 @@
     },
     "frontend/src/features/mutual-fund/components/NewSchemeModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/NewSchemeModal.jsx",
-      "contentHash": "98788dba6bcdd869ec221cf4aef647a3047a2ca9f396dd0e8d2e182556e9dffe",
+      "contentHash": "480125571405cdfa069fac96128375a0f56db48b136822814127e101a7e6c907",
       "functions": [
         {
           "name": "autoExtractCategory",
@@ -91558,12 +91729,12 @@
       "exports": [
         "NewSchemeModal"
       ],
-      "totalLines": 352,
+      "totalLines": 351,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/components/OverrideUnitsModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/OverrideUnitsModal.jsx",
-      "contentHash": "85e93afb95a0f4bc6ac993996e9395ebdc43799b695dc105461eb2e97959ed1e",
+      "contentHash": "3cb7e530a4c34a5984c1827647d83a7f2469e27ef034c65572a5555a62707c3c",
       "functions": [
         {
           "name": "OverrideUnitsModal",
@@ -91604,7 +91775,7 @@
       "exports": [
         "OverrideUnitsModal"
       ],
-      "totalLines": 129,
+      "totalLines": 128,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/components/RedemptionModal.jsx": {
@@ -91756,7 +91927,7 @@
     },
     "frontend/src/features/mutual-fund/components/SchemeSummaryTab.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/SchemeSummaryTab.jsx",
-      "contentHash": "cd37d48f3aa1af9bca4e7b072858e1b68143cac03ecba591a3f22f138da469a0",
+      "contentHash": "388a05c23f09019bd692208c9f7b22d497b012a104405c9f64d68a1407bf6aad",
       "functions": [
         {
           "name": "formatCurrency",
@@ -91830,7 +92001,7 @@
       "exports": [
         "SchemeSummaryTab"
       ],
-      "totalLines": 371,
+      "totalLines": 370,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/components/SipContributionModal.jsx": {
@@ -91888,7 +92059,7 @@
     },
     "frontend/src/features/mutual-fund/components/SipMandateModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/SipMandateModal.jsx",
-      "contentHash": "4ef1ed0400e227058a61705770edbd61499593640f731f0ffbfbd87d024e2a4e",
+      "contentHash": "88d80edc905b3cc34d58c4c5f17b3b2ba26758d55ab6f7ec164f969f3276ac4b",
       "functions": [
         {
           "name": "SipMandateModal",
@@ -91936,7 +92107,7 @@
       "exports": [
         "SipMandateModal"
       ],
-      "totalLines": 414,
+      "totalLines": 413,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/components/SipTab.jsx": {
@@ -92066,7 +92237,7 @@
     },
     "frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx",
-      "contentHash": "081af392d19894c93abef4daa6be926fa5a9aa512b6933b2cce218cb66a4c2e2",
+      "contentHash": "162a8b01e79760ee9e0f6076fc7e4e474123c680fd9782568e912b349cd75fd4",
       "functions": [
         {
           "name": "UpdateValuationModal",
@@ -92108,12 +92279,12 @@
       "exports": [
         "UpdateValuationModal"
       ],
-      "totalLines": 184,
+      "totalLines": 183,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx",
-      "contentHash": "375975294521800826be71f03794f9fbaed4d8638e86f4d491415c801b9bd90c",
+      "contentHash": "38f3f6eb9c947d4c3918f18249c657f5b5639da16709bc695c27c2130a1f524b",
       "functions": [
         {
           "name": "ValuationSnapshotModal",
@@ -92172,12 +92343,12 @@
       "exports": [
         "ValuationSnapshotModal"
       ],
-      "totalLines": 296,
+      "totalLines": 295,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/components/ValuationSnapshotTab.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/ValuationSnapshotTab.jsx",
-      "contentHash": "7da5069b64ec8b2ece10f748488fc98f6c4ac2b7dced054b6fae241213be7cd3",
+      "contentHash": "3dedc51815f92eac53a8beabf646dcddc1b0558f56631e47025c19cf82a84c99",
       "functions": [
         {
           "name": "formatCurrency",
@@ -92265,12 +92436,12 @@
       "exports": [
         "ValuationSnapshotTab"
       ],
-      "totalLines": 280,
+      "totalLines": 279,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/components/ValuationTab.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/ValuationTab.jsx",
-      "contentHash": "a6dcdab551de43023e41a7dec66f97cad553998867b250a0982eb08a8ac23b64",
+      "contentHash": "70f47845ab78948200671031d905c96dd1a44284072a6f4ba895a2b9e31bb6bb",
       "functions": [
         {
           "name": "formatCurrency",
@@ -92349,12 +92520,12 @@
       "exports": [
         "ValuationTab"
       ],
-      "totalLines": 214,
+      "totalLines": 213,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/index.js": {
       "filePath": "frontend/src/features/mutual-fund/index.js",
-      "contentHash": "abcfee095f9415446997f6c75b9e23bee31a66bcfada4bdcdddbf486f661ffdc",
+      "contentHash": "34f14ca48fd89d5abdad485c94d45cd37113471fb075e7bece75b69caf408709",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -92376,7 +92547,7 @@
         "ValuationSnapshotTab",
         "ValuationTab"
       ],
-      "totalLines": 20,
+      "totalLines": 22,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/mutual-fund/services/mutualFunds.service.js": {
@@ -92413,7 +92584,7 @@
     },
     "frontend/src/features/notes/components/NoteDialog.jsx": {
       "filePath": "frontend/src/features/notes/components/NoteDialog.jsx",
-      "contentHash": "98990bf95313bce0d01afbd71e7adc8418b3413815b8cd73792ba61ef01765db",
+      "contentHash": "579ab721444d0f09284736669ec35e9b3c8c01a102ce0b0453544853335a18ba",
       "functions": [
         {
           "name": "getColorKey",
@@ -92459,12 +92630,12 @@
       "exports": [
         "NoteDialog"
       ],
-      "totalLines": 259,
+      "totalLines": 258,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/notes/components/NotesView.jsx": {
       "filePath": "frontend/src/features/notes/components/NotesView.jsx",
-      "contentHash": "19874a721b643af60f134525dd38cd12e60d2358eb1826497b93931ba4f556aa",
+      "contentHash": "a564e2812d7a9293f551826395b3fdbf59ad43de305288a14fe78e3492b1da4e",
       "functions": [
         {
           "name": "getColorKey",
@@ -92564,7 +92735,7 @@
       "exports": [
         "NotesView"
       ],
-      "totalLines": 569,
+      "totalLines": 567,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/notes/index.js": {
@@ -92609,19 +92780,19 @@
     },
     "frontend/src/features/portfolio/components/DataAccuracyWarning.jsx": {
       "filePath": "frontend/src/features/portfolio/components/DataAccuracyWarning.jsx",
-      "contentHash": "a33f0af7f7ce0e6958008c0fcdf7fcd8393523dea8d58b9224c1a33a386ee0aa",
+      "contentHash": "ac87011207ff9af1c26ec5a5015c1a4477667c14802b09adc784ad2777287857",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [
         "default"
       ],
-      "totalLines": 3,
+      "totalLines": 2,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/HoldingsTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/HoldingsTab.jsx",
-      "contentHash": "c2a5cd37c91d4eb0a4aadbdf26c0c2899f8a6fa87a4381764b4d67b4cbe5c05a",
+      "contentHash": "95873df4408dff0250a16b9e197844f4c66fe702426ba8b19e8be771f1efa81a",
       "functions": [
         {
           "name": "SortIcon",
@@ -92696,12 +92867,12 @@
       "exports": [
         "HoldingsTab"
       ],
-      "totalLines": 441,
+      "totalLines": 440,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfHoldingsTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfHoldingsTab.jsx",
-      "contentHash": "5aa9255abfb599c5db8dc45632c5709e9a38afbece39ec9e5579265bef6ce467",
+      "contentHash": "5dd924c9777962c91c1dad3e2d05d42f6b39c0aa8ad14b83bc4878e1bb8dfa53",
       "functions": [
         {
           "name": "MfHoldingsTab",
@@ -92777,7 +92948,7 @@
       "exports": [
         "MfHoldingsTab"
       ],
-      "totalLines": 145,
+      "totalLines": 144,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfInstrumentList.jsx": {
@@ -92874,7 +93045,7 @@
     },
     "frontend/src/features/portfolio/components/MfOrdersTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfOrdersTab.jsx",
-      "contentHash": "a6e48aaeb97ceba142847941ededf506cf8f08b9768c146be04b08429285898b",
+      "contentHash": "24d6555a73d0daf474a7ed7bfb08420b3d28c2de8b4aa2b8a64c1c005ba1d3af",
       "functions": [
         {
           "name": "MfOrdersTab",
@@ -92949,12 +93120,12 @@
       "exports": [
         "MfOrdersTab"
       ],
-      "totalLines": 145,
+      "totalLines": 144,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfSipList.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfSipList.jsx",
-      "contentHash": "9ebc9adf495b96c01dba565f3492f000c3e750e92d2554cfc96b57521506403f",
+      "contentHash": "06707d4033d67cc8a2354e743ead25ce867d7950cbea8df7bc8be678a464bcfe",
       "functions": [
         {
           "name": "MfSipList",
@@ -92998,7 +93169,7 @@
       "exports": [
         "MfSipList"
       ],
-      "totalLines": 358,
+      "totalLines": 357,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfSipsTab.jsx": {
@@ -93059,7 +93230,7 @@
     },
     "frontend/src/features/portfolio/components/MfTimeline.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfTimeline.jsx",
-      "contentHash": "42260594c42e9f51ec49859d156fdb40bb6d230b0f256e91e94856180cc8230b",
+      "contentHash": "0b09510236d6d5ffb415611dd63f29f531e790f54ef885d9f05fbe444bea4670",
       "functions": [
         {
           "name": "eventTheme",
@@ -93134,7 +93305,7 @@
       "exports": [
         "MfTimeline"
       ],
-      "totalLines": 537,
+      "totalLines": 536,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfTimelineTab.jsx": {
@@ -93195,7 +93366,7 @@
     },
     "frontend/src/features/portfolio/components/OrdersTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/OrdersTab.jsx",
-      "contentHash": "497f45c3c6f21a8b8563d43a69112015f84595a534f246f11e564e3a1f7bf92b",
+      "contentHash": "f5f89d19049a0e2f523a7f4b5d23b73b767cb36741431a7ece3cb561626518bf",
       "functions": [
         {
           "name": "OrdersTab",
@@ -93258,12 +93429,12 @@
       "exports": [
         "OrdersTab"
       ],
-      "totalLines": 145,
+      "totalLines": 144,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/PortfolioTabBar.jsx": {
       "filePath": "frontend/src/features/portfolio/components/PortfolioTabBar.jsx",
-      "contentHash": "0be5cde8136b490fa6bd77d72ef424a130b09badb7061ce92e67bdae05602fa9",
+      "contentHash": "e5b381925da8aaf1b1c4c3076cadcc0476e8d3fa124ed95d103af23a7a10fe3b",
       "functions": [
         {
           "name": "PortfolioTabBar",
@@ -93290,12 +93461,12 @@
       "exports": [
         "PortfolioTabBar"
       ],
-      "totalLines": 99,
+      "totalLines": 98,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/PortfolioView.jsx": {
       "filePath": "frontend/src/features/portfolio/components/PortfolioView.jsx",
-      "contentHash": "e33929dead8d6312d1a837fe43275edee1bf7535ae73cfd2ef70c965fd7cc98d",
+      "contentHash": "12b602c6fafa3b5c813a56911d55c8b9aa0ce635ab0695149ffd5f91a9f939f8",
       "functions": [
         {
           "name": "SummaryStats",
@@ -93440,7 +93611,7 @@
     },
     "frontend/src/features/portfolio/components/PositionsTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/PositionsTab.jsx",
-      "contentHash": "fe8012dc892022f6c6d52b7b605bf0fec397d224696135175794b5410d2d6300",
+      "contentHash": "e7d4f8da1a282416080497b5b009ea115ff8891196d36d463b0954b0a68e5d2a",
       "functions": [
         {
           "name": "PositionsTab",
@@ -93504,12 +93675,12 @@
       "exports": [
         "PositionsTab"
       ],
-      "totalLines": 262,
+      "totalLines": 261,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/ProfileTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/ProfileTab.jsx",
-      "contentHash": "7eb98cda8ddfe818c6b49c03ed580935a480daebc5af62022f56c31c579b7532",
+      "contentHash": "6112fbfaf4ec1bd2411196912e448d7e7164626d0809650faa4eed79c718d812",
       "functions": [
         {
           "name": "relativeTime",
@@ -93619,7 +93790,7 @@
       "exports": [
         "ProfileTab"
       ],
-      "totalLines": 432,
+      "totalLines": 431,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/TabError.jsx": {
@@ -93650,7 +93821,7 @@
     },
     "frontend/src/features/portfolio/components/TabLoadingSkeleton.jsx": {
       "filePath": "frontend/src/features/portfolio/components/TabLoadingSkeleton.jsx",
-      "contentHash": "b58e07e98ae54de417578f3374fed8353f9208883da8081cec80c8b471f21f85",
+      "contentHash": "1953883b224ffe7fc96cd5d293e0a1c003bd6332842d4077d2c0af1bbc865d45",
       "functions": [
         {
           "name": "TabLoadingSkeleton",
@@ -93671,12 +93842,12 @@
       "exports": [
         "TabLoadingSkeleton"
       ],
-      "totalLines": 40,
+      "totalLines": 39,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/TradesTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/TradesTab.jsx",
-      "contentHash": "e7eb974a5d5d9473e468c7f5f0952f9d98382447b82367849eab71744be3d827",
+      "contentHash": "952126788760d0f16e514eadb3174a87ba4f40ad289672e0d32c7b54a76a1772",
       "functions": [
         {
           "name": "TradesTab",
@@ -93745,12 +93916,12 @@
       "exports": [
         "TradesTab"
       ],
-      "totalLines": 125,
+      "totalLines": 124,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/hooks/usePortfolioFunds.js": {
       "filePath": "frontend/src/features/portfolio/hooks/usePortfolioFunds.js",
-      "contentHash": "119a9f4a2e403a922587514787eca8f8bccba0ce6d20e7b4188d738c75b97b6d",
+      "contentHash": "ad90249dfbfa8d5cf16e558bb61bd6d8b9030870694fa48f81cc56c7118a4ed9",
       "functions": [
         {
           "name": "usePortfolioFunds",
@@ -93777,12 +93948,12 @@
       "exports": [
         "usePortfolioFunds"
       ],
-      "totalLines": 14,
+      "totalLines": 13,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/hooks/usePortfolioHoldings.js": {
       "filePath": "frontend/src/features/portfolio/hooks/usePortfolioHoldings.js",
-      "contentHash": "f726851e0712d4f0dccf975e689426ffa6be0aabd0d4a7023edf62c9b38e6244",
+      "contentHash": "1e53903c4a171e0fefe5fe72378b38fd4d90dd9160bfa7a0537fb820830e3c18",
       "functions": [
         {
           "name": "usePortfolioHoldings",
@@ -93809,12 +93980,12 @@
       "exports": [
         "usePortfolioHoldings"
       ],
-      "totalLines": 14,
+      "totalLines": 13,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/hooks/usePortfolioOrders.js": {
       "filePath": "frontend/src/features/portfolio/hooks/usePortfolioOrders.js",
-      "contentHash": "ae2b626de7374e3e4bc652bb6befd3684eab61fdc207b859a4393535f4680459",
+      "contentHash": "d2d6a627172ebaa8ba8a5ff9ad55fd6a76b4f1d3f81a53929e58d1dbc35be666",
       "functions": [
         {
           "name": "usePortfolioOrders",
@@ -93841,12 +94012,12 @@
       "exports": [
         "usePortfolioOrders"
       ],
-      "totalLines": 14,
+      "totalLines": 13,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/hooks/usePortfolioPositions.js": {
       "filePath": "frontend/src/features/portfolio/hooks/usePortfolioPositions.js",
-      "contentHash": "a6309417112e9020d2437334b5a8a7855c10dee482359206620319f32f135469",
+      "contentHash": "03869f8cfdfbda3eea1f3d40dcb893c43e23c4842dba55fb8fb4b21613e17694",
       "functions": [
         {
           "name": "usePortfolioPositions",
@@ -93873,12 +94044,12 @@
       "exports": [
         "usePortfolioPositions"
       ],
-      "totalLines": 15,
+      "totalLines": 14,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/hooks/usePortfolioSummary.js": {
       "filePath": "frontend/src/features/portfolio/hooks/usePortfolioSummary.js",
-      "contentHash": "fb23288406a1e4098937fe0928e0303e71db976bf0301cb9f9ed23d49a378fcc",
+      "contentHash": "3e53a93ea9a7f6cb6d19750de4ce3d4feaca5e0b1b81dff5304971559f3e8060",
       "functions": [
         {
           "name": "usePortfolioSummary",
@@ -93905,7 +94076,7 @@
       "exports": [
         "usePortfolioSummary"
       ],
-      "totalLines": 15,
+      "totalLines": 14,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/hooks/usePortfolioTab.js": {
@@ -93944,7 +94115,7 @@
     },
     "frontend/src/features/portfolio/index.js": {
       "filePath": "frontend/src/features/portfolio/index.js",
-      "contentHash": "f4affa037cb1ef93e1ba04a32b97ed4d110327d008cb6f64a3d83ddcf943d4df",
+      "contentHash": "3d76fd7655ec66d9061565c22c86c387714f82c31f2dbaef4ef865fb120d7a15",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -93952,7 +94123,7 @@
         "PortfolioView",
         "PortfolioViewDefault"
       ],
-      "totalLines": 25,
+      "totalLines": 28,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/services/portfolio.service.js": {
@@ -94017,7 +94188,7 @@
     },
     "frontend/src/features/ppf/components/PpfDialog.jsx": {
       "filePath": "frontend/src/features/ppf/components/PpfDialog.jsx",
-      "contentHash": "113fd052c3b0935703507322d69fb552cf9de291f51a386c315bc6797f9b6d19",
+      "contentHash": "cb778dbeb9d8b51fc476a75e2aebd1f4dca432daea856ea6013d5908199dc442",
       "functions": [
         {
           "name": "parseShortcutAmount",
@@ -94086,12 +94257,12 @@
       "exports": [
         "PpfDialog"
       ],
-      "totalLines": 459,
+      "totalLines": 458,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/ppf/components/PpfSettingsDialog.jsx": {
       "filePath": "frontend/src/features/ppf/components/PpfSettingsDialog.jsx",
-      "contentHash": "c4212600e390795bebb1b75f4c58cb0e08f00f652fb6442ea4a544365c49017a",
+      "contentHash": "524cb9abdf0a3d60b4aa32366f320355a3f2d02e01c48b1e6e78df15fc60c911",
       "functions": [
         {
           "name": "PpfSettingsDialog",
@@ -94127,12 +94298,12 @@
       "exports": [
         "PpfSettingsDialog"
       ],
-      "totalLines": 182,
+      "totalLines": 181,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/ppf/components/PpfView.jsx": {
       "filePath": "frontend/src/features/ppf/components/PpfView.jsx",
-      "contentHash": "b541b27add49d10088ff0d1fc3cd7cefe72d41ae74c02f14c2581ffe84a442a9",
+      "contentHash": "51e6181121507739e9e5df90b270ddfa359855ec6bb6b8d25287228369455f1d",
       "functions": [
         {
           "name": "formatCurrency",
@@ -94233,7 +94404,7 @@
       "exports": [
         "PpfView"
       ],
-      "totalLines": 540,
+      "totalLines": 538,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/ppf/index.js": {
@@ -94253,19 +94424,13 @@
     },
     "frontend/src/features/profile/components/ProfileView.jsx": {
       "filePath": "frontend/src/features/profile/components/ProfileView.jsx",
-      "contentHash": "2f665f53243da7767e25ad27360741e761655ebf471993b94628fb57b55800e7",
+      "contentHash": "86510daf4a0edfe4459c16d1a10e9916766be9c54e7aa513e8400c074701fe03",
       "functions": [
         {
           "name": "ProfileView",
           "params": [],
           "exported": true,
-          "lineCount": 1271
-        },
-        {
-          "name": "ProfileField",
-          "params": [],
-          "exported": false,
-          "lineCount": 73
+          "lineCount": 1852
         }
       ],
       "classes": [],
@@ -94283,6 +94448,12 @@
           ]
         },
         {
+          "source": "@/shared/providers/ThemeProvider",
+          "specifiers": [
+            "useTheme"
+          ]
+        },
+        {
           "source": "@/shared/lib/utils",
           "specifiers": [
             "cn"
@@ -94292,7 +94463,6 @@
           "source": "@/shared/api/client",
           "specifiers": [
             "emailAPI",
-            "portfolioAPI",
             "totpAPI",
             "twofaAPI",
             "userAPI"
@@ -94309,25 +94479,40 @@
         {
           "source": "lucide-react",
           "specifiers": [
+            "AlertTriangle",
             "BadgeCheck",
             "Bell",
             "Camera",
-            "Edit",
-            "Eye",
-            "EyeOff",
+            "CheckCircle2",
+            "Clock",
+            "Download",
             "Key",
+            "Laptop",
             "Loader2",
+            "Lock",
+            "Mail",
+            "Moon",
+            "Pencil",
             "Save",
-            "Shield",
             "ShieldAlert",
             "ShieldCheck",
+            "SlidersHorizontal",
+            "Sun",
+            "User",
             "X"
+          ]
+        },
+        {
+          "source": "@/features/auth/components/security-inputs",
+          "specifiers": [
+            "PasswordStrengthInput"
           ]
         },
         {
           "source": "react",
           "specifiers": [
             "useEffect",
+            "useRef",
             "useState"
           ]
         }
@@ -94335,12 +94520,12 @@
       "exports": [
         "ProfileView"
       ],
-      "totalLines": 1393,
+      "totalLines": 1908,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/profile/index.js": {
       "filePath": "frontend/src/features/profile/index.js",
-      "contentHash": "e6987bf20ed2c23c6f807fd73fc321c3a2168f03d62c1278b02e0e24dd9a7ee9",
+      "contentHash": "95341e28c589f986774ad90e0f891fb548e7b665a99a018c028c17f963e2754d",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -94353,7 +94538,7 @@
         "normalizePhoneIndia",
         "sanitizeText"
       ],
-      "totalLines": 9,
+      "totalLines": 12,
       "hasStructuralAnalysis": true
     },
     "frontend/src/proxy.js": {
@@ -94399,7 +94584,7 @@
     },
     "frontend/src/shared/api/client.js": {
       "filePath": "frontend/src/shared/api/client.js",
-      "contentHash": "20764316bf6bf95008c3c8397e6bc410bf36b4a40eb1dc8a630c686b94e16d1a",
+      "contentHash": "ffbcb0fa34f40f48f8862f1f4a7bd3a97b4b0b4adccb52379e5b8b7ae92ddec8",
       "functions": [
         {
           "name": "processQueue",
@@ -94453,19 +94638,19 @@
         "mutualFundAPI",
         "apiClient"
       ],
-      "totalLines": 1463,
+      "totalLines": 1472,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/api/index.js": {
       "filePath": "frontend/src/shared/api/index.js",
-      "contentHash": "8119049ca0baa355f8682683e0b273ff62219786ef16dcb0509594877cccb575",
+      "contentHash": "4b73d3c8a333583f1ee22c25b6b472e4dfc78130c31fb9bd19c31db02c56d38d",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [
         "default"
       ],
-      "totalLines": 6,
+      "totalLines": 5,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/api/ledger.service.js": {
@@ -94490,7 +94675,7 @@
     },
     "frontend/src/shared/auth/AuthContext.js": {
       "filePath": "frontend/src/shared/auth/AuthContext.js",
-      "contentHash": "fd1244bc82d7c388479cf3f47fb518a0e6efc0180e33288820a71dde5ecd43f9",
+      "contentHash": "77332ff3b56f9e4ca341192cc6d10ebad4eebe42dc767340f1dd90c252c12737",
       "functions": [
         {
           "name": "buildLockoutNotice",
@@ -94507,13 +94692,13 @@
             "action"
           ],
           "exported": false,
-          "lineCount": 26
+          "lineCount": 38
         },
         {
           "name": "AuthProvider",
           "params": [],
           "exported": true,
-          "lineCount": 531
+          "lineCount": 558
         },
         {
           "name": "useAuth",
@@ -94570,22 +94755,28 @@
         "useAuth",
         "withAuth"
       ],
-      "totalLines": 637,
+      "totalLines": 676,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/auth/AuthGuard.jsx": {
       "filePath": "frontend/src/shared/auth/AuthGuard.jsx",
-      "contentHash": "d4a23943c9ed8fdebf0ce35558df35d43a9ca517c21683add398ff2cb7f5f176",
+      "contentHash": "231b4d46c8e89e81982c3ecf98bc69cc49a593f66276b482788b1635e3be7f69",
       "functions": [
         {
           "name": "AuthGuard",
           "params": [],
           "exported": true,
-          "lineCount": 43
+          "lineCount": 81
         }
       ],
       "classes": [],
       "imports": [
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "tokenManager"
+          ]
+        },
         {
           "source": "@/shared/auth/AuthContext",
           "specifiers": [
@@ -94608,19 +94799,20 @@
         {
           "source": "react",
           "specifiers": [
-            "useEffect"
+            "useEffect",
+            "useState"
           ]
         }
       ],
       "exports": [
         "AuthGuard"
       ],
-      "totalLines": 66,
+      "totalLines": 104,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/auth/index.js": {
       "filePath": "frontend/src/shared/auth/index.js",
-      "contentHash": "3ae236adc043b9fe2fd82821f31f1a6d219f457aa2dce6e8e811901a0774ca47",
+      "contentHash": "a3895fc1fd002762f6a086138b4ad43e857409bae6a8d3fbf349dc305e46dfda",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -94630,7 +94822,7 @@
         "AuthGuard",
         "tokenManager"
       ],
-      "totalLines": 5,
+      "totalLines": 4,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/auth/token-storage.js": {
@@ -94677,24 +94869,24 @@
     },
     "frontend/src/shared/config/env.js": {
       "filePath": "frontend/src/shared/config/env.js",
-      "contentHash": "418c5d13b44c975bf244168faf6865918aa6da8aa9f39c5c287cf8e704c4de5b",
+      "contentHash": "14ba6385f1e5dbd65b8f9f6f65d621f6eb5c1c43e1fdb0fac9049bb797fb3375",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [
         "ENV"
       ],
-      "totalLines": 11,
+      "totalLines": 12,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/config/index.js": {
       "filePath": "frontend/src/shared/config/index.js",
-      "contentHash": "81e923e309d42fd73a56572b96bf0cfa7268b186dd632db8648c6f3b3ad06ddc",
+      "contentHash": "4e6f4942b0b433cb4340e878aeac3ed787c1de334982072efa35eef5d5942662",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 4,
+      "totalLines": 3,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/entitlements/EntitlementGate.jsx": {
@@ -94725,7 +94917,7 @@
     },
     "frontend/src/shared/entitlements/index.js": {
       "filePath": "frontend/src/shared/entitlements/index.js",
-      "contentHash": "0de45dde7a44f457ed2abdd273b0c83fe9bebe33161198b267bb2a3e296b7b0e",
+      "contentHash": "55b43677b84afd659c3b5a0785fe6145181a34e89e74eedcdc540ddf5ca61739",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -94733,7 +94925,7 @@
         "EntitlementGate",
         "useEntitlement"
       ],
-      "totalLines": 4,
+      "totalLines": 3,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/entitlements/useEntitlement.js": {
@@ -95000,7 +95192,7 @@
     },
     "frontend/src/shared/lib/logger.js": {
       "filePath": "frontend/src/shared/lib/logger.js",
-      "contentHash": "d0976e9816037ad7734456e7ee3e0a642f523ba77c1b90bebce9d4ceefe3e525",
+      "contentHash": "871096adda71ca962d723e7ec908010e80ee5b543194770b4a0144669f3925e3",
       "functions": [
         {
           "name": "safeStringify",
@@ -95040,7 +95232,7 @@
       "exports": [
         "logger"
       ],
-      "totalLines": 141,
+      "totalLines": 140,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/lib/motion.js": {
@@ -95304,22 +95496,22 @@
     },
     "frontend/src/shared/providers/index.js": {
       "filePath": "frontend/src/shared/providers/index.js",
-      "contentHash": "803c4f84c6b9cca24619c207eac4449810151677bb37ce88c4ab3f2e974ebec5",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 5,
-      "hasStructuralAnalysis": true
-    },
-    "frontend/src/shared/security/index.js": {
-      "filePath": "frontend/src/shared/security/index.js",
-      "contentHash": "cfe3bf4544fda8008e817a2ad954b89fd820422373dab7c5a559ab1f1de217b0",
+      "contentHash": "a4f1180511e58aa79aa37de1254f464890248ae9344fc578e15aec47d511728d",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
       "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/shared/security/index.js": {
+      "filePath": "frontend/src/shared/security/index.js",
+      "contentHash": "84bfb7e320280253c520d5b02b44772f4a448ab102545cd500be53923b497f01",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 3,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/security/masking.js": {
@@ -95455,7 +95647,7 @@
     },
     "frontend/src/shared/ui/brand/cointrack-features.jsx": {
       "filePath": "frontend/src/shared/ui/brand/cointrack-features.jsx",
-      "contentHash": "2f637d1c4a208cd237cfc01d534ad96b7e6c40574187723e2f14e4c6b4f7d3cb",
+      "contentHash": "f20a18ff7dde62388aea7d899b362ce5a900158d185ae536cbecad7ca3b24bfa",
       "functions": [
         {
           "name": "CoinTrackFeatures",
@@ -95492,12 +95684,12 @@
       "exports": [
         "CoinTrackFeatures"
       ],
-      "totalLines": 306,
+      "totalLines": 305,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/brand/cointrack-footer.jsx": {
       "filePath": "frontend/src/shared/ui/brand/cointrack-footer.jsx",
-      "contentHash": "16e56170553996ba0ccdf39bc186db034a8861cb4a7109d253872fc9d4a3fc53",
+      "contentHash": "5c28cbab5eb6cfbfa12b63f06d418606a0a51b308192314f14e946afee1906bd",
       "functions": [
         {
           "name": "CoinTrackFooter",
@@ -95542,12 +95734,12 @@
       "exports": [
         "CoinTrackFooter"
       ],
-      "totalLines": 207,
+      "totalLines": 206,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/brand/cointrack-hero-mockup.jsx": {
       "filePath": "frontend/src/shared/ui/brand/cointrack-hero-mockup.jsx",
-      "contentHash": "b0a8de8fa8dffc7f071f3caac0861f8f3a7bedd6e7e23c47b2a0a0f38e7d03ad",
+      "contentHash": "1b8db764efc5b4308fd8e7eec6aecc9a33452c197db5e08e7c3f0fa19bd0fe40",
       "functions": [
         {
           "name": "CoinTrackHeroMockup",
@@ -95608,12 +95800,12 @@
       "exports": [
         "CoinTrackHeroMockup"
       ],
-      "totalLines": 608,
+      "totalLines": 607,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/brand/cointrack-inbox-section.jsx": {
       "filePath": "frontend/src/shared/ui/brand/cointrack-inbox-section.jsx",
-      "contentHash": "82cf2f3c6425c64253ad2a374eb66d82e95d489c69ff39fa3fe4051c6ceac5e9",
+      "contentHash": "f42b7e7695e40de8dbc322546860bbed2ddc54392a69e7fa52b61048031f1f8a",
       "functions": [
         {
           "name": "CoinTrackInboxSection",
@@ -95663,7 +95855,7 @@
       "exports": [
         "CoinTrackInboxSection"
       ],
-      "totalLines": 236,
+      "totalLines": 235,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/brand/cointrack-logo.jsx": {
@@ -95694,7 +95886,7 @@
     },
     "frontend/src/shared/ui/brand/cointrack-navbar.jsx": {
       "filePath": "frontend/src/shared/ui/brand/cointrack-navbar.jsx",
-      "contentHash": "35ee11415f573112dd3a360ed434f5c74f88b100fb603ae0f044254f7d9a1517",
+      "contentHash": "55b5b3e3db83ef194bf9d6f6d9df115601a0324557b5cd32cbc7c2913caf7ca2",
       "functions": [
         {
           "name": "CoinTrackNavbar",
@@ -95761,12 +95953,12 @@
       "exports": [
         "CoinTrackNavbar"
       ],
-      "totalLines": 309,
+      "totalLines": 308,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/brand/cointrack-pricing.jsx": {
       "filePath": "frontend/src/shared/ui/brand/cointrack-pricing.jsx",
-      "contentHash": "ca42c791a2b8cf23d6117bb32d5f91681c01fa9e9d570142a40b1a7e94edde49",
+      "contentHash": "bc2f171f51dc91d986499da7eacd03d1445cbe3fa660482cf4899d002bc1aea9",
       "functions": [
         {
           "name": "CoinTrackPricing",
@@ -95814,22 +96006,29 @@
       "exports": [
         "CoinTrackPricing"
       ],
-      "totalLines": 239,
+      "totalLines": 238,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/brand/cointrack-sky-background.jsx": {
       "filePath": "frontend/src/shared/ui/brand/cointrack-sky-background.jsx",
-      "contentHash": "7180433c876d47c8a27a0970db6c6413131423fa998ce65112aaa0a1297286b2",
+      "contentHash": "4ad83c53ef3c296ba5a31994859019c76afada5f0d4ba43a0eec7600c92f5ac7",
       "functions": [
         {
           "name": "CoinTrackSkyBackground",
           "params": [],
           "exported": true,
-          "lineCount": 33
+          "lineCount": 494
         }
       ],
       "classes": [],
       "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useRef"
+          ]
+        },
         {
           "source": "framer-motion",
           "specifiers": [
@@ -95842,12 +96041,12 @@
       "exports": [
         "CoinTrackSkyBackground"
       ],
-      "totalLines": 38,
+      "totalLines": 516,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/data-display/announcement-card.jsx": {
       "filePath": "frontend/src/shared/ui/data-display/announcement-card.jsx",
-      "contentHash": "4945363a47c47e43cce2922db8528a056481c0dc9246e5b5191239541d733eff",
+      "contentHash": "21dedf2369f5135b3c7809162e8c811d6cef930d31034d486b0307777561ec8d",
       "functions": [
         {
           "name": "GiftGraphic",
@@ -95881,12 +96080,12 @@
       "exports": [
         "AnnouncementCard"
       ],
-      "totalLines": 123,
+      "totalLines": 122,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/data-display/chart.jsx": {
       "filePath": "frontend/src/shared/ui/data-display/chart.jsx",
-      "contentHash": "bf14243428fb189ccce13fbab066cfb41f16c12e3d8dc70d98e443b45d042f6b",
+      "contentHash": "51296afbcdcc6c4ff865192e07234ef30b987f4d9159c5bbd0adf9d437aaa93f",
       "functions": [
         {
           "name": "useChart",
@@ -95958,12 +96157,12 @@
         "ChartLegendContent",
         "ChartStyle"
       ],
-      "totalLines": 325,
+      "totalLines": 324,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/data-display/pending-verification-banner.jsx": {
       "filePath": "frontend/src/shared/ui/data-display/pending-verification-banner.jsx",
-      "contentHash": "3e9a98ecd220bbfe47277cf264838c32b3c4634439438490049bb0dd6a172d38",
+      "contentHash": "a8a1271f128ebad1bcb4554d6302806ef1d55a99ab865f8b8ec05fe251f90cc8",
       "functions": [
         {
           "name": "PendingVerificationBanner",
@@ -96027,12 +96226,12 @@
       "exports": [
         "PendingVerificationBanner"
       ],
-      "totalLines": 169,
+      "totalLines": 171,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/feedback/DataAccuracyWarning.jsx": {
       "filePath": "frontend/src/shared/ui/feedback/DataAccuracyWarning.jsx",
-      "contentHash": "ab02a613579d9667f0ffaa5799f35a93db445ccb481a30738bc98b335f986212",
+      "contentHash": "914929722a08b49875a3b7cc240d17031c5d89149e118595bec6fdc33fd172f4",
       "functions": [
         {
           "name": "DataAccuracyWarning",
@@ -96059,12 +96258,12 @@
       "exports": [
         "DataAccuracyWarning"
       ],
-      "totalLines": 25,
+      "totalLines": 24,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/feedback/Skeleton.jsx": {
       "filePath": "frontend/src/shared/ui/feedback/Skeleton.jsx",
-      "contentHash": "a75607906229d29cff8a17b9f6736754d4097dfdcb93ecc5cd0ec43f4a25fce9",
+      "contentHash": "1f42c03153a2a0d0e75d6ed990ae7d2489fc1cd32c642f5444356161d8236ce2",
       "functions": [
         {
           "name": "Skeleton",
@@ -96113,12 +96312,12 @@
         "SkeletonStat",
         "SkeletonTableRow"
       ],
-      "totalLines": 93,
+      "totalLines": 92,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/feedback/animated-icons.jsx": {
       "filePath": "frontend/src/shared/ui/feedback/animated-icons.jsx",
-      "contentHash": "e9772dd7011561daaf24dc8c44afc1efb993b25ba5d725c53b6ff43782d3fb9c",
+      "contentHash": "5161deef9b1db1e798ec51e93270c3889d390bca64881053e02b44486408f06d",
       "functions": [
         {
           "name": "AnimatedSuccessIcon",
@@ -96230,12 +96429,12 @@
         "AnimatedMailboxIcon",
         "AnimatedUnlockIcon"
       ],
-      "totalLines": 619,
+      "totalLines": 618,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/feedback/base-dialog.jsx": {
       "filePath": "frontend/src/shared/ui/feedback/base-dialog.jsx",
-      "contentHash": "5f38f4d68efda8aa4723863676afad02f0c18b41dd8996dbd3e26e20eeb8350a",
+      "contentHash": "ce889ae9cf585c1847bda41df725f75186d4901c0e42f5d2a7fbb44107798f9f",
       "functions": [
         {
           "name": "BaseDialog",
@@ -96284,12 +96483,12 @@
       "exports": [
         "BaseDialog"
       ],
-      "totalLines": 120,
+      "totalLines": 119,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/feedback/confirm-dialog.jsx": {
       "filePath": "frontend/src/shared/ui/feedback/confirm-dialog.jsx",
-      "contentHash": "d843fdeaa9a15eec51454ccd8cbae9240f2f531b783828caca9ff7a613449375",
+      "contentHash": "57371fb378bb918c065014e4840812af9e1265bc3fc6aae1d313e0de3d5c46b8",
       "functions": [
         {
           "name": "ConfirmDialog",
@@ -96327,18 +96526,18 @@
       "exports": [
         "ConfirmDialog"
       ],
-      "totalLines": 238,
+      "totalLines": 237,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/feedback/sonner.jsx": {
       "filePath": "frontend/src/shared/ui/feedback/sonner.jsx",
-      "contentHash": "d6839beb01292053f959c105364a8e56facf22c673ff46635d93ee4faf162e1c",
+      "contentHash": "b1063f83ee84619c5cda6c3e3180a97738d958a8c456cd0267fb30daae960d8f",
       "functions": [
         {
           "name": "Toaster",
           "params": [],
           "exported": true,
-          "lineCount": 29
+          "lineCount": 44
         }
       ],
       "classes": [],
@@ -96356,25 +96555,31 @@
           ]
         },
         {
+          "source": "./animated-icons",
+          "specifiers": [
+            "AnimatedSuccessIcon",
+            "AnimatedInfoIcon",
+            "AnimatedWarningIcon",
+            "AnimatedErrorIcon"
+          ]
+        },
+        {
           "source": "lucide-react",
           "specifiers": [
-            "CircleCheckIcon",
-            "InfoIcon",
-            "TriangleAlertIcon",
-            "OctagonXIcon",
-            "Loader2Icon"
+            "Loader2",
+            "X"
           ]
         }
       ],
       "exports": [
         "Toaster"
       ],
-      "totalLines": 45,
+      "totalLines": 59,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/feedback/use-toast.js": {
       "filePath": "frontend/src/shared/ui/feedback/use-toast.js",
-      "contentHash": "3118b39c405d1280511ebc9d699ebd9069af6a3276dcd111205e49382aba5d84",
+      "contentHash": "7280bc9bcd6bd97609e02c20f04090dfb1624d9bdde3eaf38bf54a3b7bbfccc0",
       "functions": [
         {
           "name": "toast",
@@ -96383,7 +96588,7 @@
             "maybeOptions"
           ],
           "exported": true,
-          "lineCount": 15
+          "lineCount": 28
         },
         {
           "name": "useToast",
@@ -96405,12 +96610,12 @@
         "toast",
         "useToast"
       ],
-      "totalLines": 31,
+      "totalLines": 44,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/CategoryDropdown.jsx": {
       "filePath": "frontend/src/shared/ui/forms/CategoryDropdown.jsx",
-      "contentHash": "45e7d626a45b3f1e34376739fddd564a1af44c84c104d53239a6b6af71248a7b",
+      "contentHash": "6277a36916eab0cfae618e25d2b5e2bf12ab1d8e41ae4eb6467e99fcdd069463",
       "functions": [
         {
           "name": "CategoryDropdown",
@@ -96463,12 +96668,12 @@
       "exports": [
         "CategoryDropdown"
       ],
-      "totalLines": 138,
+      "totalLines": 137,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/CurrencyInput.jsx": {
       "filePath": "frontend/src/shared/ui/forms/CurrencyInput.jsx",
-      "contentHash": "7cb686e59f3792f9b15f5baf69c5513f2df5b86959b47b3772919f4e63999a08",
+      "contentHash": "02eb1914d533c9bb10098b0313e7b0a4a409442fc2e754e9b57bdafb1f7ab0e4",
       "functions": [
         {
           "name": "CurrencyInput",
@@ -96504,12 +96709,12 @@
       "exports": [
         "CurrencyInput"
       ],
-      "totalLines": 87,
+      "totalLines": 86,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/FilterDropdown.jsx": {
       "filePath": "frontend/src/shared/ui/forms/FilterDropdown.jsx",
-      "contentHash": "9e2bfdadb3ec65c2c46bb326ed70398b2c861ae09c8980a2c28cb1cbafc03f7a",
+      "contentHash": "416ef4a0dea1711c067b309ce7ebf39437a2212691eeb67c385090d7552a1afd",
       "functions": [
         {
           "name": "FilterDropdown",
@@ -96550,12 +96755,12 @@
       "exports": [
         "FilterDropdown"
       ],
-      "totalLines": 63,
+      "totalLines": 62,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/FormField.jsx": {
       "filePath": "frontend/src/shared/ui/forms/FormField.jsx",
-      "contentHash": "0de4437056e201a6ecac3709bdd6acb9e6b0706ba3287ee8a9a460210a825b91",
+      "contentHash": "a466fcfc66c093e03f6ab59208b199ecced01b25bd6195da785009adcf22d81c",
       "functions": [],
       "classes": [],
       "imports": [
@@ -96576,12 +96781,12 @@
       "exports": [
         "FormField"
       ],
-      "totalLines": 141,
+      "totalLines": 140,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/PanInput.jsx": {
       "filePath": "frontend/src/shared/ui/forms/PanInput.jsx",
-      "contentHash": "628caa5b69da1d5bdb97be7f9431eea1541e7fbfda53a95ca73c2b49c6e3e64a",
+      "contentHash": "d3476c33268e5ecdfc0bf09fd379aff81f37d4b6207c6caa25cff5ebc8db91f0",
       "functions": [
         {
           "name": "PanInput",
@@ -96608,12 +96813,12 @@
       "exports": [
         "PanInput"
       ],
-      "totalLines": 41,
+      "totalLines": 40,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/PhoneInput.jsx": {
       "filePath": "frontend/src/shared/ui/forms/PhoneInput.jsx",
-      "contentHash": "03da2dc9a7b431cfaebcad206d4d59f40aed0b5590163ecc979dc742380742ca",
+      "contentHash": "2ae6dc5851c7cf6b2a609913c93ad59ddcb271c836cee1f55215ea031fcf1371",
       "functions": [
         {
           "name": "PhoneInput",
@@ -96640,12 +96845,12 @@
       "exports": [
         "PhoneInput"
       ],
-      "totalLines": 50,
+      "totalLines": 49,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/currency-stepper.jsx": {
       "filePath": "frontend/src/shared/ui/forms/currency-stepper.jsx",
-      "contentHash": "48e929194e42ce237957476a7097e3e9a803f9df6f0524b086ab20ea7fd52749",
+      "contentHash": "8b33832776d646cf53be03c93f260bf5f34a52387c0211e0ac8063999dd7afe1",
       "functions": [
         {
           "name": "formatIndianAmount",
@@ -96699,12 +96904,12 @@
         "CurrencyStepper",
         "CurrencyStepperDemo"
       ],
-      "totalLines": 152,
+      "totalLines": 151,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/date-picker.jsx": {
       "filePath": "frontend/src/shared/ui/forms/date-picker.jsx",
-      "contentHash": "09e94b2c0fa809c256180c8737d97768d0c81f26d077637641cca27c4704f926",
+      "contentHash": "89b1245819b31b00799baeadf998f8f28c23faef84f2ff4f7923592d1a2a596a",
       "functions": [
         {
           "name": "DatePicker",
@@ -96753,12 +96958,12 @@
       "exports": [
         "DatePicker"
       ],
-      "totalLines": 217,
+      "totalLines": 216,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/dropdown-select.jsx": {
       "filePath": "frontend/src/shared/ui/forms/dropdown-select.jsx",
-      "contentHash": "83500c197e9028f9c973d8ee163bbbc8e084e06b80c782846e9bc08d190a0a4b",
+      "contentHash": "f09c2c8bca2dabbaf8ee49a0e9d47f90c9492a77a2556f630d1a5f2b7a5c2181",
       "functions": [
         {
           "name": "DropdownSelect",
@@ -96793,12 +96998,12 @@
       "exports": [
         "DropdownSelect"
       ],
-      "totalLines": 61,
+      "totalLines": 60,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/inset-form-card.jsx": {
       "filePath": "frontend/src/shared/ui/forms/inset-form-card.jsx",
-      "contentHash": "1144eb9630d5059f9bf85dac30d6fd4828e60bba0cd656b44535cf5ee376795d",
+      "contentHash": "00b1fb08e52697b818b5e1de9967dbb9f5a9ca478905fd04a98f58c87a70b5b6",
       "functions": [
         {
           "name": "InsetFormCard",
@@ -96875,12 +97080,12 @@
         "InsetDropdownRow",
         "InsetTextareaRow"
       ],
-      "totalLines": 233,
+      "totalLines": 232,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/forms/utility-inputs.jsx": {
       "filePath": "frontend/src/shared/ui/forms/utility-inputs.jsx",
-      "contentHash": "eafda1973c8fbdecdde961d0d7d25d9b5cbf6138746b8eb8a4d6b87d366ffb2d",
+      "contentHash": "1d55ed2dc228794cfea741e549c0dcc19015c066399e58c91d263d94ab20cf81",
       "functions": [
         {
           "name": "CopyableKey",
@@ -96925,12 +97130,12 @@
         "CopyableKey",
         "TagInput"
       ],
-      "totalLines": 182,
+      "totalLines": 181,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/loaders/FintechLoader.jsx": {
       "filePath": "frontend/src/shared/ui/loaders/FintechLoader.jsx",
-      "contentHash": "47cca0aa6b90af2f7071dcc00f0246f40b6be804cf4de1cc09a97f3c5926aacb",
+      "contentHash": "0a486982236bb0dea393694feb28fd75399512b82ca669e15e4c70109eed8654",
       "functions": [
         {
           "name": "FintechLoader",
@@ -96958,12 +97163,12 @@
       "exports": [
         "FintechLoader"
       ],
-      "totalLines": 2165,
+      "totalLines": 2164,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/loaders/FintechLoaderOverlay.jsx": {
       "filePath": "frontend/src/shared/ui/loaders/FintechLoaderOverlay.jsx",
-      "contentHash": "ff36373569a274b8710ff1c51d51eb77f19158a1296923b4bbb7b6d62af4911b",
+      "contentHash": "1726728b1d573333f081189a9b495a5b222464fc7122f8a5cf9fd6c414fc094d",
       "functions": [
         {
           "name": "FintechLoaderOverlay",
@@ -96990,7 +97195,7 @@
       "exports": [
         "FintechLoaderOverlay"
       ],
-      "totalLines": 74,
+      "totalLines": 73,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/loaders/LottieWrapper.jsx": {
@@ -97071,7 +97276,7 @@
     },
     "frontend/src/shared/ui/not-found-page.jsx": {
       "filePath": "frontend/src/shared/ui/not-found-page.jsx",
-      "contentHash": "be65b82e261f4b1802965ac30d584ca34bd3668a4149a10ce20d54471f3181a7",
+      "contentHash": "495bd0d1dc61542f386acfb4a45fa38012f5276941b9b7567f030892d2c96cb7",
       "functions": [
         {
           "name": "NotFoundPage",
@@ -97148,12 +97353,12 @@
       "exports": [
         "NotFoundPage"
       ],
-      "totalLines": 439,
+      "totalLines": 438,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/alert.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/alert.jsx",
-      "contentHash": "06f5944ce663d4aff3194bbbcb0111860dfeea10a7d04d19ef1d060854ab74be",
+      "contentHash": "af7f03bd4e01f1d9520d936493690642bbf8c32f339e2ee929bfcd9447ca08b1",
       "functions": [
         {
           "name": "Alert",
@@ -97201,12 +97406,12 @@
         "AlertDescription",
         "AlertAction"
       ],
-      "totalLines": 77,
+      "totalLines": 76,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/avatar.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/avatar.jsx",
-      "contentHash": "4851259423a3078a702c7dac9a585a29ecd553cd21eb17b59176d896e54822c3",
+      "contentHash": "1c1758f8c2df396d2e6cde111c291e561301aa5c444a785b4475892cbfecbd3b",
       "functions": [
         {
           "name": "Avatar",
@@ -97274,12 +97479,12 @@
         "AvatarGroupCount",
         "AvatarBadge"
       ],
-      "totalLines": 113,
+      "totalLines": 112,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/badge.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/badge.jsx",
-      "contentHash": "771b797298503205e320d861bc0c12931ef8bd5147b577f398aa71f4ef70e61b",
+      "contentHash": "3ba5765d86cc1fd010c881963b5407e67f061b8d1ecaffc1a02f414ec766c452",
       "functions": [
         {
           "name": "Badge",
@@ -97313,12 +97518,12 @@
         "Badge",
         "badgeVariants"
       ],
-      "totalLines": 60,
+      "totalLines": 59,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/button.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/button.jsx",
-      "contentHash": "33bdd360e0d328ea1e8d5fe4a568f1ecb0edbe2a88053d1b64949b04c128944c",
+      "contentHash": "c03c52840147bf06b9fb914069ae6c9dd2be8a0f889978d0a6b7ca018fe020d0",
       "functions": [
         {
           "name": "Button",
@@ -97352,12 +97557,12 @@
         "Button",
         "buttonVariants"
       ],
-      "totalLines": 74,
+      "totalLines": 73,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/calendar.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/calendar.jsx",
-      "contentHash": "72de37aa4e5ac282952cab14679e2099e177218310dd23f212e0f8932fc4ab0d",
+      "contentHash": "7d967e0d1e00ff3997a5423f42abda4cd40034d88bb8b4d899d7f8c64b8dfbe9",
       "functions": [
         {
           "name": "Calendar",
@@ -97413,12 +97618,12 @@
         "Calendar",
         "CalendarDayButton"
       ],
-      "totalLines": 439,
+      "totalLines": 438,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/card.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/card.jsx",
-      "contentHash": "74cff6e9d875b8c368ce2e45f074f3f246ba0f620a874619d1e0a4513e0da161",
+      "contentHash": "0428f6e7d4a362f3c58db30198e56c8086d782ea27eb4ed177fa96da1950e969",
       "functions": [
         {
           "name": "Card",
@@ -97481,12 +97686,12 @@
         "CardHeader",
         "CardTitle"
       ],
-      "totalLines": 111,
+      "totalLines": 110,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/dialog.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/dialog.jsx",
-      "contentHash": "406bdb9ccd396fc351b94cf18d3884664d58b9606bb9c0511a00a15cfba9a7d2",
+      "contentHash": "ca830ff6082ef63c4f7821ad0c407003a6c78731990f45fe380e7779867b726e",
       "functions": [
         {
           "name": "Dialog",
@@ -97588,12 +97793,12 @@
         "DialogTitle",
         "DialogTrigger"
       ],
-      "totalLines": 147,
+      "totalLines": 146,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/dropdown-menu.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/dropdown-menu.jsx",
-      "contentHash": "39c9783e23b5c758c6ef40d7af7d3b0b660343b7451b9eda7ceb5d41bb996c06",
+      "contentHash": "33afde91c9ce8764238877fd246dc4c7e52269b822cd28a18e121749128ceb86",
       "functions": [
         {
           "name": "DropdownMenu",
@@ -97725,12 +97930,12 @@
         "DropdownMenuSubTrigger",
         "DropdownMenuSubContent"
       ],
-      "totalLines": 223,
+      "totalLines": 222,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/input.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/input.jsx",
-      "contentHash": "d40cb8022c946309bacbc69d442445fa000649f85caf44f8a28a0104182f7a09",
+      "contentHash": "72bbea2fc2038ad0cc49921ee59a9c2353f31bafec4a53d9a5db0c1ac0a731ab",
       "functions": [
         {
           "name": "Input",
@@ -97751,12 +97956,12 @@
       "exports": [
         "Input"
       ],
-      "totalLines": 19,
+      "totalLines": 18,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/label.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/label.jsx",
-      "contentHash": "7cfba765318033dba94f3e4b88f41d9d8b9e60fa2324101bb8b2399431de80c7",
+      "contentHash": "866c070e0aacd94e0571795f5989c769178874bfe9ffd6e3b8d6f6813ac793d8",
       "functions": [
         {
           "name": "Label",
@@ -97783,12 +97988,12 @@
       "exports": [
         "Label"
       ],
-      "totalLines": 22,
+      "totalLines": 21,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/popover.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/popover.jsx",
-      "contentHash": "d1843ea84a7a90cd3ae8c4a7231e932ae4ef605e930e45b1dfe7c229ce3df525",
+      "contentHash": "f0941e19b1415326531e790a35839a4f9b36f75d52e449bb7d67201c943f5516",
       "functions": [
         {
           "name": "Popover",
@@ -97857,12 +98062,12 @@
         "PopoverTitle",
         "PopoverTrigger"
       ],
-      "totalLines": 84,
+      "totalLines": 83,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/progress.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/progress.jsx",
-      "contentHash": "7010c07da45606eab2e6169bd29378f925610cb1c6c090e934418053a78abde4",
+      "contentHash": "834c1dc6270ecb057072238f41748ef121f76f406c8cb9159e283b7536a6acef",
       "functions": [
         {
           "name": "Progress",
@@ -97889,12 +98094,12 @@
       "exports": [
         "Progress"
       ],
-      "totalLines": 28,
+      "totalLines": 27,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/scroll-area.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/scroll-area.jsx",
-      "contentHash": "b5c813cec5f840ebc30954641ba437e14053c70ba331d30f021fc8f26d3a126c",
+      "contentHash": "28c4a4e0893a3256a7ed871b64ce6fb1e25e264fffc09fd1da1ff930df4dda1d",
       "functions": [
         {
           "name": "ScrollArea",
@@ -97928,12 +98133,12 @@
         "ScrollArea",
         "ScrollBar"
       ],
-      "totalLines": 48,
+      "totalLines": 47,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/separator.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/separator.jsx",
-      "contentHash": "8e51ae090296b638bc4c7eaef188ceb5822c13694ed6d5fa5f220eb8aaf1e48d",
+      "contentHash": "9af4b54d22ff88152d9b7525db6a64d417aa3a6776592a97e4c5db44b1ab49f4",
       "functions": [
         {
           "name": "Separator",
@@ -97960,12 +98165,12 @@
       "exports": [
         "Separator"
       ],
-      "totalLines": 29,
+      "totalLines": 28,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/sheet.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/sheet.jsx",
-      "contentHash": "51cfde62fb11607be495972c121b290b0d1c5e173228ec478246a9dfd6907199",
+      "contentHash": "f82a7e785f0bfe4f038fbeb2a5c10738dd8cc0d4142e0674ec4a7eb9b1cc7709",
       "functions": [
         {
           "name": "Sheet",
@@ -98065,12 +98270,12 @@
         "SheetTitle",
         "SheetDescription"
       ],
-      "totalLines": 129,
+      "totalLines": 128,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/spotlight-input.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/spotlight-input.jsx",
-      "contentHash": "2d738ca0253b52bcb2feca1735273b828292893ce04b00f1316a9545bf52d90f",
+      "contentHash": "4266b79112455318001641f0573095f6b0773834b48b60c2483f529a84dc89c8",
       "functions": [
         {
           "name": "SpotlightInput",
@@ -98126,12 +98331,12 @@
         "SpotlightInput",
         "SlugInput"
       ],
-      "totalLines": 311,
+      "totalLines": 310,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/switch.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/switch.jsx",
-      "contentHash": "7032ee435a374c97707f665af5b3c66ef9de5b99a9ac3a3c440ce95ae2c2d21e",
+      "contentHash": "9b00747ab6dabf9c2b437a3d05432bee6f539511709ef6911f27c3cf2611a9a5",
       "functions": [],
       "classes": [],
       "imports": [
@@ -98157,12 +98362,12 @@
       "exports": [
         "Switch"
       ],
-      "totalLines": 30,
+      "totalLines": 29,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/table.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/table.jsx",
-      "contentHash": "a14be8a4930cf459aa7d9a8a9d2d9edbbe0a8112e4873d0d1f58f6b59d5cd823",
+      "contentHash": "8af670d5458f4af41d4b8619126360462e038c4359c4f42c146d2cfbc6f6f2fc",
       "functions": [
         {
           "name": "Table",
@@ -98232,12 +98437,12 @@
         "TableCell",
         "TableCaption"
       ],
-      "totalLines": 113,
+      "totalLines": 112,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/tabs.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/tabs.jsx",
-      "contentHash": "c2dbe34607f11da6a93efb370277e744183c628b08602ae7e3cd07bdbefa3fdc",
+      "contentHash": "09f0b1ee7fb2297cded5228058e32e7404f68bf20ad97eed0f41d360404f851d",
       "functions": [
         {
           "name": "Tabs",
@@ -98292,12 +98497,12 @@
         "TabsContent",
         "tabsListVariants"
       ],
-      "totalLines": 78,
+      "totalLines": 77,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/textarea.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/textarea.jsx",
-      "contentHash": "a367edfa184fcfe78e0f2108ccce10ea4f6a894fe68d8c57d4fd4e71b4e08148",
+      "contentHash": "892ff50017e0a257276a0d8faad8286cc936a52c0376cb9f7d475a51e9a12c8a",
       "functions": [
         {
           "name": "Textarea",
@@ -98318,12 +98523,12 @@
       "exports": [
         "Textarea"
       ],
-      "totalLines": 18,
+      "totalLines": 17,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/theme-toggle.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/theme-toggle.jsx",
-      "contentHash": "44431a7e02fc313dc34c0681d83aa883a684ad89f1cd2e9e5b4f2c52b6d44a40",
+      "contentHash": "9a8153d66247c6073c43d516ff7baf3173d4c293c5f6498678a6ffa7c517a6b9",
       "functions": [
         {
           "name": "ThemeToggle",
@@ -98351,12 +98556,12 @@
       "exports": [
         "ThemeToggle"
       ],
-      "totalLines": 32,
+      "totalLines": 31,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/tooltip.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/tooltip.jsx",
-      "contentHash": "9e45543453435957d8d3bfc07ad6717347ba82c4076f59a0694b699098e429e0",
+      "contentHash": "50fc26d379260e41100c912728f91f937288fa1edbe008877e36c2e3a79f26fe",
       "functions": [
         {
           "name": "TooltipProvider",
@@ -98404,12 +98609,12 @@
         "TooltipProvider",
         "TooltipTrigger"
       ],
-      "totalLines": 49,
+      "totalLines": 48,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/search/BankSearchCombobox.jsx": {
       "filePath": "frontend/src/shared/ui/search/BankSearchCombobox.jsx",
-      "contentHash": "e44c63f12847a271df69bbe30043a95bfa96326d3bde152c4571997122e5a502",
+      "contentHash": "88a01fcdddcf0022adde6ec6a67c4fe6b5e9e6560836aae7b134509c5e5b50f0",
       "functions": [
         {
           "name": "BankSearchCombobox",
@@ -98444,12 +98649,12 @@
       "exports": [
         "BankSearchCombobox"
       ],
-      "totalLines": 119,
+      "totalLines": 118,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/search/SchemeSearchCombobox.jsx": {
       "filePath": "frontend/src/shared/ui/search/SchemeSearchCombobox.jsx",
-      "contentHash": "1287c5c23c0e10ea49d12ef52c6d79e4c0a3434f6555b9b528703a7a2616e104",
+      "contentHash": "13cdafadbd0a09e608ae0902205df5c4ddc1cf4c43c38f7f8364dcd7b4a9720a",
       "functions": [
         {
           "name": "SchemeSearchCombobox",
@@ -98490,12 +98695,12 @@
       "exports": [
         "SchemeSearchCombobox"
       ],
-      "totalLines": 126,
+      "totalLines": 125,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/search/search-combobox.jsx": {
       "filePath": "frontend/src/shared/ui/search/search-combobox.jsx",
-      "contentHash": "4c0f76d64f1401988332757c369a692b5cac51287075cec7141216acd875bb10",
+      "contentHash": "52cb929ec37b390b642951f8f86f59715d021f05c7dfb86656aefb82e96f55f6",
       "functions": [
         {
           "name": "SearchCombobox",
@@ -98531,7 +98736,7 @@
       "exports": [
         "SearchCombobox"
       ],
-      "totalLines": 83,
+      "totalLines": 82,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/seo/JsonLd.jsx": {
@@ -98782,37 +98987,67 @@
       "totalLines": 3,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/widgets/app-shell/Header.jsx": {
-      "filePath": "frontend/src/widgets/app-shell/Header.jsx",
-      "contentHash": "205452b0cb5a39c617d45c6d77b2024bf86df88056d84c1b3faf412f3e9a6cfe",
+    "frontend/src/widgets/app-shell/Footer.jsx": {
+      "filePath": "frontend/src/widgets/app-shell/Footer.jsx",
+      "contentHash": "433b15da9ed042cf71fc81b36638c993de355ce96a1af64fd3095a26198685bc",
       "functions": [
         {
-          "name": "deriveRoute",
-          "params": [
-            "pathname"
-          ],
-          "exported": false,
-          "lineCount": 11
-        },
-        {
-          "name": "useNow",
-          "params": [],
-          "exported": false,
-          "lineCount": 8
-        },
-        {
-          "name": "Header",
+          "name": "Footer",
           "params": [],
           "exported": true,
-          "lineCount": 163
+          "lineCount": 42
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/shared/ui/primitives/theme-toggle",
+          "source": "react",
           "specifiers": [
-            "ThemeToggle"
+            "useMemo"
+          ]
+        },
+        {
+          "source": "@/shared/providers/ModalContext",
+          "specifiers": [
+            "useModal"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ShieldCheck"
+          ]
+        }
+      ],
+      "exports": [
+        "Footer"
+      ],
+      "totalLines": 49,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/widgets/app-shell/Header.jsx": {
+      "filePath": "frontend/src/widgets/app-shell/Header.jsx",
+      "contentHash": "259adef51cecdaec79a7eca9de16dabe1354941839a0862f33b44bf6af2d87f7",
+      "functions": [
+        {
+          "name": "Header",
+          "params": [],
+          "exported": true,
+          "lineCount": 307
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/shared/auth/AuthContext",
+          "specifiers": [
+            "useAuth"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
           ]
         },
         {
@@ -98835,29 +99070,41 @@
           ]
         },
         {
-          "source": "@/shared/auth/AuthContext",
+          "source": "@/shared/ui/primitives/popover",
           "specifiers": [
-            "useAuth"
+            "Popover",
+            "PopoverContent",
+            "PopoverTrigger"
           ]
         },
         {
-          "source": "@/shared/lib/utils",
+          "source": "@/shared/ui/primitives/theme-toggle",
           "specifiers": [
-            "cn"
+            "ThemeToggle"
+          ]
+        },
+        {
+          "source": "@/shared/providers/ThemeProvider",
+          "specifiers": [
+            "useTheme"
           ]
         },
         {
           "source": "lucide-react",
           "specifiers": [
+            "Bell",
+            "Building2",
+            "Coins",
+            "Landmark",
+            "LayoutGrid",
             "LogOut",
-            "Menu",
+            "Moon",
+            "PieChart",
+            "Search",
+            "StickyNote",
+            "Sun",
+            "TrendingUp",
             "UserCircle"
-          ]
-        },
-        {
-          "source": "next/image",
-          "specifiers": [
-            "Image"
           ]
         },
         {
@@ -98869,13 +99116,15 @@
         {
           "source": "next/navigation",
           "specifiers": [
-            "usePathname"
+            "usePathname",
+            "useRouter"
           ]
         },
         {
           "source": "react",
           "specifiers": [
             "useEffect",
+            "useMemo",
             "useState"
           ]
         }
@@ -98883,34 +99132,50 @@
       "exports": [
         "Header"
       ],
-      "totalLines": 238,
+      "totalLines": 446,
       "hasStructuralAnalysis": true
     },
     "frontend/src/widgets/app-shell/MainLayout.jsx": {
       "filePath": "frontend/src/widgets/app-shell/MainLayout.jsx",
-      "contentHash": "751143e51277ba7d5e8f798d304f0ee0252abacab5960e3a7604e4ad53687a9f",
+      "contentHash": "d23b64819bb6f37d90ee6f2867c30b11234f15b6bda89c9ffbb02584749a4862",
       "functions": [
         {
           "name": "MainLayout",
           "params": [],
           "exported": true,
-          "lineCount": 55
+          "lineCount": 54
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/shared/ui/primitives/sheet",
+          "source": "@/shared/api/client",
           "specifiers": [
-            "Sheet",
-            "SheetContent",
-            "SheetTitle"
+            "authAPI"
           ]
         },
         {
-          "source": "react",
+          "source": "@/shared/auth/AuthContext",
           "specifiers": [
-            "useState"
+            "useAuth"
+          ]
+        },
+        {
+          "source": "@/shared/ui/brand/cointrack-sky-background",
+          "specifiers": [
+            "CoinTrackSkyBackground"
+          ]
+        },
+        {
+          "source": "@/shared/ui/data-display/pending-verification-banner",
+          "specifiers": [
+            "PendingVerificationBanner"
+          ]
+        },
+        {
+          "source": "./Footer",
+          "specifiers": [
+            "Footer"
           ]
         },
         {
@@ -98924,66 +99189,36 @@
           "specifiers": [
             "Sidebar"
           ]
-        },
-        {
-          "source": "@/shared/ui/data-display/pending-verification-banner",
-          "specifiers": [
-            "PendingVerificationBanner"
-          ]
-        },
-        {
-          "source": "@/shared/auth/AuthContext",
-          "specifiers": [
-            "useAuth"
-          ]
-        },
-        {
-          "source": "@/shared/api/client",
-          "specifiers": [
-            "authAPI"
-          ]
         }
       ],
       "exports": [
         "MainLayout"
       ],
-      "totalLines": 71,
+      "totalLines": 65,
       "hasStructuralAnalysis": true
     },
     "frontend/src/widgets/app-shell/Sidebar.jsx": {
       "filePath": "frontend/src/widgets/app-shell/Sidebar.jsx",
-      "contentHash": "833d1a6dc87f31f3aba7e01f536445fdd7e0fe12d0beb14c32f2d50bfbbe3139",
+      "contentHash": "a1b568a2b29c10ebb260374cc28da4454263fc56a350f1774a335e9f5879c03a",
       "functions": [
         {
-          "name": "isActive",
+          "name": "isItemActive",
           "params": [
             "href",
             "pathname"
           ],
           "exported": false,
-          "lineCount": 2
-        },
-        {
-          "name": "NavRow",
-          "params": [],
-          "exported": false,
-          "lineCount": 62
+          "lineCount": 6
         },
         {
           "name": "Sidebar",
           "params": [],
           "exported": true,
-          "lineCount": 137
+          "lineCount": 97
         }
       ],
       "classes": [],
       "imports": [
-        {
-          "source": "@/shared/auth/AuthContext",
-          "specifiers": [
-            "useAuth"
-          ]
-        },
         {
           "source": "@/features/brokers",
           "specifiers": [
@@ -98999,25 +99234,11 @@
         {
           "source": "lucide-react",
           "specifiers": [
-            "Calculator",
-            "LayoutDashboard",
+            "Home",
             "Link2",
-            "LogOut",
+            "SlidersHorizontal",
             "StickyNote",
-            "TrendingUp",
-            "User",
-            "Building2",
-            "Landmark",
-            "PiggyBank",
-            "Coins",
-            "PieChart",
-            "PenTool"
-          ]
-        },
-        {
-          "source": "next/image",
-          "specifiers": [
-            "Image"
+            "User"
           ]
         },
         {
@@ -99031,37 +99252,32 @@
           "specifiers": [
             "usePathname"
           ]
-        },
-        {
-          "source": "react",
-          "specifiers": [
-            "useCallback"
-          ]
         }
       ],
       "exports": [
         "Sidebar"
       ],
-      "totalLines": 254,
+      "totalLines": 157,
       "hasStructuralAnalysis": true
     },
     "frontend/src/widgets/app-shell/index.js": {
       "filePath": "frontend/src/widgets/app-shell/index.js",
-      "contentHash": "dcfb6e711e59af6ef7bbec5777530a2cbba4e6dc19540ce9b1c087350f2415c6",
+      "contentHash": "bbb819083436ec208902a2e59491f7e90236919a0de15d7e8ce7987cfa6677b0",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [
         "Header",
         "MainLayout",
-        "Sidebar"
+        "Sidebar",
+        "Footer"
       ],
       "totalLines": 5,
       "hasStructuralAnalysis": true
     },
     "frontend/src/widgets/broker-status-banner/BrokerStatusBanner.jsx": {
       "filePath": "frontend/src/widgets/broker-status-banner/BrokerStatusBanner.jsx",
-      "contentHash": "786897bf59dce236b09cbce0270db382ae43a2676e10009c27fc8ca2ca16cc50",
+      "contentHash": "afc0745ab302c3858f72c22eb39afb205dc2ca3d935bc8666f996f82e929a3b9",
       "functions": [
         {
           "name": "relativeTime",
@@ -99109,7 +99325,7 @@
       "exports": [
         "BrokerStatusBanner"
       ],
-      "totalLines": 129,
+      "totalLines": 128,
       "hasStructuralAnalysis": true
     },
     "frontend/src/widgets/broker-status-banner/index.js": {
@@ -99137,7 +99353,7 @@
     },
     "frontend/src/widgets/legal-support/ContactSupportDialog.jsx": {
       "filePath": "frontend/src/widgets/legal-support/ContactSupportDialog.jsx",
-      "contentHash": "c8accb470417d73b316d42dcbcfd08170c1711c165a3c374d7e442f8fc2a2f32",
+      "contentHash": "95eed4bb0ecb196c3c69373469ee55a95fe9debc05be369290ca2b3f2be51447",
       "functions": [
         {
           "name": "ContactSupportDialog",
@@ -99229,12 +99445,12 @@
         "ContactDialog",
         "ContactModal"
       ],
-      "totalLines": 198,
+      "totalLines": 197,
       "hasStructuralAnalysis": true
     },
     "frontend/src/widgets/legal-support/LegalHubDialog.jsx": {
       "filePath": "frontend/src/widgets/legal-support/LegalHubDialog.jsx",
-      "contentHash": "6a385770100f68bbab7d97d179e438a16a8ff6014e99e8ffe5aed76bc0d82343",
+      "contentHash": "1270deee9f3dcdb14d04f772d48f2a6d474c594ccc04cc0f49f442e63654944b",
       "functions": [
         {
           "name": "LegalHubDialog",
@@ -99320,7 +99536,7 @@
         "LegalDialog",
         "LegalModals"
       ],
-      "totalLines": 446,
+      "totalLines": 445,
       "hasStructuralAnalysis": true
     },
     "frontend/src/widgets/legal-support/LegalSupportDialogManager.jsx": {
@@ -99359,7 +99575,7 @@
     },
     "frontend/src/widgets/legal-support/index.js": {
       "filePath": "frontend/src/widgets/legal-support/index.js",
-      "contentHash": "d10faf13ff56cafec18a2d03f8d88cafb26f03043d2825fdd9a4792e69d61191",
+      "contentHash": "7e8b8e6d3706d833d13371de794dd9874ff2d799e3401fdacff318f2b2e61fb3",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -99368,7 +99584,7 @@
         "LegalHubDialog",
         "LegalSupportDialogManager"
       ],
-      "totalLines": 5,
+      "totalLines": 4,
       "hasStructuralAnalysis": true
     },
     "frontend/system.css": {
@@ -99581,6 +99797,16 @@
       "totalLines": 1325,
       "hasStructuralAnalysis": false
     },
+    "local/memory/README.md": {
+      "filePath": "local/memory/README.md",
+      "contentHash": "4756abdb237b1b981b3f856b1721df9acd1e4c69d482c1f2f654251f4ce3286f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 24,
+      "hasStructuralAnalysis": false
+    },
     "local/memory/auth_design_system.md": {
       "filePath": "local/memory/auth_design_system.md",
       "contentHash": "c488c17bc69e64c006597b5c4243b2535ff410e56e7124707ffc90541a39904d",
@@ -99589,6 +99815,26 @@
       "imports": [],
       "exports": [],
       "totalLines": 40,
+      "hasStructuralAnalysis": false
+    },
+    "local/memory/dashboard_and_auth_session_recovery.md": {
+      "filePath": "local/memory/dashboard_and_auth_session_recovery.md",
+      "contentHash": "85f08e65afaa288dc7cae60e2e7c45e9f7ebdb89155dd1438fbb0920535e0d0b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 73,
+      "hasStructuralAnalysis": false
+    },
+    "local/memory/postman_api_ecosystem.md": {
+      "filePath": "local/memory/postman_api_ecosystem.md",
+      "contentHash": "587bdfb4d708bb5c65edf5b086e38531b8e24016b5d17f04ae5920b175627c97",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 103,
       "hasStructuralAnalysis": false
     },
     "local/rules/01-inventory-readmes-config.md": {
@@ -99633,23 +99879,267 @@
     },
     "postman/CoinTrack_API_Collection.json": {
       "filePath": "postman/CoinTrack_API_Collection.json",
-      "contentHash": "d66bc930c73ea674ed9a3dd448f4428e906793f89846506185ddb88c9b3f8cb3",
+      "contentHash": "4d92a5c381435f9a3a971dae8132dcaa6d276cc81563d2c1219e4c49b2d6ae3f",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 1593,
+      "totalLines": 12328,
+      "hasStructuralAnalysis": false
+    },
+    "postman/CoinTrack_E2E_Workflow.json": {
+      "filePath": "postman/CoinTrack_E2E_Workflow.json",
+      "contentHash": "932f6a30d6de3f4937c7af9803d9915ef2a39228469b989c63338a9b0acaac64",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2234,
       "hasStructuralAnalysis": false
     },
     "postman/CoinTrack_Local_Environment.json": {
       "filePath": "postman/CoinTrack_Local_Environment.json",
-      "contentHash": "4932b6e76a86c8d67481e38ea724b0f6fb1855ef2ca775101b6dc78b1dd18a2e",
+      "contentHash": "2db142aa8ce04dfce8d3a5dae2d75e21ea87451238bb5dec640296da182f462e",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 73,
+      "totalLines": 175,
       "hasStructuralAnalysis": false
+    },
+    "postman/CoinTrack_Staging_Environment.json": {
+      "filePath": "postman/CoinTrack_Staging_Environment.json",
+      "contentHash": "c59cd2b561169c069f75b3d4461138ab8ac560f23fe0ddea9a57aa2c7bfcb48b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 175,
+      "hasStructuralAnalysis": false
+    },
+    "postman/README.md": {
+      "filePath": "postman/README.md",
+      "contentHash": "93ba51b77c16191e09a375527d560d1d107d04cbd54086972e8f8c7125a24b54",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 291,
+      "hasStructuralAnalysis": false
+    },
+    "postman/build_postman_suite.py": {
+      "filePath": "postman/build_postman_suite.py",
+      "contentHash": "2206ad0e92f55fac98c2e2b383ebfb8e0d8fe0485bfd2d821cf253209922c043",
+      "functions": [
+        {
+          "name": "get_folder_00_health",
+          "params": [],
+          "exported": true,
+          "lineCount": 43
+        },
+        {
+          "name": "get_folder_01_auth",
+          "params": [],
+          "exported": true,
+          "lineCount": 127
+        },
+        {
+          "name": "get_folder_02_mfa",
+          "params": [],
+          "exported": true,
+          "lineCount": 117
+        },
+        {
+          "name": "get_folder_03_email",
+          "params": [],
+          "exported": true,
+          "lineCount": 124
+        },
+        {
+          "name": "get_folder_04_user",
+          "params": [],
+          "exported": true,
+          "lineCount": 56
+        },
+        {
+          "name": "get_folder_05_portfolio",
+          "params": [],
+          "exported": true,
+          "lineCount": 234
+        },
+        {
+          "name": "get_folder_06_mutual_funds",
+          "params": [],
+          "exported": true,
+          "lineCount": 581
+        },
+        {
+          "name": "get_folder_07_epf",
+          "params": [],
+          "exported": true,
+          "lineCount": 114
+        },
+        {
+          "name": "get_folder_08_ppf",
+          "params": [],
+          "exported": true,
+          "lineCount": 115
+        },
+        {
+          "name": "get_folder_09_fixed_deposits",
+          "params": [],
+          "exported": true,
+          "lineCount": 141
+        },
+        {
+          "name": "get_folder_10_gold_silver",
+          "params": [],
+          "exported": true,
+          "lineCount": 171
+        },
+        {
+          "name": "get_folder_11_notes",
+          "params": [],
+          "exported": true,
+          "lineCount": 58
+        },
+        {
+          "name": "get_folder_12_calculators",
+          "params": [],
+          "exported": true,
+          "lineCount": 401
+        },
+        {
+          "name": "build_master_collection",
+          "params": [],
+          "exported": true,
+          "lineCount": 75
+        },
+        {
+          "name": "build_e2e_workflow_collection",
+          "params": [],
+          "exported": true,
+          "lineCount": 636
+        },
+        {
+          "name": "build_environment",
+          "params": [
+            "name",
+            "base_url",
+            "is_staging"
+          ],
+          "exported": true,
+          "lineCount": 47
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "generate_postman",
+          "specifiers": [
+            "make_request",
+            "make_test_script",
+            "COLLECTION_PRE_REQUEST_SCRIPT",
+            "COLLECTION_TEST_SCRIPT",
+            "VISUALIZER_PORTFOLIO_SUMMARY",
+            "VISUALIZER_HOLDINGS",
+            "VISUALIZER_MF_DASHBOARD",
+            "VISUALIZER_EPF_SUMMARY",
+            "VISUALIZER_PPF_SUMMARY",
+            "VISUALIZER_FD_SUMMARY",
+            "VISUALIZER_GOLD_SILVER_SUMMARY",
+            "VISUALIZER_CALCULATOR_SIP",
+            "VISUALIZER_CALCULATOR_EMI"
+          ]
+        }
+      ],
+      "exports": [
+        "get_folder_00_health",
+        "get_folder_01_auth",
+        "get_folder_02_mfa",
+        "get_folder_03_email",
+        "get_folder_04_user",
+        "get_folder_05_portfolio",
+        "get_folder_06_mutual_funds",
+        "get_folder_07_epf",
+        "get_folder_08_ppf",
+        "get_folder_09_fixed_deposits",
+        "get_folder_10_gold_silver",
+        "get_folder_11_notes",
+        "get_folder_12_calculators",
+        "build_master_collection",
+        "build_e2e_workflow_collection",
+        "build_environment"
+      ],
+      "totalLines": 3160,
+      "hasStructuralAnalysis": true
+    },
+    "postman/generate_postman.py": {
+      "filePath": "postman/generate_postman.py",
+      "contentHash": "3ee40bb4eb9964a4eafb26ea03439b6f1a8ee81d17f276fdd2459a332867afe3",
+      "functions": [
+        {
+          "name": "make_test_script",
+          "params": [
+            "status_code",
+            "checks",
+            "extra_script",
+            "visualizer_script"
+          ],
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "make_request",
+          "params": [
+            "name",
+            "method",
+            "url_path",
+            "body",
+            "query",
+            "path_vars",
+            "description",
+            "test_script",
+            "pre_script",
+            "auth_override"
+          ],
+          "exported": true,
+          "lineCount": 73
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        }
+      ],
+      "exports": [
+        "make_test_script",
+        "make_request"
+      ],
+      "totalLines": 821,
+      "hasStructuralAnalysis": true
     },
     "restart-dev.sh": {
       "filePath": "restart-dev.sh",
