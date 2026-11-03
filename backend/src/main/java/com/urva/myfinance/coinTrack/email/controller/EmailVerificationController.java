@@ -82,11 +82,22 @@ public class EmailVerificationController {
         String oldEmail = user.getEmail();
         String newEmail = emailToken.getNewEmail();
 
+        // Guard against race condition: check if newEmail was taken by another user
+        User existingUserWithEmail = userRepository.findByEmail(newEmail);
+        if (existingUserWithEmail != null && !existingUserWithEmail.getId().equals(user.getId())) {
+          user.setPendingEmail(null);
+          userRepository.save(user);
+          emailTokenService.markUsed(emailToken.getId());
+          return ResponseEntity.badRequest()
+              .body(ApiResponse.error("Email address has already been claimed by another account."));
+        }
+
         // Update email
         user.setEmail(newEmail);
         user.setEmailVerified(true);
         user.setEmailVerifiedAt(LocalDateTime.now());
         user.setPendingEmail(null);
+        user.setPendingEmailExpiresAt(null);
         userRepository.save(user);
 
         // Mark token as used

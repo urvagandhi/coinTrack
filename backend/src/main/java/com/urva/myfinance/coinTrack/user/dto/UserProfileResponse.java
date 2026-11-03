@@ -1,5 +1,6 @@
 package com.urva.myfinance.coinTrack.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.urva.myfinance.coinTrack.user.model.AuthProvider;
 import com.urva.myfinance.coinTrack.user.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +17,8 @@ public record UserProfileResponse(
     String username,
     String name,
     String email,
+    String pendingEmail,
+    java.time.LocalDateTime pendingEmailExpiresAt,
     String phoneNumber,
     LocalDate dateOfBirth,
     String bio,
@@ -27,12 +30,19 @@ public record UserProfileResponse(
     boolean totpEnabled,
     boolean totpVerified) {
 
+  @JsonProperty("isEmailVerified")
+  public boolean isEmailVerified() {
+    return emailVerified;
+  }
+
   public static UserProfileResponse from(User user) {
     return new UserProfileResponse(
         user.getId(),
         user.getUsername(),
         user.getName(),
         user.getEmail(),
+        user.getPendingEmail(),
+        user.getPendingEmailExpiresAt(),
         user.getPhoneNumber(),
         user.getDateOfBirth(),
         user.getBio(),

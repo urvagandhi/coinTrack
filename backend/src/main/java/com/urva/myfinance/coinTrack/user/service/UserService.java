@@ -124,7 +124,8 @@ public class UserService {
       throw new RuntimeException("Username already exists. Please choose a different username.");
     }
 
-    boolean emailExists = cleanEmail != null && userRepository.existsByEmail(cleanEmail);
+    boolean emailExists = cleanEmail != null
+        && (userRepository.existsByEmail(cleanEmail) || isPendingEmailActive(cleanEmail));
     boolean phoneExists = normalizedPhone != null
         && !normalizedPhone.isEmpty()
         && userRepository.existsByPhoneNumber(normalizedPhone);
@@ -455,6 +456,10 @@ public class UserService {
     return userRepository.save(existing);
   }
 
+  public User saveUser(User user) {
+    return userRepository.save(user);
+  }
+
   @SuppressWarnings("null")
   public void changePassword(String userId, String oldPassword, String newPassword) {
     User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
@@ -623,6 +628,16 @@ public class UserService {
     } catch (Exception e) {
       logger.error("Failed to send registration emails: {}", e.getMessage());
     }
+  }
+
+  private boolean isPendingEmailActive(String email) {
+    if (email == null || email.trim().isEmpty())
+      return false;
+    return userRepository
+        .findOptionalByPendingEmail(email.trim().toLowerCase())
+        .map(u -> u.getPendingEmailExpiresAt() == null
+            || u.getPendingEmailExpiresAt().isAfter(java.time.LocalDateTime.now()))
+        .orElse(false);
   }
 
   private String normalizePhoneNumber(String input) {

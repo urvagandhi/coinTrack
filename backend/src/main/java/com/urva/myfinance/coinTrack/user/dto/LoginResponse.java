@@ -65,6 +65,10 @@ public class LoginResponse {
   /** Indicates if the OAuth user has completed their profile (username choice, name, etc.). */
   private Boolean profileComplete;
 
+  /** Indicates if user has verified their email address. */
+  private Boolean emailVerified;
+  private Boolean isEmailVerified;
+
   /** Default constructor for JSON deserialization. */
   public LoginResponse() {}
 
@@ -225,6 +229,24 @@ public class LoginResponse {
 
   public void setProfileComplete(Boolean profileComplete) {
     this.profileComplete = profileComplete;
+  }
+
+  public Boolean isEmailVerified() {
+    return isEmailVerified != null ? isEmailVerified : emailVerified;
+  }
+
+  public Boolean getEmailVerified() {
+    return emailVerified != null ? emailVerified : isEmailVerified;
+  }
+
+  public void setEmailVerified(Boolean emailVerified) {
+    this.emailVerified = emailVerified;
+    this.isEmailVerified = emailVerified;
+  }
+
+  public void setIsEmailVerified(Boolean isEmailVerified) {
+    this.isEmailVerified = isEmailVerified;
+    this.emailVerified = isEmailVerified;
   }
 
   @Override

@@ -189,6 +189,18 @@ public class EmailTokenService {
     logger.info("Invalidated all email tokens for user: userId={}", userId);
   }
 
+  /**
+   * Invalidate all tokens for a user with a specific purpose (e.g., cancelling pending email change).
+   *
+   * @param userId User ID to invalidate tokens for
+   * @param purpose Token purpose (EMAIL_CHANGE_VERIFY, etc.)
+   */
+  public void invalidateAllForUserAndPurpose(String userId, String purpose) {
+    repository.deleteAllByUserIdAndPurpose(userId, purpose);
+    logger.info(
+        "Invalidated all email tokens for user: userId={}, purpose={}", userId, purpose);
+  }
+
   /** Create a signed JWT token. */
   private String createJwt(String tokenId, String userId, String purpose, LocalDateTime expiresAt) {
     SecretKey key = Keys.hmacShaKeyFor(emailConfig.getMagicLinkSecret().getBytes());

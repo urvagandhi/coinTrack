@@ -20,7 +20,9 @@ public record UpdateProfileRequest(
     @Email(message = "Please provide a valid email address")
         @Size(max = 100, message = "Email must not exceed 100 characters")
         String email,
-    @Pattern(regexp = "^\\+91\\d{10}$", message = "Phone number must be +91 followed by 10 digits")
+    @Pattern(
+        regexp = "^$|^(\\+91)?[6-9]\\d{9}$",
+        message = "Phone number must be +91 followed by 10 digits, or 10 digits starting with 6-9")
         String phoneNumber,
     LocalDate dateOfBirth,
     @Size(max = 500, message = "Bio must not exceed 500 characters") String bio,

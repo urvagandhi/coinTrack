@@ -236,6 +236,7 @@ public class UserAuthenticationService {
     response.setUserId(savedUser.getId());
     response.setUsername(savedUser.getUsername());
     response.setBackupCodes(backupCodes);
+    response.setEmailVerified(savedUser.isEmailVerified());
     response.setMessage("Registration complete! Welcome to CoinTrack.");
 
     logger.info("Registration completed with TOTP for user: {}", savedUser.getUsername());
@@ -262,6 +263,7 @@ public class UserAuthenticationService {
     response.setLocation(user.getLocation());
     response.setRequireTotpSetup(false);
     response.setProfileComplete(true);
+    response.setEmailVerified(user.isEmailVerified());
     return response;
   }
 

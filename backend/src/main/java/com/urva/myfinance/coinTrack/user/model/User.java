@@ -76,6 +76,8 @@ public class User {
 
   private String pendingEmail;
 
+  private LocalDateTime pendingEmailExpiresAt;
+
   // ── OAuth 2.0 / SSO ─────────────────────────────────────────────
   @Builder.Default private AuthProvider authProvider = AuthProvider.LOCAL;
 

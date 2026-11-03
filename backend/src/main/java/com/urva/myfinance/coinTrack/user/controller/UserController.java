@@ -76,6 +76,13 @@ public class UserController {
       User user = userService.findUserByUsername(username);
 
       if (user != null) {
+        if (user.getPendingEmail() != null
+            && user.getPendingEmailExpiresAt() != null
+            && user.getPendingEmailExpiresAt().isBefore(java.time.LocalDateTime.now().minusHours(24))) {
+          user.setPendingEmail(null);
+          user.setPendingEmailExpiresAt(null);
+          user = userService.saveUser(user);
+        }
         user.setPassword(null);
         return ResponseEntity.ok(ApiResponse.success(UserProfileResponse.from(user)));
       }

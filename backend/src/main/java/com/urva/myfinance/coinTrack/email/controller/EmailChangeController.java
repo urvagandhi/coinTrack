@@ -10,6 +10,7 @@ import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -84,17 +85,29 @@ public class EmailChangeController {
           .body(ApiResponse.error("New email must be different from current email"));
     }
 
-    // Check if new email is already in use
-    if (userRepository.findByEmail(newEmail) != null) {
+    // Check if new email is already in use or already pending change by another user
+    User existingUserWithEmail = userRepository.findByEmail(newEmail);
+    java.util.Optional<User> userWithPending = userRepository.findOptionalByPendingEmail(newEmail);
+    boolean pendingConflict = userWithPending.isPresent()
+        && !userWithPending.get().getId().equals(user.getId())
+        && (userWithPending.get().getPendingEmailExpiresAt() == null
+            || userWithPending.get().getPendingEmailExpiresAt().isAfter(java.time.LocalDateTime.now()));
+
+    if ((existingUserWithEmail != null && !existingUserWithEmail.getId().equals(user.getId()))
+        || pendingConflict) {
       // Return neutral message to prevent user enumeration
-      logger.info("Email change requested for already-used email: {}", newEmail);
+      logger.info("Email change requested for already-used or actively pending email: {}", newEmail);
       return ResponseEntity.ok(
           ApiResponse.success(
               Map.of("message", "If this email is available, a verification link has been sent")));
     }
 
-    // Store pending email
+    LocalDateTime expiresAt =
+        LocalDateTime.now().plusMinutes(emailConfig.getMagicLinkExpiryMinutes());
+
+    // Store pending email and expiry
     user.setPendingEmail(newEmail);
+    user.setPendingEmailExpiresAt(expiresAt);
     userRepository.save(user);
 
     // Create token and send to NEW email
@@ -114,5 +127,36 @@ public class EmailChangeController {
 
     return ResponseEntity.ok(
         ApiResponse.success(Map.of("message", "Verification link sent to new email address")));
+  }
+
+  /** Cancel a pending email change request. */
+  @Operation(summary = "Cancel pending email change request")
+  @PostMapping("/change/cancel")
+  public ResponseEntity<?> cancelEmailChange(@AuthenticationPrincipal UserDetails userDetails) {
+    if (userDetails == null) {
+      return ResponseEntity.status(401).body(ApiResponse.error("Authentication required"));
+    }
+
+    User user = userRepository.findByUsername(userDetails.getUsername());
+    if (user == null) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("User not found"));
+    }
+
+    if (user.getPendingEmail() == null) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("No pending email change to cancel"));
+    }
+
+    String cancelledEmail = user.getPendingEmail();
+    user.setPendingEmail(null);
+    user.setPendingEmailExpiresAt(null);
+    userRepository.save(user);
+
+    // Invalidate any active tokens for email change
+    emailTokenService.invalidateAllForUserAndPurpose(
+        user.getId(), EmailToken.PURPOSE_EMAIL_CHANGE_VERIFY);
+
+    logger.info("Email change cancelled: userId={}, cancelledEmail={}", user.getId(), cancelledEmail);
+    return ResponseEntity.ok(
+        ApiResponse.success(Map.of("message", "Pending email change cancelled successfully")));
   }
 }

@@ -48,6 +48,7 @@ class LoginResponseTest {
     response.setRefreshToken("refresh-abc");
     response.setBackupCodes(List.of("AAAA-BBBB", "CCCC-DDDD"));
     response.setProfileComplete(true);
+    response.setEmailVerified(true);
 
     assertEquals("jwt-token", response.getToken());
     assertEquals("uid-123", response.getUserId());
@@ -64,6 +65,8 @@ class LoginResponseTest {
     assertEquals("refresh-abc", response.getRefreshToken());
     assertEquals(List.of("AAAA-BBBB", "CCCC-DDDD"), response.getBackupCodes());
     assertTrue(response.getProfileComplete());
+    assertTrue(response.getEmailVerified());
+    assertTrue(response.isEmailVerified());
   }
 
   @Test
