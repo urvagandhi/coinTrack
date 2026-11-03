@@ -1211,3 +1211,20 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
     border-color: hsl(var(--hairline));
   }
 }
+
+/* ───────────────────────────────────────────────────────────────
+   Sonner Toast Customization
+   Ensure close button is cleanly positioned inside on top-right.
+   ─────────────────────────────────────────────────────────────── */
+[data-sonner-toaster] {
+  --toast-close-button-start: unset !important;
+  --toast-close-button-end: 14px !important;
+  --toast-close-button-transform: none !important;
+}
+
+[data-sonner-toast] [data-close-button] {
+  left: auto !important;
+  right: 14px !important;
+  top: 14px !important;
+  transform: none !important;
+}

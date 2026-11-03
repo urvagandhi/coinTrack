@@ -277,16 +277,29 @@ export function TwoFactorSetupScreen({
       ? `otpauth://totp/coinTrack:${userEmail}?secret=${secretKey}&issuer=coinTrack`
       : '');
 
+  // Resilient secret resolution for manual entry (from prop or parsed from QR URI)
+  const displaySecret = useMemo(() => {
+    if (secretKey && typeof secretKey === 'string' && secretKey.trim()) {
+      return secretKey.trim();
+    }
+    if (generatedQrUri && typeof generatedQrUri === 'string') {
+      const match = generatedQrUri.match(/[?&]secret=([A-Za-z0-9]+)/i);
+      if (match && match[1]) return match[1];
+    }
+    return '';
+  }, [secretKey, generatedQrUri]);
+
   const activeBackupCodes = useMemo(
     () => (Array.isArray(backupCodes) ? backupCodes : []),
     [backupCodes]
   );
 
   const handleCopySecret = useCallback(() => {
-    navigator.clipboard.writeText(secretKey);
+    if (!displaySecret) return;
+    navigator.clipboard.writeText(displaySecret);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [secretKey]);
+  }, [displaySecret]);
 
   const handleCopyBackupCodes = useCallback(() => {
     navigator.clipboard.writeText(activeBackupCodes.join('\n'));
@@ -453,13 +466,19 @@ CoinTrack - Your Portfolio, Secured`;
                 <div className='relative w-36 h-36 mb-4'>
                   <div className='absolute -inset-0.5 bg-gradient-to-br from-emerald-500/30 to-blue-500/30 rounded-2xl blur-sm opacity-50 group-hover:opacity-100 transition duration-500' />
                   <div className='relative w-full h-full bg-white rounded-xl p-3 shadow-md ring-1 ring-black/5 overflow-hidden flex items-center justify-center'>
-                    <QRCode
-                      value={generatedQrUri}
-                      size={120}
-                      level='M'
-                      fgColor='#000000'
-                      bgColor='#ffffff'
-                    />
+                    {generatedQrUri ? (
+                      <QRCode
+                        value={generatedQrUri}
+                        size={120}
+                        level='M'
+                        fgColor='#000000'
+                        bgColor='#ffffff'
+                      />
+                    ) : (
+                      <div className='w-full h-full flex flex-col items-center justify-center gap-2'>
+                        <Loader2 className='size-6 animate-spin text-emerald-600' />
+                      </div>
+                    )}
                     {/* Animated Scanner Line */}
                     <div className='absolute left-0 top-0 w-full h-[2px] bg-emerald-500/80 shadow-[0_0_12px_rgba(16,185,129,0.8)] z-20 animate-[scan_2s_ease-in-out_infinite]' />
                   </div>
@@ -467,13 +486,22 @@ CoinTrack - Your Portfolio, Secured`;
 
                 <div className='w-full relative z-10'>
                   <div className='flex items-center gap-2 bg-background border border-border/60 rounded-[14px] p-1 shadow-sm'>
-                    <div className='flex-1 font-mono text-[11px] sm:text-xs font-semibold tracking-[0.15em] text-center text-foreground px-2 py-1 truncate'>
-                      {secretKey}
+                    <div
+                      onClick={handleCopySecret}
+                      title='Click to copy manual key'
+                      className='flex-1 font-mono text-[11px] sm:text-xs font-semibold tracking-[0.15em] text-center text-foreground px-2 py-1 truncate select-all cursor-pointer hover:text-emerald-500 transition-colors'
+                    >
+                      {displaySecret || (
+                        <span className='text-muted-foreground/40 font-sans tracking-normal text-xs'>
+                          Generating secret key…
+                        </span>
+                      )}
                     </div>
                     <Button
                       type='button'
                       variant='ghost'
                       onClick={handleCopySecret}
+                      disabled={!displaySecret}
                       className={cn(
                         'shrink-0 h-8 px-2.5 rounded-xl transition-colors',
                         copied
@@ -709,4 +737,3 @@ CoinTrack - Your Portfolio, Secured`;
 }
 
 export default TwoFactorSetupScreen;
-

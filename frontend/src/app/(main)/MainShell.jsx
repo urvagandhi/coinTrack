@@ -10,5 +10,3 @@ export default function MainShell({ children }) {
     </AuthGuard>
   );
 }
-
-

@@ -1,7 +1,11 @@
 'use client';
 
 import { usePortfolioSummary } from '@/features/portfolio';
-import { formatCurrency, formatDateTime, formatPercent } from '@/shared/formatters';
+import {
+  formatCurrency,
+  formatDateTime,
+  formatPercent,
+} from '@/shared/formatters';
 import { cn } from '@/shared/lib/utils';
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, X } from 'lucide-react';
 import { useState } from 'react';
@@ -196,4 +200,3 @@ export function PortfolioSummary() {
     </div>
   );
 }
-

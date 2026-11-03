@@ -13,6 +13,8 @@ export const createEntitlementModel = (raw = {}) => ({
   isPro: raw.tier === TIERS.PRO || raw.tier === TIERS.ENTERPRISE,
   features: Array.isArray(raw.features) ? raw.features : [],
   maxBrokers: raw.maxBrokers ?? (raw.tier === TIERS.PRO ? 10 : 1),
-  canExportTaxReports: Boolean(raw.canExportTaxReports ?? (raw.tier === TIERS.PRO)),
-  canAccessApi: Boolean(raw.canAccessApi ?? (raw.tier === TIERS.ENTERPRISE)),
+  canExportTaxReports: Boolean(
+    raw.canExportTaxReports ?? raw.tier === TIERS.PRO
+  ),
+  canAccessApi: Boolean(raw.canAccessApi ?? raw.tier === TIERS.ENTERPRISE),
 });

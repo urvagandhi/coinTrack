@@ -1,9 +1,10 @@
 'use client';
 
+import { tokenManager } from '@/shared/api/client';
 import { useAuth } from '@/shared/auth/AuthContext';
 import { motion } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const PUBLIC_ROUTES = [
   '/',
@@ -20,17 +21,42 @@ const AUTH_ONLY_ROUTES = ['/login', '/register'];
 const CALCULATOR_PREFIX = '/calculators';
 
 export default function AuthGuard({ children }) {
-  const { isAuthenticated, isInitializing } = useAuth();
+  const { isAuthenticated, isInitializing, refreshUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [isRecoveringSession, setIsRecoveringSession] = useState(false);
 
   const isPublic =
     PUBLIC_ROUTES.includes(pathname) || pathname.startsWith(CALCULATOR_PREFIX);
 
+  const storedToken =
+    typeof window !== 'undefined' ? tokenManager.getToken() : null;
+  const hasValidStoredToken =
+    !!storedToken && !tokenManager.isTokenExpired(storedToken);
+
   useEffect(() => {
     if (isInitializing) return;
 
-    if (!isAuthenticated && !isPublic) {
+    // If client memory hasn't hydrated user yet, but a valid token is in storage, recover session
+    if (
+      !isAuthenticated &&
+      hasValidStoredToken &&
+      refreshUser &&
+      !isRecoveringSession
+    ) {
+      setIsRecoveringSession(true);
+      refreshUser().catch(() => {
+        setIsRecoveringSession(false);
+      });
+      return;
+    }
+
+    if (
+      !isAuthenticated &&
+      !isPublic &&
+      !hasValidStoredToken &&
+      !isRecoveringSession
+    ) {
       // Preserve full URL including query params (critical for OAuth callbacks like Zerodha)
       const qs = typeof window !== 'undefined' ? window.location.search : '';
       const fullPath = qs ? `${pathname}${qs}` : pathname;
@@ -41,9 +67,22 @@ export default function AuthGuard({ children }) {
     if (isAuthenticated && AUTH_ONLY_ROUTES.includes(pathname)) {
       router.replace('/dashboard');
     }
-  }, [isAuthenticated, isInitializing, isPublic, pathname, router]);
+  }, [
+    isAuthenticated,
+    isInitializing,
+    isPublic,
+    hasValidStoredToken,
+    isRecoveringSession,
+    pathname,
+    refreshUser,
+    router,
+  ]);
 
-  if (isInitializing) {
+  if (
+    isInitializing ||
+    isRecoveringSession ||
+    (!isAuthenticated && hasValidStoredToken)
+  ) {
     return (
       <div className='fixed inset-0 bg-background flex flex-col items-center justify-center gap-3'>
         <motion.div
@@ -62,4 +101,3 @@ export default function AuthGuard({ children }) {
 
   return children;
 }
-

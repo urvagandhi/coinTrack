@@ -9,6 +9,7 @@ export const createUserModel = (rawUser = {}) => ({
   username: rawUser.username || '',
   role: rawUser.role || 'USER',
   tier: rawUser.tier || 'FREE',
+  emailVerified: Boolean(rawUser.emailVerified ?? rawUser.isEmailVerified),
   isEmailVerified: Boolean(rawUser.isEmailVerified ?? rawUser.emailVerified),
   is2faEnabled: Boolean(rawUser.is2faEnabled ?? rawUser.totpEnabled),
   avatarUrl: rawUser.avatarUrl || null,

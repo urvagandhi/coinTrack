@@ -2,12 +2,14 @@
 
 import { TwoFactorSetupScreen } from '@/features/auth';
 import { tokenManager, totpAPI } from '@/shared/api/client';
+import { useAuth } from '@/shared/auth/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
 function Setup2FAContent() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [isRegistration, setIsRegistration] = useState(false);
   const [tempToken, setTempToken] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,12 +19,15 @@ function Setup2FAContent() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
-    const registrationToken = sessionStorage.getItem('totpSetupToken');
+    const registrationToken =
+      sessionStorage.getItem('totpSetupToken') ||
+      sessionStorage.getItem('registrationTempToken');
     const existingUserToken = sessionStorage.getItem('tempToken');
 
     if (registrationToken) {
       if (tokenManager.isTokenExpired(registrationToken)) {
         sessionStorage.removeItem('totpSetupToken');
+        sessionStorage.removeItem('registrationTempToken');
         sessionStorage.removeItem('totpSetupUsername');
         router.push(
           '/register?error=Registration expired. Please register again.'
@@ -38,6 +43,7 @@ function Setup2FAContent() {
         router.push('/login?error=Session expired. Please login again.');
         return;
       }
+      setTempToken(existingUserToken);
       tokenManager.setToken(existingUserToken);
       setIsRegistration(false);
       setLoading(false);
@@ -53,8 +59,30 @@ function Setup2FAContent() {
         ? await totpAPI.registerSetup(tempToken)
         : await totpAPI.setup(tempToken);
 
-      setSecretKey(data.secret || data.secretKey || '');
-      setQrUri(data.qrCodeUri || data.qrUri || data.qrCodeBase64 || '');
+      const resolvedData = data?.data || data || {};
+      const rawSecret =
+        resolvedData.secret ||
+        resolvedData.secretKey ||
+        resolvedData.secret_key ||
+        resolvedData.totpSecret ||
+        '';
+
+      const rawQr =
+        resolvedData.qrCodeUri ||
+        resolvedData.qrUri ||
+        resolvedData.qr_code_uri ||
+        resolvedData.qrCodeBase64 ||
+        '';
+
+      const secretFromQr =
+        rawQr && typeof rawQr === 'string'
+          ? rawQr.match(/[?&]secret=([A-Za-z0-9]+)/i)?.[1] || ''
+          : '';
+
+      const finalSecret = rawSecret || secretFromQr;
+
+      setSecretKey(finalSecret);
+      setQrUri(rawQr);
     } catch (error) {
       const msg = error.message || '';
       if (
@@ -93,6 +121,9 @@ function Setup2FAContent() {
           if (data.refreshToken) {
             tokenManager.setRefreshToken(data.refreshToken);
           }
+          if (refreshUser) {
+            await refreshUser().catch(() => {});
+          }
         }
         setBackupCodes(data.backupCodes || []);
         return { success: true, backupCodes: data.backupCodes || [] };
@@ -115,7 +146,7 @@ function Setup2FAContent() {
         setIsVerifying(false);
       }
     },
-    [tempToken, isRegistration, router]
+    [tempToken, isRegistration, refreshUser, router]
   );
 
   const handleComplete = useCallback(() => {
@@ -124,11 +155,11 @@ function Setup2FAContent() {
     sessionStorage.removeItem('tempToken');
 
     if (tokenManager.getToken()) {
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } else {
-      router.push('/login?message=Setup%20Complete%20Please%20Login');
+      window.location.href = '/login?message=Setup%20Complete%20Please%20Login';
     }
-  }, [router]);
+  }, []);
 
   if (loading) {
     return (
@@ -165,4 +196,3 @@ export default function Setup2FAPage() {
     </Suspense>
   );
 }
-

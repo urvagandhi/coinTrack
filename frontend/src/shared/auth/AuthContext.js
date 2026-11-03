@@ -54,14 +54,26 @@ function authReducer(state, action) {
         isLoading: action.payload,
         error: action.payload ? null : state.error,
       };
-    case AUTH_ACTIONS.SET_USER:
+    case AUTH_ACTIONS.SET_USER: {
+      const user = action.payload
+        ? {
+            ...action.payload,
+            emailVerified: Boolean(
+              action.payload.emailVerified ?? action.payload.isEmailVerified
+            ),
+            isEmailVerified: Boolean(
+              action.payload.isEmailVerified ?? action.payload.emailVerified
+            ),
+          }
+        : null;
       return {
         ...state,
-        user: action.payload,
-        isAuthenticated: !!action.payload,
+        user,
+        isAuthenticated: !!user,
         isLoading: false,
         error: null,
       };
+    }
     case AUTH_ACTIONS.SET_ERROR:
       return { ...state, error: action.payload, isLoading: false };
     case AUTH_ACTIONS.LOGOUT:
@@ -217,6 +229,12 @@ export function AuthProvider({ children }) {
           phoneNumber: userData.mobile,
           bio: userData.bio,
           location: userData.location,
+          emailVerified: Boolean(
+            userData.emailVerified ?? userData.isEmailVerified
+          ),
+          isEmailVerified: Boolean(
+            userData.isEmailVerified ?? userData.emailVerified
+          ),
         };
 
         tokenManager.setToken(token, true);
@@ -345,6 +363,12 @@ export function AuthProvider({ children }) {
           phoneNumber: userData.mobile,
           bio: userData.bio,
           location: userData.location,
+          emailVerified: Boolean(
+            userData.emailVerified ?? userData.isEmailVerified
+          ),
+          isEmailVerified: Boolean(
+            userData.isEmailVerified ?? userData.emailVerified
+          ),
         };
 
         tokenManager.setToken(token, true);
@@ -390,6 +414,12 @@ export function AuthProvider({ children }) {
           phoneNumber: userData.mobile,
           bio: userData.bio,
           location: userData.location,
+          emailVerified: Boolean(
+            userData.emailVerified ?? userData.isEmailVerified
+          ),
+          isEmailVerified: Boolean(
+            userData.isEmailVerified ?? userData.emailVerified
+          ),
         };
 
         tokenManager.setToken(token, true);
@@ -493,6 +523,12 @@ export function AuthProvider({ children }) {
       phoneNumber: userData.mobile,
       bio: userData.bio,
       location: userData.location,
+      emailVerified: Boolean(
+        userData.emailVerified ?? userData.isEmailVerified
+      ),
+      isEmailVerified: Boolean(
+        userData.isEmailVerified ?? userData.emailVerified
+      ),
     };
     dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
   }, []);
@@ -596,6 +632,9 @@ export function AuthProvider({ children }) {
     verifyRecoveryLogin,
     resetTotp,
     verifyResetTotp,
+    refreshUser: fetchUserProfile,
+    fetchUserProfile,
+    handleTotpLoginSuccess,
     isLoggedIn: state.isAuthenticated,
     userId: state.user?.id,
   };
