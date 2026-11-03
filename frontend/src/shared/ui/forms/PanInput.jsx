@@ -37,4 +37,3 @@ export function PanInput({
 }
 
 export default PanInput;
-

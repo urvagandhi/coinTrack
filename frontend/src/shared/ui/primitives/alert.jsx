@@ -73,4 +73,3 @@ function AlertAction({ className, ...props }) {
 }
 
 export { Alert, AlertTitle, AlertDescription, AlertAction };
-

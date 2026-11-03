@@ -615,4 +615,3 @@ export function AnimatedMailboxIcon({ className, size = 160, ...props }) {
 }
 
 export const AnimatedUnlockIcon = AnimatedMailboxIcon;
-

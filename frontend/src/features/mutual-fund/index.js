@@ -1,6 +1,9 @@
 export { default as LumpsumTab } from './components/LumpsumTab';
 export { default as LumpsumTransactionModal } from './components/LumpsumTransactionModal';
-export { MutualFundView, default as MutualFundViewDefault } from './components/MutualFundView';
+export {
+  MutualFundView,
+  default as MutualFundViewDefault,
+} from './components/MutualFundView';
 export { default as NewSchemeModal } from './components/NewSchemeModal';
 export { default as OverrideUnitsModal } from './components/OverrideUnitsModal';
 export { default as RedemptionModal } from './components/RedemptionModal';
@@ -16,4 +19,3 @@ export { default as ValuationTab } from './components/ValuationTab';
 
 export * from './services/mutualFunds.service';
 export * from './shared/mfCategories';
-

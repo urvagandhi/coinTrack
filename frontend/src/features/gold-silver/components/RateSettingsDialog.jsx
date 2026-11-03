@@ -372,4 +372,3 @@ export default function RateSettingsDialog({ isOpen, onClose, onSaved }) {
     </div>
   );
 }
-

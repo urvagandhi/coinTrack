@@ -410,4 +410,3 @@ export default function SipMandateModal({
     </div>
   );
 }
-

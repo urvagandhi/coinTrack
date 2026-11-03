@@ -36,4 +36,3 @@ export function TabLoadingSkeleton({ rows = 8, columns = 6 }) {
     </div>
   );
 }
-

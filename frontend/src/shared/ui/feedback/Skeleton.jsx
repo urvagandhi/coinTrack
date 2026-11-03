@@ -89,4 +89,3 @@ function SkeletonTableRow({ columns = 5 }) {
 }
 
 export { Skeleton, SkeletonText, SkeletonCard, SkeletonStat, SkeletonTableRow };
-

@@ -207,5 +207,4 @@ export function ZerodhaSetupView() {
   );
 }
 
-
 export default ZerodhaSetupView;

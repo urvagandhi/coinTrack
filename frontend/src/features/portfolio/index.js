@@ -1,4 +1,7 @@
-export { PortfolioView, default as PortfolioViewDefault } from './components/PortfolioView';
+export {
+  PortfolioView,
+  default as PortfolioViewDefault,
+} from './components/PortfolioView';
 export * from './components/HoldingsTab';
 export * from './components/MfHoldingsTab';
 export * from './components/MfInstrumentList';

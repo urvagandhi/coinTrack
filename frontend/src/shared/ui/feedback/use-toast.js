@@ -7,14 +7,27 @@ export const toast = (props, maybeOptions) => {
   if (typeof props === 'string') {
     return sonner(props, maybeOptions);
   }
-  const { title, description, variant, duration, ...opts } = props || {};
+  const {
+    title,
+    description,
+    variant = 'default',
+    duration = 3500,
+    ...opts
+  } = props || {};
+
   const options = { description, duration, ...opts };
 
-  if (variant === 'destructive') {
+  if (variant === 'destructive' || variant === 'error') {
     return sonner.error(title || 'Error', options);
   }
   if (variant === 'success') {
     return sonner.success(title || 'Success', options);
+  }
+  if (variant === 'warning') {
+    return sonner.warning(title || 'Warning', options);
+  }
+  if (variant === 'info') {
+    return sonner.info(title || 'Information', options);
   }
   return sonner(title, options);
 };

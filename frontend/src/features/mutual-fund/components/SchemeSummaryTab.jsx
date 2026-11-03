@@ -367,4 +367,3 @@ export default function SchemeSummaryTab({ onNewScheme, onEditScheme }) {
     </div>
   );
 }
-

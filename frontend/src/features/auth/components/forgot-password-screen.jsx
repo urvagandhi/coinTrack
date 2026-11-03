@@ -5,7 +5,10 @@ import { AuthLayout } from './auth-layout';
 import { AnimatedKeyIcon } from '@/shared/ui/feedback/animated-icons';
 import { SmartAuthInput } from './security-inputs';
 import { Button } from '@/shared/ui/primitives/button';
-import { detectWebmailProvider, openWebmailProvider } from '@/shared/lib/webmail';
+import {
+  detectWebmailProvider,
+  openWebmailProvider,
+} from '@/shared/lib/webmail';
 import {
   AlertCircle,
   ArrowLeft,
@@ -489,4 +492,3 @@ export function ForgotPasswordScreen({
 }
 
 export default ForgotPasswordScreen;
-

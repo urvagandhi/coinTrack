@@ -554,4 +554,3 @@ export default function WithdrawDialog({
     </div>
   );
 }
-

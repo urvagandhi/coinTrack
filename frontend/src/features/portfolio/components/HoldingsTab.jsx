@@ -437,4 +437,3 @@ export function HoldingsTab() {
     </div>
   );
 }
-

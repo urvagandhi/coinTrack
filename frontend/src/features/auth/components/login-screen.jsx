@@ -13,10 +13,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
-import {
-  SmartAuthInput,
-  PasswordStrengthInput,
-} from './security-inputs';
+import { SmartAuthInput, PasswordStrengthInput } from './security-inputs';
 import { Button } from '@/shared/ui/primitives/button';
 import { useDynamicDocumentTitle } from './auth-shared';
 import { AuthLayout } from './auth-layout';
@@ -567,4 +564,3 @@ export function LoginSplitScreen({
 
 export const LoginScreen = LoginSplitScreen;
 export default LoginSplitScreen;
-

@@ -5,7 +5,7 @@ import { ShieldCheck } from 'lucide-react';
 
 export default function BrokersPage() {
   return (
-    <div className='space-y-10'>
+    <div className='space-y-10 pb-8 md:pb-12'>
       <header className='pb-6 border-b border-hairline'>
         <div className='flex items-center gap-3 mb-5'>
           <span className='index-num'>FOLIO·§03</span>

@@ -356,6 +356,7 @@ export const endpoints = {
     verify: '/api/auth/email/verify',
     resend: '/api/auth/email/resend',
     change: '/api/auth/email/change',
+    cancelChange: '/api/auth/email/change/cancel',
   },
   twofa: {
     recovery: '/api/auth/mfa/email-recovery',
@@ -753,6 +754,14 @@ export const emailAPI = {
     const { data } = await api.post(
       endpoints.email.change,
       { newEmail },
+      noRetry
+    );
+    return unwrapResponse(data);
+  },
+  cancelChange: async () => {
+    const { data } = await api.post(
+      endpoints.email.cancelChange,
+      null,
       noRetry
     );
     return unwrapResponse(data);

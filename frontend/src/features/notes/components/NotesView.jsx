@@ -356,7 +356,7 @@ export function NotesView() {
     'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
 
   return (
-    <div className='space-y-8'>
+    <div className='space-y-8 pb-8 md:pb-12'>
       {/* Masthead */}
       <header className='pb-6 border-b border-hairline flex items-end justify-between gap-6'>
         <div className='space-y-3'>
@@ -448,7 +448,7 @@ export function NotesView() {
           )}
         </section>
       ) : (
-        <div className='space-y-8'>
+        <div className='space-y-8 pb-8 md:pb-12'>
           {pinned.length > 0 && (
             <div>
               <div className='flex items-baseline gap-3 mb-4'>
@@ -563,6 +563,4 @@ export function NotesView() {
   );
 }
 
-
 export default NotesView;
-

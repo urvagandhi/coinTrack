@@ -715,4 +715,3 @@ export function SmartAuthInput({
     </div>
   );
 }
-

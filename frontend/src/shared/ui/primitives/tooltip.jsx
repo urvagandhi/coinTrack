@@ -45,4 +45,3 @@ function TooltipContent({ className, sideOffset = 6, children, ...props }) {
 }
 
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
-

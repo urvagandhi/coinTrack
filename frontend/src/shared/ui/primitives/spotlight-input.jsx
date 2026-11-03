@@ -307,4 +307,3 @@ export const SlugInput = forwardRef(function SlugInput(
     </div>
   );
 });
-

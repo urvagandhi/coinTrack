@@ -1,4 +1,7 @@
-export { ProfileView, default as ProfileViewDefault } from './components/ProfileView';
+export {
+  ProfileView,
+  default as ProfileViewDefault,
+} from './components/ProfileView';
 export {
   formatPhoneDisplay,
   normalizeEmail,

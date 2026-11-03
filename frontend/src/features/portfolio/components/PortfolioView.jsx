@@ -87,7 +87,7 @@ export function PortfolioView() {
   const context = getContext();
 
   return (
-    <div className='space-y-8'>
+    <div className='space-y-8 pb-8 md:pb-12'>
       <header className='pb-6 border-b border-hairline flex items-end justify-between gap-6'>
         <div className='space-y-3'>
           <div className='flex items-center gap-3'>

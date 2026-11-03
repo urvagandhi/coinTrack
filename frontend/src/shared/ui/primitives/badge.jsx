@@ -56,4 +56,3 @@ function Badge({ className, variant = 'default', asChild = false, ...props }) {
 }
 
 export { Badge, badgeVariants };
-

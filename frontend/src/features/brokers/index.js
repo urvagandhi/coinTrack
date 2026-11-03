@@ -17,4 +17,3 @@ export * from './angelone/components/AngelOneSetupView';
 export * from './upstox/components/UpstoxCallbackView';
 export * from './upstox/components/UpstoxDashboardView';
 export * from './upstox/components/UpstoxSetupView';
-

@@ -138,7 +138,7 @@ export function MutualFundView() {
   const isTotalProfit = absoluteGain >= 0;
 
   return (
-    <div className='space-y-8'>
+    <div className='space-y-8 pb-8 md:pb-12'>
       {/* HEADER */}
       <header className='pb-6 border-b border-hairline flex flex-col md:flex-row md:items-end justify-between gap-6'>
         <div className='space-y-3'>

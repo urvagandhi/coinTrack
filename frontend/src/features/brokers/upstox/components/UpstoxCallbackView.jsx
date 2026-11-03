@@ -114,5 +114,4 @@ export function UpstoxCallbackView() {
   );
 }
 
-
 export default UpstoxCallbackView;

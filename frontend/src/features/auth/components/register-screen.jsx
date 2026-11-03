@@ -1039,4 +1039,3 @@ export function RegisterSplitScreen({
 
 export const RegisterScreen = RegisterSplitScreen;
 export default RegisterSplitScreen;
-

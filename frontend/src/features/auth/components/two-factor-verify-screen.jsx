@@ -613,4 +613,3 @@ export function TwoFactorVerifyScreen({
 
 export const TwoFactorVerifyScreenAlias = TwoFactorVerifyScreen;
 export default TwoFactorVerifyScreen;
-

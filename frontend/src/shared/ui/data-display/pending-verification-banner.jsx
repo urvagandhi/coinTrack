@@ -6,7 +6,10 @@ import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/primitives/button';
 import { AnimatedWarningIcon } from '@/shared/ui/feedback/animated-icons';
 import { Badge } from '@/shared/ui/primitives/badge';
-import { detectWebmailProvider, openWebmailProvider } from '@/shared/lib/webmail';
+import {
+  detectWebmailProvider,
+  openWebmailProvider,
+} from '@/shared/lib/webmail';
 
 export function PendingVerificationBanner({
   isVerified = false,
@@ -165,4 +168,3 @@ export function PendingVerificationBanner({
     </div>
   );
 }
-

@@ -2161,4 +2161,3 @@ export function FintechLoader({
 }
 
 export default FintechLoader;
-

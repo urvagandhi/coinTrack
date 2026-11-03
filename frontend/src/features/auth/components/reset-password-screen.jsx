@@ -381,4 +381,3 @@ export function ResetPasswordScreen({
     </AuthLayout>
   );
 }
-

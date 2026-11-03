@@ -10,4 +10,3 @@ export function usePortfolioFunds() {
     refetchOnWindowFocus: false,
   });
 }
-

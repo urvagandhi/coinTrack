@@ -7,7 +7,10 @@ import { Skeleton } from '@/shared/ui/feedback/Skeleton';
 import { useToast } from '@/shared/ui/feedback/use-toast';
 import FilterDropdown from '@/shared/ui/forms/FilterDropdown';
 import { epfAPI, userAPI } from '@/shared/api/client';
-import { generateFinancialYearOptions, getFinancialYear } from '@/shared/formatters';
+import {
+  generateFinancialYearOptions,
+  getFinancialYear,
+} from '@/shared/formatters';
 import { cn } from '@/shared/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -692,7 +695,7 @@ export function EpfView() {
   );
 
   return (
-    <div className='space-y-8'>
+    <div className='space-y-8 pb-8 md:pb-12'>
       {/* Header */}
       <header className='pb-6 border-b border-hairline flex flex-col md:flex-row md:items-end justify-between gap-6'>
         <div className='space-y-3'>
@@ -905,7 +908,7 @@ export function EpfView() {
           </button>
         </section>
       ) : (
-        <div className='space-y-8'>
+        <div className='space-y-8 pb-8 md:pb-12'>
           <div className='ed-card relative overflow-hidden'>
             <span className='corner-mark corner-tl' />
             <span className='corner-mark corner-tr' />
@@ -1446,6 +1449,4 @@ export function EpfView() {
   );
 }
 
-
 export default EpfView;
-

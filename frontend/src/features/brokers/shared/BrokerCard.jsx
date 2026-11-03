@@ -144,4 +144,3 @@ export function BrokerCard({ broker, index = 0 }) {
     </article>
   );
 }
-

@@ -95,4 +95,3 @@ export function PortfolioTabBar({ activeTab, onTabChange, counts }) {
     </nav>
   );
 }
-

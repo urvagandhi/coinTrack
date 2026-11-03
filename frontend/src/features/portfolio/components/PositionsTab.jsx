@@ -258,4 +258,3 @@ export function PositionsTab() {
     </div>
   );
 }
-

@@ -276,5 +276,4 @@ export function UpstoxSetupView() {
   );
 }
 
-
 export default UpstoxSetupView;

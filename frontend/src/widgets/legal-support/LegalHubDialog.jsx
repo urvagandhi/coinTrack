@@ -442,4 +442,3 @@ export default function LegalHubDialog() {
 
 export const LegalDialog = LegalHubDialog;
 export const LegalModals = LegalHubDialog;
-

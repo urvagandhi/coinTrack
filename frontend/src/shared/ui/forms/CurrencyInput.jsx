@@ -83,4 +83,3 @@ export function CurrencyInput({
 }
 
 export default CurrencyInput;
-

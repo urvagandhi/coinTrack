@@ -11,4 +11,3 @@ export function usePortfolioSummary() {
     refetchOnWindowFocus: false,
   });
 }
-

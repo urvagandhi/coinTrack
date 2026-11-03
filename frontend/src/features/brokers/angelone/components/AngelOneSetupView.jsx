@@ -285,5 +285,4 @@ export function AngelOneSetupView() {
   );
 }
 
-
 export default AngelOneSetupView;

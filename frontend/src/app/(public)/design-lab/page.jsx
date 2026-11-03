@@ -2111,4 +2111,3 @@ export default function DesignLabPage() {
     </TooltipProvider>
   );
 }
-

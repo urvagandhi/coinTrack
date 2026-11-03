@@ -128,4 +128,3 @@ export default function DashboardTab({ summaryData }) {
     </div>
   );
 }
-

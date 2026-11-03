@@ -53,7 +53,7 @@ export function BrokerSetupLayout({ broker, children, statusBadge }) {
   const accentColor = `hsl(var(${accentVar}))`;
 
   return (
-    <div className='max-w-6xl space-y-8'>
+    <div className='max-w-6xl space-y-8 pb-8 md:pb-12'>
       <Link
         href='/brokers'
         className='inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground transition-colors'
