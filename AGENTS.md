@@ -13,7 +13,37 @@ CoinTrack is a multi-asset financial tracking platform:
 
 ---
 
-## 2. Agent Skills & Development Lifecycle
+## 2. Session Initialization, Context Switching & Skill Discovery Protocol
+
+Whenever a **new conversation starts** OR the context within a conversation **shifts to a different topic, module, or technology**, every AI agent MUST execute the following three-phase protocol before writing any code or proposing solutions:
+
+### Phase 1: Codebase Grounding via Graphify & Knowledge Graphs
+- **Graphify First**: Query the AST dependency graph in `graphify-out/` to ground decisions in actual dependencies and symbol relationships:
+  - Run `graphify query "<question>"` for scoped subgraphs on concepts or features.
+  - Run `graphify path "<source>" "<target>"` to determine dependency pathways before modifying shared symbols.
+  - Run `graphify explain "<symbol>"` for deep structural understanding of hub nodes.
+- **Understand-Anything**: Use `/understand-explain <path>` or `/understand-domain` for business logic flows and high-level architectural layering.
+- **Read Memory**: Inspect `local/memory/` and Section 8 of `AGENTS.md` for historical decisions and architectural invariants.
+
+### Phase 2: Domain Skill Activation
+- Identify the subsystem being touched and activate the appropriate packaged skill in [`.agents/skills/`](./.agents/skills/):
+  - **Java / Spring Boot**: [`java-pro`](./.agents/skills/java-pro/SKILL.md) (records, hexagonal architecture, virtual threads, domain safety)
+  - **Next.js & React**: [`nextjs-best-practices`](./.agents/skills/nextjs-best-practices/SKILL.md) & [`frontend-ui-engineering`](./.agents/skills/frontend-ui-engineering/SKILL.md) (App Router, server vs. client boundaries, lowercase imports)
+  - **Styling**: [`tailwind-patterns`](./.agents/skills/tailwind-patterns/SKILL.md) (Terminal Editorial tokens, Geist + Instrument Serif)
+  - **Database**: [`postgres-best-practices`](./.agents/skills/postgres-best-practices/SKILL.md) (indexing, connection pooling, safe migrations)
+  - **Security & Auth**: [`security-and-hardening`](./.agents/skills/security-and-hardening/SKILL.md) & [`api-security-best-practices`](./.agents/skills/api-security-best-practices/SKILL.md) (OWASP Top 10, TOTP, token encryption, revocation priority)
+  - **Testing**: [`test-driven-development`](./.agents/skills/test-driven-development/SKILL.md) (red-green-refactor, test pyramid proof)
+  - **Docker**: [`docker-expert`](./.agents/skills/docker-expert/SKILL.md) (multi-stage builds, non-root Alpine execution)
+- Read the relevant `SKILL.md` instructions before taking action.
+
+### Phase 3: Web Research Fallback for Missing Skills / Emerging Context
+- If no existing local skill, rule, or documentation adequately covers the specific technology, third-party broker API (e.g. Upstox V2, Zerodha Kite Connect, AngelOne SmartAPI), library version, or architectural pattern:
+  - **Search the Web proactively** using `search_web` for official documentation, RFC standards, and modern industry best practices.
+  - Ground all implementation details in authoritative, up-to-date sources (`source-driven-development`) rather than relying on outdated assumptions.
+
+---
+
+## 3. Agent Skills & Development Lifecycle
 
 CoinTrack adopts senior engineering workflows via packaged **Agent Skills** located in [`.agents/skills/`](./.agents/skills/).
 
@@ -33,11 +63,11 @@ CoinTrack adopts senior engineering workflows via packaged **Agent Skills** loca
 
 ---
 
-## 3. Codebase Understanding & Knowledge Graphs
+## 4. Codebase Understanding & Knowledge Graphs
 
 CoinTrack integrates a dual-layer knowledge graph architecture for comprehensive codebase comprehension:
 
-### 3.1 Understand-Anything (High-Level Architecture & Business Domains)
+### 4.1 Understand-Anything (High-Level Architecture & Business Domains)
 - `/understand` — Scans the codebase, analyzes components, layers, and dependencies into `.ua/knowledge-graph.json`.
 - `/understand-dashboard` — Opens the interactive visual web dashboard to explore files, layers, and flows.
 - `/understand-chat <question>` — Query architecture, relationships, and business flows with graph-grounded answers.
@@ -46,7 +76,7 @@ CoinTrack integrates a dual-layer knowledge graph architecture for comprehensive
 - `/understand-explain <path>` — Deep-dive architectural explanation of a specific class or module.
 - `/understand-onboard` — Generates a guided onboarding tour through core architecture paths.
 
-### 3.2 Graphify (Deep AST Dependency Graph, God Nodes & Path Queries)
+### 4.2 Graphify (Deep AST Dependency Graph, God Nodes & Path Queries)
 - **Skill**: [`graphify`](./.agents/skills/graphify/SKILL.md)
 - **Command**: `/graphify` ([`graphify.toml`](./.agents/commands/graphify.toml))
 - **Key CLI Tools**:
@@ -57,7 +87,7 @@ CoinTrack integrates a dual-layer knowledge graph architecture for comprehensive
   - `graphify update .` — Incremental AST re-extraction without requiring LLM calls (keeps `graphify-out/` current).
   - **Outputs**: `graphify-out/graph.html` (interactive dependency explorer), `graphify-out/GRAPH_REPORT.md`, and `graphify-out/graph.json`.
 
-### 3.3 Unified Knowledge Graph Synchronization & Auto-Update
+### 4.3 Unified Knowledge Graph Synchronization & Auto-Update
 - **Unified Auto-Update Script**: [`scripts/auto-update.mjs`](./scripts/auto-update.mjs)
   - Synchronizes both Understand Anything (`.ua/`) and Graphify (`graphify-out/`) in a single pass.
   - Can be invoked via `node scripts/auto-update.mjs` or globally via `graph-auto-update`.
@@ -68,7 +98,7 @@ CoinTrack integrates a dual-layer knowledge graph architecture for comprehensive
 
 ---
 
-## 4. Stack-Specific Best Practices
+## 5. Stack-Specific Best Practices
 
 When modifying code in specific subsystems, activate the dedicated skill:
 - **Java / Spring Boot**: [`java-pro`](./.agents/skills/java-pro/SKILL.md) — Follow hexagonal domain separation, Spring service boundaries, record types, and strict exception handling.
@@ -80,7 +110,7 @@ When modifying code in specific subsystems, activate the dedicated skill:
 
 ---
 
-## 5. Specialist Review Personas
+## 6. Specialist Review Personas
 
 When running reviews or evaluations, use the personas in [`.agents/agents/`](./.agents/agents/):
 - `code-reviewer`: Senior staff engineer standard across architecture, logic, maintainability, tests, and style.
@@ -90,7 +120,7 @@ When running reviews or evaluations, use the personas in [`.agents/agents/`](./.
 
 ---
 
-## 6. Standing Checklists
+## 7. Standing Checklists
 
 Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
 - [`definition-of-done.md`](./.agents/references/definition-of-done.md) — The baseline bar every commit and PR must clear.
@@ -102,9 +132,9 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
 
 ---
 
-## 7. Recent Context & System State (Session Memory)
+## 8. Recent Context & System State (Session Memory)
 
-### 7.1 Elevated Canvas Card App Shell
+### 8.1 Elevated Canvas Card App Shell
 - **App Shell Architecture (`MainLayout.jsx`)**: The authenticated workspace (`(main)/*`) utilizes an elevated island canvas card layout matching modern fintech reference mockups:
   - **Atmospheric Sky Backdrop**: Interactive Canvas 2D simulation ([`cointrack-sky-background.jsx`](./frontend/src/shared/ui/brand/cointrack-sky-background.jsx)) renders as the outer environmental backdrop.
   - **Elevated Canvas Card**: The central app container (`bg-white/95 dark:bg-[#121316]/95 backdrop-blur-xl rounded-[24px] sm:rounded-[32px] md:rounded-[40px] border shadow`) encapsulates the entire authenticated experience without edge bleed.
@@ -112,7 +142,7 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
   - **Sidebar Dock ([`Sidebar.jsx`](./frontend/src/widgets/app-shell/Sidebar.jsx))**: Slim left vertical dock for core module jumping (Home, Ledgers, Profile, Brokers, Tools).
   - **App Shell Footer ([`Footer.jsx`](./frontend/src/widgets/app-shell/Footer.jsx))**: Pinned bottom status bar containing copyright, Terms of Service, Privacy Policy, and "Bank-Grade Security" badge.
 
-### 7.2 Dashboard Architecture & Layout
+### 8.2 Dashboard Architecture & Layout
 - **Main Dashboard**: [`DashboardView.jsx`](./frontend/src/features/dashboard/components/DashboardView.jsx) implements a modern SaaS card layout:
   - **KPI Metrics Row**: 4 primary indicators (Total Net Worth, Today's Return, Unrealized Gain, Invested Capital) with real-time gain/loss indicators.
   - **Asset Allocation Bar**: Segmented horizontal progress bar displaying distribution across Equities, Mutual Funds, Gold & Silver, and Fixed Income/EPF.
@@ -120,7 +150,7 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
     - *Left*: Net worth vs. invested timeline chart with hover tooltips + [`HoldingsTable.jsx`](./frontend/src/features/dashboard/components/HoldingsTable.jsx).
     - *Right*: AI portfolio suggestion bubbles, rebalancing insights, and semi-circular portfolio health speedometer gauge.
 
-### 7.3 Profile & Settings Subsystem
+### 8.3 Profile & Settings Subsystem
 - **Two-Column Experience ([`ProfileView.jsx`](./frontend/src/features/profile/components/ProfileView.jsx))**: Built to match the modern two-column settings architecture (Wayline reference design):
   - **Left Settings Sub-Sidebar (`<aside>`)**: Fixed/docked static navigation (`My Profile`, `Security Options`, `Preferences`, `Notifications`, `Danger Zone`). Does NOT scroll independently.
   - **Right Main Content Card (`<section>`)**: Dedicated, spacious card displaying active tab content with dynamic vertical scrolling (`overflow-y-auto [scrollbar-width:thin]`).
@@ -134,16 +164,16 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
     - *Notifications*: Granular toggles for price alerts, portfolio updates, market news, and weekly digests.
     - *Danger Zone*: Red-themed account deletion dialog with confirmation password input.
 
-### 7.4 Identity & DTO Synchronization
+### 8.4 Identity & DTO Synchronization
 - **Email Verification Normalization**:
   - Backend: [`UserProfileResponse.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/UserProfileResponse.java) and [`LoginResponse.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/dto/LoginResponse.java) explicitly include `@JsonProperty("isEmailVerified")` and `emailVerified` accessors.
   - Frontend: [`model.js`](./frontend/src/entities/user/model.js) and [`AuthContext.js`](./frontend/src/shared/auth/AuthContext.js) normalize `isEmailVerified` so verification badges and pending banners hydrate accurately without discrepancies.
 
-### 7.5 Authentication Lifecycle & 2FA Recovery
+### 8.5 Authentication Lifecycle & 2FA Recovery
 - **Token Handoff**: [`setup-2fa/page.jsx`](./frontend/src/app/(access)/setup-2fa/page.jsx) sets auth tokens via `tokenManager.setToken(data.token, true)` and invokes `refreshUser()` from [`AuthContext.js`](./frontend/src/shared/auth/AuthContext.js). Completion triggers `window.location.href = '/dashboard'` to guarantee clean cookie and session hydration.
 - **Self-Healing AuthGuard**: [`AuthGuard.jsx`](./frontend/src/shared/auth/AuthGuard.jsx) detects valid unexpired tokens in storage. If in-memory React state is momentarily desynchronized, it displays a loading state and recovers the profile via `refreshUser()`, preventing white-screen lockouts or redirect loops with [`proxy.js`](./frontend/src/proxy.js).
 
-### 7.6 Email Change Lifecycle, Expiry, Mutual Exclusion & Cooldown
+### 8.6 Email Change Lifecycle, Expiry, Mutual Exclusion & Cooldown
 - **Backend Model & Token Revocation**:
   - **Entity Properties ([`User.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/model/User.java))**: Added `pendingEmail` and `pendingEmailExpiresAt` (10-minute expiry governed by `magicLinkExpiryMinutes = 10` in `EmailConfigProperties.java`).
   - **Collision Prevention ([`UserRepository.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/repository/UserRepository.java) & [`UserService.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/user/service/UserService.java))**: Implemented `existsByPendingEmail` and `isPendingEmailActive` to prevent dual-account collisions. Actively pending email changes lock the address across the platform; expired requests release the address automatically.
@@ -156,7 +186,7 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
   - **60-Second Cooldown & Visual Status**: Pending email change banner integrates a 60s countdown timer with `<Clock className="size-3.5 text-white/80" />` matching [`pending-verification-banner.jsx`](./frontend/src/shared/ui/data-display/pending-verification-banner.jsx), with explicit sending and cancelling spinner states.
   - **Mobile Number Validation**: Enforces 10-digit Indian phone regex (`/^[6-9]\d{9}$/`), stripping non-digits and ensuring standard `+91` prefixing across both profile edits and registration.
 
-### 7.7 UI Feedback, Toasts & Design Lab Alignment
+### 8.7 UI Feedback, Toasts & Design Lab Alignment
 - **Toast Notifications ([`toaster.jsx`](./frontend/src/shared/ui/feedback/toaster.jsx) & [`use-toast.js`](./frontend/src/shared/ui/feedback/use-toast.js))**:
   - Dismiss button (`X`) pinned to the top-right corner with proper flex alignment.
   - Outer ghost borders eliminated in favor of clean Terminal Editorial border tokens (`border-black/[0.08] dark:border-white/[0.08]`).
