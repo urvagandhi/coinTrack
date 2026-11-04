@@ -260,3 +260,37 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
     6. [`broker-orchestration-and-edge-cases.test.jsx`](./frontend/src/features/brokers/__tests__/broker-orchestration-and-edge-cases.test.jsx): Tri-attribute search, empty search state reset, global sync, form validation.
 - **Memory Reference**: Detailed documentation in [`local/memory/broker_connections_unslop_redesign.md`](./local/memory/broker_connections_unslop_redesign.md).
 
+### 8.11 Unslopped Dashboard, Shared DataTable Architecture & Dynamic Multi-Ledger Intelligence
+- **Dashboard Unslop & Component Decomposition ([`DashboardView.jsx`](./frontend/src/features/dashboard/components/DashboardView.jsx))**:
+  - Re-architected in a single phase using the senior engineering principles in [`.agents/skills/unslop/`](./.agents/skills/unslop/), aligning visually and behaviorally with Profile, Notes, and Broker Connections.
+  - Eliminated glowing borders, pastel washes, and emojis in favor of a calm, terminal-editorial hierarchy (`bg-white dark:bg-[#16171a] border border-neutral-200/80 dark:border-neutral-800`), 4px spacing scale, and sentence-case headers.
+  - Decomposed into single-responsibility components:
+    1. [`DashboardKpiGrid.jsx`](./frontend/src/features/dashboard/components/DashboardKpiGrid.jsx): 2-pane asymmetric wealth Bento (7/5 split: Net Worth & Capital Ledger + Intraday Momentum & Cash vs. Equity Ratio with live broker telemetry).
+    2. [`DashboardWealthChart.jsx`](./frontend/src/features/dashboard/components/DashboardWealthChart.jsx): Area curve of Net Worth vs. Invested Capital with an asymmetric zero-axis mirrored delta silhouette for negative delta tracking.
+    3. [`DashboardAssetSpread.jsx`](./frontend/src/features/dashboard/components/DashboardAssetSpread.jsx): Dynamic asset distribution across 6 ledgers, rebalancing model drift, and upcoming statutory/SIP schedule.
+    4. [`HoldingsTable.jsx`](./frontend/src/features/dashboard/components/HoldingsTable.jsx): Active stock positions leveraging shared table primitives.
+  - Dynamic feed status via [`useBrokerSummary()`](./frontend/src/features/brokers/hooks/useBrokerSummary.js) (`All Feeds Live`, `X of 3 Feeds Live`, `Session Expired`, `Feeds Idle`) with pulsating status dots and real-time quarter calculation (`Q4 2026`).
+- **Shared Reusable DataTable Asset ([`data-table.jsx`](./frontend/src/shared/ui/data-display/data-table.jsx))**:
+  - Extracted shared table primitives to standardize table styling across all ledgers (Holdings, Orders, Trades, Mutual Funds):
+    - `parseSymbol()`: Extracts exchange prefixes (e.g. `NSE:SBIN` &rarr; symbol `SBIN`, exchange badge `NSE`).
+    - `SymbolBadge`: Renders symbol in bold mono with a muted hairline exchange pill.
+    - `BrokerBadge`: Sentence-case broker label with quiet status dot (`• Zerodha`).
+    - `PnLCell` with Self-Healing Logic: Detects when broker payloads return `0.00%` alongside non-zero rupee P&L, automatically computing `(pnl / invested) * 100` (`-6.04%` for `NSE:SBIN` and `-1.20%` for `BSE:COALINDIA`).
+    - `DayChangeCell`: Subdued emerald/rose changes formatted in `font-mono tnum`.
+    - `DataTable`: Container applying standardized `.ed-table` styling. Fixed table background bug by setting `.ed-table thead th` to `transparent`, eliminating outer paper background bleed inside white/dark cards.
+- **Dynamic 6-Ledger Feed Consolidation ([`DashboardAssetSpread.jsx`](./frontend/src/features/dashboard/components/DashboardAssetSpread.jsx))**:
+  - Proportional Strategic Model: Equities (42% = `₹579.00`), Mutual Funds (28% = `₹386.00`), EPF & Fixed Income (16% = `₹221.00`), Gold & Silver (14% = `₹193.00`) dynamically scaling to total portfolio value.
+  - Multi-Ledger Querying: Integrates `portfolioAPI`, `mutualFundAPI`, `epfAPI`, `ppfAPI`, `fdAPI`, and `goldSilverAPI`. When external accounts are active, it calculates live consolidated asset weights (`Consolidated Live`); otherwise, it falls back seamlessly to the calibrated `Target Model`.
+  - Rebalancing Model: Computes drift against a 40.0% strategic target (`+2.0% Equity Drift`) with dynamic actionable narrative guiding SIP balancing into debt & EPF.
+  - Upcoming Ledger Schedule:
+    - Monthly Auto-SIP: Queries `portfolioAPI.getMfSips()` to compute next trigger date (`1 Dec · 2 Folios`) and committed amount (`₹30,000`).
+    - Section 80C Limit: Computes dynamic Indian financial year (`PPF + EPF Cap ₹1.5L (FY 2026-27)`) and aggregates employee EPF + PPF contributions (`83% Used`).
+    - Gold Spot 24K: Live MCX bullion feed querying `goldSilverAPI.getCurrentRates()` (`₹76,420/10g`).
+- **Landing Page Hero Mockup Alignment ([`cointrack-hero-mockup.jsx`](./frontend/src/shared/ui/brand/cointrack-hero-mockup.jsx))**:
+  - Purged generic CRM/e-commerce mockups (`leads`, `sales`, `messenger`, `inbox 28`). Replaced with a high-fidelity interactive replica of the CoinTrack multi-asset dashboard.
+- **AI Financial Copilot Architecture (RAG / CAG)**:
+  - Formulated comprehensive architectural specification at [`local/TODOs/Left-TODOs/RAG-CAG-GEMINI-COPILOT-RFC.md`](./local/TODOs/Left-TODOs/RAG-CAG-GEMINI-COPILOT-RFC.md).
+  - Hybrid design: **CAG (Context-Augmented Generation)** via Gemini 1.5/2.0 context caching for statutory tax rules (Section 80C/80D, 112A LTCG) cutting token costs by ~85% with <500ms TTFT, combined with **PGVector RAG** for tenant-isolated user notes and transactions.
+- **Memory Reference**: Detailed documentation in [`local/memory/dashboard_unslop_and_shared_tables.md`](./local/memory/dashboard_unslop_and_shared_tables.md).
+
+

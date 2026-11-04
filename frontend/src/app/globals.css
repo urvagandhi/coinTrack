@@ -514,33 +514,33 @@
 
   :where(.ed-table) thead th {
     text-align: left;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: normal;
+    text-transform: none;
     color: hsl(var(--muted-foreground));
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid hsl(var(--hairline));
-    background: hsl(var(--background));
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid hsl(var(--border));
+    background: transparent;
     white-space: nowrap;
     vertical-align: middle;
   }
 
   :where(.ed-table) tbody tr {
-    border-bottom: 1px solid hsl(var(--border));
-    transition: background 0.12s ease;
+    border-bottom: 1px solid hsl(var(--border) / 0.6);
+    transition: background-color 0.12s ease;
   }
 
   :where(.ed-table) tbody tr:hover {
-    background: hsl(var(--accent-muted) / 0.4);
+    background: hsl(var(--muted) / 0.45);
   }
 
   :where(.ed-table) tbody tr:last-child {
-    border-bottom: 1px solid hsl(var(--hairline));
+    border-bottom: none;
   }
 
   :where(.ed-table) tbody td {
-    padding: 0.875rem 1rem;
+    padding: 0.75rem 1rem;
     font-size: 0.8125rem;
     color: hsl(var(--foreground));
     vertical-align: middle;
