@@ -1,7 +1,6 @@
-// src/app/(main)/brokers/zerodha/callback/page.jsx
 'use client';
 
-import { BrokerCallbackHandler } from '@/features/brokers/shared/BrokerCallbackHandler';
+import { BrokerCallbackHandler } from './BrokerCallbackHandler';
 import { brokerAPI, BROKERS } from '@/shared/api/client';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -21,7 +20,7 @@ function ZerodhaCallbackInner() {
     <BrokerCallbackHandler
       brokerKey='ZERODHA'
       onCallback={handleCallback}
-      successRedirect='/brokers'
+      successRedirect='/brokers/zerodha'
     />
   );
 }
@@ -31,7 +30,7 @@ export function ZerodhaCallbackView() {
     <Suspense
       fallback={
         <div className='min-h-[60vh] flex items-center justify-center'>
-          <div className='w-8 h-8 rounded-full border-2 border-hairline border-t-foreground animate-spin' />
+          <div className='size-8 rounded-full border-2 border-neutral-200 dark:border-neutral-800 border-t-neutral-800 dark:border-t-neutral-200 animate-spin' />
         </div>
       }
     >

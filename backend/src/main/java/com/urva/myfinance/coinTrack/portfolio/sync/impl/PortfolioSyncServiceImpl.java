@@ -76,11 +76,15 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
     List<BrokerAccount> accounts = brokerAccountRepository.findByUserId(userId);
     if (accounts.isEmpty()) return;
 
+    long startTime = System.currentTimeMillis();
+
     // Delegate to aggregation service for parallel multi-broker fetch
     AggregatedPortfolio result = aggregationService.aggregateForUser(userId);
 
     // Persist canonical models
     persistAggregatedData(userId, result);
+
+    long durationMs = Math.max(1L, System.currentTimeMillis() - startTime);
 
     // Update sync timestamps on accounts
     LocalDateTime now = LocalDateTime.now(INDIA_ZONE);
@@ -88,6 +92,7 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
       if (Boolean.TRUE.equals(account.getIsActive())
           && !result.staleBrokers().contains(account.getBroker())) {
         account.setLastSuccessfulSync(now);
+        account.setLastUsed(now);
         brokerAccountRepository.save(account);
       }
     }
@@ -102,7 +107,9 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
                 + result.syncErrors().stream()
                     .map(e -> e.brokerType() + ": " + e.humanMessage())
                     .collect(Collectors.joining("; "));
-    createLog(userId, null, status, message, 0L);
+    // Create sync log (associate broker if single active broker; otherwise null for aggregated)
+    Broker logBroker = accounts.size() == 1 ? accounts.getFirst().getBroker() : null;
+    createLog(userId, logBroker, status, message, durationMs);
   }
 
   @Override
@@ -196,20 +203,16 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
     }
 
     if (hasValidAccount) {
-      // Use aggregation service for parallel fetch
-      java.util.concurrent.CompletableFuture.runAsync(
-          () -> {
-            try {
-              syncUser(userId);
-            } catch (Exception e) {
-              logger.error("Error during manual sync for user {}", userId, e);
-            }
-          });
+      try {
+        syncUser(userId);
+      } catch (Exception e) {
+        logger.error("Error during manual sync for user {}", userId, e);
+      }
     }
 
     return ManualRefreshResponse.builder()
         .accepted(!triggered.isEmpty())
-        .message(triggered.isEmpty() ? "No accounts synced." : "Refresh initiated.")
+        .message(triggered.isEmpty() ? "No accounts synced." : "Refresh completed.")
         .triggeredBrokers(triggered)
         .skippedBrokers(skipped)
         .build();

@@ -1,7 +1,5 @@
-'use client';
-
-import { UpstoxDashboardView } from '@/features/brokers';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <UpstoxDashboardView />;
+  redirect('/brokers/upstox');
 }

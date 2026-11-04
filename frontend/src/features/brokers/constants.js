@@ -1,4 +1,5 @@
-// src/lib/brokerConfig.js — Single source of truth for all broker metadata
+// frontend/src/features/brokers/constants.js — Central constants for Broker subsystem
+import { Activity, BookOpen, Key } from 'lucide-react';
 
 const APP_URL =
   typeof window !== 'undefined'
@@ -20,6 +21,7 @@ export const BROKERS = {
     accentClass: 'border-l-chart-3',
     badgeClass: 'bg-chart-3/10 text-chart-3',
     initials: 'ZE',
+    logoPath: '/brokers/zerodha.png',
     capabilities: [
       'Equity Holdings',
       'Positions & F&O',
@@ -77,6 +79,7 @@ export const BROKERS = {
     accentClass: 'border-l-chart-4',
     badgeClass: 'bg-chart-4/10 text-chart-4',
     initials: 'AO',
+    logoPath: '/brokers/angelone.png',
     capabilities: [
       'Equity Holdings',
       'Positions & F&O',
@@ -150,6 +153,7 @@ export const BROKERS = {
     accentClass: 'border-l-chart-5',
     badgeClass: 'bg-chart-5/10 text-chart-5',
     initials: 'UP',
+    logoPath: '/brokers/upstox-mark.svg',
     capabilities: [
       'Equity Holdings',
       'Positions & F&O',
@@ -210,4 +214,44 @@ export const BROKER_LIST = Object.values(BROKERS);
 
 export const getBrokerByKey = key =>
   BROKER_LIST.find(b => b.key === key) ?? null;
+
 export const getBrokerById = id => BROKER_LIST.find(b => b.id === id) ?? null;
+
+export const BROKER_SETTINGS_TABS = [
+  { id: 'credentials', label: 'Credentials & Keys', icon: Key },
+  { id: 'guide', label: 'Developer Guide', icon: BookOpen },
+  { id: 'hub', label: 'Connection Hub', icon: Activity },
+];
+
+export const BROKER_BRAND_THEMES = {
+  ZERODHA: {
+    accentText: 'text-orange-600 dark:text-orange-400',
+    accentBg: 'bg-white dark:bg-neutral-800',
+    accentBorder: 'border-neutral-200/80 dark:border-neutral-700/80',
+    logo: '/brokers/zerodha.png',
+    monogram: 'ZE',
+    protocol: 'Kite Connect v3',
+  },
+  ANGEL_ONE: {
+    accentText: 'text-sky-600 dark:text-sky-400',
+    accentBg: 'bg-white dark:bg-neutral-800',
+    accentBorder: 'border-neutral-200/80 dark:border-neutral-700/80',
+    logo: '/brokers/angelone.png',
+    monogram: 'AO',
+    protocol: 'SmartAPI Direct',
+  },
+  UPSTOX: {
+    accentText: 'text-purple-600 dark:text-purple-400',
+    accentBg: 'bg-white dark:bg-neutral-800',
+    accentBorder: 'border-neutral-200/80 dark:border-neutral-700/80',
+    logo: '/brokers/upstox-mark.svg',
+    monogram: 'UP',
+    protocol: 'Upstox Pro V2',
+  },
+};
+
+export const BROKER_FILTER_TABS = [
+  { id: 'all', label: 'All' },
+  { id: 'connected', label: 'Connected' },
+  { id: 'available', label: 'Available' },
+];

@@ -11,6 +11,8 @@ public interface SyncLogRepository extends MongoRepository<SyncLog, String> {
 
   List<SyncLog> findByUserIdOrderByTimestampDesc(String userId);
 
+  java.util.Optional<SyncLog> findFirstByUserIdOrderByTimestampDesc(String userId);
+
   java.util.Optional<SyncLog> findFirstByUserIdAndStatusOrderByTimestampDesc(
       String userId, com.urva.myfinance.coinTrack.portfolio.model.SyncStatus status);
 

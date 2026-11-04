@@ -334,7 +334,10 @@ export const endpoints = {
   brokers: {
     connect: broker => `/api/brokers/${broker}/connect`,
     status: broker => `/api/brokers/${broker}/status`,
-    zerodha: { saveCredentials: '/api/brokers/zerodha/credentials' },
+    zerodha: {
+      saveCredentials: '/api/brokers/zerodha/credentials',
+      disconnect: '/api/brokers/zerodha/disconnect',
+    },
     upstox: {
       saveCredentials: '/api/brokers/upstox/credentials',
       disconnect: '/api/brokers/upstox/disconnect',
@@ -659,6 +662,10 @@ export const brokerAPI = {
       endpoints.brokers.zerodha.saveCredentials,
       creds
     );
+    return unwrapResponse(data);
+  },
+  disconnectZerodha: async () => {
+    const { data } = await api.post(endpoints.brokers.zerodha.disconnect);
     return unwrapResponse(data);
   },
   getStatus: async brokerName => {

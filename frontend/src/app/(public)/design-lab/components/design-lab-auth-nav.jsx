@@ -48,6 +48,11 @@ export function DesignLabAuthNav() {
       href: '/design-lab/dashboard',
       icon: LayoutDashboard,
     },
+    {
+      label: 'Brokers Demo',
+      href: '/design-lab/brokers',
+      icon: ExternalLink,
+    },
   ];
 
   return (

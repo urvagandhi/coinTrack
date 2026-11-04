@@ -226,3 +226,37 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
 - **Three-Tier Modal Scrolling Layout**: Modals ([`NoteDialog.jsx`](./frontend/src/features/notes/components/NoteDialog.jsx), [`NoteReaderModal.jsx`](./frontend/src/features/notes/components/NoteReaderModal.jsx), [`BaseDialog.jsx`](./frontend/src/shared/ui/feedback/base-dialog.jsx)) enforce `p-0 overflow-hidden flex flex-col` on the outer card. Header (`px-6 sm:px-7 pt-6 pb-4 border-b shrink-0`) and Footer (`px-6 sm:px-7 py-4 border-t shrink-0`) are pinned. Only the body container handles vertical overflow with `overflow-y-auto px-6 sm:px-7 py-5 [scrollbar-gutter:stable] [scrollbar-width:thin]`. The scrollbar is pinned to the card's outer edge, leaving $\ge 16\text{px}$ of clear whitespace between text/inputs and the scrollbar thumb.
 - **App Shell & Dashboard Overview Clearance**: [`MainLayout.jsx`](./frontend/src/widgets/app-shell/MainLayout.jsx) updates `<main>` to `pr-3 sm:pr-4 md:pr-5 [scrollbar-gutter:stable] [scrollbar-width:thin]`, ensuring right-aligned dashboard cards, charts, quick sync buttons, and tables never sit under the window scrollbar.
 - **Global Scrollbar Standardization**: [`globals.css`](./frontend/src/app/globals.css) applies universal `scrollbar-width: thin` and `scrollbar-color` across all browsers, plus `.scrollbar-thin`, `.custom-scrollbar`, and `.scrollbar-none` utilities. Applied across all dialogs and modals.
+
+### 8.10 Broker Connections Subsystem & Single-Responsibility Decomposition
+- **Unslop Design Craft & Docked Two-Column Layout**:
+  - Exactly mirrors the architecture of [`ProfileView.jsx`](./frontend/src/features/profile/components/ProfileView.jsx) and [`NotesView.jsx`](./frontend/src/features/notes/components/NotesView.jsx).
+  - **Left Sub-Sidebar ([`BrokerSidebar.jsx`](./frontend/src/features/brokers/components/BrokerSidebar.jsx))**: Docked static navigation for the 3 core tabs: `Credentials & Keys`, `Developer Guide`, and `Connection Hub`. Shows real broker logo, display name, protocol badge, and dynamic session status badge (`Live Stream`, `Session Expired`, `Not Connected`). Does NOT scroll with the page.
+  - **Right Content Section ([`BrokerSetupLayout.jsx`](./frontend/src/features/brokers/components/BrokerSetupLayout.jsx))**: Spacious card with internal scrolling (`overflow-y-auto [scrollbar-gutter:stable] [scrollbar-width:thin] overscroll-contain`). Outer container uses `w-full min-h-0 flex-1 md:overflow-hidden` with a fixed top back link to `/brokers`.
+  - **Eliminates Congestion**: `Credentials & Keys` and `Developer Guide` are separate dedicated full-width tabs, with a quick-copy redirect URL callout bar placed above the credentials fields.
+- **Dynamic Telemetry & OAuth Handshake Lifecycle ([`BrokerCallbackHandler.jsx`](./frontend/src/features/brokers/components/BrokerCallbackHandler.jsx))**:
+  - **100% Dynamic State Machine**: Progresses through Step 0 (exchange request authorization token), Step 1 (AES-256-GCM verification), Step 2 (portfolio telemetry stream activation), and Step 3 (success celebration).
+  - **Dynamic Syndicated Channels**: Derived from `/api/portfolio/sync/status` telemetry (`recordCount`, `streaming` status, e.g. `24 securities`, `6 folios`).
+  - **React 19 / StrictMode Guard**: `called.current` ref lock prevents duplicate concurrent token exchanges during immediate remounts.
+  - **HTTP 400 Idempotent Normalization**: Catches scenarios where request tokens have already been consumed or sessions are already active on the broker end, safely normalizing HTTP 400 to an active session.
+  - **Watchdog Stall Timer**: Automatically transitions slow gateway responses (>15s) to a delayed state with manual retry and directory fallback options.
+  - **Auto-Redirect with Override**: Automatically pushes to the broker hub after 2.8s, with an immediate "Open Connection Hub" button override.
+- **Real-Time Telemetry Hub ([`ConnectionHubPanel.jsx`](./frontend/src/features/brokers/components/ConnectionHubPanel.jsx))**:
+  - **Live Streams Matrix**: Equity Holdings, Mutual Funds (Coin/AMFI), Positions & F&O, Funds & Margin with active pulse indicators.
+  - **Diagnostics**: Millisecond-resolution gateway latency indicator and operational health status.
+  - **Robust Timestamp Formatting**: Automatically appends `+05:30` (IST) when Jackson produces local datetimes without offset, calculates seconds-resolution relative time (`hh:mm:ss A IST (just now / 35s ago / 2m ago)`), and gracefully handles future dates (clock skew), null, epoch zero, and malformed date strings.
+  - **Optimistic Actions**: `Sync Feeds Now` (disables and spins during `isManualSyncing`), `Refresh Token`, and `Unlink Broker Account`.
+- **Architectural Cleanup & Redundancy Elimination**:
+  - Completely purged redundant nested folders: `frontend/src/features/brokers/shared`, `frontend/src/features/brokers/zerodha`, `frontend/src/features/brokers/upstox`, `frontend/src/features/brokers/angelone`, and `frontend/src/features/brokers/services`.
+  - Removed dummy redirect components (`ZerodhaDashboardView`, `UpstoxDashboardView`, `AngelOneDashboardView`, `AngelOneCallbackView`), replacing them with native Next.js App Router redirects directly in `page.jsx`.
+  - Root [`constants.js`](./frontend/src/features/brokers/constants.js) provides single source of truth for broker configurations, brand themes, tab definitions, and lookup helpers (`getBrokerByKey`, `getBrokerById`).
+  - Root [`index.js`](./frontend/src/features/brokers/index.js) provides clean barrel export.
+- **Exhaustive Test Pyramid Coverage ([`frontend/src/features/brokers/__tests__/`](./frontend/src/features/brokers/__tests__))**:
+  - 6 dedicated test suites, 63 unit/integration tests with 100% pass rate:
+    1. [`constants.test.js`](./frontend/src/features/brokers/__tests__/constants.test.js): Configuration, tab metadata, lookup helpers.
+    2. [`brokers-components.test.jsx`](./frontend/src/features/brokers/__tests__/brokers-components.test.jsx): Decomposed UI components, headers, KPI row, filter toolbar.
+    3. [`broker-connection-lifecycle.test.jsx`](./frontend/src/features/brokers/__tests__/broker-connection-lifecycle.test.jsx): OAuth handshake, telemetry progression, StrictMode guards, HTTP 400 normalization.
+    4. [`broker-security-and-input-edges.test.jsx`](./frontend/src/features/brokers/__tests__/broker-security-and-input-edges.test.jsx): SQL injection, XSS payloads, Unicode surrogates, buffer limits, clipboard API permission denials.
+    5. [`broker-views-and-telemetry-edges.test.jsx`](./frontend/src/features/brokers/__tests__/broker-views-and-telemetry-edges.test.jsx): Clock skew, negative diffs, unsupported broker channels, loading skeletons.
+    6. [`broker-orchestration-and-edge-cases.test.jsx`](./frontend/src/features/brokers/__tests__/broker-orchestration-and-edge-cases.test.jsx): Tri-attribute search, empty search state reset, global sync, form validation.
+- **Memory Reference**: Detailed documentation in [`local/memory/broker_connections_unslop_redesign.md`](./local/memory/broker_connections_unslop_redesign.md).
+

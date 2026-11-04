@@ -1,7 +1,5 @@
-'use client';
-
-import { AngelOneCallbackView } from '@/features/brokers';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <AngelOneCallbackView />;
+  redirect('/brokers/angelone');
 }

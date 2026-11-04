@@ -361,6 +361,56 @@ public class BrokerConnectController {
     }
   }
 
+  /** Disconnects Zerodha — clears stored account and tokens. */
+  @Operation(summary = "Disconnect Zerodha")
+  @PostMapping("/zerodha/disconnect")
+  public ResponseEntity<ApiResponse<Map<String, String>>> disconnectZerodha() {
+    User user = getAuthenticatedUser();
+    if (user == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+    try {
+      BrokerAccount account =
+          accountRepository.findByUserIdAndBroker(user.getId(), Broker.ZERODHA).stream()
+              .findFirst()
+              .orElse(null);
+      if (account != null) {
+        accountRepository.delete(account);
+      }
+      return ResponseEntity.ok(
+          ApiResponse.success(Map.of("message", "Disconnected", "broker", Broker.ZERODHA.name())));
+    } catch (Exception e) {
+      logger.error("Error disconnecting Zerodha for user {}: {}", user.getId(), e.getMessage());
+      return ResponseEntity.internalServerError()
+          .body(ApiResponse.error("Error: " + e.getMessage()));
+    }
+  }
+
+  /** Disconnects Upstox — clears stored account and tokens. */
+  @Operation(summary = "Disconnect Upstox")
+  @PostMapping("/upstox/disconnect")
+  public ResponseEntity<ApiResponse<Map<String, String>>> disconnectUpstox() {
+    User user = getAuthenticatedUser();
+    if (user == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+    try {
+      BrokerAccount account =
+          accountRepository.findByUserIdAndBroker(user.getId(), Broker.UPSTOX).stream()
+              .findFirst()
+              .orElse(null);
+      if (account != null) {
+        accountRepository.delete(account);
+      }
+      return ResponseEntity.ok(
+          ApiResponse.success(Map.of("message", "Disconnected", "broker", Broker.UPSTOX.name())));
+    } catch (Exception e) {
+      logger.error("Error disconnecting Upstox for user {}: {}", user.getId(), e.getMessage());
+      return ResponseEntity.internalServerError()
+          .body(ApiResponse.error("Error: " + e.getMessage()));
+    }
+  }
+
   /** Disconnects AngelOne — calls SmartAPI /logout (best-effort) and clears local tokens. */
   @Operation(summary = "Disconnect AngelOne")
   @PostMapping("/angelone/disconnect")

@@ -1,7 +1,5 @@
-'use client';
-
-import { AngelOneDashboardView } from '@/features/brokers';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <AngelOneDashboardView />;
+  redirect('/brokers/angelone');
 }

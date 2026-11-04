@@ -1,5 +1,6 @@
 'use client';
 
+import { invalidateBrokerQueries } from '@/features/brokers/hooks/useBrokerConnection';
 import { portfolioAPI } from '@/shared/api/client';
 import { cn } from '@/shared/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,16 +14,15 @@ export function RefreshButton() {
 
   const { mutate } = useMutation({
     mutationFn: portfolioAPI.manualRefresh,
-    onSuccess: () => {
-      setTimeout(async () => {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['portfolio'] }),
-          queryClient.invalidateQueries({ queryKey: ['brokers'] }),
-          queryClient.invalidateQueries({ queryKey: ['holdings'] }),
-        ]);
-        setIsRefreshing(false);
+    onSuccess: async () => {
+      try {
+        await invalidateBrokerQueries(queryClient);
         toast.success('Portfolio synced');
-      }, 2000);
+      } catch (err) {
+        console.error('Failed to refetch after sync', err);
+      } finally {
+        setIsRefreshing(false);
+      }
     },
     onError: err => {
       setIsRefreshing(false);
