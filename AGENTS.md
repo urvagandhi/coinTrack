@@ -2,6 +2,13 @@
 
 This file provides instructions for AI coding agents (Antigravity, Codex, Cursor, Claude Code, Gemini CLI, OpenCode) working in the **CoinTrack** repository.
 
+> [!IMPORTANT]
+> ### 🚨 Mandatory Protocol on New Conversations & In-Session Context Shifts
+> Whenever a **new conversation starts** OR the context within an ongoing conversation **shifts to a different topic, module, or technology**, every AI agent MUST:
+> 1. **Check Graphify AST & Knowledge Graph first**: Query `graphify query "<question>"`, `graphify path`, or `graphify explain` to ground all decisions in actual dependencies and symbol relationships.
+> 2. **Activate the Appropriate Local Skill**: Identify the subsystem and load the matching skill in `.agents/skills/` (e.g. `java-pro`, `nextjs-best-practices`, `unslop`, `tailwind-patterns`, `postgres-best-practices`, `security-and-hardening`, `test-driven-development`).
+> 3. **Search the Web if Skill is Missing**: If no local skill or documentation covers the topic, third-party broker API, library version, or design challenge, **proactively search the web via `search_web` for the best modern skills, official RFCs, and industry patterns**, and work according to those authoritative standards.
+
 ---
 
 ## 1. Project Overview & Architecture
@@ -29,7 +36,7 @@ Whenever a **new conversation starts** OR the context within a conversation **sh
 - Identify the subsystem being touched and activate the appropriate packaged skill in [`.agents/skills/`](./.agents/skills/):
   - **Java / Spring Boot**: [`java-pro`](./.agents/skills/java-pro/SKILL.md) (records, hexagonal architecture, virtual threads, domain safety)
   - **Next.js & React**: [`nextjs-best-practices`](./.agents/skills/nextjs-best-practices/SKILL.md) & [`frontend-ui-engineering`](./.agents/skills/frontend-ui-engineering/SKILL.md) (App Router, server vs. client boundaries, lowercase imports)
-  - **Styling**: [`tailwind-patterns`](./.agents/skills/tailwind-patterns/SKILL.md) (Terminal Editorial tokens, Geist + Instrument Serif)
+  - **Styling & Design Craft**: [`tailwind-patterns`](./.agents/skills/tailwind-patterns/SKILL.md) & [`unslop`](./.agents/skills/unslop/SKILL.md) (Terminal Editorial tokens, eliminating AI template slop, quiet chrome, status dots, calm typography)
   - **Database**: [`postgres-best-practices`](./.agents/skills/postgres-best-practices/SKILL.md) (indexing, connection pooling, safe migrations)
   - **Security & Auth**: [`security-and-hardening`](./.agents/skills/security-and-hardening/SKILL.md) & [`api-security-best-practices`](./.agents/skills/api-security-best-practices/SKILL.md) (OWASP Top 10, TOTP, token encryption, revocation priority)
   - **Testing**: [`test-driven-development`](./.agents/skills/test-driven-development/SKILL.md) (red-green-refactor, test pyramid proof)
@@ -37,9 +44,9 @@ Whenever a **new conversation starts** OR the context within a conversation **sh
 - Read the relevant `SKILL.md` instructions before taking action.
 
 ### Phase 3: Web Research Fallback for Missing Skills / Emerging Context
-- If no existing local skill, rule, or documentation adequately covers the specific technology, third-party broker API (e.g. Upstox V2, Zerodha Kite Connect, AngelOne SmartAPI), library version, or architectural pattern:
-  - **Search the Web proactively** using `search_web` for official documentation, RFC standards, and modern industry best practices.
-  - Ground all implementation details in authoritative, up-to-date sources (`source-driven-development`) rather than relying on outdated assumptions.
+- If no existing local skill, rule, or documentation adequately covers the specific technology, UI design pattern, third-party broker API (e.g. Upstox V2, Zerodha Kite Connect, AngelOne SmartAPI), library version, or architectural pattern:
+  - **Search the Web proactively** using `search_web` to discover the best modern skills, official RFCs, reference implementations, and industry best practices.
+  - Formulate and execute work according to those discovered best practices (`source-driven-development`) rather than relying on ungrounded or outdated assumptions.
 
 ---
 
@@ -193,3 +200,25 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
   - Animated SVG status icons matching Design Lab alert banners (`AnimatedSuccessIcon`, `AnimatedWarningIcon`, `AnimatedErrorIcon`).
 - **Password Security Meter ([`security-inputs.jsx`](./frontend/src/features/auth/components/security-inputs.jsx))**:
   - Real-time password strength meter and rule validators (uppercase, lowercase, number, special char `@$!%*?&#`, and 8+ characters) utilized across Registration, Forgot Password, and Settings Security.
+
+### 8.8 Notes Subsystem, Unslop Design & Custom Type Architecture
+- **Unslop Design Craft ([`NoteCard.jsx`](./frontend/src/features/notes/components/NoteCard.jsx))**:
+  - **No Pastel Washes or Glows**: Cards feature pure neutral surfaces (`bg-white dark:bg-[#16171a] border border-neutral-200/80 dark:border-neutral-800`), eliminating pink/yellow full-card tints.
+  - **No Curved Left-Border Seams**: Thick left-border strips that create awkward corner radius seams were permanently removed in favor of uniform hairline borders.
+  - **Status Dots over Boxy Pills**: Replaced bulky boxed pills holding redundant icons with a clean, calm typographic status line: `<span className="size-2 rounded-full" /> <span className="font-medium">{typeInfo.label}</span>`.
+  - **Quiet Typography & Tag Links**: Titles maintain solid neutral contrast without blue hover. Tags sit naturally in the footer as plain `#tag` text links without button outlines or arbitrary dividing lines.
+- **Custom Note Types & Deletion Lifecycle**:
+  - **Creation**: Users can pick from 4 default presets (**Idea**, **Why I bought**, **Market thoughts**, **Lessons**) or add custom types via `+ Custom label` (e.g. `Crypto`, `Dividends`, `Watchlist`). Custom types are stored as `type:<slug>` tags.
+  - **Corner `×` Deletion ([`NoteDialog.jsx`](./frontend/src/features/notes/components/NoteDialog.jsx) & [`NotesView.jsx`](./frontend/src/features/notes/components/NotesView.jsx))**: Custom types in both the editor and the top filter strip feature a small circular cross at `-top-1.5 -right-1.5`. Clicking `×` deletes the custom type, blacklists it in `cointrack_deleted_custom_types_${userId}` to prevent revival from stale notes, cleans up tags from existing notes, and resets active filters to `All`. Recreating the custom type automatically un-blacklists it.
+- **Strict Per-User Isolation**:
+  - Backend ([`NoteService.java`](./backend/src/main/java/com/urva/myfinance/coinTrack/notes/service/NoteService.java)) strictly enforces `findByUserId` on all queries. There is no shared global tag or note type database.
+  - Custom types and tag strips in [`NotesView.jsx`](./frontend/src/features/notes/components/NotesView.jsx) are derived dynamically only from the authenticated user's notes (`rawNotes`).
+- **Elevated Neutral Modals ([`NoteReaderModal.jsx`](./frontend/src/features/notes/components/NoteReaderModal.jsx) & [`NoteDialog.jsx`](./frontend/src/features/notes/components/NoteDialog.jsx))**:
+  - Portaled to `document.body` via `createPortal` to prevent containing-block overflow clipping. All neon borders and dark washes removed in favor of clean elevated surfaces (`max-w-2xl bg-white dark:bg-[#16171a] border shadow-2xl rounded-2xl`).
+- **Search Bar Clearance**: Standardized to `h-9 pl-10 pr-8` with the search icon at `left-3.5`, guaranteeing 40px of left clearance to prevent icon/placeholder text collisions.
+- **Memory Reference**: Detailed architecture documented in [`local/memory/notes_subsystem_and_unslop_redesign.md`](./local/memory/notes_subsystem_and_unslop_redesign.md).
+
+### 8.9 Scrollbar & Dynamic Scrolling Invariant (Elimination of Content Overlap)
+- **Three-Tier Modal Scrolling Layout**: Modals ([`NoteDialog.jsx`](./frontend/src/features/notes/components/NoteDialog.jsx), [`NoteReaderModal.jsx`](./frontend/src/features/notes/components/NoteReaderModal.jsx), [`BaseDialog.jsx`](./frontend/src/shared/ui/feedback/base-dialog.jsx)) enforce `p-0 overflow-hidden flex flex-col` on the outer card. Header (`px-6 sm:px-7 pt-6 pb-4 border-b shrink-0`) and Footer (`px-6 sm:px-7 py-4 border-t shrink-0`) are pinned. Only the body container handles vertical overflow with `overflow-y-auto px-6 sm:px-7 py-5 [scrollbar-gutter:stable] [scrollbar-width:thin]`. The scrollbar is pinned to the card's outer edge, leaving $\ge 16\text{px}$ of clear whitespace between text/inputs and the scrollbar thumb.
+- **App Shell & Dashboard Overview Clearance**: [`MainLayout.jsx`](./frontend/src/widgets/app-shell/MainLayout.jsx) updates `<main>` to `pr-3 sm:pr-4 md:pr-5 [scrollbar-gutter:stable] [scrollbar-width:thin]`, ensuring right-aligned dashboard cards, charts, quick sync buttons, and tables never sit under the window scrollbar.
+- **Global Scrollbar Standardization**: [`globals.css`](./frontend/src/app/globals.css) applies universal `scrollbar-width: thin` and `scrollbar-color` across all browsers, plus `.scrollbar-thin`, `.custom-scrollbar`, and `.scrollbar-none` utilities. Applied across all dialogs and modals.

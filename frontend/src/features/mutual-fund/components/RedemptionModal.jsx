@@ -387,7 +387,7 @@ export default function RedemptionModal({
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto'>
+        <div className='p-6 overflow-y-auto [scrollbar-gutter:stable] scrollbar-thin'>
           <div className='mb-6'>
             <DataAccuracyWarning className='mb-4' />
           </div>

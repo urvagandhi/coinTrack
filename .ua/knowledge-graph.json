@@ -1417,6 +1417,61 @@
       "reasoning": "Extracted via AST structural analysis."
     },
     {
+      "id": "document:.agents/skills/unslop/references/effects.md",
+      "type": "document",
+      "name": "effects.md",
+      "path": ".agents/skills/unslop/references/effects.md",
+      "language": "md",
+      "summary": "docs component with 113 lines (moderate).",
+      "lines": 113,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "document:.agents/skills/unslop/references/refs.md",
+      "type": "document",
+      "name": "refs.md",
+      "path": ".agents/skills/unslop/references/refs.md",
+      "language": "md",
+      "summary": "docs component with 17 lines (simple).",
+      "lines": 17,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "document:.agents/skills/unslop/references/signs.md",
+      "type": "document",
+      "name": "signs.md",
+      "path": ".agents/skills/unslop/references/signs.md",
+      "language": "md",
+      "summary": "docs component with 103 lines (moderate).",
+      "lines": 103,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "document:.agents/skills/unslop/references/tokens.md",
+      "type": "document",
+      "name": "tokens.md",
+      "path": ".agents/skills/unslop/references/tokens.md",
+      "language": "md",
+      "summary": "docs component with 135 lines (moderate).",
+      "lines": 135,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "document:.agents/skills/unslop/references/visuals.md",
+      "type": "document",
+      "name": "visuals.md",
+      "path": ".agents/skills/unslop/references/visuals.md",
+      "language": "md",
+      "summary": "docs component with 84 lines (moderate).",
+      "lines": 84,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
       "id": "config:.env.docker.example",
       "type": "config",
       "name": ".env.docker.example",
@@ -1433,9 +1488,9 @@
       "name": "AGENTS.md",
       "path": "AGENTS.md",
       "language": "md",
-      "summary": "docs component with 122 lines (moderate).",
-      "lines": 122,
-      "complexity": "moderate",
+      "summary": "docs component with 224 lines (complex).",
+      "lines": 224,
+      "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
     {
@@ -1569,8 +1624,8 @@
       "name": "fingerprints.json",
       "path": ".ua/fingerprints.json",
       "language": "json",
-      "summary": "config component with 100258 lines (complex).",
-      "lines": 100258,
+      "summary": "config component with 100780 lines (complex).",
+      "lines": 100780,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -1580,8 +1635,8 @@
       "name": "knowledge-graph.json",
       "path": ".ua/knowledge-graph.json",
       "language": "json",
-      "summary": "config component with 110305 lines (complex).",
-      "lines": 110305,
+      "summary": "config component with 109459 lines (complex).",
+      "lines": 109459,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -2242,9 +2297,20 @@
       "name": "README.md",
       "path": "local/memory/README.md",
       "language": "md",
-      "summary": "docs component with 23 lines (simple).",
-      "lines": 23,
+      "summary": "docs component with 25 lines (simple).",
+      "lines": 25,
       "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "document:local/memory/app_shell_and_profile_settings.md",
+      "type": "document",
+      "name": "app_shell_and_profile_settings.md",
+      "path": "local/memory/app_shell_and_profile_settings.md",
+      "language": "md",
+      "summary": "docs component with 165 lines (moderate).",
+      "lines": 165,
+      "complexity": "moderate",
       "reasoning": "Extracted via AST structural analysis."
     },
     {
@@ -2269,8 +2335,19 @@
       "name": "dashboard_and_auth_session_recovery.md",
       "path": "local/memory/dashboard_and_auth_session_recovery.md",
       "language": "md",
-      "summary": "docs component with 72 lines (moderate).",
-      "lines": 72,
+      "summary": "docs component with 68 lines (moderate).",
+      "lines": 68,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "document:local/memory/notes_subsystem_and_unslop_redesign.md",
+      "type": "document",
+      "name": "notes_subsystem_and_unslop_redesign.md",
+      "path": "local/memory/notes_subsystem_and_unslop_redesign.md",
+      "language": "md",
+      "summary": "docs component with 126 lines (moderate).",
+      "lines": 126,
       "complexity": "moderate",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -5523,6 +5600,17 @@
       "reasoning": "Extracted via AST structural analysis."
     },
     {
+      "id": "document:.agents/rules/session-protocol.md",
+      "type": "document",
+      "name": "session-protocol.md",
+      "path": ".agents/rules/session-protocol.md",
+      "language": "md",
+      "summary": "docs component with 32 lines (simple).",
+      "lines": 32,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
       "id": "document:.agents/skills/api-and-interface-design/SKILL.md",
       "type": "document",
       "name": "SKILL.md",
@@ -5906,6 +5994,177 @@
       "lines": 27,
       "complexity": "simple",
       "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "document:.agents/skills/unslop/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "path": ".agents/skills/unslop/SKILL.md",
+      "language": "md",
+      "summary": "docs component with 233 lines (complex).",
+      "lines": 233,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "config:.agents/skills/unslop/agents/openai.yaml",
+      "type": "config",
+      "name": "openai.yaml",
+      "path": ".agents/skills/unslop/agents/openai.yaml",
+      "language": "yaml",
+      "summary": "config component with 4 lines (simple).",
+      "lines": 4,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "file:.agents/skills/unslop/references/refs/beacon-engraving.webp",
+      "type": "file",
+      "name": "beacon-engraving.webp",
+      "path": ".agents/skills/unslop/references/refs/beacon-engraving.webp",
+      "language": "webp",
+      "summary": "code component with 2241 lines (complex).",
+      "lines": 2241,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "file:.agents/skills/unslop/references/refs/meadow-3d.webp",
+      "type": "file",
+      "name": "meadow-3d.webp",
+      "path": ".agents/skills/unslop/references/refs/meadow-3d.webp",
+      "language": "webp",
+      "summary": "code component with 1091 lines (complex).",
+      "lines": 1091,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "file:.agents/skills/unslop/references/refs/story-dashboard-frames.webp",
+      "type": "file",
+      "name": "story-dashboard-frames.webp",
+      "path": ".agents/skills/unslop/references/refs/story-dashboard-frames.webp",
+      "language": "webp",
+      "summary": "code component with 715 lines (complex).",
+      "lines": 715,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "file:.agents/skills/unslop/references/refs/unslop-dashboard-after.webp",
+      "type": "file",
+      "name": "unslop-dashboard-after.webp",
+      "path": ".agents/skills/unslop/references/refs/unslop-dashboard-after.webp",
+      "language": "webp",
+      "summary": "code component with 300 lines (complex).",
+      "lines": 300,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "file:.agents/skills/unslop/references/refs/unslop-hero-after.webp",
+      "type": "file",
+      "name": "unslop-hero-after.webp",
+      "path": ".agents/skills/unslop/references/refs/unslop-hero-after.webp",
+      "language": "webp",
+      "summary": "code component with 839 lines (complex).",
+      "lines": 839,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "file:.agents/skills/unslop/scripts/snapshot.mjs",
+      "type": "file",
+      "name": "snapshot.mjs",
+      "path": ".agents/skills/unslop/scripts/snapshot.mjs",
+      "language": "mjs",
+      "summary": "code component with 150 lines (moderate).",
+      "lines": 150,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:.agents/skills/unslop/scripts/snapshot.mjs#flag",
+      "type": "function",
+      "name": "flag",
+      "path": ".agents/skills/unslop/scripts/snapshot.mjs",
+      "language": "mjs",
+      "summary": "Function flag in snapshot.mjs (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 7,
+      "endLine": 7
+    },
+    {
+      "id": "function:.agents/skills/unslop/scripts/snapshot.mjs#browserKit",
+      "type": "function",
+      "name": "browserKit",
+      "path": ".agents/skills/unslop/scripts/snapshot.mjs",
+      "language": "mjs",
+      "summary": "Function browserKit in snapshot.mjs (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 17,
+      "endLine": 28
+    },
+    {
+      "id": "file:.agents/skills/unslop/scripts/story.mjs",
+      "type": "file",
+      "name": "story.mjs",
+      "path": ".agents/skills/unslop/scripts/story.mjs",
+      "language": "mjs",
+      "summary": "code component with 461 lines (complex).",
+      "lines": 461,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:.agents/skills/unslop/scripts/story.mjs#browserKit",
+      "type": "function",
+      "name": "browserKit",
+      "path": ".agents/skills/unslop/scripts/story.mjs",
+      "language": "mjs",
+      "summary": "Function browserKit in story.mjs (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 17,
+      "endLine": 28
+    },
+    {
+      "id": "function:.agents/skills/unslop/scripts/story.mjs#meta",
+      "type": "function",
+      "name": "meta",
+      "path": ".agents/skills/unslop/scripts/story.mjs",
+      "language": "mjs",
+      "summary": "Function meta in story.mjs (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 40,
+      "endLine": 40
+    },
+    {
+      "id": "function:.agents/skills/unslop/scripts/story.mjs#kindOf",
+      "type": "function",
+      "name": "kindOf",
+      "path": ".agents/skills/unslop/scripts/story.mjs",
+      "language": "mjs",
+      "summary": "Function kindOf in story.mjs (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 50,
+      "endLine": 50
+    },
+    {
+      "id": "function:.agents/skills/unslop/scripts/story.mjs#sleep",
+      "type": "function",
+      "name": "sleep",
+      "path": ".agents/skills/unslop/scripts/story.mjs",
+      "language": "mjs",
+      "summary": "Function sleep in story.mjs (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 374,
+      "endLine": 374
     },
     {
       "id": "document:.agents/skills/using-agent-skills/SKILL.md",
@@ -54962,17 +55221,12 @@
       "id": "file:frontend/src/app/calculators/tax/salary/page.jsx",
       "type": "file",
       "name": "page.jsx",
-      "filePath": "frontend/src/app/calculators/tax/salary/page.jsx",
-      "lineRange": [
-        1,
-        216
-      ],
-      "summary": "Source component page.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/app/calculators/tax/salary/page.jsx",
+      "language": "jsx",
+      "summary": "code component with 216 lines (complex).",
+      "lines": 216,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/calculators/tax/salary/page.jsx#SalaryCalculatorPage",
@@ -54990,17 +55244,12 @@
       "id": "file:frontend/src/app/calculators/tax/tds/page.jsx",
       "type": "file",
       "name": "page.jsx",
-      "filePath": "frontend/src/app/calculators/tax/tds/page.jsx",
-      "lineRange": [
-        1,
-        187
-      ],
-      "summary": "Source component page.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/app/calculators/tax/tds/page.jsx",
+      "language": "jsx",
+      "summary": "code component with 187 lines (moderate).",
+      "lines": 187,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/calculators/tax/tds/page.jsx#TdsCalculatorPage",
@@ -55018,17 +55267,12 @@
       "id": "file:frontend/src/app/calculators/trading/brokerage/page.jsx",
       "type": "file",
       "name": "page.jsx",
-      "filePath": "frontend/src/app/calculators/trading/brokerage/page.jsx",
-      "lineRange": [
-        1,
-        230
-      ],
-      "summary": "Source component page.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/app/calculators/trading/brokerage/page.jsx",
+      "language": "jsx",
+      "summary": "code component with 230 lines (complex).",
+      "lines": 230,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/calculators/trading/brokerage/page.jsx#BrokerageCalculatorPage",
@@ -55046,17 +55290,12 @@
       "id": "file:frontend/src/app/calculators/trading/margin/page.jsx",
       "type": "file",
       "name": "page.jsx",
-      "filePath": "frontend/src/app/calculators/trading/margin/page.jsx",
-      "lineRange": [
-        1,
-        200
-      ],
-      "summary": "Source component page.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/app/calculators/trading/margin/page.jsx",
+      "language": "jsx",
+      "summary": "code component with 200 lines (moderate).",
+      "lines": 200,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/calculators/trading/margin/page.jsx#MarginCalculatorPage",
@@ -55074,33 +55313,23 @@
       "id": "file:frontend/src/app/globals.css",
       "type": "file",
       "name": "globals.css",
-      "filePath": "frontend/src/app/globals.css",
-      "lineRange": [
-        1,
-        1213
-      ],
-      "summary": "Source component globals.css implementing css logic.",
-      "tags": [
-        "markup",
-        "css"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/app/globals.css",
+      "language": "css",
+      "summary": "markup component with 1271 lines (complex).",
+      "lines": 1271,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/app/layout.js",
       "type": "file",
       "name": "layout.js",
-      "filePath": "frontend/src/app/layout.js",
-      "lineRange": [
-        1,
-        99
-      ],
-      "summary": "Source component layout.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/app/layout.js",
+      "language": "js",
+      "summary": "code component with 97 lines (moderate).",
+      "lines": 97,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/layout.js#RootLayout",
@@ -55118,17 +55347,12 @@
       "id": "file:frontend/src/app/manifest.js",
       "type": "file",
       "name": "manifest.js",
-      "filePath": "frontend/src/app/manifest.js",
-      "lineRange": [
-        1,
-        24
-      ],
-      "summary": "Source component manifest.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/app/manifest.js",
+      "language": "js",
+      "summary": "code component with 24 lines (simple).",
+      "lines": 24,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/manifest.js#manifest",
@@ -55146,17 +55370,12 @@
       "id": "file:frontend/src/app/not-found.js",
       "type": "file",
       "name": "not-found.js",
-      "filePath": "frontend/src/app/not-found.js",
-      "lineRange": [
-        1,
-        8
-      ],
-      "summary": "Source component not-found.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/app/not-found.js",
+      "language": "js",
+      "summary": "code component with 7 lines (simple).",
+      "lines": 7,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/not-found.js#GlobalNotFound",
@@ -55174,17 +55393,12 @@
       "id": "file:frontend/src/app/page.jsx",
       "type": "file",
       "name": "page.jsx",
-      "filePath": "frontend/src/app/page.jsx",
-      "lineRange": [
-        1,
-        278
-      ],
-      "summary": "Source component page.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/app/page.jsx",
+      "language": "jsx",
+      "summary": "code component with 277 lines (complex).",
+      "lines": 277,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/page.jsx#CoinTrackLandingPage",
@@ -55202,17 +55416,12 @@
       "id": "file:frontend/src/app/robots.js",
       "type": "file",
       "name": "robots.js",
-      "filePath": "frontend/src/app/robots.js",
-      "lineRange": [
-        1,
-        63
-      ],
-      "summary": "Source component robots.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/app/robots.js",
+      "language": "js",
+      "summary": "code component with 63 lines (moderate).",
+      "lines": 63,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/robots.js#robots",
@@ -55230,17 +55439,12 @@
       "id": "file:frontend/src/app/sitemap.js",
       "type": "file",
       "name": "sitemap.js",
-      "filePath": "frontend/src/app/sitemap.js",
-      "lineRange": [
-        1,
-        68
-      ],
-      "summary": "Source component sitemap.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/app/sitemap.js",
+      "language": "js",
+      "summary": "code component with 68 lines (moderate).",
+      "lines": 68,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/app/sitemap.js#sitemap",
@@ -55258,49 +55462,34 @@
       "id": "file:frontend/src/app/system.css",
       "type": "file",
       "name": "system.css",
-      "filePath": "frontend/src/app/system.css",
-      "lineRange": [
-        1,
-        622
-      ],
-      "summary": "Source component system.css implementing css logic.",
-      "tags": [
-        "markup",
-        "css"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/app/system.css",
+      "language": "css",
+      "summary": "markup component with 622 lines (complex).",
+      "lines": 622,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/entities/entitlement/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/entities/entitlement/index.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/entities/entitlement/index.js",
+      "language": "js",
+      "summary": "code component with 1 lines (simple).",
+      "lines": 1,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/entities/entitlement/model.js",
       "type": "file",
       "name": "model.js",
-      "filePath": "frontend/src/entities/entitlement/model.js",
-      "lineRange": [
-        1,
-        18
-      ],
-      "summary": "Source component model.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/entities/entitlement/model.js",
+      "language": "js",
+      "summary": "code component with 20 lines (simple).",
+      "lines": 20,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/entities/entitlement/model.js#createEntitlementModel",
@@ -55318,33 +55507,23 @@
       "id": "file:frontend/src/entities/holding/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/entities/holding/index.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/entities/holding/index.js",
+      "language": "js",
+      "summary": "code component with 1 lines (simple).",
+      "lines": 1,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/entities/holding/model.js",
       "type": "file",
       "name": "model.js",
-      "filePath": "frontend/src/entities/holding/model.js",
-      "lineRange": [
-        1,
-        18
-      ],
-      "summary": "Source component model.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/entities/holding/model.js",
+      "language": "js",
+      "summary": "code component with 33 lines (simple).",
+      "lines": 33,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/entities/holding/model.js#createHoldingModel",
@@ -55362,49 +55541,34 @@
       "id": "file:frontend/src/entities/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/entities/index.js",
-      "lineRange": [
-        1,
-        3
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/entities/index.js",
+      "language": "js",
+      "summary": "code component with 3 lines (simple).",
+      "lines": 3,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/entities/user/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/entities/user/index.js",
-      "lineRange": [
-        1,
-        1
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/entities/user/index.js",
+      "language": "js",
+      "summary": "code component with 1 lines (simple).",
+      "lines": 1,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/entities/user/model.js",
       "type": "file",
       "name": "model.js",
-      "filePath": "frontend/src/entities/user/model.js",
-      "lineRange": [
-        1,
-        16
-      ],
-      "summary": "Source component model.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/entities/user/model.js",
+      "language": "js",
+      "summary": "code component with 17 lines (simple).",
+      "lines": 17,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/entities/user/model.js#createUserModel",
@@ -55844,49 +56008,34 @@
       "id": "file:frontend/src/features/auth/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/features/auth/index.js",
-      "lineRange": [
-        1,
-        11
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/auth/index.js",
+      "language": "js",
+      "summary": "code component with 10 lines (simple).",
+      "lines": 10,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/auth/services/auth.service.js",
       "type": "file",
       "name": "auth.service.js",
-      "filePath": "frontend/src/features/auth/services/auth.service.js",
-      "lineRange": [
-        1,
-        86
-      ],
-      "summary": "Source component auth.service.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/features/auth/services/auth.service.js",
+      "language": "js",
+      "summary": "code component with 86 lines (moderate).",
+      "lines": 86,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx",
       "type": "file",
       "name": "AngelOneCallbackView.jsx",
-      "filePath": "frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx",
-      "lineRange": [
-        1,
-        16
-      ],
-      "summary": "Source component AngelOneCallbackView.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx",
+      "language": "jsx",
+      "summary": "code component with 16 lines (simple).",
+      "lines": 16,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx#AngelOneCallbackView",
@@ -55904,17 +56053,12 @@
       "id": "file:frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx",
       "type": "file",
       "name": "AngelOneDashboardView.jsx",
-      "filePath": "frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx",
-      "lineRange": [
-        1,
-        15
-      ],
-      "summary": "Source component AngelOneDashboardView.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx",
+      "language": "jsx",
+      "summary": "code component with 15 lines (simple).",
+      "lines": 15,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx#AngelOneDashboardView",
@@ -55932,17 +56076,12 @@
       "id": "file:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
       "type": "file",
       "name": "AngelOneSetupView.jsx",
-      "filePath": "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
-      "lineRange": [
-        1,
-        289
-      ],
-      "summary": "Source component AngelOneSetupView.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
+      "language": "jsx",
+      "summary": "code component with 288 lines (complex).",
+      "lines": 288,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx#AngelOneSetupView",
@@ -55960,17 +56099,12 @@
       "id": "file:frontend/src/features/brokers/hooks/useBrokerConnection.js",
       "type": "file",
       "name": "useBrokerConnection.js",
-      "filePath": "frontend/src/features/brokers/hooks/useBrokerConnection.js",
-      "lineRange": [
-        1,
-        40
-      ],
-      "summary": "Source component useBrokerConnection.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/brokers/hooks/useBrokerConnection.js",
+      "language": "js",
+      "summary": "code component with 39 lines (simple).",
+      "lines": 39,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/hooks/useBrokerConnection.js#useBrokerConnection",
@@ -58291,6 +58425,40 @@
       "complexity": "moderate"
     },
     {
+      "id": "file:frontend/src/features/notes/__tests__/constants.test.js",
+      "type": "file",
+      "name": "constants.test.js",
+      "path": "frontend/src/features/notes/__tests__/constants.test.js",
+      "language": "js",
+      "summary": "code component with 160 lines (moderate).",
+      "lines": 160,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NoteCard.jsx",
+      "type": "file",
+      "name": "NoteCard.jsx",
+      "path": "frontend/src/features/notes/components/NoteCard.jsx",
+      "language": "jsx",
+      "summary": "code component with 269 lines (complex).",
+      "lines": 269,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NoteCard.jsx#NoteCard",
+      "type": "function",
+      "name": "NoteCard",
+      "path": "frontend/src/features/notes/components/NoteCard.jsx",
+      "language": "jsx",
+      "summary": "Function NoteCard in NoteCard.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 30,
+      "endLine": 269
+    },
+    {
       "id": "file:frontend/src/features/notes/components/NoteDialog.jsx",
       "type": "file",
       "name": "NoteDialog.jsx",
@@ -58307,18 +58475,6 @@
       "complexity": "complex"
     },
     {
-      "id": "function:frontend/src/features/notes/components/NoteDialog.jsx#getColorKey",
-      "type": "function",
-      "name": "getColorKey",
-      "path": "frontend/src/features/notes/components/NoteDialog.jsx",
-      "language": "jsx",
-      "summary": "Function getColorKey in NoteDialog.jsx (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 20,
-      "endLine": 25
-    },
-    {
       "id": "function:frontend/src/features/notes/components/NoteDialog.jsx#NoteDialog",
       "type": "function",
       "name": "NoteDialog",
@@ -58328,7 +58484,30 @@
       "lines": 1,
       "complexity": "simple",
       "startLine": 27,
-      "endLine": 257
+      "endLine": 614
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NoteReaderModal.jsx",
+      "type": "file",
+      "name": "NoteReaderModal.jsx",
+      "path": "frontend/src/features/notes/components/NoteReaderModal.jsx",
+      "language": "jsx",
+      "summary": "code component with 252 lines (complex).",
+      "lines": 252,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NoteReaderModal.jsx#NoteReaderModal",
+      "type": "function",
+      "name": "NoteReaderModal",
+      "path": "frontend/src/features/notes/components/NoteReaderModal.jsx",
+      "language": "jsx",
+      "summary": "Function NoteReaderModal in NoteReaderModal.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 32,
+      "endLine": 252
     },
     {
       "id": "file:frontend/src/features/notes/components/NotesView.jsx",
@@ -58347,42 +58526,6 @@
       "complexity": "complex"
     },
     {
-      "id": "function:frontend/src/features/notes/components/NotesView.jsx#getColorKey",
-      "type": "function",
-      "name": "getColorKey",
-      "path": "frontend/src/features/notes/components/NotesView.jsx",
-      "language": "jsx",
-      "summary": "Function getColorKey in NotesView.jsx (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 75,
-      "endLine": 81
-    },
-    {
-      "id": "function:frontend/src/features/notes/components/NotesView.jsx#relativeTime",
-      "type": "function",
-      "name": "relativeTime",
-      "path": "frontend/src/features/notes/components/NotesView.jsx",
-      "language": "jsx",
-      "summary": "Function relativeTime in NotesView.jsx (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 83,
-      "endLine": 92
-    },
-    {
-      "id": "function:frontend/src/features/notes/components/NotesView.jsx#NoteCard",
-      "type": "function",
-      "name": "NoteCard",
-      "path": "frontend/src/features/notes/components/NotesView.jsx",
-      "language": "jsx",
-      "summary": "Function NoteCard in NotesView.jsx (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 94,
-      "endLine": 205
-    },
-    {
       "id": "function:frontend/src/features/notes/components/NotesView.jsx#NoteCardSkeleton",
       "type": "function",
       "name": "NoteCardSkeleton",
@@ -58391,8 +58534,8 @@
       "summary": "Function NoteCardSkeleton in NotesView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 207,
-      "endLine": 217
+      "startLine": 36,
+      "endLine": 52
     },
     {
       "id": "function:frontend/src/features/notes/components/NotesView.jsx#NotesView",
@@ -58403,8 +58546,118 @@
       "summary": "Function NotesView in NotesView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 219,
-      "endLine": 564
+      "startLine": 54,
+      "endLine": 792
+    },
+    {
+      "id": "file:frontend/src/features/notes/constants.js",
+      "type": "file",
+      "name": "constants.js",
+      "path": "frontend/src/features/notes/constants.js",
+      "language": "js",
+      "summary": "code component with 507 lines (complex).",
+      "lines": 507,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis.",
+      "tags": [
+        "tested"
+      ]
+    },
+    {
+      "id": "function:frontend/src/features/notes/constants.js#getDeletedCustomTypeIds",
+      "type": "function",
+      "name": "getDeletedCustomTypeIds",
+      "path": "frontend/src/features/notes/constants.js",
+      "language": "js",
+      "summary": "Function getDeletedCustomTypeIds in constants.js (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 163,
+      "endLine": 174
+    },
+    {
+      "id": "function:frontend/src/features/notes/constants.js#markCustomTypeDeleted",
+      "type": "function",
+      "name": "markCustomTypeDeleted",
+      "path": "frontend/src/features/notes/constants.js",
+      "language": "js",
+      "summary": "Function markCustomTypeDeleted in constants.js (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 176,
+      "endLine": 186
+    },
+    {
+      "id": "function:frontend/src/features/notes/constants.js#unmarkCustomTypeDeleted",
+      "type": "function",
+      "name": "unmarkCustomTypeDeleted",
+      "path": "frontend/src/features/notes/constants.js",
+      "language": "js",
+      "summary": "Function unmarkCustomTypeDeleted in constants.js (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 188,
+      "endLine": 197
+    },
+    {
+      "id": "function:frontend/src/features/notes/constants.js#getNoteColor",
+      "type": "function",
+      "name": "getNoteColor",
+      "path": "frontend/src/features/notes/constants.js",
+      "language": "js",
+      "summary": "Function getNoteColor in constants.js (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 202,
+      "endLine": 250
+    },
+    {
+      "id": "function:frontend/src/features/notes/constants.js#formatTagLabel",
+      "type": "function",
+      "name": "formatTagLabel",
+      "path": "frontend/src/features/notes/constants.js",
+      "language": "js",
+      "summary": "Function formatTagLabel in constants.js (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 255,
+      "endLine": 263
+    },
+    {
+      "id": "function:frontend/src/features/notes/constants.js#getNoteTypeInfo",
+      "type": "function",
+      "name": "getNoteTypeInfo",
+      "path": "frontend/src/features/notes/constants.js",
+      "language": "js",
+      "summary": "Function getNoteTypeInfo in constants.js (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 272,
+      "endLine": 473
+    },
+    {
+      "id": "function:frontend/src/features/notes/constants.js#getNoteCategory",
+      "type": "function",
+      "name": "getNoteCategory",
+      "path": "frontend/src/features/notes/constants.js",
+      "language": "js",
+      "summary": "Function getNoteCategory in constants.js (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 478,
+      "endLine": 480
+    },
+    {
+      "id": "function:frontend/src/features/notes/constants.js#relativeTime",
+      "type": "function",
+      "name": "relativeTime",
+      "path": "frontend/src/features/notes/constants.js",
+      "language": "js",
+      "summary": "Function relativeTime in constants.js (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 485,
+      "endLine": 507
     },
     {
       "id": "file:frontend/src/features/notes/index.js",
@@ -59363,7 +59616,7 @@
       "lines": 1,
       "complexity": "simple",
       "startLine": 54,
-      "endLine": 1905
+      "endLine": 1927
     },
     {
       "id": "file:frontend/src/features/profile/index.js",
@@ -64450,294 +64703,6 @@
       "complexity": "simple",
       "startLine": 73,
       "endLine": 96
-    },
-    {
-      "id": "function:frontend/src/app/calculators/tax/salary/page.jsx:SalaryCalculatorPage",
-      "type": "function",
-      "name": "SalaryCalculatorPage",
-      "filePath": "frontend/src/app/calculators/tax/salary/page.jsx",
-      "lineRange": [
-        14,
-        216
-      ],
-      "summary": "SalaryCalculatorPage operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/app/calculators/tax/tds/page.jsx:TdsCalculatorPage",
-      "type": "function",
-      "name": "TdsCalculatorPage",
-      "filePath": "frontend/src/app/calculators/tax/tds/page.jsx",
-      "lineRange": [
-        17,
-        187
-      ],
-      "summary": "TdsCalculatorPage operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/app/calculators/trading/brokerage/page.jsx:BrokerageCalculatorPage",
-      "type": "function",
-      "name": "BrokerageCalculatorPage",
-      "filePath": "frontend/src/app/calculators/trading/brokerage/page.jsx",
-      "lineRange": [
-        17,
-        230
-      ],
-      "summary": "BrokerageCalculatorPage operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/app/calculators/trading/margin/page.jsx:MarginCalculatorPage",
-      "type": "function",
-      "name": "MarginCalculatorPage",
-      "filePath": "frontend/src/app/calculators/trading/margin/page.jsx",
-      "lineRange": [
-        17,
-        200
-      ],
-      "summary": "MarginCalculatorPage operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/app/layout.js:RootLayout",
-      "type": "function",
-      "name": "RootLayout",
-      "filePath": "frontend/src/app/layout.js",
-      "lineRange": [
-        69,
-        97
-      ],
-      "summary": "RootLayout operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/app/manifest.js:manifest",
-      "type": "function",
-      "name": "manifest",
-      "filePath": "frontend/src/app/manifest.js",
-      "lineRange": [
-        1,
-        24
-      ],
-      "summary": "manifest operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/app/not-found.js:GlobalNotFound",
-      "type": "function",
-      "name": "GlobalNotFound",
-      "filePath": "frontend/src/app/not-found.js",
-      "lineRange": [
-        5,
-        7
-      ],
-      "summary": "GlobalNotFound operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/app/page.jsx:CoinTrackLandingPage",
-      "type": "function",
-      "name": "CoinTrackLandingPage",
-      "filePath": "frontend/src/app/page.jsx",
-      "lineRange": [
-        41,
-        277
-      ],
-      "summary": "CoinTrackLandingPage operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/app/robots.js:robots",
-      "type": "function",
-      "name": "robots",
-      "filePath": "frontend/src/app/robots.js",
-      "lineRange": [
-        1,
-        63
-      ],
-      "summary": "robots operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/app/sitemap.js:sitemap",
-      "type": "function",
-      "name": "sitemap",
-      "filePath": "frontend/src/app/sitemap.js",
-      "lineRange": [
-        1,
-        68
-      ],
-      "summary": "sitemap operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/entities/entitlement/model.js:createEntitlementModel",
-      "type": "function",
-      "name": "createEntitlementModel",
-      "filePath": "frontend/src/entities/entitlement/model.js",
-      "lineRange": [
-        11,
-        18
-      ],
-      "summary": "createEntitlementModel operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/entities/holding/model.js:createHoldingModel",
-      "type": "function",
-      "name": "createHoldingModel",
-      "filePath": "frontend/src/entities/holding/model.js",
-      "lineRange": [
-        5,
-        18
-      ],
-      "summary": "createHoldingModel operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/entities/user/model.js:createUserModel",
-      "type": "function",
-      "name": "createUserModel",
-      "filePath": "frontend/src/entities/user/model.js",
-      "lineRange": [
-        5,
-        16
-      ],
-      "summary": "createUserModel operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx:AngelOneCallbackView",
-      "type": "function",
-      "name": "AngelOneCallbackView",
-      "filePath": "frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx",
-      "lineRange": [
-        8,
-        14
-      ],
-      "summary": "AngelOneCallbackView operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx:AngelOneDashboardView",
-      "type": "function",
-      "name": "AngelOneDashboardView",
-      "filePath": "frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx",
-      "lineRange": [
-        7,
-        13
-      ],
-      "summary": "AngelOneDashboardView operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx:AngelOneSetupView",
-      "type": "function",
-      "name": "AngelOneSetupView",
-      "filePath": "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
-      "lineRange": [
-        17,
-        286
-      ],
-      "summary": "AngelOneSetupView operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/hooks/useBrokerConnection.js:useBrokerConnection",
-      "type": "function",
-      "name": "useBrokerConnection",
-      "filePath": "frontend/src/features/brokers/hooks/useBrokerConnection.js",
-      "lineRange": [
-        9,
-        16
-      ],
-      "summary": "useBrokerConnection operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/hooks/useBrokerConnection.js:useBrokerSummary",
-      "type": "function",
-      "name": "useBrokerSummary",
-      "filePath": "frontend/src/features/brokers/hooks/useBrokerConnection.js",
-      "lineRange": [
-        21,
-        39
-      ],
-      "summary": "useBrokerSummary operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
     },
     {
       "id": "function:frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx:BrokerCallbackHandler",
@@ -71080,6 +71045,60 @@
     {
       "source": "file:.agents/plugins/understand-anything/skills/understand/validate-incremental-symbols.mjs",
       "target": "function:.agents/plugins/understand-anything/skills/understand/validate-incremental-symbols.mjs#formatSymbolReport",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:.agents/skills/unslop/scripts/snapshot.mjs",
+      "target": "function:.agents/skills/unslop/scripts/snapshot.mjs#flag",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:.agents/skills/unslop/scripts/snapshot.mjs",
+      "target": "function:.agents/skills/unslop/scripts/snapshot.mjs#browserKit",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:.agents/skills/unslop/scripts/story.mjs",
+      "target": "function:.agents/skills/unslop/scripts/story.mjs#browserKit",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:.agents/skills/unslop/scripts/story.mjs",
+      "target": "function:.agents/skills/unslop/scripts/story.mjs#meta",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:.agents/skills/unslop/scripts/story.mjs",
+      "target": "function:.agents/skills/unslop/scripts/story.mjs#kindOf",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:.agents/skills/unslop/scripts/story.mjs",
+      "target": "function:.agents/skills/unslop/scripts/story.mjs#sleep",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -103316,8 +103335,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:frontend/src/features/notes/components/NoteDialog.jsx",
-      "target": "function:frontend/src/features/notes/components/NoteDialog.jsx#getColorKey",
+      "source": "file:frontend/src/features/notes/components/NoteCard.jsx",
+      "target": "function:frontend/src/features/notes/components/NoteCard.jsx#NoteCard",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -103334,26 +103353,8 @@
       "direction": "forward"
     },
     {
-      "source": "file:frontend/src/features/notes/components/NotesView.jsx",
-      "target": "function:frontend/src/features/notes/components/NotesView.jsx#getColorKey",
-      "relation": "contains",
-      "confidence": 1,
-      "weight": 0.9,
-      "reason": "File contains function definition",
-      "direction": "forward"
-    },
-    {
-      "source": "file:frontend/src/features/notes/components/NotesView.jsx",
-      "target": "function:frontend/src/features/notes/components/NotesView.jsx#relativeTime",
-      "relation": "contains",
-      "confidence": 1,
-      "weight": 0.9,
-      "reason": "File contains function definition",
-      "direction": "forward"
-    },
-    {
-      "source": "file:frontend/src/features/notes/components/NotesView.jsx",
-      "target": "function:frontend/src/features/notes/components/NotesView.jsx#NoteCard",
+      "source": "file:frontend/src/features/notes/components/NoteReaderModal.jsx",
+      "target": "function:frontend/src/features/notes/components/NoteReaderModal.jsx#NoteReaderModal",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -103372,6 +103373,78 @@
     {
       "source": "file:frontend/src/features/notes/components/NotesView.jsx",
       "target": "function:frontend/src/features/notes/components/NotesView.jsx#NotesView",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/constants.js",
+      "target": "function:frontend/src/features/notes/constants.js#getDeletedCustomTypeIds",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/constants.js",
+      "target": "function:frontend/src/features/notes/constants.js#markCustomTypeDeleted",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/constants.js",
+      "target": "function:frontend/src/features/notes/constants.js#unmarkCustomTypeDeleted",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/constants.js",
+      "target": "function:frontend/src/features/notes/constants.js#getNoteColor",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/constants.js",
+      "target": "function:frontend/src/features/notes/constants.js#formatTagLabel",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/constants.js",
+      "target": "function:frontend/src/features/notes/constants.js#getNoteTypeInfo",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/constants.js",
+      "target": "function:frontend/src/features/notes/constants.js#getNoteCategory",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/constants.js",
+      "target": "function:frontend/src/features/notes/constants.js#relativeTime",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106178,139 +106251,6 @@
       "direction": "forward"
     },
     {
-      "source": "file:frontend/src/app/calculators/tax/salary/page.jsx",
-      "target": "function:frontend/src/app/calculators/tax/salary/page.jsx:SalaryCalculatorPage",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/app/calculators/tax/tds/page.jsx",
-      "target": "function:frontend/src/app/calculators/tax/tds/page.jsx:TdsCalculatorPage",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/app/calculators/trading/brokerage/page.jsx",
-      "target": "function:frontend/src/app/calculators/trading/brokerage/page.jsx:BrokerageCalculatorPage",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/app/calculators/trading/margin/page.jsx",
-      "target": "function:frontend/src/app/calculators/trading/margin/page.jsx:MarginCalculatorPage",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/app/layout.js",
-      "target": "function:frontend/src/app/layout.js:RootLayout",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/app/layout.js",
-      "target": "file:frontend/src/app/globals.css",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:frontend/src/app/manifest.js",
-      "target": "function:frontend/src/app/manifest.js:manifest",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/app/not-found.js",
-      "target": "function:frontend/src/app/not-found.js:GlobalNotFound",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/app/page.jsx",
-      "target": "function:frontend/src/app/page.jsx:CoinTrackLandingPage",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/app/robots.js",
-      "target": "function:frontend/src/app/robots.js:robots",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/app/sitemap.js",
-      "target": "function:frontend/src/app/sitemap.js:sitemap",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/entities/entitlement/model.js",
-      "target": "function:frontend/src/entities/entitlement/model.js:createEntitlementModel",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/entities/holding/model.js",
-      "target": "function:frontend/src/entities/holding/model.js:createHoldingModel",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/entities/user/model.js",
-      "target": "function:frontend/src/entities/user/model.js:createUserModel",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx",
-      "target": "function:frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx:AngelOneCallbackView",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx",
-      "target": "function:frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx:AngelOneDashboardView",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
-      "target": "function:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx:AngelOneSetupView",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/hooks/useBrokerConnection.js",
-      "target": "function:frontend/src/features/brokers/hooks/useBrokerConnection.js:useBrokerConnection",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/hooks/useBrokerConnection.js",
-      "target": "function:frontend/src/features/brokers/hooks/useBrokerConnection.js:useBrokerSummary",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
       "source": "file:frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx",
       "target": "function:frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx:BrokerCallbackHandler",
       "type": "contains",
@@ -108164,6 +108104,14 @@
       "type": "contains",
       "direction": "forward",
       "weight": 1
+    },
+    {
+      "source": "file:frontend/src/features/notes/constants.js",
+      "target": "file:frontend/src/features/notes/__tests__/constants.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5,
+      "description": "Path-based pairing (deterministic)"
     }
   ],
   "layers": [
@@ -109575,11 +109523,11 @@
       ]
     }
   ],
-  "lastUpdated": "2026-11-03T14:12:47.197Z",
+  "lastUpdated": "2026-11-04T04:03:50.995Z",
   "metadata": {
-    "lastCommit": "2563e83a7b35c7574e3ae50dce29110067b47b8a",
-    "lastCommitTime": "2026-11-03T14:12:47.197Z",
-    "nodeCount": 5679,
-    "edgeCount": 4424
+    "lastCommit": "3a19166cbe57682e40081239bc7b57f4d2f49adb",
+    "lastCommitTime": "2026-11-04T04:03:50.996Z",
+    "nodeCount": 5694,
+    "edgeCount": 4418
   }
 }

@@ -109,7 +109,7 @@ export function HoldingsTable() {
         )}
       </header>
 
-      <div className='overflow-x-auto'>
+      <div className='overflow-x-auto [scrollbar-gutter:stable] scrollbar-thin'>
         <table className='ed-table'>
           <thead>
             <tr>

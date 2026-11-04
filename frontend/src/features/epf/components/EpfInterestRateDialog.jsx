@@ -33,7 +33,7 @@ export default function EpfInterestRateDialog({ isOpen, onClose, rates }) {
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto space-y-6'>
+        <div className='p-6 overflow-y-auto space-y-6 [scrollbar-gutter:stable] scrollbar-thin'>
           {/* Existing Configured Rates Table */}
           <div className='space-y-2'>
             <h3 className='text-[11px] font-mono uppercase text-muted-foreground tracking-[0.1em]'>

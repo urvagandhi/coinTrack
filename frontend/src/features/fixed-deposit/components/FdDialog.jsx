@@ -728,7 +728,7 @@ export default function FdDialog({
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto space-y-6'>
+        <div className='p-6 overflow-y-auto space-y-6 [scrollbar-gutter:stable] scrollbar-thin'>
           <form id='fd-form' onSubmit={handleSubmit} className='space-y-6'>
             {/* Section 1: Institution & Holder Info */}
             <div className='space-y-3'>

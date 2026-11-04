@@ -85,7 +85,7 @@ export default function WithdrawnFdDialog({
           </div>
         </div>
 
-        <div className='p-6 overflow-y-auto space-y-5'>
+        <div className='p-6 overflow-y-auto space-y-5 [scrollbar-gutter:stable] scrollbar-thin'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             {/* Deposit card */}
             <div className='border border-hairline rounded-sm px-4 py-3'>

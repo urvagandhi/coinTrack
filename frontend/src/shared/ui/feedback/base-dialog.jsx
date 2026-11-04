@@ -95,7 +95,7 @@ export function BaseDialog({
         )}
 
         {/* Scrollable Body Content */}
-        <div className='p-6 sm:p-8 overflow-y-auto flex-1 min-h-0 scrollbar-thin space-y-4'>
+        <div className='p-6 sm:p-8 overflow-y-auto flex-1 min-h-0 [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-neutral-300 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-700 hover:[&::-webkit-scrollbar-thumb]:bg-neutral-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-neutral-600 [&::-webkit-scrollbar-track]:bg-transparent space-y-4'>
           {children}
         </div>
 

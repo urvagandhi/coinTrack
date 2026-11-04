@@ -267,7 +267,7 @@ export default function PpfDialog({
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto'>
+        <div className='p-6 overflow-y-auto [scrollbar-gutter:stable] scrollbar-thin'>
           <form id='ppf-form' onSubmit={handleSubmit} className='space-y-6'>
             {/* Section 1: Transaction & Type */}
             <div className='space-y-3'>

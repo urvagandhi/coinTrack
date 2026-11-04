@@ -14,6 +14,7 @@ When resuming or starting new agent sessions, agents should reference these memo
 | [`app_shell_and_profile_settings.md`](./app_shell_and_profile_settings.md) | **App Shell & Profile/Settings Subsystem** | Elevated canvas card layout with atmospheric sky backdrop, header deduplication, theme switcher, docked static sidebar navigation, dynamic right card vertical scrolling with single scrollbar, un-shrunk sizing, TOTP 2FA reset, and email verification DTO synchronization. |
 | [`dashboard_and_auth_session_recovery.md`](./dashboard_and_auth_session_recovery.md) | **Dashboard Architecture & Auth Session Recovery** | Modern SaaS card dashboard, elevated canvas card isolation, self-healing `AuthGuard`, 2FA token handoff and hydration via `refreshUser()`. |
 | [`postman_api_ecosystem.md`](./postman_api_ecosystem.md) | **Postman API & Automated E2E Testing** | Dual collection architecture (199-request Master Suite + 38-step automated E2E runner), root Bearer auth inheritance, silent token refresh, RFC 6238 TOTP auto-generation in Pre-Request scripts, Terminal Editorial response visualizers, and Newman CI/CD automation. |
+| [`notes_subsystem_and_unslop_redesign.md`](./notes_subsystem_and_unslop_redesign.md) | **Notes & Investment Journal Subsystem** | Unslop design craft (no pastel washes or curved left borders), status dot indicator, custom note types with top-right corner `×` deletion, per-user data isolation, elevated neutral modals, three-tier modal scrolling layout, and stable gutter clearance. |
 
 ---
 

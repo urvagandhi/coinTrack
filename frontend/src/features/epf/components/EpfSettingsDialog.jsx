@@ -125,7 +125,7 @@ export default function EpfSettingsDialog({
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto space-y-5'>
+        <div className='p-6 overflow-y-auto space-y-5 [scrollbar-gutter:stable] scrollbar-thin'>
           <form
             id='epf-settings-form'
             onSubmit={handleSubmit}

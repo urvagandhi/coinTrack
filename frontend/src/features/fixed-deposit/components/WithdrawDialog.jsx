@@ -340,7 +340,7 @@ export default function WithdrawDialog({
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto space-y-5'>
+        <div className='p-6 overflow-y-auto space-y-5 [scrollbar-gutter:stable] scrollbar-thin'>
           {fd.isPrematurelyWithdrawn ? (
             <div className='border border-[hsl(var(--loss))]/40 bg-[hsl(var(--loss))]/5 rounded-sm px-4 py-3 text-[13px] text-foreground'>
               This FD is already withdrawn prematurely on{' '}

@@ -92,7 +92,7 @@ export default function PpfSettingsDialog({
         </div>
 
         {/* Form */}
-        <div className='p-6 overflow-y-auto'>
+        <div className='p-6 overflow-y-auto [scrollbar-gutter:stable] scrollbar-thin'>
           <form
             id='ppf-settings-form'
             onSubmit={handleSubmit}

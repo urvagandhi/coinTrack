@@ -49,7 +49,7 @@ export default function MainLayout({ children }) {
         <div className='flex-1 flex flex-col md:flex-row gap-4 sm:gap-6 pt-5 min-h-0 overflow-hidden'>
           <Sidebar />
 
-          <main className='flex-1 h-full min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden pr-1 sm:pr-2 overscroll-contain [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-neutral-200/80 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-800/80 hover:[&::-webkit-scrollbar-thumb]:bg-neutral-300 dark:hover:[&::-webkit-scrollbar-thumb]:bg-neutral-700 [&::-webkit-scrollbar-track]:bg-transparent'>
+          <main className='flex-1 h-full min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden pr-3 sm:pr-4 md:pr-5 overscroll-contain [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-neutral-300 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-700 hover:[&::-webkit-scrollbar-thumb]:bg-neutral-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-neutral-600 [&::-webkit-scrollbar-track]:bg-transparent'>
             {children}
           </main>
         </div>

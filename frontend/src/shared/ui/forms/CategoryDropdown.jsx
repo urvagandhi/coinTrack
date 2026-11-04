@@ -63,7 +63,7 @@ export default function CategoryDropdown({
       </div>
 
       {searchQuery ? (
-        <div className='max-h-72 overflow-y-auto'>
+        <div className='max-h-72 overflow-y-auto pr-1.5 [scrollbar-gutter:stable] scrollbar-thin'>
           {searchResults.length > 0 ? (
             searchResults.map(cat => (
               <DropdownMenuItem
@@ -98,7 +98,7 @@ export default function CategoryDropdown({
               <span>{groupObj.group}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
-              <DropdownMenuSubContent className='font-mono max-h-72 overflow-y-auto'>
+              <DropdownMenuSubContent className='font-mono max-h-72 overflow-y-auto pr-1.5 [scrollbar-gutter:stable] scrollbar-thin'>
                 <DropdownMenuLabel className='text-[10px] uppercase tracking-wider text-muted-foreground'>
                   {groupObj.group}
                 </DropdownMenuLabel>

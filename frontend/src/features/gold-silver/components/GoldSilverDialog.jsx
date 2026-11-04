@@ -202,7 +202,7 @@ export default function GoldSilverDialog({
           </button>
         </div>
 
-        <div className='p-0 overflow-y-auto flex flex-col md:flex-row h-full'>
+        <div className='p-0 overflow-y-auto [scrollbar-gutter:stable] scrollbar-thin flex flex-col md:flex-row h-full'>
           {/* Form Side */}
           <div className='flex-1 p-6 space-y-6 md:border-r border-border'>
             <form id='gs-form' onSubmit={handleSubmit} className='space-y-6'>

@@ -55,7 +55,7 @@ export function SearchCombobox({
         className='w-[--radix-popover-trigger-width] p-1.5 z-[100]'
         onOpenAutoFocus={e => e.preventDefault()}
       >
-        <div className='max-h-60 overflow-y-auto'>
+        <div className='max-h-60 overflow-y-auto pr-1.5 [scrollbar-gutter:stable] scrollbar-thin'>
           {results.length > 0 ? (
             results.map(item => (
               <button

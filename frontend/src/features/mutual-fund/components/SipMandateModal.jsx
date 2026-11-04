@@ -196,7 +196,7 @@ export default function SipMandateModal({
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto'>
+        <div className='p-6 overflow-y-auto [scrollbar-gutter:stable] scrollbar-thin'>
           <form
             id='mandate-form'
             onSubmit={handleSubmit}

@@ -184,7 +184,7 @@ export default function NewSchemeModal({
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto'>
+        <div className='p-6 overflow-y-auto [scrollbar-gutter:stable] scrollbar-thin'>
           <form
             id='new-scheme-form'
             onSubmit={handleSubmit}

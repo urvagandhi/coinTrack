@@ -19,7 +19,7 @@ Whenever a **new conversation starts** OR the context within a conversation **sh
 Identify the subsystem being touched and activate the appropriate packaged skill in `.agents/skills/`:
 - **Java / Spring Boot**: `java-pro` (records, hexagonal architecture, virtual threads, domain safety)
 - **Next.js & React**: `nextjs-best-practices` & `frontend-ui-engineering` (App Router, server vs. client boundaries, lowercase imports)
-- **Styling**: `tailwind-patterns` (Terminal Editorial tokens, Geist + Instrument Serif)
+- **Styling & Craft**: `tailwind-patterns` & `unslop` (Terminal Editorial tokens, eliminating AI template slop, quiet chrome, status dots, calm typography)
 - **Database**: `postgres-best-practices` (indexing, connection pooling, safe migrations)
 - **Security & Auth**: `security-and-hardening` & `api-security-best-practices` (OWASP Top 10, TOTP, token encryption, revocation priority)
 - **Testing**: `test-driven-development` (red-green-refactor, test pyramid proof)
@@ -27,6 +27,6 @@ Identify the subsystem being touched and activate the appropriate packaged skill
 Read the relevant `SKILL.md` before taking action.
 
 ### Phase 3: Web Research Fallback for Missing Skills / Emerging Context
-If no existing local skill, rule, or documentation adequately covers the specific technology, third-party broker API (e.g. Upstox V2, Zerodha Kite Connect, AngelOne SmartAPI), library version, or architectural pattern:
-- **Search the Web proactively** using `search_web` for official documentation, RFC standards, and modern industry best practices.
-- Ground all implementation details in authoritative, up-to-date sources (`source-driven-development`) rather than relying on outdated assumptions.
+If no existing local skill, rule, or documentation adequately covers the specific technology, UI design pattern, third-party broker API (e.g. Upstox V2, Zerodha Kite Connect, AngelOne SmartAPI), library version, or architectural pattern:
+- **Search the Web proactively** using `search_web` to discover the best modern skills, official RFCs, reference implementations, and industry best practices.
+- Ground all implementation details in authoritative, up-to-date sources (`source-driven-development`) and work according to those discovered best practices rather than relying on ungrounded or outdated assumptions.

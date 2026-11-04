@@ -724,7 +724,7 @@ export function ProfileView() {
       {/* ── RIGHT MAIN SETTINGS CONTENT CARD ── */}
       <section
         aria-label='Settings Content'
-        className='flex-1 h-full min-h-0 w-full min-w-0 bg-white dark:bg-[#151619] border border-black/[0.06] dark:border-white/[0.08] rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xs transition-colors overflow-y-auto overflow-x-hidden [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-neutral-200/80 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-800/80 hover:[&::-webkit-scrollbar-thumb]:bg-neutral-300 dark:hover:[&::-webkit-scrollbar-thumb]:bg-neutral-700 [&::-webkit-scrollbar-track]:bg-transparent overscroll-contain'
+        className='flex-1 h-full min-h-0 w-full min-w-0 bg-white dark:bg-[#151619] border border-black/[0.06] dark:border-white/[0.08] rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xs transition-colors overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-neutral-300 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-700 hover:[&::-webkit-scrollbar-thumb]:bg-neutral-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-neutral-600 [&::-webkit-scrollbar-track]:bg-transparent overscroll-contain'
       >
         {/* TAB 1: MY PROFILE */}
         {activeTab === 'profile' && (

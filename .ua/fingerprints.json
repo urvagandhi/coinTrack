@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "2563e83a7b35c7574e3ae50dce29110067b47b8a",
-  "generatedAt": "2026-11-03T14:12:48.091Z",
+  "gitCommitHash": "3a19166cbe57682e40081239bc7b57f4d2f49adb",
+  "generatedAt": "2026-11-04T04:03:52.701Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -3823,6 +3823,16 @@
       "totalLines": 15,
       "hasStructuralAnalysis": false
     },
+    ".agents/rules/session-protocol.md": {
+      "filePath": ".agents/rules/session-protocol.md",
+      "contentHash": "c567b5169c5983d57a6d03f53766f465ea53c7734c7d678ada5de92ed0a8da1c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": false
+    },
     ".agents/skills/api-and-interface-design/SKILL.md": {
       "filePath": ".agents/skills/api-and-interface-design/SKILL.md",
       "contentHash": "cc5e2166c484b2c297e8253f56e7525e5031f81d66101ca4e760ef378ea6bad0",
@@ -4663,6 +4673,254 @@
       "totalLines": 28,
       "hasStructuralAnalysis": false
     },
+    ".agents/skills/unslop/SKILL.md": {
+      "filePath": ".agents/skills/unslop/SKILL.md",
+      "contentHash": "9e49b2ff7643fa09729e8665890a18f6bfa58a82e6fcbba330da38136ccdc393",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 234,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/agents/openai.yaml": {
+      "filePath": ".agents/skills/unslop/agents/openai.yaml",
+      "contentHash": "170d0b33a418d9d82beb7d15f8a91e314adef2edf53a81c37155b6f40dd52f06",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/effects.md": {
+      "filePath": ".agents/skills/unslop/references/effects.md",
+      "contentHash": "ded4f679e22843a8f68860e6cda0396fa8b8fa27202400e08337143b485c86a4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 114,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/refs.md": {
+      "filePath": ".agents/skills/unslop/references/refs.md",
+      "contentHash": "12a70ce17d574914ea69eb0809e5a9605de044df1b66619159c6d0b38d6b8353",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 18,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/refs/beacon-engraving.webp": {
+      "filePath": ".agents/skills/unslop/references/refs/beacon-engraving.webp",
+      "contentHash": "6500c43d96c4934fddeef40caf43ca6f0291aaead01579deac06f905bcd950d0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2242,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/refs/meadow-3d.webp": {
+      "filePath": ".agents/skills/unslop/references/refs/meadow-3d.webp",
+      "contentHash": "3ba94bbfed79b2b24701f187757fc2b3d189b7833f70d5d45c145862b6adb9b5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1092,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/refs/story-dashboard-frames.webp": {
+      "filePath": ".agents/skills/unslop/references/refs/story-dashboard-frames.webp",
+      "contentHash": "ca53301147ba1ee3efd29ba329ef2dd74ad4c558be8156bb4c9fb59fd702fb39",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 716,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/refs/unslop-dashboard-after.webp": {
+      "filePath": ".agents/skills/unslop/references/refs/unslop-dashboard-after.webp",
+      "contentHash": "a680c37099769c0e659b9e54867968c35218002af9146aac3d03d3bdf7fb5c37",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 301,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/refs/unslop-hero-after.webp": {
+      "filePath": ".agents/skills/unslop/references/refs/unslop-hero-after.webp",
+      "contentHash": "db22cf4622c149b07ac134468433b0ca5e344dfde00bb652516e8fd570847c0f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 840,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/signs.md": {
+      "filePath": ".agents/skills/unslop/references/signs.md",
+      "contentHash": "6250d3c222c2aaa4ef4f31557d99d249e5be86d8720cd1157df14798caf1c8c4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 104,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/tokens.md": {
+      "filePath": ".agents/skills/unslop/references/tokens.md",
+      "contentHash": "988b754612b3e2d42d87b1bbaca0b4a61f3e07a2b2eef782d3614e8fdb6db5b0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 136,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/references/visuals.md": {
+      "filePath": ".agents/skills/unslop/references/visuals.md",
+      "contentHash": "7247da579d2d95ace1e051b867c757bd1e05aa02f3ab8dea0ead4cd4bf14d7d7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 85,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/unslop/scripts/snapshot.mjs": {
+      "filePath": ".agents/skills/unslop/scripts/snapshot.mjs",
+      "contentHash": "0a5f2511d922bd5bd0df56e70e72d9e349695f2464f9b93d0bda3ef8a58c6e48",
+      "functions": [
+        {
+          "name": "flag",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "browserKit",
+          "params": [],
+          "exported": false,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:module",
+          "specifiers": [
+            "createRequire"
+          ]
+        },
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "existsSync",
+            "mkdirSync",
+            "writeFileSync"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "dirname",
+            "join",
+            "resolve"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 151,
+      "hasStructuralAnalysis": true
+    },
+    ".agents/skills/unslop/scripts/story.mjs": {
+      "filePath": ".agents/skills/unslop/scripts/story.mjs",
+      "contentHash": "17d3a6ab6564efc5aa7632a36f340c130aa512fde73d229d79474f1b4c09d0e1",
+      "functions": [
+        {
+          "name": "browserKit",
+          "params": [],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "meta",
+          "params": [
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "kindOf",
+          "params": [
+            "text"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "sleep",
+          "params": [
+            "ms"
+          ],
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:module",
+          "specifiers": [
+            "createRequire"
+          ]
+        },
+        {
+          "source": "node:http",
+          "specifiers": [
+            "createServer"
+          ]
+        },
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "existsSync",
+            "mkdirSync",
+            "readFileSync",
+            "rmSync",
+            "writeFileSync"
+          ]
+        },
+        {
+          "source": "node:child_process",
+          "specifiers": [
+            "execFileSync"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "dirname",
+            "extname",
+            "join",
+            "normalize",
+            "resolve"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 462,
+      "hasStructuralAnalysis": true
+    },
     ".agents/skills/using-agent-skills/SKILL.md": {
       "filePath": ".agents/skills/using-agent-skills/SKILL.md",
       "contentHash": "30787ef2c77bf1a4729fffed0f6523ba6fcbe81bdc436b36371b78c21394d3c3",
@@ -4725,27 +4983,27 @@
     },
     ".ua/fingerprints.json": {
       "filePath": ".ua/fingerprints.json",
-      "contentHash": "b2f2cb66943e24d6b5cbe2fd654cf042244562fc58a2bdfeb5d532b3d4cb094b",
+      "contentHash": "fa4a298e9c04629fb2198abfa36eea2e0d5b567b7c2d790ced9b5696975a9f14",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 100258,
+      "totalLines": 100780,
       "hasStructuralAnalysis": false
     },
     ".ua/knowledge-graph.json": {
       "filePath": ".ua/knowledge-graph.json",
-      "contentHash": "c839bfd209260c5748ac616c82ab8c007e0e987a264efc3216b4fc1f0573adf1",
+      "contentHash": "b29c3fb0d20f85b3fe05b577d5b0f99d022ee65554234a2d8b17bf923110477e",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 109585,
+      "totalLines": 109533,
       "hasStructuralAnalysis": false
     },
     ".ua/meta.json": {
       "filePath": ".ua/meta.json",
-      "contentHash": "b018cc445f4f1446dc2c9171c99a061985268ed4f6c5fc7e2be78241d21761af",
+      "contentHash": "4f8de8e8debdf3b36d6e3bd54cb55801ada4f826fcb52260f954f2eb867ab5cd",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -4813,12 +5071,12 @@
     },
     "AGENTS.md": {
       "filePath": "AGENTS.md",
-      "contentHash": "4892f51055c283d5637f3807a29c282eafb75dd7db382ab5e6967b230fda351a",
+      "contentHash": "32fea63b44d5bf061a9872f98fa6f7ee03d4884c01bd4b347032137f2be878fa",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 123,
+      "totalLines": 225,
       "hasStructuralAnalysis": false
     },
     "DOCKER.md": {
@@ -87583,12 +87841,12 @@
     },
     "frontend/src/app/globals.css": {
       "filePath": "frontend/src/app/globals.css",
-      "contentHash": "fdb8b1652d9d55004da6f7cb49b3cad3022f13068838bd63e0497a8ee9773c7d",
+      "contentHash": "8520bca4d9dbbaf54c3d21228ee812d6df8ad97bf41eb890df4e6acc127eb9e1",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 1232,
+      "totalLines": 1272,
       "hasStructuralAnalysis": false
     },
     "frontend/src/app/layout.js": {
@@ -87969,7 +88227,7 @@
     },
     "frontend/src/features/auth/components/auth-layout.jsx": {
       "filePath": "frontend/src/features/auth/components/auth-layout.jsx",
-      "contentHash": "258c82e8647ee47cd8a8a2cf33be0478960e0d2ccb9bc03e4697f683e6346276",
+      "contentHash": "2909fa3a1660cdff5811b1d1422f31e7879ae91f82aa7fbdece21a904f8725ef",
       "functions": [
         {
           "name": "AuthLayout",
@@ -89937,7 +90195,7 @@
     },
     "frontend/src/features/dashboard/components/HoldingsTable.jsx": {
       "filePath": "frontend/src/features/dashboard/components/HoldingsTable.jsx",
-      "contentHash": "f91d4bfa0aa33c42bfef1de029ade761c4aa1093c2039a1473bf04b682f5eb41",
+      "contentHash": "0bd3d55bb3cb07159da1e9ec8aaaa90e748f486d25b6fca2cac8f04078392f3a",
       "functions": [
         {
           "name": "Skeleton",
@@ -90184,7 +90442,7 @@
     },
     "frontend/src/features/epf/components/EpfInterestRateDialog.jsx": {
       "filePath": "frontend/src/features/epf/components/EpfInterestRateDialog.jsx",
-      "contentHash": "ea0dbea7e826b72c11f7839ef3a94c84dcfb963b1db886008fc2b0d44ea9f361",
+      "contentHash": "22959440aac811df6f89bbdd583bd2be52385b1fd44dcfd7bb6fba71fcdbdd39",
       "functions": [
         {
           "name": "EpfInterestRateDialog",
@@ -90211,7 +90469,7 @@
     },
     "frontend/src/features/epf/components/EpfSettingsDialog.jsx": {
       "filePath": "frontend/src/features/epf/components/EpfSettingsDialog.jsx",
-      "contentHash": "043982911d65c45a49b0db93116a5dcd8b0057a770955ddec0519fad25811711",
+      "contentHash": "d14e66bbd66e1cf0b7a70558ab3c59d366a0df435b2e807c75e8f7c07696f897",
       "functions": [
         {
           "name": "parseShortcutAmount",
@@ -90260,7 +90518,7 @@
     },
     "frontend/src/features/epf/components/EpfTransactionDialog.jsx": {
       "filePath": "frontend/src/features/epf/components/EpfTransactionDialog.jsx",
-      "contentHash": "a405d00658edccff1097b63aed87df1d8b654ee6a036aa725fd6198a3f4c227e",
+      "contentHash": "743b515d23b859277708b7733902427a7098b10a396679b7cde5a8bd6b93ee09",
       "functions": [
         {
           "name": "parseShortcutAmount",
@@ -90468,7 +90726,7 @@
     },
     "frontend/src/features/fixed-deposit/components/FdDialog.jsx": {
       "filePath": "frontend/src/features/fixed-deposit/components/FdDialog.jsx",
-      "contentHash": "bc4634a9e67ee95ab89dbfd1b1c96fbf5ef01433c5b324c1112aa24452162b9d",
+      "contentHash": "de544840cb426e64246df2f85c5e8095e0b19c0997ad4d8e96ecb4c87dcd3189",
       "functions": [
         {
           "name": "formatIndianCurrency",
@@ -90798,7 +91056,7 @@
     },
     "frontend/src/features/fixed-deposit/components/WithdrawDialog.jsx": {
       "filePath": "frontend/src/features/fixed-deposit/components/WithdrawDialog.jsx",
-      "contentHash": "aa57fc41e7c3403df8cfd718d2f524042a17cc933c3f4e113ce24d858d9534a1",
+      "contentHash": "4f235427a80c90cbe59cf7c19c2e42e41ecfaa595668a0431347eb1c2fb7f965",
       "functions": [
         {
           "name": "daysBetweenIso",
@@ -90868,7 +91126,7 @@
     },
     "frontend/src/features/fixed-deposit/components/WithdrawnFdDialog.jsx": {
       "filePath": "frontend/src/features/fixed-deposit/components/WithdrawnFdDialog.jsx",
-      "contentHash": "452831d319444528921064b92047ebb71a48f88d0c636c23717070b87032e32b",
+      "contentHash": "ec8544cf1077515cac811bbcdc848d49f3c15e10bf3d5ca8edc29ce866ba71aa",
       "functions": [
         {
           "name": "formatCurrency",
@@ -90937,7 +91195,7 @@
     },
     "frontend/src/features/gold-silver/components/GoldSilverDialog.jsx": {
       "filePath": "frontend/src/features/gold-silver/components/GoldSilverDialog.jsx",
-      "contentHash": "98b39569fbbc2a73e6772ad8dbe4a0867626450874bc98e2758218f682b34135",
+      "contentHash": "b5875a751ac3ca39fe818ebd10a61ea9c84a6d4d3ab35e5236d67ba98cf909bb",
       "functions": [
         {
           "name": "GoldSilverDialog",
@@ -91459,7 +91717,7 @@
     },
     "frontend/src/features/mutual-fund/components/LumpsumTransactionModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/LumpsumTransactionModal.jsx",
-      "contentHash": "457783a6b10f706cd13aa459fcb24848d9559c04e3d1bb88dd473b42f758b935",
+      "contentHash": "67383f837595ac2868fb2b4423390562b2e205b4d1941bc10f1abda900d7ac73",
       "functions": [
         {
           "name": "LumpsumTransactionModal",
@@ -91639,7 +91897,7 @@
     },
     "frontend/src/features/mutual-fund/components/NewSchemeModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/NewSchemeModal.jsx",
-      "contentHash": "480125571405cdfa069fac96128375a0f56db48b136822814127e101a7e6c907",
+      "contentHash": "ddf1ee2fc9cefe171cc496754e8109902d83c1e76893b7883f9baab300791563",
       "functions": [
         {
           "name": "autoExtractCategory",
@@ -91780,7 +92038,7 @@
     },
     "frontend/src/features/mutual-fund/components/RedemptionModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/RedemptionModal.jsx",
-      "contentHash": "a367e8b794393683006a66ff36a6f3f21e8df587bfa03595f295b9f083bbb949",
+      "contentHash": "9c1ded3bf60ecc7d2ab24bba5cb6a5594534648d7e292ee1abc0a960437a3d3e",
       "functions": [
         {
           "name": "RedemptionModal",
@@ -92006,7 +92264,7 @@
     },
     "frontend/src/features/mutual-fund/components/SipContributionModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/SipContributionModal.jsx",
-      "contentHash": "232439adad0a13ffd71d309bbac0b3444ffac12fb3bbbc3b8411057fc0a11b40",
+      "contentHash": "7817e71c288bfe689927b1330b60f3760be612ffd246c9c227a6a69244a0ec17",
       "functions": [
         {
           "name": "SipContributionModal",
@@ -92059,7 +92317,7 @@
     },
     "frontend/src/features/mutual-fund/components/SipMandateModal.jsx": {
       "filePath": "frontend/src/features/mutual-fund/components/SipMandateModal.jsx",
-      "contentHash": "88d80edc905b3cc34d58c4c5f17b3b2ba26758d55ab6f7ec164f969f3276ac4b",
+      "contentHash": "c30539953087ce82cb7d732c801b1ea9734160ea3682cdfbb28a99d51902c0af",
       "functions": [
         {
           "name": "SipMandateModal",
@@ -92582,27 +92840,53 @@
       "totalLines": 70,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/notes/components/NoteDialog.jsx": {
-      "filePath": "frontend/src/features/notes/components/NoteDialog.jsx",
-      "contentHash": "579ab721444d0f09284736669ec35e9b3c8c01a102ce0b0453544853335a18ba",
+    "frontend/src/features/notes/__tests__/constants.test.js": {
+      "filePath": "frontend/src/features/notes/__tests__/constants.test.js",
+      "contentHash": "103651ecdd63d6cd005f077142f5a3861694b62371dc0f2fa75a894a0b36b8d6",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../constants",
+          "specifiers": [
+            "NOTE_CATEGORIES",
+            "NOTE_COLORS",
+            "formatTagLabel",
+            "getDeletedCustomTypeIds",
+            "getNoteCategory",
+            "getNoteColor",
+            "getNoteTypeInfo",
+            "markCustomTypeDeleted",
+            "relativeTime",
+            "unmarkCustomTypeDeleted"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 161,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NoteCard.jsx": {
+      "filePath": "frontend/src/features/notes/components/NoteCard.jsx",
+      "contentHash": "c3f682afa05a4293af1b09604c48e97c931a9c20e88ec23cdf37f62a8131aaf8",
       "functions": [
         {
-          "name": "getColorKey",
-          "params": [
-            "bgStr"
-          ],
-          "exported": false,
-          "lineCount": 6
-        },
-        {
-          "name": "NoteDialog",
+          "name": "NoteCard",
           "params": [],
           "exported": true,
-          "lineCount": 231
+          "lineCount": 240
         }
       ],
       "classes": [],
       "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Edit3",
+            "Pin",
+            "Trash2"
+          ]
+        },
         {
           "source": "@/shared/lib/utils",
           "specifiers": [
@@ -92610,10 +92894,40 @@
           ]
         },
         {
+          "source": "../constants",
+          "specifiers": [
+            "getNoteColor",
+            "getNoteTypeInfo",
+            "relativeTime"
+          ]
+        }
+      ],
+      "exports": [
+        "NoteCard"
+      ],
+      "totalLines": 270,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NoteDialog.jsx": {
+      "filePath": "frontend/src/features/notes/components/NoteDialog.jsx",
+      "contentHash": "746909bc925590e741460634cb6a3fae0f90d971b9a8dc6abeaacbc565a3104f",
+      "functions": [
+        {
+          "name": "NoteDialog",
+          "params": [],
+          "exported": true,
+          "lineCount": 588
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
           "source": "lucide-react",
           "specifiers": [
             "Check",
+            "Plus",
             "Pin",
+            "Tag",
             "Trash2",
             "X"
           ]
@@ -92625,71 +92939,152 @@
             "useRef",
             "useState"
           ]
+        },
+        {
+          "source": "react-dom",
+          "specifiers": [
+            "createPortal"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "@/shared/ui/feedback/confirm-dialog",
+          "specifiers": [
+            "ConfirmDialog"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "NOTE_CATEGORIES",
+            "NOTE_COLORS",
+            "SUGGESTED_TAGS",
+            "formatTagLabel",
+            "getDeletedCustomTypeIds",
+            "getNoteColor",
+            "getNoteTypeInfo",
+            "markCustomTypeDeleted",
+            "unmarkCustomTypeDeleted"
+          ]
         }
       ],
       "exports": [
         "NoteDialog"
       ],
-      "totalLines": 258,
+      "totalLines": 615,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/notes/components/NotesView.jsx": {
-      "filePath": "frontend/src/features/notes/components/NotesView.jsx",
-      "contentHash": "a564e2812d7a9293f551826395b3fdbf59ad43de305288a14fe78e3492b1da4e",
+    "frontend/src/features/notes/components/NoteReaderModal.jsx": {
+      "filePath": "frontend/src/features/notes/components/NoteReaderModal.jsx",
+      "contentHash": "a060a99e7e9ed4aa58473f3895b6adaed861a3139020dc13afffe4d5bf32c59e",
       "functions": [
         {
-          "name": "getColorKey",
-          "params": [
-            "colorStr"
-          ],
-          "exported": false,
-          "lineCount": 7
-        },
-        {
-          "name": "relativeTime",
-          "params": [
-            "dateStr"
-          ],
-          "exported": false,
-          "lineCount": 10
-        },
-        {
-          "name": "NoteCard",
-          "params": [],
-          "exported": false,
-          "lineCount": 112
-        },
-        {
-          "name": "NoteCardSkeleton",
-          "params": [],
-          "exported": false,
-          "lineCount": 11
-        },
-        {
-          "name": "NotesView",
+          "name": "NoteReaderModal",
           "params": [],
           "exported": true,
-          "lineCount": 346
+          "lineCount": 221
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "./NoteDialog",
+          "source": "lucide-react",
           "specifiers": [
-            "NoteDialog"
+            "Check",
+            "Copy",
+            "Edit3",
+            "Pin",
+            "Trash2",
+            "X"
           ]
         },
         {
-          "source": "@/shared/ui/feedback/Skeleton",
+          "source": "react",
           "specifiers": [
-            "Skeleton"
+            "useEffect",
+            "useState"
           ]
         },
         {
-          "source": "@/shared/ui/feedback/use-toast",
+          "source": "react-dom",
           "specifiers": [
-            "useToast"
+            "createPortal"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "getNoteColor",
+            "getNoteTypeInfo",
+            "relativeTime"
+          ]
+        }
+      ],
+      "exports": [
+        "NoteReaderModal"
+      ],
+      "totalLines": 253,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NotesView.jsx": {
+      "filePath": "frontend/src/features/notes/components/NotesView.jsx",
+      "contentHash": "620d002be0214163e9329930310c2737de95683e80c8b6d94d76bed55bbd8679",
+      "functions": [
+        {
+          "name": "NoteCardSkeleton",
+          "params": [],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "NotesView",
+          "params": [],
+          "exported": true,
+          "lineCount": 739
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ChevronLeft",
+            "ChevronRight",
+            "LayoutGrid",
+            "List",
+            "Pin",
+            "Plus",
+            "RotateCcw",
+            "Search",
+            "StickyNote",
+            "X"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useMutation",
+            "useQuery",
+            "useQueryClient"
           ]
         },
         {
@@ -92705,51 +93100,175 @@
           ]
         },
         {
-          "source": "@tanstack/react-query",
+          "source": "@/shared/ui/feedback/confirm-dialog",
           "specifiers": [
-            "useMutation",
-            "useQuery",
-            "useQueryClient"
+            "ConfirmDialog"
           ]
         },
         {
-          "source": "lucide-react",
+          "source": "@/shared/ui/feedback/Skeleton",
           "specifiers": [
-            "ChevronLeft",
-            "ChevronRight",
-            "Pin",
-            "Plus",
-            "Search",
-            "StickyNote",
-            "Trash2"
+            "Skeleton"
           ]
         },
         {
-          "source": "react",
+          "source": "@/shared/ui/feedback/use-toast",
           "specifiers": [
-            "useState",
-            "useEffect"
+            "useToast"
+          ]
+        },
+        {
+          "source": "@/shared/auth/AuthContext",
+          "specifiers": [
+            "useAuth"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "NOTE_CATEGORIES",
+            "getDeletedCustomTypeIds",
+            "getNoteCategory",
+            "getNoteTypeInfo",
+            "markCustomTypeDeleted"
+          ]
+        },
+        {
+          "source": "./NoteCard",
+          "specifiers": [
+            "NoteCard"
+          ]
+        },
+        {
+          "source": "./NoteDialog",
+          "specifiers": [
+            "NoteDialog"
+          ]
+        },
+        {
+          "source": "./NoteReaderModal",
+          "specifiers": [
+            "NoteReaderModal"
           ]
         }
       ],
       "exports": [
         "NotesView"
       ],
-      "totalLines": 567,
+      "totalLines": 795,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/constants.js": {
+      "filePath": "frontend/src/features/notes/constants.js",
+      "contentHash": "2af48f35fe46175cb67ca258da46c98a3ad2a25b3375e534712f40f35f6c8edc",
+      "functions": [
+        {
+          "name": "getDeletedCustomTypeIds",
+          "params": [],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "markCustomTypeDeleted",
+          "params": [
+            "id"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "unmarkCustomTypeDeleted",
+          "params": [
+            "id"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "getNoteColor",
+          "params": [
+            "colorStr"
+          ],
+          "exported": true,
+          "lineCount": 49
+        },
+        {
+          "name": "formatTagLabel",
+          "params": [
+            "tag"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "getNoteTypeInfo",
+          "params": [
+            "note"
+          ],
+          "exported": true,
+          "lineCount": 202
+        },
+        {
+          "name": "getNoteCategory",
+          "params": [
+            "note"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "relativeTime",
+          "params": [
+            "dateStr"
+          ],
+          "exported": true,
+          "lineCount": 23
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "AlertCircle",
+            "Eye",
+            "FileText",
+            "Lightbulb",
+            "Tag",
+            "Target"
+          ]
+        }
+      ],
+      "exports": [
+        "NOTE_CATEGORIES",
+        "NOTE_COLORS",
+        "SUGGESTED_TAGS",
+        "getDeletedCustomTypeIds",
+        "markCustomTypeDeleted",
+        "unmarkCustomTypeDeleted",
+        "getNoteColor",
+        "formatTagLabel",
+        "getNoteTypeInfo",
+        "getNoteCategory",
+        "relativeTime"
+      ],
+      "totalLines": 508,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/notes/index.js": {
       "filePath": "frontend/src/features/notes/index.js",
-      "contentHash": "1c8ed06f42f744ae03fa08215c7c2cc24ed26dcaee49a0f789797b2568fd44a0",
+      "contentHash": "704e0e86da0b2e961033c2981ec2d1bed7d658e7924608ffac1e2e401eba7c8b",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [
+        "NoteCard",
         "NoteDialog",
+        "NoteReaderModal",
         "NotesView",
         "NotesViewDefault"
       ],
-      "totalLines": 3,
+      "totalLines": 6,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/BrokerInfoBanner.jsx": {
@@ -94188,7 +94707,7 @@
     },
     "frontend/src/features/ppf/components/PpfDialog.jsx": {
       "filePath": "frontend/src/features/ppf/components/PpfDialog.jsx",
-      "contentHash": "cb778dbeb9d8b51fc476a75e2aebd1f4dca432daea856ea6013d5908199dc442",
+      "contentHash": "4733c4c26c511d88445b977d55afbfb9ed265255498963dec48259f31c876599",
       "functions": [
         {
           "name": "parseShortcutAmount",
@@ -94262,7 +94781,7 @@
     },
     "frontend/src/features/ppf/components/PpfSettingsDialog.jsx": {
       "filePath": "frontend/src/features/ppf/components/PpfSettingsDialog.jsx",
-      "contentHash": "524cb9abdf0a3d60b4aa32366f320355a3f2d02e01c48b1e6e78df15fc60c911",
+      "contentHash": "a5130bec5888cf949f1129d2109cc89e91a9969290e38b7c9ac580fd918448ee",
       "functions": [
         {
           "name": "PpfSettingsDialog",
@@ -94424,13 +94943,13 @@
     },
     "frontend/src/features/profile/components/ProfileView.jsx": {
       "filePath": "frontend/src/features/profile/components/ProfileView.jsx",
-      "contentHash": "86510daf4a0edfe4459c16d1a10e9916766be9c54e7aa513e8400c074701fe03",
+      "contentHash": "59af23349bad432e01cbb30a161b6ee43bf9c586eff6b5e5f129ff625f02538e",
       "functions": [
         {
           "name": "ProfileView",
           "params": [],
           "exported": true,
-          "lineCount": 1852
+          "lineCount": 1874
         }
       ],
       "classes": [],
@@ -94520,7 +95039,7 @@
       "exports": [
         "ProfileView"
       ],
-      "totalLines": 1908,
+      "totalLines": 1930,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/profile/index.js": {
@@ -96434,7 +96953,7 @@
     },
     "frontend/src/shared/ui/feedback/base-dialog.jsx": {
       "filePath": "frontend/src/shared/ui/feedback/base-dialog.jsx",
-      "contentHash": "ce889ae9cf585c1847bda41df725f75186d4901c0e42f5d2a7fbb44107798f9f",
+      "contentHash": "14b77d0dbe9ab3acb7dfd00c43c5469e495e10ba298428fdaa765ed398edf3a2",
       "functions": [
         {
           "name": "BaseDialog",
@@ -96488,7 +97007,7 @@
     },
     "frontend/src/shared/ui/feedback/confirm-dialog.jsx": {
       "filePath": "frontend/src/shared/ui/feedback/confirm-dialog.jsx",
-      "contentHash": "57371fb378bb918c065014e4840812af9e1265bc3fc6aae1d313e0de3d5c46b8",
+      "contentHash": "b50076f7d44d4e7cc221626617f87f8d475f3eb3e7364e50f1246edf5c9e3ca9",
       "functions": [
         {
           "name": "ConfirmDialog",
@@ -96615,7 +97134,7 @@
     },
     "frontend/src/shared/ui/forms/CategoryDropdown.jsx": {
       "filePath": "frontend/src/shared/ui/forms/CategoryDropdown.jsx",
-      "contentHash": "6277a36916eab0cfae618e25d2b5e2bf12ab1d8e41ae4eb6467e99fcdd069463",
+      "contentHash": "953dc0471c582d9dfa4654085a0c4ab82bfc6c0446da87b508698e418202b84d",
       "functions": [
         {
           "name": "CategoryDropdown",
@@ -97562,7 +98081,7 @@
     },
     "frontend/src/shared/ui/primitives/calendar.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/calendar.jsx",
-      "contentHash": "7d967e0d1e00ff3997a5423f42abda4cd40034d88bb8b4d899d7f8c64b8dfbe9",
+      "contentHash": "adee2e233357cf2e3273343244255d5fde967df9e9cd76a1e3d6aeccf8b3c245",
       "functions": [
         {
           "name": "Calendar",
@@ -98275,7 +98794,7 @@
     },
     "frontend/src/shared/ui/primitives/spotlight-input.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/spotlight-input.jsx",
-      "contentHash": "4266b79112455318001641f0573095f6b0773834b48b60c2483f529a84dc89c8",
+      "contentHash": "076e91ee7a44a4db26a265a5984b4444f3929f7a4eee817c7dc5cde4c825b263",
       "functions": [
         {
           "name": "SpotlightInput",
@@ -98700,7 +99219,7 @@
     },
     "frontend/src/shared/ui/search/search-combobox.jsx": {
       "filePath": "frontend/src/shared/ui/search/search-combobox.jsx",
-      "contentHash": "52cb929ec37b390b642951f8f86f59715d021f05c7dfb86656aefb82e96f55f6",
+      "contentHash": "a99c1cc58ae1dec98b995a0fd95f09ad187fe4d696d0f259b8044f2acc9d03f8",
       "functions": [
         {
           "name": "SearchCombobox",
@@ -99027,7 +99546,7 @@
     },
     "frontend/src/widgets/app-shell/Header.jsx": {
       "filePath": "frontend/src/widgets/app-shell/Header.jsx",
-      "contentHash": "259adef51cecdaec79a7eca9de16dabe1354941839a0862f33b44bf6af2d87f7",
+      "contentHash": "885740f10e68bf4b890001c6a70aa8834cfa6a0c60067c2be74f7d7bb3e2cca7",
       "functions": [
         {
           "name": "Header",
@@ -99137,7 +99656,7 @@
     },
     "frontend/src/widgets/app-shell/MainLayout.jsx": {
       "filePath": "frontend/src/widgets/app-shell/MainLayout.jsx",
-      "contentHash": "d23b64819bb6f37d90ee6f2867c30b11234f15b6bda89c9ffbb02584749a4862",
+      "contentHash": "3b2206db98cbf4eab602746d6941a764e804808a24a37df6ca5f38dc7d07ce0a",
       "functions": [
         {
           "name": "MainLayout",
@@ -99199,7 +99718,7 @@
     },
     "frontend/src/widgets/app-shell/Sidebar.jsx": {
       "filePath": "frontend/src/widgets/app-shell/Sidebar.jsx",
-      "contentHash": "a1b568a2b29c10ebb260374cc28da4454263fc56a350f1774a335e9f5879c03a",
+      "contentHash": "94ebb672a1fa9defa78722fbedd6279f22d3f06105dd19ea79c24f34430e079c",
       "functions": [
         {
           "name": "isItemActive",
@@ -99799,12 +100318,22 @@
     },
     "local/memory/README.md": {
       "filePath": "local/memory/README.md",
-      "contentHash": "4756abdb237b1b981b3f856b1721df9acd1e4c69d482c1f2f654251f4ce3286f",
+      "contentHash": "f38784c856833cea9ed9a49b9a5e5ec8af4e6d3bc26f8ff73e1c3c3182639939",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 24,
+      "totalLines": 26,
+      "hasStructuralAnalysis": false
+    },
+    "local/memory/app_shell_and_profile_settings.md": {
+      "filePath": "local/memory/app_shell_and_profile_settings.md",
+      "contentHash": "5367a8ca0d6576eb3ee266cbad3df4b8371e7b6637fd6e0a1682f692b54ed607",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 166,
       "hasStructuralAnalysis": false
     },
     "local/memory/auth_design_system.md": {
@@ -99819,12 +100348,22 @@
     },
     "local/memory/dashboard_and_auth_session_recovery.md": {
       "filePath": "local/memory/dashboard_and_auth_session_recovery.md",
-      "contentHash": "85f08e65afaa288dc7cae60e2e7c45e9f7ebdb89155dd1438fbb0920535e0d0b",
+      "contentHash": "fb1bc2cec5174890a5c0a1bf1bcef19cee10ccc0df2ab101ee0cb0b3360d522a",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 73,
+      "totalLines": 69,
+      "hasStructuralAnalysis": false
+    },
+    "local/memory/notes_subsystem_and_unslop_redesign.md": {
+      "filePath": "local/memory/notes_subsystem_and_unslop_redesign.md",
+      "contentHash": "e7cae292722e62fabe7f8cfe59cdcfcb20a3ac10c48ea8f19f3e2dad39910679",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 127,
       "hasStructuralAnalysis": false
     },
     "local/memory/postman_api_ecosystem.md": {

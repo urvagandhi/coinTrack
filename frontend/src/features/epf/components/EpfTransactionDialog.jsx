@@ -234,7 +234,7 @@ export default function EpfTransactionDialog({
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto'>
+        <div className='p-6 overflow-y-auto [scrollbar-gutter:stable] scrollbar-thin'>
           <form id='epf-txn-form' onSubmit={handleSubmit} className='space-y-6'>
             {/* Entry Type Selector */}
             <div className='flex items-center justify-between p-3 rounded-sm border border-border bg-muted/20'>

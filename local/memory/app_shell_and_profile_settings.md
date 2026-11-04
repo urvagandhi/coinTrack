@@ -41,9 +41,14 @@
   - Conversely, removing overflow controls entirely causes child content to stretch beyond the canvas card and get clipped behind the footer.
 - **Rule of Dynamic Scrolling**:
   1. **Left Navigation Stays Static**: In two-column views like Profile/Settings, the left navigation sub-sidebar (`<aside>`) is docked (`self-start md:w-60 lg:w-64`) and does NOT scroll.
-  2. **Right Content Card Handles Vertical Overflow**: The right settings card (`<section aria-label='Settings Content'>`) has `overflow-y-auto overflow-x-hidden [scrollbar-width:thin]` and `h-full min-h-0`. When content exceeds the card's height, only the card scrolls smoothly.
+  2. **Right Content Card Handles Vertical Overflow**: The right settings card (`<section aria-label='Settings Content'>`) has `overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] [scrollbar-width:thin]` and `h-full min-h-0`. When content exceeds the card's height, only the card scrolls smoothly.
   3. **No Double Scrollbars**: The layout ensures there is never a secondary scrollbar immediately adjacent to the card's scrollbar.
   4. **Zero Content Truncation**: All form elements, including bottom inputs (Bio, password confirmation, update buttons, balance masking toggles), remain fully accessible.
+
+### 2.2 App Shell Scrollbar Clearance & Stable Gutters (`MainLayout.jsx`)
+- **App Shell Content Track**: `<main>` inside [`MainLayout.jsx`](../../frontend/src/widgets/app-shell/MainLayout.jsx) provides `pr-3 sm:pr-4 md:pr-5 [scrollbar-gutter:stable] [scrollbar-width:thin]`.
+- **Content Overlap Elimination**: This dedicated clearance guarantees that right-aligned UI elements across the Dashboard (KPI cards, quick sync buttons, time-range selectors, AI bubbles, and Holdings table right columns) never sit directly underneath or get clipped by browser scrollbars.
+- **Modal Dialog Pattern**: Dialogs enforce `p-0 overflow-hidden` on the card, with docked Header and Footer, while the scrollable body uses `px-6 sm:px-7 py-5 [scrollbar-gutter:stable]`, pinning the scrollbar cleanly to the card's outer right boundary.
 
 ---
 

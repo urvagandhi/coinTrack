@@ -26,7 +26,7 @@ const TOOL_NAV_ITEMS = [
   },
   {
     id: 'notes',
-    label: 'Margin Notes & Thesis',
+    label: 'Notes',
     href: '/notes',
     icon: StickyNote,
   },

@@ -108,7 +108,7 @@ export function AuthLayout({
       </div>
 
       {/* RIGHT SIDE - FORM (Strict 50%) */}
-      <div className='w-full md:w-1/2 min-h-screen md:min-h-0 md:h-full px-5 py-6 sm:px-8 sm:py-8 md:px-6 md:py-6 lg:px-12 lg:py-8 xl:px-16 xl:py-10 flex flex-col bg-white dark:bg-[#0c0e12] relative z-20 justify-between overflow-y-auto transition-colors duration-300 border-t md:border-t-0 md:border-l border-neutral-200/60 dark:border-neutral-800/80 shadow-[-16px_0_32px_rgba(0,0,0,0.03)] dark:shadow-[-24px_0_48px_rgba(0,0,0,0.4)]'>
+      <div className='w-full md:w-1/2 min-h-screen md:min-h-0 md:h-full px-5 py-6 sm:px-8 sm:py-8 md:px-6 md:py-6 lg:px-12 lg:py-8 xl:px-16 xl:py-10 flex flex-col bg-white dark:bg-[#0c0e12] relative z-20 justify-between overflow-y-auto [scrollbar-gutter:stable] scrollbar-thin transition-colors duration-300 border-t md:border-t-0 md:border-l border-neutral-200/60 dark:border-neutral-800/80 shadow-[-16px_0_32px_rgba(0,0,0,0.03)] dark:shadow-[-24px_0_48px_rgba(0,0,0,0.4)]'>
         {/* Header with Centered coinTrack Logo */}
         <AuthHeader />
 

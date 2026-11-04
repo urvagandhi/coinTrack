@@ -402,7 +402,7 @@ export default function Header() {
                 className='flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium cursor-pointer rounded-lg'
               >
                 <StickyNote className='size-4 text-neutral-500' />
-                <span>Margin Notes</span>
+                <span>Notes</span>
               </Link>
             </DropdownMenuItem>
 

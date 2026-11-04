@@ -184,7 +184,7 @@ export function SpotlightInput({
               No matching assets or actions found.
             </div>
           ) : (
-            <div className='space-y-1 max-h-[220px] overflow-y-auto pr-0.5'>
+            <div className='space-y-1 max-h-[220px] overflow-y-auto pr-2 [scrollbar-gutter:stable] scrollbar-thin'>
               {filteredItems.map((item, idx) => {
                 const ItemIcon = item.Icon || Sparkles;
                 const isSelected = idx === selectedIndex;

@@ -108,7 +108,7 @@ export default function ConfirmDialog({
         />
 
         {/* Content Body */}
-        <div className='flex-1 overflow-y-auto z-10'>
+        <div className='flex-1 overflow-y-auto z-10 [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-neutral-300 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-700 [&::-webkit-scrollbar-track]:bg-transparent'>
           <div className='flex flex-col items-center px-5 pt-8 pb-6 text-center'>
             <div
               className={cn(

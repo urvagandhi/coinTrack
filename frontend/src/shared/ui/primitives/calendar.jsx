@@ -302,7 +302,7 @@ function Calendar({
       {viewMode === 'years' && (
         <div
           ref={yearListRef}
-          className='grid grid-cols-3 gap-2 py-2 max-h-[240px] overflow-y-auto pr-1 animate-in fade-in zoom-in-95 duration-150 scrollbar-thin'
+          className='grid grid-cols-3 gap-2 py-2 max-h-[240px] overflow-y-auto pr-2.5 [scrollbar-gutter:stable] animate-in fade-in zoom-in-95 duration-150 scrollbar-thin'
         >
           {yearOptions.map(y => {
             const isSelected = y === currentYear;
