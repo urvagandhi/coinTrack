@@ -52,7 +52,6 @@ export default function NoteReaderModal({
   if (!isOpen || !note || !mounted) return null;
 
   const typeInfo = getNoteTypeInfo(note);
-  const TypeIcon = typeInfo.icon;
   const colorDef = getNoteColor(note.color);
 
   // Filter out internal system type tags

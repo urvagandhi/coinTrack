@@ -1,14 +1,12 @@
 'use client';
 
-import { Check, Plus, Pin, Tag, Trash2, X } from 'lucide-react';
+import { Pin, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/shared/lib/utils';
 import ConfirmDialog from '@/shared/ui/feedback/confirm-dialog';
 import {
   NOTE_CATEGORIES,
-  NOTE_COLORS,
-  SUGGESTED_TAGS,
   formatTagLabel,
   getDeletedCustomTypeIds,
   getNoteColor,
@@ -16,6 +14,9 @@ import {
   markCustomTypeDeleted,
   unmarkCustomTypeDeleted,
 } from '../constants';
+import NoteColorPicker from './NoteColorPicker';
+import NoteTagsInput from './NoteTagsInput';
+import NoteTypeSelector from './NoteTypeSelector';
 
 const PRESETS = [
   { id: 'idea', label: 'Idea', icon: NOTE_CATEGORIES.idea.icon },
@@ -125,7 +126,7 @@ export default function NoteDialog({
 
       setTimeout(() => titleInputRef.current?.focus(), 100);
     }
-  }, [isOpen, initialData, existingCustomTypes]);
+  }, [isOpen, initialData, existingCustomTypes, userId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -305,131 +306,25 @@ export default function NoteDialog({
           </div>
         </div>
 
-        {/* Form Body - Dedicated padding and stable gutter so scrollbar sits to the side */}
+        {/* Form Body */}
         <form
           onSubmit={handleSubmit}
           className='flex-1 overflow-y-auto px-6 sm:px-7 py-5 space-y-4 [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-neutral-300 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-700 hover:[&::-webkit-scrollbar-thumb]:bg-neutral-400 dark:hover:[&::-webkit-scrollbar-thumb]:bg-neutral-600 [&::-webkit-scrollbar-track]:bg-transparent'
         >
-          {/* 1. Category / Type (Presets + Custom with delete cross) */}
-          <div>
-            <div className='flex items-center justify-between mb-2'>
-              <label className='block text-xs font-medium text-neutral-700 dark:text-neutral-300'>
-                Type of note
-              </label>
-              {!isAddingCustomType && (
-                <button
-                  type='button'
-                  onClick={() => {
-                    setIsAddingCustomType(true);
-                    setTimeout(() => customTypeInputRef.current?.focus(), 50);
-                  }}
-                  className='inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer'
-                >
-                  <Plus className='size-3' />
-                  <span>Custom label</span>
-                </button>
-              )}
-            </div>
-
-            {/* Presets and Custom Types list */}
-            <div className='flex items-center gap-2 flex-wrap pt-1'>
-              {PRESETS.map(preset => {
-                const isSelected = selectedType === preset.id;
-                return (
-                  <button
-                    key={preset.id}
-                    type='button'
-                    onClick={() => setSelectedType(preset.id)}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer',
-                      isSelected
-                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white font-medium shadow-2xs'
-                        : 'bg-neutral-50 dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700/80 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white'
-                    )}
-                  >
-                    <span>{preset.label}</span>
-                  </button>
-                );
-              })}
-
-              {/* User Custom Types with small cross on right top corner */}
-              {customTypes.map(c => {
-                const isSelected = selectedType === c.id;
-                return (
-                  <div key={c.id} className='relative inline-flex group/type'>
-                    <button
-                      type='button'
-                      onClick={() => setSelectedType(c.id)}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer pr-4',
-                        isSelected
-                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white font-medium shadow-2xs'
-                          : 'bg-neutral-50 dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700/80 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white'
-                      )}
-                    >
-                      <Tag className='size-3 shrink-0 opacity-70' />
-                      <span>{c.label}</span>
-                    </button>
-
-                    {/* Small cross on right top corner */}
-                    <button
-                      type='button'
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleDeleteCustomType(c.id);
-                      }}
-                      className='absolute -top-1.5 -right-1.5 size-4 rounded-full bg-neutral-200 hover:bg-rose-500 hover:text-white dark:bg-neutral-700 dark:hover:bg-rose-500 dark:hover:text-white text-neutral-600 dark:text-neutral-300 flex items-center justify-center transition-colors shadow-2xs cursor-pointer z-10'
-                      title={`Delete "${c.label}"`}
-                      aria-label={`Delete ${c.label}`}
-                    >
-                      <X className='size-2.5 stroke-[2.5]' />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Inline Custom Type Creator */}
-            {isAddingCustomType && (
-              <div className='mt-2.5 p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/70 dark:bg-neutral-900/60 flex items-center gap-2 animate-in fade-in-50 duration-150'>
-                <input
-                  ref={customTypeInputRef}
-                  type='text'
-                  placeholder='e.g. Crypto, Dividends, Watchlist, Real Estate...'
-                  value={newCustomTypeInput}
-                  onChange={e => setNewCustomTypeInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddCustomType();
-                    } else if (e.key === 'Escape') {
-                      setIsAddingCustomType(false);
-                      setNewCustomTypeInput('');
-                    }
-                  }}
-                  className='flex-1 h-8 px-2.5 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-foreground placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-100 focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-100'
-                />
-                <button
-                  type='button'
-                  onClick={handleAddCustomType}
-                  disabled={!newCustomTypeInput.trim()}
-                  className='px-3 h-8 rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-40 cursor-pointer transition-colors'
-                >
-                  Add
-                </button>
-                <button
-                  type='button'
-                  onClick={() => {
-                    setIsAddingCustomType(false);
-                    setNewCustomTypeInput('');
-                  }}
-                  className='px-2 h-8 text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer'
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
+          {/* 1. Category / Type */}
+          <NoteTypeSelector
+            presets={PRESETS}
+            selectedType={selectedType}
+            onSelectType={setSelectedType}
+            customTypes={customTypes}
+            onDeleteCustomType={handleDeleteCustomType}
+            isAddingCustomType={isAddingCustomType}
+            setIsAddingCustomType={setIsAddingCustomType}
+            newCustomTypeInput={newCustomTypeInput}
+            setNewCustomTypeInput={setNewCustomTypeInput}
+            onAddCustomType={handleAddCustomType}
+            customTypeInputRef={customTypeInputRef}
+          />
 
           {/* 2. Title */}
           <div>
@@ -472,108 +367,20 @@ export default function NoteDialog({
           </div>
 
           {/* 4. Tags */}
-          <div>
-            <label className='block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
-              Tags
-            </label>
-
-            <div className='flex flex-wrap items-center gap-1.5 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900/60 min-h-10 focus-within:border-neutral-900 dark:focus-within:border-neutral-100 focus-within:ring-1 focus-within:ring-neutral-900 dark:focus-within:ring-neutral-100 transition-all'>
-              {tags.map(tag => (
-                <span
-                  key={tag}
-                  className='inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-                >
-                  <span>#{tag}</span>
-                  <button
-                    type='button'
-                    onClick={() => removeTag(tag)}
-                    className='hover:text-rose-600 transition-colors cursor-pointer'
-                    aria-label={`Remove tag ${tag}`}
-                  >
-                    <X className='size-3' />
-                  </button>
-                </span>
-              ))}
-
-              <input
-                type='text'
-                placeholder={
-                  tags.length === 0
-                    ? 'Add tags (e.g. stocks)...'
-                    : 'Add another...'
-                }
-                value={tagInput}
-                onChange={e => setTagInput(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                onBlur={() => {
-                  if (tagInput.trim()) addTag(tagInput);
-                }}
-                className='text-xs bg-transparent px-2 py-1 text-foreground placeholder:text-neutral-400 focus:outline-none flex-1 min-w-[120px]'
-              />
-            </div>
-
-            {/* Quick Suggestions */}
-            <div className='flex items-center gap-1.5 flex-wrap mt-2'>
-              <span className='text-xs text-neutral-400'>Quick tags:</span>
-              {SUGGESTED_TAGS.map(s => {
-                const already = tags.includes(s);
-                return (
-                  <button
-                    key={s}
-                    type='button'
-                    onClick={() => (already ? removeTag(s) : addTag(s))}
-                    className={cn(
-                      'text-xs px-2 py-0.5 rounded-md border transition-colors cursor-pointer',
-                      already
-                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white font-medium'
-                        : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                    )}
-                  >
-                    #{s}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <NoteTagsInput
+            tags={tags}
+            tagInput={tagInput}
+            onTagInputChange={setTagInput}
+            onTagKeyDown={handleTagKeyDown}
+            onAddTag={addTag}
+            onRemoveTag={removeTag}
+          />
 
           {/* 5. Color */}
-          <div>
-            <div className='flex items-center justify-between mb-2'>
-              <label className='block text-xs font-medium text-neutral-700 dark:text-neutral-300'>
-                Note status color
-              </label>
-              <span className='text-xs text-neutral-400 capitalize'>
-                {NOTE_COLORS.find(c => c.key === selectedColor)?.name ||
-                  'Default'}
-              </span>
-            </div>
-
-            <div className='flex items-center gap-3'>
-              {NOTE_COLORS.map(c => {
-                const isSelected = selectedColor === c.key;
-                return (
-                  <button
-                    key={c.key}
-                    type='button'
-                    onClick={() => setSelectedColor(c.key)}
-                    style={{ backgroundColor: c.hex }}
-                    className={cn(
-                      'size-7 rounded-full transition-all flex items-center justify-center cursor-pointer shadow-2xs',
-                      isSelected
-                        ? 'ring-2 ring-offset-2 ring-neutral-900 dark:ring-white scale-110'
-                        : 'opacity-80 hover:opacity-100 hover:scale-105'
-                    )}
-                    title={c.name}
-                    aria-label={c.name}
-                  >
-                    {isSelected && (
-                      <Check className='size-3.5 text-white stroke-[3]' />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <NoteColorPicker
+            selectedColor={selectedColor}
+            onSelectColor={setSelectedColor}
+          />
         </form>
 
         {/* Footer */}

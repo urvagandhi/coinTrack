@@ -88,13 +88,23 @@ public class Note {
 
 ---
 
-## 5. Key Files & Components
+## 5. Key Files & Modular Component Architecture
 
-- [`frontend/src/features/notes/constants.js`](../../frontend/src/features/notes/constants.js): Color maps (`NOTE_COLORS`), category metadata (`NOTE_CATEGORIES`), `getNoteTypeInfo`, `getNoteColor` with full synonym resolution (`orange`/`amber`, `green`/`emerald`, `red`/`rose`), and user-scoped deletion helpers.
+Following senior frontend engineering standards and the decomposed architecture established in the Profile subsystem, code-heavy files have been broken into single-responsibility, highly maintainable subcomponents:
+
+- [`frontend/src/features/notes/constants.js`](../../frontend/src/features/notes/constants.js): Feature-root constants, color maps (`NOTE_COLORS`), category metadata (`NOTE_CATEGORIES`), `getNoteTypeInfo`, `getNoteColor` with full synonym resolution (`orange`/`amber`, `green`/`emerald`, `red`/`rose`), and user-scoped deletion helpers.
+- [`frontend/src/features/notes/components/NotesView.jsx`](../../frontend/src/features/notes/components/NotesView.jsx): Clean view container (~350 lines, down from 800 lines) coordinating state, queries, and mutations.
+  - [`NotesHeader.jsx`](../../frontend/src/features/notes/components/NotesHeader.jsx): Title, description, view mode toggle ('grid' | 'list'), and "+ New note" button.
+  - [`NotesToolbar.jsx`](../../frontend/src/features/notes/components/NotesToolbar.jsx): Category tabs with count pills + corner `×` deletion, debounced search input with clear button, and tags strip with reset filters link.
+  - [`NotesGrid.jsx`](../../frontend/src/features/notes/components/NotesGrid.jsx): Loading skeleton grid/list, empty state with filters reset / create triggers, pinned notes section, and unpinned notes section.
+  - [`NotesPagination.jsx`](../../frontend/src/features/notes/components/NotesPagination.jsx): Numbered pagination controls (previous, numeric page buttons, next) and "Showing X-Y of Z" indicators.
+  - [`NoteCardSkeleton.jsx`](../../frontend/src/features/notes/components/NoteCardSkeleton.jsx): Extracted skeleton placeholder for notes loading state.
+- [`frontend/src/features/notes/components/NoteDialog.jsx`](../../frontend/src/features/notes/components/NoteDialog.jsx): Create/edit modal dialog (~360 lines, down from 634 lines) portaled to body, delegating controls to:
+  - [`NoteTypeSelector.jsx`](../../frontend/src/features/notes/components/NoteTypeSelector.jsx): Preset buttons, custom types with corner `×` deletion, and inline custom type adder (`+ Custom label`).
+  - [`NoteTagsInput.jsx`](../../frontend/src/features/notes/components/NoteTagsInput.jsx): Active tag chips with delete `x`, tag text input with Enter/comma handling, and quick suggested tags buttons.
+  - [`NoteColorPicker.jsx`](../../frontend/src/features/notes/components/NoteColorPicker.jsx): Status color label and circular swatches with checkmarks.
 - [`frontend/src/features/notes/components/NoteCard.jsx`](../../frontend/src/features/notes/components/NoteCard.jsx): Quiet craft card component, status dot indicator, clean typography, pinned badges.
-- [`frontend/src/features/notes/components/NoteDialog.jsx`](../../frontend/src/features/notes/components/NoteDialog.jsx): Create/edit modal portaled to body, preset selector, custom type creator with corner `×` deletion, tag input, color swatches.
 - [`frontend/src/features/notes/components/NoteReaderModal.jsx`](../../frontend/src/features/notes/components/NoteReaderModal.jsx): Dedicated read modal portaled to body, neutral container, copy to clipboard, word count and reading time.
-- [`frontend/src/features/notes/components/NotesView.jsx`](../../frontend/src/features/notes/components/NotesView.jsx): Main view, debounced search, custom type filter strip with corner `×` deletion, grid/list view toggle, pagination.
 - [`frontend/src/features/notes/__tests__/constants.test.js`](../../frontend/src/features/notes/__tests__/constants.test.js): Comprehensive Jest unit test suite covering category inference, custom types, color resolution, and deletion blacklisting.
 
 ---

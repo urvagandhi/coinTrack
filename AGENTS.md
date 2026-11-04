@@ -170,6 +170,7 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
     - *Preferences*: Theme selector (Light / Dark / System), base currency selector (INR, USD, EUR, GBP), and balance masking toggle.
     - *Notifications*: Granular toggles for price alerts, portfolio updates, market news, and weekly digests.
     - *Danger Zone*: Red-themed account deletion dialog with confirmation password input.
+  - **Modular Architecture Decomposition**: The legacy 1,929-line monolithic `ProfileView.jsx` is decomposed into single-responsibility components: `ProfileView.jsx` (container ~60 lines), `ProfileSidebar.jsx`, `MyProfileTab.jsx`, `SecurityOptionsTab.jsx`, `PreferencesTab.jsx`, `NotificationsTab.jsx`, and `DangerZoneTab.jsx`, with `constants.js` placed at the feature root (`frontend/src/features/profile/constants.js`).
 
 ### 8.4 Identity & DTO Synchronization
 - **Email Verification Normalization**:
@@ -216,6 +217,9 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
 - **Elevated Neutral Modals ([`NoteReaderModal.jsx`](./frontend/src/features/notes/components/NoteReaderModal.jsx) & [`NoteDialog.jsx`](./frontend/src/features/notes/components/NoteDialog.jsx))**:
   - Portaled to `document.body` via `createPortal` to prevent containing-block overflow clipping. All neon borders and dark washes removed in favor of clean elevated surfaces (`max-w-2xl bg-white dark:bg-[#16171a] border shadow-2xl rounded-2xl`).
 - **Search Bar Clearance**: Standardized to `h-9 pl-10 pr-8` with the search icon at `left-3.5`, guaranteeing 40px of left clearance to prevent icon/placeholder text collisions.
+- **Modular Decomposition & Architecture Alignment**:
+  - `NotesView.jsx` (reduced from 800 to 349 lines) decomposes into single-responsibility subcomponents: [`NotesHeader.jsx`](./frontend/src/features/notes/components/NotesHeader.jsx), [`NotesToolbar.jsx`](./frontend/src/features/notes/components/NotesToolbar.jsx), [`NotesGrid.jsx`](./frontend/src/features/notes/components/NotesGrid.jsx), [`NotesPagination.jsx`](./frontend/src/features/notes/components/NotesPagination.jsx), and [`NoteCardSkeleton.jsx`](./frontend/src/features/notes/components/NoteCardSkeleton.jsx).
+  - `NoteDialog.jsx` (reduced from 634 to 360 lines) delegates controls to [`NoteTypeSelector.jsx`](./frontend/src/features/notes/components/NoteTypeSelector.jsx), [`NoteTagsInput.jsx`](./frontend/src/features/notes/components/NoteTagsInput.jsx), and [`NoteColorPicker.jsx`](./frontend/src/features/notes/components/NoteColorPicker.jsx).
 - **Memory Reference**: Detailed architecture documented in [`local/memory/notes_subsystem_and_unslop_redesign.md`](./local/memory/notes_subsystem_and_unslop_redesign.md).
 
 ### 8.9 Scrollbar & Dynamic Scrolling Invariant (Elimination of Content Overlap)

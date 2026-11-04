@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "3a19166cbe57682e40081239bc7b57f4d2f49adb",
-  "generatedAt": "2026-11-04T04:03:52.701Z",
+  "gitCommitHash": "71466e93aee66254f6011e019103c9e7290ce915",
+  "generatedAt": "2026-11-04T07:51:03.423Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -4983,27 +4983,27 @@
     },
     ".ua/fingerprints.json": {
       "filePath": ".ua/fingerprints.json",
-      "contentHash": "fa4a298e9c04629fb2198abfa36eea2e0d5b567b7c2d790ced9b5696975a9f14",
+      "contentHash": "1505c99cae531349ef6ea558ef0273cec31696f2fe6fc48c8fa6ad338f0948d3",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 100780,
+      "totalLines": 100829,
       "hasStructuralAnalysis": false
     },
     ".ua/knowledge-graph.json": {
       "filePath": ".ua/knowledge-graph.json",
-      "contentHash": "b29c3fb0d20f85b3fe05b577d5b0f99d022ee65554234a2d8b17bf923110477e",
+      "contentHash": "e7491b91bfb6f2f7119c833a6877ee3db20315aa6f836a776a52bd0cf7160905",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 109533,
+      "totalLines": 109196,
       "hasStructuralAnalysis": false
     },
     ".ua/meta.json": {
       "filePath": ".ua/meta.json",
-      "contentHash": "4f8de8e8debdf3b36d6e3bd54cb55801ada4f826fcb52260f954f2eb867ab5cd",
+      "contentHash": "6855885219ac124e769229fa7c5e18aefd768050659e1fe969bf85a37d47fc42",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -5071,12 +5071,12 @@
     },
     "AGENTS.md": {
       "filePath": "AGENTS.md",
-      "contentHash": "32fea63b44d5bf061a9872f98fa6f7ee03d4884c01bd4b347032137f2be878fa",
+      "contentHash": "13714068fa3a035fc005c4f88f0825a08c036781cca9ec9550be71669872bfa5",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 225,
+      "totalLines": 228,
       "hasStructuralAnalysis": false
     },
     "DOCKER.md": {
@@ -11023,7 +11023,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java",
-      "contentHash": "3e37af7a29173de47a783486c054736f43bc77ae2ea0cad18281c7cc90a3639b",
+      "contentHash": "b59b7534c7682e3df5243285ac61c59e74d655ce6617fade1b89d58c15cbf746",
       "functions": [
         {
           "name": "BrokerConnectController",
@@ -11084,6 +11084,20 @@
           "lineCount": 33
         },
         {
+          "name": "disconnectZerodha",
+          "params": [],
+          "returnType": "ResponseEntity<ApiResponse<Map<String, String>>>",
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "disconnectUpstox",
+          "params": [],
+          "returnType": "ResponseEntity<ApiResponse<Map<String, String>>>",
+          "exported": true,
+          "lineCount": 23
+        },
+        {
           "name": "disconnectAngelOne",
           "params": [],
           "returnType": "ResponseEntity<ApiResponse<Map<String, String>>>",
@@ -11128,6 +11142,8 @@
             "saveUpstoxCredentials",
             "saveAngelOneCredentials",
             "connectAngelOne",
+            "disconnectZerodha",
+            "disconnectUpstox",
             "disconnectAngelOne",
             "handleBrokerCallback",
             "handleBrowserCallback",
@@ -11145,7 +11161,7 @@
             "frontendUrl"
           ],
           "exported": true,
-          "lineCount": 434
+          "lineCount": 484
         }
       ],
       "imports": [
@@ -11361,12 +11377,14 @@
         "saveUpstoxCredentials",
         "saveAngelOneCredentials",
         "connectAngelOne",
+        "disconnectZerodha",
+        "disconnectUpstox",
         "disconnectAngelOne",
         "handleBrokerCallback",
         "handleBrowserCallback",
         "BrokerConnectController"
       ],
-      "totalLines": 478,
+      "totalLines": 528,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerStatusController.java": {
@@ -84557,13 +84575,13 @@
     },
     "frontend/src/app/(main)/brokers/page.jsx": {
       "filePath": "frontend/src/app/(main)/brokers/page.jsx",
-      "contentHash": "a6a85c814ea3ad39bd239327ee512790c7812533ceb5a48d301fb5a03a81df0b",
+      "contentHash": "ececc2d298892eb3c6ba0622af13f61c0bb393f06cac68a708bb2470f7ad6d31",
       "functions": [
         {
           "name": "BrokersPage",
           "params": [],
           "exported": true,
-          "lineCount": 46
+          "lineCount": 153
         }
       ],
       "classes": [],
@@ -84576,16 +84594,51 @@
           ]
         },
         {
+          "source": "@/features/brokers/hooks/useBrokerConnection",
+          "specifiers": [
+            "useBrokerConnection"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "portfolioAPI"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useMutation",
+            "useQueryClient"
+          ]
+        },
+        {
           "source": "lucide-react",
           "specifiers": [
+            "Activity",
+            "CheckCircle2",
+            "Lock",
+            "RefreshCw",
             "ShieldCheck"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "toast"
           ]
         }
       ],
       "exports": [
         "BrokersPage"
       ],
-      "totalLines": 52,
+      "totalLines": 170,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(main)/brokers/upstox/callback/page.jsx": {
@@ -89171,7 +89224,7 @@
     },
     "frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx": {
       "filePath": "frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx",
-      "contentHash": "fbc1f9dc74fe5835821e0a6514498d98dca45bd47b037be58ac902c3bfe8bed4",
+      "contentHash": "d159ec2a92644fa050e0a19f4d9532cf3bac4d6354583a9ea1c563039fbe8be0",
       "functions": [
         {
           "name": "AngelOneDashboardView",
@@ -89198,18 +89251,26 @@
       "exports": [
         "AngelOneDashboardView"
       ],
-      "totalLines": 16,
+      "totalLines": 15,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx": {
       "filePath": "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
-      "contentHash": "56e3c34596b1f796814c656c218a416235c7386739f60efff91d31a4c5c369c3",
+      "contentHash": "bfc50391276c4e6012b04a837e9ac99e7a43275bd7a3bda24a190e27f7cfb50c",
       "functions": [
+        {
+          "name": "relativeTime",
+          "params": [
+            "iso"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
         {
           "name": "AngelOneSetupView",
           "params": [],
           "exported": true,
-          "lineCount": 270
+          "lineCount": 360
         }
       ],
       "classes": [],
@@ -89221,6 +89282,24 @@
           ]
         },
         {
+          "source": "@/features/brokers/shared/BrokerSetupLayout",
+          "specifiers": [
+            "BrokerSetupLayout"
+          ]
+        },
+        {
+          "source": "@/features/brokers/shared/CredentialField",
+          "specifiers": [
+            "CredentialField"
+          ]
+        },
+        {
+          "source": "@/features/brokers/shared/brokerConfig",
+          "specifiers": [
+            "BROKER_CONFIG"
+          ]
+        },
+        {
           "source": "@/shared/api/client",
           "specifiers": [
             "brokerAPI",
@@ -89228,9 +89307,9 @@
           ]
         },
         {
-          "source": "@/features/brokers/shared/brokerConfig",
+          "source": "@/shared/ui/feedback/confirm-dialog",
           "specifiers": [
-            "BROKER_CONFIG"
+            "ConfirmDialog"
           ]
         },
         {
@@ -89243,9 +89322,15 @@
           "source": "lucide-react",
           "specifiers": [
             "AlertCircle",
+            "ArrowRight",
             "CheckCircle2",
+            "Clock",
             "Info",
-            "Loader2"
+            "Key",
+            "Loader2",
+            "Lock",
+            "RefreshCw",
+            "Trash2"
           ]
         },
         {
@@ -89266,24 +89351,12 @@
           "specifiers": [
             "toast"
           ]
-        },
-        {
-          "source": "@/features/brokers/shared/BrokerSetupLayout",
-          "specifiers": [
-            "BrokerSetupLayout"
-          ]
-        },
-        {
-          "source": "@/features/brokers/shared/CredentialField",
-          "specifiers": [
-            "CredentialField"
-          ]
         }
       ],
       "exports": [
         "AngelOneSetupView"
       ],
-      "totalLines": 289,
+      "totalLines": 401,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/hooks/useBrokerConnection.js": {
@@ -89357,13 +89430,13 @@
     },
     "frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx": {
       "filePath": "frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx",
-      "contentHash": "2867eaf94c67999dac817efae011760db6d86e9b2e39e2513a7fc874dbde94c4",
+      "contentHash": "aa29f963010b1fb4124d81b3a77e3db874b2b159ff678ded828497d4a5209347",
       "functions": [
         {
           "name": "BrokerCallbackHandler",
           "params": [],
           "exported": true,
-          "lineCount": 178
+          "lineCount": 186
         }
       ],
       "classes": [],
@@ -89383,9 +89456,19 @@
         {
           "source": "lucide-react",
           "specifiers": [
+            "AlertCircle",
+            "ArrowRight",
             "CheckCircle2",
             "Loader2",
-            "XCircle"
+            "RefreshCw",
+            "RotateCcw",
+            "ShieldCheck"
+          ]
+        },
+        {
+          "source": "next/link",
+          "specifiers": [
+            "Link"
           ]
         },
         {
@@ -89406,12 +89489,12 @@
       "exports": [
         "BrokerCallbackHandler"
       ],
-      "totalLines": 187,
+      "totalLines": 206,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/shared/BrokerCard.jsx": {
       "filePath": "frontend/src/features/brokers/shared/BrokerCard.jsx",
-      "contentHash": "d04aa2dc52cc5693986bb531a40443902ff3564df41bf4471cc80763f3d6426e",
+      "contentHash": "9235bb9dd6fd83a568ee637d825e7e705f8eabc17800321b9b06698fdedb6f75",
       "functions": [
         {
           "name": "relativeTime",
@@ -89422,16 +89505,16 @@
           "lineCount": 9
         },
         {
-          "name": "StatusPill",
+          "name": "StatusDot",
           "params": [],
           "exported": false,
-          "lineCount": 14
+          "lineCount": 35
         },
         {
           "name": "BrokerCard",
           "params": [],
           "exported": true,
-          "lineCount": 107
+          "lineCount": 117
         }
       ],
       "classes": [],
@@ -89443,7 +89526,7 @@
           ]
         },
         {
-          "source": "@/features/brokers",
+          "source": "@/features/brokers/hooks/useBrokerConnection",
           "specifiers": [
             "useBrokerConnection"
           ]
@@ -89459,7 +89542,9 @@
           "specifiers": [
             "ArrowRight",
             "Check",
-            "Clock"
+            "Clock",
+            "RefreshCw",
+            "Shield"
           ]
         },
         {
@@ -89472,24 +89557,24 @@
       "exports": [
         "BrokerCard"
       ],
-      "totalLines": 147,
+      "totalLines": 201,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx": {
       "filePath": "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
-      "contentHash": "acf237866020f329bc9cd7933233b99a4ab9333eaed9f066c612d6c26bc6ca96",
+      "contentHash": "e998610196efe847af6e0d82828594728d22c82810333e7b6b9720636239fcd8",
       "functions": [
         {
-          "name": "SetupStep",
+          "name": "SetupStepItem",
           "params": [],
           "exported": false,
-          "lineCount": 38
+          "lineCount": 66
         },
         {
           "name": "BrokerSetupLayout",
           "params": [],
           "exported": true,
-          "lineCount": 101
+          "lineCount": 97
         }
       ],
       "classes": [],
@@ -89498,6 +89583,8 @@
           "source": "lucide-react",
           "specifiers": [
             "ArrowLeft",
+            "Check",
+            "Copy",
             "ExternalLink",
             "ShieldCheck"
           ]
@@ -89507,23 +89594,35 @@
           "specifiers": [
             "Link"
           ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "toast"
+          ]
         }
       ],
       "exports": [
         "BrokerSetupLayout"
       ],
-      "totalLines": 152,
+      "totalLines": 198,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/shared/CredentialField.jsx": {
       "filePath": "frontend/src/features/brokers/shared/CredentialField.jsx",
-      "contentHash": "bd15138c009a8b15949adc4ce6030f096c55dda7d67ef162f16a3fff0c87bf6b",
+      "contentHash": "ac1379744399648165781eebd67cd4aeada201a7db76cd9f43f9618b45f2da8c",
       "functions": [
         {
           "name": "CredentialField",
           "params": [],
           "exported": true,
-          "lineCount": 75
+          "lineCount": 81
         }
       ],
       "classes": [],
@@ -89531,6 +89630,7 @@
         {
           "source": "lucide-react",
           "specifiers": [
+            "Check",
             "Eye",
             "EyeOff",
             "Lock"
@@ -89546,7 +89646,7 @@
       "exports": [
         "CredentialField"
       ],
-      "totalLines": 81,
+      "totalLines": 89,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/shared/brokerConfig.js": {
@@ -89579,13 +89679,13 @@
     },
     "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx": {
       "filePath": "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
-      "contentHash": "222d957523973e88832de3d751ef6a1aeb39614ba6848e3cf26f575ec1290e6a",
+      "contentHash": "d03940be04f5e541f9b7f61a08126f01b9f041f962d0f47f6bd7934c2836c39f",
       "functions": [
         {
-          "name": "CallbackInner",
+          "name": "UpstoxCallbackInner",
           "params": [],
           "exported": false,
-          "lineCount": 90
+          "lineCount": 19
         },
         {
           "name": "UpstoxCallbackView",
@@ -89597,17 +89697,9 @@
       "classes": [],
       "imports": [
         {
-          "source": "@/shared/ui/primitives/alert",
+          "source": "@/features/brokers/shared/BrokerCallbackHandler",
           "specifiers": [
-            "Alert",
-            "AlertDescription"
-          ]
-        },
-        {
-          "source": "@/shared/ui/primitives/card",
-          "specifiers": [
-            "Card",
-            "CardContent"
+            "BrokerCallbackHandler"
           ]
         },
         {
@@ -89618,51 +89710,27 @@
           ]
         },
         {
-          "source": "@tanstack/react-query",
-          "specifiers": [
-            "useQueryClient"
-          ]
-        },
-        {
-          "source": "lucide-react",
-          "specifiers": [
-            "AlertCircle",
-            "CheckCircle2",
-            "Loader2"
-          ]
-        },
-        {
           "source": "next/navigation",
           "specifiers": [
-            "useRouter",
             "useSearchParams"
           ]
         },
         {
           "source": "react",
           "specifiers": [
-            "Suspense",
-            "useEffect",
-            "useRef",
-            "useState"
-          ]
-        },
-        {
-          "source": "sonner",
-          "specifiers": [
-            "toast"
+            "Suspense"
           ]
         }
       ],
       "exports": [
         "UpstoxCallbackView"
       ],
-      "totalLines": 118,
+      "totalLines": 43,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx": {
       "filePath": "frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx",
-      "contentHash": "719e5792e371e6fefbf1b3d8b52cc0e8df82f0915b98ae2e6bd75b89a0792f26",
+      "contentHash": "7e0556b8da6a4e0bf3d18d6b62b0788dbce58443bbfb2e39139455e9234a647d",
       "functions": [
         {
           "name": "UpstoxDashboardView",
@@ -89689,18 +89757,26 @@
       "exports": [
         "UpstoxDashboardView"
       ],
-      "totalLines": 16,
+      "totalLines": 15,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx": {
       "filePath": "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
-      "contentHash": "6a05ba1d50bb4bfe37c148a84afb67acd31264b0ee0435b7ef5800b548066113",
+      "contentHash": "45e42c22730f4387b2da908d60f57d4e88fe49d3278fff0c96df47b142b133c6",
       "functions": [
+        {
+          "name": "relativeTime",
+          "params": [
+            "iso"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
         {
           "name": "UpstoxSetupView",
           "params": [],
           "exported": true,
-          "lineCount": 261
+          "lineCount": 347
         }
       ],
       "classes": [],
@@ -89712,16 +89788,35 @@
           ]
         },
         {
-          "source": "@/shared/api/client",
+          "source": "@/features/brokers/shared/BrokerSetupLayout",
           "specifiers": [
-            "brokerAPI",
-            "BROKERS"
+            "BrokerSetupLayout"
+          ]
+        },
+        {
+          "source": "@/features/brokers/shared/CredentialField",
+          "specifiers": [
+            "CredentialField"
           ]
         },
         {
           "source": "@/features/brokers/shared/brokerConfig",
           "specifiers": [
             "BROKER_CONFIG"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "brokerAPI",
+            "BROKERS",
+            "portfolioAPI"
+          ]
+        },
+        {
+          "source": "@/shared/ui/feedback/confirm-dialog",
+          "specifiers": [
+            "ConfirmDialog"
           ]
         },
         {
@@ -89734,8 +89829,15 @@
           "source": "lucide-react",
           "specifiers": [
             "AlertCircle",
+            "ArrowRight",
             "CheckCircle2",
-            "Loader2"
+            "Clock",
+            "ExternalLink",
+            "Key",
+            "Loader2",
+            "Lock",
+            "RefreshCw",
+            "Trash2"
           ]
         },
         {
@@ -89756,29 +89858,17 @@
           "specifiers": [
             "toast"
           ]
-        },
-        {
-          "source": "@/features/brokers/shared/BrokerSetupLayout",
-          "specifiers": [
-            "BrokerSetupLayout"
-          ]
-        },
-        {
-          "source": "@/features/brokers/shared/CredentialField",
-          "specifiers": [
-            "CredentialField"
-          ]
         }
       ],
       "exports": [
         "UpstoxSetupView"
       ],
-      "totalLines": 280,
+      "totalLines": 388,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx": {
       "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx",
-      "contentHash": "1e077418e7d73191c0d12723945d8897cf827ecbde22ec47d1d82fd97bba8e97",
+      "contentHash": "0fe74d47d32cb7a7225c6f08ab65a6ebb1435568a397662ef92ae07d98e70524",
       "functions": [
         {
           "name": "ZerodhaCallbackInner",
@@ -89824,12 +89914,12 @@
       "exports": [
         "ZerodhaCallbackView"
       ],
-      "totalLines": 44,
+      "totalLines": 43,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx": {
       "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx",
-      "contentHash": "8eaffd45153b2c9b7bf118a9cd3569a0a5e929acbb167e49c3bd315996054c5e",
+      "contentHash": "f05c1854e7cb128563fdd9b5dea98c7abf2bb67df04212aad41cfab9f0ce7b26",
       "functions": [
         {
           "name": "ZerodhaDashboardView",
@@ -89856,18 +89946,26 @@
       "exports": [
         "ZerodhaDashboardView"
       ],
-      "totalLines": 16,
+      "totalLines": 15,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx": {
       "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
-      "contentHash": "c4715da6f5d48b04404b42ae764d069da9b5394722fadba373b7bb8a0ddff932",
+      "contentHash": "a129303c6306b09b91993c6cbf87095d45cdfddb4a7e3704e1f0f2435fa6bbc0",
       "functions": [
+        {
+          "name": "relativeTime",
+          "params": [
+            "iso"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
         {
           "name": "ZerodhaSetupView",
           "params": [],
           "exported": true,
-          "lineCount": 194
+          "lineCount": 315
         }
       ],
       "classes": [],
@@ -89879,10 +89977,15 @@
           ]
         },
         {
-          "source": "@/shared/api/client",
+          "source": "@/features/brokers/shared/BrokerSetupLayout",
           "specifiers": [
-            "brokerAPI",
-            "BROKERS"
+            "BrokerSetupLayout"
+          ]
+        },
+        {
+          "source": "@/features/brokers/shared/CredentialField",
+          "specifiers": [
+            "CredentialField"
           ]
         },
         {
@@ -89892,11 +89995,38 @@
           ]
         },
         {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "brokerAPI",
+            "BROKERS",
+            "portfolioAPI"
+          ]
+        },
+        {
+          "source": "@/shared/ui/feedback/confirm-dialog",
+          "specifiers": [
+            "ConfirmDialog"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useQueryClient"
+          ]
+        },
+        {
           "source": "lucide-react",
           "specifiers": [
             "AlertCircle",
+            "ArrowRight",
             "CheckCircle2",
-            "Loader2"
+            "Clock",
+            "ExternalLink",
+            "Key",
+            "Loader2",
+            "Lock",
+            "RefreshCw",
+            "Trash2"
           ]
         },
         {
@@ -89917,24 +90047,12 @@
           "specifiers": [
             "toast"
           ]
-        },
-        {
-          "source": "@/features/brokers/shared/BrokerSetupLayout",
-          "specifiers": [
-            "BrokerSetupLayout"
-          ]
-        },
-        {
-          "source": "@/features/brokers/shared/CredentialField",
-          "specifiers": [
-            "CredentialField"
-          ]
         }
       ],
       "exports": [
         "ZerodhaSetupView"
       ],
-      "totalLines": 211,
+      "totalLines": 355,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/calculators/index.js": {
@@ -92842,7 +92960,7 @@
     },
     "frontend/src/features/notes/__tests__/constants.test.js": {
       "filePath": "frontend/src/features/notes/__tests__/constants.test.js",
-      "contentHash": "103651ecdd63d6cd005f077142f5a3861694b62371dc0f2fa75a894a0b36b8d6",
+      "contentHash": "174b920b8166567f113083912ec1c2fa4d4f137289af58dad47fe18f6bcfe8d0",
       "functions": [],
       "classes": [],
       "imports": [
@@ -92863,18 +92981,18 @@
         }
       ],
       "exports": [],
-      "totalLines": 161,
+      "totalLines": 173,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/notes/components/NoteCard.jsx": {
       "filePath": "frontend/src/features/notes/components/NoteCard.jsx",
-      "contentHash": "c3f682afa05a4293af1b09604c48e97c931a9c20e88ec23cdf37f62a8131aaf8",
+      "contentHash": "1ce74619c4e14915cf467a97a721677b5dc2a11665c8918255a9a796b352a5cb",
       "functions": [
         {
           "name": "NoteCard",
           "params": [],
           "exported": true,
-          "lineCount": 240
+          "lineCount": 246
         }
       ],
       "classes": [],
@@ -92905,18 +93023,44 @@
       "exports": [
         "NoteCard"
       ],
-      "totalLines": 270,
+      "totalLines": 272,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/notes/components/NoteDialog.jsx": {
-      "filePath": "frontend/src/features/notes/components/NoteDialog.jsx",
-      "contentHash": "746909bc925590e741460634cb6a3fae0f90d971b9a8dc6abeaacbc565a3104f",
+    "frontend/src/features/notes/components/NoteCardSkeleton.jsx": {
+      "filePath": "frontend/src/features/notes/components/NoteCardSkeleton.jsx",
+      "contentHash": "d883c287f29c77cbcea622717190190f767fd97f9cb42ce722551f3393a37ccd",
       "functions": [
         {
-          "name": "NoteDialog",
+          "name": "NoteCardSkeleton",
           "params": [],
           "exported": true,
-          "lineCount": 588
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/shared/ui/feedback/Skeleton",
+          "specifiers": [
+            "Skeleton"
+          ]
+        }
+      ],
+      "exports": [
+        "NoteCardSkeleton"
+      ],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NoteColorPicker.jsx": {
+      "filePath": "frontend/src/features/notes/components/NoteColorPicker.jsx",
+      "contentHash": "9cb98b5b2ad4856c9311fa3303622494128c14fe7113b07e45de1b8a43be2216",
+      "functions": [
+        {
+          "name": "NoteColorPicker",
+          "params": [],
+          "exported": true,
+          "lineCount": 46
         }
       ],
       "classes": [],
@@ -92924,10 +93068,45 @@
         {
           "source": "lucide-react",
           "specifiers": [
-            "Check",
-            "Plus",
+            "Check"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "NOTE_COLORS"
+          ]
+        }
+      ],
+      "exports": [
+        "NoteColorPicker"
+      ],
+      "totalLines": 53,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NoteDialog.jsx": {
+      "filePath": "frontend/src/features/notes/components/NoteDialog.jsx",
+      "contentHash": "bb27c9b5d11ed12840b05f578bf35edda02f76dad6b3c7c2b7902ce9970cb225",
+      "functions": [
+        {
+          "name": "NoteDialog",
+          "params": [],
+          "exported": true,
+          "lineCount": 406
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
             "Pin",
-            "Tag",
             "Trash2",
             "X"
           ]
@@ -92962,8 +93141,6 @@
           "source": "../constants",
           "specifiers": [
             "NOTE_CATEGORIES",
-            "NOTE_COLORS",
-            "SUGGESTED_TAGS",
             "formatTagLabel",
             "getDeletedCustomTypeIds",
             "getNoteColor",
@@ -92971,23 +93148,41 @@
             "markCustomTypeDeleted",
             "unmarkCustomTypeDeleted"
           ]
+        },
+        {
+          "source": "./NoteColorPicker",
+          "specifiers": [
+            "NoteColorPicker"
+          ]
+        },
+        {
+          "source": "./NoteTagsInput",
+          "specifiers": [
+            "NoteTagsInput"
+          ]
+        },
+        {
+          "source": "./NoteTypeSelector",
+          "specifiers": [
+            "NoteTypeSelector"
+          ]
         }
       ],
       "exports": [
         "NoteDialog"
       ],
-      "totalLines": 615,
+      "totalLines": 442,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/notes/components/NoteReaderModal.jsx": {
       "filePath": "frontend/src/features/notes/components/NoteReaderModal.jsx",
-      "contentHash": "a060a99e7e9ed4aa58473f3895b6adaed861a3139020dc13afffe4d5bf32c59e",
+      "contentHash": "eec0426d32752c631afffc0c34b1c59182966fa0f07abe7b3822553ec79fa8d0",
       "functions": [
         {
           "name": "NoteReaderModal",
           "params": [],
           "exported": true,
-          "lineCount": 221
+          "lineCount": 226
         }
       ],
       "classes": [],
@@ -93034,24 +93229,164 @@
       "exports": [
         "NoteReaderModal"
       ],
-      "totalLines": 253,
+      "totalLines": 254,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/notes/components/NotesView.jsx": {
-      "filePath": "frontend/src/features/notes/components/NotesView.jsx",
-      "contentHash": "620d002be0214163e9329930310c2737de95683e80c8b6d94d76bed55bbd8679",
+    "frontend/src/features/notes/components/NoteTagsInput.jsx": {
+      "filePath": "frontend/src/features/notes/components/NoteTagsInput.jsx",
+      "contentHash": "ad2ceee7aa3fdf67d6cc81249c29fdcbb2373693e7f90e58467d61646d4abe82",
       "functions": [
         {
-          "name": "NoteCardSkeleton",
-          "params": [],
-          "exported": false,
-          "lineCount": 17
-        },
-        {
-          "name": "NotesView",
+          "name": "NoteTagsInput",
           "params": [],
           "exported": true,
-          "lineCount": 739
+          "lineCount": 73
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "X"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "SUGGESTED_TAGS"
+          ]
+        }
+      ],
+      "exports": [
+        "NoteTagsInput"
+      ],
+      "totalLines": 80,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NoteTypeSelector.jsx": {
+      "filePath": "frontend/src/features/notes/components/NoteTypeSelector.jsx",
+      "contentHash": "c02a451715670b9fc93a060be0ab5570334f4f800c61160204bb6ce769cd25e0",
+      "functions": [
+        {
+          "name": "NoteTypeSelector",
+          "params": [],
+          "exported": true,
+          "lineCount": 135
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Plus",
+            "Tag",
+            "X"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "NoteTypeSelector"
+      ],
+      "totalLines": 141,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NotesGrid.jsx": {
+      "filePath": "frontend/src/features/notes/components/NotesGrid.jsx",
+      "contentHash": "883f289d061014c97222dab4d6f92b12c9223102719ea3602d35474158097daf",
+      "functions": [
+        {
+          "name": "NotesGrid",
+          "params": [],
+          "exported": true,
+          "lineCount": 137
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Pin",
+            "Plus",
+            "StickyNote"
+          ]
+        },
+        {
+          "source": "./NoteCard",
+          "specifiers": [
+            "NoteCard"
+          ]
+        },
+        {
+          "source": "./NoteCardSkeleton",
+          "specifiers": [
+            "NoteCardSkeleton"
+          ]
+        }
+      ],
+      "exports": [
+        "NotesGrid"
+      ],
+      "totalLines": 144,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NotesHeader.jsx": {
+      "filePath": "frontend/src/features/notes/components/NotesHeader.jsx",
+      "contentHash": "23706938b7e3c0e9efadc2d44082c20be7fb17c778ede67bddbbed6575e6f2c3",
+      "functions": [
+        {
+          "name": "NotesHeader",
+          "params": [],
+          "exported": true,
+          "lineCount": 63
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "LayoutGrid",
+            "List",
+            "Plus"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "NotesHeader"
+      ],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NotesPagination.jsx": {
+      "filePath": "frontend/src/features/notes/components/NotesPagination.jsx",
+      "contentHash": "fd1830ff6b4af762a6c72206b97add67712cf3ebb4f743cfa4549f263b11c9a5",
+      "functions": [
+        {
+          "name": "NotesPagination",
+          "params": [],
+          "exported": true,
+          "lineCount": 60
         }
       ],
       "classes": [],
@@ -93060,17 +93395,69 @@
           "source": "lucide-react",
           "specifiers": [
             "ChevronLeft",
-            "ChevronRight",
-            "LayoutGrid",
-            "List",
-            "Pin",
-            "Plus",
+            "ChevronRight"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "NotesPagination"
+      ],
+      "totalLines": 66,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NotesToolbar.jsx": {
+      "filePath": "frontend/src/features/notes/components/NotesToolbar.jsx",
+      "contentHash": "250e7ac4d0fc8c60986c6a468bca862bfd55fb84a3a879777b7147d200cd11a2",
+      "functions": [
+        {
+          "name": "NotesToolbar",
+          "params": [],
+          "exported": true,
+          "lineCount": 152
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
             "RotateCcw",
             "Search",
-            "StickyNote",
             "X"
           ]
         },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "NotesToolbar"
+      ],
+      "totalLines": 158,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/components/NotesView.jsx": {
+      "filePath": "frontend/src/features/notes/components/NotesView.jsx",
+      "contentHash": "e8a20829d7549055907d9131b4a6764d2fc0254149e921b8f98ab80f29a9fffc",
+      "functions": [
+        {
+          "name": "NotesView",
+          "params": [],
+          "exported": true,
+          "lineCount": 439
+        }
+      ],
+      "classes": [],
+      "imports": [
         {
           "source": "react",
           "specifiers": [
@@ -93094,21 +93481,9 @@
           ]
         },
         {
-          "source": "@/shared/lib/utils",
-          "specifiers": [
-            "cn"
-          ]
-        },
-        {
           "source": "@/shared/ui/feedback/confirm-dialog",
           "specifiers": [
             "ConfirmDialog"
-          ]
-        },
-        {
-          "source": "@/shared/ui/feedback/Skeleton",
-          "specifiers": [
-            "Skeleton"
           ]
         },
         {
@@ -93126,17 +93501,9 @@
         {
           "source": "../constants",
           "specifiers": [
-            "NOTE_CATEGORIES",
             "getDeletedCustomTypeIds",
-            "getNoteCategory",
             "getNoteTypeInfo",
             "markCustomTypeDeleted"
-          ]
-        },
-        {
-          "source": "./NoteCard",
-          "specifiers": [
-            "NoteCard"
           ]
         },
         {
@@ -93150,12 +93517,36 @@
           "specifiers": [
             "NoteReaderModal"
           ]
+        },
+        {
+          "source": "./NotesGrid",
+          "specifiers": [
+            "NotesGrid"
+          ]
+        },
+        {
+          "source": "./NotesHeader",
+          "specifiers": [
+            "NotesHeader"
+          ]
+        },
+        {
+          "source": "./NotesPagination",
+          "specifiers": [
+            "NotesPagination"
+          ]
+        },
+        {
+          "source": "./NotesToolbar",
+          "specifiers": [
+            "NotesToolbar"
+          ]
         }
       ],
       "exports": [
         "NotesView"
       ],
-      "totalLines": 795,
+      "totalLines": 464,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/notes/constants.js": {
@@ -93257,18 +93648,26 @@
     },
     "frontend/src/features/notes/index.js": {
       "filePath": "frontend/src/features/notes/index.js",
-      "contentHash": "704e0e86da0b2e961033c2981ec2d1bed7d658e7924608ffac1e2e401eba7c8b",
+      "contentHash": "ae39b01c20715265bc859c5d0e0b158e210cefa4b205cb41e6d55c145770c5bb",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [
         "NoteCard",
+        "NoteCardSkeleton",
+        "NoteColorPicker",
         "NoteDialog",
         "NoteReaderModal",
+        "NoteTagsInput",
+        "NoteTypeSelector",
+        "NotesGrid",
+        "NotesHeader",
+        "NotesPagination",
+        "NotesToolbar",
         "NotesView",
         "NotesViewDefault"
       ],
-      "totalLines": 6,
+      "totalLines": 14,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/BrokerInfoBanner.jsx": {
@@ -94941,19 +95340,31 @@
       "totalLines": 4,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/profile/components/ProfileView.jsx": {
-      "filePath": "frontend/src/features/profile/components/ProfileView.jsx",
-      "contentHash": "59af23349bad432e01cbb30a161b6ee43bf9c586eff6b5e5f129ff625f02538e",
+    "frontend/src/features/profile/components/DangerZoneTab.jsx": {
+      "filePath": "frontend/src/features/profile/components/DangerZoneTab.jsx",
+      "contentHash": "6785e76a33a73c0c9f2e89f5c604bf03f93112f7611647387cda2394ef63b9a3",
       "functions": [
         {
-          "name": "ProfileView",
+          "name": "DangerZoneTab",
           "params": [],
           "exported": true,
-          "lineCount": 1874
+          "lineCount": 123
         }
       ],
       "classes": [],
       "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useQueryClient"
+          ]
+        },
         {
           "source": "@/shared/ui/feedback/use-toast",
           "specifiers": [
@@ -94961,15 +95372,64 @@
           ]
         },
         {
-          "source": "@/shared/auth/AuthContext",
+          "source": "@/shared/api/client",
           "specifiers": [
-            "useAuth"
+            "userAPI"
           ]
         },
         {
-          "source": "@/shared/providers/ThemeProvider",
+          "source": "lucide-react",
           "specifiers": [
-            "useTheme"
+            "AlertTriangle",
+            "Loader2"
+          ]
+        }
+      ],
+      "exports": [
+        "DangerZoneTab"
+      ],
+      "totalLines": 134,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/components/MyProfileTab.jsx": {
+      "filePath": "frontend/src/features/profile/components/MyProfileTab.jsx",
+      "contentHash": "6abbef7ddbb866779fe925a79599875ece9897abfd6cbf254b65a7833e1fede8",
+      "functions": [
+        {
+          "name": "MyProfileTab",
+          "params": [],
+          "exported": true,
+          "lineCount": 752
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState",
+            "useEffect",
+            "useRef"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useMutation",
+            "useQueryClient"
+          ]
+        },
+        {
+          "source": "@/shared/ui/feedback/use-toast",
+          "specifiers": [
+            "useToast"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "emailAPI",
+            "userAPI"
           ]
         },
         {
@@ -94979,46 +95439,274 @@
           ]
         },
         {
-          "source": "@/shared/api/client",
+          "source": "lucide-react",
           "specifiers": [
-            "emailAPI",
-            "totpAPI",
-            "twofaAPI",
-            "userAPI"
+            "AlertTriangle",
+            "BadgeCheck",
+            "Camera",
+            "CheckCircle2",
+            "Clock",
+            "Loader2",
+            "Mail",
+            "Pencil",
+            "Save",
+            "ShieldAlert",
+            "X"
+          ]
+        }
+      ],
+      "exports": [
+        "MyProfileTab"
+      ],
+      "totalLines": 776,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/components/NotificationsTab.jsx": {
+      "filePath": "frontend/src/features/profile/components/NotificationsTab.jsx",
+      "contentHash": "fd2a80bda532bdc7215d9b1de26ae29e7cb41c05e1091e8b441d09f29752e8b1",
+      "functions": [
+        {
+          "name": "NotificationsTab",
+          "params": [],
+          "exported": true,
+          "lineCount": 74
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "@/shared/ui/feedback/use-toast",
+          "specifiers": [
+            "useToast"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "NOTIF_LABELS"
+          ]
+        }
+      ],
+      "exports": [
+        "NotificationsTab"
+      ],
+      "totalLines": 84,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/components/PreferencesTab.jsx": {
+      "filePath": "frontend/src/features/profile/components/PreferencesTab.jsx",
+      "contentHash": "fbcbce21953f659bb70386bce606abe658758ac2932aca1346bebc554e36d546",
+      "functions": [
+        {
+          "name": "PreferencesTab",
+          "params": [],
+          "exported": true,
+          "lineCount": 132
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "@/shared/providers/ThemeProvider",
+          "specifiers": [
+            "useTheme"
+          ]
+        },
+        {
+          "source": "@/shared/ui/feedback/use-toast",
+          "specifiers": [
+            "useToast"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "THEME_OPTIONS",
+            "CURRENCY_OPTIONS"
+          ]
+        }
+      ],
+      "exports": [
+        "PreferencesTab"
+      ],
+      "totalLines": 143,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/components/ProfileSidebar.jsx": {
+      "filePath": "frontend/src/features/profile/components/ProfileSidebar.jsx",
+      "contentHash": "94920af2b665dc8369539a55aa78364ca25cde6758f53f54082782a9cb5f308a",
+      "functions": [
+        {
+          "name": "ProfileSidebar",
+          "params": [],
+          "exported": true,
+          "lineCount": 53
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "SETTINGS_TABS"
+          ]
+        }
+      ],
+      "exports": [
+        "ProfileSidebar"
+      ],
+      "totalLines": 61,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/components/ProfileView.jsx": {
+      "filePath": "frontend/src/features/profile/components/ProfileView.jsx",
+      "contentHash": "faf10b4c772b440d0fe589151f1c4aa702ee434e2fa88fd7f7c2c0c210a8d912",
+      "functions": [
+        {
+          "name": "ProfileView",
+          "params": [],
+          "exported": true,
+          "lineCount": 42
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
           ]
         },
         {
           "source": "@tanstack/react-query",
           "specifiers": [
-            "useMutation",
+            "useQuery"
+          ]
+        },
+        {
+          "source": "@/shared/auth/AuthContext",
+          "specifiers": [
+            "useAuth"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "userAPI"
+          ]
+        },
+        {
+          "source": "./ProfileSidebar",
+          "specifiers": [
+            "ProfileSidebar"
+          ]
+        },
+        {
+          "source": "./MyProfileTab",
+          "specifiers": [
+            "MyProfileTab"
+          ]
+        },
+        {
+          "source": "./SecurityOptionsTab",
+          "specifiers": [
+            "SecurityOptionsTab"
+          ]
+        },
+        {
+          "source": "./PreferencesTab",
+          "specifiers": [
+            "PreferencesTab"
+          ]
+        },
+        {
+          "source": "./NotificationsTab",
+          "specifiers": [
+            "NotificationsTab"
+          ]
+        },
+        {
+          "source": "./DangerZoneTab",
+          "specifiers": [
+            "DangerZoneTab"
+          ]
+        }
+      ],
+      "exports": [
+        "ProfileView"
+      ],
+      "totalLines": 58,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/components/SecurityOptionsTab.jsx": {
+      "filePath": "frontend/src/features/profile/components/SecurityOptionsTab.jsx",
+      "contentHash": "3829c7a303832150314903a0e825f888015c58a5a6579a38033e2197aa66bf2d",
+      "functions": [
+        {
+          "name": "SecurityOptionsTab",
+          "params": [],
+          "exported": true,
+          "lineCount": 626
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
             "useQuery",
+            "useMutation",
             "useQueryClient"
           ]
         },
         {
-          "source": "lucide-react",
+          "source": "@/shared/ui/feedback/use-toast",
           "specifiers": [
-            "AlertTriangle",
-            "BadgeCheck",
-            "Bell",
-            "Camera",
-            "CheckCircle2",
-            "Clock",
-            "Download",
-            "Key",
-            "Laptop",
-            "Loader2",
-            "Lock",
-            "Mail",
-            "Moon",
-            "Pencil",
-            "Save",
-            "ShieldAlert",
-            "ShieldCheck",
-            "SlidersHorizontal",
-            "Sun",
-            "User",
-            "X"
+            "useToast"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "totpAPI",
+            "twofaAPI",
+            "userAPI"
           ]
         },
         {
@@ -95028,36 +95716,74 @@
           ]
         },
         {
-          "source": "react",
+          "source": "lucide-react",
           "specifiers": [
-            "useEffect",
-            "useRef",
-            "useState"
+            "Download",
+            "Key",
+            "Loader2",
+            "Lock",
+            "ShieldAlert",
+            "ShieldCheck"
           ]
         }
       ],
       "exports": [
-        "ProfileView"
+        "SecurityOptionsTab"
       ],
-      "totalLines": 1930,
+      "totalLines": 645,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/constants.js": {
+      "filePath": "frontend/src/features/profile/constants.js",
+      "contentHash": "99a6c8cfce85e094454c64aeee6a085645265937854eab79a9e11104eabc3ab9",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "AlertTriangle",
+            "Bell",
+            "ShieldCheck",
+            "SlidersHorizontal",
+            "User",
+            "Sun",
+            "Moon",
+            "Laptop"
+          ]
+        }
+      ],
+      "exports": [
+        "SETTINGS_TABS",
+        "NOTIF_LABELS",
+        "THEME_OPTIONS",
+        "CURRENCY_OPTIONS"
+      ],
+      "totalLines": 51,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/profile/index.js": {
       "filePath": "frontend/src/features/profile/index.js",
-      "contentHash": "95341e28c589f986774ad90e0f891fb548e7b665a99a018c028c17f963e2754d",
+      "contentHash": "99c605f9d3ae7a310b1b303aec5815dcffb89a5950205e4b8607e1a5eaccbda0",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [
         "ProfileView",
         "ProfileViewDefault",
+        "ProfileSidebar",
+        "MyProfileTab",
+        "SecurityOptionsTab",
+        "PreferencesTab",
+        "NotificationsTab",
+        "DangerZoneTab",
         "formatPhoneDisplay",
         "normalizeEmail",
         "normalizeName",
         "normalizePhoneIndia",
         "sanitizeText"
       ],
-      "totalLines": 12,
+      "totalLines": 19,
       "hasStructuralAnalysis": true
     },
     "frontend/src/proxy.js": {
@@ -95103,7 +95829,7 @@
     },
     "frontend/src/shared/api/client.js": {
       "filePath": "frontend/src/shared/api/client.js",
-      "contentHash": "ffbcb0fa34f40f48f8862f1f4a7bd3a97b4b0b4adccb52379e5b8b7ae92ddec8",
+      "contentHash": "76206ddc1e25e1ec6c2a2fd64533d7eab9ea6a705f79dcdb35f991af9c5ba873",
       "functions": [
         {
           "name": "processQueue",
@@ -95157,7 +95883,7 @@
         "mutualFundAPI",
         "apiClient"
       ],
-      "totalLines": 1472,
+      "totalLines": 1479,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/api/index.js": {
@@ -99796,7 +100522,7 @@
     },
     "frontend/src/widgets/broker-status-banner/BrokerStatusBanner.jsx": {
       "filePath": "frontend/src/widgets/broker-status-banner/BrokerStatusBanner.jsx",
-      "contentHash": "afc0745ab302c3858f72c22eb39afb205dc2ca3d935bc8666f996f82e929a3b9",
+      "contentHash": "2ca11028ba8057acf9a77d26e04c185b3b82cf9299b6bf579af1f4ecde7d7ec7",
       "functions": [
         {
           "name": "relativeTime",
@@ -99810,13 +100536,13 @@
           "name": "BrokerStatusBanner",
           "params": [],
           "exported": true,
-          "lineCount": 99
+          "lineCount": 109
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers",
+          "source": "@/features/brokers/hooks/useBrokerConnection",
           "specifiers": [
             "useBrokerConnection"
           ]
@@ -99830,8 +100556,17 @@
         {
           "source": "lucide-react",
           "specifiers": [
-            "AlertTriangle",
+            "AlertCircle",
+            "ArrowRight",
+            "Clock",
+            "RefreshCw",
             "X"
+          ]
+        },
+        {
+          "source": "next/link",
+          "specifiers": [
+            "Link"
           ]
         },
         {
@@ -99844,7 +100579,7 @@
       "exports": [
         "BrokerStatusBanner"
       ],
-      "totalLines": 128,
+      "totalLines": 142,
       "hasStructuralAnalysis": true
     },
     "frontend/src/widgets/broker-status-banner/index.js": {
@@ -100346,6 +101081,16 @@
       "totalLines": 40,
       "hasStructuralAnalysis": false
     },
+    "local/memory/broker_connections_unslop_redesign.md": {
+      "filePath": "local/memory/broker_connections_unslop_redesign.md",
+      "contentHash": "82f9d874f5c909c2bd99a308c58eda84b8ea336e14b2c3f2bc5b3f82a3a7814b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 84,
+      "hasStructuralAnalysis": false
+    },
     "local/memory/dashboard_and_auth_session_recovery.md": {
       "filePath": "local/memory/dashboard_and_auth_session_recovery.md",
       "contentHash": "fb1bc2cec5174890a5c0a1bf1bcef19cee10ccc0df2ab101ee0cb0b3360d522a",
@@ -100358,12 +101103,12 @@
     },
     "local/memory/notes_subsystem_and_unslop_redesign.md": {
       "filePath": "local/memory/notes_subsystem_and_unslop_redesign.md",
-      "contentHash": "e7cae292722e62fabe7f8cfe59cdcfcb20a3ac10c48ea8f19f3e2dad39910679",
+      "contentHash": "df8663555fb43403e3d9f12c7eed67ffa354a17594c0bd780028fca98bed92d2",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 127,
+      "totalLines": 137,
       "hasStructuralAnalysis": false
     },
     "local/memory/postman_api_ecosystem.md": {

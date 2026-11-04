@@ -1488,8 +1488,8 @@
       "name": "AGENTS.md",
       "path": "AGENTS.md",
       "language": "md",
-      "summary": "docs component with 224 lines (complex).",
-      "lines": 224,
+      "summary": "docs component with 227 lines (complex).",
+      "lines": 227,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -1624,8 +1624,8 @@
       "name": "fingerprints.json",
       "path": ".ua/fingerprints.json",
       "language": "json",
-      "summary": "config component with 100780 lines (complex).",
-      "lines": 100780,
+      "summary": "config component with 100829 lines (complex).",
+      "lines": 100829,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -1635,8 +1635,8 @@
       "name": "knowledge-graph.json",
       "path": ".ua/knowledge-graph.json",
       "language": "json",
-      "summary": "config component with 109459 lines (complex).",
-      "lines": 109459,
+      "summary": "config component with 109533 lines (complex).",
+      "lines": 109533,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -2330,6 +2330,17 @@
       "complexity": "simple"
     },
     {
+      "id": "document:local/memory/broker_connections_unslop_redesign.md",
+      "type": "document",
+      "name": "broker_connections_unslop_redesign.md",
+      "path": "local/memory/broker_connections_unslop_redesign.md",
+      "language": "md",
+      "summary": "docs component with 83 lines (moderate).",
+      "lines": 83,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
       "id": "document:local/memory/dashboard_and_auth_session_recovery.md",
       "type": "document",
       "name": "dashboard_and_auth_session_recovery.md",
@@ -2346,8 +2357,8 @@
       "name": "notes_subsystem_and_unslop_redesign.md",
       "path": "local/memory/notes_subsystem_and_unslop_redesign.md",
       "language": "md",
-      "summary": "docs component with 126 lines (moderate).",
-      "lines": 126,
+      "summary": "docs component with 136 lines (moderate).",
+      "lines": 136,
       "complexity": "moderate",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -9069,8 +9080,8 @@
       "name": "BrokerConnectController.java",
       "path": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java",
       "language": "java",
-      "summary": "code component with 477 lines (complex).",
-      "lines": 477,
+      "summary": "code component with 527 lines (complex).",
+      "lines": 527,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -9147,6 +9158,30 @@
       "endLine": 362
     },
     {
+      "id": "function:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#disconnectZerodha",
+      "type": "function",
+      "name": "disconnectZerodha",
+      "path": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java",
+      "language": "java",
+      "summary": "Function disconnectZerodha in BrokerConnectController.java (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 365,
+      "endLine": 387
+    },
+    {
+      "id": "function:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#disconnectUpstox",
+      "type": "function",
+      "name": "disconnectUpstox",
+      "path": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java",
+      "language": "java",
+      "summary": "Function disconnectUpstox in BrokerConnectController.java (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 390,
+      "endLine": 412
+    },
+    {
       "id": "function:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#disconnectAngelOne",
       "type": "function",
       "name": "disconnectAngelOne",
@@ -9155,8 +9190,8 @@
       "summary": "Function disconnectAngelOne in BrokerConnectController.java (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 365,
-      "endLine": 388
+      "startLine": 415,
+      "endLine": 438
     },
     {
       "id": "function:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#handleBrokerCallback",
@@ -9167,8 +9202,8 @@
       "summary": "Function handleBrokerCallback in BrokerConnectController.java (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 391,
-      "endLine": 433
+      "startLine": 441,
+      "endLine": 483
     },
     {
       "id": "function:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#handleBrowserCallback",
@@ -9179,8 +9214,8 @@
       "summary": "Function handleBrowserCallback in BrokerConnectController.java (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 438,
-      "endLine": 458
+      "startLine": 488,
+      "endLine": 508
     },
     {
       "id": "function:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#getAuthenticatedUser",
@@ -9191,8 +9226,8 @@
       "summary": "Function getAuthenticatedUser in BrokerConnectController.java (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 465,
-      "endLine": 476
+      "startLine": 515,
+      "endLine": 526
     },
     {
       "id": "class:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#BrokerConnectController",
@@ -9204,7 +9239,7 @@
       "lines": 1,
       "complexity": "moderate",
       "startLine": 44,
-      "endLine": 477
+      "endLine": 527
     },
     {
       "id": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerStatusController.java",
@@ -53493,8 +53528,8 @@
       "name": "page.jsx",
       "path": "frontend/src/app/(main)/brokers/page.jsx",
       "language": "jsx",
-      "summary": "code component with 51 lines (moderate).",
-      "lines": 51,
+      "summary": "code component with 169 lines (moderate).",
+      "lines": 169,
       "complexity": "moderate",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -53507,8 +53542,8 @@
       "summary": "Function BrokersPage in page.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 6,
-      "endLine": 51
+      "startLine": 17,
+      "endLine": 169
     },
     {
       "id": "file:frontend/src/app/(main)/brokers/upstox/callback/page.jsx",
@@ -56055,8 +56090,8 @@
       "name": "AngelOneDashboardView.jsx",
       "path": "frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx",
       "language": "jsx",
-      "summary": "code component with 15 lines (simple).",
-      "lines": 15,
+      "summary": "code component with 14 lines (simple).",
+      "lines": 14,
       "complexity": "simple",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -56069,8 +56104,8 @@
       "summary": "Function AngelOneDashboardView in AngelOneDashboardView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 7,
-      "endLine": 13
+      "startLine": 6,
+      "endLine": 12
     },
     {
       "id": "file:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
@@ -56078,10 +56113,22 @@
       "name": "AngelOneSetupView.jsx",
       "path": "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
       "language": "jsx",
-      "summary": "code component with 288 lines (complex).",
-      "lines": 288,
+      "summary": "code component with 400 lines (complex).",
+      "lines": 400,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx#relativeTime",
+      "type": "function",
+      "name": "relativeTime",
+      "path": "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
+      "language": "jsx",
+      "summary": "Function relativeTime in AngelOneSetupView.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 29,
+      "endLine": 37
     },
     {
       "id": "function:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx#AngelOneSetupView",
@@ -56092,8 +56139,8 @@
       "summary": "Function AngelOneSetupView in AngelOneSetupView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 17,
-      "endLine": 286
+      "startLine": 39,
+      "endLine": 398
     },
     {
       "id": "file:frontend/src/features/brokers/hooks/useBrokerConnection.js",
@@ -56134,49 +56181,34 @@
       "id": "file:frontend/src/features/brokers/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/features/brokers/index.js",
-      "lineRange": [
-        1,
-        20
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/brokers/index.js",
+      "language": "js",
+      "summary": "code component with 19 lines (simple).",
+      "lines": 19,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/brokers/services/brokers.service.js",
       "type": "file",
       "name": "brokers.service.js",
-      "filePath": "frontend/src/features/brokers/services/brokers.service.js",
-      "lineRange": [
-        1,
-        44
-      ],
-      "summary": "Source component brokers.service.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/brokers/services/brokers.service.js",
+      "language": "js",
+      "summary": "code component with 44 lines (simple).",
+      "lines": 44,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx",
       "type": "file",
       "name": "BrokerCallbackHandler.jsx",
-      "filePath": "frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx",
-      "lineRange": [
-        1,
-        186
-      ],
-      "summary": "Source component BrokerCallbackHandler.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx",
+      "language": "jsx",
+      "summary": "code component with 205 lines (complex).",
+      "lines": 205,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx#BrokerCallbackHandler",
@@ -56187,24 +56219,19 @@
       "summary": "Function BrokerCallbackHandler in BrokerCallbackHandler.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 9,
-      "endLine": 186
+      "startLine": 18,
+      "endLine": 203
     },
     {
       "id": "file:frontend/src/features/brokers/shared/BrokerCard.jsx",
       "type": "file",
       "name": "BrokerCard.jsx",
-      "filePath": "frontend/src/features/brokers/shared/BrokerCard.jsx",
-      "lineRange": [
-        1,
-        147
-      ],
-      "summary": "Source component BrokerCard.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/features/brokers/shared/BrokerCard.jsx",
+      "language": "jsx",
+      "summary": "code component with 200 lines (moderate).",
+      "lines": 200,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/shared/BrokerCard.jsx#relativeTime",
@@ -56219,16 +56246,16 @@
       "endLine": 17
     },
     {
-      "id": "function:frontend/src/features/brokers/shared/BrokerCard.jsx#StatusPill",
+      "id": "function:frontend/src/features/brokers/shared/BrokerCard.jsx#StatusDot",
       "type": "function",
-      "name": "StatusPill",
+      "name": "StatusDot",
       "path": "frontend/src/features/brokers/shared/BrokerCard.jsx",
       "language": "jsx",
-      "summary": "Function StatusPill in BrokerCard.jsx (1 lines).",
+      "summary": "Function StatusDot in BrokerCard.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 25,
-      "endLine": 38
+      "startLine": 46,
+      "endLine": 80
     },
     {
       "id": "function:frontend/src/features/brokers/shared/BrokerCard.jsx#BrokerCard",
@@ -56239,36 +56266,31 @@
       "summary": "Function BrokerCard in BrokerCard.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 40,
-      "endLine": 146
+      "startLine": 82,
+      "endLine": 198
     },
     {
       "id": "file:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
       "type": "file",
       "name": "BrokerSetupLayout.jsx",
-      "filePath": "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
-      "lineRange": [
-        1,
-        151
-      ],
-      "summary": "Source component BrokerSetupLayout.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx#SetupStep",
-      "type": "function",
-      "name": "SetupStep",
       "path": "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
       "language": "jsx",
-      "summary": "Function SetupStep in BrokerSetupLayout.jsx (1 lines).",
+      "summary": "code component with 197 lines (moderate).",
+      "lines": 197,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx#SetupStepItem",
+      "type": "function",
+      "name": "SetupStepItem",
+      "path": "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
+      "language": "jsx",
+      "summary": "Function SetupStepItem in BrokerSetupLayout.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 12,
-      "endLine": 49
+      "startLine": 32,
+      "endLine": 97
     },
     {
       "id": "function:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx#BrokerSetupLayout",
@@ -56279,24 +56301,19 @@
       "summary": "Function BrokerSetupLayout in BrokerSetupLayout.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 51,
-      "endLine": 151
+      "startLine": 99,
+      "endLine": 195
     },
     {
       "id": "file:frontend/src/features/brokers/shared/CredentialField.jsx",
       "type": "file",
       "name": "CredentialField.jsx",
-      "filePath": "frontend/src/features/brokers/shared/CredentialField.jsx",
-      "lineRange": [
-        1,
-        80
-      ],
-      "summary": "Source component CredentialField.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/features/brokers/shared/CredentialField.jsx",
+      "language": "jsx",
+      "summary": "code component with 88 lines (moderate).",
+      "lines": 88,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/shared/CredentialField.jsx#CredentialField",
@@ -56308,23 +56325,18 @@
       "lines": 1,
       "complexity": "simple",
       "startLine": 6,
-      "endLine": 80
+      "endLine": 86
     },
     {
       "id": "file:frontend/src/features/brokers/shared/brokerConfig.js",
       "type": "file",
       "name": "brokerConfig.js",
-      "filePath": "frontend/src/features/brokers/shared/brokerConfig.js",
-      "lineRange": [
-        1,
-        213
-      ],
-      "summary": "Source component brokerConfig.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/features/brokers/shared/brokerConfig.js",
+      "language": "js",
+      "summary": "code component with 213 lines (complex).",
+      "lines": 213,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/shared/brokerConfig.js#getBrokerByKey",
@@ -56354,29 +56366,24 @@
       "id": "file:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
       "type": "file",
       "name": "UpstoxCallbackView.jsx",
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
-      "lineRange": [
-        1,
-        118
-      ],
-      "summary": "Source component UpstoxCallbackView.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "moderate"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx#CallbackInner",
-      "type": "function",
-      "name": "CallbackInner",
       "path": "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
       "language": "jsx",
-      "summary": "Function CallbackInner in UpstoxCallbackView.jsx (1 lines).",
+      "summary": "code component with 42 lines (simple).",
+      "lines": 42,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx#UpstoxCallbackInner",
+      "type": "function",
+      "name": "UpstoxCallbackInner",
+      "path": "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
+      "language": "jsx",
+      "summary": "Function UpstoxCallbackInner in UpstoxCallbackView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 12,
-      "endLine": 101
+      "startLine": 8,
+      "endLine": 26
     },
     {
       "id": "function:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx#UpstoxCallbackView",
@@ -56387,24 +56394,19 @@
       "summary": "Function UpstoxCallbackView in UpstoxCallbackView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 103,
-      "endLine": 115
+      "startLine": 28,
+      "endLine": 40
     },
     {
       "id": "file:frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx",
       "type": "file",
       "name": "UpstoxDashboardView.jsx",
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx",
-      "lineRange": [
-        1,
-        15
-      ],
-      "summary": "Source component UpstoxDashboardView.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx",
+      "language": "jsx",
+      "summary": "code component with 14 lines (simple).",
+      "lines": 14,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx#UpstoxDashboardView",
@@ -56415,24 +56417,31 @@
       "summary": "Function UpstoxDashboardView in UpstoxDashboardView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 7,
-      "endLine": 13
+      "startLine": 6,
+      "endLine": 12
     },
     {
       "id": "file:frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
       "type": "file",
       "name": "UpstoxSetupView.jsx",
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
-      "lineRange": [
-        1,
-        280
-      ],
-      "summary": "Source component UpstoxSetupView.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
+      "language": "jsx",
+      "summary": "code component with 387 lines (complex).",
+      "lines": 387,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx#relativeTime",
+      "type": "function",
+      "name": "relativeTime",
+      "path": "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
+      "language": "jsx",
+      "summary": "Function relativeTime in UpstoxSetupView.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 29,
+      "endLine": 37
     },
     {
       "id": "function:frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx#UpstoxSetupView",
@@ -56443,24 +56452,19 @@
       "summary": "Function UpstoxSetupView in UpstoxSetupView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 17,
-      "endLine": 277
+      "startLine": 39,
+      "endLine": 385
     },
     {
       "id": "file:frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx",
       "type": "file",
       "name": "ZerodhaCallbackView.jsx",
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx",
-      "lineRange": [
-        1,
-        43
-      ],
-      "summary": "Source component ZerodhaCallbackView.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx",
+      "language": "jsx",
+      "summary": "code component with 42 lines (simple).",
+      "lines": 42,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx#ZerodhaCallbackInner",
@@ -56471,8 +56475,8 @@
       "summary": "Function ZerodhaCallbackInner in ZerodhaCallbackView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 9,
-      "endLine": 27
+      "startLine": 8,
+      "endLine": 26
     },
     {
       "id": "function:frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx#ZerodhaCallbackView",
@@ -56483,24 +56487,19 @@
       "summary": "Function ZerodhaCallbackView in ZerodhaCallbackView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 29,
-      "endLine": 41
+      "startLine": 28,
+      "endLine": 40
     },
     {
       "id": "file:frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx",
       "type": "file",
       "name": "ZerodhaDashboardView.jsx",
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx",
-      "lineRange": [
-        1,
-        15
-      ],
-      "summary": "Source component ZerodhaDashboardView.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx",
+      "language": "jsx",
+      "summary": "code component with 14 lines (simple).",
+      "lines": 14,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx#ZerodhaDashboardView",
@@ -56511,24 +56510,31 @@
       "summary": "Function ZerodhaDashboardView in ZerodhaDashboardView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 7,
-      "endLine": 13
+      "startLine": 6,
+      "endLine": 12
     },
     {
       "id": "file:frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
       "type": "file",
       "name": "ZerodhaSetupView.jsx",
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
-      "lineRange": [
-        1,
-        211
-      ],
-      "summary": "Source component ZerodhaSetupView.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
+      "language": "jsx",
+      "summary": "code component with 354 lines (complex).",
+      "lines": 354,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx#relativeTime",
+      "type": "function",
+      "name": "relativeTime",
+      "path": "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
+      "language": "jsx",
+      "summary": "Function relativeTime in ZerodhaSetupView.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 28,
+      "endLine": 36
     },
     {
       "id": "function:frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx#ZerodhaSetupView",
@@ -56539,40 +56545,30 @@
       "summary": "Function ZerodhaSetupView in ZerodhaSetupView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 15,
-      "endLine": 208
+      "startLine": 38,
+      "endLine": 352
     },
     {
       "id": "file:frontend/src/features/calculators/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/features/calculators/index.js",
-      "lineRange": [
-        1,
-        17
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/calculators/index.js",
+      "language": "js",
+      "summary": "code component with 17 lines (simple).",
+      "lines": 17,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/calculators/shared/CalculatorComponents.jsx",
       "type": "file",
       "name": "CalculatorComponents.jsx",
-      "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "lineRange": [
-        1,
-        405
-      ],
-      "summary": "Source component CalculatorComponents.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
+      "language": "jsx",
+      "summary": "code component with 404 lines (complex).",
+      "lines": 404,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx#CalculatorLayout",
@@ -56674,17 +56670,12 @@
       "id": "file:frontend/src/features/calculators/shared/calculator.service.js",
       "type": "file",
       "name": "calculator.service.js",
-      "filePath": "frontend/src/features/calculators/shared/calculator.service.js",
-      "lineRange": [
-        1,
-        396
-      ],
-      "summary": "Source component calculator.service.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/features/calculators/shared/calculator.service.js",
+      "language": "js",
+      "summary": "code component with 396 lines (complex).",
+      "lines": 396,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/calculators/shared/calculator.service.js#formatCurrency",
@@ -56854,17 +56845,12 @@
       "id": "file:frontend/src/features/dashboard/components/StatsCard.jsx",
       "type": "file",
       "name": "StatsCard.jsx",
-      "filePath": "frontend/src/features/dashboard/components/StatsCard.jsx",
-      "lineRange": [
-        1,
-        93
-      ],
-      "summary": "Source component StatsCard.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/features/dashboard/components/StatsCard.jsx",
+      "language": "jsx",
+      "summary": "code component with 92 lines (moderate).",
+      "lines": 92,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/dashboard/components/StatsCard.jsx#StatsCard",
@@ -56882,17 +56868,12 @@
       "id": "file:frontend/src/features/dashboard/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/features/dashboard/index.js",
-      "lineRange": [
-        1,
-        8
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/dashboard/index.js",
+      "language": "js",
+      "summary": "code component with 8 lines (simple).",
+      "lines": 8,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/epf/components/EpfInterestRateDialog.jsx",
@@ -57062,17 +57043,12 @@
       "id": "file:frontend/src/features/epf/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/features/epf/index.js",
-      "lineRange": [
-        1,
-        4
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/epf/index.js",
+      "language": "js",
+      "summary": "code component with 4 lines (simple).",
+      "lines": 4,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/fixed-deposit/components/FdDialog.jsx",
@@ -57280,17 +57256,12 @@
       "id": "file:frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
       "type": "file",
       "name": "TdsSummary.jsx",
-      "filePath": "frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
-      "lineRange": [
-        1,
-        248
-      ],
-      "summary": "Source component TdsSummary.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
+      "language": "jsx",
+      "summary": "code component with 247 lines (complex).",
+      "lines": 247,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/fixed-deposit/components/TdsSummary.jsx#formatCurrency",
@@ -57450,17 +57421,12 @@
       "id": "file:frontend/src/features/fixed-deposit/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/features/fixed-deposit/index.js",
-      "lineRange": [
-        1,
-        5
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/fixed-deposit/index.js",
+      "language": "js",
+      "summary": "code component with 8 lines (simple).",
+      "lines": 8,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/gold-silver/components/GoldSilverDialog.jsx",
@@ -57665,33 +57631,23 @@
       "id": "file:frontend/src/features/gold-silver/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/features/gold-silver/index.js",
-      "lineRange": [
-        1,
-        5
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/gold-silver/index.js",
+      "language": "js",
+      "summary": "code component with 8 lines (simple).",
+      "lines": 8,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/index.js",
       "type": "file",
       "name": "index.js",
-      "filePath": "frontend/src/features/index.js",
-      "lineRange": [
-        1,
-        12
-      ],
-      "summary": "Source component index.js implementing js logic.",
-      "tags": [
-        "code",
-        "js"
-      ],
-      "complexity": "simple"
+      "path": "frontend/src/features/index.js",
+      "language": "js",
+      "summary": "code component with 12 lines (simple).",
+      "lines": 12,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/mutual-fund/components/DashboardTab.jsx",
@@ -58201,17 +58157,12 @@
       "id": "file:frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx",
       "type": "file",
       "name": "UpdateValuationModal.jsx",
-      "filePath": "frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx",
-      "lineRange": [
-        1,
-        183
-      ],
-      "summary": "Source component UpdateValuationModal.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "moderate"
+      "path": "frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx",
+      "language": "jsx",
+      "summary": "code component with 182 lines (moderate).",
+      "lines": 182,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx#UpdateValuationModal",
@@ -58229,17 +58180,12 @@
       "id": "file:frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx",
       "type": "file",
       "name": "ValuationSnapshotModal.jsx",
-      "filePath": "frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx",
-      "lineRange": [
-        1,
-        295
-      ],
-      "summary": "Source component ValuationSnapshotModal.jsx implementing jsx logic.",
-      "tags": [
-        "code",
-        "jsx"
-      ],
-      "complexity": "complex"
+      "path": "frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx",
+      "language": "jsx",
+      "summary": "code component with 294 lines (complex).",
+      "lines": 294,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "function:frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx#ValuationSnapshotModal",
@@ -58430,8 +58376,8 @@
       "name": "constants.test.js",
       "path": "frontend/src/features/notes/__tests__/constants.test.js",
       "language": "js",
-      "summary": "code component with 160 lines (moderate).",
-      "lines": 160,
+      "summary": "code component with 172 lines (moderate).",
+      "lines": 172,
       "complexity": "moderate",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -58441,8 +58387,8 @@
       "name": "NoteCard.jsx",
       "path": "frontend/src/features/notes/components/NoteCard.jsx",
       "language": "jsx",
-      "summary": "code component with 269 lines (complex).",
-      "lines": 269,
+      "summary": "code component with 271 lines (complex).",
+      "lines": 271,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -58455,8 +58401,54 @@
       "summary": "Function NoteCard in NoteCard.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 30,
-      "endLine": 269
+      "startLine": 26,
+      "endLine": 271
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NoteCardSkeleton.jsx",
+      "type": "file",
+      "name": "NoteCardSkeleton.jsx",
+      "path": "frontend/src/features/notes/components/NoteCardSkeleton.jsx",
+      "language": "jsx",
+      "summary": "code component with 21 lines (simple).",
+      "lines": 21,
+      "complexity": "simple",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NoteCardSkeleton.jsx#NoteCardSkeleton",
+      "type": "function",
+      "name": "NoteCardSkeleton",
+      "path": "frontend/src/features/notes/components/NoteCardSkeleton.jsx",
+      "language": "jsx",
+      "summary": "Function NoteCardSkeleton in NoteCardSkeleton.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 5,
+      "endLine": 21
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NoteColorPicker.jsx",
+      "type": "file",
+      "name": "NoteColorPicker.jsx",
+      "path": "frontend/src/features/notes/components/NoteColorPicker.jsx",
+      "language": "jsx",
+      "summary": "code component with 52 lines (moderate).",
+      "lines": 52,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NoteColorPicker.jsx#NoteColorPicker",
+      "type": "function",
+      "name": "NoteColorPicker",
+      "path": "frontend/src/features/notes/components/NoteColorPicker.jsx",
+      "language": "jsx",
+      "summary": "Function NoteColorPicker in NoteColorPicker.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 7,
+      "endLine": 52
     },
     {
       "id": "file:frontend/src/features/notes/components/NoteDialog.jsx",
@@ -58483,8 +58475,8 @@
       "summary": "Function NoteDialog in NoteDialog.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 27,
-      "endLine": 614
+      "startLine": 36,
+      "endLine": 441
     },
     {
       "id": "file:frontend/src/features/notes/components/NoteReaderModal.jsx",
@@ -58492,8 +58484,8 @@
       "name": "NoteReaderModal.jsx",
       "path": "frontend/src/features/notes/components/NoteReaderModal.jsx",
       "language": "jsx",
-      "summary": "code component with 252 lines (complex).",
-      "lines": 252,
+      "summary": "code component with 253 lines (complex).",
+      "lines": 253,
       "complexity": "complex",
       "reasoning": "Extracted via AST structural analysis."
     },
@@ -58506,8 +58498,146 @@
       "summary": "Function NoteReaderModal in NoteReaderModal.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 32,
-      "endLine": 252
+      "startLine": 28,
+      "endLine": 253
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NoteTagsInput.jsx",
+      "type": "file",
+      "name": "NoteTagsInput.jsx",
+      "path": "frontend/src/features/notes/components/NoteTagsInput.jsx",
+      "language": "jsx",
+      "summary": "code component with 79 lines (moderate).",
+      "lines": 79,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NoteTagsInput.jsx#NoteTagsInput",
+      "type": "function",
+      "name": "NoteTagsInput",
+      "path": "frontend/src/features/notes/components/NoteTagsInput.jsx",
+      "language": "jsx",
+      "summary": "Function NoteTagsInput in NoteTagsInput.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 7,
+      "endLine": 79
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NoteTypeSelector.jsx",
+      "type": "file",
+      "name": "NoteTypeSelector.jsx",
+      "path": "frontend/src/features/notes/components/NoteTypeSelector.jsx",
+      "language": "jsx",
+      "summary": "code component with 140 lines (moderate).",
+      "lines": 140,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NoteTypeSelector.jsx#NoteTypeSelector",
+      "type": "function",
+      "name": "NoteTypeSelector",
+      "path": "frontend/src/features/notes/components/NoteTypeSelector.jsx",
+      "language": "jsx",
+      "summary": "Function NoteTypeSelector in NoteTypeSelector.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 6,
+      "endLine": 140
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NotesGrid.jsx",
+      "type": "file",
+      "name": "NotesGrid.jsx",
+      "path": "frontend/src/features/notes/components/NotesGrid.jsx",
+      "language": "jsx",
+      "summary": "code component with 143 lines (moderate).",
+      "lines": 143,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NotesGrid.jsx#NotesGrid",
+      "type": "function",
+      "name": "NotesGrid",
+      "path": "frontend/src/features/notes/components/NotesGrid.jsx",
+      "language": "jsx",
+      "summary": "Function NotesGrid in NotesGrid.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 7,
+      "endLine": 143
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NotesHeader.jsx",
+      "type": "file",
+      "name": "NotesHeader.jsx",
+      "path": "frontend/src/features/notes/components/NotesHeader.jsx",
+      "language": "jsx",
+      "summary": "code component with 68 lines (moderate).",
+      "lines": 68,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NotesHeader.jsx#NotesHeader",
+      "type": "function",
+      "name": "NotesHeader",
+      "path": "frontend/src/features/notes/components/NotesHeader.jsx",
+      "language": "jsx",
+      "summary": "Function NotesHeader in NotesHeader.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 6,
+      "endLine": 68
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NotesPagination.jsx",
+      "type": "file",
+      "name": "NotesPagination.jsx",
+      "path": "frontend/src/features/notes/components/NotesPagination.jsx",
+      "language": "jsx",
+      "summary": "code component with 65 lines (moderate).",
+      "lines": 65,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NotesPagination.jsx#NotesPagination",
+      "type": "function",
+      "name": "NotesPagination",
+      "path": "frontend/src/features/notes/components/NotesPagination.jsx",
+      "language": "jsx",
+      "summary": "Function NotesPagination in NotesPagination.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 6,
+      "endLine": 65
+    },
+    {
+      "id": "file:frontend/src/features/notes/components/NotesToolbar.jsx",
+      "type": "file",
+      "name": "NotesToolbar.jsx",
+      "path": "frontend/src/features/notes/components/NotesToolbar.jsx",
+      "language": "jsx",
+      "summary": "code component with 157 lines (moderate).",
+      "lines": 157,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/notes/components/NotesToolbar.jsx#NotesToolbar",
+      "type": "function",
+      "name": "NotesToolbar",
+      "path": "frontend/src/features/notes/components/NotesToolbar.jsx",
+      "language": "jsx",
+      "summary": "Function NotesToolbar in NotesToolbar.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 6,
+      "endLine": 157
     },
     {
       "id": "file:frontend/src/features/notes/components/NotesView.jsx",
@@ -58526,18 +58656,6 @@
       "complexity": "complex"
     },
     {
-      "id": "function:frontend/src/features/notes/components/NotesView.jsx#NoteCardSkeleton",
-      "type": "function",
-      "name": "NoteCardSkeleton",
-      "path": "frontend/src/features/notes/components/NotesView.jsx",
-      "language": "jsx",
-      "summary": "Function NoteCardSkeleton in NotesView.jsx (1 lines).",
-      "lines": 1,
-      "complexity": "simple",
-      "startLine": 36,
-      "endLine": 52
-    },
-    {
       "id": "function:frontend/src/features/notes/components/NotesView.jsx#NotesView",
       "type": "function",
       "name": "NotesView",
@@ -58546,8 +58664,8 @@
       "summary": "Function NotesView in NotesView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 54,
-      "endLine": 792
+      "startLine": 23,
+      "endLine": 461
     },
     {
       "id": "file:frontend/src/features/notes/constants.js",
@@ -59591,6 +59709,121 @@
       "complexity": "simple"
     },
     {
+      "id": "file:frontend/src/features/profile/components/DangerZoneTab.jsx",
+      "type": "file",
+      "name": "DangerZoneTab.jsx",
+      "path": "frontend/src/features/profile/components/DangerZoneTab.jsx",
+      "language": "jsx",
+      "summary": "code component with 133 lines (moderate).",
+      "lines": 133,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/profile/components/DangerZoneTab.jsx#DangerZoneTab",
+      "type": "function",
+      "name": "DangerZoneTab",
+      "path": "frontend/src/features/profile/components/DangerZoneTab.jsx",
+      "language": "jsx",
+      "summary": "Function DangerZoneTab in DangerZoneTab.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 9,
+      "endLine": 131
+    },
+    {
+      "id": "file:frontend/src/features/profile/components/MyProfileTab.jsx",
+      "type": "file",
+      "name": "MyProfileTab.jsx",
+      "path": "frontend/src/features/profile/components/MyProfileTab.jsx",
+      "language": "jsx",
+      "summary": "code component with 775 lines (complex).",
+      "lines": 775,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/profile/components/MyProfileTab.jsx#MyProfileTab",
+      "type": "function",
+      "name": "MyProfileTab",
+      "path": "frontend/src/features/profile/components/MyProfileTab.jsx",
+      "language": "jsx",
+      "summary": "Function MyProfileTab in MyProfileTab.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 22,
+      "endLine": 773
+    },
+    {
+      "id": "file:frontend/src/features/profile/components/NotificationsTab.jsx",
+      "type": "file",
+      "name": "NotificationsTab.jsx",
+      "path": "frontend/src/features/profile/components/NotificationsTab.jsx",
+      "language": "jsx",
+      "summary": "code component with 83 lines (moderate).",
+      "lines": 83,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/profile/components/NotificationsTab.jsx#NotificationsTab",
+      "type": "function",
+      "name": "NotificationsTab",
+      "path": "frontend/src/features/profile/components/NotificationsTab.jsx",
+      "language": "jsx",
+      "summary": "Function NotificationsTab in NotificationsTab.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 8,
+      "endLine": 81
+    },
+    {
+      "id": "file:frontend/src/features/profile/components/PreferencesTab.jsx",
+      "type": "file",
+      "name": "PreferencesTab.jsx",
+      "path": "frontend/src/features/profile/components/PreferencesTab.jsx",
+      "language": "jsx",
+      "summary": "code component with 142 lines (moderate).",
+      "lines": 142,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/profile/components/PreferencesTab.jsx#PreferencesTab",
+      "type": "function",
+      "name": "PreferencesTab",
+      "path": "frontend/src/features/profile/components/PreferencesTab.jsx",
+      "language": "jsx",
+      "summary": "Function PreferencesTab in PreferencesTab.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 9,
+      "endLine": 140
+    },
+    {
+      "id": "file:frontend/src/features/profile/components/ProfileSidebar.jsx",
+      "type": "file",
+      "name": "ProfileSidebar.jsx",
+      "path": "frontend/src/features/profile/components/ProfileSidebar.jsx",
+      "language": "jsx",
+      "summary": "code component with 60 lines (moderate).",
+      "lines": 60,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/profile/components/ProfileSidebar.jsx#ProfileSidebar",
+      "type": "function",
+      "name": "ProfileSidebar",
+      "path": "frontend/src/features/profile/components/ProfileSidebar.jsx",
+      "language": "jsx",
+      "summary": "Function ProfileSidebar in ProfileSidebar.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 6,
+      "endLine": 58
+    },
+    {
       "id": "file:frontend/src/features/profile/components/ProfileView.jsx",
       "type": "file",
       "name": "ProfileView.jsx",
@@ -59615,8 +59848,42 @@
       "summary": "Function ProfileView in ProfileView.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 54,
-      "endLine": 1927
+      "startLine": 14,
+      "endLine": 55
+    },
+    {
+      "id": "file:frontend/src/features/profile/components/SecurityOptionsTab.jsx",
+      "type": "file",
+      "name": "SecurityOptionsTab.jsx",
+      "path": "frontend/src/features/profile/components/SecurityOptionsTab.jsx",
+      "language": "jsx",
+      "summary": "code component with 644 lines (complex).",
+      "lines": 644,
+      "complexity": "complex",
+      "reasoning": "Extracted via AST structural analysis."
+    },
+    {
+      "id": "function:frontend/src/features/profile/components/SecurityOptionsTab.jsx#SecurityOptionsTab",
+      "type": "function",
+      "name": "SecurityOptionsTab",
+      "path": "frontend/src/features/profile/components/SecurityOptionsTab.jsx",
+      "language": "jsx",
+      "summary": "Function SecurityOptionsTab in SecurityOptionsTab.jsx (1 lines).",
+      "lines": 1,
+      "complexity": "simple",
+      "startLine": 17,
+      "endLine": 642
+    },
+    {
+      "id": "file:frontend/src/features/profile/constants.js",
+      "type": "file",
+      "name": "constants.js",
+      "path": "frontend/src/features/profile/constants.js",
+      "language": "js",
+      "summary": "code component with 50 lines (moderate).",
+      "lines": 50,
+      "complexity": "moderate",
+      "reasoning": "Extracted via AST structural analysis."
     },
     {
       "id": "file:frontend/src/features/profile/index.js",
@@ -59715,8 +59982,8 @@
       "summary": "Function unwrapResponse in client.js (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 480,
-      "endLine": 490
+      "startLine": 483,
+      "endLine": 493
     },
     {
       "id": "file:frontend/src/shared/api/index.js",
@@ -64076,8 +64343,8 @@
       "summary": "Function relativeTime in BrokerStatusBanner.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 19,
-      "endLine": 27
+      "startLine": 21,
+      "endLine": 29
     },
     {
       "id": "function:frontend/src/widgets/broker-status-banner/BrokerStatusBanner.jsx#BrokerStatusBanner",
@@ -64088,8 +64355,8 @@
       "summary": "Function BrokerStatusBanner in BrokerStatusBanner.jsx (1 lines).",
       "lines": 1,
       "complexity": "simple",
-      "startLine": 29,
-      "endLine": 127
+      "startLine": 31,
+      "endLine": 139
     },
     {
       "id": "file:frontend/src/widgets/broker-status-banner/index.js",
@@ -64703,534 +64970,6 @@
       "complexity": "simple",
       "startLine": 73,
       "endLine": 96
-    },
-    {
-      "id": "function:frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx:BrokerCallbackHandler",
-      "type": "function",
-      "name": "BrokerCallbackHandler",
-      "filePath": "frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx",
-      "lineRange": [
-        9,
-        186
-      ],
-      "summary": "BrokerCallbackHandler operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/shared/BrokerCard.jsx:StatusPill",
-      "type": "function",
-      "name": "StatusPill",
-      "filePath": "frontend/src/features/brokers/shared/BrokerCard.jsx",
-      "lineRange": [
-        25,
-        38
-      ],
-      "summary": "StatusPill operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/shared/BrokerCard.jsx:BrokerCard",
-      "type": "function",
-      "name": "BrokerCard",
-      "filePath": "frontend/src/features/brokers/shared/BrokerCard.jsx",
-      "lineRange": [
-        40,
-        146
-      ],
-      "summary": "BrokerCard operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx:SetupStep",
-      "type": "function",
-      "name": "SetupStep",
-      "filePath": "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
-      "lineRange": [
-        12,
-        49
-      ],
-      "summary": "SetupStep operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx:BrokerSetupLayout",
-      "type": "function",
-      "name": "BrokerSetupLayout",
-      "filePath": "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
-      "lineRange": [
-        51,
-        151
-      ],
-      "summary": "BrokerSetupLayout operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/shared/CredentialField.jsx:CredentialField",
-      "type": "function",
-      "name": "CredentialField",
-      "filePath": "frontend/src/features/brokers/shared/CredentialField.jsx",
-      "lineRange": [
-        6,
-        80
-      ],
-      "summary": "CredentialField operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/shared/brokerConfig.js:getBrokerByKey",
-      "type": "function",
-      "name": "getBrokerByKey",
-      "filePath": "frontend/src/features/brokers/shared/brokerConfig.js",
-      "lineRange": [
-        211,
-        212
-      ],
-      "summary": "getBrokerByKey operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/shared/brokerConfig.js:getBrokerById",
-      "type": "function",
-      "name": "getBrokerById",
-      "filePath": "frontend/src/features/brokers/shared/brokerConfig.js",
-      "lineRange": [
-        213,
-        213
-      ],
-      "summary": "getBrokerById operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx:CallbackInner",
-      "type": "function",
-      "name": "CallbackInner",
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
-      "lineRange": [
-        12,
-        101
-      ],
-      "summary": "CallbackInner operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx:UpstoxCallbackView",
-      "type": "function",
-      "name": "UpstoxCallbackView",
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
-      "lineRange": [
-        103,
-        115
-      ],
-      "summary": "UpstoxCallbackView operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx:UpstoxDashboardView",
-      "type": "function",
-      "name": "UpstoxDashboardView",
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx",
-      "lineRange": [
-        7,
-        13
-      ],
-      "summary": "UpstoxDashboardView operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx:UpstoxSetupView",
-      "type": "function",
-      "name": "UpstoxSetupView",
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
-      "lineRange": [
-        17,
-        277
-      ],
-      "summary": "UpstoxSetupView operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx:ZerodhaCallbackInner",
-      "type": "function",
-      "name": "ZerodhaCallbackInner",
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx",
-      "lineRange": [
-        9,
-        27
-      ],
-      "summary": "ZerodhaCallbackInner operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx:ZerodhaCallbackView",
-      "type": "function",
-      "name": "ZerodhaCallbackView",
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx",
-      "lineRange": [
-        29,
-        41
-      ],
-      "summary": "ZerodhaCallbackView operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx:ZerodhaDashboardView",
-      "type": "function",
-      "name": "ZerodhaDashboardView",
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx",
-      "lineRange": [
-        7,
-        13
-      ],
-      "summary": "ZerodhaDashboardView operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx:ZerodhaSetupView",
-      "type": "function",
-      "name": "ZerodhaSetupView",
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
-      "lineRange": [
-        15,
-        208
-      ],
-      "summary": "ZerodhaSetupView operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:CalculatorLayout",
-      "type": "function",
-      "name": "CalculatorLayout",
-      "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "lineRange": [
-        16,
-        42
-      ],
-      "summary": "CalculatorLayout operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:InputCard",
-      "type": "function",
-      "name": "InputCard",
-      "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "lineRange": [
-        48,
-        86
-      ],
-      "summary": "InputCard operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:ResultCard",
-      "type": "function",
-      "name": "ResultCard",
-      "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "lineRange": [
-        92,
-        135
-      ],
-      "summary": "ResultCard operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:ResultMetric",
-      "type": "function",
-      "name": "ResultMetric",
-      "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "lineRange": [
-        160,
-        184
-      ],
-      "summary": "ResultMetric operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:FormField",
-      "type": "function",
-      "name": "FormField",
-      "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "lineRange": [
-        190,
-        278
-      ],
-      "summary": "FormField operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:BreakdownTable",
-      "type": "function",
-      "name": "BreakdownTable",
-      "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "lineRange": [
-        284,
-        336
-      ],
-      "summary": "BreakdownTable operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:DisclaimerBanner",
-      "type": "function",
-      "name": "DisclaimerBanner",
-      "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "lineRange": [
-        360,
-        387
-      ],
-      "summary": "DisclaimerBanner operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:ResultSkeleton",
-      "type": "function",
-      "name": "ResultSkeleton",
-      "filePath": "frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "lineRange": [
-        393,
-        404
-      ],
-      "summary": "ResultSkeleton operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/calculator.service.js:formatCurrency",
-      "type": "function",
-      "name": "formatCurrency",
-      "filePath": "frontend/src/features/calculators/shared/calculator.service.js",
-      "lineRange": [
-        383,
-        385
-      ],
-      "summary": "formatCurrency operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/calculator.service.js:formatPercentage",
-      "type": "function",
-      "name": "formatPercentage",
-      "filePath": "frontend/src/features/calculators/shared/calculator.service.js",
-      "lineRange": [
-        387,
-        389
-      ],
-      "summary": "formatPercentage operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/calculators/shared/calculator.service.js:formatNumber",
-      "type": "function",
-      "name": "formatNumber",
-      "filePath": "frontend/src/features/calculators/shared/calculator.service.js",
-      "lineRange": [
-        391,
-        394
-      ],
-      "summary": "formatNumber operation executing routines.",
-      "tags": [
-        "function",
-        "js"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/dashboard/components/StatsCard.jsx:StatsCard",
-      "type": "function",
-      "name": "StatsCard",
-      "filePath": "frontend/src/features/dashboard/components/StatsCard.jsx",
-      "lineRange": [
-        7,
-        92
-      ],
-      "summary": "StatsCard operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/fixed-deposit/components/TdsSummary.jsx:PeriodBadge",
-      "type": "function",
-      "name": "PeriodBadge",
-      "filePath": "frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
-      "lineRange": [
-        17,
-        30
-      ],
-      "summary": "PeriodBadge operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/fixed-deposit/components/TdsSummary.jsx:TdsRow",
-      "type": "function",
-      "name": "TdsRow",
-      "filePath": "frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
-      "lineRange": [
-        32,
-        79
-      ],
-      "summary": "TdsRow operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/fixed-deposit/components/TdsSummary.jsx:TdsSummarySection",
-      "type": "function",
-      "name": "TdsSummarySection",
-      "filePath": "frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
-      "lineRange": [
-        81,
-        245
-      ],
-      "summary": "TdsSummarySection operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx:UpdateValuationModal",
-      "type": "function",
-      "name": "UpdateValuationModal",
-      "filePath": "frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx",
-      "lineRange": [
-        8,
-        182
-      ],
-      "summary": "UpdateValuationModal operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
-    },
-    {
-      "id": "function:frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx:ValuationSnapshotModal",
-      "type": "function",
-      "name": "ValuationSnapshotModal",
-      "filePath": "frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx",
-      "lineRange": [
-        17,
-        294
-      ],
-      "summary": "ValuationSnapshotModal operation executing routines.",
-      "tags": [
-        "function",
-        "jsx"
-      ],
-      "complexity": "simple"
     },
     {
       "id": "function:frontend/src/features/mutual-fund/components/ValuationSnapshotTab.jsx:ValuationSnapshotTab",
@@ -72773,6 +72512,24 @@
     {
       "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java",
       "target": "function:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#connectAngelOne",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java",
+      "target": "function:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#disconnectZerodha",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java",
+      "target": "function:backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java#disconnectUpstox",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -102184,6 +101941,15 @@
     },
     {
       "source": "file:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
+      "target": "function:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx#relativeTime",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
       "target": "function:frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx#AngelOneSetupView",
       "relation": "contains",
       "confidence": 1,
@@ -102229,7 +101995,7 @@
     },
     {
       "source": "file:frontend/src/features/brokers/shared/BrokerCard.jsx",
-      "target": "function:frontend/src/features/brokers/shared/BrokerCard.jsx#StatusPill",
+      "target": "function:frontend/src/features/brokers/shared/BrokerCard.jsx#StatusDot",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -102247,7 +102013,7 @@
     },
     {
       "source": "file:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
-      "target": "function:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx#SetupStep",
+      "target": "function:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx#SetupStepItem",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -102292,7 +102058,7 @@
     },
     {
       "source": "file:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
-      "target": "function:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx#CallbackInner",
+      "target": "function:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx#UpstoxCallbackInner",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -102311,6 +102077,15 @@
     {
       "source": "file:frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx",
       "target": "function:frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx#UpstoxDashboardView",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
+      "target": "function:frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx#relativeTime",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -102347,6 +102122,15 @@
     {
       "source": "file:frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx",
       "target": "function:frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx#ZerodhaDashboardView",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
+      "target": "function:frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx#relativeTime",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -103344,6 +103128,24 @@
       "direction": "forward"
     },
     {
+      "source": "file:frontend/src/features/notes/components/NoteCardSkeleton.jsx",
+      "target": "function:frontend/src/features/notes/components/NoteCardSkeleton.jsx#NoteCardSkeleton",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/components/NoteColorPicker.jsx",
+      "target": "function:frontend/src/features/notes/components/NoteColorPicker.jsx#NoteColorPicker",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
       "source": "file:frontend/src/features/notes/components/NoteDialog.jsx",
       "target": "function:frontend/src/features/notes/components/NoteDialog.jsx#NoteDialog",
       "relation": "contains",
@@ -103362,8 +103164,53 @@
       "direction": "forward"
     },
     {
-      "source": "file:frontend/src/features/notes/components/NotesView.jsx",
-      "target": "function:frontend/src/features/notes/components/NotesView.jsx#NoteCardSkeleton",
+      "source": "file:frontend/src/features/notes/components/NoteTagsInput.jsx",
+      "target": "function:frontend/src/features/notes/components/NoteTagsInput.jsx#NoteTagsInput",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/components/NoteTypeSelector.jsx",
+      "target": "function:frontend/src/features/notes/components/NoteTypeSelector.jsx#NoteTypeSelector",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/components/NotesGrid.jsx",
+      "target": "function:frontend/src/features/notes/components/NotesGrid.jsx#NotesGrid",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/components/NotesHeader.jsx",
+      "target": "function:frontend/src/features/notes/components/NotesHeader.jsx#NotesHeader",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/components/NotesPagination.jsx",
+      "target": "function:frontend/src/features/notes/components/NotesPagination.jsx#NotesPagination",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/notes/components/NotesToolbar.jsx",
+      "target": "function:frontend/src/features/notes/components/NotesToolbar.jsx#NotesToolbar",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -103848,8 +103695,62 @@
       "direction": "forward"
     },
     {
+      "source": "file:frontend/src/features/profile/components/DangerZoneTab.jsx",
+      "target": "function:frontend/src/features/profile/components/DangerZoneTab.jsx#DangerZoneTab",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/profile/components/MyProfileTab.jsx",
+      "target": "function:frontend/src/features/profile/components/MyProfileTab.jsx#MyProfileTab",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/profile/components/NotificationsTab.jsx",
+      "target": "function:frontend/src/features/profile/components/NotificationsTab.jsx#NotificationsTab",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/profile/components/PreferencesTab.jsx",
+      "target": "function:frontend/src/features/profile/components/PreferencesTab.jsx#PreferencesTab",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/profile/components/ProfileSidebar.jsx",
+      "target": "function:frontend/src/features/profile/components/ProfileSidebar.jsx#ProfileSidebar",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
       "source": "file:frontend/src/features/profile/components/ProfileView.jsx",
       "target": "function:frontend/src/features/profile/components/ProfileView.jsx#ProfileView",
+      "relation": "contains",
+      "confidence": 1,
+      "weight": 0.9,
+      "reason": "File contains function definition",
+      "direction": "forward"
+    },
+    {
+      "source": "file:frontend/src/features/profile/components/SecurityOptionsTab.jsx",
+      "target": "function:frontend/src/features/profile/components/SecurityOptionsTab.jsx#SecurityOptionsTab",
       "relation": "contains",
       "confidence": 1,
       "weight": 0.9,
@@ -106249,244 +106150,6 @@
       "weight": 0.9,
       "reason": "File contains function definition",
       "direction": "forward"
-    },
-    {
-      "source": "file:frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx",
-      "target": "function:frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx:BrokerCallbackHandler",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx",
-      "target": "file:frontend/src/features/brokers/shared/brokerConfig.js",
-      "type": "imports",
-      "direction": "forward",
-      "weight": 0.7
-    },
-    {
-      "source": "file:frontend/src/features/brokers/shared/BrokerCard.jsx",
-      "target": "function:frontend/src/features/brokers/shared/BrokerCard.jsx:StatusPill",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/shared/BrokerCard.jsx",
-      "target": "function:frontend/src/features/brokers/shared/BrokerCard.jsx:BrokerCard",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
-      "target": "function:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx:SetupStep",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
-      "target": "function:frontend/src/features/brokers/shared/BrokerSetupLayout.jsx:BrokerSetupLayout",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/shared/CredentialField.jsx",
-      "target": "function:frontend/src/features/brokers/shared/CredentialField.jsx:CredentialField",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/shared/brokerConfig.js",
-      "target": "function:frontend/src/features/brokers/shared/brokerConfig.js:getBrokerByKey",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/shared/brokerConfig.js",
-      "target": "function:frontend/src/features/brokers/shared/brokerConfig.js:getBrokerById",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
-      "target": "function:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx:CallbackInner",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
-      "target": "function:frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx:UpstoxCallbackView",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx",
-      "target": "function:frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx:UpstoxDashboardView",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
-      "target": "function:frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx:UpstoxSetupView",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx",
-      "target": "function:frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx:ZerodhaCallbackInner",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx",
-      "target": "function:frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx:ZerodhaCallbackView",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx",
-      "target": "function:frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx:ZerodhaDashboardView",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
-      "target": "function:frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx:ZerodhaSetupView",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "target": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:CalculatorLayout",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "target": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:InputCard",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "target": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:ResultCard",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "target": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:ResultMetric",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "target": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:FormField",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "target": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:BreakdownTable",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "target": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:DisclaimerBanner",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/CalculatorComponents.jsx",
-      "target": "function:frontend/src/features/calculators/shared/CalculatorComponents.jsx:ResultSkeleton",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/calculator.service.js",
-      "target": "function:frontend/src/features/calculators/shared/calculator.service.js:formatCurrency",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/calculator.service.js",
-      "target": "function:frontend/src/features/calculators/shared/calculator.service.js:formatPercentage",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/calculators/shared/calculator.service.js",
-      "target": "function:frontend/src/features/calculators/shared/calculator.service.js:formatNumber",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/dashboard/components/StatsCard.jsx",
-      "target": "function:frontend/src/features/dashboard/components/StatsCard.jsx:StatsCard",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
-      "target": "function:frontend/src/features/fixed-deposit/components/TdsSummary.jsx:PeriodBadge",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
-      "target": "function:frontend/src/features/fixed-deposit/components/TdsSummary.jsx:TdsRow",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/fixed-deposit/components/TdsSummary.jsx",
-      "target": "function:frontend/src/features/fixed-deposit/components/TdsSummary.jsx:TdsSummarySection",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx",
-      "target": "function:frontend/src/features/mutual-fund/components/UpdateValuationModal.jsx:UpdateValuationModal",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
-    },
-    {
-      "source": "file:frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx",
-      "target": "function:frontend/src/features/mutual-fund/components/ValuationSnapshotModal.jsx:ValuationSnapshotModal",
-      "type": "contains",
-      "direction": "forward",
-      "weight": 1
     },
     {
       "source": "file:frontend/src/features/mutual-fund/components/ValuationSnapshotTab.jsx",
@@ -109523,11 +109186,11 @@
       ]
     }
   ],
-  "lastUpdated": "2026-11-04T04:03:50.995Z",
+  "lastUpdated": "2026-11-04T07:51:01.703Z",
   "metadata": {
-    "lastCommit": "3a19166cbe57682e40081239bc7b57f4d2f49adb",
-    "lastCommitTime": "2026-11-04T04:03:50.996Z",
-    "nodeCount": 5694,
-    "edgeCount": 4418
+    "lastCommit": "71466e93aee66254f6011e019103c9e7290ce915",
+    "lastCommitTime": "2026-11-04T07:51:01.705Z",
+    "nodeCount": 5695,
+    "edgeCount": 4402
   }
 }

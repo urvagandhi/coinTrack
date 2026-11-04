@@ -269,7 +269,7 @@ export function formatTagLabel(tag) {
  * 3. Legacy tags ('thesis', 'observation', 'errata')
  * 4. User-created custom types (excluding deleted ones)
  */
-export function getNoteTypeInfo(note) {
+export function getNoteTypeInfo(note, userId = 'default') {
   if (!note) {
     return {
       id: 'general',
@@ -281,7 +281,7 @@ export function getNoteTypeInfo(note) {
 
   const tags = (note.tags || []).map(t => String(t).trim());
   const lowerTags = tags.map(t => t.toLowerCase());
-  const deletedIds = getDeletedCustomTypeIds();
+  const deletedIds = getDeletedCustomTypeIds(userId);
 
   // 1. Explicit `type:...` prefix tag takes highest priority
   for (const tag of tags) {
@@ -415,7 +415,8 @@ export function getNoteTypeInfo(note) {
   }
 
   // 4. Title / content prefix scan
-  const text = `${note.title || ''} ${note.content || ''}`.toLowerCase();
+  const text =
+    `${(note.title || '').trim()} ${(note.content || '').trim()}`.toLowerCase();
   if (text.includes('[idea]') || text.startsWith('idea:')) {
     return {
       id: 'idea',
