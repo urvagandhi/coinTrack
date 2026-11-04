@@ -293,4 +293,23 @@ Refer to detailed guidance in [`.agents/references/`](./.agents/references/):
   - Hybrid design: **CAG (Context-Augmented Generation)** via Gemini 1.5/2.0 context caching for statutory tax rules (Section 80C/80D, 112A LTCG) cutting token costs by ~85% with <500ms TTFT, combined with **PGVector RAG** for tenant-isolated user notes and transactions.
 - **Memory Reference**: Detailed documentation in [`local/memory/dashboard_unslop_and_shared_tables.md`](./local/memory/dashboard_unslop_and_shared_tables.md).
 
+### 8.12 Unified Broker & Market Feeds Sync Architecture
+- **Canonical Sync Hook ([`useSyncFeeds.js`](./frontend/src/features/brokers/hooks/useSyncFeeds.js))**:
+  - Eliminates fragmented sync behaviors by centralizing manual broker and feed synchronization into a single hook.
+  - Standardized Execution:
+    1. Triggers `portfolioAPI.manualRefresh()` to execute synchronous backend ingestion across all connected broker adapters (Zerodha, Upstox, AngelOne).
+    2. Fires unified, rich-color Sonner toast notification at the bottom-right (`Holdings and market feeds synchronized` or `${brokerDisplayName} holdings and positions synchronized`).
+    3. Concurrently invalidates domain query hierarchies (`brokers`, `portfolio`, `holdings`) and actively refetches all mounted viewport queries via `invalidateBrokerQueries(queryClient)`.
+    4. Provides unified loading (`isSyncing`) and spinning feedback across all buttons, preventing concurrent in-flight requests.
+    5. Native Keyboard Shortcut: Intercepts `⌘R` (macOS) and `Ctrl+R` (Windows/Linux) when focused outside text inputs, preventing browser page reloads and executing synchronized refresh.
+- **Synchronized Viewport Reactivity Across All Views**:
+  - **Dashboard Overview ([`DashboardView.jsx`](./frontend/src/features/dashboard/components/DashboardView.jsx))**: Replaced local-only `handleQuickSync` with `useSyncFeeds()`. Clicking "Sync feeds" now triggers actual broker ingestion and instantly updates [`BrokerStatusBanner.jsx`](./frontend/src/widgets/broker-status-banner/BrokerStatusBanner.jsx) (`Live Feeds [Zerodha Kite · just now]`), the 7/5 Asymmetric Wealth Bento, and [`HoldingsTable.jsx`](./frontend/src/features/dashboard/components/HoldingsTable.jsx).
+  - **Stocks / Portfolio Header ([`RefreshButton.jsx`](./frontend/src/features/dashboard/components/RefreshButton.jsx))**: Rewired to `useSyncFeeds({ enableShortcut: true })`. Standardized styling with Terminal Editorial tokens (`bg-neutral-900 text-white dark:bg-white dark:text-neutral-900`) and quiet `⌘R` badge.
+  - **Broker Directory ([`BrokersView.jsx`](./frontend/src/features/brokers/components/BrokersView.jsx))**: "Sync All Feeds" button leverages `useSyncFeeds()`. All broker cards ([`BrokerCard.jsx`](./frontend/src/features/brokers/components/BrokerCard.jsx)) immediately reflect `Synced just now`.
+  - **Per-Broker Hubs ([`ZerodhaSetupView.jsx`](./frontend/src/features/brokers/components/ZerodhaSetupView.jsx), [`UpstoxSetupView.jsx`](./frontend/src/features/brokers/components/UpstoxSetupView.jsx), [`AngelOneSetupView.jsx`](./frontend/src/features/brokers/components/AngelOneSetupView.jsx))**: "Sync Feeds Now" in [`ConnectionHubPanel.jsx`](./frontend/src/features/brokers/components/ConnectionHubPanel.jsx) leverages `useSyncFeeds({ brokerDisplayName })`. Diagnostics immediately display `Last Synced: hh:mm:ss A IST (just now)`.
+  - **Stocks / Broker Tab ([`ProfileTab.jsx`](./frontend/src/features/portfolio/components/ProfileTab.jsx))**: Added dedicated "Sync Feeds Now" button to active broker profile cards. Telemetry rows (`№ 01 Zerodha just now · 420ms ACTIVE`, `LAST SYNC just now`, `STATUS Success`, `DURATION 420ms`) update in real-time.
+- **Exhaustive Test Coverage**: Added dedicated test suite [`refresh-and-sync.test.jsx`](./frontend/src/features/dashboard/__tests__/refresh-and-sync.test.jsx) covering component rendering, Sonner toast assertions, error recovery, shortcut event prevention, and input field evasion. Total test count: 17 suites, 173 tests passing.
+- **Memory Reference**: Documented in [`local/memory/unified_sync_feeds_architecture.md`](./local/memory/unified_sync_feeds_architecture.md).
+
+
 

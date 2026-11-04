@@ -4,18 +4,31 @@ import { useQuery } from '@tanstack/react-query';
 
 /**
  * Invalidate all broker status, portfolio summaries, and holdings queries across the application.
- * Forces immediate active network refetch of ['brokers', 'sync-status'] so UI updates in real-time.
+ * Forces immediate concurrent network refetch of all active queries so UI updates in real-time.
  */
 export async function invalidateBrokerQueries(queryClient) {
   if (!queryClient) return;
-  return Promise.all([
+  // 1. Invalidate domain query trees so inactive views fetch freshly upon navigation
+  await Promise.all([
     queryClient.invalidateQueries({ queryKey: ['brokers'] }),
+    queryClient.invalidateQueries({ queryKey: ['portfolio'] }),
+    queryClient.invalidateQueries({ queryKey: ['holdings'] }),
+  ]);
+
+  // 2. Actively refetch critical mounted queries so the current screen updates immediately
+  return Promise.all([
     queryClient.refetchQueries({
       queryKey: ['brokers', 'sync-status'],
       type: 'active',
     }),
-    queryClient.invalidateQueries({ queryKey: ['portfolio'] }),
-    queryClient.invalidateQueries({ queryKey: ['holdings'] }),
+    queryClient.refetchQueries({
+      queryKey: ['portfolio'],
+      type: 'active',
+    }),
+    queryClient.refetchQueries({
+      queryKey: ['holdings'],
+      type: 'active',
+    }),
   ]);
 }
 

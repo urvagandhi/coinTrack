@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { usePortfolioSummary } from '@/features/portfolio';
-import { useBrokerSummary } from '@/features/brokers';
+import { useBrokerSummary, useSyncFeeds } from '@/features/brokers';
 import { useAuth } from '@/shared/auth/AuthContext';
 import { BrokerStatusBanner } from '@/widgets/broker-status-banner';
 import { DashboardHeader } from './DashboardHeader';
@@ -13,14 +13,10 @@ import { HoldingsTable } from './HoldingsTable';
 
 export function DashboardView() {
   const { user } = useAuth();
-  const {
-    data: summary,
-    isLoading: isSummaryLoading,
-    refetch,
-  } = usePortfolioSummary();
+  const { data: summary, isLoading: isSummaryLoading } = usePortfolioSummary();
   const { connectedCount, hasExpired, totalBrokers = 3 } = useBrokerSummary();
   const [timeRange, setTimeRange] = useState('6M');
-  const [isSyncing, setIsSyncing] = useState(false);
+  const { sync: handleQuickSync, isSyncing } = useSyncFeeds();
 
   // Dynamic feed status
   const feedStatus = useMemo(() => {
@@ -51,15 +47,6 @@ export function DashboardView() {
     const quarter = Math.floor(now.getMonth() / 3) + 1;
     return `Q${quarter} ${now.getFullYear()}`;
   }, []);
-
-  const handleQuickSync = async () => {
-    setIsSyncing(true);
-    try {
-      if (refetch) await refetch();
-    } finally {
-      setTimeout(() => setIsSyncing(false), 600);
-    }
-  };
 
   return (
     <div className='w-full pb-8 md:pb-12 space-y-6 sm:space-y-7'>

@@ -66,4 +66,5 @@ export {
 
 // ── Hooks & Constants ──
 export * from './hooks/useBrokerConnection';
+export * from './hooks/useSyncFeeds';
 export * from './constants';

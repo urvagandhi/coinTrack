@@ -1,6 +1,6 @@
 'use client';
 
-import { useBrokerConnection } from '@/features/brokers';
+import { useBrokerConnection, useSyncFeeds } from '@/features/brokers';
 import { brokerAPI, portfolioAPI } from '@/shared/api/client';
 import { cn } from '@/shared/lib/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -125,6 +125,9 @@ function BrokerProfileCard({ broker, profileData, index }) {
   const profile = broker.broker === 'ZERODHA' ? profileData : null;
   const accentColor = `hsl(var(${meta.accentVar}))`;
   const [reconnecting, setReconnecting] = useState(false);
+  const { sync: handleCardSync, isSyncing: isCardSyncing } = useSyncFeeds({
+    brokerDisplayName: meta.name,
+  });
 
   const handleReconnect = async () => {
     if (reconnecting || !meta.slug) return;
@@ -343,6 +346,19 @@ function BrokerProfileCard({ broker, profileData, index }) {
                 <RefreshCw className='h-3 w-3' /> Connect
               </button>
             </Link>
+          )}
+          {isActive && !needsReconnect && (
+            <button
+              type='button'
+              onClick={handleCardSync}
+              disabled={isCardSyncing}
+              className='ed-btn ed-btn-accent'
+            >
+              <RefreshCw
+                className={cn('h-3 w-3', isCardSyncing && 'animate-spin')}
+              />
+              {isCardSyncing ? 'Syncing…' : 'Sync Feeds Now'}
+            </button>
           )}
           {isActive && !needsReconnect && meta.slug && (
             <Link href={`/brokers/${meta.slug}`}>

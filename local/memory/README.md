@@ -17,6 +17,7 @@ When resuming or starting new agent sessions, agents should reference these memo
 | [`notes_subsystem_and_unslop_redesign.md`](./notes_subsystem_and_unslop_redesign.md) | **Notes & Investment Journal Subsystem** | Unslop design craft (no pastel washes or curved left borders), status dot indicator, custom note types with top-right corner `×` deletion, per-user data isolation, elevated neutral modals, three-tier modal scrolling layout, and stable gutter clearance. |
 | [`broker_connections_unslop_redesign.md`](./broker_connections_unslop_redesign.md) | **Broker Connections Subsystem** | Docked two-column layout, dynamic telemetry state machine, OAuth callback lifecycle, 6-suite test pyramid, and credential configuration hub. |
 | [`dashboard_unslop_and_shared_tables.md`](./dashboard_unslop_and_shared_tables.md) | **Dashboard Architecture & Shared Tables** | Unslopped dashboard view, Net Worth area curve with mirrored delta baseline, shared reusable `data-table.jsx` with self-healing P&L logic, dynamic 6-ledger consolidation, and landing page hero mockup alignment. |
+| [`unified_sync_feeds_architecture.md`](./unified_sync_feeds_architecture.md) | **Unified Broker & Feed Sync Architecture** | Canonical `useSyncFeeds` hook, multi-domain active cache refetching, Sonner bottom-right toast notifications, `⌘R` keyboard shortcut handling, and cross-view telemetry synchronization across Dashboard, Portfolio, and Broker views. |
 
 ---
 

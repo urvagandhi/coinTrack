@@ -4,19 +4,16 @@ import {
   useBrokerConnection,
   invalidateBrokerQueries,
 } from '../hooks/useBrokerConnection';
+import { useSyncFeeds } from '../hooks/useSyncFeeds';
 import { BrokerGuideTab } from './BrokerGuideTab';
 import { BrokerSetupLayout } from './BrokerSetupLayout';
 import { CredentialField } from './CredentialField';
 import { ConnectionHubPanel } from './ConnectionHubPanel';
 import { BROKERS as BROKER_CONFIG } from '../constants';
-import { brokerAPI, BROKERS, portfolioAPI } from '@/shared/api/client';
+import { brokerAPI, BROKERS } from '@/shared/api/client';
 import ConfirmDialog from '@/shared/ui/feedback/confirm-dialog';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  AlertCircle,
-  ArrowRight,
-  Loader2,
-} from 'lucide-react';
+import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -54,7 +51,9 @@ export function UpstoxSetupView() {
   const [isEditingCreds, setIsEditingCreds] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isManualSyncing, setIsManualSyncing] = useState(false);
+  const { sync: handleManualSync, isSyncing: isManualSyncing } = useSyncFeeds({
+    brokerDisplayName: 'Upstox',
+  });
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
   const [error, setError] = useState('');
@@ -111,19 +110,6 @@ export function UpstoxSetupView() {
       setError(err?.message || 'Failed to get Upstox login URL');
       toast.error(err?.message || 'Failed to get Upstox login URL');
       setIsConnecting(false);
-    }
-  };
-
-  const handleManualSync = async () => {
-    setIsManualSyncing(true);
-    try {
-      await portfolioAPI.manualRefresh();
-      toast.success('Upstox portfolio synchronized');
-      await invalidateBrokerQueries(queryClient);
-    } catch (err) {
-      toast.error(err?.message || 'Manual sync failed');
-    } finally {
-      setIsManualSyncing(false);
     }
   };
 

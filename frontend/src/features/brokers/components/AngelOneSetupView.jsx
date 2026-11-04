@@ -4,6 +4,7 @@ import {
   useBrokerConnection,
   invalidateBrokerQueries,
 } from '../hooks/useBrokerConnection';
+import { useSyncFeeds } from '../hooks/useSyncFeeds';
 import { BrokerGuideTab } from './BrokerGuideTab';
 import { BrokerSetupLayout } from './BrokerSetupLayout';
 import { CredentialField } from './CredentialField';
@@ -12,12 +13,7 @@ import { BROKERS as BROKER_CONFIG } from '../constants';
 import { brokerAPI, portfolioAPI } from '@/shared/api/client';
 import ConfirmDialog from '@/shared/ui/feedback/confirm-dialog';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  AlertCircle,
-  ArrowRight,
-  Info,
-  Loader2,
-} from 'lucide-react';
+import { AlertCircle, ArrowRight, Info, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -51,7 +47,9 @@ export function AngelOneSetupView() {
   const [isEditingCreds, setIsEditingCreds] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isManualSyncing, setIsManualSyncing] = useState(false);
+  const { sync: handleManualSync, isSyncing: isManualSyncing } = useSyncFeeds({
+    brokerDisplayName: 'Angel One',
+  });
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
   const [error, setError] = useState('');
@@ -119,19 +117,6 @@ export function AngelOneSetupView() {
       toast.error(friendly);
     } finally {
       setIsConnecting(false);
-    }
-  };
-
-  const handleManualSync = async () => {
-    setIsManualSyncing(true);
-    try {
-      await portfolioAPI.manualRefresh();
-      toast.success('Angel One portfolio synchronized');
-      await invalidateBrokerQueries(queryClient);
-    } catch (err) {
-      toast.error(err?.message || 'Manual sync failed');
-    } finally {
-      setIsManualSyncing(false);
     }
   };
 

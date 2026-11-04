@@ -32,8 +32,16 @@ jest.mock('@/features/portfolio', () => ({
   }),
 }));
 
+jest.mock('sonner', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
 jest.mock('@/shared/api/client', () => ({
   portfolioAPI: {
+    manualRefresh: jest.fn().mockResolvedValue({ accepted: true }),
     getSyncStatus: jest.fn().mockResolvedValue({
       brokers: [
         { broker: 'ZERODHA', tokenActive: true },
@@ -236,13 +244,18 @@ describe('Dashboard Unslopped Components', () => {
       expect(oneYearBtn).toHaveClass('shadow-2xs');
     });
 
-    it('triggers sync when clicking Sync feeds button', async () => {
+    it('triggers sync when clicking Sync feeds button and shows Sonner toast', async () => {
+      const { toast } = require('sonner');
+      const { portfolioAPI } = require('@/shared/api/client');
       renderWithClient(<DashboardView />);
       const syncBtn = screen.getByText('Sync feeds');
       fireEvent.click(syncBtn);
 
       await waitFor(() => {
-        expect(mockRefetch).toHaveBeenCalled();
+        expect(portfolioAPI.manualRefresh).toHaveBeenCalled();
+        expect(toast.success).toHaveBeenCalledWith(
+          'Holdings and market feeds synchronized'
+        );
       });
     });
   });

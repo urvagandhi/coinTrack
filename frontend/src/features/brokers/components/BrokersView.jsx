@@ -1,15 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { Search } from 'lucide-react';
-import { portfolioAPI } from '@/shared/api/client';
 import { BROKER_LIST } from '../constants';
-import {
-  useBrokerConnection,
-  invalidateBrokerQueries,
-} from '../hooks/useBrokerConnection';
+import { useBrokerConnection } from '../hooks/useBrokerConnection';
+import { useSyncFeeds } from '../hooks/useSyncFeeds';
 import { BrokersHeader } from './BrokersHeader';
 import { BrokersKpiGrid } from './BrokersKpiGrid';
 import { BrokersFilterToolbar } from './BrokersFilterToolbar';
@@ -18,29 +13,15 @@ import { BrokersSecurityNotice } from './BrokersSecurityNotice';
 
 export function BrokersView() {
   const { data: syncData, isLoading } = useBrokerConnection();
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'connected' | 'available'
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { sync: handleGlobalRefresh, isSyncing: isRefreshing } = useSyncFeeds();
 
   const brokers = syncData?.brokers ?? [];
   const connectedBrokers = brokers.filter(b => b.tokenActive);
   const connectedCount = connectedBrokers.length;
   const totalBrokers = BROKER_LIST.length;
   const hasExpired = brokers.some(b => !b.tokenActive && b.lastStatus !== null);
-
-  const handleGlobalRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await portfolioAPI.manualRefresh();
-      toast.success('Holdings and market feeds synchronized');
-      await invalidateBrokerQueries(queryClient);
-    } catch (err) {
-      toast.error(err?.message || 'Sync failed');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   const filteredBrokers = useMemo(() => {
     return BROKER_LIST.filter(broker => {

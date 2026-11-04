@@ -1,55 +1,32 @@
 'use client';
 
-import { invalidateBrokerQueries } from '@/features/brokers/hooks/useBrokerConnection';
-import { portfolioAPI } from '@/shared/api/client';
+import { useSyncFeeds } from '@/features/brokers/hooks/useSyncFeeds';
 import { cn } from '@/shared/lib/utils';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
-import { useCallback, useState } from 'react';
-import { toast } from 'sonner';
 
 export function RefreshButton() {
-  const queryClient = useQueryClient();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const { mutate } = useMutation({
-    mutationFn: portfolioAPI.manualRefresh,
-    onSuccess: async () => {
-      try {
-        await invalidateBrokerQueries(queryClient);
-        toast.success('Portfolio synced');
-      } catch (err) {
-        console.error('Failed to refetch after sync', err);
-      } finally {
-        setIsRefreshing(false);
-      }
-    },
-    onError: err => {
-      setIsRefreshing(false);
-      toast.error(err?.message || 'Sync failed');
-    },
+  const { sync: handleRefresh, isSyncing } = useSyncFeeds({
+    enableShortcut: true,
   });
-
-  const handleRefresh = useCallback(() => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    mutate();
-  }, [isRefreshing, mutate]);
 
   return (
     <button
+      type='button'
       onClick={handleRefresh}
-      disabled={isRefreshing}
-      className='ed-btn ed-btn-ghost group'
+      disabled={isSyncing}
+      title='Sync all holdings and market feeds (⌘R)'
+      className='inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all shadow-2xs cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed'
     >
       <RefreshCw
-        className={cn('h-3 w-3', isRefreshing && 'animate-spin')}
+        className={cn('size-3.5', isSyncing && 'animate-spin')}
         strokeWidth={2}
       />
-      <span>{isRefreshing ? 'Syncing' : 'Sync'}</span>
-      <span className='hidden sm:inline text-[9px] tracking-[0.18em] text-muted-foreground border-l border-border pl-2 ml-1'>
+      <span>{isSyncing ? 'Syncing…' : 'Sync'}</span>
+      <span className='hidden sm:inline text-[9px] font-mono tracking-wider opacity-60 border-l border-white/20 dark:border-neutral-700/60 pl-2 ml-1'>
         ⌘R
       </span>
     </button>
   );
 }
+
+export default RefreshButton;
