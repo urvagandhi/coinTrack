@@ -98,6 +98,17 @@ Rebuilt from the legacy press-credential layout into a modern two-column SaaS se
    - Danger warning card for permanent account deletion.
    - Delete Account confirmation modal requiring password re-verification.
 
+### 3.5 Modular Subcomponent Architecture (Decomposition)
+To eliminate monolithic files and adhere to senior frontend architecture standards, the legacy 1,929-line `ProfileView.jsx` was decomposed into single-responsibility tab modules:
+- [`frontend/src/features/profile/components/ProfileView.jsx`](../../frontend/src/features/profile/components/ProfileView.jsx): Slim container (~60 lines) orchestrating active tab state (`activeTab`) and rendering the two-column grid.
+- [`frontend/src/features/profile/components/ProfileSidebar.jsx`](../../frontend/src/features/profile/components/ProfileSidebar.jsx): Docked navigation sidebar handling tab triggers, unread badges, and visual active indicators.
+- [`frontend/src/features/profile/components/MyProfileTab.jsx`](../../frontend/src/features/profile/components/MyProfileTab.jsx): Identity form, pending email verification banner with countdown timer, mutual-exclusion cancellation, phone regex, and bio.
+- [`frontend/src/features/profile/components/SecurityOptionsTab.jsx`](../../frontend/src/features/profile/components/SecurityOptionsTab.jsx): TOTP status display, interactive 3-step reset modal with backup code download, and password strength validator form.
+- [`frontend/src/features/profile/components/PreferencesTab.jsx`](../../frontend/src/features/profile/components/PreferencesTab.jsx): Theme picker, currency selector, and balance mask toggles.
+- [`frontend/src/features/profile/components/NotificationsTab.jsx`](../../frontend/src/features/profile/components/NotificationsTab.jsx): Notification preferences toggles.
+- [`frontend/src/features/profile/components/DangerZoneTab.jsx`](../../frontend/src/features/profile/components/DangerZoneTab.jsx): Account deletion card with password-authenticated confirmation modal.
+- [`frontend/src/features/profile/constants.js`](../../frontend/src/features/profile/constants.js): Moved to feature root (industry standard) housing `PROFILE_TABS`, theme and currency definitions.
+
 ---
 
 ## 4. Backend DTO & Field Synchronization
