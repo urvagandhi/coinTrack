@@ -12,7 +12,7 @@ import {
   useState,
 } from 'react';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 
 // Single, deliberately vague message for any credential failure.
 // Combined with the backend returning "Invalid credentials" for both an

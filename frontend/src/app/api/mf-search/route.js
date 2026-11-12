@@ -17,14 +17,17 @@ export async function GET(request) {
     const now = Date.now();
     // If cache is empty or expired, fetch and parse the text file
     if (!cachedSchemes || now - lastFetchTime > CACHE_TTL_MS) {
-      const res = await fetch('https://www.amfiindia.com/spages/NAVAll.txt', {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          Accept: 'text/plain,*/*',
-        },
-        cache: 'no-store',
-      });
+      const res = await fetch(
+        'https://portal.amfiindia.com/spages/NAVAll.txt',
+        {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept: 'text/plain,*/*',
+          },
+          cache: 'no-store',
+        }
+      );
 
       if (!res.ok) {
         throw new Error(`AMFI API returned status: ${res.status}`);

@@ -32,6 +32,12 @@ export {
   default as ConnectionHubPanelDefault,
 } from './components/ConnectionHubPanel';
 export {
+  AccountCustodyDossier,
+  default as AccountCustodyDossierDefault,
+  formatBoid,
+  formatDossierSyncTime,
+} from './components/AccountCustodyDossier';
+export {
   CredentialField,
   default as CredentialFieldDefault,
 } from './components/CredentialField';

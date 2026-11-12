@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ConnectionHubPanel } from '../components/ConnectionHubPanel';
+import { AccountCustodyDossier } from '../components/AccountCustodyDossier';
 import { BrokerCard } from '../components/BrokerCard';
 import { BrokerSetupLayout } from '../components/BrokerSetupLayout';
 import { BROKERS } from '../constants';
@@ -172,7 +173,7 @@ describe('Broker Views, Real-Time Telemetry & Environmental Edge Cases', () => {
           isExpired={false}
         />
       );
-      expect(screen.getByText('Never synced')).toBeInTheDocument();
+      expect(screen.getAllByText('Never synced')[0]).toBeInTheDocument();
 
       // 2. Corrupt string
       rerender(
@@ -187,7 +188,7 @@ describe('Broker Views, Real-Time Telemetry & Environmental Edge Cases', () => {
           isExpired={false}
         />
       );
-      expect(screen.getByText('Never')).toBeInTheDocument();
+      expect(screen.getAllByText('Never')[0]).toBeInTheDocument();
 
       // 3. Sub-10s time (just now)
       rerender(
@@ -202,7 +203,7 @@ describe('Broker Views, Real-Time Telemetry & Environmental Edge Cases', () => {
           isExpired={false}
         />
       );
-      expect(screen.getByText(/just now/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/just now/i)[0]).toBeInTheDocument();
 
       // 4. Future date (client clock behind server)
       rerender(
@@ -217,7 +218,7 @@ describe('Broker Views, Real-Time Telemetry & Environmental Edge Cases', () => {
           isExpired={false}
         />
       );
-      expect(screen.getByText(/just now/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/just now/i)[0]).toBeInTheDocument();
     });
 
     it('renders error banner when error prop is supplied', () => {
@@ -356,6 +357,53 @@ describe('Broker Views, Real-Time Telemetry & Environmental Edge Cases', () => {
       const guideTab = screen.getByText('Developer Guide').closest('button');
       fireEvent.click(guideTab);
       expect(onTabChange).toHaveBeenCalledWith('guide');
+    });
+  });
+
+  describe('AccountCustodyDossier — Pure Dynamic Resolution & Zero Static Leaks', () => {
+    it('renders completely dynamic values supplied by backend broker status', () => {
+      const dynamicStatus = {
+        brokerUserId: 'USR_XYZ999',
+        accountHolder: 'Dev User Sharma',
+        email: 'dev.sharma@example.org',
+        dematAccount: '1208990098765432',
+        exchanges: ['NSE', 'BSE', 'MCX'],
+        products: ['DELIVERY', 'INTRADAY'],
+        lastSuccessAt: '2026-11-05T10:15:00Z',
+        protocol: 'OAuth 2.0 REST',
+        securityMode: 'Read-Only Enforced',
+      };
+
+      render(
+        <AccountCustodyDossier
+          brokerKey='ZERODHA'
+          brokerStatus={dynamicStatus}
+        />
+      );
+
+      expect(screen.getByText('USR_XYZ999')).toBeInTheDocument();
+      expect(screen.getByText('Dev User Sharma')).toBeInTheDocument();
+      expect(screen.getByText('dev.sharma@example.org')).toBeInTheDocument();
+      expect(screen.getByText('12089900 · 98765432')).toBeInTheDocument();
+      expect(screen.getByText('NSE, BSE, MCX')).toBeInTheDocument();
+      expect(screen.getByText('DELIVERY, INTRADAY')).toBeInTheDocument();
+    });
+
+    it('renders safe em-dashes without hardcoded static broker codes when data is missing', () => {
+      render(<AccountCustodyDossier brokerKey='UPSTOX' brokerStatus={{}} />);
+
+      // Verify no hardcoded static strings appear in the document
+      expect(screen.queryByText('6A7201')).not.toBeInTheDocument();
+      expect(screen.queryByText('EUS554')).not.toBeInTheDocument();
+      expect(screen.queryByText('A19482')).not.toBeInTheDocument();
+      expect(screen.queryByText(/12081600/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/12081800/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Urva Yogeshkumar Gandhi')
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('urvagandhi24@gmail.com')
+      ).not.toBeInTheDocument();
     });
   });
 });

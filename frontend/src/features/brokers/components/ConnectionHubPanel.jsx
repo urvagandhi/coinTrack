@@ -6,14 +6,13 @@ import {
   Clock,
   Key,
   RefreshCw,
-  Server,
-  ShieldCheck,
   Trash2,
   Wifi,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/shared/lib/utils';
+import { AccountCustodyDossier } from './AccountCustodyDossier';
 
 /**
  * Parses timestamp cleanly with fallback to Indian Standard Time offset (+05:30)
@@ -148,7 +147,6 @@ export function ConnectionHubPanel({
   const protocolName =
     brokerStatus?.protocol ||
     (broker.authType === 'oauth' ? 'OAuth 2.0 REST' : 'Direct SmartAPI');
-  const securityMode = brokerStatus?.securityMode || 'Read-Only Enforced';
   const gatewayHealth =
     brokerStatus?.gatewayHealth || (isConnected ? 'Operational' : 'Idle');
   const latencyDisplay =
@@ -163,6 +161,15 @@ export function ConnectionHubPanel({
     }
     return relativeTimeStr || 'Never synced';
   }, [effectiveTimestamp, now, relativeTimeStr]);
+
+  const isLinked = Boolean(
+    isConnected ||
+    isExpired ||
+    brokerStatus?.needsReconnect ||
+    (brokerStatus?.lastStatus !== null &&
+      brokerStatus?.lastStatus !== 'NEVER_SYNCED' &&
+      brokerStatus?.lastStatus !== undefined)
+  );
 
   return (
     <div className='space-y-6 sm:space-y-7'>
@@ -195,56 +202,138 @@ export function ConnectionHubPanel({
         </div>
       )}
 
-      {isConnected ? (
+      {isLinked ? (
         <div className='space-y-6'>
-          {/* ── 2. HERO STATUS CARD (Quiet Chrome + Interlock Brand Moment) ── */}
-          <div className='rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] p-5 sm:p-6 shadow-2xs space-y-5'>
-            <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-              <div className='flex items-center gap-3.5'>
-                <div className='size-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200/80 dark:border-neutral-700/80 flex items-center justify-center p-2 shrink-0 shadow-2xs'>
-                  {broker.logoPath ? (
-                    <img
-                      src={broker.logoPath}
-                      alt={broker.displayName}
-                      className='size-full object-contain'
+          {/* ── 2. TWO-COLUMN HERO GRID: BROKER IDENTITY + ACCOUNT CUSTODY DOSSIER ── */}
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-5'>
+            {/* Column A: Broker Identity, Stream Status & Direct Actions */}
+            <div className='rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] p-5 sm:p-6 shadow-2xs flex flex-col justify-between space-y-5'>
+              <div className='space-y-4'>
+                <div className='flex items-center justify-between gap-2 pb-4 border-b border-neutral-100 dark:border-neutral-800/80'>
+                  <div className='flex items-center gap-2'>
+                    <span
+                      className={cn(
+                        'size-2 rounded-full',
+                        isConnected
+                          ? 'bg-emerald-500 animate-pulse'
+                          : 'bg-rose-500'
+                      )}
                     />
-                  ) : (
-                    <span className='font-bold text-sm text-neutral-800 dark:text-neutral-200'>
-                      {broker.initials}
+                    <span className='text-xs font-semibold text-neutral-800 dark:text-neutral-200'>
+                      {isConnected
+                        ? 'Live Stream Active'
+                        : 'Session Expired / Reconnect Needed'}
                     </span>
-                  )}
+                  </div>
+                  <span className='text-[11px] font-medium px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800/80 text-neutral-500 dark:text-neutral-400 border border-neutral-200/60 dark:border-neutral-700/60'>
+                    {protocolName}
+                  </span>
                 </div>
 
-                <div>
-                  <div className='flex items-center gap-2'>
-                    <h3 className='text-base font-bold text-neutral-900 dark:text-neutral-100 tracking-tight'>
-                      {broker.displayName} Authenticated
-                    </h3>
-                    <span className='size-2 rounded-full bg-emerald-500 animate-pulse' />
+                <div className='flex items-start gap-3.5'>
+                  <div className='size-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200/80 dark:border-neutral-700/80 flex items-center justify-center p-2 shrink-0 shadow-2xs'>
+                    {broker.logoPath ? (
+                      <img
+                        src={broker.logoPath}
+                        alt={broker.displayName}
+                        className='size-full object-contain'
+                      />
+                    ) : (
+                      <span className='font-bold text-sm text-neutral-800 dark:text-neutral-200'>
+                        {broker.initials}
+                      </span>
+                    )}
                   </div>
-                  <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-0.5'>
-                    Connected via {broker.displayName} Gateway. Encrypted
-                    AES-256 session token active.
-                  </p>
+
+                  <div className='min-w-0 flex-1'>
+                    <div className='flex items-center gap-2'>
+                      <h3 className='text-base font-bold text-neutral-900 dark:text-neutral-100 tracking-tight'>
+                        {broker.displayName}{' '}
+                        {isConnected ? 'Authenticated' : 'Session Expired'}
+                      </h3>
+                      {isConnected && (
+                        <span className='size-2 rounded-full bg-emerald-500 animate-pulse' />
+                      )}
+                    </div>
+                    <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 leading-normal'>
+                      {isConnected
+                        ? `Connected via ${broker.displayName} Gateway. Encrypted AES-256 session token active.`
+                        : `Daily session token expired. Re-authenticate with ${broker.displayName} to restore live feeds.`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Diagnostics Matrix */}
+                <div className='grid grid-cols-2 gap-2.5 pt-2 text-xs'>
+                  <div className='p-2.5 rounded-xl bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-neutral-800/50 space-y-0.5'>
+                    <span className='text-[10px] font-medium text-neutral-400 dark:text-neutral-500 flex items-center gap-1'>
+                      <Clock className='size-3 text-neutral-400' />
+                      Last Synced
+                    </span>
+                    <span className='font-semibold text-neutral-800 dark:text-neutral-200 block truncate font-mono text-[11px]'>
+                      {effectiveTimeStr}
+                    </span>
+                  </div>
+
+                  <div className='p-2.5 rounded-xl bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-neutral-800/50 space-y-0.5'>
+                    <span className='text-[10px] font-medium text-neutral-400 dark:text-neutral-500 flex items-center gap-1'>
+                      <Wifi className='size-3 text-blue-500' />
+                      Gateway Health
+                    </span>
+                    <span
+                      className={cn(
+                        'font-semibold block truncate font-mono text-[11px]',
+                        isConnected
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                      )}
+                    >
+                      {isConnected ? gatewayHealth : 'Expired'}
+                      {latencyDisplay}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className='flex items-center gap-2.5 shrink-0'>
-                <button
-                  type='button'
-                  onClick={onManualSync}
-                  disabled={isManualSyncing}
-                  className='inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-semibold hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs cursor-pointer'
-                >
-                  <RefreshCw
-                    className={cn(
-                      'size-3.5',
-                      isManualSyncing && 'animate-spin'
-                    )}
-                  />
-                  <span>{isManualSyncing ? 'Syncing…' : 'Sync Feeds Now'}</span>
-                </button>
+              {/* Action Buttons Toolbar */}
+              <div className='flex flex-wrap items-center gap-2.5 pt-4 border-t border-neutral-100 dark:border-neutral-800/80'>
+                {isConnected ? (
+                  <button
+                    type='button'
+                    onClick={onManualSync}
+                    disabled={isManualSyncing}
+                    className='inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-semibold hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs cursor-pointer'
+                  >
+                    <RefreshCw
+                      className={cn(
+                        'size-3.5',
+                        isManualSyncing && 'animate-spin'
+                      )}
+                    />
+                    <span>
+                      {isManualSyncing ? 'Syncing…' : 'Sync Feeds Now'}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type='button'
+                    onClick={onRefreshToken}
+                    disabled={isRefreshingToken}
+                    className='inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors shadow-xs cursor-pointer disabled:opacity-60'
+                  >
+                    <RefreshCw
+                      className={cn(
+                        'size-3.5',
+                        isRefreshingToken && 'animate-spin'
+                      )}
+                    />
+                    <span>
+                      {isRefreshingToken
+                        ? 'Redirecting…'
+                        : `Reconnect ${broker.displayName}`}
+                    </span>
+                  </button>
+                )}
 
                 <button
                   type='button'
@@ -253,63 +342,28 @@ export function ConnectionHubPanel({
                   className='inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors shadow-xs cursor-pointer'
                 >
                   <Key className='size-3.5 text-neutral-400' />
-                  <span>Refresh Token</span>
+                  <span>
+                    {isConnected ? 'Refresh Token' : 'Re-authenticate'}
+                  </span>
                 </button>
               </div>
             </div>
 
-            {/* Diagnostic Metrics Matrix */}
-            <div className='grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800/80 text-xs'>
-              <div className='p-3 rounded-xl bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-neutral-800/50 space-y-1'>
-                <span className='text-[11px] font-medium text-neutral-400 dark:text-neutral-500 flex items-center gap-1'>
-                  <Clock className='size-3 text-neutral-400' />
-                  Last Synced
-                </span>
-                <span className='font-semibold text-neutral-800 dark:text-neutral-200 block truncate'>
-                  {effectiveTimeStr}
-                </span>
-              </div>
-
-              <div className='p-3 rounded-xl bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-neutral-800/50 space-y-1'>
-                <span className='text-[11px] font-medium text-neutral-400 dark:text-neutral-500 flex items-center gap-1'>
-                  <Server className='size-3 text-neutral-400' />
-                  Protocol
-                </span>
-                <span className='font-semibold text-neutral-800 dark:text-neutral-200 block truncate'>
-                  {protocolName}
-                </span>
-              </div>
-
-              <div className='p-3 rounded-xl bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-neutral-800/50 space-y-1'>
-                <span className='text-[11px] font-medium text-neutral-400 dark:text-neutral-500 flex items-center gap-1'>
-                  <ShieldCheck className='size-3 text-emerald-500' />
-                  Security Mode
-                </span>
-                <span className='font-semibold text-emerald-600 dark:text-emerald-400 block truncate'>
-                  {securityMode}
-                </span>
-              </div>
-
-              <div className='p-3 rounded-xl bg-neutral-50/60 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-neutral-800/50 space-y-1'>
-                <span className='text-[11px] font-medium text-neutral-400 dark:text-neutral-500 flex items-center gap-1'>
-                  <Wifi className='size-3 text-blue-500' />
-                  Gateway Health
-                </span>
-                <span className='font-semibold text-neutral-800 dark:text-neutral-200 block truncate'>
-                  {gatewayHealth}
-                  {latencyDisplay}
-                </span>
-              </div>
-            </div>
+            {/* Column B: Institutional Account & Custody Dossier (ONLY shown for linked/re-auth accounts!) */}
+            <AccountCustodyDossier
+              brokerKey={broker.key}
+              brokerStatus={brokerStatus}
+              lastSyncedAt={effectiveTimestamp}
+            />
           </div>
 
           {/* ── 3. SYNDICATED FEEDS MATRIX ── */}
           <div className='space-y-3'>
             <div className='flex items-center justify-between'>
-              <h4 className='text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500'>
+              <h4 className='text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-mono'>
                 Syndicated Data Channels
               </h4>
-              <span className='text-[11px] text-neutral-500 dark:text-neutral-400'>
+              <span className='text-[11px] text-neutral-500 dark:text-neutral-400 font-mono'>
                 {activeChannelsCount} of {channels.length} channels streaming
               </span>
             </div>
@@ -334,7 +388,7 @@ export function ConnectionHubPanel({
                         <span className='text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate'>
                           {channel.name}
                         </span>
-                        <span className='text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 font-medium shrink-0'>
+                        <span className='text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 font-medium shrink-0 font-mono'>
                           {channel.tag}
                         </span>
                       </div>
@@ -345,7 +399,7 @@ export function ConnectionHubPanel({
 
                     <span
                       className={cn(
-                        'inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md shrink-0 border',
+                        'inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md shrink-0 border font-mono',
                         isStreamActive
                           ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-900/40'
                           : isUnsupported
@@ -386,19 +440,67 @@ export function ConnectionHubPanel({
           </div>
         </div>
       ) : (
-        /* Disconnected State */
-        <div className='p-8 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-900/30 text-center space-y-4 py-12'>
-          <div className='size-12 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 flex items-center justify-center mx-auto'>
-            <Key className='size-5' />
-          </div>
-          <div>
-            <h3 className='text-sm sm:text-base font-bold text-foreground'>
-              {broker.displayName} Not Connected
-            </h3>
-            <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1 max-w-sm mx-auto'>
-              Provide your API credentials in the Credentials tab to syndicate
-              your portfolio.
-            </p>
+        /* Disconnected / Unlinked State — Clean, with NO fake Account & Custody Dossier */
+        <div className='space-y-6'>
+          <div className='rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] p-6 sm:p-8 shadow-2xs space-y-6'>
+            <div className='flex items-start gap-4'>
+              <div className='size-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200/80 dark:border-neutral-700/80 flex items-center justify-center p-2.5 shrink-0 shadow-2xs'>
+                {broker.logoPath ? (
+                  <img
+                    src={broker.logoPath}
+                    alt={broker.displayName}
+                    className='size-full object-contain grayscale opacity-75'
+                  />
+                ) : (
+                  <span className='font-bold text-base text-neutral-400 dark:text-neutral-500'>
+                    {broker.initials}
+                  </span>
+                )}
+              </div>
+
+              <div className='space-y-1.5 flex-1'>
+                <div className='flex items-center gap-2'>
+                  <h3 className='text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100 tracking-tight'>
+                    {broker.displayName} Not Connected
+                  </h3>
+                  <span className='text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 font-semibold border border-neutral-200/60 dark:border-neutral-700/60'>
+                    UNLINKED
+                  </span>
+                </div>
+                <p className='text-xs text-neutral-500 dark:text-neutral-400 max-w-lg leading-relaxed'>
+                  No authenticated CDSL session or API credentials found for{' '}
+                  {broker.displayName}. Provide your API credentials in the
+                  Credentials tab to link your demat account and stream
+                  real-time telemetry.
+                </p>
+              </div>
+            </div>
+
+            <div className='p-4 rounded-xl bg-neutral-50/70 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/60 flex items-start gap-3 text-xs'>
+              <Key className='size-4 text-neutral-400 shrink-0 mt-0.5' />
+              <div className='space-y-0.5'>
+                <p className='font-semibold text-neutral-800 dark:text-neutral-200'>
+                  How to link {broker.displayName}
+                </p>
+                <p className='text-neutral-500 dark:text-neutral-400 text-[11px] leading-normal'>
+                  Switch to the Credentials tab, enter your developer API keys
+                  or login details, and click Connect to authorize read-only
+                  CDSL access.
+                </p>
+              </div>
+            </div>
+
+            <div className='flex items-center gap-3 pt-2'>
+              <button
+                type='button'
+                onClick={onRefreshToken}
+                disabled={isRefreshingToken}
+                className='inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-semibold hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs cursor-pointer'
+              >
+                <Key className='size-3.5' />
+                <span>Configure {broker.displayName}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

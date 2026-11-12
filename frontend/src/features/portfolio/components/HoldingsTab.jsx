@@ -1,439 +1,411 @@
 'use client';
 
-import { Skeleton } from '@/shared/ui/feedback/Skeleton';
-import { usePortfolioHoldings } from '@/features/portfolio';
 import { formatCurrency, formatPercent } from '@/shared/formatters';
-import { getShortCompanyName } from '@/features/portfolio';
 import { cn } from '@/shared/lib/utils';
-import { BarChart2, ChevronDown, ChevronUp, Info, Search } from 'lucide-react';
+import { parseSymbol } from '@/shared/ui/data-display/data-table';
+import {
+  ArrowDownRight,
+  ArrowUpDown,
+  ArrowUpRight,
+  Search,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { BROKER_CONFIGS, normalizeBrokerKey } from '../constants';
+import { usePortfolioHoldings } from '../hooks/usePortfolioHoldings';
 import { TabError } from './TabError';
+import { TabLoadingSkeleton } from './TabLoadingSkeleton';
 
-const BROKER_DISPLAY = {
-  ZERODHA: 'Zerodha',
-  ANGEL_ONE: 'Angel One',
-  UPSTOX: 'Upstox',
-  GROWW: 'Groww',
-};
-const BROKER_VAR = {
-  ZERODHA: 'hsl(var(--broker-zerodha))',
-  ANGEL_ONE: 'hsl(var(--broker-angel))',
-  UPSTOX: 'hsl(var(--broker-upstox))',
-  GROWW: 'hsl(var(--gain))',
-};
-const PAGE_SIZE = 20;
-
-function SortIcon({ column, sortKey, sortDir }) {
-  if (sortKey !== column) return null;
-  return sortDir === 'asc' ? (
-    <ChevronUp className='h-3 w-3 inline ml-0.5' />
-  ) : (
-    <ChevronDown className='h-3 w-3 inline ml-0.5' />
-  );
-}
-
-export function HoldingsTab() {
+export function HoldingsTab({
+  selectedBroker = 'ALL',
+  onInspect = () => {},
+  initialSearch = '',
+}) {
   const { data: rawData, isLoading, error, refetch } = usePortfolioHoldings();
-  const [search, setSearch] = useState('');
-  const [selectedBrokers, setSelectedBrokers] = useState([]);
+  const [search, setSearch] = useState(initialSearch);
   const [sortKey, setSortKey] = useState('currentValue');
   const [sortDir, setSortDir] = useState('desc');
-  const [page, setPage] = useState(0);
 
-  const holdings = useMemo(
+  const normSelected = normalizeBrokerKey(selectedBroker);
+  const isAll = normSelected === 'ALL';
+  const activeConfig = BROKER_CONFIGS[normSelected];
+
+  const allHoldings = useMemo(
     () => (Array.isArray(rawData) ? rawData : rawData?.data || []),
     [rawData]
   );
 
-  const availableBrokers = useMemo(() => {
-    const set = new Set();
-    holdings.forEach(h => {
-      const b = h.broker || h.brokerType;
-      if (b) set.add(b);
+  // Filter by selected broker and active holdings (either settled quantity > 0 OR t1_quantity > 0)
+  const brokerHoldings = useMemo(() => {
+    const list = isAll
+      ? allHoldings
+      : allHoldings.filter(
+          h => normalizeBrokerKey(h.broker || h.brokerType) === normSelected
+        );
+    return list.filter(h => {
+      const settled = Number(h.quantity ?? 0);
+      const t1 = Number(h.raw?.t1_quantity ?? h.t1Quantity ?? 0);
+      return settled > 0 || t1 > 0;
     });
-    return Array.from(set);
-  }, [holdings]);
+  }, [allHoldings, isAll, normSelected]);
 
-  const toggleBroker = b => {
-    setSelectedBrokers(prev =>
-      prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]
-    );
-    setPage(0);
-  };
+  // Search filter
+  const filteredHoldings = useMemo(() => {
+    if (!search.trim()) return brokerHoldings;
+    const q = search.toLowerCase();
+    return brokerHoldings.filter(h => {
+      const sym = (h.symbol || '').toLowerCase();
+      const comp = (
+        h.companyName ||
+        h.raw?.company_name ||
+        h.symbol ||
+        ''
+      ).toLowerCase();
+      const isin = (h.isin || h.raw?.isin || '').toLowerCase();
+      return sym.includes(q) || comp.includes(q) || isin.includes(q);
+    });
+  }, [brokerHoldings, search]);
 
-  const filtered = useMemo(() => {
-    let result = holdings;
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        h =>
-          (h.symbol || '').toLowerCase().includes(q) ||
-          (getShortCompanyName(h.symbol) || '').toLowerCase().includes(q)
-      );
-    }
-    if (selectedBrokers.length > 0) {
-      result = result.filter(h =>
-        selectedBrokers.includes(h.broker || h.brokerType)
-      );
-    }
-    return result;
-  }, [holdings, search, selectedBrokers]);
+  // Sorting
+  const sortedHoldings = useMemo(() => {
+    return [...filteredHoldings].sort((a, b) => {
+      let aVal = a[sortKey];
+      let bVal = b[sortKey];
 
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      const aVal = a[sortKey] ?? 0;
-      const bVal = b[sortKey] ?? 0;
+      if (sortKey === 'symbol') {
+        aVal = a.symbol || '';
+        bVal = b.symbol || '';
+        return sortDir === 'asc'
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+
+      aVal = Number(aVal) || 0;
+      bVal = Number(bVal) || 0;
       return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
     });
-  }, [filtered, sortKey, sortDir]);
-
-  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
-  const paginated = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  }, [filteredHoldings, sortKey, sortDir]);
 
   const handleSort = key => {
-    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-    else {
+    if (sortKey === key) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
       setSortKey(key);
       setSortDir('desc');
     }
   };
 
+  if (isLoading) return <TabLoadingSkeleton rows={8} columns={isAll ? 9 : 8} />;
   if (error) return <TabError error={error} onRetry={refetch} />;
 
-  const hasT1 = holdings.some(h => h.t1Quantity > 0);
-  const TH = extra =>
-    cn(
-      'cursor-pointer select-none hover:text-foreground transition-colors',
-      extra
-    );
+  const brokerTitle = isAll
+    ? 'All demats holdings'
+    : `${activeConfig?.name || selectedBroker} holdings`;
 
   return (
-    <div className='space-y-5'>
-      {/* Filter bar */}
-      <div className='flex flex-wrap items-end justify-between gap-3 pb-4 border-b border-border'>
-        <div className='flex items-end gap-4 flex-wrap'>
-          <div className='flex items-center gap-2 min-w-[200px]'>
-            <Search className='h-3.5 w-3.5 text-muted-foreground' />
-            <input
-              type='text'
-              placeholder='Search holdings…'
-              value={search}
-              onChange={e => {
-                setSearch(e.target.value);
-                setPage(0);
-              }}
-              className='ed-input text-[13px] py-1 w-48'
-            />
-          </div>
-          {availableBrokers.length > 0 && (
-            <div className='flex items-center gap-1.5'>
-              <span className='eyebrow mr-1'>Filter</span>
-              {availableBrokers.map(b => (
-                <button
-                  key={b}
-                  onClick={() => toggleBroker(b)}
-                  className={cn(
-                    'h-6 px-2 text-[10px] font-semibold uppercase tracking-[0.1em] border transition-colors rounded-sm inline-flex items-center gap-1.5',
-                    selectedBrokers.includes(b)
-                      ? 'bg-foreground text-background border-foreground'
-                      : 'border-border text-muted-foreground hover:text-foreground hover:border-hairline'
-                  )}
-                >
-                  <span
-                    className='h-1 w-1 rounded-full'
-                    style={{ background: BROKER_VAR[b] || 'currentColor' }}
-                  />
-                  {BROKER_DISPLAY[b] || b}
-                </button>
-              ))}
-            </div>
+    <section className='space-y-4'>
+      {/* ── TOP ACTION BAR: SECTION TITLE & SEARCH ── */}
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1'>
+        <div className='flex items-center gap-2'>
+          <h2 className='text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100 tracking-tight'>
+            {brokerTitle}
+          </h2>
+          <span className='text-xs font-mono px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'>
+            {brokerHoldings.length} on record
+          </span>
+        </div>
+
+        {/* Search Input */}
+        <div className='relative w-full sm:w-64'>
+          <Search className='absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-neutral-400 pointer-events-none' />
+          <input
+            type='text'
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder='Search holdings…'
+            className='w-full pl-9 pr-8 py-1.5 rounded-lg border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 transition-colors font-mono'
+          />
+          {search && (
+            <button
+              type='button'
+              onClick={() => setSearch('')}
+              className='absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer'
+            >
+              <X className='size-3' />
+            </button>
           )}
         </div>
-        <span className='text-[11px] tabular-nums font-mono text-muted-foreground'>
-          {filtered.length} of {holdings.length} on record
-        </span>
       </div>
 
-      {/* Table */}
-      <section className='ed-card relative'>
-        <span className='corner-mark corner-tl' />
-        <span className='corner-mark corner-br' />
-        {isLoading ? (
-          <div className='p-6 space-y-3'>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className='h-4 w-full rounded-sm' />
-            ))}
-          </div>
-        ) : holdings.length === 0 ? (
-          <div className='py-14 text-center'>
-            <BarChart2
-              className='h-6 w-6 text-muted-foreground mx-auto mb-3'
-              strokeWidth={1.5}
-            />
-            <p className='font-serif italic text-[22px] text-foreground'>
-              No holdings on record.
-            </p>
-            <p className='text-[12px] text-muted-foreground mt-1'>
-              Connect a broker to begin tracking.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className='overflow-x-auto'>
-              <table className='ed-table'>
-                <thead>
-                  <tr>
-                    <th
-                      className={TH('text-left')}
-                      onClick={() => handleSort('symbol')}
-                    >
-                      Stock{' '}
-                      <SortIcon
-                        column='symbol'
-                        sortKey={sortKey}
-                        sortDir={sortDir}
-                      />
-                    </th>
-                    <th className='text-left'>Broker</th>
-                    <th
-                      className={TH('text-right')}
-                      onClick={() => handleSort('quantity')}
-                    >
-                      Qty{' '}
-                      <SortIcon
-                        column='quantity'
-                        sortKey={sortKey}
-                        sortDir={sortDir}
-                      />
-                    </th>
-                    {hasT1 && <th className='text-right'>T1</th>}
-                    <th
-                      className={TH('text-right')}
-                      onClick={() => handleSort('averageBuyPrice')}
-                    >
-                      Avg{' '}
-                      <SortIcon
-                        column='averageBuyPrice'
-                        sortKey={sortKey}
-                        sortDir={sortDir}
-                      />
-                    </th>
-                    <th className='text-right'>LTP</th>
-                    <th
-                      className={TH('text-right')}
-                      onClick={() => handleSort('currentValue')}
-                    >
-                      Value{' '}
-                      <SortIcon
-                        column='currentValue'
-                        sortKey={sortKey}
-                        sortDir={sortDir}
-                      />
-                    </th>
-                    <th
-                      className={TH('text-right')}
-                      onClick={() => handleSort('unrealizedPL')}
-                    >
-                      P&amp;L{' '}
-                      <SortIcon
-                        column='unrealizedPL'
-                        sortKey={sortKey}
-                        sortDir={sortDir}
-                      />
-                    </th>
-                    <th className='text-right pr-6'>Day</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginated.map((h, i) => {
-                    const broker = h.broker || h.brokerType;
-                    const pnl = h.unrealizedPL ?? h.unrealizedPnL ?? 0;
-                    const pnlPct =
-                      h.unrealizedPLPercent ?? h.unrealizedPnLPct ?? 0;
-                    const dayChange = h.dayGain ?? h.dayChange;
-                    const dayPct = h.dayGainPercent ?? h.dayChangePct;
-                    const pnlPos = pnl >= 0;
-                    const dayPos = (dayChange ?? 0) >= 0;
-                    const stockName = getShortCompanyName(h.symbol);
+      {/* ── MASTER HOLDINGS TABLE ── */}
+      <div className='rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] shadow-2xs overflow-hidden'>
+        <div className='overflow-x-auto'>
+          <table className='w-full text-left border-collapse'>
+            <thead>
+              <tr className='border-b border-neutral-100 dark:border-neutral-800/80 text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 font-mono uppercase tracking-wider bg-neutral-50/50 dark:bg-neutral-900/30'>
+                <th className='py-3 pl-4 pr-2 w-10 text-center'>#</th>
+                <th
+                  className='py-3 px-3 cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors'
+                  onClick={() => handleSort('symbol')}
+                >
+                  <div className='flex items-center gap-1'>
+                    <span>Stock</span>
+                    <ArrowUpDown className='size-3' />
+                  </div>
+                </th>
 
-                    return (
-                      <tr key={`${h.symbol}-${broker}-${i}`}>
-                        <td>
-                          <div className='flex items-baseline gap-3'>
-                            <span className='index-num tnum w-6'>
-                              {String(page * PAGE_SIZE + i + 1).padStart(
-                                2,
-                                '0'
-                              )}
+                {/* ── USER DIRECTIVE: HIDE BROKER COLUMN WHEN SINGLE BROKER SELECTED! ── */}
+                {isAll && <th className='py-3 px-3'>Broker</th>}
+
+                <th
+                  className='py-3 px-3 text-right cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors'
+                  onClick={() => handleSort('quantity')}
+                >
+                  <div className='flex items-center justify-end gap-1'>
+                    <span>Qty</span>
+                    <ArrowUpDown className='size-3' />
+                  </div>
+                </th>
+                <th
+                  className='py-3 px-3 text-right cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors'
+                  onClick={() => handleSort('averageBuyPrice')}
+                >
+                  <div className='flex items-center justify-end gap-1'>
+                    <span>Avg price</span>
+                    <ArrowUpDown className='size-3' />
+                  </div>
+                </th>
+                <th
+                  className='py-3 px-3 text-right cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors'
+                  onClick={() => handleSort('currentPrice')}
+                >
+                  <div className='flex items-center justify-end gap-1'>
+                    <span>LTP</span>
+                    <ArrowUpDown className='size-3' />
+                  </div>
+                </th>
+                <th
+                  className='py-3 px-3 text-right cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors'
+                  onClick={() => handleSort('currentValue')}
+                >
+                  <div className='flex items-center justify-end gap-1'>
+                    <span>Current value</span>
+                    <ArrowUpDown className='size-3' />
+                  </div>
+                </th>
+                <th
+                  className='py-3 px-3 text-right cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors'
+                  onClick={() => handleSort('unrealizedPL')}
+                >
+                  <div className='flex items-center justify-end gap-1'>
+                    <span>Unrealized P&amp;L</span>
+                    <ArrowUpDown className='size-3' />
+                  </div>
+                </th>
+                <th
+                  className='py-3 pr-4 pl-3 text-right cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors'
+                  onClick={() => handleSort('dayGainPercent')}
+                >
+                  <div className='flex items-center justify-end gap-1'>
+                    <span>Day change</span>
+                    <ArrowUpDown className='size-3' />
+                  </div>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className='divide-y divide-neutral-100 dark:divide-neutral-800/80 text-xs font-mono'>
+              {sortedHoldings.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={isAll ? 9 : 8}
+                    className='py-12 text-center text-neutral-400 font-mono'
+                  >
+                    No holdings match your search criteria.
+                  </td>
+                </tr>
+              ) : (
+                sortedHoldings.map((pos, idx) => {
+                  const currentPrice = Number(
+                    pos.currentPrice || pos.lastPrice || 0
+                  );
+                  const averageBuyPrice = Number(
+                    pos.averageBuyPrice || pos.averagePrice || 0
+                  );
+                  const quantity = Number(pos.quantity || 0);
+                  const currentValue =
+                    Number(pos.currentValue) || currentPrice * quantity;
+                  const investedValue =
+                    Number(pos.investedValue) || averageBuyPrice * quantity;
+                  const unrealizedPL =
+                    Number(pos.unrealizedPL) ?? currentValue - investedValue;
+                  const unrealizedPercent =
+                    investedValue > 0
+                      ? (unrealizedPL / investedValue) * 100
+                      : 0;
+                  const isPositiveGain = unrealizedPL >= 0;
+
+                  const dayGainPercent = Number(pos.dayGainPercent || 0);
+                  const isPositiveDay = dayGainPercent >= 0;
+
+                  const normBroker = normalizeBrokerKey(
+                    pos.broker || pos.brokerType
+                  );
+                  const brokerCfg =
+                    BROKER_CONFIGS[normBroker] || BROKER_CONFIGS.ZERODHA;
+
+                  const rawSym = pos.symbol || '';
+                  const { exchange: parsedEx, ticker } = parseSymbol(rawSym);
+                  const displayTicker = ticker || rawSym;
+                  const displayExchange = pos.exchange || parsedEx || 'NSE';
+                  const companyName = pos.companyName || pos.raw?.company_name;
+
+                  return (
+                    <tr
+                      key={pos.id || `${pos.symbol}-${idx}`}
+                      onClick={() => onInspect(pos)}
+                      className='hover:bg-neutral-50/70 dark:hover:bg-neutral-850/60 transition-colors cursor-pointer group'
+                    >
+                      {/* Row Index */}
+                      <td className='py-3.5 pl-4 pr-2 text-center text-neutral-400 text-[11px] font-mono'>
+                        {String(idx + 1).padStart(2, '0')}
+                      </td>
+
+                      {/* Stock Symbol + Company */}
+                      <td className='py-3.5 px-3 font-sans'>
+                        <div className='flex items-center gap-1.5'>
+                          <span className='font-bold text-neutral-900 dark:text-neutral-100 font-mono'>
+                            {displayTicker}
+                          </span>
+                          {displayExchange && (
+                            <span className='text-[10px] font-mono px-1 py-0.2 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500'>
+                              {displayExchange}
                             </span>
-                            <div className='flex flex-col'>
-                              <span className='font-medium text-foreground tracking-tight'>
-                                {stockName || h.symbol}
-                              </span>
-                              {stockName && stockName !== h.symbol && (
-                                <span className='text-[10px] text-muted-foreground font-mono mt-0.5'>
-                                  {h.symbol}
-                                </span>
-                              )}
-                            </div>
+                          )}
+                          {pos.raw?.t1_quantity > 0 && (
+                            <span className='text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold'>
+                              T+1
+                            </span>
+                          )}
+                        </div>
+                        {companyName && companyName !== displayTicker && (
+                          <div className='text-[11px] text-neutral-500 dark:text-neutral-400 truncate max-w-[200px] mt-0.5'>
+                            {companyName}
                           </div>
-                        </td>
-                        <td>
-                          <span className='inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground'>
+                        )}
+                      </td>
+
+                      {/* Broker column (rendered only in ALL demats view) */}
+                      {isAll && (
+                        <td className='py-3.5 px-3 font-sans'>
+                          <span className='inline-flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300'>
                             <span
-                              className='h-1 w-1 rounded-full'
-                              style={{
-                                background:
-                                  BROKER_VAR[broker] || 'currentColor',
-                              }}
+                              className={cn(
+                                'size-2 rounded-full shrink-0',
+                                brokerCfg.dotColor
+                              )}
                             />
-                            {BROKER_DISPLAY[broker] || broker}
+                            <span>{brokerCfg.displayName}</span>
                           </span>
                         </td>
-                        <td className='text-right font-mono tnum'>
-                          {h.quantity}
-                        </td>
-                        {hasT1 && (
-                          <td
-                            className='text-right font-mono tnum'
-                            title='Unsettled shares'
-                          >
-                            {h.t1Quantity > 0 ? (
-                              <span className='text-[hsl(var(--chart-4))]'>
-                                {h.t1Quantity}
-                              </span>
-                            ) : (
-                              <span className='text-muted-foreground/50'>
-                                —
-                              </span>
-                            )}
-                          </td>
-                        )}
-                        <td className='text-right font-mono tnum text-muted-foreground'>
-                          {formatCurrency(h.averageBuyPrice ?? h.avgBuyPrice, {
-                            precise: true,
-                          })}
-                        </td>
-                        <td className='text-right font-mono tnum text-foreground'>
-                          {h.currentPrice > 0
-                            ? formatCurrency(h.currentPrice)
-                            : '—'}
-                        </td>
-                        <td className='text-right font-mono tnum font-semibold text-foreground'>
-                          {formatCurrency(h.currentValue)}
-                        </td>
-                        <td className='text-right'>
-                          <div className='flex flex-col items-end'>
-                            <span
-                              className={cn(
-                                'font-mono tnum text-[13px] font-medium inline-flex items-center gap-1',
-                                pnlPos
-                                  ? 'text-[hsl(var(--gain))]'
-                                  : 'text-[hsl(var(--loss))]'
-                              )}
-                            >
-                              {formatCurrency(pnl, { showSign: true })}
-                              {h.dataConfidence === 'LOW' && (
-                                <span title='Average price may be inaccurate'>
-                                  <Info className='h-3 w-3 text-muted-foreground/60' />
-                                </span>
-                              )}
-                            </span>
-                            <span
-                              className={cn(
-                                'font-mono tnum text-[10px]',
-                                pnlPos
-                                  ? 'text-[hsl(var(--gain))]'
-                                  : 'text-[hsl(var(--loss))]'
-                              )}
-                            >
-                              {formatPercent(pnlPct, { showSign: true })}
-                            </span>
-                          </div>
-                        </td>
-                        <td className='text-right pr-6'>
-                          {dayChange != null ? (
-                            <div className='flex flex-col items-end'>
-                              <span
-                                className={cn(
-                                  'font-mono tnum text-[11px] font-medium',
-                                  dayPos
-                                    ? 'text-[hsl(var(--gain))]'
-                                    : 'text-[hsl(var(--loss))]'
-                                )}
-                              >
-                                {formatPercent(dayPct, { showSign: true })}
-                              </span>
-                              <span
-                                className={cn(
-                                  'font-mono tnum text-[10px] mt-0.5',
-                                  dayPos
-                                    ? 'text-[hsl(var(--gain))]'
-                                    : 'text-[hsl(var(--loss))]'
-                                )}
-                              >
-                                {formatCurrency(dayChange, { showSign: true })}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className='text-muted-foreground/50'>—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      )}
 
-            {totalPages > 1 && (
-              <div className='px-6 py-3 border-t border-hairline flex items-center justify-between'>
-                <span className='eyebrow tnum'>
-                  Page {page + 1} of {totalPages} · {sorted.length} rows
-                </span>
-                <div className='flex items-center gap-1'>
-                  <button
-                    onClick={() => setPage(p => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                    className='h-7 w-7 text-[12px] font-mono border border-border hover:border-hairline disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-sm'
-                  >
-                    ‹
-                  </button>
-                  {Array.from({ length: Math.min(totalPages, 5) }).map(
-                    (_, i) => {
-                      const p = page < 3 ? i : page - 2 + i;
-                      if (p >= totalPages) return null;
-                      return (
-                        <button
-                          key={p}
-                          onClick={() => setPage(p)}
+                      {/* Qty */}
+                      <td className='py-3.5 px-3 text-right tnum font-semibold text-neutral-900 dark:text-neutral-100'>
+                        {quantity}
+                      </td>
+
+                      {/* Avg Price */}
+                      <td className='py-3.5 px-3 text-right tnum text-neutral-600 dark:text-neutral-400'>
+                        ₹
+                        {averageBuyPrice.toLocaleString('en-IN', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </td>
+
+                      {/* LTP */}
+                      <td className='py-3.5 px-3 text-right tnum font-semibold text-neutral-900 dark:text-neutral-100'>
+                        ₹
+                        {currentPrice.toLocaleString('en-IN', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </td>
+
+                      {/* Current Value */}
+                      <td className='py-3.5 px-3 text-right tnum font-bold text-neutral-900 dark:text-neutral-100'>
+                        {formatCurrency(currentValue)}
+                      </td>
+
+                      {/* Unrealized P&L */}
+                      <td className='py-3.5 px-3 text-right tnum'>
+                        <span
                           className={cn(
-                            'h-7 w-7 text-[12px] font-mono tnum transition-colors rounded-sm',
-                            p === page
-                              ? 'bg-foreground text-background'
-                              : 'border border-border text-muted-foreground hover:border-hairline hover:text-foreground'
+                            'font-bold block',
+                            isPositiveGain
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-rose-600 dark:text-rose-400'
                           )}
                         >
-                          {p + 1}
-                        </button>
-                      );
-                    }
-                  )}
-                  <button
-                    onClick={() =>
-                      setPage(p => Math.min(totalPages - 1, p + 1))
-                    }
-                    disabled={page >= totalPages - 1}
-                    className='h-7 w-7 text-[12px] font-mono border border-border hover:border-hairline disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-sm'
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </section>
-    </div>
+                          {formatCurrency(unrealizedPL, { showSign: true })}
+                        </span>
+                        <span
+                          className={cn(
+                            'text-[10px] block',
+                            isPositiveGain
+                              ? 'text-emerald-600/80 dark:text-emerald-400/80'
+                              : 'text-rose-600/80 dark:text-rose-400/80'
+                          )}
+                        >
+                          {formatPercent(unrealizedPercent, { showSign: true })}
+                        </span>
+                      </td>
+
+                      {/* Day Change */}
+                      <td className='py-3.5 pr-4 pl-3 text-right tnum'>
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-0.5 text-xs font-semibold',
+                            isPositiveDay
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-rose-600 dark:text-rose-400'
+                          )}
+                        >
+                          {isPositiveDay ? (
+                            <ArrowUpRight className='size-3' />
+                          ) : (
+                            <ArrowDownRight className='size-3' />
+                          )}
+                          <span>
+                            {formatPercent(dayGainPercent, { showSign: true })}
+                          </span>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── TABLE FOOTER ── */}
+        <div className='p-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-neutral-500'>
+          <div className='flex items-center gap-1.5'>
+            <ShieldCheck className='size-4 text-emerald-500 shrink-0' />
+            <span>
+              Canonical broker sync via CDSL with FIFO capital gains tracking.
+            </span>
+          </div>
+          <div>
+            Showing {sortedHoldings.length} of {brokerHoldings.length} positions
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
+
+export default HoldingsTab;

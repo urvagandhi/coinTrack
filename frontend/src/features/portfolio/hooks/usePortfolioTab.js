@@ -9,6 +9,7 @@ const VALID_TABS = [
   'positions',
   'orders',
   'trades',
+  'brokers',
   'profile',
   'mf-holdings',
   'mf-orders',
@@ -23,7 +24,11 @@ export function usePortfolioTab() {
   const searchParams = useSearchParams();
 
   const raw = searchParams.get('tab');
-  const activeTab = VALID_TABS.includes(raw) ? raw : 'holdings';
+  // Normalize 'profile' to 'brokers'
+  const normalizedRaw = raw === 'profile' ? 'brokers' : raw;
+  const activeTab = VALID_TABS.includes(normalizedRaw)
+    ? normalizedRaw
+    : 'holdings';
 
   const setTab = useCallback(
     tab => {

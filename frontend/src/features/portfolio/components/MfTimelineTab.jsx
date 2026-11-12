@@ -1,14 +1,12 @@
-// src/components/portfolio/tabs/MfTimelineTab.jsx
 'use client';
 
-import MfTimeline from './MfTimeline';
 import { portfolioAPI } from '@/shared/api/client';
 import { useQuery } from '@tanstack/react-query';
+import MfTimeline from './MfTimeline';
 import { TabError } from './TabError';
 import { TabLoadingSkeleton } from './TabLoadingSkeleton';
-import DataAccuracyWarning from './DataAccuracyWarning';
 
-export function MfTimelineTab({ navigateTo, context }) {
+export function MfTimelineTab({ selectedBroker = 'ZERODHA' }) {
   const {
     data: rawData,
     isLoading,
@@ -21,27 +19,12 @@ export function MfTimelineTab({ navigateTo, context }) {
     refetchOnWindowFocus: false,
   });
 
-  if (isLoading) return <TabLoadingSkeleton rows={4} columns={4} />;
+  if (isLoading) return <TabLoadingSkeleton rows={4} showKpis={false} />;
   if (error) return <TabError error={error} onRetry={refetch} />;
 
   const events = Array.isArray(rawData) ? rawData : rawData?.data || [];
 
-  const handleNavigate = (targetTab, navContext) => {
-    if (navigateTo) {
-      const tabMap = { timeline: 'mf-timeline', mf_sips: 'mf-sips' };
-      navigateTo(tabMap[targetTab] || targetTab, navContext);
-    }
-  };
-
-  return (
-    <div>
-      <DataAccuracyWarning />
-      <MfTimeline
-        events={events}
-        isLoading={false}
-        onNavigate={handleNavigate}
-        initialContext={context}
-      />
-    </div>
-  );
+  return <MfTimeline events={events} selectedBroker={selectedBroker} />;
 }
+
+export default MfTimelineTab;

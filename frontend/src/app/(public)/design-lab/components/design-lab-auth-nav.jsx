@@ -53,6 +53,11 @@ export function DesignLabAuthNav() {
       href: '/design-lab/brokers',
       icon: ExternalLink,
     },
+    {
+      label: 'Holdings Demo',
+      href: '/design-lab/holdings',
+      icon: ExternalLink,
+    },
   ];
 
   return (

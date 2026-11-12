@@ -2,22 +2,17 @@
 
 import { portfolioAPI } from '@/shared/api/client';
 import { formatCurrency } from '@/shared/formatters';
-import { cn } from '@/shared/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { ClipboardList } from 'lucide-react';
+import {
+  Check,
+  ClipboardList,
+  FileSpreadsheet,
+  Repeat,
+  TrendingUp,
+} from 'lucide-react';
 import { useMemo } from 'react';
-import { BrokerInfoBanner } from './BrokerInfoBanner';
-import DataAccuracyWarning from './DataAccuracyWarning';
 import { TabError } from './TabError';
 import { TabLoadingSkeleton } from './TabLoadingSkeleton';
-
-const STATUS_STYLE = {
-  COMPLETE:
-    'text-[hsl(var(--gain))] border-[hsl(var(--gain))]/30 bg-[hsl(var(--gain))]/8',
-  REJECTED:
-    'text-[hsl(var(--loss))] border-[hsl(var(--loss))]/30 bg-[hsl(var(--loss))]/8',
-  CANCELLED: 'text-muted-foreground border-border bg-muted',
-};
 
 export function MfOrdersTab() {
   const {
@@ -31,103 +26,167 @@ export function MfOrdersTab() {
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
   const orders = useMemo(
     () => (Array.isArray(rawData) ? rawData : rawData?.data || []),
     [rawData]
+  );
+
+  const completedOrders = orders.filter(
+    o => (o.status || '').toUpperCase() === 'COMPLETE'
+  );
+  const totalVolume = orders.reduce(
+    (acc, o) => acc + (Number(o.amount) || 0),
+    0
   );
 
   if (isLoading) return <TabLoadingSkeleton rows={6} columns={7} />;
   if (error) return <TabError error={error} onRetry={refetch} />;
 
   return (
-    <div>
-      <BrokerInfoBanner message='Mutual fund order log — from Zerodha Coin.' />
-      <DataAccuracyWarning />
-      <section className='ed-card relative'>
-        <span className='corner-mark corner-tl' />
-        <span className='corner-mark corner-br' />
+    <div className='space-y-4'>
+      {/* ── 4 KPI CARDS ── */}
+      <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs'>
+        <div className='p-3.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] shadow-2xs space-y-1'>
+          <span className='text-[11px] font-medium text-neutral-400 dark:text-neutral-500'>
+            Total Orders Logged
+          </span>
+          <span className='text-base sm:text-lg font-bold font-mono text-neutral-900 dark:text-neutral-100 block'>
+            {orders.length} Executed
+          </span>
+        </div>
+
+        <div className='p-3.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] shadow-2xs space-y-1'>
+          <span className='text-[11px] font-medium text-neutral-400 dark:text-neutral-500'>
+            Completed Allotments
+          </span>
+          <span className='text-base sm:text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400 block'>
+            {completedOrders.length} Allotted
+          </span>
+        </div>
+
+        <div className='p-3.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] shadow-2xs space-y-1'>
+          <span className='text-[11px] font-medium text-neutral-400 dark:text-neutral-500'>
+            Gross Cumulative Volume
+          </span>
+          <span className='text-base sm:text-lg font-bold font-mono tnum text-neutral-900 dark:text-neutral-100 block'>
+            {formatCurrency(totalVolume)}
+          </span>
+        </div>
+
+        <div className='p-3.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] shadow-2xs space-y-1'>
+          <span className='text-[11px] font-medium text-neutral-400 dark:text-neutral-500'>
+            Settlement Mode
+          </span>
+          <span className='text-sm font-semibold text-emerald-600 dark:text-emerald-400 block font-mono'>
+            T+2 Demat Allotment
+          </span>
+        </div>
+      </div>
+
+      {/* ── ORDERS TABLE ── */}
+      <section className='rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-[#16171a] shadow-2xs overflow-hidden'>
+        <div className='p-4 border-b border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between'>
+          <div className='flex items-center gap-2'>
+            <FileSpreadsheet className='size-4 text-neutral-400' />
+            <span className='font-semibold text-xs text-neutral-900 dark:text-neutral-100'>
+              Mutual Fund Orders Book (Coin Sync)
+            </span>
+          </div>
+          <span className='text-xs font-mono text-neutral-500 dark:text-neutral-400'>
+            {orders.length} records on file
+          </span>
+        </div>
+
         {orders.length === 0 ? (
           <div className='py-14 text-center'>
             <ClipboardList
-              className='h-6 w-6 text-muted-foreground mx-auto mb-3'
+              className='size-8 text-neutral-300 dark:text-neutral-700 mx-auto mb-3'
               strokeWidth={1.5}
             />
-            <p className='font-serif italic text-[20px] text-foreground'>
-              No MF orders on record.
+            <p className='text-sm text-neutral-500 font-mono'>
+              No mutual fund orders on record.
             </p>
           </div>
         ) : (
           <div className='overflow-x-auto'>
-            <table className='ed-table'>
+            <table className='w-full text-left border-collapse text-xs font-mono'>
               <thead>
-                <tr>
-                  <th className='text-left'>Date</th>
-                  <th className='text-left'>Fund</th>
-                  <th className='text-left'>Type</th>
-                  <th className='text-right'>Amount</th>
-                  <th className='text-right'>Units</th>
-                  <th className='text-right'>NAV</th>
-                  <th className='text-center pr-6'>Status</th>
+                <tr className='border-b border-neutral-100 dark:border-neutral-800/80 text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase bg-neutral-50/50 dark:bg-neutral-900/30'>
+                  <th className='py-3 pl-4 pr-3'>Date &amp; Time</th>
+                  <th className='py-3 px-3'>Order Ref</th>
+                  <th className='py-3 px-3'>Scheme Name</th>
+                  <th className='py-3 px-3'>Order Type</th>
+                  <th className='py-3 px-3 text-right'>Amount</th>
+                  <th className='py-3 px-3 text-right'>Allotted NAV</th>
+                  <th className='py-3 px-3 text-right'>Units</th>
+                  <th className='py-3 pr-4 pl-3 text-right'>Status</th>
                 </tr>
               </thead>
-              <tbody>
-                {orders.map((o, i) => {
-                  const status = (o.status || '').toUpperCase();
-                  const isBuy =
-                    (
-                      o.transactionType ||
-                      o.transaction_type ||
-                      ''
-                    ).toUpperCase() === 'BUY';
+              <tbody className='divide-y divide-neutral-100 dark:divide-neutral-800/80'>
+                {orders.map((ord, i) => {
                   const dateStr =
-                    o.orderTimestamp || o.order_timestamp || o.placedAt;
+                    ord.orderTimestamp || ord.order_timestamp || ord.placedAt;
+                  const formattedDate = dateStr
+                    ? new Date(dateStr).toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '—';
+                  const amount = Number(ord.amount || 0);
+                  const nav = Number(ord.lastPrice || ord.nav || 0);
+                  const units = Number(ord.quantity || 0);
+                  const isSip =
+                    (ord.transactionType || '').includes('SIP') ||
+                    (ord.tag || '').includes('sip');
 
                   return (
-                    <tr key={o.orderId || o.order_id || i}>
-                      <td className='font-mono tnum text-[12px] text-muted-foreground'>
-                        {dateStr
-                          ? new Date(dateStr).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })
-                          : '—'}
+                    <tr
+                      key={ord.orderId || ord.order_id || i}
+                      className='hover:bg-neutral-50/60 dark:hover:bg-neutral-850/50 transition-colors'
+                    >
+                      <td className='py-3 pl-4 pr-3 text-neutral-500 whitespace-nowrap'>
+                        {formattedDate}
                       </td>
-                      <td className='font-medium text-foreground tracking-tight max-w-xs truncate'>
-                        {o.fund || o.tradingsymbol}
+                      <td className='py-3 px-3 font-semibold text-neutral-600 dark:text-neutral-400'>
+                        {ord.orderId || ord.order_id || `ORD-${i + 1}`}
                       </td>
-                      <td>
-                        <span
-                          className={cn(
-                            'text-[11px] font-bold tracking-[0.1em]',
-                            isBuy
-                              ? 'text-[hsl(var(--gain))]'
-                              : 'text-[hsl(var(--loss))]'
+                      <td className='py-3 px-3 font-sans'>
+                        <div className='font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-1'>
+                          {ord.fund || ord.tradingsymbol}
+                        </div>
+                        <div className='text-[10px] text-neutral-400 font-mono mt-0.5'>
+                          {ord.folio
+                            ? `Folio: ${ord.folio}`
+                            : 'CDSL Demat Allotment'}
+                        </div>
+                      </td>
+                      <td className='py-3 px-3'>
+                        <span className='inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-sans'>
+                          {isSip ? (
+                            <Repeat className='size-3 text-blue-500' />
+                          ) : (
+                            <TrendingUp className='size-3 text-emerald-500' />
                           )}
-                        >
-                          {o.transactionType || o.transaction_type || '—'}
+                          <span>{isSip ? 'SIP Installment' : 'Lumpsum'}</span>
                         </span>
                       </td>
-                      <td className='text-right font-mono tnum'>
-                        {formatCurrency(o.amount)}
+                      <td className='py-3 px-3 text-right tnum font-semibold text-neutral-900 dark:text-neutral-100'>
+                        {formatCurrency(amount)}
                       </td>
-                      <td className='text-right font-mono tnum text-muted-foreground'>
-                        {o.quantity?.toFixed(3) ?? '—'}
+                      <td className='py-3 px-3 text-right tnum text-neutral-600 dark:text-neutral-400'>
+                        {nav > 0 ? `₹${nav.toFixed(2)}` : '—'}
                       </td>
-                      <td className='text-right font-mono tnum text-muted-foreground'>
-                        {o.price
-                          ? formatCurrency(o.price, { precise: true })
-                          : '—'}
+                      <td className='py-3 px-3 text-right tnum text-neutral-700 dark:text-neutral-300'>
+                        {units > 0 ? units.toFixed(3) : '—'}
                       </td>
-                      <td className='text-center pr-6'>
-                        <span
-                          className={cn(
-                            'inline-block text-[9px] tracking-[0.1em] uppercase font-semibold px-1.5 py-0.5 rounded-sm border',
-                            STATUS_STYLE[status] ||
-                              'text-muted-foreground border-border bg-muted'
-                          )}
-                        >
-                          {status || 'UNKNOWN'}
+                      <td className='py-3 pr-4 pl-3 text-right'>
+                        <span className='inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'>
+                          <Check className='size-3' />
+                          <span>{ord.status || 'COMPLETE'}</span>
                         </span>
                       </td>
                     </tr>
@@ -141,3 +200,5 @@ export function MfOrdersTab() {
     </div>
   );
 }
+
+export default MfOrdersTab;
