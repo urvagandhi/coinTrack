@@ -1,0 +1,136 @@
+# ==============================================================================
+# CoinTrack - Industry Standard Docker Compose Configuration
+# Complete Multi-Container Stack (MongoDB + Spring Boot Backend + Next.js Frontend)
+# Environment variables are cleanly loaded from '.env' file
+# ==============================================================================
+
+name: cointrack
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. DATABASE SERVICE - MongoDB 7.0
+  # ----------------------------------------------------------------------------
+  mongodb:
+    image: mongo:7.0-noble
+    container_name: cointrack-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-cointrack_admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-cointrack_secure_password_123}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-Finance}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - cointrack-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ----------------------------------------------------------------------------
+  # 2. BACKEND SERVICE - Spring Boot Java 25 REST API
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cointrack-backend
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    env_file:
+      - path: ./backend/.env
+        required: false
+      - path: ./.env
+        required: false
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      PORT: ${PORT:-8080}
+      MONGODB_URI: ${MONGODB_URI}
+      MONGODB_DB: ${MONGODB_DB:-Finance}
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_SECRET_KEY: ${ENCRYPTION_SECRET_KEY}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY}
+      EMAIL_MAGIC_LINK_SECRET: ${EMAIL_MAGIC_LINK_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      EMAIL_BASE_URL: ${EMAIL_BASE_URL:-http://localhost:3000}
+      EMAIL_API_BASE_URL: ${EMAIL_API_BASE_URL:-http://localhost:8080}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-cointrack.urva@gmail.com}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-CoinTrack Support}
+      EMAIL_SUPPORT: ${EMAIL_SUPPORT:-cointrack.urva@gmail.com}
+      GOLDAPI_KEY: ${GOLDAPI_KEY}
+      GOLD_API_KEY: ${GOLD_API_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+    ports:
+      - "${PORT:-8080}:8080"
+    networks:
+      - cointrack-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # ----------------------------------------------------------------------------
+  # 3. FRONTEND SERVICE - Next.js 16 Web Application
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8080}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-CoinTrack}
+        NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-3.0.0}
+        NEXT_PUBLIC_ENABLE_WEBSOCKETS: ${NEXT_PUBLIC_ENABLE_WEBSOCKETS:-true}
+        NEXT_PUBLIC_ENABLE_NOTIFICATIONS: ${NEXT_PUBLIC_ENABLE_NOTIFICATIONS:-true}
+        NEXT_PUBLIC_DEBUG: ${NEXT_PUBLIC_DEBUG:-false}
+    container_name: cointrack-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - path: ./frontend/.env
+        required: false
+      - path: ./.env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8080}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      IFSC_API_KEY: ${IFSC_API_KEY:-}
+    ports:
+      - "3000:3000"
+    networks:
+      - cointrack-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+# ------------------------------------------------------------------------------
+# VOLUMES & NETWORKS DEFINITIONS
+# ------------------------------------------------------------------------------
+volumes:
+  mongo-data:
+    driver: local
+
+networks:
+  cointrack-network:
+    driver: bridge

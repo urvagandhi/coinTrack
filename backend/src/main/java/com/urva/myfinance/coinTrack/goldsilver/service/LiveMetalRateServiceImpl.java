@@ -1,5 +1,16 @@
 package com.urva.myfinance.coinTrack.goldsilver.service;
 
+import com.urva.myfinance.coinTrack.goldsilver.dto.response.MetalRateSnapshotDTO;
+import com.urva.myfinance.coinTrack.goldsilver.model.GoldSilverInvestment;
+import com.urva.myfinance.coinTrack.goldsilver.model.MetalRateSnapshot;
+import com.urva.myfinance.coinTrack.goldsilver.model.MetalType;
+import com.urva.myfinance.coinTrack.goldsilver.model.PurityOption;
+import com.urva.myfinance.coinTrack.goldsilver.model.RateSource;
+import com.urva.myfinance.coinTrack.goldsilver.repository.GoldSilverInvestmentRepository;
+import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSnapshotRepository;
+import com.urva.myfinance.coinTrack.user.model.MetalRateSettingsEmbed;
+import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -7,7 +18,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,336 +28,345 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import com.urva.myfinance.coinTrack.goldsilver.dto.response.MetalRateSnapshotDTO;
-import com.urva.myfinance.coinTrack.goldsilver.model.GoldSilverInvestment;
-import com.urva.myfinance.coinTrack.goldsilver.model.MetalRateSnapshot;
-import com.urva.myfinance.coinTrack.goldsilver.model.MetalType;
-import com.urva.myfinance.coinTrack.goldsilver.model.PurityOption;
-import com.urva.myfinance.coinTrack.goldsilver.model.RateSource;
-import com.urva.myfinance.coinTrack.goldsilver.repository.GoldSilverInvestmentRepository;
-import com.urva.myfinance.coinTrack.goldsilver.repository.MetalRateSnapshotRepository;
-
-import com.urva.myfinance.coinTrack.user.model.MetalRateSettingsEmbed;
-import com.urva.myfinance.coinTrack.user.model.User;
-import com.urva.myfinance.coinTrack.user.repository.UserRepository;
-
 @Service
 public class LiveMetalRateServiceImpl implements LiveMetalRateService {
 
-    private static final Logger logger = LoggerFactory.getLogger(LiveMetalRateServiceImpl.class);
-    private static final BigDecimal DEFAULT_PREMIUM_PERCENT = new BigDecimal("15.00");
-    private static final Duration MIN_REFRESH_INTERVAL = Duration.ofMinutes(30);
+  private static final Logger logger = LoggerFactory.getLogger(LiveMetalRateServiceImpl.class);
+  private static final BigDecimal DEFAULT_PREMIUM_PERCENT = new BigDecimal("15.00");
+  private static final Duration MIN_REFRESH_INTERVAL = Duration.ofMinutes(30);
 
-    private final MetalPriceProvider metalPriceProvider;
-    private final MetalRateSnapshotRepository snapshotRepository;
-    private final UserRepository userRepository;
-    private final List<PurityOption> defaultPurityOptions;
-    private final GoldSilverInvestmentRepository investmentRepository;
-    private final GoldSilverCalculationService calculationService;
-    private final GoldApiUsageService goldApiUsageService;
-    private final MongoTemplate mongoTemplate;
+  private final MetalPriceProvider metalPriceProvider;
+  private final MetalRateSnapshotRepository snapshotRepository;
+  private final UserRepository userRepository;
+  private final List<PurityOption> defaultPurityOptions;
+  private final GoldSilverInvestmentRepository investmentRepository;
+  private final GoldSilverCalculationService calculationService;
+  private final GoldApiUsageService goldApiUsageService;
+  private final MongoTemplate mongoTemplate;
 
-    private Instant lastFetchTime = null;
+  private Instant lastFetchTime = null;
 
-    @Autowired
-    public LiveMetalRateServiceImpl(
-            MetalPriceProvider metalPriceProvider,
-            MetalRateSnapshotRepository snapshotRepository,
-            UserRepository userRepository,
-            List<PurityOption> defaultPurityOptions,
-            GoldSilverInvestmentRepository investmentRepository,
-            GoldSilverCalculationService calculationService,
-            GoldApiUsageService goldApiUsageService,
-            MongoTemplate mongoTemplate) {
-        this.metalPriceProvider = metalPriceProvider;
-        this.snapshotRepository = snapshotRepository;
-        this.userRepository = userRepository;
-        this.defaultPurityOptions = defaultPurityOptions;
-        this.investmentRepository = investmentRepository;
-        this.calculationService = calculationService;
-        this.goldApiUsageService = goldApiUsageService;
-        this.mongoTemplate = mongoTemplate;
+  @Autowired
+  public LiveMetalRateServiceImpl(
+      MetalPriceProvider metalPriceProvider,
+      MetalRateSnapshotRepository snapshotRepository,
+      UserRepository userRepository,
+      List<PurityOption> defaultPurityOptions,
+      GoldSilverInvestmentRepository investmentRepository,
+      GoldSilverCalculationService calculationService,
+      GoldApiUsageService goldApiUsageService,
+      MongoTemplate mongoTemplate) {
+    this.metalPriceProvider = metalPriceProvider;
+    this.snapshotRepository = snapshotRepository;
+    this.userRepository = userRepository;
+    this.defaultPurityOptions = defaultPurityOptions;
+    this.investmentRepository = investmentRepository;
+    this.calculationService = calculationService;
+    this.goldApiUsageService = goldApiUsageService;
+    this.mongoTemplate = mongoTemplate;
+  }
+
+  @Override
+  public List<MetalRateSnapshotDTO> fetchAndCacheRates() {
+    return executeRateFetch(false);
+  }
+
+  @Override
+  public List<MetalRateSnapshotDTO> forceRefreshRates() {
+    // Quota guard — check if we have remaining API requests this month
+    if (!goldApiUsageService.isWithinQuota()) {
+      logger.warn(
+          "Manual rate refresh BLOCKED — GoldAPI monthly quota limit reached. Returning cached rates.");
+      return getCurrentRates();
     }
 
-    @Override
-    public List<MetalRateSnapshotDTO> fetchAndCacheRates() {
-        return executeRateFetch(false);
+    // Health check — verify GoldAPI is responding before burning quota
+    if (!goldApiUsageService.isApiHealthy()) {
+      logger.warn(
+          "Manual rate refresh BLOCKED — GoldAPI health check failed. Service may be down. Returning cached rates.");
+      return getCurrentRates();
     }
 
-    @Override
-    public List<MetalRateSnapshotDTO> forceRefreshRates() {
-        // Quota guard — check if we have remaining API requests this month
-        if (!goldApiUsageService.isWithinQuota()) {
-            logger.warn("Manual rate refresh BLOCKED — GoldAPI monthly quota limit reached. Returning cached rates.");
-            return getCurrentRates();
-        }
+    return executeRateFetch(true);
+  }
 
-        // Health check — verify GoldAPI is responding before burning quota
-        if (!goldApiUsageService.isApiHealthy()) {
-            logger.warn(
-                    "Manual rate refresh BLOCKED — GoldAPI health check failed. Service may be down. Returning cached rates.");
-            return getCurrentRates();
-        }
+  private synchronized List<MetalRateSnapshotDTO> executeRateFetch(boolean isForce) {
+    Instant now = Instant.now();
 
-        return executeRateFetch(true);
+    Instant mostRecentFetch = lastFetchTime;
+    if (mostRecentFetch == null) {
+      Optional<MetalRateSnapshot> latestGold =
+          snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD);
+      if (latestGold.isPresent() && latestGold.get().getFetchedAt() != null) {
+        mostRecentFetch = latestGold.get().getFetchedAt();
+      }
     }
 
-    private synchronized List<MetalRateSnapshotDTO> executeRateFetch(boolean isForce) {
-        Instant now = Instant.now();
-
-        Instant mostRecentFetch = lastFetchTime;
-        if (mostRecentFetch == null) {
-            Optional<MetalRateSnapshot> latestGold = snapshotRepository
-                    .findFirstByMetalTypeOrderByFetchedAtDesc(MetalType.GOLD);
-            if (latestGold.isPresent() && latestGold.get().getFetchedAt() != null) {
-                mostRecentFetch = latestGold.get().getFetchedAt();
-            }
-        }
-
-        if (isForce && mostRecentFetch != null) {
-            Duration elapsed = Duration.between(mostRecentFetch, now);
-            if (elapsed.compareTo(MIN_REFRESH_INTERVAL) < 0) {
-                logger.info(
-                        "Rate refresh requested within 30-minute cooldown ({}s elapsed). Returning existing cached rates to preserve API quota.",
-                        elapsed.getSeconds());
-                return getCurrentRates();
-            }
-        }
-
-        List<MetalRateSnapshotDTO> results = new ArrayList<>();
-
-        for (MetalType metalType : MetalType.values()) {
-            BigDecimal premium = getLocalPremiumPercent(metalType);
-            MetalRateSnapshot snapshot;
-
-            try {
-                logger.info("Fetching spot rate for {} from provider...", metalType);
-                snapshot = metalPriceProvider.fetchSpotRate(metalType);
-                snapshot.setLocalPremiumPercent(premium);
-
-                BigDecimal baseRate = snapshot.getBaseRatePerGram() != null ? snapshot.getBaseRatePerGram()
-                        : BigDecimal.ZERO;
-                BigDecimal multiplier = BigDecimal.ONE
-                        .add(premium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-                BigDecimal effectiveBaseRate = baseRate.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
-                snapshot.setEffectiveBaseRate(effectiveBaseRate);
-
-                snapshot = snapshotRepository.save(snapshot);
-                logger.info("Successfully fetched and saved snapshot for {}: effectiveBaseRate={}", metalType,
-                        effectiveBaseRate);
-            } catch (Exception e) {
-                logger.warn("Failed to fetch live rate for {}. Falling back to cached rate marked as stale.", metalType,
-                        e);
-                snapshot = handleFetchFailure(metalType, premium);
-            }
-
-            if (snapshot != null) {
-                recomputeLiveInvestments(metalType);
-                results.add(toSnapshotDTO(snapshot));
-            }
-        }
-
-        this.lastFetchTime = Instant.now();
-        return results;
+    if (isForce && mostRecentFetch != null) {
+      Duration elapsed = Duration.between(mostRecentFetch, now);
+      if (elapsed.compareTo(MIN_REFRESH_INTERVAL) < 0) {
+        logger.info(
+            "Rate refresh requested within 30-minute cooldown ({}s elapsed). Returning existing cached rates to preserve API quota.",
+            elapsed.getSeconds());
+        return getCurrentRates();
+      }
     }
 
-    private MetalRateSnapshot handleFetchFailure(MetalType metalType, BigDecimal premium) {
-        Optional<MetalRateSnapshot> latestOpt = snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(metalType);
-        if (latestOpt.isPresent()) {
-            MetalRateSnapshot latest = latestOpt.get();
-            MetalRateSnapshot staleSnapshot = MetalRateSnapshot.builder()
-                    .metalType(metalType)
-                    .baseRatePerGram(latest.getBaseRatePerGram())
-                    .localPremiumPercent(premium)
-                    .effectiveBaseRate(latest.getEffectiveBaseRate())
-                    .source(latest.getSource() != null ? latest.getSource() : "GoldAPI.io")
-                    .fetchedAt(Instant.now())
-                    .isStale(true)
-                    .build();
-            return snapshotRepository.save(staleSnapshot);
+    List<MetalRateSnapshotDTO> results = new ArrayList<>();
+
+    for (MetalType metalType : MetalType.values()) {
+      BigDecimal premium = getLocalPremiumPercent(metalType);
+      MetalRateSnapshot snapshot;
+
+      try {
+        logger.info("Fetching spot rate for {} from provider...", metalType);
+        snapshot = metalPriceProvider.fetchSpotRate(metalType);
+        snapshot.setLocalPremiumPercent(premium);
+
+        BigDecimal baseRate =
+            snapshot.getBaseRatePerGram() != null ? snapshot.getBaseRatePerGram() : BigDecimal.ZERO;
+        BigDecimal multiplier =
+            BigDecimal.ONE.add(premium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
+        BigDecimal effectiveBaseRate =
+            baseRate.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+        snapshot.setEffectiveBaseRate(effectiveBaseRate);
+
+        snapshot = snapshotRepository.save(snapshot);
+        logger.info(
+            "Successfully fetched and saved snapshot for {}: effectiveBaseRate={}",
+            metalType,
+            effectiveBaseRate);
+      } catch (Exception e) {
+        logger.warn(
+            "Failed to fetch live rate for {}. Falling back to cached rate marked as stale.",
+            metalType,
+            e);
+        snapshot = handleFetchFailure(metalType, premium);
+      }
+
+      if (snapshot != null) {
+        recomputeLiveInvestments(metalType);
+        results.add(toSnapshotDTO(snapshot));
+      }
+    }
+
+    this.lastFetchTime = Instant.now();
+    return results;
+  }
+
+  private MetalRateSnapshot handleFetchFailure(MetalType metalType, BigDecimal premium) {
+    Optional<MetalRateSnapshot> latestOpt =
+        snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(metalType);
+    if (latestOpt.isPresent()) {
+      MetalRateSnapshot latest = latestOpt.get();
+      MetalRateSnapshot staleSnapshot =
+          MetalRateSnapshot.builder()
+              .metalType(metalType)
+              .baseRatePerGram(latest.getBaseRatePerGram())
+              .localPremiumPercent(premium)
+              .effectiveBaseRate(latest.getEffectiveBaseRate())
+              .source(latest.getSource() != null ? latest.getSource() : "GoldAPI.io")
+              .fetchedAt(Instant.now())
+              .isStale(true)
+              .build();
+      return snapshotRepository.save(staleSnapshot);
+    }
+
+    // Default baseline fallback if DB has no historical snapshots
+    BigDecimal defaultBase =
+        (metalType == MetalType.GOLD) ? new BigDecimal("6400.00") : new BigDecimal("75.00");
+    BigDecimal multiplier =
+        BigDecimal.ONE.add(premium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
+    BigDecimal effectiveBase = defaultBase.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+
+    MetalRateSnapshot fallbackSnapshot =
+        MetalRateSnapshot.builder()
+            .metalType(metalType)
+            .baseRatePerGram(defaultBase)
+            .localPremiumPercent(premium)
+            .effectiveBaseRate(effectiveBase)
+            .source("Default Baseline (Fallback)")
+            .fetchedAt(Instant.now())
+            .isStale(true)
+            .build();
+    return snapshotRepository.save(fallbackSnapshot);
+  }
+
+  private BigDecimal getLocalPremiumPercent(MetalType metalType) {
+    // Use DEFAULT_PREMIUM_PERCENT since this method is for global
+    // (non-user-specific) lookups
+    return DEFAULT_PREMIUM_PERCENT;
+  }
+
+  @Override
+  public List<MetalRateSnapshotDTO> getCurrentRates() {
+    return getCurrentRatesForUser(null);
+  }
+
+  @Override
+  public List<MetalRateSnapshotDTO> getCurrentRatesForUser(String userId) {
+    List<MetalRateSnapshotDTO> list = new ArrayList<>();
+    // Look up embedded settings from User document — no extra collection needed
+    MetalRateSettingsEmbed userEmbed = null;
+    if (userId != null) {
+      User user = userRepository.findById(userId).orElse(null);
+      userEmbed = (user != null) ? user.getMetalRateSettings() : null;
+    }
+    final MetalRateSettingsEmbed finalEmbed = userEmbed;
+
+    for (MetalType metalType : MetalType.values()) {
+      MetalRateSnapshotDTO dto = getCurrentRateForMetal(metalType);
+      if (dto != null) {
+        if (finalEmbed != null && dto.getBaseRatePerGram() != null) {
+          BigDecimal userPremium =
+              (metalType == MetalType.GOLD)
+                  ? finalEmbed.getGoldLocalPremiumPercent()
+                  : finalEmbed.getSilverLocalPremiumPercent();
+
+          if (userPremium != null) {
+            BigDecimal multiplier =
+                BigDecimal.ONE.add(
+                    userPremium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
+            BigDecimal userEffectiveBase =
+                dto.getBaseRatePerGram().multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+            dto.setLocalPremiumPercent(userPremium);
+            dto.setEffectiveBaseRate(userEffectiveBase);
+          }
         }
+        list.add(dto);
+      }
+    }
+    return list;
+  }
 
-        // Default baseline fallback if DB has no historical snapshots
-        BigDecimal defaultBase = (metalType == MetalType.GOLD) ? new BigDecimal("6400.00") : new BigDecimal("75.00");
-        BigDecimal multiplier = BigDecimal.ONE.add(premium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-        BigDecimal effectiveBase = defaultBase.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+  @Override
+  public MetalRateSnapshotDTO getCurrentRateForMetal(MetalType metalType) {
+    return snapshotRepository
+        .findFirstByMetalTypeOrderByFetchedAtDesc(metalType)
+        .map(this::toSnapshotDTO)
+        .orElse(null);
+  }
 
-        MetalRateSnapshot fallbackSnapshot = MetalRateSnapshot.builder()
-                .metalType(metalType)
-                .baseRatePerGram(defaultBase)
-                .localPremiumPercent(premium)
-                .effectiveBaseRate(effectiveBase)
-                .source("Default Baseline (Fallback)")
-                .fetchedAt(Instant.now())
-                .isStale(true)
-                .build();
-        return snapshotRepository.save(fallbackSnapshot);
+  @Override
+  public void recomputeLiveInvestments(MetalType metalType) {
+    Optional<MetalRateSnapshot> snapshotOpt =
+        snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(metalType);
+    if (snapshotOpt.isEmpty()) {
+      return;
     }
 
-    private BigDecimal getLocalPremiumPercent(MetalType metalType) {
-        // Use DEFAULT_PREMIUM_PERCENT since this method is for global
-        // (non-user-specific) lookups
-        return DEFAULT_PREMIUM_PERCENT;
-    }
+    MetalRateSnapshot snapshot = snapshotOpt.get();
+    BigDecimal effectiveBaseRate = snapshot.getEffectiveBaseRate();
+    if (effectiveBaseRate == null) return;
 
-    @Override
-    public List<MetalRateSnapshotDTO> getCurrentRates() {
-        return getCurrentRatesForUser(null);
-    }
-
-    @Override
-    public List<MetalRateSnapshotDTO> getCurrentRatesForUser(String userId) {
-        List<MetalRateSnapshotDTO> list = new ArrayList<>();
-        // Look up embedded settings from User document — no extra collection needed
-        MetalRateSettingsEmbed userEmbed = null;
-        if (userId != null) {
-            User user = userRepository.findById(userId).orElse(null);
-            userEmbed = (user != null) ? user.getMetalRateSettings() : null;
-        }
-        final MetalRateSettingsEmbed finalEmbed = userEmbed;
-
-        for (MetalType metalType : MetalType.values()) {
-            MetalRateSnapshotDTO dto = getCurrentRateForMetal(metalType);
-            if (dto != null) {
-                if (finalEmbed != null && dto.getBaseRatePerGram() != null) {
-                    BigDecimal userPremium = (metalType == MetalType.GOLD)
-                            ? finalEmbed.getGoldLocalPremiumPercent()
-                            : finalEmbed.getSilverLocalPremiumPercent();
-
-                    if (userPremium != null) {
-                        BigDecimal multiplier = BigDecimal.ONE
-                                .add(userPremium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-                        BigDecimal userEffectiveBase = dto.getBaseRatePerGram().multiply(multiplier).setScale(2,
-                                RoundingMode.HALF_UP);
-                        dto.setLocalPremiumPercent(userPremium);
-                        dto.setEffectiveBaseRate(userEffectiveBase);
-                    }
-                }
-                list.add(dto);
-            }
-        }
-        return list;
-    }
-
-    @Override
-    public MetalRateSnapshotDTO getCurrentRateForMetal(MetalType metalType) {
-        return snapshotRepository.findFirstByMetalTypeOrderByFetchedAtDesc(metalType)
-                .map(this::toSnapshotDTO)
-                .orElse(null);
-    }
-
-    @Override
-    public void recomputeLiveInvestments(MetalType metalType) {
-        Optional<MetalRateSnapshot> snapshotOpt = snapshotRepository
-                .findFirstByMetalTypeOrderByFetchedAtDesc(metalType);
-        if (snapshotOpt.isEmpty()) {
-            return;
-        }
-
-        MetalRateSnapshot snapshot = snapshotOpt.get();
-        BigDecimal effectiveBaseRate = snapshot.getEffectiveBaseRate();
-        if (effectiveBaseRate == null)
-            return;
-
-        Criteria criteria = Criteria.where("metalType").is(metalType)
-                .andOperator(new Criteria().orOperator(
+    Criteria criteria =
+        Criteria.where("metalType")
+            .is(metalType)
+            .andOperator(
+                new Criteria()
+                    .orOperator(
                         Criteria.where("rateSource").is(RateSource.LIVE),
                         Criteria.where("rateSource").exists(false)));
 
-        Query query = new Query(criteria);
-        List<GoldSilverInvestment> records = mongoTemplate.find(query, GoldSilverInvestment.class);
+    Query query = new Query(criteria);
+    List<GoldSilverInvestment> records = mongoTemplate.find(query, GoldSilverInvestment.class);
 
-        if (records.isEmpty())
-            return;
+    if (records.isEmpty()) return;
 
-        BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, GoldSilverInvestment.class);
+    BulkOperations bulkOps =
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, GoldSilverInvestment.class);
 
-        for (GoldSilverInvestment record : records) {
-            BigDecimal effectiveBaseRateForUser = snapshot.getEffectiveBaseRate();
+    for (GoldSilverInvestment record : records) {
+      BigDecimal effectiveBaseRateForUser = snapshot.getEffectiveBaseRate();
 
-            if (record.getUserId() != null) {
-                // Fetch embedded settings from User document
-                User user = userRepository.findById(record.getUserId()).orElse(null);
-                MetalRateSettingsEmbed userEmbed = (user != null) ? user.getMetalRateSettings() : null;
-                if (userEmbed != null && snapshot.getBaseRatePerGram() != null) {
-                    BigDecimal userPremium = (metalType == MetalType.GOLD)
-                            ? userEmbed.getGoldLocalPremiumPercent()
-                            : userEmbed.getSilverLocalPremiumPercent();
+      if (record.getUserId() != null) {
+        // Fetch embedded settings from User document
+        User user = userRepository.findById(record.getUserId()).orElse(null);
+        MetalRateSettingsEmbed userEmbed = (user != null) ? user.getMetalRateSettings() : null;
+        if (userEmbed != null && snapshot.getBaseRatePerGram() != null) {
+          BigDecimal userPremium =
+              (metalType == MetalType.GOLD)
+                  ? userEmbed.getGoldLocalPremiumPercent()
+                  : userEmbed.getSilverLocalPremiumPercent();
 
-                    if (userPremium != null) {
-                        BigDecimal multiplier = BigDecimal.ONE
-                                .add(userPremium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-                        effectiveBaseRateForUser = snapshot.getBaseRatePerGram().multiply(multiplier).setScale(2,
-                                RoundingMode.HALF_UP);
-                    }
-                }
-            }
-
-            BigDecimal purityFactor = resolvePurityFactor(record);
-            BigDecimal currentMarketRate = effectiveBaseRateForUser.multiply(purityFactor).setScale(2,
-                    RoundingMode.HALF_UP);
-
-            record.setCurrentMarketRate(currentMarketRate);
-            calculationService.recalculateMarketValue(record);
-
-            Update update = new Update()
-                    .set("currentMarketRate", record.getCurrentMarketRate())
-                    .set("currentValue", record.getCurrentValue())
-                    .set("profitLoss", record.getProfitLoss())
-                    .set("returnPercent", record.getReturnPercent())
-                    .set("purityFactor", purityFactor)
-                    .set("updatedAt", Instant.now());
-
-            if (record.getPurityLabel() != null) {
-                update.set("purityLabel", record.getPurityLabel());
-            }
-
-            bulkOps.updateOne(new Query(Criteria.where("id").is(record.getId())), update);
+          if (userPremium != null) {
+            BigDecimal multiplier =
+                BigDecimal.ONE.add(
+                    userPremium.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
+            effectiveBaseRateForUser =
+                snapshot
+                    .getBaseRatePerGram()
+                    .multiply(multiplier)
+                    .setScale(2, RoundingMode.HALF_UP);
+          }
         }
+      }
 
-        bulkOps.execute();
-        logger.info("Recomputed live market rates for {} records of metalType {}", records.size(), metalType);
+      BigDecimal purityFactor = resolvePurityFactor(record);
+      BigDecimal currentMarketRate =
+          effectiveBaseRateForUser.multiply(purityFactor).setScale(2, RoundingMode.HALF_UP);
+
+      record.setCurrentMarketRate(currentMarketRate);
+      calculationService.recalculateMarketValue(record);
+
+      Update update =
+          new Update()
+              .set("currentMarketRate", record.getCurrentMarketRate())
+              .set("currentValue", record.getCurrentValue())
+              .set("profitLoss", record.getProfitLoss())
+              .set("returnPercent", record.getReturnPercent())
+              .set("purityFactor", purityFactor)
+              .set("updatedAt", Instant.now());
+
+      if (record.getPurityLabel() != null) {
+        update.set("purityLabel", record.getPurityLabel());
+      }
+
+      bulkOps.updateOne(new Query(Criteria.where("id").is(record.getId())), update);
     }
 
-    public BigDecimal resolvePurityFactor(GoldSilverInvestment record) {
-        if (record.getPurityFactor() != null && record.getPurityFactor().compareTo(BigDecimal.ZERO) > 0) {
-            return record.getPurityFactor();
-        }
+    bulkOps.execute();
+    logger.info(
+        "Recomputed live market rates for {} records of metalType {}", records.size(), metalType);
+  }
 
-        if (record.getPurityOptionId() != null) {
-            Optional<PurityOption> opt = defaultPurityOptions.stream()
-                    .filter(p -> p.getId().equals(record.getPurityOptionId()))
-                    .findFirst();
-            if (opt.isPresent()) {
-                return opt.get().getPurityFactor();
-            }
-        }
-
-        if (record.getPurity() != null) {
-            String p = record.getPurity().trim().toUpperCase();
-            if (p.contains("24K") || p.contains("999"))
-                return new BigDecimal("0.999");
-            if (p.contains("22K") || p.contains("916"))
-                return new BigDecimal("0.916");
-            if (p.contains("18K") || p.contains("750"))
-                return new BigDecimal("0.750");
-            if (p.contains("925"))
-                return new BigDecimal("0.925");
-        }
-
-        return BigDecimal.ONE;
+  public BigDecimal resolvePurityFactor(GoldSilverInvestment record) {
+    if (record.getPurityFactor() != null
+        && record.getPurityFactor().compareTo(BigDecimal.ZERO) > 0) {
+      return record.getPurityFactor();
     }
 
-    private MetalRateSnapshotDTO toSnapshotDTO(MetalRateSnapshot s) {
-        return MetalRateSnapshotDTO.builder()
-                .id(s.getId())
-                .metalType(s.getMetalType())
-                .baseRatePerGram(s.getBaseRatePerGram())
-                .localPremiumPercent(s.getLocalPremiumPercent())
-                .effectiveBaseRate(s.getEffectiveBaseRate())
-                .source(s.getSource())
-                .fetchedAt(s.getFetchedAt())
-                .isStale(s.isStale())
-                .build();
+    if (record.getPurityOptionId() != null) {
+      Optional<PurityOption> opt =
+          defaultPurityOptions.stream()
+              .filter(p -> p.getId().equals(record.getPurityOptionId()))
+              .findFirst();
+      if (opt.isPresent()) {
+        return opt.get().getPurityFactor();
+      }
     }
+
+    if (record.getPurity() != null) {
+      String p = record.getPurity().trim().toUpperCase();
+      if (p.contains("24K") || p.contains("999")) return new BigDecimal("0.999");
+      if (p.contains("22K") || p.contains("916")) return new BigDecimal("0.916");
+      if (p.contains("18K") || p.contains("750")) return new BigDecimal("0.750");
+      if (p.contains("925")) return new BigDecimal("0.925");
+    }
+
+    return BigDecimal.ONE;
+  }
+
+  private MetalRateSnapshotDTO toSnapshotDTO(MetalRateSnapshot s) {
+    return MetalRateSnapshotDTO.builder()
+        .id(s.getId())
+        .metalType(s.getMetalType())
+        .baseRatePerGram(s.getBaseRatePerGram())
+        .localPremiumPercent(s.getLocalPremiumPercent())
+        .effectiveBaseRate(s.getEffectiveBaseRate())
+        .source(s.getSource())
+        .fetchedAt(s.getFetchedAt())
+        .isStale(s.isStale())
+        .build();
+  }
 }

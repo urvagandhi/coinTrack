@@ -5,13 +5,14 @@ import com.urva.myfinance.coinTrack.portfolio.model.SyncLog;
 
 public interface PortfolioSyncService {
 
-    void syncUser(String userId);
+  void syncUser(String userId);
 
-    void syncBrokerAccount(BrokerAccount account);
+  void syncBrokerAccount(BrokerAccount account);
 
-    void syncAllActiveAccounts();
+  void syncAllActiveAccounts();
 
-    com.urva.myfinance.coinTrack.portfolio.dto.ManualRefreshResponse triggerManualRefreshForUser(String userId);
+  com.urva.myfinance.coinTrack.portfolio.dto.ManualRefreshResponse triggerManualRefreshForUser(
+      String userId);
 
-    SyncLog runFullSyncForAccount(BrokerAccount account);
+  SyncLog runFullSyncForAccount(BrokerAccount account);
 }

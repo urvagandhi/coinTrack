@@ -1,9 +1,9 @@
 # CoinTrack Backend Architecture & Developer Guide
 
-> **Version**: 3.1.0
+> **Version**: 3.3.0
 > **Status**: Production-Ready
-> **Tech Stack**: Java 21, Spring Boot 3.5.5, MongoDB Atlas, Spring Security (JWT + TOTP 2FA)
-> **Last Updated**: 2026-07-25
+> **Tech Stack**: Java 25, Spring Boot 3.5.5, MongoDB Atlas, Spring Security (JWT + MFA MFA)
+> **Last Updated**: 2026-09-13
 
 ---
 
@@ -16,7 +16,7 @@
 5. [Folder Structure](#5-folder-structure)
 6. [Request Lifecycle](#6-request-lifecycle)
 7. [Authentication & Authorization](#7-authentication--authorization)
-8. [TOTP 2FA System](#8-totp-2fa-system)
+8. [MFA MFA System](#8-totp-2fa-system)
 9. [Broker Integration (Hexagonal)](#9-broker-integration-hexagonal)
 10. [Portfolio & Sync Architecture](#10-portfolio--sync-architecture)
 11. [Email System](#11-email-system)
@@ -25,11 +25,12 @@
 14. [Logging Strategy](#14-logging-strategy)
 15. [Configuration & Environments](#15-configuration--environments)
 16. [Testing Strategy](#16-testing-strategy)
-17. [Extension Guide](#17-extension-guide)
-18. [Anti-Patterns](#18-anti-patterns)
-19. [Deployment & Runtime](#19-deployment--runtime)
-20. [Codebase Statistics](#20-codebase-statistics)
-21. [Documentation Index](#21-documentation-index)
+17. [Code Quality, Formatting & Linting](#17-code-quality-formatting--linting)
+18. [Extension Guide](#18-extension-guide)
+19. [Anti-Patterns](#19-anti-patterns)
+20. [Deployment & Runtime](#20-deployment--runtime)
+21. [Codebase Statistics](#21-codebase-statistics)
+22. [Documentation Index](#22-documentation-index)
 
 ---
 
@@ -56,13 +57,13 @@ CoinTrack solves this by acting as a **secure, normalizing middleware** between 
 | Feature | Description |
 |---------|-------------|
 | **Multi-Broker Support** | Zerodha, Upstox, AngelOne with unified API |
-| **TOTP 2FA** | Mandatory two-factor authentication for all users |
+| **MFA MFA** | Mandatory two-factor authentication for all users |
 | **Portfolio Aggregation** | Cross-broker holdings with unified P&L |
 | **Holdings-Only Summary** | Positions excluded for mathematical consistency |
 | **Encrypted Secrets** | AES-256-GCM encryption for all sensitive data |
 | **Background Sync** | Scheduled portfolio synchronization |
 | **EmailSender Interface** | Strategy pattern for email dispatch (Brevo prod) |
-| **41 Financial Calculators** | Stateless, public, rate-limited computation suite |
+| **33 Financial Calculators** | Stateless, public, rate-limited computation suite |
 | **Alternative Assets** | Manual tracking for Mutual Funds, Gold & Silver, EPF, PPF, and FD with live rates & FIFO |
 
 ---
@@ -86,7 +87,7 @@ We strictly adhere to **Domain-Driven Design (DDD)** and **Separation of Concern
 
 ## 3. High-Level System Architecture
 
-CoinTrack follows a **Layered Hexagonal Architecture** with 8 domain modules.
+CoinTrack follows a **Layered Hexagonal Architecture** with 13 domain modules.
 
 ```mermaid
 graph TB
@@ -102,19 +103,19 @@ graph TB
 
     SEC --> CORE
 
-    subgraph CORE["Backend Core (8 Modules)"]
+    subgraph CORE["Backend Core (13 Modules)"]
         direction TB
-        USER["USER<br/>Auth, Profile, TOTP"]
+        USER["USER<br/>Auth, Profile, MFA"]
         SECURITY["SECURITY<br/>JWT, Filters"]
         BROKER["BROKER<br/>Hexagonal Adapters"]
         PORTFOLIO["PORTFOLIO<br/>Aggregation, Sync"]
         EMAIL["EMAIL<br/>Brevo Sender"]
-        CALCULATOR["CALCULATOR<br/>41 Financial Tools"]
+        CALCULATOR["CALCULATOR<br/>33 Financial Tools"]
         NOTES["NOTES<br/>Personal Journal"]
         COMMON["COMMON<br/>Utils, Exceptions"]
     end
 
-    CORE --> DB[("MongoDB Atlas<br/>17+ Collections")]
+    CORE --> DB[("MongoDB Atlas<br/>32 Collections")]
     BROKER --> APIS["External Broker APIs<br/>Zerodha | AngelOne | Upstox"]
     EMAIL --> BREVO["Brevo<br/>Email API"]
 
@@ -130,9 +131,9 @@ graph TB
 ```mermaid
 graph TD
     COMMON["common/<br/>utils, exceptions, config"] --> SECURITY["security/<br/>JWT, filters, config"]
-    COMMON --> USER["user/<br/>auth, profile, TOTP"]
+    COMMON --> USER["user/<br/>auth, profile, MFA"]
     COMMON --> EMAIL["email/<br/>Brevo, templates"]
-    COMMON --> CALC["calculator/<br/>41 financial tools"]
+    COMMON --> CALC["calculator/<br/>33 financial tools"]
 
     SECURITY --> BROKER["broker/<br/>hexagonal adapters"]
     USER --> NOTES["notes/<br/>journal CRUD"]
@@ -158,17 +159,18 @@ Each module has its own comprehensive README documentation.
 | Module | Purpose | Size | README |
 |--------|---------|------|--------|
 | **broker** | Hexagonal multi-broker adapters, OAuth, canonical models | 2000+ lines | [broker/README.md](src/main/java/com/urva/myfinance/coinTrack/broker/README.md) |
-| **calculator** | 41 financial calculators, config-driven, rate-limited | 1500+ lines | [calculator/README.md](src/main/java/com/urva/myfinance/coinTrack/calculator/README.md) |
+| **calculator** | 33 financial calculators, config-driven, rate-limited | 1500+ lines | [calculator/README.md](src/main/java/com/urva/myfinance/coinTrack/calculator/README.md) |
 | **common** | Shared infrastructure, exceptions, encryption utils | 400+ lines | [common/README.md](src/main/java/com/urva/myfinance/coinTrack/common/README.md) |
 | **email** | Brevo transactional email, strategy-based sender | 300+ lines | [email/README.md](src/main/java/com/urva/myfinance/coinTrack/email/README.md) |
-| **fixeddeposit** | Fixed Deposit manual ledger & Excel exports | 1000+ lines | [fixeddeposit/README.md](src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/README.md) |
+| **fixeddeposit** | Fixed Deposit manual ledger, bank-aware premature-withdrawal penalty, Excel exports | 1000+ lines | [fixeddeposit/README.md](src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/README.md) |
 | **notes** | Personal investment journal (CRUD) | 200+ lines | [notes/README.md](src/main/java/com/urva/myfinance/coinTrack/notes/README.md) |
 | **portfolio** | Aggregation, sync engine, P&L calculation | 2000+ lines | [portfolio/README.md](src/main/java/com/urva/myfinance/coinTrack/portfolio/README.md) |
 | **ppf** | PPF transactions, ledger balance recalculating, withdrawal validation | 800+ lines | [ppf/README.md](src/main/java/com/urva/myfinance/coinTrack/ppf/README.md) |
 | **epf** | EPF & EPS dual-balance ledger, statutory split & interest engine | 1000+ lines | [epf/README.md](src/main/java/com/urva/myfinance/coinTrack/epf/README.md) |
 | **goldsilver** | Gold & Silver investments, status scheduler, manual ledger | 800+ lines | [goldsilver/README.md](src/main/java/com/urva/myfinance/coinTrack/goldsilver/README.md) |
+| **mutualfund** | MF schemes, lumpsum/SIP/redemption ledgers, FIFO capital gains, aggregation | 500+ lines | [mutualfund/README.md](src/main/java/com/urva/myfinance/coinTrack/mutualfund/README.md) |
 | **security** | JWT auth, filter chain, token blacklist | 628 lines | [security/README.md](src/main/java/com/urva/myfinance/coinTrack/security/README.md) |
-| **user** | Registration, profile, TOTP 2FA, refresh tokens | 750+ lines | [user/README.md](src/main/java/com/urva/myfinance/coinTrack/user/README.md) |
+| **user** | Registration, profile, MFA MFA, refresh tokens | 750+ lines | [user/README.md](src/main/java/com/urva/myfinance/coinTrack/user/README.md) |
 
 ---
 
@@ -210,8 +212,8 @@ backend/src/main/java/com/urva/myfinance/coinTrack/
 ├── calculator/                      # Financial Calculators (1500+ lines)
 │   ├── config/                      #   CalculatorConfigLoader, RateLimitFilter
 │   ├── controller/                  #   6 category controllers
-│   ├── dto/request/                 #   37 request DTOs (Java records)
-│   ├── dto/response/                #   37 response DTOs
+│   ├── dto/request/                 #   29 request DTOs (Java records)
+│   ├── dto/response/                #   30 response DTOs
 │   ├── service/                     #   6 interfaces + 6 implementations
 │   └── util/                        #   FinancialMath facade, 7 math classes
 │
@@ -259,13 +261,13 @@ backend/src/main/java/com/urva/myfinance/coinTrack/
 │
 └── user/                            # User Management (750+ lines)
     ├── controller/
-    │   ├── AuthController.java      #   Login, register, TOTP, refresh
-    │   ├── TotpController.java      #   2FA setup, verify, reset
+    │   ├── AuthController.java      #   Login, register, MFA, refresh
+    │   ├── TotpController.java      #   MFA setup, verify, reset
     │   └── UserController.java      #   Profile, password, email change
-    ├── dto/                         #   9 DTOs (Login, Register, TOTP, etc.)
+    ├── dto/                         #   9 DTOs (Login, Register, MFA, etc.)
     ├── model/
-    │   ├── User.java                #   16+ fields incl. TOTP + rate limiting
-    │   ├── BackupCode.java          #   One-time 2FA recovery codes
+    │   ├── User.java                #   16+ fields incl. MFA + rate limiting
+    │   ├── BackupCode.java          #   One-time MFA recovery codes
     │   ├── PendingRegistration.java #   Email verification queue
     │   └── RefreshToken.java        #   JWT refresh token persistence
     ├── repository/                  #   4 repositories (User, BackupCode, Pending, Refresh)
@@ -311,12 +313,14 @@ sequenceDiagram
 
 ## 7. Authentication & Authorization
 
-Security is stateless and JWT-based with mandatory TOTP 2FA.
+Security is stateless and JWT-based with mandatory MFA MFA.
 
 ### Components
 
 | Component | File | Purpose |
 |-----------|------|---------|
+| **UserAuthenticationService** | `user/service/UserAuthenticationService.java` | Login: single `$or` identifier lookup (`UserRepository.findByIdentifier`) + direct timing-safe BCrypt |
+| **GoogleOAuthService** | `security/service/GoogleOAuthService.java` | Google OIDC code exchange & JWKS verification with a TTL-bounded atomic key cache (single-flight refresh) |
 | **JWTService** | `security/service/JWTService.java` | Sign/validate tokens (HMAC-SHA256) |
 | **JwtFilter** | `security/filter/JwtFilter.java` | Extract Bearer token, validate, set SecurityContext |
 | **SecurityConfig** | `security/config/SecurityConfig.java` | Define public/protected routes, filter chain |
@@ -328,7 +332,7 @@ Security is stateless and JWT-based with mandatory TOTP 2FA.
 ```mermaid
 stateDiagram-v2
     [*] --> Unauthenticated
-    Unauthenticated --> Active: Login + 2FA verified
+    Unauthenticated --> Active: Login + MFA verified
     Active --> Expired: Token TTL expires
     Active --> Blacklisted: POST /api/auth/logout
     Expired --> Active: POST /api/auth/refresh
@@ -344,39 +348,45 @@ stateDiagram-v2
 - **Manual Parsing Forbidden**: Never manually parse `Authorization` headers. Use `@AuthenticationPrincipal UserPrincipal` to access `getUserId()` (the MongoDB `_id`).
 - **Public Routes**: Explicitly whitelisted in `SecurityConfig` (e.g., `/login`, `/register`, `/api/calculators/**`). All others are deny-by-default.
 
+### Authentication Performance (2026-09-12)
+
+- **Identifier lookup is 1 RTT**: `UserRepository.findByIdentifier(username, email, phoneNumber)` resolves the account in a single `$or` query. Previously the login path issued three sequential queries (username → email → phone) and then re-fetched the user again inside Spring Security's `DaoAuthenticationProvider`. Removing that provider round-trip makes `POST /api/auth/login` a constant **one DB read + one BCrypt verify**.
+- **Timing-safe password verify**: unknown identifiers and OAuth-only accounts verify against a constant-time `DUMMY_HASH` so failures and successes take identical time.
+- **Google JWKS caching**: `GoogleOAuthService` caches Google's RSA signing keys in an atomically-swapped `volatile` map — 12h TTL, 5s unknown-`kid` rotation cooldown (no refetch-storm on token with bogus `kid`s), 60s failure backoff, and a single-flight `synchronized` refresh so N concurrent login requests share one certs fetch. Token signature verification is local after the (one-time) fetch.
+
 ---
 
-## 8. TOTP 2FA System
+## 8. MFA MFA System
 
-CoinTrack enforces **mandatory TOTP 2FA** for all users.
+CoinTrack enforces **mandatory MFA MFA** for all users.
 
 ### Components
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| **AuthController** | `user/controller/AuthController.java` | Registration + login TOTP flows |
-| **TotpController** | `user/controller/TotpController.java` | 2FA setup, verify, reset |
+| **AuthController** | `user/controller/AuthController.java` | Registration + login MFA flows |
+| **TotpController** | `user/controller/TotpController.java` | MFA setup, verify, reset |
 | **TotpService** | `user/service/TotpService.java` | 361 lines, 14 methods |
 | **BackupCode** | `user/model/BackupCode.java` | One-time recovery codes |
 
-### TOTP Flow
+### MFA Flow
 
 ```mermaid
 flowchart TD
     subgraph REG["Registration (New Users)"]
-        R1["1. POST /api/auth/register"] -->|"tempToken"| R2["2. POST /api/auth/2fa/register/setup"]
+        R1["1. POST /api/auth/register"] -->|"tempToken"| R2["2. POST /api/auth/mfa/register/setup"]
         R2 -->|"qrCode, secret"| R3["3. User scans QR in authenticator"]
-        R3 --> R4["4. POST /api/auth/2fa/register/verify"]
+        R3 --> R4["4. POST /api/auth/mfa/register/verify"]
         R4 -->|"JWT + backupCodes"| R5["5. User saved, authenticated"]
     end
 
     subgraph LOGIN["Login (Existing Users)"]
-        L1["1. POST /api/auth/login"] -->|"requiresOtp: true, tempToken"| L2["2. POST /api/auth/login/totp"]
+        L1["1. POST /api/auth/login"] -->|"requiresOtp: true, tempToken"| L2["2. POST /api/auth/mfa/login"]
         L2 -->|"JWT + refreshToken"| L3["Authenticated"]
     end
 
     subgraph REC["Recovery (Lost Authenticator)"]
-        RC1["1. POST /api/auth/login"] -->|"tempToken"| RC2["2. POST /api/auth/login/recovery"]
+        RC1["1. POST /api/auth/login"] -->|"tempToken"| RC2["2. POST /api/auth/mfa/email-recovery"]
         RC2 -->|"uses one-time backup code"| RC3["Authenticated"]
     end
 
@@ -392,7 +402,7 @@ flowchart TD
 | **Secret Encryption** | AES-256-GCM via `EncryptionUtil` |
 | **Backup Codes** | 10 codes, BCrypt hashed, one-time use |
 | **Rate Limiting** | 5 failed attempts → 15-minute lockout |
-| **Temp Tokens** | 5-minute expiry for TOTP verification |
+| **Temp Tokens** | 5-minute expiry for MFA verification |
 | **Refresh Tokens** | Persisted in MongoDB, rotated on use |
 
 ---
@@ -519,7 +529,7 @@ graph TD
 
     subgraph Aggregation["Aggregation Layer"]
         AGG["PortfolioAggregationService"]
-        AGG -->|"Java 21 Virtual Threads"| Z["Zerodha Adapter"]
+        AGG -->|"Java 25 Virtual Threads"| Z["Zerodha Adapter"]
         AGG -->|"Parallel"| A["AngelOne Adapter"]
         AGG -->|"CompletableFuture"| U["Upstox Adapter"]
     end
@@ -598,7 +608,7 @@ graph TD
 graph TD
     subgraph Callers["Calling Modules"]
         USER["User Module<br/>(registration, profile)"]
-        SEC["Security Module<br/>(password reset, 2FA recovery)"]
+        SEC["Security Module<br/>(password reset, MFA recovery)"]
     end
 
     subgraph Email["Email Module"]
@@ -625,7 +635,7 @@ graph TD
 | `reset-password.html` | Forgot password | Yes (10 min expiry) |
 | `change-email.html` | Email update | Yes (10 min expiry) |
 | `2fa-recovery.html` | Lost authenticator | Yes (10 min expiry) |
-| `security-alert.html` | Password/2FA/email change | No |
+| `security-alert.html` | Password/MFA/email change | No |
 | `contact-form.html` | Public contact form | No |
 
 ### Controllers (6)
@@ -636,7 +646,7 @@ graph TD
 
 ## 12. Calculator Suite
 
-41 financial calculators organized into 6 categories. All **public** (no authentication) and **rate-limited** (60 req/min/IP via Bucket4j).
+33 financial calculators organized into 6 categories. All **public** (no authentication) and **rate-limited** (60 req/min/IP via Bucket4j).
 
 ### Architecture
 
@@ -772,7 +782,25 @@ when(mockAdapter.fetchHoldings(any())).thenReturn(CompletableFuture.completedFut
 
 ---
 
-## 17. Extension Guide
+## 17. Code Quality, Formatting & Linting
+
+We enforce automated code formatting and static code quality checks via Maven plugins in `pom.xml`.
+
+### Developer Commands
+
+| Command | Purpose | Tool |
+|---------|---------|------|
+| `./mvnw spotless:apply` | Auto-formats all Java code | **Spotless** (Google Java Format v1.28.0) |
+| `./mvnw spotless:check` | Verifies code formatting compliance | **Spotless** |
+| `./mvnw checkstyle:check` | Runs static code analysis & style checks | **Checkstyle** (`google_checks.xml`) |
+
+### Standards Enforced
+- **Formatting**: Google Java Format standard 2-space indentation, Unix line endings (`lf`), and trailing whitespace removal.
+- **Linting**: Import ordering, naming conventions, and static code quality rules.
+
+---
+
+## 18. Extension Guide
 
 ### Adding a New Broker (e.g., Groww)
 
@@ -848,14 +876,14 @@ graph LR
 
 | Metric | Value |
 |--------|-------|
-| **Total Modules** | 8 |
+| **Total Modules** | 13 |
 | **Total Source Files** | ~200+ |
 | **Total Lines of Code** | ~15,000+ |
 | **API Endpoints** | ~50+ |
-| **MongoDB Collections** | 17+ |
+| **MongoDB Collections** | 32 |
 | **DTOs** | 80+ |
 | **Broker Adapters** | 3 |
-| **Financial Calculators** | 41 |
+| **Financial Calculators** | 33 |
 
 ### Key Files by Size
 
@@ -864,7 +892,7 @@ graph LR
 | `PortfolioSummaryServiceImpl.java` | P&L calculation, LTP enrichment | 1,500+ |
 | `ZerodhaBrokerAdapter.java` | Complete Zerodha integration | 400+ |
 | `PortfolioSyncServiceImpl.java` | Sync orchestration | 500+ |
-| `TotpService.java` | 2FA logic, 14 methods | 361 |
+| `TotpService.java` | MFA logic, 14 methods | 361 |
 | `UserAuthenticationService.java` | Login, token management | 300+ |
 | `FinancialMath.java` | Calculator math facade | 500+ |
 
@@ -872,20 +900,21 @@ graph LR
 
 | Collection | Module | Purpose |
 |-----------|--------|---------|
-| `users` | user | User accounts |
-| `backup_codes` | user | 2FA recovery codes |
+| `users` | user | User accounts (incl. **embedded** `EpfSettingsEmbed`, `PpfSettingsEmbed`, `MetalRateSettingsEmbed`) |
+| `backup_codes` | user | MFA recovery codes |
 | `pending_registrations` | user | Email verification queue |
 | `refresh_tokens` | user | JWT refresh sessions |
 | `broker_accounts` | broker | Broker connection state |
-| `canonical_holdings` | portfolio | Equity holdings (cross-broker) |
-| `canonical_positions` | portfolio | Open positions |
-| `canonical_funds` | portfolio | Cash balances |
-| `canonical_mf_holdings` | portfolio | Mutual fund holdings |
-| `canonical_mf_orders` | portfolio | MF order history |
+| `canonical_holdings` | broker | Equity holdings (cross-broker canonical) |
+| `canonical_positions` | broker | Open positions |
+| `canonical_funds` | broker | Cash balances |
+| `canonical_mf_holdings` | broker | Mutual fund holdings |
+| `canonical_mf_orders` | broker | MF order history |
 | `market_prices` | portfolio | Cached LTP data |
-| `sync_cooldown` | portfolio | Rate limit cooldown |
-| `sync_log` | portfolio | Sync audit trail |
-| `invalidated_tokens` | security | JWT blacklist |
+| `sync_cooldowns` | portfolio | Rate limit cooldown |
+| `sync_logs` | portfolio | Sync audit trail |
+| `invalidated_tokens` | security | JWT blacklist (TTL-indexed) |
+| `counters` | common | Shared sequence generators (`DatabaseSequence`) |
 | `email_tokens` | email | Verification/reset tokens |
 | `notes` | notes | User notes (text indexed) |
 | `fixed_deposits` | fixeddeposit | Manual fixed deposits |
@@ -895,11 +924,18 @@ graph LR
 | `mf_sip_contributions` | mutualfund | Monthly SIP ledgers |
 | `mf_redemption_transactions` | mutualfund | Mutual fund redemptions |
 | `mf_valuation_snapshots` | mutualfund | Periodic P&L snapshots |
+| `mf_portfolio_holdings` | mutualfund | Computed per-scheme holdings view |
+| `mf_portfolio_metrics` | mutualfund | Aggregated portfolio metrics |
+| `mf_latest_prices` | mutualfund | Latest NAV/LTP per scheme |
+| `mf_historical_nav_cache` | mutualfund | Historical NAV cache |
 | `ppf_transactions` | ppf | Public Provident Fund ledger |
-| `epf_settings` | epf | EPF per-user calculation settings |
 | `epf_transactions` | epf | EPF/EPS dual-balance transaction ledger |
-| `epf_interest_rates` | epf | User-maintained FY interest rate table |
 | `gold_silver_investments` | goldsilver | Gold & Silver investments ledger |
+| `metal_rate_snapshots` | goldsilver | Global cached metal rate history |
+
+> Purity options are an in-memory seeded list; EPF interest rates load from
+> `configs/epf-rates.yml`; EPF/PPF/metal settings are embedded in `users`.
+> Verified against `@Document(collection = ...)` annotations on 2026-08-23.
 
 ---
 
@@ -919,6 +955,7 @@ graph LR
 | PPF | [ppf/README.md](src/main/java/com/urva/myfinance/coinTrack/ppf/README.md) | 220+ |
 | EPF | [epf/README.md](src/main/java/com/urva/myfinance/coinTrack/epf/README.md) | 100+ |
 | Gold & Silver | [goldsilver/README.md](src/main/java/com/urva/myfinance/coinTrack/goldsilver/README.md) | 100+ |
+| Mutual Fund | [mutualfund/README.md](src/main/java/com/urva/myfinance/coinTrack/mutualfund/README.md) | 500+ |
 | Security | [security/README.md](src/main/java/com/urva/myfinance/coinTrack/security/README.md) | 660+ |
 | User | [user/README.md](src/main/java/com/urva/myfinance/coinTrack/user/README.md) | 760+ |
 

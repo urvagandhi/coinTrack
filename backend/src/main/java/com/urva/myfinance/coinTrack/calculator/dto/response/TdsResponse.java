@@ -2,14 +2,11 @@ package com.urva.myfinance.coinTrack.calculator.dto.response;
 
 import java.math.BigDecimal;
 
-/**
- * Response DTO for TDS Calculator.
- */
+/** Response DTO for TDS Calculator. */
 public record TdsResponse(
-        BigDecimal grossAmount,
-        BigDecimal tdsAmount,
-        BigDecimal netPayment,
-        BigDecimal tdsRate,
-        String section,
-        BigDecimal threshold) {
-}
+    BigDecimal grossAmount,
+    BigDecimal tdsAmount,
+    BigDecimal netPayment,
+    BigDecimal tdsRate,
+    String section,
+    BigDecimal threshold) {}

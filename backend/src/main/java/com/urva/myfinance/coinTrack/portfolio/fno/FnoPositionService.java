@@ -1,9 +1,8 @@
 package com.urva.myfinance.coinTrack.portfolio.fno;
 
+import com.urva.myfinance.coinTrack.portfolio.dto.FnoPositionDTO;
 import java.util.List;
 
-import com.urva.myfinance.coinTrack.portfolio.dto.FnoPositionDTO;
-
 public interface FnoPositionService {
-    List<FnoPositionDTO> getFnoPositionsForUser(String userId);
+  List<FnoPositionDTO> getFnoPositionsForUser(String userId);
 }

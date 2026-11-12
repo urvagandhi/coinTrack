@@ -60,8 +60,10 @@ migrate-userid.js
 .claude/
 .fuse_hidden*
 
+graphify-out/
+
 # Understand-Anything local scratch
 .ua/intermediate/
 .ua/diff-overlay.json
-
-
+.ua/tmp/
+.ua/.trash-*/

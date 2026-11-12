@@ -1,12 +1,21 @@
 package com.urva.myfinance.coinTrack.user.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -16,10 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.urva.myfinance.coinTrack.notes.service.NoteService;
 import com.urva.myfinance.coinTrack.security.service.GoogleOAuthService;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.CompleteProfileRequest;
@@ -34,8 +41,6 @@ public class UserAuthenticationServiceGoogleTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private AuthenticationManager authManager;
-    @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private JWTService jwtService;
@@ -45,8 +50,6 @@ public class UserAuthenticationServiceGoogleTest {
     private UserService userService;
     @Mock
     private GoogleOAuthService googleOAuthService;
-    @Mock
-    private NoteService noteService;
 
     @InjectMocks
     private UserAuthenticationService authService;
@@ -74,7 +77,8 @@ public class UserAuthenticationServiceGoogleTest {
 
     @Test
     public void testAuthenticateGoogle_NewUser() {
-        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri")).thenReturn("id-token");
+        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri"))
+                .thenReturn("id-token");
         when(googleOAuthService.verifyIdToken("id-token")).thenReturn(tokenPayload);
         when(userRepository.findByGoogleId("google-sub-123")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("test@gmail.com")).thenReturn(null);
@@ -82,7 +86,8 @@ public class UserAuthenticationServiceGoogleTest {
         com.urva.myfinance.coinTrack.user.model.PendingRegistration pending = new com.urva.myfinance.coinTrack.user.model.PendingRegistration();
         pending.setTempToken("temp-token-xyz");
 
-        when(userService.upsertPendingGoogleRegistration("google-sub-123", "test@gmail.com", "Google User"))
+        when(userService.upsertPendingGoogleRegistration(
+                "google-sub-123", "test@gmail.com", "Google User"))
                 .thenReturn(pending);
 
         LoginResponse response = authService.authenticateGoogle("auth-code", "redirect-uri", "device", "ip");
@@ -103,14 +108,13 @@ public class UserAuthenticationServiceGoogleTest {
         when(userService.getPendingRegistrationByGoogleId("google-sub-123")).thenReturn(pending);
 
         when(userRepository.existsByUsername("new_username")).thenReturn(false);
-        when(userService.getPendingRegistrationUser("new_username")).thenReturn(null);
-        when(userRepository.existsByPhoneNumber(anyString())).thenReturn(false);
         when(passwordEncoder.encode("Password123!")).thenReturn("hashed-pwd");
 
-        when(jwtService.generateTempToken("new_username", "TOTP_REGISTRATION")).thenReturn("totp-token-123");
+        when(jwtService.generateTempToken("new_username", "TOTP_REGISTRATION"))
+                .thenReturn("totp-token-123");
 
-        CompleteProfileRequest request = new CompleteProfileRequest("temp-token-xyz", "new_username", "New Name",
-                LocalDate.of(1995, 5, 5));
+        CompleteProfileRequest request = new CompleteProfileRequest(
+                "temp-token-xyz", "new_username", "New Name", LocalDate.of(1995, 5, 5));
         request.setPassword("Password123!");
         request.setConfirmPassword("Password123!");
         request.setPhoneNumber("9876543210");
@@ -152,7 +156,8 @@ public class UserAuthenticationServiceGoogleTest {
         when(userService.completePendingRegistration(pendingUser)).thenReturn(savedUser);
 
         when(jwtService.generateToken(savedUser)).thenReturn("final-access-token");
-        when(jwtService.generateRefreshToken(eq("real-user-id"), any(), any())).thenReturn("final-refresh-token");
+        when(jwtService.generateRefreshToken(eq("real-user-id"), any(), any()))
+                .thenReturn("final-refresh-token");
 
         // Act
         LoginResponse response = authService.completeRegistrationWithTotp(tempToken, totpCode, "device", "ip");
@@ -179,20 +184,22 @@ public class UserAuthenticationServiceGoogleTest {
                 .totpEnabled(false)
                 .build();
 
-        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri")).thenReturn("id-token");
+        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri"))
+                .thenReturn("id-token");
         when(googleOAuthService.verifyIdToken("id-token")).thenReturn(tokenPayload);
         when(userRepository.findByGoogleId("google-sub-123")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("test@gmail.com")).thenReturn(localUser);
         when(userRepository.save(any(User.class))).thenReturn(localUser);
-        when(jwtService.generateToken(any(User.class))).thenReturn("access-token-123");
-        when(jwtService.generateRefreshToken(eq("local123"), any(), any())).thenReturn("refresh-token-123");
+        when(jwtService.generateTempToken(eq(localUser), eq("TOTP_SETUP"), anyInt()))
+                .thenReturn("setup-temp-token-123");
 
         LoginResponse response = authService.authenticateGoogle("auth-code", "redirect-uri", "device", "ip");
 
         assertNotNull(response);
         assertEquals(AuthProvider.GOOGLE, localUser.getAuthProvider());
         assertEquals("google-sub-123", localUser.getGoogleId());
-        assertEquals("access-token-123", response.getToken());
+        assertTrue(response.getRequireTotpSetup());
+        assertEquals("setup-temp-token-123", response.getTempToken());
     }
 
     @Test
@@ -207,7 +214,8 @@ public class UserAuthenticationServiceGoogleTest {
                 .username("existing_user")
                 .build();
 
-        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri")).thenReturn("id-token");
+        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri"))
+                .thenReturn("id-token");
         when(googleOAuthService.verifyIdToken("id-token")).thenReturn(tokenPayload);
         when(userRepository.findByGoogleId("google-sub-123")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("test@gmail.com")).thenReturn(localUser);
@@ -220,29 +228,30 @@ public class UserAuthenticationServiceGoogleTest {
     }
 
     @Test
-    public void testAuthenticateGoogle_TotpBypass_Success() {
+    public void testAuthenticateGoogle_TotpDisabled_RequiresTotpSetup() {
         User googleExisting = User.builder()
                 .id("user123")
                 .authProvider(AuthProvider.GOOGLE)
                 .googleId("google-sub-123")
-                .totpEnabled(false) // TOTP disabled
+                .totpEnabled(false) // TOTP disabled -> mandatory setup
                 .build();
 
-        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri")).thenReturn("id-token");
+        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri"))
+                .thenReturn("id-token");
         when(googleOAuthService.verifyIdToken("id-token")).thenReturn(tokenPayload);
         when(userRepository.findByGoogleId("google-sub-123")).thenReturn(Optional.of(googleExisting));
-        when(jwtService.generateToken(any(User.class))).thenReturn("access-token-123");
-        when(jwtService.generateRefreshToken(eq("user123"), any(), any())).thenReturn("refresh-token-123");
+        when(jwtService.generateTempToken(eq(googleExisting), eq("TOTP_SETUP"), anyInt()))
+                .thenReturn("setup-temp-token-123");
 
         LoginResponse response = authService.authenticateGoogle("auth-code", "redirect-uri", "device", "ip");
 
         assertNotNull(response);
-        assertEquals("access-token-123", response.getToken());
-        assertNull(response.getTempToken());
+        assertTrue(response.getRequireTotpSetup());
+        assertEquals("setup-temp-token-123", response.getTempToken());
     }
 
     @Test
-    public void testAuthenticateGoogle_WithTotpEnabled_BypassesTotp() {
+    public void testAuthenticateGoogle_WithTotpEnabled_RequiresTotpVerification() {
         User googleExisting = User.builder()
                 .id("user123")
                 .authProvider(AuthProvider.GOOGLE)
@@ -251,17 +260,17 @@ public class UserAuthenticationServiceGoogleTest {
                 .totpVerified(true)
                 .build();
 
-        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri")).thenReturn("id-token");
+        when(googleOAuthService.exchangeCodeForIdToken("auth-code", "redirect-uri"))
+                .thenReturn("id-token");
         when(googleOAuthService.verifyIdToken("id-token")).thenReturn(tokenPayload);
         when(userRepository.findByGoogleId("google-sub-123")).thenReturn(Optional.of(googleExisting));
-        when(jwtService.generateToken(googleExisting)).thenReturn("access-token");
-        when(jwtService.generateRefreshToken(eq("user123"), any(), any())).thenReturn("refresh-token");
+        when(jwtService.generateTempToken(eq(googleExisting), eq("TOTP_LOGIN"), anyInt()))
+                .thenReturn("login-temp-token-123");
 
         LoginResponse response = authService.authenticateGoogle("auth-code", "redirect-uri", "device", "ip");
 
         assertNotNull(response);
-        assertEquals("access-token", response.getToken());
-        assertNull(response.getTempToken());
+        assertFalse(response.getRequireTotpSetup());
+        assertEquals("login-temp-token-123", response.getTempToken());
     }
-
 }

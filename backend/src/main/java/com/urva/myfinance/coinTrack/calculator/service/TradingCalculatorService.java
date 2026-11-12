@@ -6,12 +6,10 @@ import com.urva.myfinance.coinTrack.calculator.dto.response.BrokerageResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.CalculatorResponse;
 import com.urva.myfinance.coinTrack.calculator.dto.response.MarginResponse;
 
-/**
- * Service interface for Trading Calculators.
- */
+/** Service interface for Trading Calculators. */
 public interface TradingCalculatorService {
 
-    CalculatorResponse<BrokerageResponse> calculateBrokerage(BrokerageRequest request, boolean debug);
+  CalculatorResponse<BrokerageResponse> calculateBrokerage(BrokerageRequest request, boolean debug);
 
-    CalculatorResponse<MarginResponse> calculateMargin(MarginRequest request, boolean debug);
+  CalculatorResponse<MarginResponse> calculateMargin(MarginRequest request, boolean debug);
 }

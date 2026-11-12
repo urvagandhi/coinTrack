@@ -29,7 +29,7 @@ Interest is accrued independently for the **EPF Balance** and the **EPS Balance*
 - EPFO declares interest rates per financial year (e.g. 8.25% for FY 2025-26). Rates are stored dynamically in the `epf_interest_rates` database collection rather than hardcoded.
 
 ### 4. Recalculation Cascade (`EpfBalanceRecalculationService`)
-- Editing or deleting a past transaction automatically recomputes both running `epfBalance` and `epsBalance` ledgers. Throws `InsufficientEpfBalanceException` (400 Bad Request) if any transaction date results in a negative balance.
+- Editing or deleting a past transaction automatically recomputes both running `epfBalance` and `epsBalance` ledgers. Throws `InsufficientEpfBalanceException` (module-local `epf/exception/`, 400 Bad Request — relocated from common.exception 2026-08-26) if any transaction date results in a negative balance.
 
 ### 5. Taxability Indicator
 - Surfaces `taxableInterestFlag: boolean` on the summary DTO if total employee contributions + VPF in the current financial year exceed **₹2,50,000**.
@@ -38,9 +38,15 @@ Interest is accrued independently for the **EPF Balance** and the **EPS Balance*
 
 ## Database Collections
 
-1. **`epf_settings`**: Per-user configuration (`defaultBasicDA`, `employeeContributionRate`, `useActualSalaryForEps`, `monthlyVpfAmount`).
-2. **`epf_transactions`**: Individual monthly or ad-hoc ledger entries.
-3. **`epf_interest_rates`**: Reference table mapping financial years (e.g. `2025-26`) to interest percentage rates.
+1. **`epf_transactions`**: Individual monthly or ad-hoc ledger entries.
+2. **User-embedded settings**: Per-user configuration (`defaultBasicDA`,
+   `employeeContributionRate`, `useActualSalaryForEps`, `monthlyVpfAmount`) lives in an
+   `EpfSettingsEmbed` object **embedded in the `users` document** — not a separate
+   `epf_settings` collection.
+3. **Interest rates**: FY reference rates load from YAML config (`configs/epf-rates.yml`
+   via `EpfInterestRateConfig`) — **not** a database collection. Earlier revisions
+   describing `epf_settings` / `epf_interest_rates` collections are outdated
+   (verified against source 2026-08-23).
 
 ---
 
@@ -57,3 +63,12 @@ Base path: `/api/epf` (JWT authenticated)
 | GET / PUT / DELETE | `/api/epf/transactions/{id}` | Single transaction operations (edits/deletes trigger balance recalculation) |
 | GET | `/api/epf/summary` | Dashboard summary metrics (EPF & EPS balances, totals, live accrued interest, tax flag) |
 | GET | `/api/epf/export` | Export filtered transactions to styled Excel (XLSX) with perfect UI-parity |
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/EpfUserDataCleanupListener.java` listens for common's `UserDeletedEvent` and
+deletes **all** EPF ledger transactions via the newly added
+`EpfTransactionRepository.deleteByUserId(String)`. EPF settings are embedded in the user
+document and are removed with the account itself.

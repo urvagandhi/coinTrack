@@ -6,15 +6,16 @@
 
 <p align="center">
   <strong>Multi-broker portfolio tracker for the Indian stock market</strong><br/>
-  Aggregate holdings across Zerodha, Angel One & Upstox — with mandatory 2FA, encrypted credential storage, and 41+ financial calculators.
+  Aggregate holdings across Zerodha, Angel One & Upstox — with mandatory MFA, encrypted credential storage, and 33 financial calculators.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Java-21-orange?logo=openjdk" alt="Java 21" />
+  <img src="https://img.shields.io/badge/Java-25-orange?logo=openjdk" alt="Java 25" />
   <img src="https://img.shields.io/badge/Spring%20Boot-3.5.5-brightgreen?logo=springboot" alt="Spring Boot" />
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs" alt="Next.js" />
   <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb" alt="MongoDB" />
   <img src="https://img.shields.io/badge/Swagger-OpenAPI_3-85EA2D?logo=swagger" alt="Swagger" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker" alt="Docker Ready" />
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="License" />
 </p>
 
@@ -28,7 +29,9 @@
 - [Tech Stack](#tech-stack)
 - [Features](#features)
 - [Project Structure](#project-structure)
+- [Docker Containerization](#docker-containerization)
 - [Getting Started](#getting-started)
+
 - [Environment Variables](#environment-variables)
 - [Deployment](#deployment)
 - [API Documentation (Swagger)](#api-documentation-swagger)
@@ -53,7 +56,7 @@ coinTrack is a production-grade personal finance platform built for Indian retai
 | Broker sessions expire daily              | Auto-detection + one-click reconnect flow                       |
 | No free tool for MF + equity in one view  | Holdings, positions, mutual funds, SIPs — all in one screen    |
 | Manual P&L tracking in spreadsheets       | Real-time day gain, unrealized P&L, cost basis from broker APIs |
-| Financial planning scattered across sites | 41 built-in calculators (SIP, EMI, tax, NPS, retirement, etc.)  |
+| Financial planning scattered across sites | 33 built-in calculators (SIP, EMI, tax, NPS, retirement, etc.)  |
 
 ---
 
@@ -88,7 +91,7 @@ graph TB
             PS["Portfolio<br/>Summary"]
             PA["Portfolio<br/>Aggregation"]
             SS["Sync<br/>Scheduler"]
-            TS["TOTP<br/>Service"]
+            TS["MFA<br/>Service"]
             JS["JWT<br/>Service"]
         end
 
@@ -133,9 +136,9 @@ graph TD
     COMMON["common/<br/>utils, exceptions, config"]
 
     COMMON --> SECURITY["security/<br/>JWT, filters, config"]
-    COMMON --> USER["user/<br/>auth, profile, TOTP"]
+    COMMON --> USER["user/<br/>auth, profile, MFA"]
     COMMON --> EMAIL["email/<br/>Brevo, templates"]
-    COMMON --> CALC["calculator/<br/>41 financial tools"]
+    COMMON --> CALC["calculator/<br/>33 financial tools"]
 
     SECURITY --> BROKER["broker/<br/>hexagonal adapters"]
     USER --> NOTES["notes/<br/>journal CRUD"]
@@ -175,13 +178,14 @@ sequenceDiagram
     B->>DB: Move to users collection
     B-->>C: 200 "Email verified"
 
-    Note over C,E: Login (2FA Mandatory)
+    Note over C,E: Login (MFA Mandatory)
     C->>B: POST /api/auth/login {email, password}
-    B->>DB: Verify credentials
+    B->>DB: findByIdentifier(...) — single $or query (1 RTT)
+    B->>B: Direct timing-safe BCrypt (constant-time, no provider re-fetch)
     B-->>C: 200 {totpRequired: true}
 
     C->>B: POST /api/auth/login {email, password, totpCode}
-    B->>B: Verify TOTP code
+    B->>B: Verify MFA code
     B->>DB: Create refresh token
     B-->>C: 200 {accessToken, refreshToken}
 
@@ -206,19 +210,19 @@ sequenceDiagram
     participant DB as MongoDB
 
     Note over C,DB: Step 1 — Save Credentials
-    C->>B: POST /api/broker/zerodha/credentials<br/>{apiKey, apiSecret}
+    C->>B: POST /api/brokers/zerodha/credentials<br/>{apiKey, apiSecret}
     B->>B: encrypt(apiSecret) with AES-256-GCM
     B->>DB: Save BrokerAccount
     B-->>C: 200 "Credentials saved"
 
     Note over C,DB: Step 2 — OAuth Connect
-    C->>B: GET /api/broker/zerodha/connect
+    C->>B: GET /api/brokers/zerodha/connect
     B-->>C: 302 Redirect to kite.zerodha.com/connect/login
 
     C->>Z: User logs in on Zerodha
     Z-->>C: Redirect to callback?request_token=xxx
 
-    C->>B: POST /api/broker/callback {requestToken}
+    C->>B: POST /api/brokers/callback {requestToken}
     B->>Z: POST /session/token (exchange)
     Z-->>B: {access_token}
     B->>B: encrypt(access_token)
@@ -288,18 +292,18 @@ flowchart LR
 
 | Technology            | Version  | Purpose                                      |
 | --------------------- | -------- | -------------------------------------------- |
-| Java                  | 21 (LTS) | Runtime                                      |
+| Java                  | 25       | Runtime                                      |
 | Spring Boot           | 3.5.5    | Application framework                        |
 | Spring Security       | 6.5.x    | Authentication & authorization               |
 | Spring Data MongoDB   | 4.x      | Database access                              |
 | Spring WebFlux        | 6.x      | Non-blocking HTTP client (broker APIs)       |
 | SpringDoc OpenAPI     | 2.x      | **Swagger UI** — interactive API docs |
 | JJWT                  | 0.12.5   | JWT token signing & validation               |
-| TOTP (dev.samstevens) | 1.7.1    | Time-based One-Time Password                 |
+| MFA (dev.samstevens) | 1.7.1    | Time-based One-Time Password                 |
 | BouncyCastle          | 1.78     | AES-256-GCM encryption                       |
 | Bucket4j              | 8.x      | Rate limiting                                |
 | Caffeine              | 3.x      | In-memory cache (JWT blacklist)              |
-| ZXing                 | 3.5.3    | QR code generation for 2FA setup             |
+| ZXing                 | 3.5.3    | QR code generation for MFA setup             |
 | Brevo API             | REST     | Transactional email delivery                 |
 | Maven                 | 3.9.9    | Build & dependency management                |
 
@@ -348,7 +352,7 @@ flowchart LR
 - **Gold & Silver** — Physical metal tracking with live purity-based market rates.
 - **EPF & EPS** — Statutory provident fund ledger with dual-balance interest simulation.
 - **PPF** — Public Provident Fund ledger with strict withdrawal and maturity rules enforcement.
-- **Fixed Deposits** — Track FDs across banks with live maturity status and Excel export.
+- **Fixed Deposits** — Track FDs across banks with live maturity status, bank-aware premature-withdrawal penalty, and Excel export.
 
 ### Broker Integration
 
@@ -392,15 +396,16 @@ graph LR
 
 ### Security
 
-- **Mandatory 2FA** — TOTP-based (Google Authenticator, Authy)
-- **Google SSO** — One-click login and registration with Google OAuth2
+- **Mandatory MFA** — MFA-based (Google Authenticator, Authy)
+- **Google SSO** — One-click login and registration with Google OAuth2 (JWKS signing keys cached: 12h TTL, atomic swap, single-flight refresh — no per-login cert fetch)
 - **10 backup codes** — One-time recovery codes generated at setup
 - **AES-256-GCM encryption** — All broker API secrets and access tokens encrypted at rest
 - **JWT authentication** — Stateless auth with refresh token rotation
+- **Fast login** — Identifier resolved in a single `$or` query + one direct timing-safe BCrypt verification
 - **Rate limiting** — Brute-force protection on login and sensitive endpoints
 - **Request correlation** — Every request tagged with a unique ID (MDC logging)
 
-### Financial Calculators (41 tools)
+### Financial Calculators (33 backend endpoints · 32 UI pages)
 
 | Category             | Calculators                                                                    |
 | -------------------- | ------------------------------------------------------------------------------ |
@@ -468,7 +473,7 @@ coinTrack/
 │   │   ├── epf/                                # Employees' Provident Fund (EPF) Ledger module
 │   │   ├── goldsilver/                         # Gold & Silver module
 │   │   ├── mutualfund/                         # Mutual Fund module
-│   │   ├── calculator/                         # 41 financial calculators (6 controllers)
+│   │   ├── calculator/                         # 33 financial calculators (6 controllers)
 │   │   └── common/                             # Shared: EncryptionUtil, GlobalExceptionHandler, SequenceGeneratorService, CsvExportUtil
 │   │
 │   ├── src/main/resources/
@@ -482,15 +487,15 @@ coinTrack/
 │
 ├── frontend/                                   # Next.js 16 App
 │   ├── src/app/
-│   │   ├── (access)/                           # Public: login, register, forgot-password, 2FA
+│   │   ├── (access)/                           # Public: login, register, forgot-password, MFA
 │   │   ├── (main)/                             # Protected: dashboard, portfolio, brokers, notes
 │   │   │   ├── dashboard/                      #   Portfolio overview with P&L cards
 │   │   │   ├── portfolio/                      #   Tabbed view: holdings, positions, MF, orders
 │   │   │   ├── brokers/                        #   Zerodha, AngelOne, Upstox setup & dashboards
 │   │   │   ├── notes/                          #   Investment journal
 │   │   │   ├── profile/                        #   User profile
-│   │   │   └── settings/                       #   2FA settings
-│   │   └── calculators/                        # 41 calculator pages (public, no auth)
+│   │   │   └── settings/                       #   MFA settings
+│   │   └── calculators/                        # 32 calculator pages (public, no auth)
 │   │       ├── investment/                     #   SIP, lumpsum, CAGR, XIRR, etc.
 │   │       ├── loans/                          #   EMI, compound interest, etc.
 │   │       ├── savings/                        #   PPF, NPS, FD, RD, SSY, etc.
@@ -510,13 +515,38 @@ coinTrack/
 
 ---
 
+## Docker Containerization
+
+The fastest way to spin up the entire **coinTrack** application stack (MongoDB + Spring Boot Backend + Next.js Frontend) is using Docker Compose.
+
+```bash
+# 1. Clone repo & navigate to directory
+git clone https://github.com/urvagandhi/coinTrack.git
+cd coinTrack
+
+# 2. Copy docker environment template
+cp .env.docker.example .env
+
+# 3. Launch full stack containers
+docker compose up -d --build
+```
+
+- **Frontend Dashboard:** [http://localhost:3000](http://localhost:3000)
+- **Backend API:** [http://localhost:8080](http://localhost:8080)
+- **Backend Health Check:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+
+📖 **For complete production deployment guides, security hardening, environment matrices, and troubleshooting, see [DOCKER.md](file:///media/urva/Personal/Technical/Projects%20&%20Hackathons/Urva/coinTrack/DOCKER.md).**
+
+---
+
 ## Getting Started
+
 
 ### Prerequisites
 
 | Tool     | Version       | Download                                    |
 | -------- | ------------- | ------------------------------------------- |
-| Java JDK | 21+           | [Eclipse Temurin](https://adoptium.net/)     |
+| Java JDK | 25+           | [Eclipse Temurin](https://adoptium.net/)     |
 | Node.js  | 18.17+        | [nodejs.org](https://nodejs.org/)            |
 | npm      | 9+            | Included with Node.js                       |
 | MongoDB  | 7+ (or Atlas) | [mongodb.com](https://www.mongodb.com/atlas) |
@@ -547,7 +577,6 @@ totp.encryption-key=<64-character-hex-key>
 
 brevo.api-key=<your-brevo-api-key>
 
-zerodha.redirect.url=http://localhost:3000/brokers/zerodha/callback
 frontend.url=http://localhost:3000
 app.cors.allowed-origins=http://localhost:3000
 EOF
@@ -617,7 +646,7 @@ openssl rand -hex 32
 # Encryption Key (32 characters)
 openssl rand -base64 24
 
-# TOTP Encryption Key (64 hex characters)
+# MFA Encryption Key (64 hex characters)
 openssl rand -hex 32
 ```
 
@@ -633,13 +662,19 @@ openssl rand -hex 32
 | `MONGODB_DB`            | No       | Database name (default:`Finance`) | `Finance`                          |
 | `JWT_SECRET`            | Yes      | 256-bit signing key (hex)           | `a1b2c3d4...` (64 chars)           |
 | `ENCRYPTION_SECRET_KEY` | Yes      | AES-256 key (exactly 32 chars)      | `mySecretKey12345678901234567890`  |
-| `TOTP_ENCRYPTION_KEY`   | Yes      | TOTP encryption key (64 hex chars)  | `a1b2c3...`                        |
+| `TOTP_ENCRYPTION_KEY`   | Yes      | MFA encryption key (64 hex chars)  | `a1b2c3...`                        |
+| `EMAIL_MAGIC_LINK_SECRET` | Yes    | JWT secret for email magic links    | (random 32+ chars)                 |
 | `BREVO_API_KEY`         | Yes      | Brevo email API key                 | `xkeysib-...`                      |
+| `GOLDAPI_KEY`           | For live metal rates | GoldAPI.io API key (alias: `GOLD_API_KEY`) | `goldapi-...` |
 | `FRONTEND_URL`          | Yes      | Frontend origin for emails/links    | `http://localhost:3000`            |
 | `CORS_ALLOWED_ORIGINS`  | Yes      | Allowed CORS origins                | `http://localhost:3000`            |
-| `ZERODHA_REDIRECT_URL`  | No       | Zerodha OAuth callback              | `.../brokers/zerodha/callback`     |
-| `ANGELONE_REDIRECT_URL` | No       | Angel One OAuth callback            | `.../brokers/angelone/callback`    |
-| `UPSTOX_REDIRECT_URL`   | No       | Upstox OAuth callback               | `.../brokers/upstox/callback`      |
+| `GOOGLE_CLIENT_ID`      | For Google SSO | Google OAuth client ID         | `...apps.googleusercontent.com`    |
+| `GOOGLE_CLIENT_SECRET`  | For Google SSO | Google OAuth client secret     | `GOCSPX-...`                       |
+| `GOOGLE_REDIRECT_URI`   | For Google SSO | Google OAuth redirect          | `http://localhost:3000/login`      |
+
+> The legacy `ZERODHA_REDIRECT_URL` / `ANGELONE_REDIRECT_URL` / `UPSTOX_REDIRECT_URL`
+> variables were removed — no code reads them. Zerodha's OAuth callback goes to the backend
+> bridge at `/zerodha/callback`; Upstox uses a per-user redirectUri saved with credentials.
 
 ### Frontend (`.env.local`)
 
@@ -757,32 +792,33 @@ graph LR
 | `POST` | `/api/auth/register`        | Public | Register new user                  |
 | `POST` | `/api/auth/google`          | Public | Google SSO Login/Registration      |
 | `GET`  | `/api/auth/verify`          | Public | Verify email token                 |
-| `POST` | `/api/auth/login`           | Public | Login (returns JWT or TOTP prompt) |
+| `POST` | `/api/auth/login`           | Public | Login (returns JWT or MFA prompt) |
 | `POST` | `/api/auth/refresh`         | Public | Refresh JWT token                  |
 | `POST` | `/api/auth/logout`          | JWT    | Invalidate token                   |
 | `POST` | `/api/auth/forgot-password` | Public | Send reset email                   |
 | `POST` | `/api/auth/reset-password`  | Public | Reset with token                   |
 
-### User & 2FA
+### User & MFA
 
 | Method   | Endpoint                          | Auth | Description                    |
 | -------- | --------------------------------- | ---- | ------------------------------ |
-| `GET`  | `/api/user/profile`             | JWT  | Get user profile               |
-| `PUT`  | `/api/user/profile`             | JWT  | Update profile                 |
-| `POST` | `/api/totp/setup`               | JWT  | Generate TOTP secret + QR code |
-| `POST` | `/api/totp/verify`              | JWT  | Verify TOTP code               |
-| `POST` | `/api/totp/backup-codes/verify` | JWT  | Verify backup code             |
-| `GET`  | `/api/totp/backup-codes`        | JWT  | Get remaining backup codes     |
+| `GET`  | `/api/users/me`                 | JWT  | Get user profile               |
+| `PUT`  | `/api/users/me`                 | JWT  | Update profile                 |
+| `POST` | `/api/auth/mfa/setup`           | JWT  | Generate TOTP secret + QR code |
+| `POST` | `/api/auth/mfa/verify`          | JWT  | Verify MFA code (setup)       |
+| `POST` | `/api/auth/api/auth/mfa/login`          | JWT  | Complete login with MFA       |
+| `POST` | `/api/auth/login/recovery`      | JWT  | Login with backup code         |
+| `GET`  | `/api/auth/mfa/status`          | JWT  | Get MFA status                 |
 
 ### Broker
 
 | Method     | Endpoint                             | Auth | Description           |
 | ---------- | ------------------------------------ | ---- | --------------------- |
-| `POST`   | `/api/broker/{broker}/credentials` | JWT  | Save API key/secret   |
-| `GET`    | `/api/broker/{broker}/connect`     | JWT  | Get OAuth login URL   |
-| `POST`   | `/api/broker/callback`             | JWT  | Handle OAuth callback |
-| `GET`    | `/api/broker/status`               | JWT  | All broker statuses   |
-| `DELETE` | `/api/broker/{broker}/disconnect`  | JWT  | Disconnect broker     |
+| `POST`   | `/api/brokers/{broker}/credentials` | JWT  | Save API key/secret   |
+| `GET`    | `/api/brokers/{broker}/connect`     | JWT  | Get OAuth login URL   |
+| `POST`   | `/api/brokers/callback`             | JWT  | Handle OAuth callback |
+| `GET`    | `/api/brokers/{broker}/status`      | JWT  | Broker status         |
+| `POST`   | `/api/brokers/angelone/disconnect`  | JWT  | Disconnect Angel One  |
 
 ### Portfolio
 
@@ -813,7 +849,12 @@ graph LR
 | `GET`    | `/api/fixed-deposits/export`     | JWT  | Export filtered FDs to 14-column Excel (.xlsx)                  |
 | `GET`    | `/api/fixed-deposits/{id}`       | JWT  | Get single FD by ID                                             |
 | `PUT`    | `/api/fixed-deposits/{id}`       | JWT  | Update FD details                                               |
-| `PATCH`  | `/api/fixed-deposits/{id}/close` | JWT  | Mark FD as CLOSED (sticky override)                             |
+| `POST`   | `/api/fixed-deposits/{id}/withdraw` | JWT  | Premature withdrawal (bank-aware penalty, persists economics)     |
+| `POST`   | `/api/fixed-deposits/{id}/withdraw/preview` | JWT  | Dry-run premature-withdrawal penalty preview (no persist)    |
+| `PUT`    | `/api/fixed-deposits/{id}/withdraw` | JWT  | Edit an existing premature withdrawal (recompute + persist)      |
+| `PUT`    | `/api/fixed-deposits/{id}/withdraw/preview` | JWT  | Dry-run penalty preview for an edited withdrawal (no persist) |
+| `GET`    | `/api/fixed-deposits/{id}/tds`   | JWT  | TDS computation for a single FD                                  |
+| `GET`    | `/api/fixed-deposits/tds-summary` | JWT | Aggregated TDS summary across holdings                            |
 | `DELETE` | `/api/fixed-deposits/{id}`       | JWT  | Delete FD                                                       |
 
 > **Key FD Module Features:**
@@ -822,6 +863,7 @@ graph LR
 > - **6-Mode Sorting Engine**: `maturityDate:asc`, `maturityDate:desc`, `issueDate:desc`, `issueDate:asc` (Export Default), `issueAmount:desc`, `issueAmount:asc`.
 > - **Excel (XLSX) Export Formatting**: 14-column output via `ExcelExportUtil` with bold headers, right alignment, and auto column widths. Formats `Days To Maturity` as `-` for matured/due/closed FDs.
 > - **Dual View UI**: Switch seamlessly between Card Grid View (`FdCard`) and Financial Table View (`FdTable`).
+> - **Bank-Aware Premature Withdrawal**: penalty rate derived per bank/type (`BankPenaltyResolver`, all ~1,511 banks) with a manual override clamped to `[0, interestRate]`; economics (`withdrawalDate`, `realizedMaturityAmount`, `penaltyAmount`, `effectiveRateApplied`, `penaltyRateApplied`) persisted and editable via `PUT /{id}/withdraw`.
 
 ### Public Provident Fund (PPF)
 
@@ -896,7 +938,7 @@ graph LR
 | `POST` | `/api/calculators/savings/ppf`        | PPF maturity                   |
 | `POST` | `/api/calculators/savings/nps`        | NPS projection                 |
 | `POST` | `/api/calculators/tax/income-tax`     | Income tax estimator           |
-| ...      | `/api/calculators/**`                 | **41 calculators total** |
+| ...      | `/api/calculators/**`                 | **33 calculators total** |
 
 > Full interactive docs with request/response schemas available at **[Swagger UI](#api-documentation-swagger)**.
 
@@ -940,7 +982,7 @@ graph LR
 ```mermaid
 stateDiagram-v2
     [*] --> Unauthenticated
-    Unauthenticated --> Active: Login + 2FA
+    Unauthenticated --> Active: Login + MFA
     Active --> Expired: Token TTL expires
     Active --> Blacklisted: Logout
     Expired --> Active: Refresh token
@@ -1035,7 +1077,7 @@ graph TD
 
 ## Calculator Suite
 
-All 41 calculators are **publicly accessible** (no login required) and **rate-limited** to prevent abuse.
+All 33 calculators are **publicly accessible** (no login required) and **rate-limited** to prevent abuse.
 
 ### Investment Calculators
 
@@ -1105,6 +1147,6 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ---
 
 <p align="center">
-  Built with Java 21, Spring Boot, Next.js, and MongoDB<br/>
+  Built with Java 25, Spring Boot, Next.js, and MongoDB<br/>
   <sub>Designed for Indian retail investors</sub>
 </p>

@@ -1,21 +1,19 @@
 package com.urva.myfinance.coinTrack.broker.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.mongodb.core.mapping.Document;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @NoArgsConstructor
@@ -23,176 +21,180 @@ import lombok.NoArgsConstructor;
 @Builder
 @Document(collection = "broker_accounts")
 public class BrokerAccount {
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String userId; // Reference to internal user
+  @Indexed private String userId; // Reference to internal user
 
-    private String brokerUserId; // Broker-specific user ID
+  private String brokerUserId; // Broker-specific user ID
 
-    private Broker broker;
+  private String dematAccount; // Demat BOID (16 digits)
 
-    private String zerodhaApiKey;
+  private String accountHolder; // Account holder full name from broker profile
 
-    @JsonIgnore
-    private String encryptedZerodhaApiSecret;
+  private String email; // Broker registered email
 
-    // Zerodha session tokens
-    @JsonIgnore
-    private String zerodhaAccessToken;
+  private Broker broker;
 
-    @JsonIgnore
-    private String zerodhaPublicToken;
+  private String zerodhaApiKey;
 
-    private LocalDateTime zerodhaTokenCreatedAt;
+  @JsonIgnore private String encryptedZerodhaApiSecret;
 
-    private LocalDateTime zerodhaTokenExpiresAt;
+  // Zerodha session tokens
+  @JsonIgnore private String zerodhaAccessToken;
 
-    // Upstox OAuth2 client credentials
-    private String upstoxApiKey;
+  @JsonIgnore private String zerodhaPublicToken;
 
-    @JsonIgnore
-    private String encryptedUpstoxApiSecret;
+  private LocalDateTime zerodhaTokenCreatedAt;
 
-    private String upstoxRedirectUri;
+  private LocalDateTime zerodhaTokenExpiresAt;
 
-    // AngelOne direct-login credentials (clientCode + MPIN + TOTP-seed flow).
-    // AngelOne has no OAuth redirect; the backend stores the TOTP seed and
-    // generates a live OTP at /connect time.
-    private String angelOneApiKey;
+  // Upstox OAuth2 client credentials
+  private String upstoxApiKey;
 
-    private String angelOneClientCode;
+  @JsonIgnore private String encryptedUpstoxApiSecret;
 
-    @JsonIgnore
-    private String encryptedAngelOnePassword;
+  private String upstoxRedirectUri;
 
-    @JsonIgnore
-    private String encryptedAngelOneTotpSecret;
+  // AngelOne direct-login credentials (clientCode + MPIN + TOTP-seed flow).
+  // AngelOne has no OAuth redirect; the backend stores the TOTP seed and
+  // generates a live OTP at /connect time.
+  private String angelOneApiKey;
 
-    @JsonIgnore
-    private String encryptedAngelOneJwtToken;
+  private String angelOneClientCode;
 
-    @JsonIgnore
-    private String angelOneRefreshToken;
+  @JsonIgnore private String encryptedAngelOnePassword;
 
-    @JsonIgnore
-    private String angelOneFeedToken;
+  @JsonIgnore private String encryptedAngelOneTotpSecret;
 
-    private LocalDateTime angelOneTokenCreatedAt;
+  @JsonIgnore private String encryptedAngelOneJwtToken;
 
-    private LocalDateTime angelOneTokenExpiresAt;
+  @JsonIgnore private String angelOneRefreshToken;
 
-    @JsonIgnore
-    private String accessToken;
+  @JsonIgnore private String angelOneFeedToken;
 
-    @JsonIgnore
-    private String refreshToken;
+  private LocalDateTime angelOneTokenCreatedAt;
 
-    private ExpiryReason expiryReason;
+  private LocalDateTime angelOneTokenExpiresAt;
 
-    private LocalDateTime tokenCreatedAt;
+  @JsonIgnore private String accessToken;
 
-    private LocalDateTime tokenExpiresAt;
+  @JsonIgnore private String refreshToken;
 
-    private LocalDateTime lastSuccessfulSync;
+  private ExpiryReason expiryReason;
 
-    // Granular Sync Timestamps
-    private LocalDateTime lastHoldingsSync;
-    private LocalDateTime lastPositionsSync;
-    private LocalDateTime lastOrdersSync;
-    private LocalDateTime lastMarginSync;
-    private LocalDateTime lastMfHoldingsSync;
-    private LocalDateTime lastMfOrdersSync;
+  private LocalDateTime tokenCreatedAt;
 
-    private LocalDateTime lastUsed;
+  private LocalDateTime tokenExpiresAt;
 
-    @Builder.Default
-    private Boolean isActive = true;
+  private LocalDateTime lastSuccessfulSync;
 
-    @CreatedDate
-    private LocalDate createdAt;
+  // Granular Sync Timestamps
+  private LocalDateTime lastHoldingsSync;
+  private LocalDateTime lastPositionsSync;
+  private LocalDateTime lastOrdersSync;
+  private LocalDateTime lastMarginSync;
+  private LocalDateTime lastMfHoldingsSync;
+  private LocalDateTime lastMfOrdersSync;
 
-    @LastModifiedDate
-    private LocalDate updatedAt;
+  private LocalDateTime lastUsed;
 
-    // Utility methods
-    public boolean hasCredentials() {
-        if (Broker.ZERODHA.equals(broker)) {
-            return zerodhaApiKey != null && !zerodhaApiKey.isEmpty();
-        }
-        if (Broker.UPSTOX.equals(broker)) {
-            return upstoxApiKey != null && !upstoxApiKey.isEmpty()
-                    && encryptedUpstoxApiSecret != null && !encryptedUpstoxApiSecret.isEmpty();
-        }
-        if (Broker.ANGELONE.equals(broker)) {
-            return angelOneApiKey != null && !angelOneApiKey.isEmpty()
-                    && angelOneClientCode != null && !angelOneClientCode.isEmpty()
-                    && encryptedAngelOnePassword != null && !encryptedAngelOnePassword.isEmpty()
-                    && encryptedAngelOneTotpSecret != null && !encryptedAngelOneTotpSecret.isEmpty();
-        }
-        return accessToken != null && !accessToken.isEmpty();
+  @Builder.Default private Boolean isActive = true;
+
+  @CreatedDate private LocalDate createdAt;
+
+  @LastModifiedDate private LocalDate updatedAt;
+
+  // Utility methods
+  public boolean hasCredentials() {
+    if (Broker.ZERODHA.equals(broker)) {
+      return zerodhaApiKey != null && !zerodhaApiKey.isEmpty();
     }
-
-    public boolean hasValidToken() {
-        if (Broker.ZERODHA.equals(broker)) {
-            return zerodhaAccessToken != null && !isTokenExpired();
-        }
-        if (Broker.ANGELONE.equals(broker)) {
-            return encryptedAngelOneJwtToken != null && !isTokenExpired();
-        }
-        return accessToken != null && !isTokenExpired();
+    if (Broker.UPSTOX.equals(broker)) {
+      return upstoxApiKey != null
+          && !upstoxApiKey.isEmpty()
+          && encryptedUpstoxApiSecret != null
+          && !encryptedUpstoxApiSecret.isEmpty();
     }
-
-    public boolean isTokenExpired() {
-        if (Broker.ZERODHA.equals(broker)) {
-            if (zerodhaTokenExpiresAt == null) {
-                return true;
-            }
-            return LocalDateTime.now().isAfter(zerodhaTokenExpiresAt);
-        }
-        if (Broker.ANGELONE.equals(broker)) {
-            if (angelOneTokenExpiresAt == null) {
-                return true;
-            }
-            return LocalDateTime.now().isAfter(angelOneTokenExpiresAt);
-        }
-        if (tokenExpiresAt == null) {
-            return true;
-        }
-        return LocalDateTime.now().isAfter(tokenExpiresAt);
+    if (Broker.ANGELONE.equals(broker)) {
+      return angelOneApiKey != null
+          && !angelOneApiKey.isEmpty()
+          && angelOneClientCode != null
+          && !angelOneClientCode.isEmpty()
+          && encryptedAngelOnePassword != null
+          && !encryptedAngelOnePassword.isEmpty()
+          && encryptedAngelOneTotpSecret != null
+          && !encryptedAngelOneTotpSecret.isEmpty();
     }
+    return accessToken != null && !accessToken.isEmpty();
+  }
 
-    public Map<String, Object> getAccountStatus() {
-        Map<String, Object> status = new HashMap<>();
-        status.put("broker", broker);
-        status.put("brokerUserId", brokerUserId);
-        status.put("isActive", isActive);
-        status.put("hasCredentials", hasCredentials());
-        status.put("hasValidToken", hasValidToken());
-        status.put("isTokenExpired", isTokenExpired());
-        status.put("tokenCreatedAt", tokenCreatedAt);
-        status.put("tokenExpiresAt", tokenExpiresAt);
-        status.put("lastSuccessfulSync", lastSuccessfulSync);
-        status.put("expiryReason", expiryReason);
-
-        // Distinguish three states for the UI:
-        //  CONNECTED       — everything valid
-        //  NEEDS_RECONNECT — credentials present but Zerodha rejected the token; user just needs to redo OAuth
-        //  DISCONNECTED    — no credentials or account inactive
-        boolean needsReconnect = Boolean.TRUE.equals(isActive)
-                && hasCredentials()
-                && (expiryReason != null && expiryReason != ExpiryReason.NONE
-                    || !hasValidToken());
-        String connectionStatus;
-        if (Boolean.TRUE.equals(isActive) && hasCredentials() && hasValidToken() && !isTokenExpired()
-                && (expiryReason == null || expiryReason == ExpiryReason.NONE)) {
-            connectionStatus = "CONNECTED";
-        } else if (needsReconnect) {
-            connectionStatus = "NEEDS_RECONNECT";
-        } else {
-            connectionStatus = "DISCONNECTED";
-        }
-        status.put("connectionStatus", connectionStatus);
-        return status;
+  public boolean hasValidToken() {
+    if (Broker.ZERODHA.equals(broker)) {
+      return zerodhaAccessToken != null && !isTokenExpired();
     }
+    if (Broker.ANGELONE.equals(broker)) {
+      return encryptedAngelOneJwtToken != null && !isTokenExpired();
+    }
+    return accessToken != null && !isTokenExpired();
+  }
+
+  public boolean isTokenExpired() {
+    if (Broker.ZERODHA.equals(broker)) {
+      if (zerodhaTokenExpiresAt == null) {
+        return true;
+      }
+      return LocalDateTime.now().isAfter(zerodhaTokenExpiresAt);
+    }
+    if (Broker.ANGELONE.equals(broker)) {
+      if (angelOneTokenExpiresAt == null) {
+        return true;
+      }
+      return LocalDateTime.now().isAfter(angelOneTokenExpiresAt);
+    }
+    if (tokenExpiresAt == null) {
+      return true;
+    }
+    return LocalDateTime.now().isAfter(tokenExpiresAt);
+  }
+
+  public Map<String, Object> getAccountStatus() {
+    Map<String, Object> status = new HashMap<>();
+    status.put("broker", broker);
+    status.put("brokerUserId", brokerUserId);
+    status.put("dematAccount", dematAccount);
+    status.put("accountHolder", accountHolder);
+    status.put("email", email);
+    status.put("isActive", isActive);
+    status.put("hasCredentials", hasCredentials());
+    status.put("hasValidToken", hasValidToken());
+    status.put("isTokenExpired", isTokenExpired());
+    status.put("tokenCreatedAt", tokenCreatedAt);
+    status.put("tokenExpiresAt", tokenExpiresAt);
+    status.put("lastSuccessfulSync", lastSuccessfulSync);
+    status.put("expiryReason", expiryReason);
+
+    // Distinguish three states for the UI:
+    //  CONNECTED       — everything valid
+    //  NEEDS_RECONNECT — credentials present but Zerodha rejected the token; user just needs to
+    // redo OAuth
+    //  DISCONNECTED    — no credentials or account inactive
+    boolean needsReconnect =
+        Boolean.TRUE.equals(isActive)
+            && hasCredentials()
+            && (expiryReason != null && expiryReason != ExpiryReason.NONE || !hasValidToken());
+    String connectionStatus;
+    if (Boolean.TRUE.equals(isActive)
+        && hasCredentials()
+        && hasValidToken()
+        && !isTokenExpired()
+        && (expiryReason == null || expiryReason == ExpiryReason.NONE)) {
+      connectionStatus = "CONNECTED";
+    } else if (needsReconnect) {
+      connectionStatus = "NEEDS_RECONNECT";
+    } else {
+      connectionStatus = "DISCONNECTED";
+    }
+    status.put("connectionStatus", connectionStatus);
+    return status;
+  }
 }

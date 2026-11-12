@@ -2,83 +2,82 @@ package com.urva.myfinance.coinTrack.portfolio.dto.kite;
 
 import java.math.BigDecimal;
 import java.util.Map;
-
 import lombok.Data;
 
 @Data
 public class MutualFundOrderDTO {
-    private String orderId;
+  private String orderId;
 
-    private String fund; // Usually matches DTO field name and Zerodha key "fund" or "tradingsymbol"
+  private String fund; // Usually matches DTO field name and Zerodha key "fund" or "tradingsymbol"
 
-    private String tradingSymbol;
+  private String tradingSymbol;
 
-    private String transactionType;
+  private String transactionType;
 
-    private BigDecimal amount;
+  private BigDecimal amount;
 
-    private String status;
+  private String status;
 
-    private String executionDate;
+  private String executionDate;
 
-    private String orderTimestamp;
+  private String orderTimestamp;
 
-    private BigDecimal executedQuantity;
+  private BigDecimal executedQuantity;
 
-    private BigDecimal executedNav;
+  private BigDecimal executedNav;
 
-    private String folio;
+  private String folio;
 
-    private String variety;
+  private String variety;
 
-    private String purchaseType;
+  private String purchaseType;
 
-    private String settlementId;
+  private String settlementId;
 
-    // Raw Pass-Through
-    private Map<String, Object> raw;
+  // Raw Pass-Through
+  private Map<String, Object> raw;
 
-    // --- Meta Fields Extraction ---
+  // --- Meta Fields Extraction ---
 
-    public String getExpectedNavDate() {
-        return extractMetaDate("expected_nav_date");
+  public String getExpectedNavDate() {
+    return extractMetaDate("expected_nav_date");
+  }
+
+  public String getAllotmentDate() {
+    return extractMetaDate("allotment_date");
+  }
+
+  public String getRedemptionDate() {
+    // Try actual redemption date first, then expected
+    String date = extractMetaDate("redemption_date");
+    if (date == null) {
+      date = extractMetaDate("expected_redeem_date");
     }
+    return date;
+  }
 
-    public String getAllotmentDate() {
-        return extractMetaDate("allotment_date");
+  // --- Derived Semantic Fields ---
+
+  public boolean getIsSip() {
+    return "sip".equalsIgnoreCase(variety) || "amc_sip".equalsIgnoreCase(variety);
+  }
+
+  public String getOrderSide() {
+    if ("BUY".equalsIgnoreCase(transactionType)) {
+      return "INFLOW";
+    } else if ("SELL".equalsIgnoreCase(transactionType)) {
+      return "OUTFLOW";
     }
+    return "UNKNOWN";
+  }
 
-    public String getRedemptionDate() {
-        // Try actual redemption date first, then expected
-        String date = extractMetaDate("redemption_date");
-        if (date == null) {
-            date = extractMetaDate("expected_redeem_date");
-        }
-        return date;
+  private String extractMetaDate(String key) {
+    if (raw != null && raw.get("meta") instanceof Map) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> meta = (Map<String, Object>) raw.get("meta");
+      Object val = meta.get(key);
+      return val != null ? val.toString() : null;
     }
-
-    // --- Derived Semantic Fields ---
-
-    public boolean getIsSip() {
-        return "sip".equalsIgnoreCase(variety) || "amc_sip".equalsIgnoreCase(variety);
-    }
-
-    public String getOrderSide() {
-        if ("BUY".equalsIgnoreCase(transactionType)) {
-            return "INFLOW";
-        } else if ("SELL".equalsIgnoreCase(transactionType)) {
-            return "OUTFLOW";
-        }
-        return "UNKNOWN";
-    }
-
-    private String extractMetaDate(String key) {
-        if (raw != null && raw.get("meta") instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> meta = (Map<String, Object>) raw.get("meta");
-            Object val = meta.get(key);
-            return val != null ? val.toString() : null;
-        }
-        return null;
-    }
+    return null;
+  }
 }

@@ -4,5 +4,5 @@ import com.urva.myfinance.coinTrack.goldsilver.model.MetalRateSnapshot;
 import com.urva.myfinance.coinTrack.goldsilver.model.MetalType;
 
 public interface MetalPriceProvider {
-    MetalRateSnapshot fetchSpotRate(MetalType metalType);
+  MetalRateSnapshot fetchSpotRate(MetalType metalType);
 }

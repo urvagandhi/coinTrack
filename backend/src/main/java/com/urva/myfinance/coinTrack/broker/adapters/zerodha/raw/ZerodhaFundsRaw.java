@@ -1,75 +1,73 @@
 package com.urva.myfinance.coinTrack.broker.adapters.zerodha.raw;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ZerodhaFundsRaw {
 
-    private LocalDateTime lastSyncedAt;
-    private String source; // "CACHE" or "LIVE"
+  private LocalDateTime lastSyncedAt;
+  private String source; // "CACHE" or "LIVE"
 
-    @JsonProperty("equity")
-    private SegmentFundsDTO equity;
+  @JsonProperty("equity")
+  private SegmentFundsDTO equity;
 
-    @JsonProperty("commodity")
-    private SegmentFundsDTO commodity;
+  @JsonProperty("commodity")
+  private SegmentFundsDTO commodity;
 
-    @Data
-    public static class SegmentFundsDTO {
-        @JsonProperty("enabled")
-        private boolean enabled;
+  @Data
+  public static class SegmentFundsDTO {
+    @JsonProperty("enabled")
+    private boolean enabled;
 
-        @JsonProperty("net")
-        private BigDecimal net;
+    @JsonProperty("net")
+    private BigDecimal net;
 
-        @JsonProperty("available")
-        private Available available;
+    @JsonProperty("available")
+    private Available available;
 
-        @JsonProperty("utilised")
-        private Utilised utilised;
+    @JsonProperty("utilised")
+    private Utilised utilised;
 
-        @JsonProperty("raw")
-        private Map<String, Object> raw;
-    }
+    @JsonProperty("raw")
+    private Map<String, Object> raw;
+  }
 
-    @Data
-    public static class Available {
-        @JsonProperty("cash")
-        private BigDecimal cash;
+  @Data
+  public static class Available {
+    @JsonProperty("cash")
+    private BigDecimal cash;
 
-        @JsonProperty("collateral")
-        private BigDecimal collateral;
+    @JsonProperty("collateral")
+    private BigDecimal collateral;
 
-        @JsonProperty("intraday_payin")
-        private BigDecimal intradayPayin;
+    @JsonProperty("intraday_payin")
+    private BigDecimal intradayPayin;
 
-        @JsonProperty("opening_balance")
-        private BigDecimal openingBalance;
+    @JsonProperty("opening_balance")
+    private BigDecimal openingBalance;
 
-        @JsonProperty("live_balance")
-        private BigDecimal liveBalance;
-    }
+    @JsonProperty("live_balance")
+    private BigDecimal liveBalance;
+  }
 
-    @Data
-    public static class Utilised {
-        @JsonProperty("debits")
-        private BigDecimal debits;
+  @Data
+  public static class Utilised {
+    @JsonProperty("debits")
+    private BigDecimal debits;
 
-        @JsonProperty("exposure")
-        private BigDecimal exposure;
+    @JsonProperty("exposure")
+    private BigDecimal exposure;
 
-        @JsonProperty("span")
-        private BigDecimal span;
+    @JsonProperty("span")
+    private BigDecimal span;
 
-        @JsonProperty("option_premium")
-        private BigDecimal optionPremium;
-    }
+    @JsonProperty("option_premium")
+    private BigDecimal optionPremium;
+  }
 }

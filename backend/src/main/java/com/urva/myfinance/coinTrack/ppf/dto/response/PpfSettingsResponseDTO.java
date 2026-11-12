@@ -2,7 +2,6 @@ package com.urva.myfinance.coinTrack.ppf.dto.response;
 
 import java.time.Instant;
 import java.time.LocalDate;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,15 +13,17 @@ import lombok.NoArgsConstructor;
 @Builder
 public class PpfSettingsResponseDTO {
 
-    private String id;
+  private String id;
 
-    private String userId;
+  private String userId;
 
-    private String accountNumber;
+  private Boolean configured;
 
-    private LocalDate dateOfIssue;
+  private String accountNumber;
 
-    private String extensionMode;
+  private LocalDate dateOfIssue;
 
-    private Instant updatedAt;
+  private String extensionMode;
+
+  private Instant updatedAt;
 }

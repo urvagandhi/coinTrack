@@ -1,0 +1,16 @@
+{
+  "totalInvestment": 1500000,
+  "totalReturns": 294420.35,
+  "totalMaturityAmount": 1794420.35,
+  "totalActiveInvestment": 1000000,
+  "totalEstimatedReturns": 256052.1,
+  "totalDueInvestment": 0,
+  "totalDueReturns": 0,
+  "totalMaturedInvestment": 150000,
+  "totalMaturedReturns": 60434.1,
+  "totalFds": 6,
+  "activeFdCount": 3,
+  "maturedFdCount": 1,
+  "closedFdCount": 1,
+  "withdrawnFdCount": 1
+}

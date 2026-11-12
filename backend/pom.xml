@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project 
+	
 	xmlns="http://maven.apache.org/POM/4.0.0"
+	
 	
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -31,7 +33,7 @@
 		<url />
 	</scm>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
 		<!-- <node.version>v20.11.0</node.version><npm.version>10.2.4</npm.version> -->
 		<frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
 	</properties>
@@ -134,11 +136,6 @@
 			<artifactId>bucket4j-core</artifactId>
 			<version>8.7.0</version>
 		</dependency>
-		<!-- Caffeine cache (JWT blacklist in-memory first-pass check) -->
-		<dependency>
-			<groupId>com.github.ben-manes.caffeine</groupId>
-			<artifactId>caffeine</artifactId>
-		</dependency>
 		<!-- OpenAPI / Swagger UI -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
@@ -183,7 +180,7 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<release>21</release>
+					<release>25</release>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
@@ -205,11 +202,37 @@
 					</layers>
 				</configuration>
 			</plugin>
+			<!-- Spotless plugin for code formatting -->
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.45.0</version>
+				<configuration>
+					<java>
+						<googleJavaFormat>
+							<version>1.28.0</version>
+						</googleJavaFormat>
+						<trimTrailingWhitespace />
+						<endWithNewline />
+					</java>
+				</configuration>
+			</plugin>
+			<!-- Checkstyle plugin for code linting -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>3.5.0</version>
+				<configuration>
+					<configLocation>config/checkstyle/checkstyle.xml</configLocation>
+					<consoleOutput>true</consoleOutput>
+					<failsOnError>false</failsOnError>
+					<linkXRef>false</linkXRef>
+				</configuration>
+			</plugin>
 			<!-- Frontend Maven Plugin for React + Vite
 			<plugin><groupId>com.github.eirslett</groupId><artifactId>frontend-maven-plugin</artifactId><version>1.15.0</version><configuration><workingDirectory>frontend</workingDirectory><installDirectory>target</installDirectory></configuration><executions><execution><id>install node and npm</id><goals><goal>install-node-and-npm</goal></goals><configuration><nodeVersion>${node.version}</nodeVersion><npmVersion>${npm.version}</npmVersion></configuration></execution><execution><id>npm install</id><goals><goal>npm</goal></goals><configuration><arguments>install</arguments></configuration></execution><execution><id>npm run build</id><goals><goal>npm</goal></goals><configuration><arguments>run build</arguments></configuration></execution></executions></plugin> -->
 			<!-- Copy frontend build to Spring Boot static resources -->
 			<!-- <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-resources-plugin</artifactId><executions><execution><id>copy-frontend-build</id><phase>process-classes</phase><goals><goal>copy-resources</goal></goals><configuration><outputDirectory>${project.build.outputDirectory}/static</outputDirectory><resources><resource><directory>frontend/dist</directory></resource></resources></configuration></execution></executions></plugin> -->
 		</plugins>
 	</build>
-
 </project>

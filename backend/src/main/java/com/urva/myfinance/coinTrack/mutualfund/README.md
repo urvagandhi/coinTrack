@@ -2,8 +2,8 @@
 
 > **Domain**: Household Mutual Fund Portfolio Tracking (Multi-Holder)
 > **Responsibility**: Scheme master CRUD, lumpsum/SIP/redemption ledgers, automatic aggregation, cross-check discrepancy detection, and 5-sheet Excel (XLSX) export
-> **Version**: 1.0.0
-> **Last Updated**: 2026-07-26
+> **Version**: 1.1.0
+> **Last Updated**: 2026-08-28
 
 ---
 
@@ -60,7 +60,7 @@ structural problems:
 | **Status derivation** | `ACTIVE_SIP` / `LUMPSUM_ONLY` / `FULLY_REDEEMED` computed from live mandates and ledger balances — no manual flags |
 | **Discrepancy cross-check** | Dashboard compares latest `ValuationSnapshot.investmentValue` against ledger-derived `totalInvestment` per holder+platform bucket; flags divergence > ₹1 |
 | **LTCG/STCG tracking** | `capitalGain` auto-computed; `gainType` is user-selected (not auto-applied). Reference-only — not a tax filing tool |
-| **Multi-holder support** | `holderName` is a plain field under one `userId`; all list endpoints accept `?holderName=` filter |
+| **Multi-holder support** | `holderName` is a plain field under one `userId`; all list endpoints accept `?holderName=` filter. On-save it is **normalized via shared `common/util/HolderName.normalize`** (trim + whitespace-collapse + title-case) so `" GOPAL  das "` and `"Gopal Das"` are the same holder — owner grouping/aggregation uses the shared `common/util/OwnerGrouping.groupKey` and can never split one person's holdings (same-class bug fix, `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`) |
 | **Category normalization** | `mfCategory` trimmed and case-normalized on save (`"Multicap "` → `"Multicap"`) |
 | **Delete-block on referenced schemes** | `deleteScheme` throws if any transaction collection references the scheme — no orphaned FKs |
 | **5-sheet Excel export** | `MfExcelExportService` + `MfExcelExporter` produce a styled multi-sheet workbook |
@@ -145,6 +145,8 @@ mutualfund/
 ├── dto/
 │   ├── OverallSummaryDto.java       (dashboard totals + discrepancy reports)
 │   └── SchemeSummaryDto.java        (per-scheme aggregated view)
+├── exception/
+│   └── MissingCostBasisException.java (400 MISSING_COST_BASIS; thrown by MfFifoEngine when a redemption references units with no recorded purchase cost — relocated from common.exception 2026-08-26)
 ├── model/
 │   ├── FundStatus.java              (ACTIVE_SIP, LUMPSUM_ONLY, FULLY_REDEEMED)
 │   ├── GainType.java                (LTCG, STCG)
@@ -200,10 +202,17 @@ All responses are wrapped in the standard `ApiResponse<T>` envelope.
 
 - Normalizes `mfCategory` on every save: `trim()` + capitalize first character + lowercase remainder.
   Ensures `"Multicap "` and `"Multicap"` are stored identically.
+- Normalizes `holderName` on every save via shared `common/util/HolderName.normalize`
+  (trim + whitespace-collapse + title-case) — `setHolderName` in `createScheme`/`updateScheme`.
+  The client is never trusted to send a canonical name.
 - `deleteScheme()` queries all 4 transaction collections before deletion. If any reference the scheme,
   throws `RuntimeException("Cannot delete scheme because it has associated transactions.")`.
   This is the FK delete-block that prevents orphaned transaction records.
-- `getAllSchemes(userId, holderName)` — uses `findByUserIdAndHolderName` when `holderName` is provided.
+- `getAllSchemes(userId, holderName)` — when a `holderName` is provided it fetches
+  `findByUserId(userId)` and filters **in-memory by normalized holder**: the param is normalized and
+  compared against the canonical stored name (`HolderName.normalize(param).equals(HolderName.normalize(stored))`).
+  This makes `getAllSchemes?holderName=rahul das` match rows stored as `"RAHUL DAS"` / `"Rahul Das"`
+  (replaces the old exact-match `findByUserIdAndHolderName`, which missed case/whitespace variants).
 
 ### 5.2 `LumpsumTransactionService` / `SipMandateService` / `RedemptionTransactionService`
 
@@ -212,7 +221,10 @@ All three share the same FK enforcement pattern:
 1. `validateSchemeOwnership(userId, schemeId)` — calls `MfSchemeRepository.findById(schemeId)` and
    asserts the scheme's `userId` matches the caller. Throws if missing or mismatched.
 2. Called in both `createTransaction()` and `updateTransaction()` (when schemeId changes).
-3. `RedemptionTransactionService.createTransaction()` additionally auto-computes:
+3. `SipMandateService` additionally **normalizes `holderName` on save** (shared `HolderName.normalize`)
+   and, when the mandate's holder is blank, copies the **scheme's canonical** (already-normalized)
+   holder downstream — so a mandate never propagates a raw/un-normalized owner label.
+4. `RedemptionTransactionService.createTransaction()` additionally auto-computes:
    `capitalGain = redemptionValue - tradeInvestmentValue` (§4 rule 6 of the spec).
 
 ### 5.3 `SipContributionService` — Three-Part FK Integrity Check & Scheduling
@@ -247,7 +259,10 @@ else → LUMPSUM_ONLY
 
 `calculateOverallSummary()` additionally computes discrepancy reports:
 
-- Groups all schemes by `holderName + "|" + platform` bucket.
+- Groups all schemes / snapshots by the shared `common/util/OwnerGrouping.groupKey(platform, holderName)`
+  bucket — **not** raw string concat. This fixes the previous live **same-class bug** where un-normalized
+  names (`"  Rahul Das"`, `"Rahul  Das"`, `"RAHUL DAS"`) split one holder into different buckets and
+  produced wrong per-PAN XIRR/tax rows.
 - Finds the latest `ValuationSnapshot` per bucket.
 - Compares `snapshot.investmentValue` vs. `ledgerTotalByBucket`.
 - If difference > ₹1 tolerance: `discrepancyFlag = true`, `discrepancyAmount` (signed).
@@ -262,6 +277,7 @@ Single-responsibility service that:
 ### 5.6 `MfFifoEngine` — Accurate Capital Gains Engine
 - Simulates the chronological purchase and redemption of units using a First-In-First-Out (FIFO) queue of lots.
 - Computes Short-Term Capital Gains (STCG) vs Long-Term Capital Gains (LTCG) based on 1-year holding periods automatically upon redemption.
+- Throws `MissingCostBasisException` (module-local `exception/`, 400 MISSING_COST_BASIS) when a redemption lot has no matching purchase cost on record — surfaces as a client-facing validation error, not a 500.
 
 ### 5.7 `PortfolioHoldingService` — Advanced Metrics
 - Aggregates lumpsum, SIP, and redemption transactions to compute the user's `PortfolioHolding` per scheme.
@@ -272,6 +288,13 @@ Single-responsibility service that:
 - **NAV Service**: Responsible for fetching and applying the correct NAV value for transactions to ensure accurate mark-to-market valuations.
 
 Keeps `MfSchemeAggregationService` focused on computation only.
+
+### 5.9 `ValuationSnapshotService` — normalized read/write
+
+- `createSnapshot()` normalizes `holderName` on save via shared `HolderName.normalize`.
+- `getSnapshots(userId, holderName, platform)` fetches `findByUserId` and filters **in-memory** by the
+  normalized holder param (vs canonical stored name) and platform-equality — replacing the old exact-match
+  `findByUserIdAndHolderNameAndPlatform` (case/whitespace mismatches no longer miss snapshots).
 
 ---
 
@@ -362,12 +385,12 @@ All extend `MongoRepository<T, String>`.
 
 | Repository | Key Query Methods |
 |---|---|
-| `MfSchemeRepository` | `findByUserId`, `findByUserIdAndHolderName` |
+| `MfSchemeRepository` | `findByUserId` (holder filter is applied in-memory on normalized name — was `findByUserIdAndHolderName`) |
 | `LumpsumTransactionRepository` | `findByUserId`, `findByUserIdAndSchemeId` |
 | `SipMandateRepository` | `findByUserId`, `findByUserIdAndSchemeId`, `findByUserIdAndSchemeIdAndActiveTrue` |
 | `SipContributionRepository` | `findByUserId`, `findByUserIdAndSchemeId` |
 | `RedemptionTransactionRepository` | `findByUserId`, `findByUserIdAndSchemeId` |
-| `ValuationSnapshotRepository` | `findByUserId`, `findByUserIdAndHolderNameAndPlatform` |
+| `ValuationSnapshotRepository` | `findByUserId` (holder/platform filter applied in-memory on normalized name — was `findByUserIdAndHolderNameAndPlatform`) |
 
 ---
 
@@ -465,8 +488,9 @@ Authorization: Bearer <jwt>
 
 1. User manually enters a `ValuationSnapshot` for "Krishil | CAMS" from a broker statement.
 2. `GET /api/mutual-fund/summary` → `MfSchemeAggregationService.calculateOverallSummary()`:
-   a. Sums all scheme `totalInvestment` values where `holderName = "Krishil"` and `platform = "CAMS"`.
-   b. Fetches the latest `ValuationSnapshot` for that bucket.
+   a. Sums all scheme `totalInvestment` values bucketed by shared `OwnerGrouping.groupKey(platform, holderName)`
+      (canonical owner per platform — "Krishil" / "CAMS"), never raw string concat.
+   b. Fetches the latest `ValuationSnapshot` for that same canonical bucket.
    c. Computes `|snapshot.investmentValue - ledgerTotal|`. If > ₹1: adds a `DiscrepancyReport`.
 3. Frontend surfaces the flag so the user knows a transaction may be missing.
 
@@ -488,8 +512,29 @@ Authorization: Bearer <jwt>
 | Floating point for money/units/NAV | Strictly `BigDecimal` for all monetary and unit fields |
 | Free-typing scheme names per transaction | Always use `schemeId` — `createTransaction()` validates FK at write time |
 | `"Multicap "` vs `"Multicap"` category mismatch | `normalizeCategory()` called on every `MfScheme` save — trim + normalize casing |
+| `" Rahul Das"` vs `"RAHUL DAS"` holder-name mismatch | `holderName` normalized on save via shared `HolderName.normalize`; all grouping goes through `OwnerGrouping.groupKey` (see `local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`) |
 | `sipMandateId` pointing to wrong scheme | `SipContributionService` validates mandate `schemeId` matches contribution `schemeId` |
 | LTCG/STCG used for tax filing | These are reference-tracking fields only — not authoritative for tax computation |
 | Treating `ValuationSnapshot` as ledger data | Snapshots are independently entered cross-checks; never merged with or derived from the ledger |
 | Expecting `FULLY_REDEEMED` schemes in default list | Use `?includeRedeemed=true` to surface them |
 | `capitalGain` edited directly | It is auto-computed on every save (`redemptionValue - tradeInvestmentValue`); manual edits are overwritten |
+
+---
+
+## Account-Deletion Cascade (added 2026-08-23)
+
+`listener/MutualFundUserDataCleanupListener.java` listens for common's `UserDeletedEvent`
+and purges all user-owned MF data via new derived `deleteByUserId(String)` methods on:
+`LumpsumTransactionRepository`, `SipContributionRepository`, `SipMandateRepository`,
+`RedemptionTransactionRepository`, `ValuationSnapshotRepository`, `PortfolioHoldingRepository`,
+`MfPortfolioMetricsRepository`, then `MfSchemeRepository` **last** (FK parent). Shared NAV
+cache and LTP repositories are kept.
+
+---
+
+## Changelog
+
+| Version | Date | Changes |
+|---|---|---|
+| 1.1.0 | 2026-08-28 | **HolderName attribution fix** (`local/TODOs/TODO_HOLDERNAME_ATTRIBUTION_FIX.md`): `holderName` normalized on save everywhere (shared `common/util/HolderName.normalize`) — `MfSchemeService.create/updateScheme`, `ValuationSnapshotService.createSnapshot`, `SipMandateService.create/updateMandate` (whose blank holder now copies the scheme's canonical name downstream). Fixed the **live same-class bug** in `MfSchemeAggregationService` where raw `holderName + "|" + platform` strings bucketed un-normalized spelling variants into different per-PAN groups — now routed through shared `OwnerGrouping.groupKey(platform, holderName)`. Filters normalized on read: `MfSchemeService.getAllSchemes` and `ValuationSnapshotService.getSnapshots` compare a normalized param against canonical stored names (replacing exact-match `findByUserIdAndHolderName` / `findByUserIdAndHolderNameAndPlatform`). `PortfolioDashboardService` folio key uses `HolderName.normalize`. |
+| 1.0.0 | 2026-07-26 | Initial documentation release. |

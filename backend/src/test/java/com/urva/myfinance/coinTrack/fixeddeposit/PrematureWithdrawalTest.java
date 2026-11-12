@@ -1,0 +1,550 @@
+package com.urva.myfinance.coinTrack.fixeddeposit;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.urva.myfinance.coinTrack.common.service.TransactionSequenceService;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.request.PrematureWithdrawalRequestDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.dto.response.PrematureWithdrawalResponseDTO;
+import com.urva.myfinance.coinTrack.fixeddeposit.exception.InvalidWithdrawalException;
+// [DEPRECATED-SEC-04-05] CompoundingFrequency model import unused after Sections 04/05 removal.
+// import com.urva.myfinance.coinTrack.fixeddeposit.model.CompoundingFrequency;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.FdStatus;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.FdType;
+import com.urva.myfinance.coinTrack.fixeddeposit.model.FixedDeposit;
+import com.urva.myfinance.coinTrack.fixeddeposit.repository.FixedDepositRepository;
+import com.urva.myfinance.coinTrack.fixeddeposit.service.FixedDepositServiceImpl;
+import com.urva.myfinance.coinTrack.fixeddeposit.util.BankPenaltyResolver;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.mongodb.core.MongoTemplate;
+
+@ExtendWith(MockitoExtension.class)
+class PrematureWithdrawalTest {
+
+  @Mock private FixedDepositRepository fixedDepositRepository;
+
+  @Mock private TransactionSequenceService transactionSequenceService;
+
+  @Mock private MongoTemplate mongoTemplate;
+
+  @InjectMocks private FixedDepositServiceImpl fixedDepositService;
+
+  private FixedDeposit createActiveFd(
+      String fdId, BigDecimal principal, BigDecimal rate, boolean isTaxSaver) {
+    return FixedDeposit.builder()
+        .id(fdId)
+        .fdNo(1L)
+        .userId("user_A")
+        .place("HDFC Bank")
+        .holderName("Alice")
+        .interestRate(rate)
+        .issueDate(LocalDate.of(2024, 1, 1))
+        .maturityDate(LocalDate.of(2029, 1, 1))
+        .issueAmount(principal)
+        .maturityAmount(new BigDecimal("141477"))
+        .status(FdStatus.ACTIVE)
+        .fdType(FdType.CUMULATIVE)
+        // [DEPRECATED-SEC-04-05] compoundingFrequency / isSeniorCitizen / isTaxSaver fields were
+        // removed from the entity along with Sections 04/05; isTaxSaver param kept only so call
+        // sites remain readable.
+        // .compoundingFrequency(CompoundingFrequency.QUARTERLY)
+        // .isTaxSaver(isTaxSaver)
+        // .isSeniorCitizen(false)
+        .createdAt(Instant.now())
+        .updatedAt(Instant.now())
+        .build();
+  }
+
+  @Test
+  @DisplayName("Withdraw after 7 days, small FD (₹1L) → 0.5% penalty")
+  void testWithdrawSmallFdAfter7Days() {
+    FixedDeposit fd =
+        createActiveFd("fd_1", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    fd.setPlace("State Bank of India");
+    when(fixedDepositRepository.findByIdAndUserId("fd_1", "user_A")).thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2025, 1, 8)) // 7+ days after issue
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_1", request, "user_A");
+
+    assertNotNull(result);
+    assertEquals(0, result.getPenaltyRate().compareTo(new BigDecimal("0.50")));
+    assertTrue(result.getRealizedMaturityAmount().compareTo(BigDecimal.ZERO) > 0);
+    assertTrue(result.getPenaltyAmount().compareTo(BigDecimal.ZERO) > 0);
+    System.out.println(
+        "Small FD penalty: "
+            + result.getPenaltyAmount()
+            + ", Realized: "
+            + result.getRealizedMaturityAmount());
+  }
+
+  @Test
+  @DisplayName("Withdraw after 7 days, large FD (>₹5L) → 1% penalty")
+  void testWithdrawLargeFdAfter7Days() {
+    FixedDeposit fd =
+        createActiveFd("fd_2", new BigDecimal("600000"), new BigDecimal("7.00"), false);
+    fd.setPlace("State Bank of India");
+    when(fixedDepositRepository.findByIdAndUserId("fd_2", "user_A")).thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder().withdrawalDate(LocalDate.of(2025, 1, 8)).build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_2", request, "user_A");
+
+    assertNotNull(result);
+    assertEquals(0, result.getPenaltyRate().compareTo(new BigDecimal("1.00")));
+  }
+
+  @Test
+  @DisplayName("Withdraw before 7 days → 0 interest (effective rate = 0)")
+  void testWithdrawBefore7Days() {
+    FixedDeposit fd =
+        createActiveFd("fd_3", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    when(fixedDepositRepository.findByIdAndUserId("fd_3", "user_A")).thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2024, 1, 5)) // 4 days after issue
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_3", request, "user_A");
+
+    assertNotNull(result);
+    assertEquals(0, result.getRealizedMaturityAmount().compareTo(BigDecimal.ZERO));
+    assertEquals(0, result.getEffectiveRate().compareTo(BigDecimal.ZERO));
+    assertEquals(0, result.getInterestEarned().compareTo(BigDecimal.ZERO));
+  }
+
+  // [DEPRECATED-SEC-04-05] Tax-saver lock-in guard (isTaxSaver) is disabled along with Sections
+  // 04/05, so this test's expected 400 response no longer applies. Re-enable the guard + field to
+  // restore.
+  // @Test
+  // @DisplayName("Tax-saver FD withdraw → 400 error")
+  // void testTaxSaverFdWithdrawBlocked() {
+  //   FixedDeposit fd =
+  //       createActiveFd("fd_4", new BigDecimal("100000"), new BigDecimal("7.00"), true);
+  //   when(fixedDepositRepository.findByIdAndUserId("fd_4", "user_A")).thenReturn(Optional.of(fd));
+  //
+  //   PrematureWithdrawalRequestDTO request =
+  //       PrematureWithdrawalRequestDTO.builder().withdrawalDate(LocalDate.of(2025, 1, 8)).build();
+  //
+  //   InvalidWithdrawalException ex =
+  //       assertThrows(
+  //           InvalidWithdrawalException.class,
+  //           () -> fixedDepositService.prematureWithdraw("fd_4", request, "user_A"));
+  //
+  //   assertEquals(400, ex.getHttpStatus());
+  //   assertTrue(ex.getMessage().contains("Tax-saver"));
+  // }
+
+  @Test
+  @DisplayName("Already withdrawn FD → 400 error")
+  void testAlreadyWithdrawnFd() {
+    FixedDeposit fd =
+        createActiveFd("fd_5", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    fd.setStatus(FdStatus.PREMATURELY_WITHDRAWN);
+    fd.setIsPrematurelyWithdrawn(true);
+    when(fixedDepositRepository.findByIdAndUserId("fd_5", "user_A")).thenReturn(Optional.of(fd));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder().withdrawalDate(LocalDate.of(2025, 1, 8)).build();
+
+    InvalidWithdrawalException ex =
+        assertThrows(
+            InvalidWithdrawalException.class,
+            () -> fixedDepositService.prematureWithdraw("fd_5", request, "user_A"));
+
+    assertEquals(400, ex.getHttpStatus());
+  }
+
+  @Test
+  @DisplayName("Already withdrawn FD → 400 error (duplicate pre-existing test kept distinct)")
+  void testAlreadyWithdrawnFdDuplicated() {
+    FixedDeposit fd =
+        createActiveFd("fd_6", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    fd.setStatus(FdStatus.PREMATURELY_WITHDRAWN);
+    when(fixedDepositRepository.findByIdAndUserId("fd_6", "user_A")).thenReturn(Optional.of(fd));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder().withdrawalDate(LocalDate.of(2025, 1, 8)).build();
+
+    InvalidWithdrawalException ex =
+        assertThrows(
+            InvalidWithdrawalException.class,
+            () -> fixedDepositService.prematureWithdraw("fd_6", request, "user_A"));
+
+    assertEquals(400, ex.getHttpStatus());
+  }
+
+  @Test
+  @DisplayName("Withdrawal date before issue date → 400 error")
+  void testWithdrawalBeforeIssueDate() {
+    FixedDeposit fd =
+        createActiveFd("fd_7", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    when(fixedDepositRepository.findByIdAndUserId("fd_7", "user_A")).thenReturn(Optional.of(fd));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder().withdrawalDate(LocalDate.of(2023, 12, 31)).build();
+
+    InvalidWithdrawalException ex =
+        assertThrows(
+            InvalidWithdrawalException.class,
+            () -> fixedDepositService.prematureWithdraw("fd_7", request, "user_A"));
+
+    assertEquals(400, ex.getHttpStatus());
+  }
+
+  @Test
+  @DisplayName("Withdrawal date after maturity date → 400 error")
+  void testWithdrawalAfterMaturityDate() {
+    FixedDeposit fd =
+        createActiveFd("fd_8", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    when(fixedDepositRepository.findByIdAndUserId("fd_8", "user_A")).thenReturn(Optional.of(fd));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder().withdrawalDate(LocalDate.of(2030, 1, 1)).build();
+
+    InvalidWithdrawalException ex =
+        assertThrows(
+            InvalidWithdrawalException.class,
+            () -> fixedDepositService.prematureWithdraw("fd_8", request, "user_A"));
+
+    assertEquals(400, ex.getHttpStatus());
+  }
+
+  @Test
+  @DisplayName("Penalty rate override respected")
+  void testPenaltyRateOverride() {
+    FixedDeposit fd =
+        createActiveFd("fd_9", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    when(fixedDepositRepository.findByIdAndUserId("fd_9", "user_A")).thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2025, 1, 8))
+            .penaltyRateOverride(new BigDecimal("2.00")) // custom override
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_9", request, "user_A");
+
+    assertNotNull(result);
+    assertEquals(0, result.getPenaltyRate().compareTo(new BigDecimal("2.00")));
+  }
+
+  @Test
+  @DisplayName("Non-cumulative FD withdrawal uses simple interest")
+  void testNonCumulativeFdWithdrawal() {
+    FixedDeposit fd =
+        createActiveFd("fd_10", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    fd.setFdType(FdType.NON_CUMULATIVE);
+    when(fixedDepositRepository.findByIdAndUserId("fd_10", "user_A")).thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder().withdrawalDate(LocalDate.of(2025, 1, 8)).build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_10", request, "user_A");
+
+    assertNotNull(result);
+    assertTrue(result.getRealizedMaturityAmount().compareTo(BigDecimal.ZERO) > 0);
+    System.out.println("Non-cumulative withdrawal: " + result.getRealizedMaturityAmount());
+  }
+
+  @Test
+  @DisplayName("Bank-aware default: co-operative bank → 0.5% penalty regardless of amount")
+  void testCoopBankDefaultPenalty() {
+    FixedDeposit fd =
+        createActiveFd("fd_coop", new BigDecimal("600000"), new BigDecimal("7.00"), false);
+    fd.setPlace("Aurangabad District Central Co-operative Bank");
+    when(fixedDepositRepository.findByIdAndUserId("fd_coop", "user_A"))
+        .thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2025, 1, 8))
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_coop", request, "user_A");
+
+    assertEquals(0, result.getPenaltyRate().compareTo(new BigDecimal("0.50")));
+  }
+
+  @Test
+  @DisplayName("Bank-aware default: Kotak tenure tier ≥365 days → 1% penalty")
+  void testKotakLongTenureDefaultPenalty() {
+    FixedDeposit fd =
+        createActiveFd("fd_kotak_long", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    fd.setPlace("Kotak Mahindra Bank");
+    when(fixedDepositRepository.findByIdAndUserId("fd_kotak_long", "user_A"))
+        .thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2025, 1, 8)) // 373 days after issue
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_kotak_long", request, "user_A");
+
+    assertEquals(0, result.getPenaltyRate().compareTo(new BigDecimal("1.00")));
+  }
+
+  @Test
+  @DisplayName("Bank-aware default: Kotak tenure tier ≤180 days → 0% penalty")
+  void testKotakShortTenureDefaultPenalty() {
+    FixedDeposit fd =
+        createActiveFd("fd_kotak_short", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    fd.setPlace("Kotak Mahindra Bank");
+    when(fixedDepositRepository.findByIdAndUserId("fd_kotak_short", "user_A"))
+        .thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2024, 5, 1)) // 121 days after issue
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_kotak_short", request, "user_A");
+
+    assertEquals(0, result.getPenaltyRate().compareTo(new BigDecimal("0.00")));
+  }
+
+  @Test
+  @DisplayName("Penalty override clamped to contracted rate")
+  void testPenaltyOverrideClamped() {
+    FixedDeposit fd =
+        createActiveFd("fd_clamped", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    when(fixedDepositRepository.findByIdAndUserId("fd_clamped", "user_A"))
+        .thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2025, 1, 8))
+            .penaltyRateOverride(new BigDecimal("99.00"))
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_clamped", request, "user_A");
+
+    assertEquals(0, result.getPenaltyRate().compareTo(new BigDecimal("7.00")));
+  }
+
+  @Test
+  @DisplayName("Applied penalty rate persisted onto the FD and used on withdrawal")
+  void testPersistedPenaltyRateApplied() {
+    FixedDeposit fd =
+        createActiveFd("fd_persist", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    when(fixedDepositRepository.findByIdAndUserId("fd_persist", "user_A"))
+        .thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2025, 1, 8))
+            .penaltyRateOverride(new BigDecimal("1.25"))
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.prematureWithdraw("fd_persist", request, "user_A");
+
+    assertEquals(0, result.getPenaltyRate().compareTo(new BigDecimal("1.25")));
+
+    ArgumentCaptor<FixedDeposit> captor = ArgumentCaptor.forClass(FixedDeposit.class);
+    verify(fixedDepositRepository).save(captor.capture());
+    FixedDeposit saved = captor.getValue();
+    assertEquals(0, saved.getPenaltyRateApplied().compareTo(new BigDecimal("1.25")));
+    assertEquals(0, saved.getEffectiveRateApplied().compareTo(result.getEffectiveRate()));
+  }
+
+  @Test
+  @DisplayName("BankPenaltyResolver covers registry categories and amount-tier fallback")
+  void testBankPenaltyResolverCategories() {
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("State Bank of India", new BigDecimal("100000"), null)
+            .compareTo(new BigDecimal("0.50")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("State Bank of India", new BigDecimal("600000"), null)
+            .compareTo(new BigDecimal("1.00")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("HDFC Bank", new BigDecimal("100000"), null)
+            .compareTo(new BigDecimal("1.00")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("Kotak Mahindra Bank", new BigDecimal("100000"), 160L)
+            .compareTo(new BigDecimal("0.00")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("Kotak Mahindra Bank", new BigDecimal("100000"), 200L)
+            .compareTo(new BigDecimal("0.50")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("Kotak Mahindra Bank", new BigDecimal("100000"), 400L)
+            .compareTo(new BigDecimal("1.00")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("Yes Bank", new BigDecimal("100000"), 100L)
+            .compareTo(new BigDecimal("0.75")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("Aurangabad District Central Co-operative Bank",
+            new BigDecimal("900000"), 300L)
+            .compareTo(new BigDecimal("0.50")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("AU Small Finance Bank", new BigDecimal("100000"), null)
+            .compareTo(new BigDecimal("1.00")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("Airtel Payments Bank", new BigDecimal("100000"), null)
+            .compareTo(new BigDecimal("0.00")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("General Post Office", new BigDecimal("100000"), 365L)
+            .compareTo(new BigDecimal("2.00")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("Bajaj Finance Limited", new BigDecimal("100000"), 400L)
+            .compareTo(new BigDecimal("2.00")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("Generic Small Bank", new BigDecimal("100000"), null)
+            .compareTo(new BigDecimal("1.00")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("", new BigDecimal("100000"), null)
+            .compareTo(new BigDecimal("0.50")));
+    assertEquals(
+        0,
+        BankPenaltyResolver.resolve("", new BigDecimal("600000"), null)
+            .compareTo(new BigDecimal("1.00")));
+    assertEquals(0, BankPenaltyResolver.resolve("", null, null).compareTo(new BigDecimal("0.50")));
+  }
+
+  @Test
+  @DisplayName("Update withdrawal on non-withdrawn FD is rejected")
+  void testUpdateWithdrawalRejectedWhenNotWithdrawn() {
+    FixedDeposit fd =
+        createActiveFd("fd_notwithdrawn", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    when(fixedDepositRepository.findByIdAndUserId("fd_notwithdrawn", "user_A"))
+        .thenReturn(Optional.of(fd));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2025, 1, 8))
+            .build();
+
+    assertThrows(
+        InvalidWithdrawalException.class,
+        () -> fixedDepositService.updatePrematureWithdrawal("fd_notwithdrawn", request, "user_A"));
+  }
+
+  @Test
+  @DisplayName("Update withdrawal recomputes and persists corrected withdrawal details")
+  void testUpdateWithdrawalRecomputes() {
+    FixedDeposit fd =
+        createActiveFd("fd_update", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    fd.setStatus(FdStatus.PREMATURELY_WITHDRAWN);
+    fd.setIsPrematurelyWithdrawn(true);
+    fd.setWithdrawalDate(LocalDate.of(2025, 1, 8));
+    fd.setRealizedMaturityAmount(new BigDecimal("100500"));
+    fd.setPenaltyAmount(new BigDecimal("100"));
+    fd.setPenaltyRateApplied(new BigDecimal("0.50"));
+    fd.setEffectiveRateApplied(new BigDecimal("6.50"));
+    when(fixedDepositRepository.findByIdAndUserId("fd_update", "user_A"))
+        .thenReturn(Optional.of(fd));
+    when(fixedDepositRepository.save(any(FixedDeposit.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2025, 3, 1))
+            .penaltyRateOverride(new BigDecimal("0.75"))
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.updatePrematureWithdrawal("fd_update", request, "user_A");
+
+    assertNotNull(result);
+    assertEquals(0, result.getPenaltyRate().compareTo(new BigDecimal("0.75")));
+    assertEquals(LocalDate.of(2025, 3, 1), result.getWithdrawalDate());
+
+    ArgumentCaptor<FixedDeposit> captor = ArgumentCaptor.forClass(FixedDeposit.class);
+    verify(fixedDepositRepository).save(captor.capture());
+    FixedDeposit saved = captor.getValue();
+    assertEquals(LocalDate.of(2025, 3, 1), saved.getWithdrawalDate());
+    assertEquals(0, saved.getPenaltyRateApplied().compareTo(new BigDecimal("0.75")));
+    assertEquals(0, saved.getEffectiveRateApplied().compareTo(result.getEffectiveRate()));
+    assertEquals(0, saved.getRealizedMaturityAmount().compareTo(result.getRealizedMaturityAmount()));
+    assertEquals(FdStatus.PREMATURELY_WITHDRAWN, saved.getStatus());
+  }
+
+  @Test
+  @DisplayName("Update withdrawal preview recomputes without persisting")
+  void testUpdateWithdrawalPreview() {
+    FixedDeposit fd =
+        createActiveFd("fd_updatepreview", new BigDecimal("100000"), new BigDecimal("7.00"), false);
+    fd.setStatus(FdStatus.PREMATURELY_WITHDRAWN);
+    fd.setIsPrematurelyWithdrawn(true);
+    fd.setWithdrawalDate(LocalDate.of(2025, 1, 8));
+    when(fixedDepositRepository.findByIdAndUserId("fd_updatepreview", "user_A"))
+        .thenReturn(Optional.of(fd));
+
+    PrematureWithdrawalRequestDTO request =
+        PrematureWithdrawalRequestDTO.builder()
+            .withdrawalDate(LocalDate.of(2025, 2, 1))
+            .build();
+
+    PrematureWithdrawalResponseDTO result =
+        fixedDepositService.updatePrematureWithdrawalPreview("fd_updatepreview", request, "user_A");
+
+    assertNotNull(result);
+    assertEquals(LocalDate.of(2025, 2, 1), result.getWithdrawalDate());
+    assertTrue(result.getRealizedMaturityAmount().compareTo(BigDecimal.ZERO) > 0);
+    verify(fixedDepositRepository, org.mockito.Mockito.never()).save(any(FixedDeposit.class));
+  }
+}

@@ -1,0 +1,1454 @@
+{
+  "version": "1.0.0",
+  "kind": "domain",
+  "project": {
+    "name": "cointrack",
+    "languages": [
+      "java",
+      "javascript",
+      "typescript",
+      "sql",
+      "dockerfile"
+    ],
+    "frameworks": [
+      "Spring Boot",
+      "Spring Security",
+      "Next.js",
+      "React",
+      "Tailwind CSS",
+      "PostgreSQL"
+    ],
+    "description": "Business domain flow graph mapping authentication, broker integrations, mutual fund valuation, financial engines, fixed income, and commodities.",
+    "analyzedAt": "2026-10-31T12:20:44.736Z",
+    "gitCommitHash": "5cdc78da97f239a33281c1710e8a0c7193f3274f"
+  },
+  "nodes": [
+    {
+      "id": "domain:auth-and-security",
+      "type": "domain",
+      "name": "Authentication & Security",
+      "summary": "Handles user authentication, Spring Security filter chains, JWT bearer token validation, TOTP two-factor authentication, and account lockouts.",
+      "tags": [
+        "auth",
+        "jwt",
+        "security",
+        "2fa",
+        "spring-security"
+      ],
+      "complexity": "complex",
+      "domainMeta": {
+        "entities": [
+          "User",
+          "BackupCode",
+          "JwtToken",
+          "TotpSecret",
+          "UserDeletionAudit"
+        ],
+        "businessRules": [
+          "All private REST endpoints require valid, non-expired JWT bearer tokens",
+          "TOTP 2FA enforced for high-value actions and sensitive profile modifications",
+          "Automatic account lockout and rate limiting applied after consecutive failed authentication attempts"
+        ],
+        "crossDomainInteractions": [
+          "Supplies authenticated user context and user ID to all other domains (Broker, Portfolio, MF, FD, Calculators)"
+        ]
+      }
+    },
+    {
+      "id": "domain:broker-integration",
+      "type": "domain",
+      "name": "Broker Integration & Hexagonal Adapters",
+      "summary": "Manages multi-broker connectivity for Zerodha Kite, Upstox, and Angel One SmartAPI using hexagonal adapter architecture, token encryption, and canonical data normalization.",
+      "tags": [
+        "broker",
+        "zerodha",
+        "upstox",
+        "angelone",
+        "adapter",
+        "hexagonal"
+      ],
+      "complexity": "complex",
+      "domainMeta": {
+        "entities": [
+          "BrokerAccount",
+          "BrokerSession",
+          "CanonicalHolding",
+          "CanonicalPosition",
+          "CanonicalFunds"
+        ],
+        "businessRules": [
+          "Broker credentials and access tokens must always be encrypted at rest using AES-GCM",
+          "Disparate broker API formats must be normalized into standard CanonicalHolding and CanonicalPosition schemas",
+          "Sync operations must respect rate-limit cooldown intervals to prevent broker API bans"
+        ],
+        "crossDomainInteractions": [
+          "Feeds synchronized stock holdings and transaction positions into the Stock Portfolio domain"
+        ]
+      }
+    },
+    {
+      "id": "domain:mutual-funds",
+      "type": "domain",
+      "name": "Mutual Funds & NAV Valuation",
+      "summary": "Tracks Indian mutual fund investments across SIPs and lumpsum transactions, crawls daily AMFI NAV data, and computes portfolio valuation and XIRR performance.",
+      "tags": [
+        "mutual-fund",
+        "amfi",
+        "nav",
+        "sip",
+        "valuation",
+        "xirr"
+      ],
+      "complexity": "complex",
+      "domainMeta": {
+        "entities": [
+          "MfScheme",
+          "MfTransaction",
+          "SipSchedule",
+          "MfPortfolioMetrics",
+          "MutualFundLtp"
+        ],
+        "businessRules": [
+          "AMFI NAV daily crawler syncs prices after Indian market close with local caching",
+          "SIP execution tracks recurring debits, installment numbers, and units allocation",
+          "Calculates XIRR annualized rate of return across irregular historical cash flows"
+        ],
+        "crossDomainInteractions": [
+          "Interacts with Financial Calculators for projected returns and user portfolio summaries"
+        ]
+      }
+    },
+    {
+      "id": "domain:stock-portfolio",
+      "type": "domain",
+      "name": "Stock Portfolio & Equity Valuation",
+      "summary": "Tracks equity holdings, executed trades, realized capital gains, and unrealized profit-and-loss analytics for Indian stock market assets.",
+      "tags": [
+        "portfolio",
+        "equity",
+        "stocks",
+        "pnl",
+        "holdings"
+      ],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entities": [
+          "PortfolioHolding",
+          "EquityTrade",
+          "RealizedPnl",
+          "HoldingMetrics"
+        ],
+        "businessRules": [
+          "Maintains weighted average purchase price on subsequent buy transactions",
+          "FIFO accounting methodology for calculating realized short-term and long-term capital gains",
+          "Dynamic valuation updates based on broker LTP sync feeds"
+        ],
+        "crossDomainInteractions": [
+          "Receives automated holding feeds from the Broker Integration domain"
+        ]
+      }
+    },
+    {
+      "id": "domain:financial-calculators",
+      "type": "domain",
+      "name": "Financial Calculators Engine",
+      "summary": "Provides 32 high-precision calculation engines covering loan amortization, compound investment growth, tax optimization, and retirement planning.",
+      "tags": [
+        "calculator",
+        "loans",
+        "investment",
+        "tax",
+        "finance-engine"
+      ],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entities": [
+          "CalculatorConfig",
+          "EmiResponse",
+          "InvestmentMath",
+          "LoanMath",
+          "TaxSlabConfig"
+        ],
+        "businessRules": [
+          "Strict mathematical precision using BigDecimal for monetary compounding and amortizations",
+          "Dynamic assumption loading from YAML configurations for inflation rates, tax slabs, and statutory caps",
+          "High-throughput in-memory evaluation with per-IP rate limiting"
+        ],
+        "crossDomainInteractions": [
+          "Shared calculation formulas used across Fixed Income, EPF, PPF, and Mutual Fund modules"
+        ]
+      }
+    },
+    {
+      "id": "domain:fixed-income-and-pf",
+      "type": "domain",
+      "name": "Fixed Deposits & Provident Funds (EPF / PPF)",
+      "summary": "Tracks fixed-income banking instruments, quarterly TDS deductions, 15-year PPF maturity accounts, and employer/employee EPF passbook contributions.",
+      "tags": [
+        "fixed-deposit",
+        "epf",
+        "ppf",
+        "banking",
+        "tds",
+        "retirement"
+      ],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entities": [
+          "FixedDeposit",
+          "PpfAccount",
+          "PpfTransaction",
+          "EpfAccount",
+          "EpfTransaction"
+        ],
+        "businessRules": [
+          "Fixed Deposits track compounding frequency (quarterly, monthly) and maturity payout dates",
+          "PPF transactions enforce statutory annual contribution limits (min ₹500, max ₹1,50,000)",
+          "EPF calculates interest and separates employee (12%), employer (3.67%), and EPS pension (8.33%)"
+        ],
+        "crossDomainInteractions": [
+          "Aggregated into the unified multi-asset net worth overview on the main dashboard"
+        ]
+      }
+    },
+    {
+      "id": "domain:precious-metals",
+      "type": "domain",
+      "name": "Precious Metals (Gold & Silver)",
+      "summary": "Tracks physical and digital bullion assets in gold and silver, synchronizes live spot commodity market prices, and calculates real-time valuation.",
+      "tags": [
+        "gold",
+        "silver",
+        "commodities",
+        "bullion",
+        "spot-rate"
+      ],
+      "complexity": "simple",
+      "domainMeta": {
+        "entities": [
+          "GoldSilverHolding",
+          "MarketRate",
+          "PurityOptionConfig"
+        ],
+        "businessRules": [
+          "Supports 24K, 22K, 18K gold and 999 silver purities with custom making charge offsets",
+          "Integrates with GoldAPI.io for live market rates with strict usage throttling and fallbacks"
+        ],
+        "crossDomainInteractions": [
+          "Feeds commodity valuation into unified asset allocation breakdown"
+        ]
+      }
+    },
+    {
+      "id": "flow:user-registration-and-login",
+      "type": "flow",
+      "name": "User Registration & Login",
+      "summary": "Validates user credentials, prompts for TOTP 2FA when enabled, and issues signed JWT bearer tokens for session establishment.",
+      "tags": [
+        "login",
+        "jwt",
+        "auth-flow"
+      ],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "POST /api/auth/login",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:user-registration-and-login:submit-credentials",
+      "name": "Submit User Credentials",
+      "summary": "User submits email and password via the Terminal Editorial login interface.",
+      "tags": [
+        "ui",
+        "form"
+      ],
+      "filePath": "frontend/src/app/(access)/login/page.jsx",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:user-registration-and-login:rate-limit-check",
+      "name": "Enforce Auth Rate Limiting",
+      "summary": "Intercepts request to verify client has not exceeded failed attempt thresholds.",
+      "tags": [
+        "security",
+        "filter"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/security/filter/AuthRateLimitFilter.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:user-registration-and-login:authenticate-user",
+      "name": "Verify Password Hash",
+      "summary": "Compares bcrypt password hash against stored user records.",
+      "tags": [
+        "auth",
+        "database"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/user/service/UserService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:user-registration-and-login:verify-totp-2fa",
+      "name": "Verify TOTP 2FA Code",
+      "summary": "Validates 6-digit TOTP code against shared secret when 2FA is active.",
+      "tags": [
+        "2fa",
+        "totp"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/security/totp/TotpService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:user-registration-and-login:issue-jwt",
+      "name": "Issue Signed JWT Token",
+      "summary": "Generates HMAC-signed JWT token carrying user claims and expiration timestamp.",
+      "tags": [
+        "jwt",
+        "token"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/security/service/JWTService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:user-registration-and-login:store-session",
+      "name": "Establish Client Session",
+      "summary": "Frontend AuthContext captures token, stores in memory, and transitions to Dashboard.",
+      "tags": [
+        "frontend",
+        "session"
+      ],
+      "filePath": "frontend/src/shared/auth/AuthContext.js",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "flow:jwt-request-authorization",
+      "type": "flow",
+      "name": "JWT Request Authorization",
+      "summary": "Intercepts incoming API requests, verifies bearer tokens, and populates the Spring Security authentication context.",
+      "tags": [
+        "filter",
+        "jwt",
+        "authorization"
+      ],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "HTTP Header Authorization: Bearer <token>",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:jwt-request-authorization:extract-bearer-token",
+      "name": "Extract Bearer Header",
+      "summary": "Parses Authorization header in JwtFilter to retrieve raw token string.",
+      "tags": [
+        "filter",
+        "http"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/security/filter/JwtFilter.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:jwt-request-authorization:validate-token-claims",
+      "name": "Validate Token & Expiration",
+      "summary": "Checks cryptographic signature and ensures token timestamp has not expired.",
+      "tags": [
+        "jwt",
+        "validation"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/security/service/JWTService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:jwt-request-authorization:populate-security-context",
+      "name": "Populate Security Context",
+      "summary": "Constructs UsernamePasswordAuthenticationToken and registers user in SecurityContext.",
+      "tags": [
+        "security",
+        "context"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/security/config/SecurityConfig.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "flow:broker-connection-and-auth",
+      "type": "flow",
+      "name": "Broker OAuth Connection & Session",
+      "summary": "Orchestrates broker OAuth authentication redirect, token exchange, and encrypted credential storage.",
+      "tags": [
+        "broker",
+        "oauth",
+        "connection"
+      ],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "POST /api/brokers/connect",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:broker-connection-and-auth:initiate-broker-oauth",
+      "name": "Select Broker & Initiate OAuth",
+      "summary": "User selects broker (Zerodha, Upstox, AngelOne) and initiates login redirect.",
+      "tags": [
+        "ui",
+        "modal"
+      ],
+      "filePath": "frontend/src/features/brokers/shared/BrokerConnectModal.jsx",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:broker-connection-and-auth:handle-broker-callback",
+      "name": "Handle Broker Auth Callback",
+      "summary": "Receives request token or authorization code in BrokerConnectController.",
+      "tags": [
+        "controller",
+        "oauth"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:broker-connection-and-auth:exchange-session-tokens",
+      "name": "Exchange Session Tokens",
+      "summary": "Calls broker adapter to exchange auth token for access/refresh session tokens.",
+      "tags": [
+        "adapter",
+        "network"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/adapters/zerodha/ZerodhaBrokerAdapter.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:broker-connection-and-auth:encrypt-and-persist",
+      "name": "Encrypt & Persist Tokens",
+      "summary": "Encrypts sensitive access tokens using AES-GCM and persists BrokerAccount.",
+      "tags": [
+        "encryption",
+        "persistence"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/storage/BrokerTokenService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "flow:broker-portfolio-synchronization",
+      "type": "flow",
+      "name": "Broker Portfolio Sync & Normalization",
+      "summary": "Synchronizes live equity holdings from connected brokerages and normalizes them into canonical domain models.",
+      "tags": [
+        "sync",
+        "holdings",
+        "normalization"
+      ],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "POST /api/brokers/sync",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:broker-portfolio-synchronization:check-sync-cooldown",
+      "name": "Verify Sync Cooldown Interval",
+      "summary": "Ensures sync frequency complies with broker API rate limits and safety cooldowns.",
+      "tags": [
+        "rate-limit",
+        "safety"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/service/SyncSafetyServiceImpl.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:broker-portfolio-synchronization:fetch-remote-holdings",
+      "name": "Fetch Broker Remote Holdings",
+      "summary": "Dispatches API request to broker adapter (AngelOne, Upstox, Kite) with auth headers.",
+      "tags": [
+        "adapter",
+        "api-client"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/adapters/angelone/AngelOneBrokerAdapter.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:broker-portfolio-synchronization:normalize-to-canonical",
+      "name": "Normalize to Canonical Holdings",
+      "summary": "Maps raw broker JSON payloads into standardized CanonicalHolding domain models.",
+      "tags": [
+        "mapper",
+        "normalization"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/normalization/SymbolNormalizer.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:broker-portfolio-synchronization:save-canonical-holdings",
+      "name": "Persist Canonical Records",
+      "summary": "Saves normalized holding state in CanonicalHoldingRepository.",
+      "tags": [
+        "repository",
+        "database"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/repository/CanonicalHoldingRepository.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:broker-portfolio-synchronization:refresh-portfolio-ui",
+      "name": "Update Frontend View",
+      "summary": "TanStack Query hook invalidates holding cache and re-renders portfolio dashboard.",
+      "tags": [
+        "react",
+        "tanstack-query"
+      ],
+      "filePath": "frontend/src/features/brokers/hooks/useBrokerData.js",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "flow:daily-amfi-nav-ingestion",
+      "type": "flow",
+      "name": "Daily AMFI NAV Crawler & Ingestion",
+      "summary": "Automated daily ingestion crawler downloading official AMFI India NAV files, updating LTP cache, and recalculating fund values.",
+      "tags": [
+        "amfi",
+        "crawler",
+        "nav",
+        "cron"
+      ],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "Cron @Scheduled(cron = \"0 0 23 * * ?\")",
+        "entryType": "cron"
+      }
+    },
+    {
+      "id": "step:daily-amfi-nav-ingestion:trigger-scheduled-crawler",
+      "name": "Trigger Scheduled Cron Job",
+      "summary": "Daily timer fires evening crawler task in PortfolioMetricsSyncService.",
+      "tags": [
+        "scheduler",
+        "cron"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/mutualfund/scheduler/PortfolioMetricsSyncService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:daily-amfi-nav-ingestion:fetch-amfi-portal-data",
+      "name": "Download AMFI Portal NAV Text",
+      "summary": "Downloads pipe-delimited NAV master file from Association of Mutual Funds in India.",
+      "tags": [
+        "crawler",
+        "http-client"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/mutualfund/service/MutualFundNavCache.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:daily-amfi-nav-ingestion:parse-and-update-ltp",
+      "name": "Parse Schemes & Update LTP",
+      "summary": "Extracts scheme codes, ISINs, and Net Asset Values into MutualFundLtpRepository.",
+      "tags": [
+        "parser",
+        "database"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/mutualfund/repository/MutualFundLtpRepository.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:daily-amfi-nav-ingestion:recompute-portfolio-valuations",
+      "name": "Recalculate Portfolio Valuations",
+      "summary": "Multiplies held units by latest NAVs and updates user portfolio metrics and unrealized gain.",
+      "tags": [
+        "valuation",
+        "xirr"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/mutualfund/service/PortfolioHoldingService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "flow:record-mutual-fund-transaction",
+      "type": "flow",
+      "name": "Record Mutual Fund Investment",
+      "summary": "Records purchase or redemption of mutual fund units, computes purchase NAV, and updates holding balance.",
+      "tags": [
+        "transaction",
+        "sip",
+        "lumpsum"
+      ],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "POST /api/mutual-funds/transactions",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:record-mutual-fund-transaction:submit-transaction-form",
+      "name": "Submit Transaction Details",
+      "summary": "User inputs scheme code, investment amount, trade date, and SIP/lumpsum type.",
+      "tags": [
+        "ui",
+        "modal"
+      ],
+      "filePath": "frontend/src/features/mutual-fund/components/LumpsumTransactionModal.jsx",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:record-mutual-fund-transaction:validate-mf-scheme",
+      "name": "Validate Scheme & Folio",
+      "summary": "Verifies scheme existence in MfSchemeController against AMFI scheme registry.",
+      "tags": [
+        "controller",
+        "validation"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/mutualfund/controller/LumpsumTransactionController.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:record-mutual-fund-transaction:calculate-units-and-nav",
+      "name": "Calculate Units & Trade Value",
+      "summary": "Applies applicable NAV to determine allotted units and purchase ledger entries.",
+      "tags": [
+        "accounting",
+        "math"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/mutualfund/service/RedemptionTransactionService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:record-mutual-fund-transaction:update-holding-balance",
+      "name": "Update Holding Balance",
+      "summary": "Updates aggregated portfolio holding quantity and weighted cost basis.",
+      "tags": [
+        "persistence",
+        "holding"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/mutualfund/repository/PortfolioHoldingRepository.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "flow:loan-emi-and-amortization",
+      "type": "flow",
+      "name": "Loan EMI & Amortization Engine",
+      "summary": "Calculates monthly equated installments, interest-to-principal ratio, prepayment savings, and multi-year amortization schedule.",
+      "tags": [
+        "loan",
+        "emi",
+        "amortization"
+      ],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "POST /api/calculators/loan/emi",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:loan-emi-and-amortization:input-loan-parameters",
+      "name": "Input Principal & Tenure",
+      "summary": "User configures loan amount, interest rate slider, and tenure in months/years.",
+      "tags": [
+        "ui",
+        "calculator"
+      ],
+      "filePath": "frontend/src/app/calculators/loans/page.jsx",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:loan-emi-and-amortization:load-rate-assumptions",
+      "name": "Load Default Assumptions",
+      "summary": "Loads bank rate benchmarks and compounding conventions from YAML configuration.",
+      "tags": [
+        "config",
+        "yaml"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/calculator/config/CalculatorConfigLoader.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:loan-emi-and-amortization:execute-loan-math",
+      "name": "Execute Reducing Balance Formula",
+      "summary": "Evaluates standard reducing balance loan formula with prepayment amortization iterations.",
+      "tags": [
+        "math",
+        "finance-engine"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/calculator/math/LoanMath.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:loan-emi-and-amortization:render-amortization-schedule",
+      "name": "Render Amortization Schedule",
+      "summary": "Displays monthly/yearly principal-interest breakdown table and interactive charts.",
+      "tags": [
+        "ui",
+        "dataviz"
+      ],
+      "filePath": "frontend/src/app/calculators/page.jsx",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "flow:investment-sip-and-cagr",
+      "type": "flow",
+      "name": "SIP & Compound Wealth Projection",
+      "summary": "Computes future wealth accumulation, step-up SIP increments, inflation-adjusted value, and annualized CAGR.",
+      "tags": [
+        "sip",
+        "cagr",
+        "investment-calculator"
+      ],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "POST /api/calculators/investment/sip",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:investment-sip-and-cagr:submit-investment-inputs",
+      "name": "Input Investment Parameters",
+      "summary": "Configures monthly contribution, expected annual returns, and optional yearly step-up rate.",
+      "tags": [
+        "ui",
+        "calculator"
+      ],
+      "filePath": "frontend/src/app/calculators/investment/page.jsx",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:investment-sip-and-cagr:compute-compound-interest",
+      "name": "Compute Compound Growth",
+      "summary": "Calculates monthly compounding iterations with step-up cash flow adjustments.",
+      "tags": [
+        "math",
+        "compounding"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/calculator/math/InvestmentMath.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:investment-sip-and-cagr:format-investment-response",
+      "name": "Format Growth Breakdown",
+      "summary": "Serializes invested amount vs. wealth gained comparison in InvestmentCalculatorController.",
+      "tags": [
+        "controller",
+        "dto"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/calculator/controller/InvestmentCalculatorController.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "flow:create-and-track-fixed-deposit",
+      "type": "flow",
+      "name": "Fixed Deposit Booking & TDS Tracker",
+      "summary": "Tracks bank term deposits, validates IFSC banking codes, projects quarterly interest payouts, and computes TDS deduction thresholds.",
+      "tags": [
+        "fixed-deposit",
+        "banking",
+        "tds"
+      ],
+      "complexity": "moderate",
+      "domainMeta": {
+        "entryPoint": "POST /api/fixed-deposits",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:create-and-track-fixed-deposit:submit-fd-details",
+      "name": "Submit Fixed Deposit Details",
+      "summary": "User inputs bank name, principal amount, interest rate, tenure, and payout frequency.",
+      "tags": [
+        "ui",
+        "dialog"
+      ],
+      "filePath": "frontend/src/features/fixed-deposit/components/FdDialog.jsx",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:create-and-track-fixed-deposit:lookup-ifsc-bank",
+      "name": "Lookup Bank Details by IFSC",
+      "summary": "Validates bank branch details via Razorpay IFSC public lookup API route.",
+      "tags": [
+        "api-route",
+        "ifsc"
+      ],
+      "filePath": "frontend/src/app/api/ifsc/route.js",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:create-and-track-fixed-deposit:calculate-fd-maturity",
+      "name": "Calculate Maturity & TDS Schedule",
+      "summary": "Computes maturity amount, quarterly interest compounding, and applicable TDS deductions.",
+      "tags": [
+        "math",
+        "tax"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/controller/FixedDepositController.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:create-and-track-fixed-deposit:persist-fd-record",
+      "name": "Persist Fixed Deposit Record",
+      "summary": "Saves FD entity and scheduled interest intervals in FixedDepositRepository.",
+      "tags": [
+        "repository",
+        "database"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/fixeddeposit/repository/FixedDepositRepository.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "flow:gold-silver-asset-tracking",
+      "type": "flow",
+      "name": "Precious Metals Spot Rate & Asset Valuation",
+      "summary": "Tracks physical bullion, fetches live commodity market rates via GoldAPI.io, and computes real-time asset valuation.",
+      "tags": [
+        "gold",
+        "silver",
+        "spot-rates",
+        "commodities"
+      ],
+      "complexity": "simple",
+      "domainMeta": {
+        "entryPoint": "POST /api/gold-silver/holdings",
+        "entryType": "http"
+      }
+    },
+    {
+      "id": "step:gold-silver-asset-tracking:submit-metal-purchase",
+      "name": "Submit Bullion Holding Form",
+      "summary": "Enters gold/silver weight in grams, karat purity (24K/22K/18K), and purchase invoice value.",
+      "tags": [
+        "ui",
+        "dialog"
+      ],
+      "filePath": "frontend/src/features/gold-silver/components/GoldSilverDialog.jsx",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:gold-silver-asset-tracking:fetch-live-market-rates",
+      "name": "Fetch Spot Rate via GoldAPI",
+      "summary": "Queries GoldAPI.io provider with local in-memory caching and usage quota protection.",
+      "tags": [
+        "api-client",
+        "cache"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/goldsilver/service/GoldApiUsageService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:gold-silver-asset-tracking:compute-unrealized-pnl",
+      "name": "Compute Spot Valuation & P&L",
+      "summary": "Calculates current market value based on weight, purity multiplier, and purchase cost.",
+      "tags": [
+        "valuation",
+        "math"
+      ],
+      "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/goldsilver/service/GoldSilverCalculationService.java",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    },
+    {
+      "id": "step:gold-silver-asset-tracking:render-metals-dashboard",
+      "name": "Render Precious Metals Table",
+      "summary": "Displays live spot rate ticker, holding inventory, and unrealized profit-and-loss.",
+      "tags": [
+        "ui",
+        "dashboard"
+      ],
+      "filePath": "frontend/src/features/gold-silver/components/GoldSilverView.jsx",
+      "type": "step",
+      "complexity": "moderate",
+      "lineRange": [
+        1,
+        50
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "domain:auth-and-security",
+      "target": "flow:user-registration-and-login",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:user-registration-and-login",
+      "target": "step:user-registration-and-login:submit-credentials",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.2
+    },
+    {
+      "source": "flow:user-registration-and-login",
+      "target": "step:user-registration-and-login:rate-limit-check",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3
+    },
+    {
+      "source": "flow:user-registration-and-login",
+      "target": "step:user-registration-and-login:authenticate-user",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:user-registration-and-login",
+      "target": "step:user-registration-and-login:verify-totp-2fa",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "flow:user-registration-and-login",
+      "target": "step:user-registration-and-login:issue-jwt",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "flow:user-registration-and-login",
+      "target": "step:user-registration-and-login:store-session",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:auth-and-security",
+      "target": "flow:jwt-request-authorization",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:jwt-request-authorization",
+      "target": "step:jwt-request-authorization:extract-bearer-token",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3
+    },
+    {
+      "source": "flow:jwt-request-authorization",
+      "target": "step:jwt-request-authorization:validate-token-claims",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "flow:jwt-request-authorization",
+      "target": "step:jwt-request-authorization:populate-security-context",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:broker-integration",
+      "target": "flow:broker-connection-and-auth",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:broker-connection-and-auth",
+      "target": "step:broker-connection-and-auth:initiate-broker-oauth",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3
+    },
+    {
+      "source": "flow:broker-connection-and-auth",
+      "target": "step:broker-connection-and-auth:handle-broker-callback",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:broker-connection-and-auth",
+      "target": "step:broker-connection-and-auth:exchange-session-tokens",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "flow:broker-connection-and-auth",
+      "target": "step:broker-connection-and-auth:encrypt-and-persist",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:broker-integration",
+      "target": "flow:broker-portfolio-synchronization",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:broker-portfolio-synchronization",
+      "target": "step:broker-portfolio-synchronization:check-sync-cooldown",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.2
+    },
+    {
+      "source": "flow:broker-portfolio-synchronization",
+      "target": "step:broker-portfolio-synchronization:fetch-remote-holdings",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.4
+    },
+    {
+      "source": "flow:broker-portfolio-synchronization",
+      "target": "step:broker-portfolio-synchronization:normalize-to-canonical",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "flow:broker-portfolio-synchronization",
+      "target": "step:broker-portfolio-synchronization:save-canonical-holdings",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "flow:broker-portfolio-synchronization",
+      "target": "step:broker-portfolio-synchronization:refresh-portfolio-ui",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:mutual-funds",
+      "target": "flow:daily-amfi-nav-ingestion",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:daily-amfi-nav-ingestion",
+      "target": "step:daily-amfi-nav-ingestion:trigger-scheduled-crawler",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3
+    },
+    {
+      "source": "flow:daily-amfi-nav-ingestion",
+      "target": "step:daily-amfi-nav-ingestion:fetch-amfi-portal-data",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:daily-amfi-nav-ingestion",
+      "target": "step:daily-amfi-nav-ingestion:parse-and-update-ltp",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "flow:daily-amfi-nav-ingestion",
+      "target": "step:daily-amfi-nav-ingestion:recompute-portfolio-valuations",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:mutual-funds",
+      "target": "flow:record-mutual-fund-transaction",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:record-mutual-fund-transaction",
+      "target": "step:record-mutual-fund-transaction:submit-transaction-form",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3
+    },
+    {
+      "source": "flow:record-mutual-fund-transaction",
+      "target": "step:record-mutual-fund-transaction:validate-mf-scheme",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:record-mutual-fund-transaction",
+      "target": "step:record-mutual-fund-transaction:calculate-units-and-nav",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "flow:record-mutual-fund-transaction",
+      "target": "step:record-mutual-fund-transaction:update-holding-balance",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:financial-calculators",
+      "target": "flow:loan-emi-and-amortization",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:loan-emi-and-amortization",
+      "target": "step:loan-emi-and-amortization:input-loan-parameters",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3
+    },
+    {
+      "source": "flow:loan-emi-and-amortization",
+      "target": "step:loan-emi-and-amortization:load-rate-assumptions",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:loan-emi-and-amortization",
+      "target": "step:loan-emi-and-amortization:execute-loan-math",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "flow:loan-emi-and-amortization",
+      "target": "step:loan-emi-and-amortization:render-amortization-schedule",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:financial-calculators",
+      "target": "flow:investment-sip-and-cagr",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:investment-sip-and-cagr",
+      "target": "step:investment-sip-and-cagr:submit-investment-inputs",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3
+    },
+    {
+      "source": "flow:investment-sip-and-cagr",
+      "target": "step:investment-sip-and-cagr:compute-compound-interest",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "flow:investment-sip-and-cagr",
+      "target": "step:investment-sip-and-cagr:format-investment-response",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:fixed-income-and-pf",
+      "target": "flow:create-and-track-fixed-deposit",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:create-and-track-fixed-deposit",
+      "target": "step:create-and-track-fixed-deposit:submit-fd-details",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3
+    },
+    {
+      "source": "flow:create-and-track-fixed-deposit",
+      "target": "step:create-and-track-fixed-deposit:lookup-ifsc-bank",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:create-and-track-fixed-deposit",
+      "target": "step:create-and-track-fixed-deposit:calculate-fd-maturity",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "flow:create-and-track-fixed-deposit",
+      "target": "step:create-and-track-fixed-deposit:persist-fd-record",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:precious-metals",
+      "target": "flow:gold-silver-asset-tracking",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:gold-silver-asset-tracking",
+      "target": "step:gold-silver-asset-tracking:submit-metal-purchase",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3
+    },
+    {
+      "source": "flow:gold-silver-asset-tracking",
+      "target": "step:gold-silver-asset-tracking:fetch-live-market-rates",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:gold-silver-asset-tracking",
+      "target": "step:gold-silver-asset-tracking:compute-unrealized-pnl",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "flow:gold-silver-asset-tracking",
+      "target": "step:gold-silver-asset-tracking:render-metals-dashboard",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:auth-and-security",
+      "target": "domain:broker-integration",
+      "type": "cross_domain",
+      "direction": "forward",
+      "description": "Enforces JWT authentication before accessing broker connection credentials.",
+      "weight": 0.6
+    },
+    {
+      "source": "domain:broker-integration",
+      "target": "domain:stock-portfolio",
+      "type": "cross_domain",
+      "direction": "forward",
+      "description": "Supplies synchronized broker equity holdings to the stock portfolio manager.",
+      "weight": 0.8
+    },
+    {
+      "source": "domain:mutual-funds",
+      "target": "domain:financial-calculators",
+      "type": "cross_domain",
+      "direction": "forward",
+      "description": "Uses compound growth and XIRR math routines for NAV portfolio valuation.",
+      "weight": 0.7
+    },
+    {
+      "source": "domain:fixed-income-and-pf",
+      "target": "domain:financial-calculators",
+      "type": "cross_domain",
+      "direction": "forward",
+      "description": "Uses reducing interest and compounding formulas for FD and PF projections.",
+      "weight": 0.6
+    }
+  ],
+  "layers": [],
+  "tour": []
+}

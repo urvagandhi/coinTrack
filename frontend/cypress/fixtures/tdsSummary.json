@@ -1,0 +1,53 @@
+[
+  {
+    "fdId": 105,
+    "fdNo": "FD-2024-020",
+    "financialYear": 2025,
+    "grossInterest": 100000,
+    "tdsThreshold": 50000,
+    "taxableInterest": 40000,
+    "tdsRate": 0.1,
+    "tdsDeducted": 0,
+    "netInterest": 100000,
+    "bankName": "Kotak Mahindra Bank",
+    "bankTotalGrossInterest": 100000,
+    "bankTaxableInterest": 40000,
+    "bankTotalTdsDeducted": 0,
+    "form15g15hSubmitted": true,
+    "hasPan": true
+  },
+  {
+    "fdId": 101,
+    "fdNo": "FD-2024-001",
+    "financialYear": 2025,
+    "grossInterest": 60000,
+    "tdsThreshold": 50000,
+    "taxableInterest": 10000,
+    "tdsRate": 0.1,
+    "tdsDeducted": 1000,
+    "netInterest": 59000,
+    "bankName": "State Bank of India",
+    "bankTotalGrossInterest": 60000,
+    "bankTaxableInterest": 10000,
+    "bankTotalTdsDeducted": 1000,
+    "form15g15hSubmitted": false,
+    "hasPan": true
+  },
+  {
+    "fdId": 104,
+    "fdNo": "FD-2019-003",
+    "financialYear": 2024,
+    "grossInterest": 80000,
+    "tdsThreshold": 50000,
+    "taxableInterest": 30000,
+    "tdsRate": 0.1,
+    "tdsDeducted": 3000,
+    "netInterest": 77000,
+    "bankName": "Axis Bank",
+    "bankTotalGrossInterest": 80000,
+    "bankTaxableInterest": 30000,
+    "bankTotalTdsDeducted": 3000,
+    "form15g15hSubmitted": false,
+    "hasPan": true
+  }
+]

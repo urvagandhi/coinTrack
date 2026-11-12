@@ -8,374 +8,644 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.urva.myfinance.coinTrack.common.exception.AuthenticationException;
+import com.urva.myfinance.coinTrack.common.util.HashUtil;
 import com.urva.myfinance.coinTrack.email.config.EmailConfigProperties;
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.notes.service.NoteService;
+import com.urva.myfinance.coinTrack.security.repository.InvalidatedTokenRepository;
 import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.dto.LoginResponse;
 import com.urva.myfinance.coinTrack.user.model.AuthProvider;
 import com.urva.myfinance.coinTrack.user.model.PendingRegistration;
 import com.urva.myfinance.coinTrack.user.model.User;
+import com.urva.myfinance.coinTrack.user.model.UserDeletionAudit;
+import com.urva.myfinance.coinTrack.user.repository.BackupCodeRepository;
 import com.urva.myfinance.coinTrack.user.repository.PendingRegistrationRepository;
+import com.urva.myfinance.coinTrack.user.repository.UserDeletionAuditRepository;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 
 /**
  * User registration and management service.
  *
+ * <p>
  * Changed: Replaced in-memory HashMap with MongoDB
- * PendingRegistrationRepository.
- * Pending registrations now survive server restarts and work across multiple
- * instances.
+ * PendingRegistrationRepository. Pending
+ * registrations now survive server restarts and work across multiple instances.
  */
 @Service
 public class UserService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+  private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
-    private final UserRepository userRepository;
-    private final PendingRegistrationRepository pendingRegistrationRepository;
-    private final MongoTemplate mongoTemplate;
-    private final PasswordEncoder passwordEncoder;
-    private final JWTService jwtService;
-    private final NoteService noteService;
+  private final UserRepository userRepository;
+  private final PendingRegistrationRepository pendingRegistrationRepository;
+  private final BackupCodeRepository backupCodeRepository;
+  private final UserDeletionAuditRepository userDeletionAuditRepository;
+  private final MongoTemplate mongoTemplate;
+  private final PasswordEncoder passwordEncoder;
+  private final JWTService jwtService;
+  private final NoteService noteService;
+  private final InvalidatedTokenRepository invalidatedTokenRepository;
+  private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
-    private EmailService emailService;
-    private EmailTokenService emailTokenService;
-    private EmailConfigProperties emailConfig;
+  @Autowired
+  public UserService(
+      UserRepository userRepository,
+      PendingRegistrationRepository pendingRegistrationRepository,
+      BackupCodeRepository backupCodeRepository,
+      UserDeletionAuditRepository userDeletionAuditRepository,
+      MongoTemplate mongoTemplate,
+      PasswordEncoder passwordEncoder,
+      JWTService jwtService,
+      NoteService noteService,
+      InvalidatedTokenRepository invalidatedTokenRepository,
+      org.springframework.context.ApplicationEventPublisher eventPublisher) {
+    this.userRepository = userRepository;
+    this.pendingRegistrationRepository = pendingRegistrationRepository;
+    this.backupCodeRepository = backupCodeRepository;
+    this.userDeletionAuditRepository = userDeletionAuditRepository;
+    this.mongoTemplate = mongoTemplate;
+    this.passwordEncoder = passwordEncoder;
+    this.jwtService = jwtService;
+    this.noteService = noteService;
+    this.invalidatedTokenRepository = invalidatedTokenRepository;
+    this.eventPublisher = eventPublisher;
+  }
 
-    @Autowired(required = false)
-    public void setEmailService(EmailService emailService) {
-        this.emailService = emailService;
+  private EmailService emailService;
+  private EmailTokenService emailTokenService;
+  private EmailConfigProperties emailConfig;
+
+  @Autowired(required = false)
+  public void setEmailService(EmailService emailService) {
+    this.emailService = emailService;
+  }
+
+  @Autowired(required = false)
+  public void setEmailTokenService(EmailTokenService emailTokenService) {
+    this.emailTokenService = emailTokenService;
+  }
+
+  @Autowired(required = false)
+  public void setEmailConfig(EmailConfigProperties emailConfig) {
+    this.emailConfig = emailConfig;
+  }
+
+  // ── Registration ────────────────────────────────────────────────
+
+  /**
+   * Initiates user registration. Validates input, checks uniqueness, stores in
+   * MongoDB
+   * pending_registrations. User is NOT saved to users collection until TOTP setup
+   * is verified.
+   */
+  public LoginResponse registerUser(User user) {
+    if (user.getUsername() == null || user.getPassword() == null) {
+      throw new RuntimeException("Username and Password are required");
     }
 
-    @Autowired(required = false)
-    public void setEmailTokenService(EmailTokenService emailTokenService) {
-        this.emailTokenService = emailTokenService;
+    String cleanUsername = user.getUsername().trim();
+    String cleanEmail = user.getEmail() != null ? user.getEmail().trim().toLowerCase() : null;
+    String normalizedPhone = normalizePhoneNumber(user.getPhoneNumber());
+
+    // 1. Check permanent database (fully registered users)
+    if (userRepository.existsByUsername(cleanUsername)) {
+      throw new RuntimeException("Username already exists. Please choose a different username.");
     }
 
-    @Autowired(required = false)
-    public void setEmailConfig(EmailConfigProperties emailConfig) {
-        this.emailConfig = emailConfig;
+    boolean emailExists = cleanEmail != null
+        && (userRepository.existsByEmail(cleanEmail) || isPendingEmailActive(cleanEmail));
+    boolean phoneExists = normalizedPhone != null
+        && !normalizedPhone.isEmpty()
+        && userRepository.existsByPhoneNumber(normalizedPhone);
+
+    if (emailExists || phoneExists) {
+      // FinTech Anti-Enumeration & Account Protection:
+      // Do not disclose whether email or phone collided to prevent reconnaissance.
+      // Dispatch asynchronous security alert to existing user if email is matched.
+      if (emailExists && emailService != null) {
+        try {
+          User existing = userRepository.findByEmail(cleanEmail);
+          if (existing != null) {
+            emailService.sendSecurityAlert(
+                existing,
+                "Sign-up Attempt Detected",
+                java.util.Map.of(
+                    "Notice",
+                    "A registration attempt was initiated with this email address. If you already"
+                        + " have an account, you can sign in or reset your password."));
+          }
+        } catch (Exception ex) {
+          logger.warn("Could not dispatch registration security alert: {}", ex.getMessage());
+        }
+      }
+      throw new RuntimeException(
+          "An account associated with these details may already exist. If you already have an"
+              + " account, please sign in or recover access.");
     }
 
-    public UserService(UserRepository userRepository,
-            PendingRegistrationRepository pendingRegistrationRepository,
-            MongoTemplate mongoTemplate,
-            PasswordEncoder passwordEncoder,
-            JWTService jwtService,
-            NoteService noteService) {
-        this.userRepository = userRepository;
-        this.pendingRegistrationRepository = pendingRegistrationRepository;
-        this.mongoTemplate = mongoTemplate;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.noteService = noteService;
+    // 2. Check pending registrations collection
+    PendingRegistration existingPending = pendingRegistrationRepository
+        .findByUsername(cleanUsername)
+        .orElseGet(
+            () -> cleanEmail != null
+                ? pendingRegistrationRepository.findByEmail(cleanEmail).orElse(null)
+                : null);
+    if (existingPending == null && normalizedPhone != null && !normalizedPhone.isEmpty()) {
+      existingPending = pendingRegistrationRepository.findByPhoneNumber(normalizedPhone).orElse(null);
     }
 
-    // ── Registration ────────────────────────────────────────────────
+    if (existingPending != null) {
+      // Auto-purge if expired
+      if (existingPending.getExpiresAt() != null
+          && existingPending.getExpiresAt().isBefore(Instant.now())) {
+        pendingRegistrationRepository.delete(existingPending);
+        existingPending = null;
+      }
+    }
 
-    /**
-     * Initiates user registration.
-     * Validates input, checks uniqueness, stores in MongoDB pending_registrations.
-     * User is NOT saved to users collection until TOTP setup is verified.
-     */
-    public LoginResponse registerUser(User user) {
-        if (user.getUsername() == null || user.getPassword() == null) {
-            throw new RuntimeException("Username and Password are required");
-        }
+    if (existingPending != null) {
+      // Check if this is the EXACT SAME user re-submitting registration
+      boolean isSameUser = existingPending.getUsername() != null
+          && existingPending.getUsername().equalsIgnoreCase(cleanUsername)
+          && existingPending.getEmail() != null
+          && existingPending.getEmail().equalsIgnoreCase(cleanEmail)
+          && existingPending.getPasswordHash() != null
+          && passwordEncoder.matches(user.getPassword(), existingPending.getPasswordHash());
 
-        if (userRepository.existsByUsername(user.getUsername())
-                || pendingRegistrationRepository.existsByUsername(user.getUsername())) {
-            throw new RuntimeException("Username already exists. Please choose a different username.");
-        }
+      if (isSameUser) {
+        String tempToken = jwtService.generateTempToken(cleanUsername, "TOTP_REGISTRATION");
+        existingPending.setTempToken(tempToken);
+        if (normalizedPhone != null)
+          existingPending.setPhoneNumber(normalizedPhone);
+        if (user.getName() != null && !user.getName().isBlank())
+          existingPending.setName(user.getName().trim());
+        existingPending.setExpiresAt(Instant.now().plusSeconds(15 * 60));
+        pendingRegistrationRepository.save(existingPending);
 
-        if (userRepository.existsByEmail(user.getEmail())
-                || pendingRegistrationRepository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("Email already exists. Please use a different email.");
-        }
-
-        String normalizedPhone = normalizePhoneNumber(user.getPhoneNumber());
-        if (normalizedPhone != null && userRepository.existsByPhoneNumber(normalizedPhone)) {
-            throw new RuntimeException("Phone number already exists. Please use a different number.");
-        }
-
-        // Generate temp token for TOTP setup
-        String tempToken = jwtService.generateTempToken(user.getUsername(), "TOTP_REGISTRATION");
-
-        // Store pending registration in MongoDB (15-minute TTL)
-        PendingRegistration pending = PendingRegistration.builder()
-                .tempToken(tempToken)
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .phoneNumber(normalizedPhone)
-                .name(user.getName())
-                .passwordHash(passwordEncoder.encode(user.getPassword()))
-                .expiresAt(Instant.now().plusSeconds(15 * 60))
-                .build();
-
-        pendingRegistrationRepository.save(pending);
-        logger.info("Stored pending registration in MongoDB for: {}", user.getUsername());
-
+        logger.info("Resumed active pending registration for user: {}", cleanUsername);
         LoginResponse response = new LoginResponse();
-        response.setMessage("Please set up 2-Factor Authentication to complete registration.");
+        response.setMessage("Registration resumed. Please set up 2-Factor Authentication.");
         response.setRequireTotpSetup(true);
         response.setTempToken(tempToken);
-        response.setUsername(user.getUsername());
+        response.setUsername(cleanUsername);
         return response;
+      }
+
+      // If details don't match, enforce username error or uniform collision error
+      if (existingPending.getUsername() != null
+          && existingPending.getUsername().equalsIgnoreCase(cleanUsername)) {
+        throw new RuntimeException("Username already exists. Please choose a different username.");
+      }
+      throw new RuntimeException(
+          "An account associated with these details may already exist. If you already have an"
+              + " account, please sign in or recover access.");
     }
 
-    /**
-     * Get pending user as a User object (for TOTP setup).
-     * Builds a transient User from the PendingRegistration document.
-     */
-    public User getPendingRegistrationUser(String username) {
-        return pendingRegistrationRepository.findByUsername(username)
-                .map(this::toTransientUser)
-                .orElse(null);
+    // Generate temp token for TOTP setup
+    String tempToken = jwtService.generateTempToken(cleanUsername, "TOTP_REGISTRATION");
+
+    // Store pending registration in MongoDB (15-minute TTL)
+    PendingRegistration pending = PendingRegistration.builder()
+        .tempToken(tempToken)
+        .username(cleanUsername)
+        .email(cleanEmail)
+        .phoneNumber(normalizedPhone)
+        .name(user.getName())
+        .passwordHash(passwordEncoder.encode(user.getPassword()))
+        .expiresAt(Instant.now().plusSeconds(15 * 60))
+        .build();
+
+    pendingRegistrationRepository.save(pending);
+    logger.info("Stored pending registration in MongoDB for: {}", cleanUsername);
+
+    LoginResponse response = new LoginResponse();
+    response.setMessage("Please set up 2-Factor Authentication to complete registration.");
+    response.setRequireTotpSetup(true);
+    response.setTempToken(tempToken);
+    response.setUsername(cleanUsername);
+    return response;
+  }
+
+  public PendingRegistration getPendingRegistrationByIdentifier(String clean, String normalizedPhone) {
+    if (clean == null || clean.isBlank())
+      return null;
+    Optional<PendingRegistration> opt = pendingRegistrationRepository.findByUsername(clean);
+    if (opt.isPresent())
+      return opt.get();
+    opt = pendingRegistrationRepository.findByEmail(clean.toLowerCase());
+    if (opt.isPresent())
+      return opt.get();
+    if (normalizedPhone != null && !normalizedPhone.isBlank()) {
+      opt = pendingRegistrationRepository.findByPhoneNumber(normalizedPhone);
+      if (opt.isPresent())
+        return opt.get();
     }
+    return null;
+  }
 
-    public PendingRegistration getPendingRegistrationByGoogleId(String googleId) {
-        return pendingRegistrationRepository.findByGoogleId(googleId).orElse(null);
+  public void deletePendingRegistration(PendingRegistration pending) {
+    if (pending != null && pending.getId() != null) {
+      pendingRegistrationRepository.deleteById(pending.getId());
     }
+  }
 
-    public void savePendingRegistration(PendingRegistration pending) {
-        pendingRegistrationRepository.save(pending);
-    }
+  /**
+   * Get pending user as a User object (for TOTP setup). Builds a transient User
+   * from the
+   * PendingRegistration document.
+   */
+  public User getPendingRegistrationUser(String username) {
+    return pendingRegistrationRepository
+        .findByUsername(username)
+        .map(this::toTransientUser)
+        .orElse(null);
+  }
 
-    @Transactional
-    public PendingRegistration upsertPendingGoogleRegistration(String googleId, String email, String name) {
-        String tempToken = jwtService.generateTempToken(googleId, "PROFILE_COMPLETION");
-        Instant now = Instant.now();
-        Instant expires = now.plusSeconds(15 * 60);
+  public PendingRegistration getPendingRegistrationByGoogleId(String googleId) {
+    return pendingRegistrationRepository.findByGoogleId(googleId).orElse(null);
+  }
 
-        Query query = new Query(Criteria.where("googleId").is(googleId));
+  public void savePendingRegistration(PendingRegistration pending) {
+    pendingRegistrationRepository.save(pending);
+  }
 
-        Update update = new Update()
-                .setOnInsert("googleId", googleId)
-                .setOnInsert("createdAt", now)
-                .set("email", email)
-                .set("name", name)
-                .set("authProvider", AuthProvider.GOOGLE)
-                .set("tempToken", tempToken)
-                .set("expiresAt", expires);
+  public void recordPendingTotpFailure(String username) {
+    if (username == null || username.isBlank())
+      return;
+    pendingRegistrationRepository
+        .findByUsername(username)
+        .ifPresent(
+            pending -> {
+              int attempts = pending.getTotpFailedAttempts() + 1;
+              pending.setTotpFailedAttempts(attempts);
+              if (attempts >= 5) {
+                pendingRegistrationRepository.delete(pending);
+                logger.warn(
+                    "Pending registration for user '{}' deleted due to exceeding maximum allowed"
+                        + " TOTP verification attempts (brute-force prevention).",
+                    username);
+              } else {
+                pendingRegistrationRepository.save(pending);
+              }
+            });
+  }
 
-        FindAndModifyOptions options = new FindAndModifyOptions().returnNew(true).upsert(true);
+  @Transactional
+  public PendingRegistration upsertPendingGoogleRegistration(
+      String googleId, String email, String name) {
+    String tempToken = jwtService.generateTempToken(googleId, "PROFILE_COMPLETION");
+    Instant now = Instant.now();
+    Instant expires = now.plusSeconds(15 * 60);
 
-        return mongoTemplate.findAndModify(query, update, options, PendingRegistration.class);
-    }
+    Query query = new Query(Criteria.where("googleId").is(googleId));
 
-    /**
-     * Complete pending registration by saving user to DB.
-     * Called after TOTP verification is successful.
-     */
-    @Transactional
-    public User completePendingRegistration(User verifiedUser) {
-        String username = verifiedUser.getUsername();
-        pendingRegistrationRepository.findByUsername(username)
-                .orElseThrow(() -> new AuthenticationException("Registration expired. Please register again."));
+    Update update = new Update()
+        .setOnInsert("googleId", googleId)
+        .setOnInsert("createdAt", now)
+        .set("email", email)
+        .set("name", name)
+        .set("authProvider", AuthProvider.GOOGLE)
+        .set("tempToken", tempToken)
+        .set("expiresAt", expires);
 
-        @SuppressWarnings("null")
-        User savedUser = userRepository.save(verifiedUser);
-        logger.info("User saved to DB after TOTP verification: {}", savedUser.getUsername());
+    FindAndModifyOptions options = new FindAndModifyOptions().returnNew(true).upsert(true);
 
-        // Remove pending registration
-        pendingRegistrationRepository.deleteByUsername(username);
+    return mongoTemplate.findAndModify(query, update, options, PendingRegistration.class);
+  }
 
-        // Seed default notes
-        noteService.createDefaultNotesIfNoneExist(savedUser.getId());
-
-        // Send emails
-        sendRegistrationEmails(savedUser);
-
-        return savedUser;
-    }
-
-    /**
-     * Update the TOTP pending secret on a PendingRegistration in MongoDB.
-     * Called during registration TOTP setup to persist the encrypted secret.
-     */
-    public void updatePendingTotpSecret(String username, String encryptedSecret) {
-        pendingRegistrationRepository.findByUsername(username).ifPresent(pending -> {
-            pending.setTotpSecretEncrypted(encryptedSecret);
-            pendingRegistrationRepository.save(pending);
-        });
-    }
-
-    // ── User queries ────────────────────────────────────────────────
-
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
-    public User getUserById(String id) {
-        return userRepository.findById(id).orElse(null);
-    }
-
-    public User findUserByUsername(String username) {
-        if (username == null || username.trim().isEmpty())
-            return null;
-        return userRepository.findByUsername(username);
-    }
-
-    public boolean isUsernameAvailable(String username) {
-        return !userRepository.existsByUsername(username);
-    }
-
-    // ── Profile updates ─────────────────────────────────────────────
+  /**
+   * Complete pending registration by saving user to DB. Called after TOTP
+   * verification is
+   * successful.
+   */
+  @Transactional
+  public User completePendingRegistration(User verifiedUser) {
+    String username = verifiedUser.getUsername();
+    pendingRegistrationRepository
+        .findByUsername(username)
+        .orElseThrow(
+            () -> new AuthenticationException("Registration expired. Please register again."));
 
     @SuppressWarnings("null")
-    public User updateUser(String id, User user) {
-        Optional<User> existingUserOpt = userRepository.findById(id);
-        if (existingUserOpt.isEmpty())
-            return null;
+    User savedUser = userRepository.save(verifiedUser);
+    logger.info("User saved to DB after TOTP verification: {}", savedUser.getUsername());
 
-        User existing = existingUserOpt.get();
+    // Remove pending registration
+    pendingRegistrationRepository.deleteByUsername(username);
 
-        if (user.getUsername() != null) {
-            String newUsername = user.getUsername().trim();
-            if (newUsername.isEmpty())
-                throw new IllegalArgumentException("Username cannot be empty");
-            if (!newUsername.equals(existing.getUsername())) {
-                if (userRepository.findByUsername(newUsername) != null) {
-                    throw new IllegalArgumentException("Username is already taken");
-                }
-            }
-            existing.setUsername(newUsername);
+    // Seed default notes
+    noteService.createDefaultNotesIfNoneExist(savedUser.getId());
+
+    // Send emails
+    sendRegistrationEmails(savedUser);
+
+    return savedUser;
+  }
+
+  /**
+   * Update the TOTP pending secret on a PendingRegistration in MongoDB. Called
+   * during registration
+   * TOTP setup to persist the encrypted secret.
+   */
+  public void updatePendingTotpSecret(String username, String encryptedSecret) {
+    pendingRegistrationRepository
+        .findByUsername(username)
+        .ifPresent(
+            pending -> {
+              pending.setTotpSecretEncrypted(encryptedSecret);
+              pendingRegistrationRepository.save(pending);
+            });
+  }
+
+  // ── User queries ────────────────────────────────────────────────
+
+  public User getUserById(String id) {
+    return userRepository.findById(id).orElse(null);
+  }
+
+  public User findUserByUsername(String username) {
+    if (username == null || username.trim().isEmpty())
+      return null;
+    return userRepository.findByUsername(username);
+  }
+
+  public boolean isUsernameAvailable(String username) {
+    return !userRepository.existsByUsername(username);
+  }
+
+  /**
+   * True when the normalized phone is held by an existing user OR a pending
+   * registration (closes
+   * the race where a pending signup later claims it). Null-safe: a missing phone
+   * is never "taken".
+   */
+  public boolean isPhoneNumberRegistered(String normalizedPhone) {
+    if (normalizedPhone == null || normalizedPhone.isEmpty()) {
+      return false;
+    }
+    return userRepository.existsByPhoneNumber(normalizedPhone)
+        || pendingRegistrationRepository.existsByPhoneNumber(normalizedPhone);
+  }
+
+  // ── Profile updates ─────────────────────────────────────────────
+
+  @SuppressWarnings("null")
+  public User updateUser(String id, User user) {
+    Optional<User> existingUserOpt = userRepository.findById(id);
+    if (existingUserOpt.isEmpty())
+      return null;
+
+    User existing = existingUserOpt.get();
+
+    if (user.getUsername() != null) {
+      String newUsername = user.getUsername().trim();
+      if (newUsername.isEmpty())
+        throw new IllegalArgumentException("Username cannot be empty");
+      if (!newUsername.equals(existing.getUsername())) {
+        if (userRepository.findByUsername(newUsername) != null) {
+          throw new IllegalArgumentException("Username is already taken");
         }
-
-        if (user.getEmail() != null) {
-            String newEmail = user.getEmail().trim().toLowerCase();
-            if (newEmail.isEmpty())
-                throw new IllegalArgumentException("Email cannot be empty");
-            if (!newEmail.equals(existing.getEmail())) {
-                if (userRepository.findByEmail(newEmail) != null) {
-                    throw new IllegalArgumentException("Email is already registered with another account");
-                }
-            }
-            existing.setEmail(newEmail);
-        }
-
-        if (user.getPhoneNumber() != null) {
-            String newPhone = normalizePhoneNumber(user.getPhoneNumber());
-            if (newPhone != null && !newPhone.isEmpty()) {
-                if (existing.getPhoneNumber() == null || !newPhone.equals(existing.getPhoneNumber())) {
-                    if (userRepository.findByPhoneNumber(newPhone) != null) {
-                        throw new IllegalArgumentException("Mobile number is already registered with another account");
-                    }
-                }
-            }
-            existing.setPhoneNumber(newPhone);
-        }
-
-        if (user.getName() != null)
-            existing.setName(user.getName());
-        if (user.getDateOfBirth() != null)
-            existing.setDateOfBirth(user.getDateOfBirth());
-        if (user.getBio() != null)
-            existing.setBio(user.getBio());
-        if (user.getLocation() != null)
-            existing.setLocation(user.getLocation());
-
-        return userRepository.save(existing);
+      }
+      existing.setUsername(newUsername);
     }
 
-    @SuppressWarnings("null")
-    public void changePassword(String userId, String oldPassword, String newPassword) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
-        }
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
+    if (user.getEmail() != null) {
+      String newEmail = user.getEmail().trim().toLowerCase();
+      if (newEmail.isEmpty())
+        throw new IllegalArgumentException("Email cannot be empty");
+      if (existing.getEmail() != null && !newEmail.equals(existing.getEmail().toLowerCase())) {
+        throw new IllegalArgumentException(
+            "Email cannot be modified directly in profile settings. Please use the secure Email Change request feature at /api/auth/email/change.");
+      }
     }
 
-    @SuppressWarnings("null")
-    public boolean deleteUser(String id) {
-        if (userRepository.existsById(id)) {
-            userRepository.deleteById(id);
-            return true;
+    if (user.getPhoneNumber() != null) {
+      String newPhone = normalizePhoneNumber(user.getPhoneNumber());
+      if (newPhone != null && !newPhone.isEmpty()) {
+        if (existing.getPhoneNumber() == null || !newPhone.equals(existing.getPhoneNumber())) {
+          if (isPhoneNumberRegistered(newPhone)) {
+            throw new IllegalArgumentException(
+                "Mobile number is already registered with another account");
+          }
         }
+      }
+      existing.setPhoneNumber(newPhone);
+    }
+
+    if (user.getName() != null)
+      existing.setName(user.getName());
+    if (user.getDateOfBirth() != null)
+      existing.setDateOfBirth(user.getDateOfBirth());
+    if (user.getBio() != null)
+      existing.setBio(user.getBio());
+    if (user.getLocation() != null)
+      existing.setLocation(user.getLocation());
+
+    return userRepository.save(existing);
+  }
+
+  public User saveUser(User user) {
+    return userRepository.save(user);
+  }
+
+  @SuppressWarnings("null")
+  public void changePassword(String userId, String oldPassword, String newPassword) {
+    User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+    if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+      throw new RuntimeException("Current password is incorrect");
+    }
+    user.setPassword(passwordEncoder.encode(newPassword));
+    userRepository.save(user);
+
+    // Revoke all active refresh tokens on password change
+    jwtService.revokeAllRefreshTokens(userId);
+  }
+
+  /**
+   * Industry-standard self-service account deletion.
+   *
+   * <p>
+   * 1. Re-authentication — accounts with a local password MUST confirm it; a
+   * stolen session
+   * alone can never destroy an account. Google-only accounts (no local secret)
+   * are exempt since
+   * there is nothing to match. 2. Audit snapshot written BEFORE any destruction —
+   * the only
+   * surviving identity evidence, kept for compliance/fraud/dispute resolution. 3.
+   * Own-module
+   * leftovers purged (backup codes, pending registrations). 4. User document
+   * removed, all refresh
+   * tokens revoked. 5. UserDeletedEvent fans out — every owning module deletes
+   * its own user-keyed
+   * data; the email module listener purges magic-link tokens.
+   */
+  public boolean deleteAccount(
+      String userId, String rawPassword, String ipAddress, String userAgent) {
+    User user = userRepository.findById(userId).orElse(null);
+    if (user == null) {
+      return false;
+    }
+
+    boolean hasLocalPassword = user.getPassword() != null && !user.getPassword().isBlank();
+    if (hasLocalPassword
+        && (rawPassword == null
+            || rawPassword.isBlank()
+            || !passwordEncoder.matches(rawPassword, user.getPassword()))) {
+      throw new IllegalArgumentException("Password confirmation failed — account not deleted");
+    }
+
+    // Immutable audit trail BEFORE anything is destroyed
+    UserDeletionAudit audit = UserDeletionAudit.builder()
+        .userId(user.getId())
+        .username(user.getUsername())
+        .email(user.getEmail())
+        .name(user.getName())
+        .phoneNumber(user.getPhoneNumber())
+        .authProvider(user.getAuthProvider() != null ? user.getAuthProvider().name() : null)
+        .emailVerified(user.isEmailVerified())
+        .totpEnabled(user.isTotpEnabled())
+        .accountCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null)
+        .deletionRequestedAt(java.time.Instant.now())
+        .deletedByUserId(userId)
+        .ipAddress(ipAddress)
+        .userAgent(userAgent)
+        .reason("USER_REQUESTED")
+        .status("IN_PROGRESS")
+        .build();
+    userDeletionAuditRepository.save(audit);
+
+    // Own-module leftovers with no dedicated listener
+    backupCodeRepository.deleteByUserId(userId);
+    pendingRegistrationRepository.deleteByUsername(user.getUsername());
+
+    userRepository.deleteById(userId);
+    jwtService.revokeAllRefreshTokens(userId);
+
+    eventPublisher.publishEvent(
+        new com.urva.myfinance.coinTrack.common.event.UserDeletedEvent(userId, user.getUsername()));
+
+    audit.setStatus("COMPLETED");
+    audit.setCompletedAt(java.time.Instant.now());
+    userDeletionAuditRepository.save(audit);
+    return true;
+  }
+
+  // ── Token helpers (kept for backward compat) ────────────────────
+
+  public User getUserByToken(String token) {
+    String username = jwtService.extractUsername(token);
+    return userRepository.findByUsername(username);
+  }
+
+  public boolean isTokenValid(String token) {
+    try {
+      String tokenHash = HashUtil.sha256(token);
+      if (invalidatedTokenRepository.existsByTokenHash(tokenHash)) {
         return false;
+      }
+      String username = jwtService.extractUsername(token);
+      return username != null && !jwtService.isTokenExpired(token);
+    } catch (Exception e) {
+      return false;
     }
+  }
 
-    // ── Token helpers (kept for backward compat) ────────────────────
+  // ── Internal helpers ────────────────────────────────────────────
 
-    public User getUserByToken(String token) {
-        String username = jwtService.extractUsername(token);
-        return userRepository.findByUsername(username);
-    }
-
-    public boolean isTokenValid(String token) {
-        try {
-            String username = jwtService.extractUsername(token);
-            return username != null && !jwtService.isTokenExpired(token);
-        } catch (Exception e) {
-            return false;
+  @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+  public void migrateMixedCaseEmailsToLowerCase() {
+    try {
+      List<User> users = userRepository.findAll();
+      int count = 0;
+      for (User u : users) {
+        if (u.getEmail() != null) {
+          String lower = u.getEmail().trim().toLowerCase();
+          if (!u.getEmail().equals(lower)) {
+            u.setEmail(lower);
+            userRepository.save(u);
+            count++;
+          }
         }
+      }
+      if (count > 0) {
+        logger.info("Migrated {} existing user email(s) to lower-case in MongoDB.", count);
+      }
+    } catch (Exception e) {
+      logger.warn("Failed to run email lower-case migration: {}", e.getMessage());
     }
+  }
 
-    // ── Internal helpers ────────────────────────────────────────────
+  private User toTransientUser(PendingRegistration pending) {
+    AuthProvider provider = pending.getAuthProvider() != null ? pending.getAuthProvider() : AuthProvider.LOCAL;
+    boolean isGoogle = provider == AuthProvider.GOOGLE;
+    String cleanEmail = pending.getEmail() != null ? pending.getEmail().trim().toLowerCase() : null;
+    return User.builder()
+        .username(pending.getUsername())
+        .email(cleanEmail)
+        .phoneNumber(pending.getPhoneNumber())
+        .name(pending.getName())
+        .password(pending.getPasswordHash())
+        .totpSecretPending(pending.getTotpSecretEncrypted())
+        .googleId(pending.getGoogleId())
+        .authProvider(provider)
+        .emailVerified(isGoogle)
+        .emailVerifiedAt(isGoogle ? LocalDateTime.now() : null)
+        .totpEnabled(false)
+        .totpVerified(false)
+        .totpSecretVersion(0)
+        .build();
+  }
 
-    private User toTransientUser(PendingRegistration pending) {
-        AuthProvider provider = pending.getAuthProvider() != null ? pending.getAuthProvider() : AuthProvider.LOCAL;
-        boolean isGoogle = provider == AuthProvider.GOOGLE;
-        return User.builder()
-                .username(pending.getUsername())
-                .email(pending.getEmail())
-                .phoneNumber(pending.getPhoneNumber())
-                .name(pending.getName())
-                .password(pending.getPasswordHash())
-                .totpSecretPending(pending.getTotpSecretEncrypted())
-                .googleId(pending.getGoogleId())
-                .authProvider(provider)
-                .emailVerified(isGoogle)
-                .emailVerifiedAt(isGoogle ? LocalDateTime.now() : null)
-                .totpEnabled(false)
-                .totpVerified(false)
-                .totpSecretVersion(0)
-                .build();
+  private void sendRegistrationEmails(User user) {
+    if (emailService == null || emailTokenService == null || emailConfig == null) {
+      logger.warn("Email services not configured, skipping registration emails");
+      return;
     }
+    try {
+      emailService.sendWelcomeEmail(user);
+      logger.info("Welcome email sent to: {}", user.getEmail());
 
-    private void sendRegistrationEmails(User user) {
-        if (emailService == null || emailTokenService == null || emailConfig == null) {
-            logger.warn("Email services not configured, skipping registration emails");
-            return;
-        }
-        try {
-            emailService.sendWelcomeEmail(user);
-            logger.info("Welcome email sent to: {}", user.getEmail());
-
-            if (user.getAuthProvider() != AuthProvider.GOOGLE) {
-                String token = emailTokenService.createToken(user, "EMAIL_VERIFY", null);
-                String magicLink = emailConfig.getEmailVerifyUrl(token);
-                emailService.sendEmailVerification(user, magicLink);
-                logger.info("Verification email sent to: {}", user.getEmail());
-            } else {
-                logger.info("Skipping verification email for Google SSO user: {}", user.getEmail());
-            }
-        } catch (Exception e) {
-            logger.error("Failed to send registration emails: {}", e.getMessage());
-        }
+      if (user.getAuthProvider() != AuthProvider.GOOGLE) {
+        String token = emailTokenService.createToken(user, "EMAIL_VERIFY", null);
+        String magicLink = emailConfig.getEmailVerifyUrl(token);
+        emailService.sendEmailVerification(user, magicLink);
+        logger.info("Verification email sent to: {}", user.getEmail());
+      } else {
+        logger.info("Skipping verification email for Google SSO user: {}", user.getEmail());
+      }
+    } catch (Exception e) {
+      logger.error("Failed to send registration emails: {}", e.getMessage());
     }
+  }
 
-    private String normalizePhoneNumber(String input) {
-        if (input == null || input.trim().isEmpty())
-            return null;
-        String cleaned = input.replaceAll("[^0-9+]", "");
-        if (cleaned.matches("^\\d{10}$"))
-            return "+91" + cleaned;
-        return cleaned;
-    }
+  private boolean isPendingEmailActive(String email) {
+    if (email == null || email.trim().isEmpty())
+      return false;
+    return userRepository
+        .findOptionalByPendingEmail(email.trim().toLowerCase())
+        .map(u -> u.getPendingEmailExpiresAt() == null
+            || u.getPendingEmailExpiresAt().isAfter(java.time.LocalDateTime.now()))
+        .orElse(false);
+  }
+
+  private String normalizePhoneNumber(String input) {
+    if (input == null || input.trim().isEmpty())
+      return null;
+    String cleaned = input.replaceAll("[^0-9+]", "");
+    if (cleaned.matches("^\\d{10}$"))
+      return "+91" + cleaned;
+    return cleaned;
+  }
 }

@@ -1,11 +1,5 @@
-// src/app/(main)/brokers/angelone/dashboard/page.jsx — Redirect to portfolio
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-
-export default function AngelOneDashboardRedirect() {
-    const router = useRouter();
-    useEffect(() => { router.replace('/portfolio?tab=holdings'); }, [router]);
-    return null;
+export default function Page() {
+  redirect('/brokers/angelone');
 }

@@ -4,10 +4,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import java.util.Arrays;
+import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
+import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.PortfolioHoldingRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.RedemptionTransactionRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.SipContributionRepository;
+import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
 import java.util.List;
 import java.util.Optional;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,220 +23,242 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import com.urva.myfinance.coinTrack.mutualfund.model.MfScheme;
-import com.urva.myfinance.coinTrack.mutualfund.repository.LumpsumTransactionRepository;
-import com.urva.myfinance.coinTrack.mutualfund.repository.MfSchemeRepository;
-import com.urva.myfinance.coinTrack.mutualfund.repository.RedemptionTransactionRepository;
-import com.urva.myfinance.coinTrack.mutualfund.repository.SipContributionRepository;
-import com.urva.myfinance.coinTrack.mutualfund.repository.SipMandateRepository;
-import com.urva.myfinance.coinTrack.mutualfund.repository.PortfolioHoldingRepository;
-import com.urva.myfinance.coinTrack.mutualfund.service.PortfolioHoldingService;
-
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MfSchemeService - Comprehensive Tests")
 class MfSchemeServiceTest {
 
-    @Mock private MfSchemeRepository repository;
-    @Mock private LumpsumTransactionRepository lumpsumRepo;
-    @Mock private SipMandateRepository sipMandateRepo;
-    @Mock private RedemptionTransactionRepository redemptionRepo;
-    @Mock private SipContributionRepository sipContributionRepo;
-    @Mock private PortfolioHoldingService portfolioHoldingService;
-    @Mock private PortfolioHoldingRepository portfolioHoldingRepo;
+  @Mock private MfSchemeRepository repository;
+  @Mock private LumpsumTransactionRepository lumpsumRepo;
+  @Mock private SipMandateRepository sipMandateRepo;
+  @Mock private RedemptionTransactionRepository redemptionRepo;
+  @Mock private SipContributionRepository sipContributionRepo;
+  @Mock private PortfolioHoldingService portfolioHoldingService;
+  @Mock private PortfolioHoldingRepository portfolioHoldingRepo;
 
-    @InjectMocks
-    private MfSchemeService service;
+  @InjectMocks private MfSchemeService service;
 
-    private MfScheme sampleScheme;
-    private static final String USER_ID = "u1";
-    private static final String SCHEME_ID = "s1";
+  private MfScheme sampleScheme;
+  private static final String USER_ID = "u1";
+  private static final String SCHEME_ID = "s1";
 
-    @BeforeEach
-    void setUp() {
-        sampleScheme = new MfScheme();
-        sampleScheme.setId(SCHEME_ID);
-        sampleScheme.setUserId(USER_ID);
-        sampleScheme.setSchemeName("HDFC Mid Cap");
-        sampleScheme.setHolderName("John");
-        sampleScheme.setMfCategory("equity");
-        sampleScheme.setPlatform("Groww");
-        sampleScheme.setFolioNo("F123");
+  @BeforeEach
+  void setUp() {
+    sampleScheme = new MfScheme();
+    sampleScheme.setId(SCHEME_ID);
+    sampleScheme.setUserId(USER_ID);
+    sampleScheme.setSchemeName("HDFC Mid Cap");
+    sampleScheme.setHolderName("John");
+    sampleScheme.setMfCategory("equity");
+    sampleScheme.setPlatform("Groww");
+    sampleScheme.setFolioNo("F123");
 
-        when(portfolioHoldingRepo.findByUserIdAndSchemeId(anyString(), anyString())).thenReturn(Optional.empty());
-    }
+    when(portfolioHoldingRepo.findByUserIdAndSchemeId(anyString(), anyString()))
+        .thenReturn(Optional.empty());
+  }
 
-    // ── getAllSchemes ──────────────────────────────────────────────
+  // ── getAllSchemes ──────────────────────────────────────────────
 
-    @Test
-    @DisplayName("getAllSchemes: no holderName → returns all user schemes")
-    void getAllSchemes_noHolderName_returnsAll() {
-        when(repository.findByUserId(USER_ID)).thenReturn(List.of(sampleScheme));
+  @Test
+  @DisplayName("getAllSchemes: no holderName → returns all user schemes")
+  void getAllSchemes_noHolderName_returnsAll() {
+    when(repository.findByUserId(USER_ID)).thenReturn(List.of(sampleScheme));
 
-        List<MfScheme> result = service.getAllSchemes(USER_ID, null);
+    List<MfScheme> result = service.getAllSchemes(USER_ID, null);
 
-        assertEquals(1, result.size());
-    }
+    assertEquals(1, result.size());
+  }
 
-    @Test
-    @DisplayName("getAllSchemes: with holderName → filters by holder")
-    void getAllSchemes_withHolderName_filtersByHolder() {
-        when(repository.findByUserIdAndHolderName(USER_ID, "John")).thenReturn(List.of(sampleScheme));
+  @Test
+  @DisplayName("getAllSchemes: with holderName → filters by holder (normalized match)")
+  void getAllSchemes_withHolderName_filtersByHolder() {
+    MfScheme matching = new MfScheme();
+    matching.setHolderName("John");
+    MfScheme caseVariant = new MfScheme();
+    caseVariant.setHolderName("JOHN");
+    MfScheme other = new MfScheme();
+    other.setHolderName("Jane");
+    when(repository.findByUserId(USER_ID))
+        .thenReturn(List.of(sampleScheme, matching, caseVariant, other));
 
-        List<MfScheme> result = service.getAllSchemes(USER_ID, "John");
+    // Case/whitespace variants of "John" must match the same person.
+    List<MfScheme> result = service.getAllSchemes(USER_ID, "john");
 
-        assertEquals(1, result.size());
-    }
+    assertEquals(3, result.size());
+    assertTrue(result.contains(sampleScheme));
+    assertTrue(result.contains(matching));
+    assertTrue(result.contains(caseVariant));
+    assertFalse(result.contains(other));
+  }
 
-    // ── getScheme ──────────────────────────────────────────────────
+  // ── getScheme ──────────────────────────────────────────────────
 
-    @Test
-    @DisplayName("getScheme: exists and owned → returns scheme")
-    void getScheme_exists_returnsScheme() {
-        when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
+  @Test
+  @DisplayName("getScheme: exists and owned → returns scheme")
+  void getScheme_exists_returnsScheme() {
+    when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
 
-        MfScheme result = service.getScheme(USER_ID, SCHEME_ID);
+    MfScheme result = service.getScheme(USER_ID, SCHEME_ID);
 
-        assertNotNull(result);
-        assertEquals("HDFC Mid Cap", result.getSchemeName());
-    }
+    assertNotNull(result);
+    assertEquals("HDFC Mid Cap", result.getSchemeName());
+  }
 
-    @Test
-    @DisplayName("getScheme: not found → throws RuntimeException")
-    void getScheme_notFound_throws() {
-        when(repository.findById("bad")).thenReturn(Optional.empty());
+  @Test
+  @DisplayName("getScheme: not found → throws RuntimeException")
+  void getScheme_notFound_throws() {
+    when(repository.findById("bad")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> service.getScheme(USER_ID, "bad"));
-    }
+    assertThrows(RuntimeException.class, () -> service.getScheme(USER_ID, "bad"));
+  }
 
-    @Test
-    @DisplayName("getScheme: wrong owner → throws RuntimeException")
-    void getScheme_wrongOwner_throws() {
-        MfScheme other = new MfScheme();
-        other.setId(SCHEME_ID);
-        other.setUserId("other-user");
-        when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(other));
+  @Test
+  @DisplayName("getScheme: wrong owner → throws RuntimeException")
+  void getScheme_wrongOwner_throws() {
+    MfScheme other = new MfScheme();
+    other.setId(SCHEME_ID);
+    other.setUserId("other-user");
+    when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(other));
 
-        assertThrows(RuntimeException.class, () -> service.getScheme(USER_ID, SCHEME_ID));
-    }
+    assertThrows(RuntimeException.class, () -> service.getScheme(USER_ID, SCHEME_ID));
+  }
 
-    // ── createScheme ──────────────────────────────────────────────
+  // ── createScheme ──────────────────────────────────────────────
 
-    @Test
-    @DisplayName("createScheme: sets userId, normalizes category, sets timestamps")
-    void createScheme_setsFieldsCorrectly() {
-        when(repository.save(any(MfScheme.class))).thenAnswer(inv -> {
-            MfScheme s = inv.getArgument(0);
-            s.setId("new-id");
-            return s;
-        });
+  @Test
+  @DisplayName("createScheme: sets userId, normalizes category+holderName, sets timestamps")
+  void createScheme_setsFieldsCorrectly() {
+    when(repository.save(any(MfScheme.class)))
+        .thenAnswer(
+            inv -> {
+              MfScheme s = inv.getArgument(0);
+              s.setId("new-id");
+              return s;
+            });
 
-        MfScheme newScheme = new MfScheme();
-        newScheme.setSchemeName("ICICI Prudential");
-        newScheme.setMfCategory("debt");
+    MfScheme newScheme = new MfScheme();
+    newScheme.setSchemeName("ICICI Prudential");
+    newScheme.setMfCategory("debt");
+    newScheme.setHolderName("  RAHUL   das ");
 
-        MfScheme result = service.createScheme(USER_ID, newScheme);
+    MfScheme result = service.createScheme(USER_ID, newScheme);
 
-        assertEquals(USER_ID, result.getUserId());
-        assertEquals("Debt", result.getMfCategory());
-        assertNotNull(result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
-    }
+    assertEquals(USER_ID, result.getUserId());
+    assertEquals("Debt", result.getMfCategory());
+    assertEquals("Rahul Das", result.getHolderName());
+    assertNotNull(result.getCreatedAt());
+    assertNotNull(result.getUpdatedAt());
+  }
 
-    @Test
-    @DisplayName("createScheme: null category → preserved as null")
-    void createScheme_nullCategory_preserved() {
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+  @Test
+  @DisplayName("createScheme: null holderName → preserved as null")
+  void createScheme_nullHolderName_preserved() {
+    when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        MfScheme s = new MfScheme();
-        s.setMfCategory(null);
+    MfScheme s = new MfScheme();
+    s.setHolderName(null);
 
-        MfScheme result = service.createScheme(USER_ID, s);
+    MfScheme result = service.createScheme(USER_ID, s);
 
-        assertNull(result.getMfCategory());
-    }
+    assertNull(result.getHolderName());
+  }
 
-    @Test
-    @DisplayName("createScheme: empty category → preserved as empty")
-    void createScheme_emptyCategory_preserved() {
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+  @Test
+  @DisplayName("createScheme: null category → preserved as null")
+  void createScheme_nullCategory_preserved() {
+    when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        MfScheme s = new MfScheme();
-        s.setMfCategory("  ");
+    MfScheme s = new MfScheme();
+    s.setMfCategory(null);
 
-        MfScheme result = service.createScheme(USER_ID, s);
+    MfScheme result = service.createScheme(USER_ID, s);
 
-        assertEquals("  ", result.getMfCategory());
-    }
+    assertNull(result.getMfCategory());
+  }
 
-    // ── updateScheme ──────────────────────────────────────────────
+  @Test
+  @DisplayName("createScheme: empty category → preserved as empty")
+  void createScheme_emptyCategory_preserved() {
+    when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    @Test
-    @DisplayName("updateScheme: updates all mutable fields")
-    void updateScheme_updatesFields() {
-        when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    MfScheme s = new MfScheme();
+    s.setMfCategory("  ");
 
-        MfScheme updates = new MfScheme();
-        updates.setHolderName("Jane");
-        updates.setSchemeName("SBI Small Cap");
-        updates.setMfCategory("equity");
-        updates.setPlatform("Zerodha");
-        updates.setFolioNo("F456");
-        updates.setBank("HDFC");
+    MfScheme result = service.createScheme(USER_ID, s);
 
-        MfScheme result = service.updateScheme(USER_ID, SCHEME_ID, updates);
+    assertEquals("  ", result.getMfCategory());
+  }
 
-        assertEquals("Jane", result.getHolderName());
-        assertEquals("SBI Small Cap", result.getSchemeName());
-        assertEquals("Equity", result.getMfCategory());
-        assertEquals("Zerodha", result.getPlatform());
-        assertEquals("F456", result.getFolioNo());
-        assertNotNull(result.getUpdatedAt());
-    }
+  // ── updateScheme ──────────────────────────────────────────────
 
-    // ── deleteScheme ──────────────────────────────────────────────
+  @Test
+  @DisplayName("updateScheme: updates all mutable fields (holderName normalized)")
+  void updateScheme_updatesFields() {
+    when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
+    when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    @Test
-    @DisplayName("deleteScheme: no transactions → deletes successfully")
-    void deleteScheme_noTransactions_deletes() {
-        when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(lumpsumRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-        when(sipMandateRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-        when(redemptionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
-        when(sipContributionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
+    MfScheme updates = new MfScheme();
+    updates.setHolderName("  jane  singh ");
+    updates.setSchemeName("SBI Small Cap");
+    updates.setMfCategory("equity");
+    updates.setPlatform("Zerodha");
+    updates.setFolioNo("F456");
+    updates.setBank("HDFC");
 
-        assertDoesNotThrow(() -> service.deleteScheme(USER_ID, SCHEME_ID));
-        verify(repository).delete(sampleScheme);
-    }
+    MfScheme result = service.updateScheme(USER_ID, SCHEME_ID, updates);
 
-    @Test
-    @DisplayName("deleteScheme: cascades deletion to all transactions and mandates")
-    void deleteScheme_cascades() {
-        when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
-        when(lumpsumRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
-                .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.LumpsumTransaction()));
-        when(sipMandateRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
-                .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.SipMandate()));
-        when(redemptionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
-                .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.RedemptionTransaction()));
-        when(sipContributionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
-                .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.SipContribution()));
+    assertEquals("Jane Singh", result.getHolderName());
+    assertEquals("SBI Small Cap", result.getSchemeName());
+    assertEquals("Equity", result.getMfCategory());
+    assertEquals("Zerodha", result.getPlatform());
+    assertEquals("F456", result.getFolioNo());
+    assertNotNull(result.getUpdatedAt());
+  }
 
-        assertDoesNotThrow(() -> service.deleteScheme(USER_ID, SCHEME_ID));
-        
-        verify(lumpsumRepo).deleteAll(any());
-        verify(sipMandateRepo).deleteAll(any());
-        verify(redemptionRepo).deleteAll(any());
-        verify(sipContributionRepo).deleteAll(any());
-        verify(repository).delete(sampleScheme);
-    }
+  // ── deleteScheme ──────────────────────────────────────────────
 
-    @Test
-    @DisplayName("deleteScheme: not found → throws RuntimeException")
-    void deleteScheme_notFound_throws() {
-        when(repository.findById("bad")).thenReturn(Optional.empty());
+  @Test
+  @DisplayName("deleteScheme: no transactions → deletes successfully")
+  void deleteScheme_noTransactions_deletes() {
+    when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
+    when(lumpsumRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
+    when(sipMandateRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
+    when(redemptionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
+    when(sipContributionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID)).thenReturn(List.of());
 
-        assertThrows(RuntimeException.class, () -> service.deleteScheme(USER_ID, "bad"));
-    }
+    assertDoesNotThrow(() -> service.deleteScheme(USER_ID, SCHEME_ID));
+    verify(repository).delete(sampleScheme);
+  }
+
+  @Test
+  @DisplayName("deleteScheme: cascades deletion to all transactions and mandates")
+  void deleteScheme_cascades() {
+    when(repository.findById(SCHEME_ID)).thenReturn(Optional.of(sampleScheme));
+    when(lumpsumRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
+        .thenReturn(
+            List.of(new com.urva.myfinance.coinTrack.mutualfund.model.LumpsumTransaction()));
+    when(sipMandateRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
+        .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.SipMandate()));
+    when(redemptionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
+        .thenReturn(
+            List.of(new com.urva.myfinance.coinTrack.mutualfund.model.RedemptionTransaction()));
+    when(sipContributionRepo.findByUserIdAndSchemeId(USER_ID, SCHEME_ID))
+        .thenReturn(List.of(new com.urva.myfinance.coinTrack.mutualfund.model.SipContribution()));
+
+    assertDoesNotThrow(() -> service.deleteScheme(USER_ID, SCHEME_ID));
+
+    verify(lumpsumRepo).deleteAll(any());
+    verify(sipMandateRepo).deleteAll(any());
+    verify(redemptionRepo).deleteAll(any());
+    verify(sipContributionRepo).deleteAll(any());
+    verify(repository).delete(sampleScheme);
+  }
+
+  @Test
+  @DisplayName("deleteScheme: not found → throws RuntimeException")
+  void deleteScheme_notFound_throws() {
+    when(repository.findById("bad")).thenReturn(Optional.empty());
+
+    assertThrows(RuntimeException.class, () -> service.deleteScheme(USER_ID, "bad"));
+  }
 }

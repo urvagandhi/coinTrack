@@ -11,7 +11,7 @@
 # ==========================================
 
 # 1. BUILD STAGE
-FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-25-alpine AS builder
 
 WORKDIR /app
 
@@ -37,7 +37,7 @@ RUN --mount=type=cache,target=/root/.m2 \
 RUN java -Djarmode=layertools -jar target/coinTrack-0.0.1-SNAPSHOT.jar extract --destination extracted
 
 # 2. RUNTIME STAGE
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
     && apk add --no-cache curl

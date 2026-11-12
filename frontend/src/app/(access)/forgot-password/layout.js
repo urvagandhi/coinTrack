@@ -1,11 +1,7 @@
 export const metadata = {
-    title: "Forget Password",
+  title: 'Reset Password',
 };
 
 export default function LoginLayout({ children }) {
-    return (
-        <>
-            {children}
-        </>
-    );
+  return <>{children}</>;
 }

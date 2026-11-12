@@ -18,6 +18,7 @@ import com.urva.myfinance.coinTrack.email.model.EmailToken;
 import com.urva.myfinance.coinTrack.email.service.EmailService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService;
 import com.urva.myfinance.coinTrack.email.service.EmailTokenService.InvalidEmailTokenException;
+import com.urva.myfinance.coinTrack.security.service.JWTService;
 import com.urva.myfinance.coinTrack.user.model.User;
 import com.urva.myfinance.coinTrack.user.repository.UserRepository;
 import com.urva.myfinance.coinTrack.user.service.TotpService;
@@ -28,147 +29,152 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Controller for Lost 2FA Recovery flow.
+ * Controller for Lost MFA Recovery flow.
  *
- * Flow:
- * 1. POST /auth/2fa/recovery - Request 2FA recovery (email/username/mobile)
- * 2. POST /auth/2fa/recovery/verify - Verify recovery token, disable 2FA
+ * <p>
+ * Flow: 1. POST /auth/mfa/email-recovery - Request MFA recovery
+ * (email/username/mobile) 2. POST
+ * /auth/mfa/email-recovery/verify - Verify recovery token, disable MFA
  *
- * Security:
- * - Only works if user has verified email
- * - Token is single-use and short-lived
- * - Security alert sent after 2FA is disabled
+ * <p>
+ * Security: - Only works if user has verified email - Token is single-use and
+ * short-lived -
+ * Security alert sent after MFA is disabled
  */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "2FA Recovery", description = "Recover 2FA via email magic link")
+@Tag(name = "MFA Recovery", description = "Recover MFA via email magic link")
 public class TwoFactorRecoveryController {
 
-    private static final Logger logger = LoggerFactory.getLogger(TwoFactorRecoveryController.class);
+  private static final Logger logger = LoggerFactory.getLogger(TwoFactorRecoveryController.class);
 
-    private final EmailTokenService emailTokenService;
-    private final EmailService emailService;
-    private final EmailConfigProperties emailConfig;
-    private final UserRepository userRepository;
-    private final TotpService totpService;
+  private static final String DUMMY_HASH =
+      "$2a$10$AAAAAAAAAAAAAAAAAAAAAO8kI2R6x9YpFKeMMxaq0JZm2DOiCm9eK";
 
-    /**
-     * Request 2FA recovery.
-     * Sends magic link to the user's verified email.
-     * Only works if user has 2FA enabled and email is verified.
-     */
-    @Operation(summary = "Request 2FA recovery via email")
-    @PostMapping("/2fa/recovery")
-    public ResponseEntity<?> request2FARecovery(
-            @RequestBody Map<String, String> request,
-            HttpServletRequest httpRequest) {
+  private final EmailTokenService emailTokenService;
+  private final EmailService emailService;
+  private final EmailConfigProperties emailConfig;
+  private final UserRepository userRepository;
+  private final TotpService totpService;
+  private final JWTService jwtService;
+  private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
-        String identifier = request.get("identifier");
+  /**
+   * Request MFA recovery. Sends magic link to the user's verified email. Only
+   * works if user has MFA
+   * enabled and email is verified.
+   */
+  @Operation(summary = "Request MFA recovery via email")
+  @PostMapping("/mfa/email-recovery")
+  public ResponseEntity<?> request2FARecovery(
+      @RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
 
-        if (identifier == null || identifier.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Email, username, or mobile number is required"));
-        }
+    String identifier = request.get("identifier");
 
-        // Find user by email, username, or phone
-        Optional<User> userOpt = UserLookupUtil.findByIdentifier(userRepository, identifier);
+    if (identifier == null || identifier.isBlank()) {
+      return ResponseEntity.badRequest()
+          .body(ApiResponse.error("Email, username, or mobile number is required"));
+    }
 
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
+    // Find user by email, username, or phone
+    Optional<User> userOpt = UserLookupUtil.findByIdentifier(userRepository, identifier);
 
-            // Check if user has 2FA enabled
-            if (!user.isTotpEnabled()) {
-                // Don't reveal that 2FA is not enabled (prevent enumeration)
-                logger.info("2FA recovery requested but 2FA not enabled: userId={}", user.getId());
-                return ResponseEntity.ok(ApiResponse.success(Map.of(
-                        "message",
-                        "If an account exists with this identifier and has 2FA enabled, you will receive a recovery link")));
-            }
+    if (userOpt.isPresent()) {
+      User user = userOpt.get();
 
-            // Check if email is verified
-            if (!user.isEmailVerified()) {
-                // For security, we require verified email
-                logger.info("2FA recovery requested but email not verified: userId={}", user.getId());
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Email must be verified before 2FA recovery. Please contact support."));
-            }
+      // Check if user has 2FA enabled
+      if (!user.isTotpEnabled() || !user.isEmailVerified()) {
+        // Equalize execution timing
+        passwordEncoder.matches("dummy", DUMMY_HASH);
+        logger.info("2FA recovery requested but 2FA not enabled or email not verified: userId={}", user.getId());
+        return ResponseEntity.ok(
+            ApiResponse.success(
+                Map.of(
+                    "message",
+                    "If an account exists with this identifier and has 2FA enabled, you will receive a recovery link")));
+      }
 
-            // Create token and send email
-            String token = emailTokenService.createToken(
-                    user,
-                    EmailToken.PURPOSE_2FA_RECOVERY,
-                    httpRequest);
-            String magicLink = emailConfig.get2FARecoveryUrl(token);
-            try {
-                emailService.send2FARecoveryLink(user, magicLink);
-            } catch (Exception emailEx) {
-                logger.warn("Failed to send 2FA recovery email: {}", emailEx.getMessage());
-            }
+      // Create token and send email
+      String token = emailTokenService.createToken(user, EmailToken.PURPOSE_2FA_RECOVERY, httpRequest);
+      String magicLink = emailConfig.get2FARecoveryUrl(token);
+      try {
+        emailService.send2FARecoveryLink(user, magicLink);
+      } catch (Exception emailEx) {
+        logger.warn("Failed to send 2FA recovery email: {}", emailEx.getMessage());
+      }
 
-            logger.info("2FA recovery requested: userId={}", user.getId());
-        } else {
-            // Log but don't reveal to user (prevent enumeration)
-            logger.info("2FA recovery requested for unknown identifier: {}", identifier);
-        }
+      logger.info("2FA recovery requested: userId={}", user.getId());
+    } else {
+      // Timing attack mitigation: run dummy BCrypt verification to equalize CPU execution time
+      passwordEncoder.matches("dummy", DUMMY_HASH);
+      logger.info("2FA recovery requested for unknown identifier");
+    }
 
-        // Always return same response (no enumeration)
-        return ResponseEntity.ok(ApiResponse.success(Map.of(
+    // Always return same response (no enumeration)
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            Map.of(
                 "message",
                 "If an account exists with this identifier and has 2FA enabled, you will receive a recovery link")));
+  }
+
+  /**
+   * Verify MFA recovery token and disable MFA. Returns a temporary JWT to allow
+   * completing the
+   * reset.
+   */
+  @Operation(summary = "Verify MFA recovery token and disable MFA")
+  @PostMapping("/mfa/email-recovery/verify")
+  public ResponseEntity<?> verify2FARecovery(@RequestBody Map<String, String> request) {
+    String token = request.get("token");
+
+    if (token == null || token.isBlank()) {
+      return ResponseEntity.badRequest().body(ApiResponse.error("Token is required"));
     }
 
-    /**
-     * Verify 2FA recovery token and disable 2FA.
-     * Returns a temporary JWT to allow completing the reset.
-     */
-    @Operation(summary = "Verify 2FA recovery token and disable 2FA")
-    @PostMapping("/2fa/recovery/verify")
-    public ResponseEntity<?> verify2FARecovery(@RequestBody Map<String, String> request) {
-        String token = request.get("token");
+    try {
+      // Validate token
+      EmailToken emailToken = emailTokenService.validateToken(token, EmailToken.PURPOSE_2FA_RECOVERY);
 
-        if (token == null || token.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Token is required"));
-        }
+      // Get user
+      @SuppressWarnings("null")
+      User user = userRepository
+          .findById(emailToken.getUserId())
+          .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
 
-        try {
-            // Validate token
-            EmailToken emailToken = emailTokenService.validateToken(token, EmailToken.PURPOSE_2FA_RECOVERY);
+      // Mark token as used
+      emailTokenService.markUsed(emailToken.getId());
 
-            // Get user
-            @SuppressWarnings("null")
-            User user = userRepository.findById(emailToken.getUserId())
-                    .orElseThrow(() -> new InvalidEmailTokenException("User not found"));
+      // Disable 2FA
+      totpService.disable2FA(user);
 
-            // Mark token as used
-            emailTokenService.markUsed(emailToken.getId());
+      // Revoke all refresh tokens on 2FA recovery (attacker session revocation)
+      jwtService.revokeAllRefreshTokens(user.getId());
 
-            // Disable 2FA
-            totpService.disable2FA(user);
+      // Invalidate all email tokens
+      emailTokenService.invalidateAllForUser(user.getId());
 
-            // Invalidate all email tokens
-            emailTokenService.invalidateAllForUser(user.getId());
+      // Send security alert (non-blocking)
+      try {
+        emailService.sendSecurityAlert(user, "2-Factor Authentication Disabled via Recovery");
+      } catch (Exception emailEx) {
+        logger.warn("Failed to send security alert: {}", emailEx.getMessage());
+      }
 
-            // Send security alert (non-blocking)
-            try {
-                emailService.sendSecurityAlert(user, "2-Factor Authentication Disabled via Recovery");
-            } catch (Exception emailEx) {
-                logger.warn("Failed to send security alert: {}", emailEx.getMessage());
-            }
+      logger.info("2FA recovery successful: userId={}", user.getId());
 
-            logger.info("2FA recovery successful: userId={}", user.getId());
+      return ResponseEntity.ok(
+          ApiResponse.success(
+              Map.of(
+                  "verified",
+                  true,
+                  "message",
+                  "2-Factor Authentication has been disabled. You can now log in with just your password and set up new 2FA.")));
 
-            return ResponseEntity.ok(ApiResponse.success(Map.of(
-                    "verified", true,
-                    "message",
-                    "2-Factor Authentication has been disabled. You can now log in with just your password and set up new 2FA.")));
-
-        } catch (InvalidEmailTokenException e) {
-            logger.warn("2FA recovery token verification failed: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(e.getMessage()));
-        }
+    } catch (InvalidEmailTokenException e) {
+      logger.warn("2FA recovery token verification failed: {}", e.getMessage());
+      return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
     }
-
+  }
 }

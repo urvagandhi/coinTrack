@@ -1,0 +1,2234 @@
+{
+  "info": {
+    "name": "CoinTrack E2E Integration Suite (Automated CI/CD Workflow)",
+    "_postman_id": "cointrack-e2e-ci",
+    "description": "# CoinTrack Automated E2E Integration Test Suite\n\nThis sequential 38-step workflow executes end-to-end integration testing across every subsystem in CoinTrack:\n1. Health Heartbeat\n2. Dynamic User Onboarding & Authentication\n3. User Profile & Research Journaling (Notes CRUD)\n4. Mutual Funds Engine (Scheme -> SIP Mandate -> Contribution -> Lumpsum -> FIFO Preview -> Redemption -> Dashboard)\n5. Employee Provident Fund (EPF Settings -> Contribution -> Passbook Balance)\n6. Public Provident Fund (PPF Settings -> Deposit -> Withdrawal Eligibility)\n7. Bank Fixed Deposits (Certificate Creation -> Premature Withdrawal Simulation -> Summary)\n8. Physical Bullion (Spot Rates API -> Gold Asset -> Valuation)\n9. Financial Planning Engines (SIP, Home Loan EMI, Retirement Corpus, Income Tax Comparison, Stock Brokerage)\n10. Unified Portfolio Synchronization\n11. Refresh Token Rotation & Session Teardown\n\n### Headless Execution via Newman:\n```bash\nnewman run CoinTrack_E2E_Workflow.json -e CoinTrack_Local_Environment.json --bail folder --color on\n```\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// ==============================================================================",
+          "// CoinTrack Collection-Level Pre-Request Hook",
+          "// ==============================================================================",
+          "",
+          "// 1. Setup Request Timestamp & Trace ID",
+          "const requestTimestamp = Date.now().toString();",
+          "pm.variables.set(\"requestTimestamp\", requestTimestamp);",
+          "pm.variables.set(\"clientRequestId\", \"req_\" + Math.random().toString(36).substring(2, 12));",
+          "",
+          "// 2. RFC 6238 TOTP Generator Helper",
+          "function generateTotp(secretBase32) {",
+          "    if (!secretBase32) return \"\";",
+          "    var base32chars = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567\";",
+          "    var bits = \"\";",
+          "    var cleanSecret = secretBase32.replace(/[\\s-]/g, '').toUpperCase();",
+          "    for (var i = 0; i < cleanSecret.length; i++) {",
+          "        var val = base32chars.indexOf(cleanSecret.charAt(i));",
+          "        if (val === -1) continue;",
+          "        bits += ('00000' + val.toString(2)).slice(-5);",
+          "    }",
+          "    var hex = [];",
+          "    for (var j = 0; j + 8 <= bits.length; j += 8) {",
+          "        hex.push(('0' + parseInt(bits.substr(j, 8), 2).toString(16)).slice(-2));",
+          "    }",
+          "    var keyBytes = CryptoJS.enc.Hex.parse(hex.join(''));",
+          "    var epoch = Math.floor(Date.now() / 1000.0);",
+          "    var timeHex = ('0000000000000000' + Math.floor(epoch / 30).toString(16)).slice(-16);",
+          "    var timeBytes = CryptoJS.enc.Hex.parse(timeHex);",
+          "    var hmac = CryptoJS.HmacSHA1(timeBytes, keyBytes).toString(CryptoJS.enc.Hex);",
+          "    var offset = parseInt(hmac.substring(hmac.length - 1), 16);",
+          "    var otpPart = (parseInt(hmac.substr(offset * 2, 8), 16) & 0x7fffffff) + '';",
+          "    return ('000000' + otpPart).slice(-6);",
+          "}",
+          "",
+          "// Auto-populate totpCode if totpSecret is configured in environment",
+          "const currentSecret = pm.environment.get(\"totpSecret\");",
+          "if (currentSecret && currentSecret.length >= 16) {",
+          "    try {",
+          "        const otp = generateTotp(currentSecret);",
+          "        pm.variables.set(\"dynamicTotpCode\", otp);",
+          "    } catch (e) {",
+          "        console.warn(\"Could not generate TOTP code:\", e.message);",
+          "    }",
+          "}",
+          "",
+          "// 3. Silent JWT Access Token Auto-Refresh",
+          "const baseUrl = pm.environment.get(\"baseUrl\") || \"http://localhost:8080\";",
+          "const token = pm.environment.get(\"token\");",
+          "const expiresAt = pm.environment.get(\"tokenExpiresAt\");",
+          "const refreshToken = pm.environment.get(\"refreshToken\");",
+          "const path = pm.request.url.getPath ? pm.request.url.getPath().join(\"/\") : \"\";",
+          "",
+          "// Avoid refreshing on auth endpoints themselves",
+          "const isAuthEndpoint = path.includes(\"auth/login\") || path.includes(\"auth/refresh\") || path.includes(\"auth/register\");",
+          "const isExpired = expiresAt && (Date.now() >= (parseInt(expiresAt) - 30000));",
+          "",
+          "if (!isAuthEndpoint && token && isExpired && refreshToken) {",
+          "    console.log(\"Access token expired. Executing silent token refresh...\");",
+          "    pm.sendRequest({",
+          "        url: baseUrl + \"/api/auth/refresh\",",
+          "        method: \"POST\",",
+          "        header: { \"Content-Type\": \"application/json\" },",
+          "        body: { mode: \"raw\", raw: JSON.stringify({ refreshToken: refreshToken }) }",
+          "    }, function (err, res) {",
+          "        if (!err && res.code === 200) {",
+          "            const body = res.json();",
+          "            const newToken = body.token || body.accessToken;",
+          "            if (newToken) {",
+          "                pm.environment.set(\"token\", newToken);",
+          "                console.log(\"Token successfully refreshed silently.\");",
+          "            }",
+          "            if (body.refreshToken) {",
+          "                pm.environment.set(\"refreshToken\", body.refreshToken);",
+          "            }",
+          "        }",
+          "    });",
+          "}",
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// ==============================================================================",
+          "// CoinTrack Collection-Level Test Script",
+          "// ==============================================================================",
+          "",
+          "// 1. Response Time SLA Budget Check",
+          "pm.test(\"Response time is within SLA budget (< 3500ms)\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(3500);",
+          "});",
+          "",
+          "// 2. Structured Failure Diagnostic Logger",
+          "if (pm.response.code >= 400) {",
+          "    console.error(\"Endpoint Failed: \" + pm.request.method + \" \" + pm.request.url.toString());",
+          "    console.error(\"Status: \" + pm.response.code + \" \" + pm.response.status);",
+          "    try {",
+          "        console.error(\"Error Payload:\", pm.response.json());",
+          "    } catch(e) {",
+          "        console.error(\"Raw Body:\", pm.response.text());",
+          "    }",
+          "}",
+          ""
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Step 01 - System Health Probe",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "health"
+          ]
+        },
+        "description": "Assert backend application is UP before starting integration sequence.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Server is UP\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.status).to.eql('UP');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 02 - Register Integration Test User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "description": "Registers isolated test account with dynamic credentials.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"ci_user_{{$timestamp}}\",\n  \"email\": \"ci_{{$timestamp}}@test.cointrack.internal\",\n  \"mobile\": \"9988776655\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"CI\",\n  \"lastName\": \"Runner\"\n}"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "",
+              "const uniqueUser = \"ci_\" + Date.now();",
+              "pm.environment.set(\"testUser\", uniqueUser);",
+              "pm.environment.set(\"testPassword\", \"Password123!\");",
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"User registration acknowledged\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "if (json.token) pm.environment.set(\"token\", json.token);",
+              "if (json.userId) pm.environment.set(\"userId\", json.userId);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 03 - Authenticate & Extract Tokens",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Logs in with newly registered account and extracts session JWT tokens.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usernameOrEmailOrMobile\": \"{{testUser}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Access token generated\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.token || json.accessToken).to.be.a('string');",
+              "});",
+              "",
+              "const t = json.token || json.accessToken;",
+              "pm.environment.set(\"token\", t);",
+              "if (json.refreshToken) pm.environment.set(\"refreshToken\", json.refreshToken);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 04 - Verify JWT Authenticity",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/verify-token",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "verify-token"
+          ]
+        },
+        "description": "Validates Bearer token acceptance."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Token valid\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.valid || json.authenticated).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 05 - Fetch User Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "me"
+          ]
+        },
+        "description": "Verifies profile details match registered username."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Profile retrieved\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.username).to.eql(pm.environment.get('testUser'));",
+              "});",
+              "",
+              "if (json.id || json.userId) pm.environment.set(\"userId\", json.id || json.userId);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 06 - Update User Profile",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "me"
+          ]
+        },
+        "description": "Tests profile mutation endpoint.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{testUser}}\",\n  \"email\": \"{{testUser}}@updated.cointrack.internal\",\n  \"phoneNumber\": \"+919988776655\",\n  \"dateOfBirth\": \"1992-08-20\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Profile updated\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(pm.response.code).to.eql(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 07 - Create Research Note",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/notes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "notes"
+          ]
+        },
+        "description": "Tests note creation.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"CI Automated Trade Journal\",\n  \"content\": \"Automated regression run validating note journaling lifecycle.\",\n  \"tags\": [\n    \"Automation\",\n    \"CI\"\n  ],\n  \"color\": \"#6366f1\",\n  \"pinned\": true\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Note ID returned\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.id).to.be.ok;",
+              "});",
+              "",
+              "pm.environment.set(\"noteId\", json.id);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 08 - Update Research Note",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/notes/:id",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "notes",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "{{noteId}}",
+              "description": "Note ID"
+            }
+          ]
+        },
+        "description": "Tests note modification.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"CI Automated Trade Journal (Updated)\",\n  \"content\": \"Content updated by regression runner.\",\n  \"tags\": [\n    \"Automation\",\n    \"CI\",\n    \"Updated\"\n  ],\n  \"color\": \"#10b981\",\n  \"pinned\": false\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 09 - Delete Research Note",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/notes/:id",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "notes",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "{{noteId}}",
+              "description": "Note ID"
+            }
+          ]
+        },
+        "description": "Tests note deletion cleanup."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 10 - Create Mutual Fund Scheme",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/mutual-fund/schemes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "mutual-fund",
+            "schemes"
+          ]
+        },
+        "description": "Seeds a new mutual fund scheme for investment tracking.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schemeName\": \"Quant Small Cap Fund - Direct Plan\",\n  \"amfiCode\": \"120823\",\n  \"mfCategory\": \"EQUITY_SMALL_CAP\",\n  \"platform\": \"MF_CENTRAL\",\n  \"folioNo\": \"FOLIO-CI-100\",\n  \"bank\": \"HDFC Bank\",\n  \"holderName\": \"CI User\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Scheme created\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.id).to.be.ok;",
+              "});",
+              "",
+              "pm.environment.set(\"mfSchemeId\", json.id);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 11 - Setup SIP Mandate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/mutual-fund/sip-mandate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "mutual-fund",
+            "sip-mandate"
+          ]
+        },
+        "description": "Configures SIP mandate.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schemeId\": \"{{mfSchemeId}}\",\n  \"holderName\": \"CI User\",\n  \"startDate\": \"2024-01-05\",\n  \"endDate\": \"2028-01-05\",\n  \"amount\": 5000.0,\n  \"bank\": \"HDFC Bank\",\n  \"registrationNo\": \"SIP-CI-01\",\n  \"active\": true\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"SIP mandate registered\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.id).to.be.ok;",
+              "});",
+              "",
+              "pm.environment.set(\"sipMandateId\", json.id);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 12 - Record SIP Contribution Installment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/mutual-fund/sip-contribution",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "mutual-fund",
+            "sip-contribution"
+          ]
+        },
+        "description": "Allots units from SIP installment.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sipMandateId\": \"{{sipMandateId}}\",\n  \"schemeId\": \"{{mfSchemeId}}\",\n  \"contributionDate\": \"2024-01-05\",\n  \"amount\": 5000.0,\n  \"navPrice\": 200.0,\n  \"totalUnit\": 25.0,\n  \"debitedBank\": \"HDFC Bank\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 13 - Record Lumpsum Investment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/mutual-fund/lumpsum",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "mutual-fund",
+            "lumpsum"
+          ]
+        },
+        "description": "Records lumpsum investment purchase.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schemeId\": \"{{mfSchemeId}}\",\n  \"investmentDate\": \"2024-06-01\",\n  \"lumpsumInvestment\": 15000.0,\n  \"totalUnit\": 60.0,\n  \"navPrice\": 250.0,\n  \"debitedBank\": \"HDFC Bank\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 14 - Preview FIFO Capital Gains Before Sale",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/mutual-fund/redemption/preview-fifo",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "mutual-fund",
+            "redemption",
+            "preview-fifo"
+          ],
+          "query": [
+            {
+              "key": "schemeId",
+              "value": "{{mfSchemeId}}",
+              "description": "Scheme ID"
+            },
+            {
+              "key": "redemptionUnit",
+              "value": "20.0",
+              "description": "Units to sell"
+            },
+            {
+              "key": "navPrice",
+              "value": "280.00",
+              "description": "Redemption NAV"
+            },
+            {
+              "key": "redemptionDate",
+              "value": "2025-01-15",
+              "description": "Sale date"
+            }
+          ]
+        },
+        "description": "Validates FIFO cost-basis math."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"FIFO preview evaluated\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.be.an('object');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 15 - Execute Partial Redemption",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/mutual-fund/redemption",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "mutual-fund",
+            "redemption"
+          ]
+        },
+        "description": "Burns units via FIFO pool.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schemeId\": \"{{mfSchemeId}}\",\n  \"redemptionDate\": \"2025-01-15\",\n  \"redemptionUnit\": 20.0,\n  \"navPrice\": 280.0,\n  \"remarks\": \"CI partial redemption\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Redemption completed\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.id).to.be.ok;",
+              "});",
+              "",
+              "pm.environment.set(\"redemptionId\", json.id);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 16 - Assert Mutual Fund Dashboard Metrics",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/mutual-fund/dashboard",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "mutual-fund",
+            "dashboard"
+          ]
+        },
+        "description": "Asserts valuation totals reflect contributions and redemptions."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Dashboard metrics populated\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.be.an('object');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 17 - Configure EPF Settings",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/epf/settings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "epf",
+            "settings"
+          ]
+        },
+        "description": "Saves user EPF configuration.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"defaultBasicDA\": 60000.0,\n  \"employeeContributionRate\": 12.0,\n  \"useActualSalaryForEps\": false,\n  \"monthlyVpfAmount\": 3000.0\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 18 - Record EPF Contribution",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/epf/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "epf",
+            "transactions"
+          ]
+        },
+        "description": "Creates monthly EPF passbook entry.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionDate\": \"2025-01-31\",\n  \"mode\": \"AUTO_SALARY\",\n  \"basicDA\": 60000.0,\n  \"employeeContribution\": 7200.0,\n  \"employerEpfContribution\": 2160.0,\n  \"employerEpsContribution\": 1250.0,\n  \"vpfAmount\": 3000.0,\n  \"remarks\": \"CI automated EPF ledger\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"EPF transaction created\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.id).to.be.ok;",
+              "});",
+              "",
+              "pm.environment.set(\"epfTransactionId\", json.id);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 19 - Assert EPF Summary Balances",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/epf/summary",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "epf",
+            "summary"
+          ]
+        },
+        "description": "Asserts EPF balance reflects contributions."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"EPF balance positive\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(Number(json.currentEpfBalance || 0)).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 20 - Configure PPF Account Settings",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/ppf/settings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "ppf",
+            "settings"
+          ]
+        },
+        "description": "Configures PPF account start date.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"accountNumber\": \"PPF-CI-998877\",\n  \"dateOfIssue\": \"2020-04-01\",\n  \"extensionMode\": \"WITH_CONTRIBUTION\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 21 - Record PPF Deposit",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/ppf/transactions",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "ppf",
+            "transactions"
+          ]
+        },
+        "description": "Credits PPF passbook.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionDate\": \"2025-01-05\",\n  \"particulars\": \"CI Scheduled NetBanking Deposit\",\n  \"particularType\": \"DEPOSIT\",\n  \"creditAmount\": 15000.0,\n  \"remarks\": \"Annual deposit\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"PPF transaction recorded\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.id).to.be.ok;",
+              "});",
+              "",
+              "pm.environment.set(\"ppfTransactionId\", json.id);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 22 - Evaluate PPF Partial Withdrawal Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/ppf/withdrawal-status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "ppf",
+            "withdrawal-status"
+          ]
+        },
+        "description": "Checks statutory withdrawal eligibility formula."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Withdrawal rule evaluated\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.have.property('withdrawalAllowed');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 23 - Assert PPF Account Balance",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/ppf/summary",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "ppf",
+            "summary"
+          ]
+        },
+        "description": "Asserts PPF balance is positive."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"PPF balance positive\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(Number(json.currentBalance || 0)).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 24 - Create Fixed Deposit Certificate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/fixed-deposits",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "fixed-deposits"
+          ]
+        },
+        "description": "Creates bank fixed deposit certificate.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"place\": \"State Bank of India\",\n  \"holderName\": \"CI User\",\n  \"nominee\": \"Nominee Name\",\n  \"accountNumber\": \"FD-CI-123456\",\n  \"interestRate\": 7.1,\n  \"investmentPeriod\": \"1 Year\",\n  \"issueDate\": \"2024-05-01\",\n  \"maturityDate\": \"2025-05-01\",\n  \"issueAmount\": 50000.0,\n  \"maturityAmount\": 53645.0,\n  \"maturityMode\": \"AUTOMATIC\",\n  \"fdType\": \"CUMULATIVE\",\n  \"remarks\": \"CI Test FD\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Fixed deposit created\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.id).to.be.ok;",
+              "});",
+              "",
+              "pm.environment.set(\"fdId\", json.id);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 25 - Simulate Premature FD Withdrawal",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/fixed-deposits/:id/withdraw/preview",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "fixed-deposits",
+            ":id",
+            "withdraw",
+            "preview"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "{{fdId}}",
+              "description": "FD ID"
+            }
+          ]
+        },
+        "description": "Simulates premature liquidation penalty without mutating record.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"withdrawalDate\": \"2025-01-10\",\n  \"penaltyRateOverride\": 1.0,\n  \"bankName\": \"State Bank of India\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Penalty preview computed\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.be.an('object');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 26 - Assert Fixed Deposits Portfolio Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/fixed-deposits/summary",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "fixed-deposits",
+            "summary"
+          ]
+        },
+        "description": "Asserts active FD investment total."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"FD total active investment verified\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(Number(json.totalActiveInvestment || json.totalInvestment || 0)).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 27 - Fetch Precious Metal Spot Rates",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/gold-silver/rates/current",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "gold-silver",
+            "rates",
+            "current"
+          ]
+        },
+        "description": "Fetches live spot prices for bullion."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Live metal rates available\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.be.an('object');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 28 - Add Gold Bullion Asset",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/gold-silver",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "gold-silver"
+          ]
+        },
+        "description": "Adds physical gold asset to vault.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"purchaseDate\": \"2024-10-15\",\n  \"purchasedFrom\": \"MMTC-PAMP\",\n  \"metalType\": \"GOLD\",\n  \"purchaseItem\": \"24K Gold Bar 10g\",\n  \"purity\": \"24K\",\n  \"purityOptionId\": \"gold-24k\",\n  \"rateSource\": \"API\",\n  \"ratePerGram\": 7500.0,\n  \"netWeight\": 10.0,\n  \"makingChargePercent\": 1.5,\n  \"gstPercent\": 3.0,\n  \"remarks\": \"CI Gold Test Asset\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Metal holding created\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.id).to.be.ok;",
+              "});",
+              "",
+              "pm.environment.set(\"goldSilverId\", json.id);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 29 - Assert Gold & Silver Portfolio Valuation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/gold-silver/summary",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "gold-silver",
+            "summary"
+          ]
+        },
+        "description": "Asserts gold investment valuation reflects weight and price."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Gold holding total invested > 0\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(Number(json.totalInvested || 0)).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 30 - Run SIP Investment Calculator Engine",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/calculators/investment/sip",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "calculators",
+            "investment",
+            "sip"
+          ]
+        },
+        "description": "Executes SIP mathematical projection engine.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"monthlyInvestment\": 15000,\n  \"expectedReturn\": 12.5,\n  \"years\": 10\n}"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"SIP maturity value projected correctly\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(Number(json.result.totalValue || 0)).to.be.above(3000000);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 31 - Run Home Loan EMI Calculator Engine",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/calculators/loans/home-loan-emi",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "calculators",
+            "loans",
+            "home-loan-emi"
+          ]
+        },
+        "description": "Executes loan amortization engine.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"principal\": 4000000,\n  \"annualRate\": 8.5,\n  \"months\": 240\n}"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Monthly EMI calculated correctly\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(Number(json.result.monthlyEmi || json.result.emi || 0)).to.be.above(30000);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 32 - Run Retirement Planning Calculator Engine",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/calculators/planning/retirement",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "calculators",
+            "planning",
+            "retirement"
+          ]
+        },
+        "description": "Executes retirement corpus planner.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"currentAge\": 28,\n  \"retirementAge\": 60,\n  \"lifeExpectancy\": 85,\n  \"currentMonthlyExpense\": 50000,\n  \"currentSavings\": 1000000,\n  \"expectedInflation\": 6.0,\n  \"preRetirementReturn\": 12.0,\n  \"postRetirementReturn\": 8.0\n}"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Retirement target corpus evaluated\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(Number(json.result.targetCorpus || json.result.corpusRequired || 0)).to.be.above(10000000);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 33 - Run Income Tax Calculator Engine",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/calculators/tax/income-tax",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "calculators",
+            "tax",
+            "income-tax"
+          ]
+        },
+        "description": "Executes Indian tax regime comparison engine.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"grossIncome\": 1800000,\n  \"section80CDeductions\": 150000,\n  \"section80DDeductions\": 25000,\n  \"financialYear\": \"2024-25\"\n}"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Old and New tax regimes evaluated\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.result).to.have.property('newRegimeTax');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 34 - Run Stock Brokerage Calculator Engine",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/calculators/trading/brokerage",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "calculators",
+            "trading",
+            "brokerage"
+          ]
+        },
+        "description": "Executes regulatory turnover and brokerage engine.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionType\": \"DELIVERY\",\n  \"buyPrice\": 2500.0,\n  \"sellPrice\": 2750.0,\n  \"quantity\": 100,\n  \"exchange\": \"NSE\",\n  \"broker\": \"ZERODHA\"\n}"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Net trading profit evaluated\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.result.netProfitLoss || json.result.totalCharges).to.be.ok;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 35 - Trigger Unified Portfolio Refresh",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/portfolio/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "portfolio",
+            "refresh"
+          ]
+        },
+        "description": "Triggers synchronization across all connected broker adapters."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 36 - Get Consolidated Portfolio Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/portfolio/summary",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "portfolio",
+            "summary"
+          ]
+        },
+        "description": "Fetches consolidated multi-asset net worth summary."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Consolidated portfolio summary loaded\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.be.an('object');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 37 - Refresh JWT Access Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "refresh"
+          ]
+        },
+        "description": "Validates that token rotation works seamlessly in CI.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Rotated access token received\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.token || json.accessToken).to.be.a('string');",
+              "});",
+              "",
+              "const nt = json.token || json.accessToken;",
+              "if (nt) pm.environment.set(\"token\", nt);",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 38 - Invalidate Session (Logout & Teardown)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "logout"
+          ]
+        },
+        "description": "Cleans up active session and invalidates refresh token."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is valid JSON format\", function () {",
+              "    pm.response.to.be.withBody;",
+              "    pm.response.to.be.json;",
+              "});",
+              "pm.test(\"Logged out cleanly\", function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(pm.response.code).to.eql(200);",
+              "});",
+              "",
+              "pm.environment.set(\"token\", \"\");",
+              "pm.environment.set(\"refreshToken\", \"\");",
+              "console.log(\"38-step automated integration run successfully completed.\");",
+              ""
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

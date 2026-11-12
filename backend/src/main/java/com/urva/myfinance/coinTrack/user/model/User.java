@@ -1,25 +1,22 @@
 package com.urva.myfinance.coinTrack.user.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 /**
- * User entity stored in MongoDB.
- * Changed: Added passwordFailedAttempts + passwordLockedUntil for login rate limiting.
+ * User entity stored in MongoDB. Changed: Added passwordFailedAttempts + passwordLockedUntil for
+ * login rate limiting.
  */
 @Document(collection = "users")
 @Data
@@ -27,87 +24,84 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
-    @Id
-    private String id;
-    @Indexed(unique = true)
-    private String username;
-    private String name;
-    private LocalDate dateOfBirth;
-    private String email;
-    private String phoneNumber;
-    private String bio;
-    private String location;
-    @JsonIgnore
-    private String password;
+  @Id private String id;
 
-    @CreatedDate
-    private LocalDate createdAt;
+  @Indexed(unique = true, sparse = true)
+  private String username;
 
-    @LastModifiedDate
-    private LocalDate updatedAt;
+  private String name;
+  private LocalDate dateOfBirth;
 
-    // ── Password rate limiting ──────────────────────────────────────
-    @Builder.Default
-    private int passwordFailedAttempts = 0;
+  @Indexed(unique = true, sparse = true)
+  private String email;
 
-    private Instant passwordLockedUntil;
+  @Indexed(unique = true, sparse = true)
+  private String phoneNumber;
 
-    // ── TOTP 2FA Fields ─────────────────────────────────────────────
-    @Builder.Default
-    private boolean totpEnabled = false;
+  private String bio;
+  private String location;
+  @JsonIgnore private String password;
 
-    @Builder.Default
-    private boolean totpVerified = false;
+  @CreatedDate private LocalDate createdAt;
 
-    @JsonIgnore
-    private String totpSecretEncrypted;
+  @LastModifiedDate private LocalDate updatedAt;
 
-    @JsonIgnore
-    private String totpSecretPending;
+  // ── Password rate limiting ──────────────────────────────────────
+  @Builder.Default private int passwordFailedAttempts = 0;
 
-    @Builder.Default
-    private int totpSecretVersion = 1;
+  private Instant passwordLockedUntil;
 
-    private LocalDateTime totpSetupAt;
-    private LocalDateTime totpLastUsedAt;
+  // ── TOTP 2FA Fields ─────────────────────────────────────────────
+  @Builder.Default private boolean totpEnabled = false;
 
-    @Builder.Default
-    private int totpFailedAttempts = 0;
+  @Builder.Default private boolean totpVerified = false;
 
-    private LocalDateTime totpLockedUntil;
+  @JsonIgnore private String totpSecretEncrypted;
 
-    // ── Email Verification ──────────────────────────────────────────
-    @Builder.Default
-    private boolean emailVerified = false;
+  @JsonIgnore private String totpSecretPending;
 
-    private LocalDateTime emailVerifiedAt;
+  @Builder.Default private int totpSecretVersion = 1;
 
-    private String pendingEmail;
+  private LocalDateTime totpSetupAt;
+  private LocalDateTime totpLastUsedAt;
 
-    // ── OAuth 2.0 / SSO ─────────────────────────────────────────────
-    @Builder.Default
-    private AuthProvider authProvider = AuthProvider.LOCAL;
+  @Builder.Default private int totpFailedAttempts = 0;
 
-    @JsonIgnore
-    private String googleId;
+  private LocalDateTime totpLockedUntil;
 
-    // ── Embedded Settings (replaces 3 separate collections) ─────────
+  // ── Email Verification ──────────────────────────────────────────
+  @Builder.Default private boolean emailVerified = false;
 
-    /**
-     * User's EPF configuration — embedded to avoid a separate epf_settings collection.
-     * Null until the user sets up their EPF for the first time.
-     */
-    private EpfSettingsEmbed epfSettings;
+  private LocalDateTime emailVerifiedAt;
 
-    /**
-     * User's PPF account info — embedded to avoid a separate ppf_settings collection.
-     * Null until the user sets up their PPF for the first time.
-     */
-    private PpfSettingsEmbed ppfSettings;
+  private String pendingEmail;
 
-    /**
-     * User's local gold/silver premium config — embedded to avoid a separate
-     * metal_rate_settings collection. Null until the user customizes rates.
-     */
-    private MetalRateSettingsEmbed metalRateSettings;
+  private LocalDateTime pendingEmailExpiresAt;
+
+  // ── OAuth 2.0 / SSO ─────────────────────────────────────────────
+  @Builder.Default private AuthProvider authProvider = AuthProvider.LOCAL;
+
+  @JsonIgnore
+  @Indexed(unique = true, sparse = true)
+  private String googleId;
+
+  // ── Embedded Settings (replaces 3 separate collections) ─────────
+
+  /**
+   * User's EPF configuration — embedded to avoid a separate epf_settings collection. Null until the
+   * user sets up their EPF for the first time.
+   */
+  private EpfSettingsEmbed epfSettings;
+
+  /**
+   * User's PPF account info — embedded to avoid a separate ppf_settings collection. Null until the
+   * user sets up their PPF for the first time.
+   */
+  private PpfSettingsEmbed ppfSettings;
+
+  /**
+   * User's local gold/silver premium config — embedded to avoid a separate metal_rate_settings
+   * collection. Null until the user customizes rates.
+   */
+  private MetalRateSettingsEmbed metalRateSettings;
 }

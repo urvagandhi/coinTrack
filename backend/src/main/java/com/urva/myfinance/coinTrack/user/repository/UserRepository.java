@@ -1,31 +1,42 @@
 package com.urva.myfinance.coinTrack.user.repository;
 
-import java.util.Optional;
-
-import org.springframework.data.mongodb.repository.MongoRepository;
-
 import com.urva.myfinance.coinTrack.user.model.User;
+import java.util.Optional;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 
 public interface UserRepository extends MongoRepository<User, String> {
 
-    User findByUsername(String username);
+  /**
+   * Single round-trip lookup across username / email / normalized phone. The phone branch falls
+   * back to a no-match sentinel when no phone is present so {@code $or} never matches documents
+   * whose field is null/missing.
+   */
+  @Query("{ '$or': [ { 'username': ?0 }, { 'email': ?1 }, { 'phoneNumber': ?2 } ] }")
+  User findByIdentifier(String username, String email, String phoneNumber);
 
-    User findByEmail(String email);
+  User findByUsername(String username);
 
-    User findByPhoneNumber(String phoneNumber);
+  User findByEmail(String email);
 
-    boolean existsByUsername(String username);
+  User findByPhoneNumber(String phoneNumber);
 
-    boolean existsByEmail(String email);
+  boolean existsByUsername(String username);
 
-    boolean existsByPhoneNumber(String phoneNumber);
+  boolean existsByEmail(String email);
 
-    // Optional-returning methods for safe lookups
-    Optional<User> findOptionalByUsername(String username);
+  boolean existsByPendingEmail(String pendingEmail);
 
-    Optional<User> findOptionalByEmail(String email);
+  boolean existsByPhoneNumber(String phoneNumber);
 
-    Optional<User> findOptionalByPhoneNumber(String phoneNumber);
+  // Optional-returning methods for safe lookups
+  Optional<User> findOptionalByUsername(String username);
 
-    Optional<User> findByGoogleId(String googleId);
+  Optional<User> findOptionalByEmail(String email);
+
+  Optional<User> findOptionalByPendingEmail(String pendingEmail);
+
+  Optional<User> findOptionalByPhoneNumber(String phoneNumber);
+
+  Optional<User> findByGoogleId(String googleId);
 }
