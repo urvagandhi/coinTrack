@@ -70,6 +70,7 @@ class PortfolioSummaryServiceImplTest {
   @Mock private AngelOneBrokerAdapter angelOneBrokerAdapter;
   @Mock private CanonicalFundsRepository canonicalFundsRepository;
   @Mock private CanonicalMfOrderRepository canonicalMfOrderRepository;
+  @Mock private com.urva.myfinance.coinTrack.mutualfund.service.MfNavService mfNavService;
 
   private PortfolioSummaryServiceImpl service;
 
@@ -92,7 +93,8 @@ class PortfolioSummaryServiceImplTest {
             upstoxBrokerAdapter,
             angelOneBrokerAdapter,
             canonicalFundsRepository,
-            canonicalMfOrderRepository);
+            canonicalMfOrderRepository,
+            mfNavService);
   }
 
   // ── Helper builders ──────────────────────────────────────────

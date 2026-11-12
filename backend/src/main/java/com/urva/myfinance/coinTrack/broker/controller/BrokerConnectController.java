@@ -165,6 +165,7 @@ public class BrokerConnectController {
 
     String apiKey = credentials.get("apiKey");
     String apiSecret = credentials.get("apiSecret");
+    String dematAccount = credentials.get("dematAccount");
 
     if (apiKey == null || apiSecret == null) {
       return ResponseEntity.badRequest().body("apiKey and apiSecret are required");
@@ -187,6 +188,9 @@ public class BrokerConnectController {
 
       account.setZerodhaApiKey(apiKey);
       account.setEncryptedZerodhaApiSecret(encryptionUtil.encrypt(apiSecret));
+      if (dematAccount != null && !dematAccount.isBlank()) {
+        account.setDematAccount(dematAccount.trim());
+      }
       accountRepository.save(account);
 
       logger.info(LoggingConstants.BROKER_CREDENTIALS_SAVED, Broker.ZERODHA, user.getId());
@@ -223,6 +227,7 @@ public class BrokerConnectController {
     String apiKey = credentials.get("apiKey");
     String apiSecret = credentials.get("apiSecret");
     String redirectUri = credentials.get("redirectUri");
+    String dematAccount = credentials.get("dematAccount");
 
     if (apiKey == null || apiSecret == null || redirectUri == null) {
       return ResponseEntity.badRequest().body("apiKey, apiSecret and redirectUri are required");
@@ -246,6 +251,9 @@ public class BrokerConnectController {
       account.setUpstoxApiKey(apiKey);
       account.setEncryptedUpstoxApiSecret(encryptionUtil.encrypt(apiSecret));
       account.setUpstoxRedirectUri(redirectUri);
+      if (dematAccount != null && !dematAccount.isBlank()) {
+        account.setDematAccount(dematAccount.trim());
+      }
       accountRepository.save(account);
 
       logger.info(LoggingConstants.BROKER_CREDENTIALS_SAVED, Broker.UPSTOX, user.getId());
@@ -284,6 +292,7 @@ public class BrokerConnectController {
     String clientCode = credentials.get("clientCode");
     String password = credentials.get("password");
     String totpSecret = credentials.get("totpSecret");
+    String dematAccount = credentials.get("dematAccount");
 
     if (apiKey == null || clientCode == null || password == null || totpSecret == null) {
       return ResponseEntity.badRequest()
@@ -309,6 +318,9 @@ public class BrokerConnectController {
       account.setAngelOneClientCode(clientCode);
       account.setEncryptedAngelOnePassword(encryptionUtil.encrypt(password));
       account.setEncryptedAngelOneTotpSecret(encryptionUtil.encrypt(totpSecret));
+      if (dematAccount != null && !dematAccount.isBlank()) {
+        account.setDematAccount(dematAccount.trim());
+      }
       accountRepository.save(account);
 
       logger.info(LoggingConstants.BROKER_CREDENTIALS_SAVED, Broker.ANGELONE, user.getId());
@@ -473,8 +485,15 @@ public class BrokerConnectController {
       return ResponseEntity.badRequest().body("Invalid broker");
     } catch (BrokerException e) {
       logger.warn("Broker connection failed: {}", e.getMessage());
-      // Safe to return 400 as this usually means invalid/expired token
-      return ResponseEntity.badRequest().body(e.getMessage());
+      String msg = e.getMessage() != null ? e.getMessage() : "Broker connection failed";
+      if (msg.toLowerCase().contains("timed out")) {
+        return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body(msg);
+      }
+      if (msg.toLowerCase().contains("could not connect")
+          || msg.toLowerCase().contains("unreachable")) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(msg);
+      }
+      return ResponseEntity.badRequest().body(msg);
     } catch (Exception e) {
       logger.error(
           LoggingConstants.BROKER_CONNECT_FAILED, brokerName, user.getId(), e.getMessage(), e);

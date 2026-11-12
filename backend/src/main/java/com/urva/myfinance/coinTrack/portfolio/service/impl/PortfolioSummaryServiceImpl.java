@@ -61,6 +61,7 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
       canonicalFundsRepository;
   private final com.urva.myfinance.coinTrack.portfolio.repository.CanonicalMfOrderRepository
       canonicalMfOrderRepository;
+  private final com.urva.myfinance.coinTrack.mutualfund.service.MfNavService mfNavService;
 
   @Autowired
   public PortfolioSummaryServiceImpl(
@@ -80,7 +81,8 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
       com.urva.myfinance.coinTrack.portfolio.repository.CanonicalFundsRepository
           canonicalFundsRepository,
       com.urva.myfinance.coinTrack.portfolio.repository.CanonicalMfOrderRepository
-          canonicalMfOrderRepository) {
+          canonicalMfOrderRepository,
+      @Autowired(required = false) com.urva.myfinance.coinTrack.mutualfund.service.MfNavService mfNavService) {
     this.holdingRepository = holdingRepository;
     this.positionRepository = positionRepository;
     this.syncLogRepository = syncLogRepository;
@@ -94,12 +96,21 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
     this.angelOneBrokerAdapter = angelOneBrokerAdapter;
     this.canonicalFundsRepository = canonicalFundsRepository;
     this.canonicalMfOrderRepository = canonicalMfOrderRepository;
+    this.mfNavService = mfNavService;
   }
 
   @Override
   public PortfolioSummaryResponse getPortfolioSummary(String userId) {
-    // 1. Load from MongoDB
-    List<CanonicalHolding> holdings = holdingRepository.findByUserId(userId);
+    // 1. Load from MongoDB - active holdings with quantity > 0 or t1Quantity > 0 (T+1 pending settlement)
+    List<CanonicalHolding> holdings =
+        holdingRepository.findByUserId(userId).stream()
+            .filter(
+                h -> {
+                  boolean hasQty = h.getQuantity() != null && h.getQuantity().compareTo(BigDecimal.ZERO) > 0;
+                  boolean hasT1 = h.getT1Quantity() != null && h.getT1Quantity().compareTo(BigDecimal.ZERO) > 0;
+                  return hasQty || hasT1;
+                })
+            .toList();
     List<CanonicalPosition> positions = positionRepository.findByUserId(userId);
 
     // 2. Collect symbols for batch market data
@@ -327,7 +338,26 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
       if (account.getBroker() == com.urva.myfinance.coinTrack.broker.model.Broker.ZERODHA
           && account.hasValidToken()) {
         try {
-          allMf.addAll(zerodhaLiveDataService.fetchMfHoldings(account));
+          List<com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO> mfList =
+              zerodhaLiveDataService.fetchMfHoldings(account);
+
+          // Enrich each holding with live NAV fallback if missing or 0 from broker feed
+          for (com.urva.myfinance.coinTrack.portfolio.dto.kite.MutualFundDTO dto : mfList) {
+            BigDecimal currentPrice = dto.getCurrentPrice();
+            if (currentPrice == null || currentPrice.compareTo(BigDecimal.ZERO) == 0) {
+              if (mfNavService != null) {
+                // Try ISIN lookup first (e.g. tradingsymbol = INF...)
+                String isin = dto.getIsin() != null && !dto.getIsin().isBlank() ? dto.getIsin() : dto.getTradingSymbol();
+                BigDecimal resolvedNav = mfNavService.fetchLatestNavByIsin(isin);
+                if (resolvedNav != null && resolvedNav.compareTo(BigDecimal.ZERO) > 0) {
+                  dto.setCurrentPrice(resolvedNav);
+                  log.debug("Enriched MF holding {} with live AMFI NAV: ₹{}", dto.getFund(), resolvedNav);
+                }
+              }
+            }
+          }
+
+          allMf.addAll(mfList);
         } catch (Exception e) {
           log.warn("Failed to fetch MF holdings: {}", e.getMessage());
         }
@@ -432,6 +462,46 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
           var profile = zerodhaLiveDataService.fetchProfile(account);
           if (profile != null) {
             profile.setLastSynced(LocalDateTime.now().toString());
+            boolean changed = false;
+            if (profile.getUserId() != null && !profile.getUserId().equals(account.getBrokerUserId())) {
+              account.setBrokerUserId(profile.getUserId());
+              changed = true;
+            }
+            if (profile.getUserName() != null && !profile.getUserName().equals(account.getAccountHolder())) {
+              account.setAccountHolder(profile.getUserName());
+              changed = true;
+            }
+            if (profile.getEmail() != null && !profile.getEmail().equals(account.getEmail())) {
+              account.setEmail(profile.getEmail());
+              changed = true;
+            }
+              String dpId = null;
+              if (profile.getRaw() != null) {
+                dpId = (String) profile.getRaw().get("dp_id");
+                if (dpId == null) {
+                  dpId = (String) profile.getRaw().get("demat_account");
+                }
+                if (dpId == null) {
+                  dpId = (String) profile.getRaw().get("boid");
+                }
+              }
+              // If broker did not return BOID in profile API, construct standard CDSL Demat BOID:
+              // Zerodha CDSL DP ID is 12081600 (or 12081601) + 8-digit client BOID.
+              // If account already has a Demat account set or known, preserve it; otherwise
+              // auto-synthesize from DP ID 12081600 if numeric client ID is present.
+              if (dpId == null && account.getDematAccount() == null && account.getBrokerUserId() != null) {
+                String rawUid = account.getBrokerUserId().replaceAll("\\D", "");
+                if (rawUid.length() >= 8) {
+                  dpId = "12081600" + rawUid.substring(rawUid.length() - 8);
+                }
+              }
+              if (dpId != null && !dpId.equals(account.getDematAccount())) {
+                account.setDematAccount(dpId);
+                changed = true;
+              }
+            if (changed) {
+              brokerAccountRepository.save(account);
+            }
           }
           return profile;
         } catch (Exception e) {
@@ -797,11 +867,34 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
         }
 
         String authDate = null;
-        if (holding.getRaw() != null && holding.getRaw().get("authorised_date") != null) {
-          String d = holding.getRaw().get("authorised_date").toString();
-          if (!d.isEmpty()) authDate = d;
+        if (holding.getRaw() != null) {
+          if (holding.getRaw().get("authorised_date") != null) {
+            String d = holding.getRaw().get("authorised_date").toString();
+            if (!d.isEmpty()) authDate = d;
+          } else if (holding.getRaw().get("last_price_date") != null) {
+            String d = holding.getRaw().get("last_price_date").toString();
+            if (!d.isEmpty()) authDate = d;
+          }
         }
-        if (authDate != null && authDate.contains(" ")) authDate = authDate.split(" ")[0];
+        if (authDate == null && holding.getLastPriceDate() != null) {
+          authDate = holding.getLastPriceDate();
+        }
+        if (authDate == null) {
+          authDate = java.time.LocalDate.now().toString();
+        }
+        if (authDate.contains(" ")) authDate = authDate.split(" ")[0];
+
+        BigDecimal eventNav = holding.getCurrentPrice() != null && holding.getCurrentPrice().compareTo(BigDecimal.ZERO) > 0
+            ? holding.getCurrentPrice()
+            : holding.getAveragePrice();
+
+        BigDecimal eventAmount = holding.getCurrentValue();
+        if (eventAmount == null || eventAmount.compareTo(BigDecimal.ZERO) == 0) {
+          eventAmount = holding.getInvestedValue();
+        }
+        if ((eventAmount == null || eventAmount.compareTo(BigDecimal.ZERO) == 0) && eventNav != null) {
+          eventAmount = eventNav.multiply(diff.abs()).setScale(2, java.math.RoundingMode.HALF_UP);
+        }
 
         events.add(
             com.urva
@@ -818,6 +911,8 @@ public class PortfolioSummaryServiceImpl implements PortfolioSummaryService {
                 .fund(holding.getFund())
                 .tradingSymbol(ts)
                 .quantity(diff.abs())
+                .amount(eventAmount)
+                .nav(eventNav)
                 .source("HOLDING")
                 .confidence("INFERRED")
                 .context(context)

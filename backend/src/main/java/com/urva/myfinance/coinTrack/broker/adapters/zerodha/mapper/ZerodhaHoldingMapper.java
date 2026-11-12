@@ -49,12 +49,15 @@ public class ZerodhaHoldingMapper {
     // 3. Exchange normalization
     Exchange exchange = ExchangeNormalizer.normalize(raw.getExchange(), Broker.ZERODHA);
 
-    // 4. Quantity (int from API)
-    BigDecimal quantity = BigDecimal.valueOf(raw.getQuantity() != null ? raw.getQuantity() : 0);
+    // 4. Quantity (settled in Demat)
+    BigDecimal settledQty = BigDecimal.valueOf(raw.getQuantity() != null ? raw.getQuantity() : 0);
 
-    // 5. T1 Quantity (int from API)
+    // 5. T1 Quantity (pending T+1 settlement)
     BigDecimal t1Quantity =
         BigDecimal.valueOf(raw.getT1_quantity() != null ? raw.getT1_quantity() : 0);
+
+    // Total effective holding quantity = settled + T+1 awaiting delivery
+    BigDecimal totalQty = settledQty.add(t1Quantity);
 
     // 6. Average buy price — 0.0 indicates possible CDSL transfer
     BigDecimal avgBuyPrice =
@@ -68,11 +71,11 @@ public class ZerodhaHoldingMapper {
     BigDecimal currentPrice =
         PriceNormalizer.toBigDecimal(raw.getLast_price(), "last_price", Broker.ZERODHA);
 
-    // 8. Invested value
-    BigDecimal investedValue = quantity.multiply(avgBuyPrice).setScale(2, RoundingMode.HALF_UP);
+    // 8. Invested value (based on total active holding: settled + T+1)
+    BigDecimal investedValue = totalQty.multiply(avgBuyPrice).setScale(2, RoundingMode.HALF_UP);
 
-    // 9. Current value
-    BigDecimal currentValue = quantity.multiply(currentPrice).setScale(2, RoundingMode.HALF_UP);
+    // 9. Current value (based on total active holding: settled + T+1)
+    BigDecimal currentValue = totalQty.multiply(currentPrice).setScale(2, RoundingMode.HALF_UP);
 
     // 10. Unrealized P&L
     BigDecimal unrealizedPnL = PriceNormalizer.toBigDecimal(raw.getPnl(), "pnl", Broker.ZERODHA);
@@ -108,7 +111,7 @@ public class ZerodhaHoldingMapper {
         .isin(isin)
         .symbol(symbol)
         .exchange(exchange)
-        .quantity(quantity)
+        .quantity(totalQty)
         .t1Quantity(t1Quantity)
         .avgBuyPrice(avgBuyPrice)
         .currentPrice(currentPrice)

@@ -48,6 +48,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
 
 /**
  * Zerodha Kite Connect adapter — implements BrokerAdapter using the Kite v3 API.
@@ -145,6 +146,9 @@ public class ZerodhaBrokerAdapter implements BrokerAdapter {
                             .with("checksum", checksum))
                     .retrieve()
                     .bodyToMono(String.class)
+                    .retryWhen(
+                        Retry.max(1)
+                            .filter(throwable -> throwable instanceof WebClientRequestException))
                     .block();
 
             @SuppressWarnings("unchecked")
@@ -352,6 +356,9 @@ public class ZerodhaBrokerAdapter implements BrokerAdapter {
               .headers(h -> applyKiteHeaders(h, session))
               .retrieve()
               .bodyToMono(String.class)
+              .retryWhen(
+                  Retry.max(1)
+                      .filter(throwable -> throwable instanceof WebClientRequestException))
               .block();
 
       JsonNode root = objectMapper.readTree(responseBody);
@@ -392,6 +399,9 @@ public class ZerodhaBrokerAdapter implements BrokerAdapter {
               .headers(h -> applyKiteHeaders(h, session))
               .retrieve()
               .bodyToMono(String.class)
+              .retryWhen(
+                  Retry.max(1)
+                      .filter(throwable -> throwable instanceof WebClientRequestException))
               .block();
 
       JsonNode root = objectMapper.readTree(responseBody);

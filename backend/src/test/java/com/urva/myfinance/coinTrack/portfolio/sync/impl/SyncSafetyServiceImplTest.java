@@ -103,9 +103,8 @@ class SyncSafetyServiceImplTest {
   @Test
   @DisplayName("isMarketOpen: delegates to MarketHoursUtil")
   void isMarketOpen_delegates() {
-    // Just verify it doesn't throw and returns a boolean
     boolean result = service.isMarketOpen();
-    assertFalse(result); // On a Sunday or outside hours, this should be false
+    assertEquals(com.urva.myfinance.coinTrack.common.util.MarketHoursUtil.isMarketOpen(), result);
   }
 
   // ── Manual Sync Cooldown ───────────────────────────────────────

@@ -52,6 +52,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
 
 /**
  * Upstox v2 API adapter.
@@ -172,6 +173,9 @@ public class UpstoxBrokerAdapter implements BrokerAdapter {
                             .with("grant_type", "authorization_code"))
                     .retrieve()
                     .bodyToMono(String.class)
+                    .retryWhen(
+                        Retry.max(1)
+                            .filter(throwable -> throwable instanceof WebClientRequestException))
                     .block();
 
             JsonNode root = objectMapper.readTree(responseBody);
@@ -353,6 +357,9 @@ public class UpstoxBrokerAdapter implements BrokerAdapter {
               .headers(h -> applyUpstoxHeaders(h, accessToken))
               .retrieve()
               .toEntity(String.class)
+              .retryWhen(
+                  Retry.max(1)
+                      .filter(throwable -> throwable instanceof WebClientRequestException))
               .block();
 
       trackRateLimit(response);
@@ -398,6 +405,9 @@ public class UpstoxBrokerAdapter implements BrokerAdapter {
               .headers(h -> applyUpstoxHeaders(h, accessToken))
               .retrieve()
               .toEntity(String.class)
+              .retryWhen(
+                  Retry.max(1)
+                      .filter(throwable -> throwable instanceof WebClientRequestException))
               .block();
 
       trackRateLimit(response);

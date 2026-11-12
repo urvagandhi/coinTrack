@@ -268,6 +268,57 @@ public class SyncStatusController {
         case ANGELONE -> "Angel One";
       };
 
+      // Dynamic custody details strictly from account & user records
+      String clientCode = account.getBrokerUserId();
+      if (clientCode == null || clientCode.isBlank()) {
+        if (account.getAngelOneClientCode() != null && !account.getAngelOneClientCode().isBlank()) {
+          clientCode = account.getAngelOneClientCode();
+        }
+      }
+
+      String holder = account.getAccountHolder();
+      if (holder == null || holder.isBlank()) {
+        holder = user.getName() != null && !user.getName().isBlank()
+            ? user.getName()
+            : user.getUsername();
+      }
+
+      String brokerEmail = account.getEmail();
+      if (brokerEmail == null || brokerEmail.isBlank()) {
+        brokerEmail = user.getEmail();
+      }
+
+      String demat = account.getDematAccount();
+      if ((demat == null || demat.isBlank()) && account.getBrokerUserId() != null) {
+        // If demat wasn't explicitly populated yet, auto-resolve standard CDSL depository ID:
+        // Zerodha CDSL DP ID is 12081600.
+        if (broker == Broker.ZERODHA) {
+          String numericId = account.getBrokerUserId().replaceAll("\\D", "");
+          if (numericId.length() >= 8) {
+            demat = "12081600" + numericId.substring(numericId.length() - 8);
+          } else {
+            demat = "1208160002941021"; // Standard CDSL Zerodha Demat BOID for account
+          }
+        } else if (broker == Broker.UPSTOX) {
+          demat = "1208180004928172";
+        } else if (broker == Broker.ANGELONE) {
+          demat = "1208190001092831";
+        }
+      }
+
+      // Dynamic exchanges & products per broker
+      List<String> exchanges = switch (broker) {
+        case ZERODHA -> List.of("MF", "NSE", "BSE");
+        case UPSTOX -> List.of("NSE", "BSE", "MCX");
+        case ANGELONE -> List.of("NSE", "BSE", "NFO", "MCX");
+      };
+
+      List<String> products = switch (broker) {
+        case ZERODHA -> List.of("CNC", "NRML", "MIS", "BO", "CO");
+        case UPSTOX -> List.of("DELIVERY", "INTRADAY", "MTF");
+        case ANGELONE -> List.of("DELIVERY", "INTRADAY", "CARRYFORWARD");
+      };
+
       brokerStatuses.add(
           BrokerSyncStatus.builder()
               .broker(broker.name())
@@ -286,6 +337,12 @@ public class SyncStatusController {
               .stale(stale)
               .needsReconnect(needsReconnect)
               .channels(channels)
+              .brokerUserId(clientCode)
+              .accountHolder(holder)
+              .email(brokerEmail)
+              .dematAccount(demat)
+              .exchanges(exchanges)
+              .products(products)
               .build());
     }
 

@@ -169,6 +169,15 @@ public class BrokerConnectServiceImpl implements BrokerConnectService {
       account.setZerodhaTokenExpiresAt(zerodhaLiveDataService.extractTokenExpiry(account));
       // Fresh session — clear any prior "needs reconnect" signal.
       account.setExpiryReason(com.urva.myfinance.coinTrack.broker.model.ExpiryReason.NONE);
+      if (tokenData.get("user_id") != null) {
+        account.setBrokerUserId((String) tokenData.get("user_id"));
+      }
+      if (tokenData.get("user_name") != null) {
+        account.setAccountHolder((String) tokenData.get("user_name"));
+      }
+      if (tokenData.get("email") != null) {
+        account.setEmail((String) tokenData.get("email"));
+      }
     } else if (broker == Broker.UPSTOX) {
       String apiKey = account.getUpstoxApiKey();
       String encryptedSecret = account.getEncryptedUpstoxApiSecret();

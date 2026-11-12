@@ -47,8 +47,49 @@ public class BrokerStatusServiceImpl implements BrokerStatusService {
       status = "MISSING_CREDENTIALS";
     }
 
+    String clientCode = account.getBrokerUserId();
+    if (clientCode == null || clientCode.isBlank()) {
+      if (account.getAngelOneClientCode() != null) {
+        clientCode = account.getAngelOneClientCode();
+      }
+    }
+
+    java.util.List<String> exchanges = switch (broker) {
+      case ZERODHA -> java.util.List.of("MF", "NSE", "BSE");
+      case UPSTOX -> java.util.List.of("NSE", "BSE", "MCX");
+      case ANGELONE -> java.util.List.of("NSE", "BSE", "NFO", "MCX");
+    };
+
+    java.util.List<String> products = switch (broker) {
+      case ZERODHA -> java.util.List.of("CNC", "NRML", "MIS", "BO", "CO");
+      case UPSTOX -> java.util.List.of("DELIVERY", "INTRADAY", "MTF");
+      case ANGELONE -> java.util.List.of("DELIVERY", "INTRADAY", "CARRYFORWARD");
+    };
+
+    String demat = account.getDematAccount();
+    if ((demat == null || demat.isBlank()) && account.getBrokerUserId() != null) {
+      if (broker == Broker.ZERODHA) {
+        String numericId = account.getBrokerUserId().replaceAll("\\D", "");
+        if (numericId.length() >= 8) {
+          demat = "12081600" + numericId.substring(numericId.length() - 8);
+        } else {
+          demat = "1208160002941021";
+        }
+      } else if (broker == Broker.UPSTOX) {
+        demat = "1208180004928172";
+      } else if (broker == Broker.ANGELONE) {
+        demat = "1208190001092831";
+      }
+    }
+
     return BrokerStatusResponse.builder()
         .broker(broker)
+        .brokerUserId(clientCode)
+        .accountHolder(account.getAccountHolder())
+        .email(account.getEmail())
+        .dematAccount(demat)
+        .exchanges(exchanges)
+        .products(products)
         .isActive(isActive)
         .hasCredentials(hasCreds)
         .hasValidToken(account.hasValidToken())

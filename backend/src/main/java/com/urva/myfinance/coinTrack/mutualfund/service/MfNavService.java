@@ -26,10 +26,14 @@ public class MfNavService {
 
   private final RestTemplate restTemplate;
   private final MutualFundNavCacheRepository navCacheRepository;
+  private final com.urva.myfinance.coinTrack.mutualfund.repository.MutualFundLtpRepository ltpRepository;
 
-  public MfNavService(MutualFundNavCacheRepository navCacheRepository) {
+  public MfNavService(
+      MutualFundNavCacheRepository navCacheRepository,
+      com.urva.myfinance.coinTrack.mutualfund.repository.MutualFundLtpRepository ltpRepository) {
     this.restTemplate = new RestTemplate();
     this.navCacheRepository = navCacheRepository;
+    this.ltpRepository = ltpRepository;
   }
 
   public BigDecimal fetchNavForDate(String amfiCode, LocalDate targetDate) {
@@ -169,6 +173,20 @@ public class MfNavService {
       return null;
     }
 
+    // 0. Check Tier 1 Local AMFI LTP Store (instant sub-millisecond lookup)
+    try {
+      if (ltpRepository != null) {
+        Optional<com.urva.myfinance.coinTrack.mutualfund.model.MutualFundLtp> ltp =
+            ltpRepository.findById(amfiCode.trim());
+        if (ltp.isPresent() && ltp.get().getLatestNav() != null && ltp.get().getLatestNav().compareTo(BigDecimal.ZERO) > 0) {
+          logger.debug("Found latest NAV {} for scheme {} in AMFI LTP store", ltp.get().getLatestNav(), amfiCode);
+          return ltp.get().getLatestNav();
+        }
+      }
+    } catch (Exception e) {
+      logger.debug("LTP store check skipped: {}", e.getMessage());
+    }
+
     try {
       // Use /latest endpoint for fast lightweight NAV retrieval as per mfapi.in documentation
       String url =
@@ -221,6 +239,35 @@ public class MfNavService {
       logger.info(
           "Successfully fell back to locally cached NAV {} for scheme {}", fallbackNav, amfiCode);
       return fallbackNav;
+    }
+
+    return null;
+  }
+
+  /**
+   * Resolves latest NAV using ISIN (e.g. from Kite / Demat holding INF...).
+   */
+  public BigDecimal fetchLatestNavByIsin(String isin) {
+    if (isin == null || isin.trim().isEmpty()) {
+      return null;
+    }
+    String cleanIsin = isin.trim();
+
+    // 1. Check LTP store by ISIN Growth
+    try {
+      if (ltpRepository != null) {
+        Optional<com.urva.myfinance.coinTrack.mutualfund.model.MutualFundLtp> ltp =
+            ltpRepository.findByIsinGrowth(cleanIsin);
+        if (ltp.isEmpty()) {
+          ltp = ltpRepository.findByIsinDiv(cleanIsin);
+        }
+        if (ltp.isPresent() && ltp.get().getLatestNav() != null && ltp.get().getLatestNav().compareTo(BigDecimal.ZERO) > 0) {
+          logger.debug("Found latest NAV {} for ISIN {} in AMFI LTP store", ltp.get().getLatestNav(), cleanIsin);
+          return ltp.get().getLatestNav();
+        }
+      }
+    } catch (Exception e) {
+      logger.debug("LTP store ISIN lookup skipped: {}", e.getMessage());
     }
 
     return null;

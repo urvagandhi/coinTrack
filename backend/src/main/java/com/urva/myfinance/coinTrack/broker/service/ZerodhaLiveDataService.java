@@ -32,7 +32,9 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
 
 /**
  * Provides live data fetching from Zerodha Kite API for pass-through endpoints. This is NOT a
@@ -107,6 +109,14 @@ public class ZerodhaLiveDataService {
                       .with("checksum", checksum))
               .retrieve()
               .bodyToMono(String.class)
+              .retryWhen(
+                  Retry.max(1)
+                      .filter(throwable -> throwable instanceof WebClientRequestException)
+                      .doBeforeRetry(
+                          signal ->
+                              logger.warn(
+                                  "Transient network/timeout error during Kite token exchange, retrying on fresh connection: {}",
+                                  extractExceptionMessage(signal.failure()))))
               .block();
 
       Map<String, Object> body = objectMapper.readValue(responseBody, Map.class);
@@ -122,13 +132,15 @@ public class ZerodhaLiveDataService {
       logger.error("SHA-256 algorithm not available: {}", e.getMessage());
       throw new BrokerException("Checksum generation failed", Broker.ZERODHA);
     } catch (WebClientResponseException e) {
-      logger.error("Zerodha API call failed: {}", e.getMessage());
-      throw new BrokerException("Token exchange failed: " + e.getMessage(), Broker.ZERODHA);
+      String kiteMsg = extractKiteErrorMessage(e);
+      logger.error("Zerodha API call failed [HTTP {}]: {}", e.getStatusCode(), kiteMsg);
+      throw new BrokerException("Token exchange failed: " + kiteMsg, Broker.ZERODHA);
     } catch (BrokerException e) {
       throw e; // Re-throw broker exceptions as-is
     } catch (Exception e) {
-      logger.error("Unexpected error during token exchange: {}", e.getMessage(), e);
-      throw new BrokerException("Token exchange failed: " + e.getMessage(), Broker.ZERODHA);
+      String errorMsg = extractExceptionMessage(e);
+      logger.error("Unexpected error during token exchange: {}", errorMsg, e);
+      throw new BrokerException("Token exchange failed: " + errorMsg, Broker.ZERODHA);
     }
   }
 
@@ -207,6 +219,14 @@ public class ZerodhaLiveDataService {
               .headers(headers -> buildKiteHeaders(headers, account))
               .retrieve()
               .bodyToMono(String.class)
+              .retryWhen(
+                  Retry.max(1)
+                      .filter(throwable -> throwable instanceof WebClientRequestException)
+                      .doBeforeRetry(
+                          signal ->
+                              logger.warn(
+                                  "Transient network error fetching Kite margins, retrying: {}",
+                                  extractExceptionMessage(signal.failure()))))
               .block();
 
       // Manual parsing
@@ -272,7 +292,20 @@ public class ZerodhaLiveDataService {
 
       dto.setQuantity(getBigDecimal(rawMap, "quantity"));
       dto.setAveragePrice(getBigDecimal(rawMap, "average_price"));
-      dto.setCurrentPrice(getBigDecimal(rawMap, "last_price"));
+
+      // Zerodha Coin may pass last_price, nav, or price
+      BigDecimal lastPrice = getBigDecimal(rawMap, "last_price");
+      if (lastPrice == null || lastPrice.compareTo(BigDecimal.ZERO) == 0) {
+        lastPrice = getBigDecimal(rawMap, "nav");
+      }
+      if (lastPrice == null || lastPrice.compareTo(BigDecimal.ZERO) == 0) {
+        lastPrice = getBigDecimal(rawMap, "last_nav");
+      }
+      if (lastPrice == null || lastPrice.compareTo(BigDecimal.ZERO) == 0) {
+        lastPrice = getBigDecimal(rawMap, "price");
+      }
+      dto.setCurrentPrice(lastPrice);
+
       dto.setCurrentValue(getBigDecimal(rawMap, "current_value"));
       dto.setUnrealizedPL(getBigDecimal(rawMap, "pnl"));
       dto.setLastPriceDate(getString(rawMap, "last_price_date"));
@@ -427,6 +460,14 @@ public class ZerodhaLiveDataService {
               .headers(headers -> buildKiteHeaders(headers, account))
               .retrieve()
               .bodyToMono(String.class)
+              .retryWhen(
+                  Retry.max(1)
+                      .filter(throwable -> throwable instanceof WebClientRequestException)
+                      .doBeforeRetry(
+                          signal ->
+                              logger.warn(
+                                  "Transient network error fetching Kite MF instruments, retrying: {}",
+                                  extractExceptionMessage(signal.failure()))))
               .block();
 
       if (csvBody == null || csvBody.isEmpty()) {
@@ -549,6 +590,14 @@ public class ZerodhaLiveDataService {
               .headers(headers -> buildKiteHeaders(headers, account))
               .retrieve()
               .bodyToMono(String.class)
+              .retryWhen(
+                  Retry.max(1)
+                      .filter(throwable -> throwable instanceof WebClientRequestException)
+                      .doBeforeRetry(
+                          signal ->
+                              logger.warn(
+                                  "Transient network error fetching Kite margins, retrying: {}",
+                                  extractExceptionMessage(signal.failure()))))
               .block();
 
       JsonNode root = objectMapper.readTree(responseBody);
@@ -595,6 +644,14 @@ public class ZerodhaLiveDataService {
               .headers(headers -> buildKiteHeaders(headers, account))
               .retrieve()
               .bodyToMono(String.class)
+              .retryWhen(
+                  Retry.max(1)
+                      .filter(throwable -> throwable instanceof WebClientRequestException)
+                      .doBeforeRetry(
+                          signal ->
+                              logger.warn(
+                                  "Transient network error fetching Kite margins, retrying: {}",
+                                  extractExceptionMessage(signal.failure()))))
               .block();
 
       JsonNode root = objectMapper.readTree(responseBody);
@@ -680,5 +737,43 @@ public class ZerodhaLiveDataService {
       hexString.append(hex);
     }
     return hexString.toString();
+  }
+
+  /** Extracts human-readable error message from Zerodha Kite JSON error response. */
+  private String extractKiteErrorMessage(WebClientResponseException e) {
+    try {
+      String body = e.getResponseBodyAsString();
+      if (body != null && !body.isBlank()) {
+        JsonNode root = objectMapper.readTree(body);
+        if (root.has("message")) {
+          return root.get("message").asText();
+        }
+      }
+    } catch (Exception ignored) {
+    }
+    return e.getMessage() != null ? e.getMessage() : "HTTP " + e.getStatusCode();
+  }
+
+  /** Extracts root cause message from exceptions to avoid logging or throwing "null". */
+  private String extractExceptionMessage(Throwable e) {
+    Throwable current = e;
+    while (current != null) {
+      if (current instanceof io.netty.handler.timeout.ReadTimeoutException) {
+        return "Zerodha server timed out while processing request. Please try reconnecting.";
+      }
+      if (current instanceof java.net.ConnectException) {
+        return "Could not connect to Zerodha Kite API. Please check your network connection.";
+      }
+      current = current.getCause();
+    }
+    if (e.getMessage() != null && !e.getMessage().isBlank()) {
+      return e.getMessage();
+    }
+    if (e.getCause() != null
+        && e.getCause().getMessage() != null
+        && !e.getCause().getMessage().isBlank()) {
+      return e.getCause().getMessage();
+    }
+    return e.getClass().getSimpleName();
   }
 }

@@ -27,6 +27,12 @@ public class BrokerAccount {
 
   private String brokerUserId; // Broker-specific user ID
 
+  private String dematAccount; // Demat BOID (16 digits)
+
+  private String accountHolder; // Account holder full name from broker profile
+
+  private String email; // Broker registered email
+
   private Broker broker;
 
   private String zerodhaApiKey;
@@ -155,6 +161,9 @@ public class BrokerAccount {
     Map<String, Object> status = new HashMap<>();
     status.put("broker", broker);
     status.put("brokerUserId", brokerUserId);
+    status.put("dematAccount", dematAccount);
+    status.put("accountHolder", accountHolder);
+    status.put("email", email);
     status.put("isActive", isActive);
     status.put("hasCredentials", hasCredentials());
     status.put("hasValidToken", hasValidToken());

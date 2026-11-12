@@ -27,7 +27,16 @@ public class HoldingEnricher {
   }
 
   private SummaryHoldingDTO enrichSingle(CanonicalHolding h, MarketPrice marketPrice) {
-    BigDecimal qty = safeDecimal(h.getQuantity());
+    BigDecimal settledQty = safeDecimal(h.getQuantity());
+    BigDecimal t1Qty = safeDecimal(h.getT1Quantity());
+    // Total effective holding is settled + T+1 awaiting delivery
+    BigDecimal totalQty = settledQty.compareTo(t1Qty) >= 0 && settledQty.compareTo(BigDecimal.ZERO) > 0 && !settledQty.equals(t1Qty)
+        ? settledQty
+        : settledQty.add(t1Qty);
+    if (settledQty.compareTo(BigDecimal.ZERO) == 0 && t1Qty.compareTo(BigDecimal.ZERO) > 0) {
+      totalQty = t1Qty;
+    }
+
     BigDecimal avgPrice = safeDecimal(h.getAvgBuyPrice());
 
     // 1. Current price: market data > canonical stored price
@@ -50,14 +59,14 @@ public class HoldingEnricher {
               .subtract(
                   h.getDayChange()
                       .divide(
-                          qty.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ONE : qty,
+                          totalQty.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ONE : totalQty,
                           4,
                           RoundingMode.HALF_UP));
     }
 
-    // 3. Computed values
-    BigDecimal currentValue = qty.multiply(currentPrice).setScale(4, RoundingMode.HALF_UP);
-    BigDecimal investedValue = qty.multiply(avgPrice).setScale(4, RoundingMode.HALF_UP);
+    // 3. Computed values based on total holding (settled + T+1)
+    BigDecimal currentValue = totalQty.multiply(currentPrice).setScale(4, RoundingMode.HALF_UP);
+    BigDecimal investedValue = totalQty.multiply(avgPrice).setScale(4, RoundingMode.HALF_UP);
 
     // 4. Unrealized P&L: trust broker when confidence HIGH
     BigDecimal unrealizedPL;
@@ -78,13 +87,13 @@ public class HoldingEnricher {
       dayGain = h.getDayChange();
     } else if (currentPrice.compareTo(BigDecimal.ZERO) > 0
         && previousClose.compareTo(BigDecimal.ZERO) > 0) {
-      dayGain = currentPrice.subtract(previousClose).multiply(qty);
+      dayGain = currentPrice.subtract(previousClose).multiply(totalQty);
     }
 
     // 6. Day gain percent
     BigDecimal dayGainPct = null;
     if (dayGain != null && previousClose.compareTo(BigDecimal.ZERO) > 0) {
-      BigDecimal prevValue = qty.multiply(previousClose);
+      BigDecimal prevValue = totalQty.multiply(previousClose);
       if (prevValue.compareTo(BigDecimal.ZERO) != 0) {
         dayGainPct =
             dayGain
@@ -99,7 +108,7 @@ public class HoldingEnricher {
         .exchange(h.getExchange() != null ? h.getExchange().name() : "")
         .broker(h.getBrokerType() != null ? h.getBrokerType().name() : "UNKNOWN")
         .type("HOLDING")
-        .quantity(qty)
+        .quantity(totalQty)
         .averageBuyPrice(avgPrice.setScale(4, RoundingMode.HALF_UP))
         .currentPrice(currentPrice.setScale(4, RoundingMode.HALF_UP))
         .previousClose(previousClose.setScale(4, RoundingMode.HALF_UP))

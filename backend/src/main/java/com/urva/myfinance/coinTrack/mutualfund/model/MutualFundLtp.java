@@ -5,12 +5,16 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @Document(collection = "mf_latest_prices")
 public class MutualFundLtp {
   @Id private String schemeCode; // AMFI code
+  @Indexed private String isinGrowth; // Primary ISIN Growth
+  @Indexed private String isinDiv; // ISIN Div / alternate
+  private String schemeName;
   private BigDecimal latestNav;
   private LocalDate navDate; // The actual date of the NAV
   private LocalDateTime lastUpdatedAt;

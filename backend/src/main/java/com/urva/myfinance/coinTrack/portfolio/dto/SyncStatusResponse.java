@@ -78,6 +78,24 @@ public class SyncStatusResponse {
 
     @Schema(description = "Dynamic list of syndicated feeds with streaming status and counts")
     private List<BrokerChannelTelemetry> channels;
+
+    @Schema(description = "Broker client ID / user code", example = "EUS554")
+    private String brokerUserId;
+
+    @Schema(description = "Account holder full name", example = "Urva Yogeshkumar Gandhi")
+    private String accountHolder;
+
+    @Schema(description = "Registered email", example = "urvagandhi24@gmail.com")
+    private String email;
+
+    @Schema(description = "Demat BOID (16 digits)", example = "1208160002941021")
+    private String dematAccount;
+
+    @Schema(description = "Supported exchanges")
+    private List<String> exchanges;
+
+    @Schema(description = "Permitted products")
+    private List<String> products;
   }
 
   @Data

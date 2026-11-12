@@ -19,10 +19,13 @@ import com.urva.myfinance.coinTrack.portfolio.repository.CanonicalPositionReposi
 import com.urva.myfinance.coinTrack.portfolio.repository.SyncLogRepository;
 import com.urva.myfinance.coinTrack.portfolio.sync.PortfolioSyncService;
 import com.urva.myfinance.coinTrack.portfolio.sync.SyncSafetyService;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -273,13 +276,51 @@ public class PortfolioSyncServiceImpl implements PortfolioSyncService {
    * canonical model indexes.
    */
   private void persistAggregatedData(String userId, AggregatedPortfolio result) {
-    // Persist holdings — upsert by (userId, brokerAccountId, isin)
+    // 1. Group active incoming holdings by brokerAccountId (active if settled quantity > 0 OR T+1 quantity > 0)
+    Map<String, Set<String>> activeIsinsByBrokerAccount = new HashMap<>();
+    for (CanonicalHolding h : result.holdings()) {
+      boolean isExplicitlyZero =
+          (h.getQuantity() != null && h.getQuantity().compareTo(BigDecimal.ZERO) == 0)
+              && (h.getT1Quantity() == null || h.getT1Quantity().compareTo(BigDecimal.ZERO) == 0);
+      if (!isExplicitlyZero && h.getBrokerAccountId() != null && h.getIsin() != null) {
+        activeIsinsByBrokerAccount
+            .computeIfAbsent(h.getBrokerAccountId(), k -> new HashSet<>())
+            .add(h.getIsin());
+      }
+    }
+
+    // 2. Persist holdings — upsert active holdings, purge explicitly zero-quantity holdings
     for (CanonicalHolding h : result.holdings()) {
       h.setUserId(userId);
-      holdingRepository
-          .findByUserIdAndBrokerAccountIdAndIsin(userId, h.getBrokerAccountId(), h.getIsin())
-          .ifPresent(existing -> h.setId(existing.getId()));
-      holdingRepository.save(h);
+      var existingOpt =
+          holdingRepository.findByUserIdAndBrokerAccountIdAndIsin(
+              userId, h.getBrokerAccountId(), h.getIsin());
+
+      boolean isExplicitlyZero =
+          (h.getQuantity() != null && h.getQuantity().compareTo(BigDecimal.ZERO) == 0)
+              && (h.getT1Quantity() == null || h.getT1Quantity().compareTo(BigDecimal.ZERO) == 0);
+
+      // If both settled quantity and T+1 quantity are zero, the holding has been completely sold/exited
+      if (isExplicitlyZero) {
+        existingOpt.ifPresent(existing -> holdingRepository.deleteById(existing.getId()));
+      } else {
+        existingOpt.ifPresent(existing -> h.setId(existing.getId()));
+        holdingRepository.save(h);
+      }
+    }
+
+    // 3. For any broker account that synced successfully, remove obsolete holdings no longer returned by broker
+    for (Map.Entry<String, Set<String>> entry : activeIsinsByBrokerAccount.entrySet()) {
+      String brokerAccountId = entry.getKey();
+      Set<String> liveIsins = entry.getValue();
+      List<CanonicalHolding> currentDbHoldings =
+          holdingRepository.findByUserIdAndBrokerAccountId(userId, brokerAccountId);
+      for (CanonicalHolding dbH : currentDbHoldings) {
+        if (!liveIsins.contains(dbH.getIsin())) {
+          logger.info("Purging sold/closed holding: {} ({}) for user {}", dbH.getSymbol(), dbH.getIsin(), userId);
+          holdingRepository.deleteById(dbH.getId());
+        }
+      }
     }
 
     // Persist positions — upsert by (userId, brokerAccountId, symbol, instrumentType)

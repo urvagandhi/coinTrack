@@ -84,6 +84,18 @@ public class PortfolioController {
     List<com.urva.myfinance.coinTrack.portfolio.dto.SummaryHoldingDTO> holdings =
         summary.getHoldingsList().stream()
             .filter(h -> "HOLDING".equalsIgnoreCase(h.getType()))
+            .filter(h -> {
+              java.math.BigDecimal qty = h.getQuantity();
+              java.math.BigDecimal t1 = null;
+              if (h.getRaw() != null && h.getRaw().get("t1_quantity") != null) {
+                try {
+                  t1 = new java.math.BigDecimal(h.getRaw().get("t1_quantity").toString());
+                } catch (Exception ignored) {}
+              }
+              boolean hasSettled = qty != null && qty.compareTo(java.math.BigDecimal.ZERO) > 0;
+              boolean hasT1 = t1 != null && t1.compareTo(java.math.BigDecimal.ZERO) > 0;
+              return hasSettled || hasT1;
+            })
             .collect(java.util.stream.Collectors.toList());
 
     return ResponseEntity.ok(ApiResponse.success(holdings));

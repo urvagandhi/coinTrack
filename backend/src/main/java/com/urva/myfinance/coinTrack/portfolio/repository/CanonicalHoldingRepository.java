@@ -17,6 +17,8 @@ public interface CanonicalHoldingRepository extends MongoRepository<CanonicalHol
   Optional<CanonicalHolding> findByUserIdAndBrokerAccountIdAndIsin(
       String userId, String brokerAccountId, String isin);
 
+  List<CanonicalHolding> findByUserIdAndBrokerAccountId(String userId, String brokerAccountId);
+
   List<CanonicalHolding> findByUserIdAndSymbol(String userId, String symbol);
 
   List<CanonicalHolding> findBySymbolIn(List<String> symbols);

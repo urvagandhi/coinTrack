@@ -21,7 +21,7 @@ import org.springframework.web.client.RestTemplate;
 public class AmfiDailySyncService {
 
   private static final Logger logger = LoggerFactory.getLogger(AmfiDailySyncService.class);
-  private static final String AMFI_NAV_URL = "https://www.amfiindia.com/spages/NAVAll.txt";
+  private static final String AMFI_NAV_URL = "https://portal.amfiindia.com/spages/NAVAll.txt";
 
   private final MutualFundLtpRepository ltpRepository;
   private final RestTemplate restTemplate;
@@ -54,18 +54,30 @@ public class AmfiDailySyncService {
           }
 
           String[] parts = line.split(";");
-          if (parts.length < 6 || "Scheme Code".equalsIgnoreCase(parts[0])) {
+          if (parts.length < 5 || "Scheme Code".equalsIgnoreCase(parts[0])) {
             continue; // Skip header or malformed lines
           }
 
           try {
-            // AMFI Format: Scheme Code;ISIN 1;ISIN 2;Scheme Name;Net Asset Value;Date
-            // Index 0: Scheme Code
-            // Index 4: NAV
-            // Index 5: Date
+            // AMFI Format: Scheme Code;ISIN 1;ISIN 2;Scheme Name;[Plan;Option;]Net Asset Value;Date
+            // In 8-column format: parts[6] is NAV, parts[7] is Date
+            // In 6-column format: parts[4] is NAV, parts[5] is Date
             String schemeCode = parts[0].trim();
-            String navString = parts[4].trim();
-            String dateString = parts[5].trim();
+            String isinGrowth = parts.length > 1 && !"-".equals(parts[1].trim()) ? parts[1].trim() : null;
+            String isinDiv = parts.length > 2 && !"-".equals(parts[2].trim()) ? parts[2].trim() : null;
+            String schemeName = parts.length > 3 ? parts[3].trim() : null;
+
+            String navString;
+            String dateString;
+            if (parts.length >= 8) {
+              navString = parts[parts.length - 2].trim();
+              dateString = parts[parts.length - 1].trim();
+            } else if (parts.length >= 6) {
+              navString = parts[4].trim();
+              dateString = parts[5].trim();
+            } else {
+              continue;
+            }
 
             if ("N.A.".equalsIgnoreCase(navString) || navString.isEmpty()) {
               continue; // Skip funds without NAV today
@@ -73,8 +85,15 @@ public class AmfiDailySyncService {
 
             MutualFundLtp ltp = new MutualFundLtp();
             ltp.setSchemeCode(schemeCode);
+            ltp.setIsinGrowth(isinGrowth);
+            ltp.setIsinDiv(isinDiv);
+            ltp.setSchemeName(schemeName);
             ltp.setLatestNav(new BigDecimal(navString));
-            ltp.setNavDate(LocalDate.parse(dateString, formatter));
+            try {
+              ltp.setNavDate(LocalDate.parse(dateString, formatter));
+            } catch (Exception parseEx) {
+              ltp.setNavDate(LocalDate.now());
+            }
             ltp.setLastUpdatedAt(now);
 
             ltpsToSave.add(ltp);

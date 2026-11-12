@@ -17,6 +17,12 @@ public class BrokerStatusResponse {
   private ExpiryReason expiryReason;
   private LocalDateTime lastSuccessfulSync;
   private String connectionStatus; // CONNECTED, DISCONNECTED, EXPIRED
+  private String brokerUserId;
+  private String accountHolder;
+  private String email;
+  private String dematAccount;
+  private java.util.List<String> exchanges;
+  private java.util.List<String> products;
   private LocalDateTime tokenCreatedAt;
   private LocalDateTime tokenExpiresAt;
 }

@@ -326,7 +326,7 @@ class MarketDataServiceImplTest {
   @DisplayName("isMarketOpen: delegates to MarketHoursUtil without throwing")
   void isMarketOpen_delegates() {
     boolean result = service.isMarketOpen();
-    assertFalse(result);
+    assertEquals(com.urva.myfinance.coinTrack.common.util.MarketHoursUtil.isMarketOpen(), result);
   }
 
   // ── warmupPrices ─────────────────────────────────────────────
