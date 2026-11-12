@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "71466e93aee66254f6011e019103c9e7290ce915",
-  "generatedAt": "2026-11-04T07:51:03.423Z",
+  "gitCommitHash": "84936591cdc113eab1c5accc32008feeaddae6c0",
+  "generatedAt": "2026-11-05T10:59:43.462Z",
   "files": {
     ".agents/agents/architecture-analyzer.md": {
       "filePath": ".agents/agents/architecture-analyzer.md",
@@ -4983,27 +4983,27 @@
     },
     ".ua/fingerprints.json": {
       "filePath": ".ua/fingerprints.json",
-      "contentHash": "1505c99cae531349ef6ea558ef0273cec31696f2fe6fc48c8fa6ad338f0948d3",
+      "contentHash": "d313fabf56219e5f01df1186fdcd60d8fc486d7ab8ae30a3d30890f500ac62b4",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 100829,
+      "totalLines": 101574,
       "hasStructuralAnalysis": false
     },
     ".ua/knowledge-graph.json": {
       "filePath": ".ua/knowledge-graph.json",
-      "contentHash": "e7491b91bfb6f2f7119c833a6877ee3db20315aa6f836a776a52bd0cf7160905",
+      "contentHash": "e0dc77ab1f1854617f351da1e621c4fc58249671956930e416a45bf9d5d13818",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 109196,
+      "totalLines": 109356,
       "hasStructuralAnalysis": false
     },
     ".ua/meta.json": {
       "filePath": ".ua/meta.json",
-      "contentHash": "6855885219ac124e769229fa7c5e18aefd768050659e1fe969bf85a37d47fc42",
+      "contentHash": "2ceae6fa938594a0c3f7694d02f0c744443bb3d2015d4ab95481c835b506bdd2",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -5071,12 +5071,12 @@
     },
     "AGENTS.md": {
       "filePath": "AGENTS.md",
-      "contentHash": "13714068fa3a035fc005c4f88f0825a08c036781cca9ec9550be71669872bfa5",
+      "contentHash": "b7294e9d10bde3ff05150013e657e022173ece5849bc99e809284cb88ca6adcd",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 228,
+      "totalLines": 316,
       "hasStructuralAnalysis": false
     },
     "DOCKER.md": {
@@ -7593,7 +7593,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/adapters/upstox/UpstoxBrokerAdapter.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/adapters/upstox/UpstoxBrokerAdapter.java",
-      "contentHash": "71b53ec4cb6c92b861b962ad150c442451fb8c56359bf0360290f8f10f380b2c",
+      "contentHash": "99dbb5140e041334c7ecc7ba556e399634c15ad6dd23aa02ea4118bf1df889c0",
       "functions": [
         {
           "name": "UpstoxBrokerAdapter",
@@ -7641,7 +7641,7 @@
           ],
           "returnType": "CompletableFuture<BrokerSession>",
           "exported": true,
-          "lineCount": 59
+          "lineCount": 62
         },
         {
           "name": "refreshSession",
@@ -7741,7 +7741,7 @@
           ],
           "returnType": "List<T>",
           "exported": false,
-          "lineCount": 44
+          "lineCount": 47
         },
         {
           "name": "fetchObjectFromUpstox",
@@ -7753,7 +7753,7 @@
           ],
           "returnType": "T",
           "exported": false,
-          "lineCount": 34
+          "lineCount": 37
         },
         {
           "name": "applyUpstoxHeaders",
@@ -7828,7 +7828,7 @@
             "objectMapper"
           ],
           "exported": true,
-          "lineCount": 398
+          "lineCount": 407
         }
       ],
       "imports": [
@@ -8143,6 +8143,12 @@
           "specifiers": [
             "WebClientResponseException"
           ]
+        },
+        {
+          "source": "reactor.util.retry.Retry",
+          "specifiers": [
+            "Retry"
+          ]
         }
       ],
       "exports": [
@@ -8161,7 +8167,7 @@
         "fetchFundsAsKite",
         "UpstoxBrokerAdapter"
       ],
-      "totalLines": 464,
+      "totalLines": 474,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/adapters/upstox/mapper/UpstoxFundsMapper.java": {
@@ -9104,7 +9110,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/adapters/zerodha/ZerodhaBrokerAdapter.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/adapters/zerodha/ZerodhaBrokerAdapter.java",
-      "contentHash": "d7d637c2616354a991248f6338c59569a0faded9772049fd4700a78650e15368",
+      "contentHash": "75f8c24a3a06c05e08ef8e5a9f0d0eaf8d8caee9014d846bb5b33db4d30dd2f8",
       "functions": [
         {
           "name": "ZerodhaBrokerAdapter",
@@ -9140,7 +9146,7 @@
           ],
           "returnType": "CompletableFuture<BrokerSession>",
           "exported": true,
-          "lineCount": 67
+          "lineCount": 70
         },
         {
           "name": "refreshSession",
@@ -9215,7 +9221,7 @@
           ],
           "returnType": "List<T>",
           "exported": false,
-          "lineCount": 39
+          "lineCount": 42
         },
         {
           "name": "fetchObjectFromKite",
@@ -9227,7 +9233,7 @@
           ],
           "returnType": "T",
           "exported": false,
-          "lineCount": 32
+          "lineCount": 35
         },
         {
           "name": "applyKiteHeaders",
@@ -9335,7 +9341,7 @@
             "objectMapper"
           ],
           "exported": true,
-          "lineCount": 422
+          "lineCount": 431
         }
       ],
       "imports": [
@@ -9626,6 +9632,12 @@
           "specifiers": [
             "WebClientResponseException"
           ]
+        },
+        {
+          "source": "reactor.util.retry.Retry",
+          "specifiers": [
+            "Retry"
+          ]
         }
       ],
       "exports": [
@@ -9642,7 +9654,7 @@
         "fetchMfOrders",
         "ZerodhaBrokerAdapter"
       ],
-      "totalLines": 483,
+      "totalLines": 493,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/adapters/zerodha/mapper/ZerodhaFundsMapper.java": {
@@ -11023,7 +11035,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerConnectController.java",
-      "contentHash": "b59b7534c7682e3df5243285ac61c59e74d655ce6617fade1b89d58c15cbf746",
+      "contentHash": "b4a472af2d837a6acc06103ec549cd675f4c040e474f623a5d22f77abb52e96e",
       "functions": [
         {
           "name": "BrokerConnectController",
@@ -11111,7 +11123,7 @@
           ],
           "returnType": "ResponseEntity<?>",
           "exported": true,
-          "lineCount": 43
+          "lineCount": 50
         },
         {
           "name": "handleBrowserCallback",
@@ -11161,7 +11173,7 @@
             "frontendUrl"
           ],
           "exported": true,
-          "lineCount": 484
+          "lineCount": 491
         }
       ],
       "imports": [
@@ -11384,7 +11396,7 @@
         "handleBrowserCallback",
         "BrokerConnectController"
       ],
-      "totalLines": 528,
+      "totalLines": 535,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/controller/BrokerStatusController.java": {
@@ -13187,7 +13199,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/dto/BrokerStatusResponse.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/dto/BrokerStatusResponse.java",
-      "contentHash": "00b3b4af31d2cc2a2058d5dcd0e2d22fee7ee84294de10bcaee933f65856fd13",
+      "contentHash": "3a607634a0f14070ecc3dd435d9fb177b17cab400602fc98c8abb866fede91b7",
       "functions": [],
       "classes": [
         {
@@ -13202,11 +13214,17 @@
             "expiryReason",
             "lastSuccessfulSync",
             "connectionStatus",
+            "brokerUserId",
+            "accountHolder",
+            "email",
+            "dematAccount",
+            "exchanges",
+            "products",
             "tokenCreatedAt",
             "tokenExpiresAt"
           ],
           "exported": true,
-          "lineCount": 14
+          "lineCount": 20
         }
       ],
       "imports": [
@@ -13244,7 +13262,7 @@
       "exports": [
         "BrokerStatusResponse"
       ],
-      "totalLines": 23,
+      "totalLines": 29,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/dto/UpstoxCredentialsDTO.java": {
@@ -13681,7 +13699,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/model/BrokerAccount.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/model/BrokerAccount.java",
-      "contentHash": "7f97c48065f1bbc70d91c02f8c0f2dd0ec381503174279200696211845d9e549",
+      "contentHash": "14f3e8a82a4cfee9f1b3c4353786b8cb596055b7960209675b30830fad6c7aa4",
       "functions": [
         {
           "name": "hasCredentials",
@@ -13709,7 +13727,7 @@
           "params": [],
           "returnType": "Map<String, Object>",
           "exported": true,
-          "lineCount": 37
+          "lineCount": 40
         }
       ],
       "classes": [
@@ -13725,6 +13743,9 @@
             "id",
             "userId",
             "brokerUserId",
+            "dematAccount",
+            "accountHolder",
+            "email",
             "broker",
             "zerodhaApiKey",
             "encryptedZerodhaApiSecret",
@@ -13762,7 +13783,7 @@
             "updatedAt"
           ],
           "exported": true,
-          "lineCount": 174
+          "lineCount": 183
         }
       ],
       "imports": [
@@ -13858,7 +13879,7 @@
         "getAccountStatus",
         "BrokerAccount"
       ],
-      "totalLines": 192,
+      "totalLines": 201,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/model/ExpiryReason.java": {
@@ -14569,7 +14590,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/service/ZerodhaLiveDataService.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/service/ZerodhaLiveDataService.java",
-      "contentHash": "90aad3058937094a915e2210dcb50c945d45975d3c4982b63d862e36b3160ed1",
+      "contentHash": "f240fee47cffd7d202f0c6bdeb7b0928215f41f3853b33d292b2e45955585dee",
       "functions": [
         {
           "name": "ZerodhaLiveDataService",
@@ -14589,7 +14610,7 @@
           ],
           "returnType": "Map<String, Object>",
           "exported": true,
-          "lineCount": 53
+          "lineCount": 63
         },
         {
           "name": "extractTokenExpiry",
@@ -14634,7 +14655,7 @@
           ],
           "returnType": "FundsDTO",
           "exported": true,
-          "lineCount": 52
+          "lineCount": 60
         },
         {
           "name": "fetchMfHoldings",
@@ -14643,7 +14664,7 @@
           ],
           "returnType": "List<MutualFundDTO>",
           "exported": true,
-          "lineCount": 33
+          "lineCount": 46
         },
         {
           "name": "fetchMfOrders",
@@ -14679,7 +14700,7 @@
           ],
           "returnType": "List<MfInstrumentDTO>",
           "exported": true,
-          "lineCount": 109
+          "lineCount": 117
         },
         {
           "name": "fetchListFromKite",
@@ -14691,7 +14712,7 @@
           ],
           "returnType": "List<T>",
           "exported": false,
-          "lineCount": 36
+          "lineCount": 44
         },
         {
           "name": "fetchObjectFromKite",
@@ -14703,7 +14724,7 @@
           ],
           "returnType": "T",
           "exported": false,
-          "lineCount": 30
+          "lineCount": 38
         },
         {
           "name": "buildKiteHeaders",
@@ -14762,6 +14783,24 @@
           "returnType": "String",
           "exported": false,
           "lineCount": 11
+        },
+        {
+          "name": "extractKiteErrorMessage",
+          "params": [
+            "e"
+          ],
+          "returnType": "String",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "extractExceptionMessage",
+          "params": [
+            "e"
+          ],
+          "returnType": "String",
+          "exported": false,
+          "lineCount": 21
         }
       ],
       "classes": [
@@ -14787,7 +14826,9 @@
             "getString",
             "getBigDecimal",
             "getInteger",
-            "bytesToHex"
+            "bytesToHex",
+            "extractKiteErrorMessage",
+            "extractExceptionMessage"
           ],
           "properties": [
             "logger",
@@ -14798,7 +14839,7 @@
             "objectMapper"
           ],
           "exported": true,
-          "lineCount": 640
+          "lineCount": 733
         }
       ],
       "imports": [
@@ -14995,9 +15036,21 @@
           ]
         },
         {
+          "source": "org.springframework.web.reactive.function.client.WebClientRequestException",
+          "specifiers": [
+            "WebClientRequestException"
+          ]
+        },
+        {
           "source": "org.springframework.web.reactive.function.client.WebClientResponseException",
           "specifiers": [
             "WebClientResponseException"
+          ]
+        },
+        {
+          "source": "reactor.util.retry.Retry",
+          "specifiers": [
+            "Retry"
           ]
         }
       ],
@@ -15016,7 +15069,7 @@
         "fetchMfInstruments",
         "ZerodhaLiveDataService"
       ],
-      "totalLines": 685,
+      "totalLines": 780,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/service/exception/BrokerException.java": {
@@ -15115,7 +15168,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/service/impl/BrokerConnectServiceImpl.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/service/impl/BrokerConnectServiceImpl.java",
-      "contentHash": "15a71d06611846b58b4fff1574be86b040b1ddb810270d80217dba3abed5ef3d",
+      "contentHash": "04572a3e583abde5072afff9cc993bbca189b87e4c8c49458d815fe03d86789c",
       "functions": [
         {
           "name": "BrokerConnectServiceImpl",
@@ -15157,7 +15210,7 @@
           ],
           "returnType": "void",
           "exported": true,
-          "lineCount": 99
+          "lineCount": 108
         }
       ],
       "classes": [
@@ -15178,7 +15231,7 @@
             "encryptionUtil"
           ],
           "exported": true,
-          "lineCount": 209
+          "lineCount": 218
         }
       ],
       "imports": [
@@ -15292,12 +15345,12 @@
         "handleCallback",
         "BrokerConnectServiceImpl"
       ],
-      "totalLines": 230,
+      "totalLines": 239,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/service/impl/BrokerStatusServiceImpl.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/broker/service/impl/BrokerStatusServiceImpl.java",
-      "contentHash": "e79b04a8b2334aef60e60f14cb195b75c16d7c4f28eb86cc1d0a9090c01920b8",
+      "contentHash": "2cdc3e022a7e2bbeae061e257b0ce5d32b2090227672c4f5b87461f7819296a0",
       "functions": [
         {
           "name": "BrokerStatusServiceImpl",
@@ -15315,7 +15368,7 @@
           ],
           "returnType": "BrokerStatusResponse",
           "exported": true,
-          "lineCount": 47
+          "lineCount": 72
         }
       ],
       "classes": [
@@ -15329,7 +15382,7 @@
             "brokerAccountRepository"
           ],
           "exported": true,
-          "lineCount": 58
+          "lineCount": 83
         }
       ],
       "imports": [
@@ -15393,7 +15446,7 @@
         "getStatus",
         "BrokerStatusServiceImpl"
       ],
-      "totalLines": 71,
+      "totalLines": 96,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/broker/service/package-info.java": {
@@ -23022,14 +23075,14 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/common/config/WebClientConfig.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/common/config/WebClientConfig.java",
-      "contentHash": "39b39c8a2cecbe98aed532ab1fdc98e88118dd0be5ff170d43f98ad0d1a79a0b",
+      "contentHash": "8a0e62f1648fd236958b99a65c06f0ec3e27ae47e9f71a19e216fe33406418fb",
       "functions": [
         {
           "name": "brokerWebClientBuilder",
           "params": [],
           "returnType": "WebClient.Builder",
           "exported": true,
-          "lineCount": 11
+          "lineCount": 25
         }
       ],
       "classes": [
@@ -23041,10 +23094,15 @@
           "properties": [
             "CONNECT_TIMEOUT_MS",
             "RESPONSE_TIMEOUT",
+            "MAX_IDLE_TIME",
+            "MAX_LIFE_TIME",
+            "EVICT_IN_BACKGROUND",
+            "PENDING_ACQUIRE_TIMEOUT",
+            "MAX_CONNECTIONS",
             "MAX_IN_MEMORY_SIZE"
           ],
           "exported": true,
-          "lineCount": 19
+          "lineCount": 38
         }
       ],
       "imports": [
@@ -23073,6 +23131,12 @@
           ]
         },
         {
+          "source": "org.springframework.http.HttpHeaders",
+          "specifiers": [
+            "HttpHeaders"
+          ]
+        },
+        {
           "source": "org.springframework.http.client.reactive.ReactorClientHttpConnector",
           "specifiers": [
             "ReactorClientHttpConnector"
@@ -23089,13 +23153,19 @@
           "specifiers": [
             "HttpClient"
           ]
+        },
+        {
+          "source": "reactor.netty.resources.ConnectionProvider",
+          "specifiers": [
+            "ConnectionProvider"
+          ]
         }
       ],
       "exports": [
         "brokerWebClientBuilder",
         "WebClientConfig"
       ],
-      "totalLines": 39,
+      "totalLines": 66,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/common/config/package-info.java": {
@@ -51506,7 +51576,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/controller/SyncStatusController.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/controller/SyncStatusController.java",
-      "contentHash": "b7a8acd06983d0de9c4e987436a5a021768caed2a701347ae949eca806622da1",
+      "contentHash": "a9b234de25a33497ad9066a59175f90ba46be6dc1c12ac813fb4c170b5d492b7",
       "functions": [
         {
           "name": "getSyncStatus",
@@ -51515,7 +51585,7 @@
           ],
           "returnType": "ResponseEntity<?>",
           "exported": true,
-          "lineCount": 93
+          "lineCount": 276
         }
       ],
       "classes": [
@@ -51529,13 +51599,30 @@
             "STALE_THRESHOLD_MINUTES",
             "syncLogRepo",
             "brokerAccountRepo",
-            "userRepository"
+            "userRepository",
+            "adapterRegistry",
+            "canonicalHoldingRepo",
+            "canonicalMfHoldingRepo",
+            "canonicalPositionRepo",
+            "canonicalFundsRepo"
           ],
           "exported": true,
-          "lineCount": 107
+          "lineCount": 295
         }
       ],
       "imports": [
+        {
+          "source": "com.urva.myfinance.coinTrack.broker.core.capability.BrokerCapability",
+          "specifiers": [
+            "BrokerCapability"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.broker.core.port.BrokerAdapter",
+          "specifiers": [
+            "BrokerAdapter"
+          ]
+        },
         {
           "source": "com.urva.myfinance.coinTrack.broker.model.Broker",
           "specifiers": [
@@ -51546,6 +51633,12 @@
           "source": "com.urva.myfinance.coinTrack.broker.model.BrokerAccount",
           "specifiers": [
             "BrokerAccount"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.broker.registry.BrokerAdapterRegistry",
+          "specifiers": [
+            "BrokerAdapterRegistry"
           ]
         },
         {
@@ -51567,6 +51660,12 @@
           ]
         },
         {
+          "source": "com.urva.myfinance.coinTrack.portfolio.dto.SyncStatusResponse.BrokerChannelTelemetry",
+          "specifiers": [
+            "BrokerChannelTelemetry"
+          ]
+        },
+        {
           "source": "com.urva.myfinance.coinTrack.portfolio.dto.SyncStatusResponse.BrokerSyncStatus",
           "specifiers": [
             "BrokerSyncStatus"
@@ -51582,6 +51681,30 @@
           "source": "com.urva.myfinance.coinTrack.portfolio.model.SyncStatus",
           "specifiers": [
             "SyncStatus"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.portfolio.repository.CanonicalFundsRepository",
+          "specifiers": [
+            "CanonicalFundsRepository"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.portfolio.repository.CanonicalHoldingRepository",
+          "specifiers": [
+            "CanonicalHoldingRepository"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.portfolio.repository.CanonicalMfHoldingRepository",
+          "specifiers": [
+            "CanonicalMfHoldingRepository"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.portfolio.repository.CanonicalPositionRepository",
+          "specifiers": [
+            "CanonicalPositionRepository"
           ]
         },
         {
@@ -51639,9 +51762,27 @@
           ]
         },
         {
+          "source": "java.util.Collections",
+          "specifiers": [
+            "Collections"
+          ]
+        },
+        {
           "source": "java.util.List",
           "specifiers": [
             "List"
+          ]
+        },
+        {
+          "source": "java.util.Optional",
+          "specifiers": [
+            "Optional"
+          ]
+        },
+        {
+          "source": "java.util.Set",
+          "specifiers": [
+            "Set"
           ]
         },
         {
@@ -51691,7 +51832,7 @@
         "getSyncStatus",
         "SyncStatusController"
       ],
-      "totalLines": 140,
+      "totalLines": 339,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/dto/FnoDetailsDTO.java": {
@@ -52199,7 +52340,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/dto/SyncStatusResponse.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/dto/SyncStatusResponse.java",
-      "contentHash": "34994aad0fc31fa0b4513385bababe835af5acb746828044d48cd1569a689ded",
+      "contentHash": "8d3dcbfabf944f8a83bf9cf4c37f3d15ec9ae91511ada0a2e363d6860aae3bcb",
       "functions": [],
       "classes": [
         {
@@ -52210,7 +52351,7 @@
             "hasIssues"
           ],
           "exported": true,
-          "lineCount": 46
+          "lineCount": 124
         }
       ],
       "imports": [
@@ -52233,6 +52374,12 @@
           ]
         },
         {
+          "source": "lombok.AllArgsConstructor",
+          "specifiers": [
+            "AllArgsConstructor"
+          ]
+        },
+        {
           "source": "lombok.Builder",
           "specifiers": [
             "Builder"
@@ -52243,12 +52390,18 @@
           "specifiers": [
             "Data"
           ]
+        },
+        {
+          "source": "lombok.NoArgsConstructor",
+          "specifiers": [
+            "NoArgsConstructor"
+          ]
         }
       ],
       "exports": [
         "SyncStatusResponse"
       ],
-      "totalLines": 56,
+      "totalLines": 136,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/dto/kite/FundsDTO.java": {
@@ -52619,34 +52772,58 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/dto/kite/MutualFundDTO.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/dto/kite/MutualFundDTO.java",
-      "contentHash": "969a2979abe42a0d08de6650e11fa74be16c6e77b4d51734fe35c21df1163917",
+      "contentHash": "77948aebfc4502c08bf32c5e20ce829a0d01cb44b5a245d7616dfee41ff996c6",
       "functions": [
+        {
+          "name": "getLastPrice",
+          "params": [],
+          "returnType": "BigDecimal",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "getLastPriceCamel",
+          "params": [],
+          "returnType": "BigDecimal",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "getPnl",
+          "params": [],
+          "returnType": "BigDecimal",
+          "exported": true,
+          "lineCount": 4
+        },
         {
           "name": "getInvestedValue",
           "params": [],
           "returnType": "BigDecimal",
           "exported": true,
-          "lineCount": 6
+          "lineCount": 7
         },
         {
           "name": "getCurrentValue",
           "params": [],
           "returnType": "BigDecimal",
           "exported": true,
-          "lineCount": 11
+          "lineCount": 16
         },
         {
           "name": "getUnrealizedPL",
           "params": [],
           "returnType": "BigDecimal",
           "exported": true,
-          "lineCount": 10
+          "lineCount": 11
         }
       ],
       "classes": [
         {
           "name": "MutualFundDTO",
           "methods": [
+            "getLastPrice",
+            "getLastPriceCamel",
+            "getPnl",
             "getInvestedValue",
             "getCurrentValue",
             "getUnrealizedPL"
@@ -52666,10 +52843,16 @@
             "raw"
           ],
           "exported": true,
-          "lineCount": 60
+          "lineCount": 84
         }
       ],
       "imports": [
+        {
+          "source": "com.fasterxml.jackson.annotation.JsonProperty",
+          "specifiers": [
+            "JsonProperty"
+          ]
+        },
         {
           "source": "java.math.BigDecimal",
           "specifiers": [
@@ -52684,12 +52867,15 @@
         }
       ],
       "exports": [
+        "getLastPrice",
+        "getLastPriceCamel",
+        "getPnl",
         "getInvestedValue",
         "getCurrentValue",
         "getUnrealizedPL",
         "MutualFundDTO"
       ],
-      "totalLines": 66,
+      "totalLines": 91,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/dto/kite/MutualFundOrderDTO.java": {
@@ -54459,7 +54645,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/repository/SyncLogRepository.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/repository/SyncLogRepository.java",
-      "contentHash": "997ff077cd426552fcf43689f14f3d32031780c20cc40912a7225abb3d9be10c",
+      "contentHash": "2e5f175054df12302f9b5e3a042739882116a8e8ac08b7ba8584fba12924e050",
       "functions": [],
       "classes": [
         {
@@ -54467,6 +54653,7 @@
           "methods": [
             "findByUserId",
             "findByUserIdOrderByTimestampDesc",
+            "findFirstByUserIdOrderByTimestampDesc",
             "findFirstByUserIdAndStatusOrderByTimestampDesc",
             "findFirstByUserIdAndBrokerOrderByTimestampDesc",
             "findFirstByUserIdAndBrokerAndStatusOrderByTimestampDesc",
@@ -54474,7 +54661,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 19
+          "lineCount": 21
         }
       ],
       "imports": [
@@ -54506,7 +54693,7 @@
       "exports": [
         "SyncLogRepository"
       ],
-      "totalLines": 27,
+      "totalLines": 29,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/scheduler/PortfolioSyncScheduler.java": {
@@ -55018,7 +55205,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/service/impl/PortfolioSummaryServiceImpl.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/service/impl/PortfolioSummaryServiceImpl.java",
-      "contentHash": "737d184451fbd4c383d9734d15afa2b73a3001e8c84acfc8b1fe962397ec0219",
+      "contentHash": "3006f2e0d4e1b76c62dbc31c931786f213fae403d18bc714f9116e2b1a631fb4",
       "functions": [
         {
           "name": "PortfolioSummaryServiceImpl",
@@ -55121,7 +55308,7 @@
           ],
           "returnType": "com.urva.myfinance.coinTrack.portfolio.dto.kite.UserProfileDTO",
           "exported": true,
-          "lineCount": 21
+          "lineCount": 47
         },
         {
           "name": "getMfSips",
@@ -55148,7 +55335,7 @@
           ],
           "returnType": "com.urva.myfinance.coinTrack.portfolio.dto.kite.KiteListResponse<\n          com.urva.myfinance.coinTrack.portfolio.dto.kite.MfTimelineEvent>",
           "exported": true,
-          "lineCount": 308
+          "lineCount": 333
         }
       ],
       "classes": [
@@ -55186,7 +55373,7 @@
             "canonicalMfOrderRepository"
           ],
           "exported": true,
-          "lineCount": 809
+          "lineCount": 860
         }
       ],
       "imports": [
@@ -55379,7 +55566,7 @@
         "getMfTimeline",
         "PortfolioSummaryServiceImpl"
       ],
-      "totalLines": 849,
+      "totalLines": 900,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/service/impl/PortfolioTotalsCalculator.java": {
@@ -55648,7 +55835,7 @@
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/sync/impl/PortfolioSyncServiceImpl.java": {
       "filePath": "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/sync/impl/PortfolioSyncServiceImpl.java",
-      "contentHash": "973ac945cbb9a6d3f49a01b15bcab35260c65f5aed73924a1f1abd420ca967f0",
+      "contentHash": "857d7183d16a1993ca0dfc47b1fd86c82baff53e995246ae144e4764dc22b2a2",
       "functions": [
         {
           "name": "PortfolioSyncServiceImpl",
@@ -55672,7 +55859,7 @@
           ],
           "returnType": "void",
           "exported": true,
-          "lineCount": 34
+          "lineCount": 41
         },
         {
           "name": "syncBrokerAccount",
@@ -55706,7 +55893,7 @@
           ],
           "returnType": "ManualRefreshResponse",
           "exported": true,
-          "lineCount": 37
+          "lineCount": 33
         },
         {
           "name": "executeSyncLogic",
@@ -55768,7 +55955,7 @@
             "syncSafetyService"
           ],
           "exported": true,
-          "lineCount": 289
+          "lineCount": 292
         }
       ],
       "imports": [
@@ -55986,7 +56173,7 @@
         "triggerManualRefreshForUser",
         "PortfolioSyncServiceImpl"
       ],
-      "totalLines": 327,
+      "totalLines": 330,
       "hasStructuralAnalysis": true
     },
     "backend/src/main/java/com/urva/myfinance/coinTrack/portfolio/sync/impl/SyncSafetyServiceImpl.java": {
@@ -66292,6 +66479,255 @@
       "totalLines": 127,
       "hasStructuralAnalysis": true
     },
+    "backend/src/test/java/com/urva/myfinance/coinTrack/broker/service/ZerodhaLiveDataServiceTest.java": {
+      "filePath": "backend/src/test/java/com/urva/myfinance/coinTrack/broker/service/ZerodhaLiveDataServiceTest.java",
+      "contentHash": "41cd75f71915fb1262abc1cc8de246e801150f13cf76735cc96e193e7b97dc68",
+      "functions": [
+        {
+          "name": "setUp",
+          "params": [],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "exchangeToken_success",
+          "params": [],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 36
+        },
+        {
+          "name": "exchangeToken_retryOnTransientException_success",
+          "params": [],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 45
+        },
+        {
+          "name": "exchangeToken_webClientResponseException_extractsKiteMessage",
+          "params": [],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 27
+        },
+        {
+          "name": "exchangeToken_persistentTimeout_meaningfulMessage",
+          "params": [],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 25
+        },
+        {
+          "name": "extractTokenExpiry_computesNext6AmIst",
+          "params": [],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "getLoginUrl_formatsUrl",
+          "params": [],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 10
+        }
+      ],
+      "classes": [
+        {
+          "name": "ZerodhaLiveDataServiceTest",
+          "methods": [
+            "setUp",
+            "exchangeToken_success",
+            "exchangeToken_retryOnTransientException_success",
+            "exchangeToken_webClientResponseException_extractsKiteMessage",
+            "exchangeToken_persistentTimeout_meaningfulMessage",
+            "extractTokenExpiry_computesNext6AmIst",
+            "getLoginUrl_formatsUrl"
+          ],
+          "properties": [
+            "encryptionUtil",
+            "service",
+            "webClientBuilder"
+          ],
+          "exported": false,
+          "lineCount": 179
+        }
+      ],
+      "imports": [
+        {
+          "source": "org.junit.jupiter.api.Assertions",
+          "specifiers": [
+            "*"
+          ]
+        },
+        {
+          "source": "org.mockito.Mockito",
+          "specifiers": [
+            "*"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.broker.model.Broker",
+          "specifiers": [
+            "Broker"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.broker.model.BrokerAccount",
+          "specifiers": [
+            "BrokerAccount"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.broker.service.exception.BrokerException",
+          "specifiers": [
+            "BrokerException"
+          ]
+        },
+        {
+          "source": "com.urva.myfinance.coinTrack.common.util.EncryptionUtil",
+          "specifiers": [
+            "EncryptionUtil"
+          ]
+        },
+        {
+          "source": "io.netty.handler.timeout.ReadTimeoutException",
+          "specifiers": [
+            "ReadTimeoutException"
+          ]
+        },
+        {
+          "source": "java.net.URI",
+          "specifiers": [
+            "URI"
+          ]
+        },
+        {
+          "source": "java.time.LocalDateTime",
+          "specifiers": [
+            "LocalDateTime"
+          ]
+        },
+        {
+          "source": "java.time.ZoneId",
+          "specifiers": [
+            "ZoneId"
+          ]
+        },
+        {
+          "source": "java.util.Map",
+          "specifiers": [
+            "Map"
+          ]
+        },
+        {
+          "source": "java.util.concurrent.atomic.AtomicInteger",
+          "specifiers": [
+            "AtomicInteger"
+          ]
+        },
+        {
+          "source": "org.junit.jupiter.api.BeforeEach",
+          "specifiers": [
+            "BeforeEach"
+          ]
+        },
+        {
+          "source": "org.junit.jupiter.api.DisplayName",
+          "specifiers": [
+            "DisplayName"
+          ]
+        },
+        {
+          "source": "org.junit.jupiter.api.Test",
+          "specifiers": [
+            "Test"
+          ]
+        },
+        {
+          "source": "org.junit.jupiter.api.extension.ExtendWith",
+          "specifiers": [
+            "ExtendWith"
+          ]
+        },
+        {
+          "source": "org.mockito.Mock",
+          "specifiers": [
+            "Mock"
+          ]
+        },
+        {
+          "source": "org.mockito.junit.jupiter.MockitoExtension",
+          "specifiers": [
+            "MockitoExtension"
+          ]
+        },
+        {
+          "source": "org.springframework.http.HttpHeaders",
+          "specifiers": [
+            "HttpHeaders"
+          ]
+        },
+        {
+          "source": "org.springframework.http.HttpStatus",
+          "specifiers": [
+            "HttpStatus"
+          ]
+        },
+        {
+          "source": "org.springframework.http.MediaType",
+          "specifiers": [
+            "MediaType"
+          ]
+        },
+        {
+          "source": "org.springframework.web.reactive.function.client.ClientRequest",
+          "specifiers": [
+            "ClientRequest"
+          ]
+        },
+        {
+          "source": "org.springframework.web.reactive.function.client.ClientResponse",
+          "specifiers": [
+            "ClientResponse"
+          ]
+        },
+        {
+          "source": "org.springframework.web.reactive.function.client.ExchangeFunction",
+          "specifiers": [
+            "ExchangeFunction"
+          ]
+        },
+        {
+          "source": "org.springframework.web.reactive.function.client.WebClient",
+          "specifiers": [
+            "WebClient"
+          ]
+        },
+        {
+          "source": "org.springframework.web.reactive.function.client.WebClientRequestException",
+          "specifiers": [
+            "WebClientRequestException"
+          ]
+        },
+        {
+          "source": "org.springframework.web.reactive.function.client.WebClientResponseException",
+          "specifiers": [
+            "WebClientResponseException"
+          ]
+        },
+        {
+          "source": "reactor.core.publisher.Mono",
+          "specifiers": [
+            "Mono"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 212,
+      "hasStructuralAnalysis": true
+    },
     "backend/src/test/java/com/urva/myfinance/coinTrack/broker/service/impl/BrokerConnectServiceImplTest.java": {
       "filePath": "backend/src/test/java/com/urva/myfinance/coinTrack/broker/service/impl/BrokerConnectServiceImplTest.java",
       "contentHash": "1b2101e1248ea33fa8e313c6269f8242bafbb7886fb12aef1b92adf31bf75e5b",
@@ -76471,7 +76907,7 @@
     },
     "backend/src/test/java/com/urva/myfinance/coinTrack/portfolio/market/impl/MarketDataServiceImplTest.java": {
       "filePath": "backend/src/test/java/com/urva/myfinance/coinTrack/portfolio/market/impl/MarketDataServiceImplTest.java",
-      "contentHash": "c6a0124a2392ab30d539f02aba1ee3fb836954e4fa1c2e94c0ce0c1ac95e74be",
+      "contentHash": "b8a57ab2c666ce0ae857be71bfcd5e722a0117e2dd7aad4d615a7987a02fed37",
       "functions": [
         {
           "name": "setUp",
@@ -78050,7 +78486,7 @@
     },
     "backend/src/test/java/com/urva/myfinance/coinTrack/portfolio/sync/impl/SyncSafetyServiceImplTest.java": {
       "filePath": "backend/src/test/java/com/urva/myfinance/coinTrack/portfolio/sync/impl/SyncSafetyServiceImplTest.java",
-      "contentHash": "50d3076783c16894044e7300f41d6e7894a35204931ed440f5a5b3f51d00e239",
+      "contentHash": "c53d381fc6da8468299b06351e87396c7a55832d81f35ee19531c54457d3c93a",
       "functions": [
         {
           "name": "tryGlobalSyncLock_free_true",
@@ -78106,7 +78542,7 @@
           "params": [],
           "returnType": "void",
           "exported": false,
-          "lineCount": 7
+          "lineCount": 6
         },
         {
           "name": "canManualSync_noCooldown_true",
@@ -78177,7 +78613,7 @@
             "ACCOUNT_ID"
           ],
           "exported": false,
-          "lineCount": 159
+          "lineCount": 158
         }
       ],
       "imports": [
@@ -78273,7 +78709,7 @@
         }
       ],
       "exports": [],
-      "totalLines": 179,
+      "totalLines": 178,
       "hasStructuralAnalysis": true
     },
     "backend/src/test/java/com/urva/myfinance/coinTrack/ppf/PpfBalanceRecalculationServiceTest.java": {
@@ -83578,7 +84014,7 @@
     },
     "frontend/jest.config.mjs": {
       "filePath": "frontend/jest.config.mjs",
-      "contentHash": "629de59461494a8c15bf5185c35ebb9ce6af226076275b5f313019c3bc96427e",
+      "contentHash": "d61e0968ab6dcc4b825635efe6ae758293677113e7d647d242d6b384463baf6a",
       "functions": [],
       "classes": [],
       "imports": [
@@ -83590,7 +84026,7 @@
         }
       ],
       "exports": [],
-      "totalLines": 15,
+      "totalLines": 18,
       "hasStructuralAnalysis": true
     },
     "frontend/jsconfig.json": {
@@ -84497,7 +84933,7 @@
     },
     "frontend/src/app/(main)/brokers/angelone/callback/page.jsx": {
       "filePath": "frontend/src/app/(main)/brokers/angelone/callback/page.jsx",
-      "contentHash": "bc9a0363d485695fb16bec1fce423e65679787a85e305f82a46276718417f6bf",
+      "contentHash": "0fc010ec3fe96d8a0f27d2074d746d399b90507438ee8edf51f86873850f21ec",
       "functions": [
         {
           "name": "Page",
@@ -84509,21 +84945,21 @@
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers",
+          "source": "next/navigation",
           "specifiers": [
-            "AngelOneCallbackView"
+            "redirect"
           ]
         }
       ],
       "exports": [
         "Page"
       ],
-      "totalLines": 8,
+      "totalLines": 6,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(main)/brokers/angelone/dashboard/page.jsx": {
       "filePath": "frontend/src/app/(main)/brokers/angelone/dashboard/page.jsx",
-      "contentHash": "e5f6400ee88bfe7da5dc00390bba1580b9870ed47143c5a7a84494b508c1f182",
+      "contentHash": "0fc010ec3fe96d8a0f27d2074d746d399b90507438ee8edf51f86873850f21ec",
       "functions": [
         {
           "name": "Page",
@@ -84535,16 +84971,16 @@
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers",
+          "source": "next/navigation",
           "specifiers": [
-            "AngelOneDashboardView"
+            "redirect"
           ]
         }
       ],
       "exports": [
         "Page"
       ],
-      "totalLines": 8,
+      "totalLines": 6,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(main)/brokers/angelone/page.jsx": {
@@ -84575,13 +85011,13 @@
     },
     "frontend/src/app/(main)/brokers/page.jsx": {
       "filePath": "frontend/src/app/(main)/brokers/page.jsx",
-      "contentHash": "ececc2d298892eb3c6ba0622af13f61c0bb393f06cac68a708bb2470f7ad6d31",
+      "contentHash": "70da20e33fb977304494c7047b6fea72e43a20144346de075a1d61db23fe7df6",
       "functions": [
         {
           "name": "BrokersPage",
           "params": [],
           "exported": true,
-          "lineCount": 153
+          "lineCount": 3
         }
       ],
       "classes": [],
@@ -84589,56 +85025,14 @@
         {
           "source": "@/features/brokers",
           "specifiers": [
-            "BROKER_LIST",
-            "BrokerCard"
-          ]
-        },
-        {
-          "source": "@/features/brokers/hooks/useBrokerConnection",
-          "specifiers": [
-            "useBrokerConnection"
-          ]
-        },
-        {
-          "source": "@/shared/api/client",
-          "specifiers": [
-            "portfolioAPI"
-          ]
-        },
-        {
-          "source": "@tanstack/react-query",
-          "specifiers": [
-            "useMutation",
-            "useQueryClient"
-          ]
-        },
-        {
-          "source": "lucide-react",
-          "specifiers": [
-            "Activity",
-            "CheckCircle2",
-            "Lock",
-            "RefreshCw",
-            "ShieldCheck"
-          ]
-        },
-        {
-          "source": "react",
-          "specifiers": [
-            "useState"
-          ]
-        },
-        {
-          "source": "sonner",
-          "specifiers": [
-            "toast"
+            "BrokersView"
           ]
         }
       ],
       "exports": [
         "BrokersPage"
       ],
-      "totalLines": 170,
+      "totalLines": 8,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(main)/brokers/upstox/callback/page.jsx": {
@@ -84669,7 +85063,7 @@
     },
     "frontend/src/app/(main)/brokers/upstox/dashboard/page.jsx": {
       "filePath": "frontend/src/app/(main)/brokers/upstox/dashboard/page.jsx",
-      "contentHash": "f3ac0b45c0ef77828f4c93248326a416282bf6a3cdd11c46554d7ca9860b721f",
+      "contentHash": "eb5df57dd95a925d917315307a74892e9230139978f5997ff34cf1c58b948cb6",
       "functions": [
         {
           "name": "Page",
@@ -84681,16 +85075,16 @@
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers",
+          "source": "next/navigation",
           "specifiers": [
-            "UpstoxDashboardView"
+            "redirect"
           ]
         }
       ],
       "exports": [
         "Page"
       ],
-      "totalLines": 8,
+      "totalLines": 6,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(main)/brokers/upstox/page.jsx": {
@@ -84747,7 +85141,7 @@
     },
     "frontend/src/app/(main)/brokers/zerodha/dashboard/page.jsx": {
       "filePath": "frontend/src/app/(main)/brokers/zerodha/dashboard/page.jsx",
-      "contentHash": "052d95a8e5f89c6c7aea5c3516cb7cf0ec5ddbcb00f4b641cd5e57236cfb9ce4",
+      "contentHash": "a0abc8144e16df7b84dfcfab418ffef883e039cfed76af53b9f401b45fdc896e",
       "functions": [
         {
           "name": "Page",
@@ -84759,16 +85153,16 @@
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers",
+          "source": "next/navigation",
           "specifiers": [
-            "ZerodhaDashboardView"
+            "redirect"
           ]
         }
       ],
       "exports": [
         "Page"
       ],
-      "totalLines": 8,
+      "totalLines": 6,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(main)/brokers/zerodha/page.jsx": {
@@ -85058,15 +85452,104 @@
       "totalLines": 8,
       "hasStructuralAnalysis": true
     },
+    "frontend/src/app/(public)/design-lab/brokers/client.jsx": {
+      "filePath": "frontend/src/app/(public)/design-lab/brokers/client.jsx",
+      "contentHash": "9759eedc3f847b7c063a6bc3358003913363fc7c6661df2978dc79c91ef0c7de",
+      "functions": [
+        {
+          "name": "DesignLabBrokersClient",
+          "params": [],
+          "exported": true,
+          "lineCount": 377
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "@/features/brokers",
+          "specifiers": [
+            "BROKERS",
+            "BrokerCard",
+            "BrokerSetupLayout",
+            "BrokerGuideTab",
+            "CredentialField",
+            "BrokerCallbackHandler",
+            "ConnectionHubPanel"
+          ]
+        },
+        {
+          "source": "../components/design-lab-auth-nav",
+          "specifiers": [
+            "DesignLabAuthNav"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Activity",
+            "ArrowRight",
+            "Clock",
+            "Layers",
+            "Lock",
+            "RefreshCw",
+            "ShieldCheck"
+          ]
+        }
+      ],
+      "exports": [
+        "DesignLabBrokersClient"
+      ],
+      "totalLines": 402,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/(public)/design-lab/brokers/page.jsx": {
+      "filePath": "frontend/src/app/(public)/design-lab/brokers/page.jsx",
+      "contentHash": "8230519b2e561281127fca7f9a1dae4db290b21334e9afdfb51a3c62d32bbf6d",
+      "functions": [
+        {
+          "name": "DesignLabBrokersPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./client",
+          "specifiers": [
+            "DesignLabBrokersClient"
+          ]
+        }
+      ],
+      "exports": [
+        "metadata",
+        "DesignLabBrokersPage"
+      ],
+      "totalLines": 10,
+      "hasStructuralAnalysis": true
+    },
     "frontend/src/app/(public)/design-lab/components/design-lab-auth-nav.jsx": {
       "filePath": "frontend/src/app/(public)/design-lab/components/design-lab-auth-nav.jsx",
-      "contentHash": "b38f99a54af29e89563c9aa9b664814daf037b436db929298f746b9f95818c63",
+      "contentHash": "f46e5a44a1d9dbc6557bfa97ddf9d688a908ae131e916acf03f778081ce5a0c5",
       "functions": [
         {
           "name": "DesignLabAuthNav",
           "params": [],
           "exported": true,
-          "lineCount": 151
+          "lineCount": 161
         }
       ],
       "classes": [],
@@ -85119,7 +85602,7 @@
       "exports": [
         "DesignLabAuthNav"
       ],
-      "totalLines": 175,
+      "totalLines": 185,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/design-lab/dashboard/client.jsx": {
@@ -85286,6 +85769,161 @@
         "DesignLabForgotPasswordPage"
       ],
       "totalLines": 10,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/(public)/design-lab/holdings/client.jsx": {
+      "filePath": "frontend/src/app/(public)/design-lab/holdings/client.jsx",
+      "contentHash": "28113aaea3423e7f7d76e53fa47a53486f12cac02f89c3f87ddeb9b25b630cee",
+      "functions": [
+        {
+          "name": "getBrokerTabGroups",
+          "params": [
+            "brokerId",
+            "counts"
+          ],
+          "exported": false,
+          "lineCount": 82
+        },
+        {
+          "name": "StockDossierModal",
+          "params": [],
+          "exported": false,
+          "lineCount": 519
+        },
+        {
+          "name": "DesignLabHoldingsClient",
+          "params": [],
+          "exported": true,
+          "lineCount": 2373
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "react-dom",
+          "specifiers": [
+            "createPortal"
+          ]
+        },
+        {
+          "source": "next/link",
+          "specifiers": [
+            "Link"
+          ]
+        },
+        {
+          "source": "next/navigation",
+          "specifiers": [
+            "useRouter"
+          ]
+        },
+        {
+          "source": "framer-motion",
+          "specifiers": [
+            "motion"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "toast"
+          ]
+        },
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency",
+            "formatPercent"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "@/shared/ui/data-display/data-table",
+          "specifiers": [
+            "BrokerBadge"
+          ]
+        },
+        {
+          "source": "../components/design-lab-auth-nav",
+          "specifiers": [
+            "DesignLabAuthNav"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "AlertCircle",
+            "AlertTriangle",
+            "ArrowRight",
+            "ArrowUpDown",
+            "BarChart2",
+            "Calendar",
+            "Check",
+            "Clock",
+            "Copy",
+            "Download",
+            "ExternalLink",
+            "FileSpreadsheet",
+            "Info",
+            "Layers",
+            "PiggyBank",
+            "RefreshCw",
+            "Repeat",
+            "Search",
+            "Server",
+            "Shield",
+            "ShieldCheck",
+            "SlidersHorizontal",
+            "TrendingUp",
+            "Wifi",
+            "X"
+          ]
+        }
+      ],
+      "exports": [
+        "DesignLabHoldingsClient"
+      ],
+      "totalLines": 4032,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/app/(public)/design-lab/holdings/page.jsx": {
+      "filePath": "frontend/src/app/(public)/design-lab/holdings/page.jsx",
+      "contentHash": "bc24ea2051468a82e466cb61037dadcde9c0bfe67365c16508b98a91d69216ee",
+      "functions": [
+        {
+          "name": "DesignLabHoldingsPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./client",
+          "specifiers": [
+            "DesignLabHoldingsClient"
+          ]
+        }
+      ],
+      "exports": [
+        "metadata",
+        "DesignLabHoldingsPage"
+      ],
+      "totalLines": 12,
       "hasStructuralAnalysis": true
     },
     "frontend/src/app/(public)/design-lab/loaders/page.jsx": {
@@ -87894,7 +88532,7 @@
     },
     "frontend/src/app/globals.css": {
       "filePath": "frontend/src/app/globals.css",
-      "contentHash": "8520bca4d9dbbaf54c3d21228ee812d6df8ad97bf41eb890df4e6acc127eb9e1",
+      "contentHash": "847ff77353b14cd1c19672644d6b4f1d8b8d5882e7df5360ed54d54bfca1047b",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -89190,73 +89828,352 @@
       "totalLines": 87,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx": {
-      "filePath": "frontend/src/features/brokers/angelone/components/AngelOneCallbackView.jsx",
-      "contentHash": "373dea5bbb6e5ad8d63ada196786241752fa2fb199337f8720929083680f687d",
+    "frontend/src/features/brokers/__tests__/broker-connection-lifecycle.test.jsx": {
+      "filePath": "frontend/src/features/brokers/__tests__/broker-connection-lifecycle.test.jsx",
+      "contentHash": "289fcdb18edec33602d0be40d829dcba82fd0f0c3e1c592c5a18e9b8017c2dfe",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "fireEvent",
+            "waitFor"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "../components/BrokerCallbackHandler",
+          "specifiers": [
+            "BrokerCallbackHandler"
+          ]
+        },
+        {
+          "source": "../components/ZerodhaCallbackView",
+          "specifiers": [
+            "ZerodhaCallbackView"
+          ]
+        },
+        {
+          "source": "../components/UpstoxCallbackView",
+          "specifiers": [
+            "UpstoxCallbackView"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "portfolioAPI",
+            "brokerAPI"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 351,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/__tests__/broker-orchestration-and-edge-cases.test.jsx": {
+      "filePath": "frontend/src/features/brokers/__tests__/broker-orchestration-and-edge-cases.test.jsx",
+      "contentHash": "a6f177c39e400ac392f4ad3087e7f7cf5872a6e84d6ca348955e3fb86b9a45ae",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "fireEvent",
+            "waitFor"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "../components/BrokersView",
+          "specifiers": [
+            "BrokersView"
+          ]
+        },
+        {
+          "source": "../components/ZerodhaSetupView",
+          "specifiers": [
+            "ZerodhaSetupView"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "portfolioAPI",
+            "brokerAPI"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "toast"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 363,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/__tests__/broker-security-and-input-edges.test.jsx": {
+      "filePath": "frontend/src/features/brokers/__tests__/broker-security-and-input-edges.test.jsx",
+      "contentHash": "daed05b4797c90814cdbcca53384a95fcb47f5b49db1aaec2370783c43a816dd",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "fireEvent"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "../components/CredentialField",
+          "specifiers": [
+            "CredentialField"
+          ]
+        },
+        {
+          "source": "../components/BrokerGuideTab",
+          "specifiers": [
+            "BrokerGuideTab"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKERS"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "toast"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 306,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/__tests__/broker-views-and-telemetry-edges.test.jsx": {
+      "filePath": "frontend/src/features/brokers/__tests__/broker-views-and-telemetry-edges.test.jsx",
+      "contentHash": "16453913e7770f731abecddd6202ebc2179e3dbd34b4e024c68a8fd22930d2b3",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "fireEvent"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "../components/ConnectionHubPanel",
+          "specifiers": [
+            "ConnectionHubPanel"
+          ]
+        },
+        {
+          "source": "../components/AccountCustodyDossier",
+          "specifiers": [
+            "AccountCustodyDossier"
+          ]
+        },
+        {
+          "source": "../components/BrokerCard",
+          "specifiers": [
+            "BrokerCard"
+          ]
+        },
+        {
+          "source": "../components/BrokerSetupLayout",
+          "specifiers": [
+            "BrokerSetupLayout"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKERS"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 411,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/__tests__/brokers-components.test.jsx": {
+      "filePath": "frontend/src/features/brokers/__tests__/brokers-components.test.jsx",
+      "contentHash": "1ed48402e01643122cec08401d6b86b6c39cc5962e54f16dac979f76ae9fc6da",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "fireEvent"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "../components/BrokersHeader",
+          "specifiers": [
+            "BrokersHeader"
+          ]
+        },
+        {
+          "source": "../components/BrokersKpiGrid",
+          "specifiers": [
+            "BrokersKpiGrid"
+          ]
+        },
+        {
+          "source": "../components/BrokersFilterToolbar",
+          "specifiers": [
+            "BrokersFilterToolbar"
+          ]
+        },
+        {
+          "source": "../components/BrokersSecurityNotice",
+          "specifiers": [
+            "BrokersSecurityNotice"
+          ]
+        },
+        {
+          "source": "../components/BrokerSidebar",
+          "specifiers": [
+            "BrokerSidebar"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKERS"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 134,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/__tests__/constants.test.js": {
+      "filePath": "frontend/src/features/brokers/__tests__/constants.test.js",
+      "contentHash": "5ff526174ea1495857589986f02cd5ed3e81d3db975d14524eb3d17b3cf88a26",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKERS",
+            "BROKER_LIST",
+            "BROKER_SETTINGS_TABS",
+            "BROKER_BRAND_THEMES",
+            "BROKER_FILTER_TABS",
+            "getBrokerByKey",
+            "getBrokerById"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 83,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/components/AccountCustodyDossier.jsx": {
+      "filePath": "frontend/src/features/brokers/components/AccountCustodyDossier.jsx",
+      "contentHash": "d0954f41dbe3898ebcc881721082d0a2448439b1c89d46ff5ab8554176e40a5b",
       "functions": [
         {
-          "name": "AngelOneCallbackView",
+          "name": "formatBoid",
+          "params": [
+            "rawBoid"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "formatDossierSyncTime",
+          "params": [
+            "iso"
+          ],
+          "exported": true,
+          "lineCount": 52
+        },
+        {
+          "name": "AccountCustodyDossier",
           "params": [],
           "exported": true,
-          "lineCount": 7
+          "lineCount": 206
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "next/navigation",
+          "source": "@/shared/auth/AuthContext",
           "specifiers": [
-            "useRouter"
+            "AuthContext"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ShieldCheck"
           ]
         },
         {
           "source": "react",
           "specifiers": [
-            "useEffect"
+            "useContext",
+            "useMemo"
           ]
         }
       ],
       "exports": [
-        "AngelOneCallbackView"
+        "formatBoid",
+        "formatDossierSyncTime",
+        "AccountCustodyDossier"
       ],
-      "totalLines": 17,
+      "totalLines": 292,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx": {
-      "filePath": "frontend/src/features/brokers/angelone/components/AngelOneDashboardView.jsx",
-      "contentHash": "d159ec2a92644fa050e0a19f4d9532cf3bac4d6354583a9ea1c563039fbe8be0",
-      "functions": [
-        {
-          "name": "AngelOneDashboardView",
-          "params": [],
-          "exported": true,
-          "lineCount": 7
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "source": "next/navigation",
-          "specifiers": [
-            "useRouter"
-          ]
-        },
-        {
-          "source": "react",
-          "specifiers": [
-            "useEffect"
-          ]
-        }
-      ],
-      "exports": [
-        "AngelOneDashboardView"
-      ],
-      "totalLines": 15,
-      "hasStructuralAnalysis": true
-    },
-    "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx": {
-      "filePath": "frontend/src/features/brokers/angelone/components/AngelOneSetupView.jsx",
-      "contentHash": "bfc50391276c4e6012b04a837e9ac99e7a43275bd7a3bda24a190e27f7cfb50c",
+    "frontend/src/features/brokers/components/AngelOneSetupView.jsx": {
+      "filePath": "frontend/src/features/brokers/components/AngelOneSetupView.jsx",
+      "contentHash": "afd979cb5e013fb06e2248b34693ada4b36e21dc6b51d76ad68645d575728413",
       "functions": [
         {
           "name": "relativeTime",
@@ -89270,31 +90187,50 @@
           "name": "AngelOneSetupView",
           "params": [],
           "exported": true,
-          "lineCount": 360
+          "lineCount": 304
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers/hooks/useBrokerConnection",
+          "source": "../hooks/useBrokerConnection",
           "specifiers": [
-            "useBrokerConnection"
+            "useBrokerConnection",
+            "invalidateBrokerQueries"
           ]
         },
         {
-          "source": "@/features/brokers/shared/BrokerSetupLayout",
+          "source": "../hooks/useSyncFeeds",
+          "specifiers": [
+            "useSyncFeeds"
+          ]
+        },
+        {
+          "source": "./BrokerGuideTab",
+          "specifiers": [
+            "BrokerGuideTab"
+          ]
+        },
+        {
+          "source": "./BrokerSetupLayout",
           "specifiers": [
             "BrokerSetupLayout"
           ]
         },
         {
-          "source": "@/features/brokers/shared/CredentialField",
+          "source": "./CredentialField",
           "specifiers": [
             "CredentialField"
           ]
         },
         {
-          "source": "@/features/brokers/shared/brokerConfig",
+          "source": "./ConnectionHubPanel",
+          "specifiers": [
+            "ConnectionHubPanel"
+          ]
+        },
+        {
+          "source": "../constants",
           "specifiers": [
             "BROKER_CONFIG"
           ]
@@ -89323,20 +90259,8 @@
           "specifiers": [
             "AlertCircle",
             "ArrowRight",
-            "CheckCircle2",
-            "Clock",
             "Info",
-            "Key",
-            "Loader2",
-            "Lock",
-            "RefreshCw",
-            "Trash2"
-          ]
-        },
-        {
-          "source": "next/link",
-          "specifiers": [
-            "Link"
+            "Loader2"
           ]
         },
         {
@@ -89356,28 +90280,34 @@
       "exports": [
         "AngelOneSetupView"
       ],
-      "totalLines": 401,
+      "totalLines": 339,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/hooks/useBrokerConnection.js": {
-      "filePath": "frontend/src/features/brokers/hooks/useBrokerConnection.js",
-      "contentHash": "8b781f8c4745757d894cbf920969ca2e21a48f878601f368ff4d79d671b477d6",
+    "frontend/src/features/brokers/components/BrokerCallbackHandler.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokerCallbackHandler.jsx",
+      "contentHash": "fb71dbe502da11b7608b6ead175855c15da7dc65f085b30b23d337993b92458f",
       "functions": [
         {
-          "name": "useBrokerConnection",
+          "name": "BrokerCallbackHandler",
           "params": [],
           "exported": true,
-          "lineCount": 8
-        },
-        {
-          "name": "useBrokerSummary",
-          "params": [],
-          "exported": true,
-          "lineCount": 19
+          "lineCount": 635
         }
       ],
       "classes": [],
       "imports": [
+        {
+          "source": "../constants",
+          "specifiers": [
+            "getBrokerByKey"
+          ]
+        },
+        {
+          "source": "../hooks/useBrokerConnection",
+          "specifiers": [
+            "invalidateBrokerQueries"
+          ]
+        },
         {
           "source": "@/shared/api/client",
           "specifiers": [
@@ -89385,66 +90315,17 @@
           ]
         },
         {
-          "source": "@tanstack/react-query",
+          "source": "@/shared/lib/utils",
           "specifiers": [
-            "useQuery"
+            "cn"
           ]
-        }
-      ],
-      "exports": [
-        "useBrokerConnection",
-        "useBrokerSummary"
-      ],
-      "totalLines": 40,
-      "hasStructuralAnalysis": true
-    },
-    "frontend/src/features/brokers/index.js": {
-      "filePath": "frontend/src/features/brokers/index.js",
-      "contentHash": "3a74ff28672391ec383045c87eae02caa0ae07c3ca4095d5be9a444167dd41cf",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 20,
-      "hasStructuralAnalysis": true
-    },
-    "frontend/src/features/brokers/services/brokers.service.js": {
-      "filePath": "frontend/src/features/brokers/services/brokers.service.js",
-      "contentHash": "945ca206cdb616a0e31b671970d45e185204339b30b25671c65cf833362195e3",
-      "functions": [],
-      "classes": [],
-      "imports": [
+        },
         {
-          "source": "@/shared/api/client",
+          "source": "@/shared/ui/feedback/animated-icons",
           "specifiers": [
-            "apiClient",
-            "unwrapResponse"
-          ]
-        }
-      ],
-      "exports": [
-        "brokersService"
-      ],
-      "totalLines": 45,
-      "hasStructuralAnalysis": true
-    },
-    "frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx": {
-      "filePath": "frontend/src/features/brokers/shared/BrokerCallbackHandler.jsx",
-      "contentHash": "aa29f963010b1fb4124d81b3a77e3db874b2b159ff678ded828497d4a5209347",
-      "functions": [
-        {
-          "name": "BrokerCallbackHandler",
-          "params": [],
-          "exported": true,
-          "lineCount": 186
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "source": "./brokerConfig",
-          "specifiers": [
-            "getBrokerByKey"
+            "AnimatedSuccessIcon",
+            "AnimatedErrorIcon",
+            "AnimatedWarningIcon"
           ]
         },
         {
@@ -89454,14 +90335,19 @@
           ]
         },
         {
+          "source": "framer-motion",
+          "specifiers": [
+            "motion",
+            "AnimatePresence"
+          ]
+        },
+        {
           "source": "lucide-react",
           "specifiers": [
-            "AlertCircle",
             "ArrowRight",
-            "CheckCircle2",
-            "Loader2",
+            "ChevronRight",
+            "Lock",
             "RefreshCw",
-            "RotateCcw",
             "ShieldCheck"
           ]
         },
@@ -89481,6 +90367,7 @@
           "source": "react",
           "specifiers": [
             "useEffect",
+            "useMemo",
             "useRef",
             "useState"
           ]
@@ -89489,12 +90376,12 @@
       "exports": [
         "BrokerCallbackHandler"
       ],
-      "totalLines": 206,
+      "totalLines": 666,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/shared/BrokerCard.jsx": {
-      "filePath": "frontend/src/features/brokers/shared/BrokerCard.jsx",
-      "contentHash": "9235bb9dd6fd83a568ee637d825e7e705f8eabc17800321b9b06698fdedb6f75",
+    "frontend/src/features/brokers/components/BrokerCard.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokerCard.jsx",
+      "contentHash": "9d5e86f2de3b0d46c5920e5f465433f4c028017526b68c2d7a20dbf5ea0cc908",
       "functions": [
         {
           "name": "relativeTime",
@@ -89505,30 +90392,24 @@
           "lineCount": 9
         },
         {
-          "name": "StatusDot",
-          "params": [],
-          "exported": false,
-          "lineCount": 35
-        },
-        {
           "name": "BrokerCard",
           "params": [],
           "exported": true,
-          "lineCount": 117
+          "lineCount": 154
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/shared/ui/feedback/Skeleton",
+          "source": "../hooks/useBrokerConnection",
           "specifiers": [
-            "Skeleton"
+            "useBrokerConnection"
           ]
         },
         {
-          "source": "@/features/brokers/hooks/useBrokerConnection",
+          "source": "../constants",
           "specifiers": [
-            "useBrokerConnection"
+            "BROKER_BRAND_THEMES"
           ]
         },
         {
@@ -89543,7 +90424,6 @@
             "ArrowRight",
             "Check",
             "Clock",
-            "RefreshCw",
             "Shield"
           ]
         },
@@ -89557,24 +90437,18 @@
       "exports": [
         "BrokerCard"
       ],
-      "totalLines": 201,
+      "totalLines": 175,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx": {
-      "filePath": "frontend/src/features/brokers/shared/BrokerSetupLayout.jsx",
-      "contentHash": "e998610196efe847af6e0d82828594728d22c82810333e7b6b9720636239fcd8",
+    "frontend/src/features/brokers/components/BrokerGuideTab.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokerGuideTab.jsx",
+      "contentHash": "6803b9a8ca26749a7a26b92b348774121bc63bf96108f974a179bea492b5c1a6",
       "functions": [
         {
-          "name": "SetupStepItem",
-          "params": [],
-          "exported": false,
-          "lineCount": 66
-        },
-        {
-          "name": "BrokerSetupLayout",
+          "name": "BrokerGuideTab",
           "params": [],
           "exported": true,
-          "lineCount": 97
+          "lineCount": 143
         }
       ],
       "classes": [],
@@ -89582,17 +90456,12 @@
         {
           "source": "lucide-react",
           "specifiers": [
-            "ArrowLeft",
+            "ArrowRight",
+            "BookOpen",
             "Check",
             "Copy",
             "ExternalLink",
             "ShieldCheck"
-          ]
-        },
-        {
-          "source": "next/link",
-          "specifiers": [
-            "Link"
           ]
         },
         {
@@ -89609,14 +90478,367 @@
         }
       ],
       "exports": [
-        "BrokerSetupLayout"
+        "BrokerGuideTab"
       ],
-      "totalLines": 198,
+      "totalLines": 159,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/shared/CredentialField.jsx": {
-      "filePath": "frontend/src/features/brokers/shared/CredentialField.jsx",
-      "contentHash": "ac1379744399648165781eebd67cd4aeada201a7db76cd9f43f9618b45f2da8c",
+    "frontend/src/features/brokers/components/BrokerSetupLayout.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokerSetupLayout.jsx",
+      "contentHash": "e286c0b8f9017e319ae7522d49504a974e7907d4c21e029c3784b9a0d97a1306",
+      "functions": [
+        {
+          "name": "BrokerSetupLayout",
+          "params": [],
+          "exported": true,
+          "lineCount": 43
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowLeft"
+          ]
+        },
+        {
+          "source": "next/link",
+          "specifiers": [
+            "Link"
+          ]
+        },
+        {
+          "source": "./BrokerSidebar",
+          "specifiers": [
+            "BrokerSidebar"
+          ]
+        }
+      ],
+      "exports": [
+        "BrokerSetupLayout"
+      ],
+      "totalLines": 58,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/components/BrokerSidebar.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokerSidebar.jsx",
+      "contentHash": "ee09180e1537eac0fddc860ab3c332bbd1fea8c0cc8ace65172648dc523257b1",
+      "functions": [
+        {
+          "name": "BrokerSidebar",
+          "params": [],
+          "exported": true,
+          "lineCount": 101
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Lock"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_BRAND_THEMES",
+            "BROKER_SETTINGS_TABS"
+          ]
+        }
+      ],
+      "exports": [
+        "BROKER_BRAND_THEMES",
+        "BROKER_SETTINGS_TABS",
+        "BrokerSidebar"
+      ],
+      "totalLines": 120,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/components/BrokersFilterToolbar.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokersFilterToolbar.jsx",
+      "contentHash": "69394eeccb72addd078b897eff4a73f8f881383d9b57704659b04a4da71cb234",
+      "functions": [
+        {
+          "name": "BrokersFilterToolbar",
+          "params": [],
+          "exported": true,
+          "lineCount": 59
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Search",
+            "X"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_FILTER_TABS"
+          ]
+        }
+      ],
+      "exports": [
+        "BrokersFilterToolbar"
+      ],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/components/BrokersHeader.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokersHeader.jsx",
+      "contentHash": "4841ceef5a0ae54a213109c131d5e2ccafe898bf32d1b235cb22c314fb330fea",
+      "functions": [
+        {
+          "name": "BrokersHeader",
+          "params": [],
+          "exported": true,
+          "lineCount": 31
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "RefreshCw"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "BrokersHeader"
+      ],
+      "totalLines": 39,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/components/BrokersKpiGrid.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokersKpiGrid.jsx",
+      "contentHash": "dcf723166ad8a45ff404b9237e878591db136d4ac6f53f3eb9f2b44e35f7b9bb",
+      "functions": [
+        {
+          "name": "BrokersKpiGrid",
+          "params": [],
+          "exported": true,
+          "lineCount": 76
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Activity",
+            "Lock",
+            "RefreshCw",
+            "ShieldCheck"
+          ]
+        }
+      ],
+      "exports": [
+        "BrokersKpiGrid"
+      ],
+      "totalLines": 83,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/components/BrokersSecurityNotice.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokersSecurityNotice.jsx",
+      "contentHash": "7105dadb3b6e78ab6f66f1586fea93b027e4c346849a8ca943cb32b2967d5f88",
+      "functions": [
+        {
+          "name": "BrokersSecurityNotice",
+          "params": [],
+          "exported": true,
+          "lineCount": 20
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ShieldCheck"
+          ]
+        }
+      ],
+      "exports": [
+        "BrokersSecurityNotice"
+      ],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/components/BrokersView.jsx": {
+      "filePath": "frontend/src/features/brokers/components/BrokersView.jsx",
+      "contentHash": "a2cbb8650401e9eefdd5505b8b0fdea91ac2a059f6811d542c01d7ce5f4226d5",
+      "functions": [
+        {
+          "name": "BrokersView",
+          "params": [],
+          "exported": true,
+          "lineCount": 103
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Search"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_LIST"
+          ]
+        },
+        {
+          "source": "../hooks/useBrokerConnection",
+          "specifiers": [
+            "useBrokerConnection"
+          ]
+        },
+        {
+          "source": "../hooks/useSyncFeeds",
+          "specifiers": [
+            "useSyncFeeds"
+          ]
+        },
+        {
+          "source": "./BrokersHeader",
+          "specifiers": [
+            "BrokersHeader"
+          ]
+        },
+        {
+          "source": "./BrokersKpiGrid",
+          "specifiers": [
+            "BrokersKpiGrid"
+          ]
+        },
+        {
+          "source": "./BrokersFilterToolbar",
+          "specifiers": [
+            "BrokersFilterToolbar"
+          ]
+        },
+        {
+          "source": "./BrokerCard",
+          "specifiers": [
+            "BrokerCard"
+          ]
+        },
+        {
+          "source": "./BrokersSecurityNotice",
+          "specifiers": [
+            "BrokersSecurityNotice"
+          ]
+        }
+      ],
+      "exports": [
+        "BrokersView"
+      ],
+      "totalLines": 119,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/components/ConnectionHubPanel.jsx": {
+      "filePath": "frontend/src/features/brokers/components/ConnectionHubPanel.jsx",
+      "contentHash": "be21e27bd6ff05841af814d9560d552104bb48e22e534d64c0f52279b045d770",
+      "functions": [
+        {
+          "name": "formatLastSynced",
+          "params": [
+            "iso",
+            "now"
+          ],
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "ConnectionHubPanel",
+          "params": [],
+          "exported": true,
+          "lineCount": 425
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "AlertCircle",
+            "ArrowRight",
+            "Clock",
+            "Key",
+            "RefreshCw",
+            "Trash2",
+            "Wifi"
+          ]
+        },
+        {
+          "source": "next/link",
+          "specifiers": [
+            "Link"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "./AccountCustodyDossier",
+          "specifiers": [
+            "AccountCustodyDossier"
+          ]
+        }
+      ],
+      "exports": [
+        "ConnectionHubPanel"
+      ],
+      "totalLines": 497,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/components/CredentialField.jsx": {
+      "filePath": "frontend/src/features/brokers/components/CredentialField.jsx",
+      "contentHash": "2aebb12fd8c5147eb2dd2d9d3678d4c74a4ff65ff931d630ac46fcaa2b1031cd",
       "functions": [
         {
           "name": "CredentialField",
@@ -89649,43 +90871,15 @@
       "totalLines": 89,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/shared/brokerConfig.js": {
-      "filePath": "frontend/src/features/brokers/shared/brokerConfig.js",
-      "contentHash": "880aa3f6e53398c949834826254e06f8c1787ea2d431b4d1fd9e70625ee494f8",
-      "functions": [
-        {
-          "name": "getBrokerByKey",
-          "params": [],
-          "exported": true,
-          "lineCount": 2
-        },
-        {
-          "name": "getBrokerById",
-          "params": [],
-          "exported": true,
-          "lineCount": 1
-        }
-      ],
-      "classes": [],
-      "imports": [],
-      "exports": [
-        "BROKERS",
-        "BROKER_LIST",
-        "getBrokerByKey",
-        "getBrokerById"
-      ],
-      "totalLines": 214,
-      "hasStructuralAnalysis": true
-    },
-    "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx": {
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxCallbackView.jsx",
-      "contentHash": "d03940be04f5e541f9b7f61a08126f01b9f041f962d0f47f6bd7934c2836c39f",
+    "frontend/src/features/brokers/components/UpstoxCallbackView.jsx": {
+      "filePath": "frontend/src/features/brokers/components/UpstoxCallbackView.jsx",
+      "contentHash": "3a3dac33210ceb116288e601bfb15141723fa5502e56d95c0f89b95270e45752",
       "functions": [
         {
           "name": "UpstoxCallbackInner",
           "params": [],
           "exported": false,
-          "lineCount": 19
+          "lineCount": 20
         },
         {
           "name": "UpstoxCallbackView",
@@ -89697,7 +90891,7 @@
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers/shared/BrokerCallbackHandler",
+          "source": "./BrokerCallbackHandler",
           "specifiers": [
             "BrokerCallbackHandler"
           ]
@@ -89725,44 +90919,12 @@
       "exports": [
         "UpstoxCallbackView"
       ],
-      "totalLines": 43,
+      "totalLines": 44,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx": {
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxDashboardView.jsx",
-      "contentHash": "7e0556b8da6a4e0bf3d18d6b62b0788dbce58443bbfb2e39139455e9234a647d",
-      "functions": [
-        {
-          "name": "UpstoxDashboardView",
-          "params": [],
-          "exported": true,
-          "lineCount": 7
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "source": "next/navigation",
-          "specifiers": [
-            "useRouter"
-          ]
-        },
-        {
-          "source": "react",
-          "specifiers": [
-            "useEffect"
-          ]
-        }
-      ],
-      "exports": [
-        "UpstoxDashboardView"
-      ],
-      "totalLines": 15,
-      "hasStructuralAnalysis": true
-    },
-    "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx": {
-      "filePath": "frontend/src/features/brokers/upstox/components/UpstoxSetupView.jsx",
-      "contentHash": "45e42c22730f4387b2da908d60f57d4e88fe49d3278fff0c96df47b142b133c6",
+    "frontend/src/features/brokers/components/UpstoxSetupView.jsx": {
+      "filePath": "frontend/src/features/brokers/components/UpstoxSetupView.jsx",
+      "contentHash": "459cb2b68b92fbbb1f89b90eafc90f155fe1615535c818443e6a27faf782cf8b",
       "functions": [
         {
           "name": "relativeTime",
@@ -89776,31 +90938,50 @@
           "name": "UpstoxSetupView",
           "params": [],
           "exported": true,
-          "lineCount": 347
+          "lineCount": 290
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers/hooks/useBrokerConnection",
+          "source": "../hooks/useBrokerConnection",
           "specifiers": [
-            "useBrokerConnection"
+            "useBrokerConnection",
+            "invalidateBrokerQueries"
           ]
         },
         {
-          "source": "@/features/brokers/shared/BrokerSetupLayout",
+          "source": "../hooks/useSyncFeeds",
+          "specifiers": [
+            "useSyncFeeds"
+          ]
+        },
+        {
+          "source": "./BrokerGuideTab",
+          "specifiers": [
+            "BrokerGuideTab"
+          ]
+        },
+        {
+          "source": "./BrokerSetupLayout",
           "specifiers": [
             "BrokerSetupLayout"
           ]
         },
         {
-          "source": "@/features/brokers/shared/CredentialField",
+          "source": "./CredentialField",
           "specifiers": [
             "CredentialField"
           ]
         },
         {
-          "source": "@/features/brokers/shared/brokerConfig",
+          "source": "./ConnectionHubPanel",
+          "specifiers": [
+            "ConnectionHubPanel"
+          ]
+        },
+        {
+          "source": "../constants",
           "specifiers": [
             "BROKER_CONFIG"
           ]
@@ -89809,8 +90990,7 @@
           "source": "@/shared/api/client",
           "specifiers": [
             "brokerAPI",
-            "BROKERS",
-            "portfolioAPI"
+            "BROKERS"
           ]
         },
         {
@@ -89830,20 +91010,7 @@
           "specifiers": [
             "AlertCircle",
             "ArrowRight",
-            "CheckCircle2",
-            "Clock",
-            "ExternalLink",
-            "Key",
-            "Loader2",
-            "Lock",
-            "RefreshCw",
-            "Trash2"
-          ]
-        },
-        {
-          "source": "next/link",
-          "specifiers": [
-            "Link"
+            "Loader2"
           ]
         },
         {
@@ -89863,12 +91030,12 @@
       "exports": [
         "UpstoxSetupView"
       ],
-      "totalLines": 388,
+      "totalLines": 325,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx": {
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaCallbackView.jsx",
-      "contentHash": "0fe74d47d32cb7a7225c6f08ab65a6ebb1435568a397662ef92ae07d98e70524",
+    "frontend/src/features/brokers/components/ZerodhaCallbackView.jsx": {
+      "filePath": "frontend/src/features/brokers/components/ZerodhaCallbackView.jsx",
+      "contentHash": "6ed13ef50e2788fd238a51bf467d5d3b558292516809cd1696e7dd1919c905cb",
       "functions": [
         {
           "name": "ZerodhaCallbackInner",
@@ -89886,7 +91053,7 @@
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers/shared/BrokerCallbackHandler",
+          "source": "./BrokerCallbackHandler",
           "specifiers": [
             "BrokerCallbackHandler"
           ]
@@ -89917,41 +91084,9 @@
       "totalLines": 43,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx": {
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaDashboardView.jsx",
-      "contentHash": "f05c1854e7cb128563fdd9b5dea98c7abf2bb67df04212aad41cfab9f0ce7b26",
-      "functions": [
-        {
-          "name": "ZerodhaDashboardView",
-          "params": [],
-          "exported": true,
-          "lineCount": 7
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "source": "next/navigation",
-          "specifiers": [
-            "useRouter"
-          ]
-        },
-        {
-          "source": "react",
-          "specifiers": [
-            "useEffect"
-          ]
-        }
-      ],
-      "exports": [
-        "ZerodhaDashboardView"
-      ],
-      "totalLines": 15,
-      "hasStructuralAnalysis": true
-    },
-    "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx": {
-      "filePath": "frontend/src/features/brokers/zerodha/components/ZerodhaSetupView.jsx",
-      "contentHash": "a129303c6306b09b91993c6cbf87095d45cdfddb4a7e3704e1f0f2435fa6bbc0",
+    "frontend/src/features/brokers/components/ZerodhaSetupView.jsx": {
+      "filePath": "frontend/src/features/brokers/components/ZerodhaSetupView.jsx",
+      "contentHash": "a8222b8bb0a2e818cb9b942ffafc3bd7d82af872fd1ce677416e4dc99e9ea1c3",
       "functions": [
         {
           "name": "relativeTime",
@@ -89965,31 +91100,50 @@
           "name": "ZerodhaSetupView",
           "params": [],
           "exported": true,
-          "lineCount": 315
+          "lineCount": 323
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/features/brokers/hooks/useBrokerConnection",
+          "source": "../hooks/useBrokerConnection",
           "specifiers": [
-            "useBrokerConnection"
+            "useBrokerConnection",
+            "invalidateBrokerQueries"
           ]
         },
         {
-          "source": "@/features/brokers/shared/BrokerSetupLayout",
+          "source": "../hooks/useSyncFeeds",
+          "specifiers": [
+            "useSyncFeeds"
+          ]
+        },
+        {
+          "source": "./BrokerGuideTab",
+          "specifiers": [
+            "BrokerGuideTab"
+          ]
+        },
+        {
+          "source": "./BrokerSetupLayout",
           "specifiers": [
             "BrokerSetupLayout"
           ]
         },
         {
-          "source": "@/features/brokers/shared/CredentialField",
+          "source": "./CredentialField",
           "specifiers": [
             "CredentialField"
           ]
         },
         {
-          "source": "@/features/brokers/shared/brokerConfig",
+          "source": "./ConnectionHubPanel",
+          "specifiers": [
+            "ConnectionHubPanel"
+          ]
+        },
+        {
+          "source": "../constants",
           "specifiers": [
             "BROKER_CONFIG"
           ]
@@ -89998,8 +91152,7 @@
           "source": "@/shared/api/client",
           "specifiers": [
             "brokerAPI",
-            "BROKERS",
-            "portfolioAPI"
+            "BROKERS"
           ]
         },
         {
@@ -90019,20 +91172,9 @@
           "specifiers": [
             "AlertCircle",
             "ArrowRight",
-            "CheckCircle2",
-            "Clock",
-            "ExternalLink",
-            "Key",
-            "Loader2",
-            "Lock",
-            "RefreshCw",
-            "Trash2"
-          ]
-        },
-        {
-          "source": "next/link",
-          "specifiers": [
-            "Link"
+            "Check",
+            "Copy",
+            "Loader2"
           ]
         },
         {
@@ -90052,7 +91194,192 @@
       "exports": [
         "ZerodhaSetupView"
       ],
-      "totalLines": 355,
+      "totalLines": 361,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/constants.js": {
+      "filePath": "frontend/src/features/brokers/constants.js",
+      "contentHash": "8525ac4a13c51f0353cdd17b812c5883f78ae8f4f2cd28acd933030674ea68e3",
+      "functions": [
+        {
+          "name": "getBrokerByKey",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "getBrokerById",
+          "params": [],
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Activity",
+            "BookOpen",
+            "Key"
+          ]
+        }
+      ],
+      "exports": [
+        "BROKERS",
+        "BROKER_LIST",
+        "getBrokerByKey",
+        "getBrokerById",
+        "BROKER_SETTINGS_TABS",
+        "BROKER_BRAND_THEMES",
+        "BROKER_FILTER_TABS"
+      ],
+      "totalLines": 258,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/hooks/useBrokerConnection.js": {
+      "filePath": "frontend/src/features/brokers/hooks/useBrokerConnection.js",
+      "contentHash": "3537dad53e9c05fa15784f0168f0a028d7c43b3e89cfaff4a61b8c93b748ad23",
+      "functions": [
+        {
+          "name": "invalidateBrokerQueries",
+          "params": [
+            "queryClient"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "useBrokerConnection",
+          "params": [],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "useBrokerSummary",
+          "params": [],
+          "exported": true,
+          "lineCount": 19
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "portfolioAPI"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useQuery"
+          ]
+        }
+      ],
+      "exports": [
+        "invalidateBrokerQueries",
+        "useBrokerConnection",
+        "useBrokerSummary"
+      ],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/hooks/useSyncFeeds.js": {
+      "filePath": "frontend/src/features/brokers/hooks/useSyncFeeds.js",
+      "contentHash": "73e29e489b20905ea5ff74dd4e26d15c70efb88560b8e8316f1556dfdaf7a744",
+      "functions": [
+        {
+          "name": "useSyncFeeds",
+          "params": [],
+          "exported": true,
+          "lineCount": 64
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useCallback",
+            "useEffect",
+            "useState"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useQueryClient"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "toast"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "portfolioAPI"
+          ]
+        },
+        {
+          "source": "./useBrokerConnection",
+          "specifiers": [
+            "invalidateBrokerQueries"
+          ]
+        }
+      ],
+      "exports": [
+        "useSyncFeeds"
+      ],
+      "totalLines": 83,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/brokers/index.js": {
+      "filePath": "frontend/src/features/brokers/index.js",
+      "contentHash": "3f2588d376a5c02d05c59e00986d9616584bdaf26031c16e547d5e8a6872e73b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "BrokersView",
+        "BrokersViewDefault",
+        "BrokersHeader",
+        "BrokersKpiGrid",
+        "BrokersFilterToolbar",
+        "BrokersSecurityNotice",
+        "BrokerCard",
+        "BrokerCardDefault",
+        "BrokerSidebar",
+        "BrokerSidebarDefault",
+        "BrokerSetupLayout",
+        "BrokerSetupLayoutDefault",
+        "BrokerGuideTab",
+        "BrokerGuideTabDefault",
+        "ConnectionHubPanel",
+        "ConnectionHubPanelDefault",
+        "AccountCustodyDossier",
+        "AccountCustodyDossierDefault",
+        "formatBoid",
+        "formatDossierSyncTime",
+        "CredentialField",
+        "CredentialFieldDefault",
+        "BrokerCallbackHandler",
+        "BrokerCallbackHandlerDefault",
+        "ZerodhaSetupView",
+        "ZerodhaSetupViewDefault",
+        "ZerodhaCallbackView",
+        "ZerodhaCallbackViewDefault",
+        "UpstoxSetupView",
+        "UpstoxSetupViewDefault",
+        "UpstoxCallbackView",
+        "UpstoxCallbackViewDefault",
+        "AngelOneSetupView",
+        "AngelOneSetupViewDefault"
+      ],
+      "totalLines": 77,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/calculators/index.js": {
@@ -90227,23 +91554,373 @@
       "totalLines": 397,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/dashboard/components/DashboardView.jsx": {
-      "filePath": "frontend/src/features/dashboard/components/DashboardView.jsx",
-      "contentHash": "72af25e4c751de956a86c3178b35fc85f0f26b4feb2736eaf92f1de348d65a60",
+    "frontend/src/features/dashboard/__tests__/constants.test.js": {
+      "filePath": "frontend/src/features/dashboard/__tests__/constants.test.js",
+      "contentHash": "9afde69eb3e25f3293e87e563f7c7f9f8abd97b14b95ee4527b18ad4ad5277f7",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../constants",
+          "specifiers": [
+            "DASHBOARD_TIME_RANGES",
+            "DEFAULT_TIME_RANGE",
+            "STRATEGIC_ALLOCATION",
+            "ASSET_LEDGER_CONFIG",
+            "STATUTORY_LIMITS",
+            "DEFAULT_SIP_SCHEDULE",
+            "BENCHMARK_ALPHA"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/__tests__/dashboard-components.test.jsx": {
+      "filePath": "frontend/src/features/dashboard/__tests__/dashboard-components.test.jsx",
+      "contentHash": "0d900c33dcaaa7a058731ccacd13cce11073007723fa5e6ec46d44e6a5c50073",
       "functions": [
         {
-          "name": "DashboardView",
-          "params": [],
-          "exported": true,
-          "lineCount": 413
+          "name": "renderWithClient",
+          "params": [
+            "ui"
+          ],
+          "exported": false,
+          "lineCount": 8
         }
       ],
       "classes": [],
       "imports": [
         {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "fireEvent",
+            "waitFor"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "QueryClient",
+            "QueryClientProvider"
+          ]
+        },
+        {
+          "source": "../components/DashboardKpiGrid",
+          "specifiers": [
+            "DashboardKpiGrid"
+          ]
+        },
+        {
+          "source": "../components/DashboardWealthChart",
+          "specifiers": [
+            "DashboardWealthChart"
+          ]
+        },
+        {
+          "source": "../components/DashboardAssetSpread",
+          "specifiers": [
+            "DashboardAssetSpread"
+          ]
+        },
+        {
+          "source": "../components/HoldingsTable",
+          "specifiers": [
+            "HoldingsTable"
+          ]
+        },
+        {
+          "source": "../components/DashboardView",
+          "specifiers": [
+            "DashboardView"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 263,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/__tests__/refresh-and-sync.test.jsx": {
+      "filePath": "frontend/src/features/dashboard/__tests__/refresh-and-sync.test.jsx",
+      "contentHash": "494ebd07bc6e64977b7316cfbbc37a11e89872f1fe0c0867f6635eff8cec07e8",
+      "functions": [
+        {
+          "name": "renderWithClient",
+          "params": [
+            "ui"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "SyncTester",
+          "params": [],
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "fireEvent",
+            "waitFor"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "QueryClient",
+            "QueryClientProvider"
+          ]
+        },
+        {
+          "source": "../components/RefreshButton",
+          "specifiers": [
+            "RefreshButton"
+          ]
+        },
+        {
+          "source": "@/features/brokers/hooks/useSyncFeeds",
+          "specifiers": [
+            "useSyncFeeds"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "portfolioAPI"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "toast"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 140,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/components/AssetDistributionCard.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/AssetDistributionCard.jsx",
+      "contentHash": "7fceac97699e03f5561e356c7f01592ab399cbdbc1f3aac55de7f9072a34160e",
+      "functions": [
+        {
+          "name": "AssetDistributionCard",
+          "params": [],
+          "exported": true,
+          "lineCount": 83
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ShieldCheck"
+          ]
+        },
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency"
+          ]
+        }
+      ],
+      "exports": [
+        "AssetDistributionCard"
+      ],
+      "totalLines": 91,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/components/DashboardAssetSpread.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/DashboardAssetSpread.jsx",
+      "contentHash": "94bb50ac4b72d0a3b174d9446b5072c7a7d20b7322f7167e7d7b390fc1213b34",
+      "functions": [
+        {
+          "name": "DashboardAssetSpread",
+          "params": [],
+          "exported": true,
+          "lineCount": 293
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useQuery"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Coins",
+            "Landmark",
+            "PieChart",
+            "TrendingUp"
+          ]
+        },
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "epfAPI",
+            "fdAPI",
+            "goldSilverAPI",
+            "mutualFundAPI",
+            "portfolioAPI",
+            "ppfAPI"
+          ]
+        },
+        {
+          "source": "./AssetDistributionCard",
+          "specifiers": [
+            "AssetDistributionCard"
+          ]
+        },
+        {
+          "source": "./LedgerScheduleCard",
+          "specifiers": [
+            "LedgerScheduleCard"
+          ]
+        }
+      ],
+      "exports": [
+        "DashboardAssetSpread"
+      ],
+      "totalLines": 313,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/components/DashboardHeader.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/DashboardHeader.jsx",
+      "contentHash": "9b5ae10e93b2229be4d6f1d4018009c3763c498dd48b0c9650046a7ef3e63825",
+      "functions": [
+        {
+          "name": "DashboardHeader",
+          "params": [],
+          "exported": true,
+          "lineCount": 81
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Download",
+            "RefreshCw"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "DASHBOARD_TIME_RANGES"
+          ]
+        }
+      ],
+      "exports": [
+        "DashboardHeader"
+      ],
+      "totalLines": 89,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/components/DashboardKpiGrid.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/DashboardKpiGrid.jsx",
+      "contentHash": "4ce797f5b1aa0c28af28876789a3ebe581436b65a8126bfe6cea03c6b95db903",
+      "functions": [
+        {
+          "name": "DashboardKpiGrid",
+          "params": [],
+          "exported": true,
+          "lineCount": 64
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo"
+          ]
+        },
+        {
+          "source": "./TotalNetWorthCard",
+          "specifiers": [
+            "TotalNetWorthCard"
+          ]
+        },
+        {
+          "source": "./MomentumAndCashCard",
+          "specifiers": [
+            "MomentumAndCashCard"
+          ]
+        }
+      ],
+      "exports": [
+        "DashboardKpiGrid"
+      ],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/components/DashboardView.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/DashboardView.jsx",
+      "contentHash": "f16475763b0b31de4c9ae7629ccd69aeed54f7d06825da56da3dbae80654c541",
+      "functions": [
+        {
+          "name": "DashboardView",
+          "params": [],
+          "exported": true,
+          "lineCount": 79
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
           "source": "@/features/portfolio",
           "specifiers": [
             "usePortfolioSummary"
+          ]
+        },
+        {
+          "source": "@/features/brokers",
+          "specifiers": [
+            "useBrokerSummary",
+            "useSyncFeeds"
           ]
         },
         {
@@ -90253,49 +91930,33 @@
           ]
         },
         {
-          "source": "@/shared/formatters",
-          "specifiers": [
-            "formatCurrency",
-            "formatPercent"
-          ]
-        },
-        {
-          "source": "@/shared/lib/utils",
-          "specifiers": [
-            "cn"
-          ]
-        },
-        {
           "source": "@/widgets/broker-status-banner",
           "specifiers": [
             "BrokerStatusBanner"
           ]
         },
         {
-          "source": "lucide-react",
+          "source": "./DashboardHeader",
           "specifiers": [
-            "ArrowDownRight",
-            "ArrowUpRight",
-            "ChevronDown",
-            "Download",
-            "Flame",
-            "History",
-            "PieChart",
-            "Share2",
-            "Sparkles",
-            "TrendingUp"
+            "DashboardHeader"
           ]
         },
         {
-          "source": "next/link",
+          "source": "./DashboardKpiGrid",
           "specifiers": [
-            "Link"
+            "DashboardKpiGrid"
           ]
         },
         {
-          "source": "react",
+          "source": "./DashboardWealthChart",
           "specifiers": [
-            "useState"
+            "DashboardWealthChart"
+          ]
+        },
+        {
+          "source": "./DashboardAssetSpread",
+          "specifiers": [
+            "DashboardAssetSpread"
           ]
         },
         {
@@ -90308,32 +91969,162 @@
       "exports": [
         "DashboardView"
       ],
-      "totalLines": 439,
+      "totalLines": 95,
       "hasStructuralAnalysis": true
     },
-    "frontend/src/features/dashboard/components/HoldingsTable.jsx": {
-      "filePath": "frontend/src/features/dashboard/components/HoldingsTable.jsx",
-      "contentHash": "0bd3d55bb3cb07159da1e9ec8aaaa90e748f486d25b6fca2cac8f04078392f3a",
+    "frontend/src/features/dashboard/components/DashboardWealthChart.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/DashboardWealthChart.jsx",
+      "contentHash": "d91c054b636f8d242d8e56b78d354b67c92ac10fdf32d9fea4571d113d51675d",
       "functions": [
         {
-          "name": "Skeleton",
-          "params": [],
-          "exported": false,
-          "lineCount": 5
-        },
-        {
-          "name": "HoldingsTable",
+          "name": "DashboardWealthChart",
           "params": [],
           "exported": true,
-          "lineCount": 200
+          "lineCount": 331
         }
       ],
       "classes": [],
       "imports": [
         {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowUpRight"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency",
+            "formatPercent"
+          ]
+        }
+      ],
+      "exports": [
+        "DashboardWealthChart"
+      ],
+      "totalLines": 341,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/components/HoldingsTable.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/HoldingsTable.jsx",
+      "contentHash": "76c4c953a4b07c10c0536b9c58bc478aebe73a6fe026403ab75d4704bfe0f22b",
+      "functions": [
+        {
+          "name": "HoldingsTable",
+          "params": [],
+          "exported": true,
+          "lineCount": 122
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useQuery"
+          ]
+        },
+        {
+          "source": "next/link",
+          "specifiers": [
+            "Link"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowRight"
+          ]
+        },
+        {
           "source": "@/shared/api/client",
           "specifiers": [
             "portfolioAPI"
+          ]
+        },
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency"
+          ]
+        },
+        {
+          "source": "@/shared/ui/data-display/data-table",
+          "specifiers": [
+            "DataTable",
+            "SymbolBadge",
+            "BrokerBadge",
+            "PnLCell",
+            "DayChangeCell"
+          ]
+        }
+      ],
+      "exports": [
+        "HoldingsTable"
+      ],
+      "totalLines": 140,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/components/LedgerScheduleCard.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/LedgerScheduleCard.jsx",
+      "contentHash": "99153dde50516942e4db64b82f6cbbf13b97c56fc9705f9eba49c19213b8ec4a",
+      "functions": [
+        {
+          "name": "LedgerScheduleCard",
+          "params": [],
+          "exported": true,
+          "lineCount": 83
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Calendar",
+            "Coins",
+            "Landmark"
+          ]
+        }
+      ],
+      "exports": [
+        "LedgerScheduleCard"
+      ],
+      "totalLines": 90,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/components/MomentumAndCashCard.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/MomentumAndCashCard.jsx",
+      "contentHash": "813812cf3a05c78974a97f727ee891262f4c8f08155ac8a0b9e63838ca6bde60",
+      "functions": [
+        {
+          "name": "MomentumAndCashCard",
+          "params": [],
+          "exported": true,
+          "lineCount": 105
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowDownRight",
+            "ArrowUpRight",
+            "Wallet"
           ]
         },
         {
@@ -90348,33 +92139,12 @@
           "specifiers": [
             "cn"
           ]
-        },
-        {
-          "source": "@tanstack/react-query",
-          "specifiers": [
-            "useQuery"
-          ]
-        },
-        {
-          "source": "lucide-react",
-          "specifiers": [
-            "ArrowDownRight",
-            "ArrowUpRight",
-            "ArrowRight",
-            "Briefcase"
-          ]
-        },
-        {
-          "source": "next/link",
-          "specifiers": [
-            "Link"
-          ]
         }
       ],
       "exports": [
-        "HoldingsTable"
+        "MomentumAndCashCard"
       ],
-      "totalLines": 233,
+      "totalLines": 114,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/dashboard/components/PortfolioSummary.jsx": {
@@ -90446,21 +92216,21 @@
     },
     "frontend/src/features/dashboard/components/RefreshButton.jsx": {
       "filePath": "frontend/src/features/dashboard/components/RefreshButton.jsx",
-      "contentHash": "29e505f05707d3e732e58185c97c8944c1052e44a70c67138d988fd48273628c",
+      "contentHash": "0f147bb79689abea266e6370c90a96cf4925c60624eb4a1a781f37ab6f6ed1a1",
       "functions": [
         {
           "name": "RefreshButton",
           "params": [],
           "exported": true,
-          "lineCount": 46
+          "lineCount": 24
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/shared/api/client",
+          "source": "@/features/brokers/hooks/useSyncFeeds",
           "specifiers": [
-            "portfolioAPI"
+            "useSyncFeeds"
           ]
         },
         {
@@ -90470,36 +92240,16 @@
           ]
         },
         {
-          "source": "@tanstack/react-query",
-          "specifiers": [
-            "useMutation",
-            "useQueryClient"
-          ]
-        },
-        {
           "source": "lucide-react",
           "specifiers": [
             "RefreshCw"
-          ]
-        },
-        {
-          "source": "react",
-          "specifiers": [
-            "useCallback",
-            "useState"
-          ]
-        },
-        {
-          "source": "sonner",
-          "specifiers": [
-            "toast"
           ]
         }
       ],
       "exports": [
         "RefreshButton"
       ],
-      "totalLines": 56,
+      "totalLines": 33,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/dashboard/components/StatsCard.jsx": {
@@ -90541,21 +92291,87 @@
       "totalLines": 93,
       "hasStructuralAnalysis": true
     },
+    "frontend/src/features/dashboard/components/TotalNetWorthCard.jsx": {
+      "filePath": "frontend/src/features/dashboard/components/TotalNetWorthCard.jsx",
+      "contentHash": "c18e142988d4c0c5a349a1582ad5aee12587cca1459db717cdbbec1128d359e2",
+      "functions": [
+        {
+          "name": "TotalNetWorthCard",
+          "params": [],
+          "exported": true,
+          "lineCount": 108
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowDownRight",
+            "ArrowUpRight"
+          ]
+        },
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency",
+            "formatPercent"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        }
+      ],
+      "exports": [
+        "TotalNetWorthCard"
+      ],
+      "totalLines": 117,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/dashboard/constants.js": {
+      "filePath": "frontend/src/features/dashboard/constants.js",
+      "contentHash": "83b2e9c7fccbc7417516d06727326367556b66b81684628192bd32ab6bfd56cd",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "DASHBOARD_TIME_RANGES",
+        "DEFAULT_TIME_RANGE",
+        "STRATEGIC_ALLOCATION",
+        "ASSET_LEDGER_CONFIG",
+        "STATUTORY_LIMITS",
+        "DEFAULT_SIP_SCHEDULE",
+        "BENCHMARK_ALPHA"
+      ],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
     "frontend/src/features/dashboard/index.js": {
       "filePath": "frontend/src/features/dashboard/index.js",
-      "contentHash": "243f4d445c302a8697c24ab84bdde6cebad7e7051f232ec76853cd9381e9b8f2",
+      "contentHash": "a0dde7b741f401cfe271aa238fc7f8df0c4ae75f5b4d200e1f4491e65ad653eb",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [
         "DashboardView",
         "DashboardViewDefault",
+        "DashboardHeader",
+        "DashboardKpiGrid",
+        "TotalNetWorthCard",
+        "MomentumAndCashCard",
+        "DashboardWealthChart",
         "HoldingsTable",
-        "PortfolioSummary",
+        "DashboardAssetSpread",
+        "AssetDistributionCard",
+        "LedgerScheduleCard",
         "RefreshButton",
-        "StatsCard"
+        "StatsCard",
+        "PortfolioSummary"
       ],
-      "totalLines": 9,
+      "totalLines": 31,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/epf/components/EpfInterestRateDialog.jsx": {
@@ -92984,6 +94800,82 @@
       "totalLines": 173,
       "hasStructuralAnalysis": true
     },
+    "frontend/src/features/notes/__tests__/notes-advanced-edges.test.js": {
+      "filePath": "frontend/src/features/notes/__tests__/notes-advanced-edges.test.js",
+      "contentHash": "daf3b7db29b2b9ea90e643630406fefdd457b26ca935d49dee0013011b85b684",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../constants",
+          "specifiers": [
+            "formatTagLabel",
+            "getDeletedCustomTypeIds",
+            "getNoteCategory",
+            "getNoteTypeInfo",
+            "markCustomTypeDeleted",
+            "relativeTime",
+            "unmarkCustomTypeDeleted"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 302,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/notes/__tests__/notes-components.test.jsx": {
+      "filePath": "frontend/src/features/notes/__tests__/notes-components.test.jsx",
+      "contentHash": "e6c1490bc0119e2a96736a10ed7d82126577057530c8d7195893ff04cebe3b05",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "fireEvent"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "../components/NotesHeader",
+          "specifiers": [
+            "NotesHeader"
+          ]
+        },
+        {
+          "source": "../components/NotesPagination",
+          "specifiers": [
+            "NotesPagination"
+          ]
+        },
+        {
+          "source": "../components/NoteColorPicker",
+          "specifiers": [
+            "NoteColorPicker"
+          ]
+        },
+        {
+          "source": "../components/NoteTypeSelector",
+          "specifiers": [
+            "NoteTypeSelector"
+          ]
+        },
+        {
+          "source": "../components/NoteTagsInput",
+          "specifiers": [
+            "NoteTagsInput"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 174,
+      "hasStructuralAnalysis": true
+    },
     "frontend/src/features/notes/components/NoteCard.jsx": {
       "filePath": "frontend/src/features/notes/components/NoteCard.jsx",
       "contentHash": "1ce74619c4e14915cf467a97a721677b5dc2a11665c8918255a9a796b352a5cb",
@@ -93413,13 +95305,13 @@
     },
     "frontend/src/features/notes/components/NotesToolbar.jsx": {
       "filePath": "frontend/src/features/notes/components/NotesToolbar.jsx",
-      "contentHash": "250e7ac4d0fc8c60986c6a468bca862bfd55fb84a3a879777b7147d200cd11a2",
+      "contentHash": "a244c092d09c41db3b5b1a7bf13d242de24bb36693c2e8b5d3f5d5c5a40431f8",
       "functions": [
         {
           "name": "NotesToolbar",
           "params": [],
           "exported": true,
-          "lineCount": 152
+          "lineCount": 150
         }
       ],
       "classes": [],
@@ -93442,7 +95334,7 @@
       "exports": [
         "NotesToolbar"
       ],
-      "totalLines": 158,
+      "totalLines": 156,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/notes/components/NotesView.jsx": {
@@ -93551,7 +95443,7 @@
     },
     "frontend/src/features/notes/constants.js": {
       "filePath": "frontend/src/features/notes/constants.js",
-      "contentHash": "2af48f35fe46175cb67ca258da46c98a3ad2a25b3375e534712f40f35f6c8edc",
+      "contentHash": "7e2a2aa66fed1044b31867914af97122f95f0218c6fa98c5c4b60347b76777af",
       "functions": [
         {
           "name": "getDeletedCustomTypeIds",
@@ -93597,7 +95489,7 @@
             "note"
           ],
           "exported": true,
-          "lineCount": 202
+          "lineCount": 203
         },
         {
           "name": "getNoteCategory",
@@ -93643,7 +95535,7 @@
         "getNoteCategory",
         "relativeTime"
       ],
-      "totalLines": 508,
+      "totalLines": 509,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/notes/index.js": {
@@ -93668,6 +95560,177 @@
         "NotesViewDefault"
       ],
       "totalLines": 14,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/portfolio/__tests__/constants.test.js": {
+      "filePath": "frontend/src/features/portfolio/__tests__/constants.test.js",
+      "contentHash": "6196a5a407ce6ed54bd6f229b6942026576f6f401c1856e3beb5ffb642995a0d",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_CONFIGS",
+            "BROKER_FILTER_PILLS",
+            "formatBoid",
+            "getBrokerTabGroups",
+            "normalizeBrokerKey"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 104,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/portfolio/__tests__/portfolio-components.test.jsx": {
+      "filePath": "frontend/src/features/portfolio/__tests__/portfolio-components.test.jsx",
+      "contentHash": "d4cf5d366daec673492d75793879001dc160249d725e8aca22d19fbf8754a8ad",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "fireEvent",
+            "render",
+            "screen"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "QueryClient",
+            "QueryClientProvider"
+          ]
+        },
+        {
+          "source": "../components/BrokerFilterPills",
+          "specifiers": [
+            "BrokerFilterPills"
+          ]
+        },
+        {
+          "source": "../components/HoldingsTab",
+          "specifiers": [
+            "HoldingsTab"
+          ]
+        },
+        {
+          "source": "../components/OrdersTab",
+          "specifiers": [
+            "OrdersTab"
+          ]
+        },
+        {
+          "source": "../components/PortfolioTabBar",
+          "specifiers": [
+            "PortfolioTabBar"
+          ]
+        },
+        {
+          "source": "../components/PositionsTab",
+          "specifiers": [
+            "PositionsTab"
+          ]
+        },
+        {
+          "source": "../components/StockDossierModal",
+          "specifiers": [
+            "StockDossierModal"
+          ]
+        },
+        {
+          "source": "../components/TradesTab",
+          "specifiers": [
+            "TradesTab"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 465,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/portfolio/components/BrokerFilterPills.jsx": {
+      "filePath": "frontend/src/features/portfolio/components/BrokerFilterPills.jsx",
+      "contentHash": "20bd973c60f6d8b046e0ed5d97a74321c61745fef26e039accc6f1d23702c887",
+      "functions": [
+        {
+          "name": "BrokerFilterPills",
+          "params": [],
+          "exported": true,
+          "lineCount": 222
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "brokerAPI"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "framer-motion",
+          "specifiers": [
+            "motion"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "AlertTriangle",
+            "RefreshCw"
+          ]
+        },
+        {
+          "source": "next/link",
+          "specifiers": [
+            "Link"
+          ]
+        },
+        {
+          "source": "next/navigation",
+          "specifiers": [
+            "useRouter"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useRef",
+            "useState"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "toast"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_CONFIGS",
+            "BROKER_FILTER_PILLS",
+            "normalizeBrokerKey"
+          ]
+        }
+      ],
+      "exports": [
+        "BrokerFilterPills"
+      ],
+      "totalLines": 241,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/BrokerInfoBanner.jsx": {
@@ -93696,6 +95759,120 @@
       "totalLines": 14,
       "hasStructuralAnalysis": true
     },
+    "frontend/src/features/portfolio/components/BrokersTab.jsx": {
+      "filePath": "frontend/src/features/portfolio/components/BrokersTab.jsx",
+      "contentHash": "d1251a45f51e08c36d1a1c381d92875a77e50c2945674ac43a20765444d031eb",
+      "functions": [
+        {
+          "name": "relativeTime",
+          "params": [
+            "iso"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "formatDateTime",
+          "params": [
+            "iso"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "BrokersTab",
+          "params": [],
+          "exported": true,
+          "lineCount": 502
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/features/brokers",
+          "specifiers": [
+            "AccountCustodyDossier",
+            "useBrokerConnection",
+            "useSyncFeeds"
+          ]
+        },
+        {
+          "source": "@/shared/api/client",
+          "specifiers": [
+            "brokerAPI",
+            "portfolioAPI"
+          ]
+        },
+        {
+          "source": "@/shared/auth/AuthContext",
+          "specifiers": [
+            "useAuth"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useQuery"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "AlertCircle",
+            "ArrowRight",
+            "Check",
+            "Clock",
+            "ExternalLink",
+            "RefreshCw",
+            "Server",
+            "ShieldCheck",
+            "Wifi"
+          ]
+        },
+        {
+          "source": "next/link",
+          "specifiers": [
+            "Link"
+          ]
+        },
+        {
+          "source": "next/navigation",
+          "specifiers": [
+            "useRouter"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "sonner",
+          "specifiers": [
+            "toast"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_CONFIGS",
+            "normalizeBrokerKey"
+          ]
+        }
+      ],
+      "exports": [
+        "BrokersTab"
+      ],
+      "totalLines": 554,
+      "hasStructuralAnalysis": true
+    },
     "frontend/src/features/portfolio/components/DataAccuracyWarning.jsx": {
       "filePath": "frontend/src/features/portfolio/components/DataAccuracyWarning.jsx",
       "contentHash": "ac87011207ff9af1c26ec5a5015c1a4477667c14802b09adc784ad2777287857",
@@ -93710,46 +95887,22 @@
     },
     "frontend/src/features/portfolio/components/HoldingsTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/HoldingsTab.jsx",
-      "contentHash": "95873df4408dff0250a16b9e197844f4c66fe702426ba8b19e8be771f1efa81a",
+      "contentHash": "17e16854d9a48adc2b6dfa7a54e3e7246211d822ed421cd540f276f83d486ab9",
       "functions": [
-        {
-          "name": "SortIcon",
-          "params": [],
-          "exported": false,
-          "lineCount": 8
-        },
         {
           "name": "HoldingsTab",
           "params": [],
           "exported": true,
-          "lineCount": 405
+          "lineCount": 376
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/shared/ui/feedback/Skeleton",
-          "specifiers": [
-            "Skeleton"
-          ]
-        },
-        {
-          "source": "@/features/portfolio",
-          "specifiers": [
-            "usePortfolioHoldings"
-          ]
-        },
-        {
           "source": "@/shared/formatters",
           "specifiers": [
             "formatCurrency",
             "formatPercent"
-          ]
-        },
-        {
-          "source": "@/features/portfolio",
-          "specifiers": [
-            "getShortCompanyName"
           ]
         },
         {
@@ -93761,11 +95914,12 @@
         {
           "source": "lucide-react",
           "specifiers": [
-            "BarChart2",
-            "ChevronDown",
-            "ChevronUp",
-            "Info",
-            "Search"
+            "ArrowDownRight",
+            "ArrowUpDown",
+            "ArrowUpRight",
+            "Search",
+            "ShieldCheck",
+            "X"
           ]
         },
         {
@@ -93776,27 +95930,46 @@
           ]
         },
         {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_CONFIGS",
+            "normalizeBrokerKey"
+          ]
+        },
+        {
+          "source": "../hooks/usePortfolioHoldings",
+          "specifiers": [
+            "usePortfolioHoldings"
+          ]
+        },
+        {
           "source": "./TabError",
           "specifiers": [
             "TabError"
+          ]
+        },
+        {
+          "source": "./TabLoadingSkeleton",
+          "specifiers": [
+            "TabLoadingSkeleton"
           ]
         }
       ],
       "exports": [
         "HoldingsTab"
       ],
-      "totalLines": 440,
+      "totalLines": 400,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfHoldingsTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfHoldingsTab.jsx",
-      "contentHash": "5dd924c9777962c91c1dad3e2d05d42f6b39c0aa8ad14b83bc4878e1bb8dfa53",
+      "contentHash": "5494bf29694c17e8cebafed9f5e79014632c0c25b4598530f42f4d953aaa9e18",
       "functions": [
         {
           "name": "MfHoldingsTab",
           "params": [],
           "exported": true,
-          "lineCount": 130
+          "lineCount": 257
         }
       ],
       "classes": [],
@@ -93829,6 +96002,9 @@
         {
           "source": "lucide-react",
           "specifiers": [
+            "ArrowDownRight",
+            "ArrowUpRight",
+            "FileSpreadsheet",
             "PiggyBank"
           ]
         },
@@ -93836,18 +96012,6 @@
           "source": "react",
           "specifiers": [
             "useMemo"
-          ]
-        },
-        {
-          "source": "./BrokerInfoBanner",
-          "specifiers": [
-            "BrokerInfoBanner"
-          ]
-        },
-        {
-          "source": "./DataAccuracyWarning",
-          "specifiers": [
-            "DataAccuracyWarning"
           ]
         },
         {
@@ -93866,29 +96030,37 @@
       "exports": [
         "MfHoldingsTab"
       ],
-      "totalLines": 144,
+      "totalLines": 276,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfInstrumentList.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfInstrumentList.jsx",
-      "contentHash": "a1ccfda41607b4ae7d30e65aa40340389499963e391631720eadf1cd74660049",
+      "contentHash": "9bed321b1b58ae16c6a458a63d2e866e0672eebf2b6857c68712fc1aa65e282e",
       "functions": [
         {
           "name": "MfInstrumentList",
           "params": [],
           "exported": true,
-          "lineCount": 151
+          "lineCount": 280
         }
       ],
       "classes": [],
       "imports": [
         {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
           "source": "lucide-react",
           "specifiers": [
-            "Banknote",
             "ChevronDown",
             "ChevronRight",
-            "Search"
+            "Compass",
+            "Search",
+            "ShieldCheck",
+            "X"
           ]
         },
         {
@@ -93902,18 +96074,18 @@
       "exports": [
         "MfInstrumentList"
       ],
-      "totalLines": 157,
+      "totalLines": 294,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfInstrumentsTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfInstrumentsTab.jsx",
-      "contentHash": "ef68e371404ae609c24fb300e54f0d559bb46abd360b58f95be838580f3de8d1",
+      "contentHash": "b7c78d35d63ce8ec3d1f8afc39f51e8f9fd00c31998e4651c597d57ba7b066c8",
       "functions": [
         {
           "name": "MfInstrumentsTab",
           "params": [],
           "exported": true,
-          "lineCount": 25
+          "lineCount": 22
         }
       ],
       "classes": [],
@@ -93928,12 +96100,6 @@
           "source": "@tanstack/react-query",
           "specifiers": [
             "useQuery"
-          ]
-        },
-        {
-          "source": "./DataAccuracyWarning",
-          "specifiers": [
-            "DataAccuracyWarning"
           ]
         },
         {
@@ -93958,18 +96124,18 @@
       "exports": [
         "MfInstrumentsTab"
       ],
-      "totalLines": 36,
+      "totalLines": 33,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfOrdersTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfOrdersTab.jsx",
-      "contentHash": "24d6555a73d0daf474a7ed7bfb08420b3d28c2de8b4aa2b8a64c1c005ba1d3af",
+      "contentHash": "0dd5248e436aa3a8eac744caaa7188c1e1f30043f456ed21ee5bcbae7a20e034",
       "functions": [
         {
           "name": "MfOrdersTab",
           "params": [],
           "exported": true,
-          "lineCount": 122
+          "lineCount": 182
         }
       ],
       "classes": [],
@@ -93987,12 +96153,6 @@
           ]
         },
         {
-          "source": "@/shared/lib/utils",
-          "specifiers": [
-            "cn"
-          ]
-        },
-        {
           "source": "@tanstack/react-query",
           "specifiers": [
             "useQuery"
@@ -94001,25 +96161,17 @@
         {
           "source": "lucide-react",
           "specifiers": [
-            "ClipboardList"
+            "Check",
+            "ClipboardList",
+            "FileSpreadsheet",
+            "Repeat",
+            "TrendingUp"
           ]
         },
         {
           "source": "react",
           "specifiers": [
             "useMemo"
-          ]
-        },
-        {
-          "source": "./BrokerInfoBanner",
-          "specifiers": [
-            "BrokerInfoBanner"
-          ]
-        },
-        {
-          "source": "./DataAccuracyWarning",
-          "specifiers": [
-            "DataAccuracyWarning"
           ]
         },
         {
@@ -94038,18 +96190,18 @@
       "exports": [
         "MfOrdersTab"
       ],
-      "totalLines": 144,
+      "totalLines": 201,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfSipList.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfSipList.jsx",
-      "contentHash": "06707d4033d67cc8a2354e743ead25ce867d7950cbea8df7bc8be678a464bcfe",
+      "contentHash": "6be821b141f89bb454a220d4e8780b9b9bf163e50ab8df995370918da14eaecb",
       "functions": [
         {
           "name": "MfSipList",
           "params": [],
           "exported": true,
-          "lineCount": 340
+          "lineCount": 263
         }
       ],
       "classes": [],
@@ -94069,8 +96221,9 @@
         {
           "source": "lucide-react",
           "specifiers": [
+            "Check",
             "ChevronDown",
-            "ChevronRight",
+            "ChevronUp",
             "History",
             "PiggyBank"
           ]
@@ -94078,7 +96231,6 @@
         {
           "source": "react",
           "specifiers": [
-            "Fragment",
             "useEffect",
             "useState"
           ]
@@ -94087,18 +96239,18 @@
       "exports": [
         "MfSipList"
       ],
-      "totalLines": 357,
+      "totalLines": 277,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfSipsTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfSipsTab.jsx",
-      "contentHash": "74da7ce3bbb99bb29ddcefcfdf5eb311c7eebf1141b8c84b7a52bc9985b634fa",
+      "contentHash": "b52ad9287ae4a0e563f10239884c395a38f531cd17bef63469772adb644de1af",
       "functions": [
         {
           "name": "MfSipsTab",
           "params": [],
           "exported": true,
-          "lineCount": 41
+          "lineCount": 36
         }
       ],
       "classes": [],
@@ -94113,12 +96265,6 @@
           "source": "@tanstack/react-query",
           "specifiers": [
             "useQuery"
-          ]
-        },
-        {
-          "source": "./DataAccuracyWarning",
-          "specifiers": [
-            "DataAccuracyWarning"
           ]
         },
         {
@@ -94143,46 +96289,39 @@
       "exports": [
         "MfSipsTab"
       ],
-      "totalLines": 52,
+      "totalLines": 47,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfTimeline.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfTimeline.jsx",
-      "contentHash": "0b09510236d6d5ffb415611dd63f29f531e790f54ef885d9f05fbe444bea4670",
+      "contentHash": "6c303ac3e4e840861d6cd28fde44a3450cd06b4a25838e74db6a803e91ca240d",
       "functions": [
         {
-          "name": "eventTheme",
-          "params": [],
+          "name": "formatTimelineDate",
+          "params": [
+            "rawDate"
+          ],
           "exported": false,
-          "lineCount": 52
+          "lineCount": 10
         },
         {
-          "name": "formatTitle",
-          "params": [],
+          "name": "formatTimelineTitle",
+          "params": [
+            "type",
+            "title"
+          ],
           "exported": false,
-          "lineCount": 7
-        },
-        {
-          "name": "eventBucket",
-          "params": [],
-          "exported": false,
-          "lineCount": 7
+          "lineCount": 14
         },
         {
           "name": "MfTimeline",
           "params": [],
           "exported": true,
-          "lineCount": 433
+          "lineCount": 181
         }
       ],
       "classes": [],
       "imports": [
-        {
-          "source": "@/shared/lib/utils",
-          "specifiers": [
-            "cn"
-          ]
-        },
         {
           "source": "@/shared/formatters",
           "specifiers": [
@@ -94190,61 +96329,37 @@
           ]
         },
         {
-          "source": "lucide-react",
+          "source": "@/shared/lib/utils",
           "specifiers": [
-            "AlertCircle",
-            "ArrowDown",
-            "ArrowDownRight",
-            "ArrowUp",
-            "ArrowUpRight",
-            "Calendar",
-            "ChevronDown",
-            "ChevronRight",
-            "CircleDollarSign",
-            "Clock",
-            "PauseCircle",
-            "PlayCircle",
-            "Search",
-            "TrendingDown",
-            "TrendingUp",
-            "X",
-            "XCircle"
+            "cn"
           ]
         },
         {
           "source": "react",
           "specifiers": [
-            "useEffect",
-            "useMemo",
-            "useState"
+            "useMemo"
           ]
         }
       ],
       "exports": [
         "MfTimeline"
       ],
-      "totalLines": 536,
+      "totalLines": 216,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/MfTimelineTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/MfTimelineTab.jsx",
-      "contentHash": "853b321263c9b9784a1512eab3d921a1f3e1c3a2c808ae7f421a399422322514",
+      "contentHash": "02ddca18f0cc91cdea430a212990e2771b2ae69f7d4640515fe7053316f7c275",
       "functions": [
         {
           "name": "MfTimelineTab",
           "params": [],
           "exported": true,
-          "lineCount": 37
+          "lineCount": 20
         }
       ],
       "classes": [],
       "imports": [
-        {
-          "source": "./MfTimeline",
-          "specifiers": [
-            "MfTimeline"
-          ]
-        },
         {
           "source": "@/shared/api/client",
           "specifiers": [
@@ -94258,6 +96373,12 @@
           ]
         },
         {
+          "source": "./MfTimeline",
+          "specifiers": [
+            "MfTimeline"
+          ]
+        },
+        {
           "source": "./TabError",
           "specifiers": [
             "TabError"
@@ -94268,39 +96389,51 @@
           "specifiers": [
             "TabLoadingSkeleton"
           ]
-        },
-        {
-          "source": "./DataAccuracyWarning",
-          "specifiers": [
-            "DataAccuracyWarning"
-          ]
         }
       ],
       "exports": [
         "MfTimelineTab"
       ],
-      "totalLines": 48,
+      "totalLines": 31,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/OrdersTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/OrdersTab.jsx",
-      "contentHash": "f5f89d19049a0e2f523a7f4b5d23b73b767cb36741431a7ece3cb561626518bf",
+      "contentHash": "ff25c2ae316be9ddd25ac5cf1a1de34940b02200bc83e7268d3a394eb4237f07",
       "functions": [
+        {
+          "name": "formatOrderTime",
+          "params": [
+            "ord"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "formatOrderType",
+          "params": [
+            "ord"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "formatOrderSymbol",
+          "params": [
+            "ord"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
         {
           "name": "OrdersTab",
           "params": [],
           "exported": true,
-          "lineCount": 121
+          "lineCount": 227
         }
       ],
       "classes": [],
       "imports": [
-        {
-          "source": "@/features/portfolio",
-          "specifiers": [
-            "usePortfolioOrders"
-          ]
-        },
         {
           "source": "@/shared/formatters",
           "specifiers": [
@@ -94314,21 +96447,36 @@
           ]
         },
         {
+          "source": "@/shared/ui/data-display/data-table",
+          "specifiers": [
+            "BrokerBadge"
+          ]
+        },
+        {
           "source": "lucide-react",
           "specifiers": [
-            "ClipboardList"
+            "ArrowUpDown",
+            "Search",
+            "X"
           ]
         },
         {
           "source": "react",
           "specifiers": [
-            "useMemo"
+            "useMemo",
+            "useState"
           ]
         },
         {
-          "source": "./BrokerInfoBanner",
+          "source": "../constants",
           "specifiers": [
-            "BrokerInfoBanner"
+            "normalizeBrokerKey"
+          ]
+        },
+        {
+          "source": "../hooks/usePortfolioOrders",
+          "specifiers": [
+            "usePortfolioOrders"
           ]
         },
         {
@@ -94347,18 +96495,105 @@
       "exports": [
         "OrdersTab"
       ],
-      "totalLines": 144,
+      "totalLines": 272,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/portfolio/components/PortfolioHeader.jsx": {
+      "filePath": "frontend/src/features/portfolio/components/PortfolioHeader.jsx",
+      "contentHash": "6bbe5aa5cadca17ae9c24278a33f975d347427d47f1c704383f14ff3c0d270b6",
+      "functions": [
+        {
+          "name": "PortfolioHeader",
+          "params": [],
+          "exported": true,
+          "lineCount": 65
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/features/dashboard",
+          "specifiers": [
+            "RefreshButton"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_CONFIGS",
+            "normalizeBrokerKey"
+          ]
+        }
+      ],
+      "exports": [
+        "PortfolioHeader"
+      ],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/portfolio/components/PortfolioHeroCard.jsx": {
+      "filePath": "frontend/src/features/portfolio/components/PortfolioHeroCard.jsx",
+      "contentHash": "6eccffdf2f6598604f1423bed7da9f5167de3fc1ed66673e1ad344f9089a8df7",
+      "functions": [
+        {
+          "name": "PortfolioHeroCard",
+          "params": [],
+          "exported": true,
+          "lineCount": 235
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency",
+            "formatPercent"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "Cpu",
+            "ShieldCheck"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_CONFIGS",
+            "formatBoid",
+            "normalizeBrokerKey"
+          ]
+        }
+      ],
+      "exports": [
+        "PortfolioHeroCard"
+      ],
+      "totalLines": 245,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/PortfolioTabBar.jsx": {
       "filePath": "frontend/src/features/portfolio/components/PortfolioTabBar.jsx",
-      "contentHash": "e5b381925da8aaf1b1c4c3076cadcc0476e8d3fa124ed95d103af23a7a10fe3b",
+      "contentHash": "78d669927140a372c85be752004ea87471a48c80cbb6ad73513e55db545f17ac",
       "functions": [
         {
           "name": "PortfolioTabBar",
           "params": [],
           "exported": true,
-          "lineCount": 61
+          "lineCount": 92
         }
       ],
       "classes": [],
@@ -94374,66 +96609,100 @@
           "specifiers": [
             "motion"
           ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "getBrokerTabGroups",
+            "normalizeBrokerKey"
+          ]
         }
       ],
       "exports": [
         "PortfolioTabBar"
       ],
-      "totalLines": 98,
+      "totalLines": 101,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/PortfolioView.jsx": {
       "filePath": "frontend/src/features/portfolio/components/PortfolioView.jsx",
-      "contentHash": "12b602c6fafa3b5c813a56911d55c8b9aa0ce635ab0695149ffd5f91a9f939f8",
+      "contentHash": "f1ea932e382583bf84179e01a7d5313173d6a24bb7bb9e4d95aea95ae0787707",
       "functions": [
-        {
-          "name": "SummaryStats",
-          "params": [],
-          "exported": false,
-          "lineCount": 44
-        },
         {
           "name": "PortfolioView",
           "params": [],
           "exported": true,
-          "lineCount": 41
+          "lineCount": 233
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/features/dashboard",
+          "source": "@/features/brokers",
           "specifiers": [
-            "RefreshButton",
-            "StatsCard"
+            "useBrokerConnection"
           ]
         },
         {
-          "source": "@/shared/formatters",
+          "source": "@/shared/api/client",
           "specifiers": [
-            "formatCurrency",
-            "formatPercent"
+            "portfolioAPI"
           ]
         },
         {
-          "source": "lucide-react",
+          "source": "@/shared/auth/AuthContext",
           "specifiers": [
-            "Banknote",
-            "BarChart3",
-            "PiggyBank",
-            "Wallet"
+            "useAuth"
+          ]
+        },
+        {
+          "source": "@tanstack/react-query",
+          "specifiers": [
+            "useQuery"
+          ]
+        },
+        {
+          "source": "next/navigation",
+          "specifiers": [
+            "useSearchParams"
           ]
         },
         {
           "source": "react",
           "specifiers": [
-            "Suspense"
+            "Suspense",
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "normalizeBrokerKey"
           ]
         },
         {
           "source": "../hooks/usePortfolioFunds",
           "specifiers": [
             "usePortfolioFunds"
+          ]
+        },
+        {
+          "source": "../hooks/usePortfolioHoldings",
+          "specifiers": [
+            "usePortfolioHoldings"
+          ]
+        },
+        {
+          "source": "../hooks/usePortfolioOrders",
+          "specifiers": [
+            "usePortfolioOrders"
+          ]
+        },
+        {
+          "source": "../hooks/usePortfolioPositions",
+          "specifiers": [
+            "usePortfolioPositions"
           ]
         },
         {
@@ -94446,6 +96715,18 @@
           "source": "../hooks/usePortfolioTab",
           "specifiers": [
             "usePortfolioTab"
+          ]
+        },
+        {
+          "source": "./BrokerFilterPills",
+          "specifiers": [
+            "BrokerFilterPills"
+          ]
+        },
+        {
+          "source": "./BrokersTab",
+          "specifiers": [
+            "BrokersTab"
           ]
         },
         {
@@ -94491,6 +96772,18 @@
           ]
         },
         {
+          "source": "./PortfolioHeader",
+          "specifiers": [
+            "PortfolioHeader"
+          ]
+        },
+        {
+          "source": "./PortfolioHeroCard",
+          "specifiers": [
+            "PortfolioHeroCard"
+          ]
+        },
+        {
           "source": "./PortfolioTabBar",
           "specifiers": [
             "PortfolioTabBar"
@@ -94503,9 +96796,9 @@
           ]
         },
         {
-          "source": "./ProfileTab",
+          "source": "./StockDossierModal",
           "specifiers": [
-            "ProfileTab"
+            "StockDossierModal"
           ]
         },
         {
@@ -94524,38 +96817,26 @@
       "exports": [
         "PortfolioView"
       ],
-      "totalLines": 124,
+      "totalLines": 282,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/PositionsTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/PositionsTab.jsx",
-      "contentHash": "e7d4f8da1a282416080497b5b009ea115ff8891196d36d463b0954b0a68e5d2a",
+      "contentHash": "8824fbcfa75ff41f78915d21eaefa3712cb20447b30ba9bc6412c3726b2bc614",
       "functions": [
         {
           "name": "PositionsTab",
           "params": [],
           "exported": true,
-          "lineCount": 238
+          "lineCount": 485
         }
       ],
       "classes": [],
       "imports": [
         {
-          "source": "@/features/portfolio",
-          "specifiers": [
-            "usePortfolioPositions"
-          ]
-        },
-        {
           "source": "@/shared/formatters",
           "specifiers": [
             "formatCurrency"
-          ]
-        },
-        {
-          "source": "@/features/portfolio",
-          "specifiers": [
-            "getShortCompanyName"
           ]
         },
         {
@@ -94565,9 +96846,20 @@
           ]
         },
         {
+          "source": "@/shared/ui/data-display/data-table",
+          "specifiers": [
+            "parseSymbol"
+          ]
+        },
+        {
           "source": "lucide-react",
           "specifiers": [
-            "BarChart2"
+            "ArrowDownRight",
+            "ArrowUpDown",
+            "ArrowUpRight",
+            "Search",
+            "ShieldCheck",
+            "X"
           ]
         },
         {
@@ -94575,6 +96867,19 @@
           "specifiers": [
             "useMemo",
             "useState"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_CONFIGS",
+            "normalizeBrokerKey"
+          ]
+        },
+        {
+          "source": "../hooks/usePortfolioPositions",
+          "specifiers": [
+            "usePortfolioPositions"
           ]
         },
         {
@@ -94593,12 +96898,12 @@
       "exports": [
         "PositionsTab"
       ],
-      "totalLines": 261,
+      "totalLines": 507,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/ProfileTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/ProfileTab.jsx",
-      "contentHash": "6112fbfaf4ec1bd2411196912e448d7e7164626d0809650faa4eed79c718d812",
+      "contentHash": "4111fd575e2fb69068f02b25cacd85799b65bde70719607780448209a22cf097",
       "functions": [
         {
           "name": "relativeTime",
@@ -94632,7 +96937,7 @@
           "name": "BrokerProfileCard",
           "params": [],
           "exported": false,
-          "lineCount": 246
+          "lineCount": 262
         },
         {
           "name": "ProfileTab",
@@ -94646,7 +96951,8 @@
         {
           "source": "@/features/brokers",
           "specifiers": [
-            "useBrokerConnection"
+            "useBrokerConnection",
+            "useSyncFeeds"
           ]
         },
         {
@@ -94708,7 +97014,67 @@
       "exports": [
         "ProfileTab"
       ],
-      "totalLines": 431,
+      "totalLines": 447,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/portfolio/components/StockDossierModal.jsx": {
+      "filePath": "frontend/src/features/portfolio/components/StockDossierModal.jsx",
+      "contentHash": "bd6108f8551f88c00538db20dfacd8855baa649a6993fc9a8a6785cd6356319d",
+      "functions": [
+        {
+          "name": "StockDossierModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 487
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency",
+            "formatPercent"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowDownRight",
+            "ArrowUpRight",
+            "Check",
+            "Copy",
+            "ExternalLink",
+            "Shield",
+            "X"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useState"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "BROKER_CONFIGS",
+            "formatBoid",
+            "normalizeBrokerKey"
+          ]
+        }
+      ],
+      "exports": [
+        "StockDossierModal"
+      ],
+      "totalLines": 506,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/TabError.jsx": {
@@ -94739,49 +97105,52 @@
     },
     "frontend/src/features/portfolio/components/TabLoadingSkeleton.jsx": {
       "filePath": "frontend/src/features/portfolio/components/TabLoadingSkeleton.jsx",
-      "contentHash": "1953883b224ffe7fc96cd5d293e0a1c003bd6332842d4077d2c0af1bbc865d45",
+      "contentHash": "3ba6fc1e571b110ba4c562c7e0c4359dffd6657df94b840b665c29192c20f32a",
       "functions": [
         {
           "name": "TabLoadingSkeleton",
           "params": [],
           "exported": true,
-          "lineCount": 32
+          "lineCount": 66
         }
       ],
       "classes": [],
-      "imports": [
-        {
-          "source": "@/shared/ui/feedback/Skeleton",
-          "specifiers": [
-            "Skeleton"
-          ]
-        }
-      ],
+      "imports": [],
       "exports": [
         "TabLoadingSkeleton"
       ],
-      "totalLines": 39,
+      "totalLines": 71,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/components/TradesTab.jsx": {
       "filePath": "frontend/src/features/portfolio/components/TradesTab.jsx",
-      "contentHash": "952126788760d0f16e514eadb3174a87ba4f40ad289672e0d32c7b54a76a1772",
+      "contentHash": "b16401afa2371646cba44bdf303b4823801df6f710b9e86a782bfe7d1a45d3cf",
       "functions": [
+        {
+          "name": "formatTradeTime",
+          "params": [
+            "tr"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "formatTradeSymbol",
+          "params": [
+            "tr"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
         {
           "name": "TradesTab",
           "params": [],
           "exported": true,
-          "lineCount": 111
+          "lineCount": 188
         }
       ],
       "classes": [],
       "imports": [
-        {
-          "source": "@/shared/api/client",
-          "specifiers": [
-            "portfolioAPI"
-          ]
-        },
         {
           "source": "@/shared/formatters",
           "specifiers": [
@@ -94789,9 +97158,9 @@
           ]
         },
         {
-          "source": "@/shared/lib/utils",
+          "source": "@/shared/ui/data-display/data-table",
           "specifiers": [
-            "cn"
+            "BrokerBadge"
           ]
         },
         {
@@ -94803,19 +97172,28 @@
         {
           "source": "lucide-react",
           "specifiers": [
-            "ArrowLeftRight"
+            "ArrowUpDown",
+            "Search",
+            "X"
           ]
         },
         {
           "source": "react",
           "specifiers": [
-            "useMemo"
+            "useMemo",
+            "useState"
           ]
         },
         {
-          "source": "./BrokerInfoBanner",
+          "source": "@/shared/api/client",
           "specifiers": [
-            "BrokerInfoBanner"
+            "portfolioAPI"
+          ]
+        },
+        {
+          "source": "../constants",
+          "specifiers": [
+            "normalizeBrokerKey"
           ]
         },
         {
@@ -94834,7 +97212,48 @@
       "exports": [
         "TradesTab"
       ],
-      "totalLines": 124,
+      "totalLines": 226,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/portfolio/constants.js": {
+      "filePath": "frontend/src/features/portfolio/constants.js",
+      "contentHash": "762733f059b285ff91d1897fc0fb91cab6f11e6ab47c957d58387d2d6bd8283f",
+      "functions": [
+        {
+          "name": "normalizeBrokerKey",
+          "params": [
+            "str"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "getBrokerTabGroups",
+          "params": [
+            "brokerKey"
+          ],
+          "exported": true,
+          "lineCount": 90
+        },
+        {
+          "name": "formatBoid",
+          "params": [
+            "rawBoid"
+          ],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "BROKER_CONFIGS",
+        "BROKER_FILTER_PILLS",
+        "normalizeBrokerKey",
+        "getBrokerTabGroups",
+        "formatBoid"
+      ],
+      "totalLines": 201,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/hooks/usePortfolioFunds.js": {
@@ -94999,13 +97418,13 @@
     },
     "frontend/src/features/portfolio/hooks/usePortfolioTab.js": {
       "filePath": "frontend/src/features/portfolio/hooks/usePortfolioTab.js",
-      "contentHash": "f1177178e5f4feda1c8238b9d636a6e7e1c6fe849ed200812c0c7cde7fb215fe",
+      "contentHash": "9c521490643005a049a8b16bb2f49acc72433a66e4c19832f247ba83dfab8a55",
       "functions": [
         {
           "name": "usePortfolioTab",
           "params": [],
           "exported": true,
-          "lineCount": 51
+          "lineCount": 53
         }
       ],
       "classes": [],
@@ -95028,12 +97447,12 @@
       "exports": [
         "usePortfolioTab"
       ],
-      "totalLines": 71,
+      "totalLines": 74,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/index.js": {
       "filePath": "frontend/src/features/portfolio/index.js",
-      "contentHash": "3d76fd7655ec66d9061565c22c86c387714f82c31f2dbaef4ef865fb120d7a15",
+      "contentHash": "819666340a9f04d6e5873d53263c2e378615a6a073f2ed8b73783cb937929387",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -95041,7 +97460,7 @@
         "PortfolioView",
         "PortfolioViewDefault"
       ],
-      "totalLines": 28,
+      "totalLines": 36,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/portfolio/services/portfolio.service.js": {
@@ -95340,6 +97759,85 @@
       "totalLines": 4,
       "hasStructuralAnalysis": true
     },
+    "frontend/src/features/profile/__tests__/ProfileSidebar.test.jsx": {
+      "filePath": "frontend/src/features/profile/__tests__/ProfileSidebar.test.jsx",
+      "contentHash": "7de687d4b357d4f74fb242fcb18bb4b27123672f42408eb04af32697492989a7",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "fireEvent"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "../components/ProfileSidebar",
+          "specifiers": [
+            "ProfileSidebar"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/__tests__/constants.test.js": {
+      "filePath": "frontend/src/features/profile/__tests__/constants.test.js",
+      "contentHash": "851df11f780cf3ca3fdf4047441b556d3b862e5b101ead46760a5fa0c38086d1",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../constants",
+          "specifiers": [
+            "CURRENCY_OPTIONS",
+            "NOTIF_LABELS",
+            "SETTINGS_TABS",
+            "THEME_OPTIONS"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 85,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/__tests__/email-change-lifecycle.test.js": {
+      "filePath": "frontend/src/features/profile/__tests__/email-change-lifecycle.test.js",
+      "contentHash": "0b26a74a3f14c2b6ef3eaf652957f382e5878dac97a2351f633b2b806ac36285",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 168,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/__tests__/profile-validation-and-edges.test.js": {
+      "filePath": "frontend/src/features/profile/__tests__/profile-validation-and-edges.test.js",
+      "contentHash": "43c82c5ba5eec06d3bd71d4d65b6cae135dcb6d13496fdd46a60524b3f982641",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 294,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/features/profile/__tests__/security-and-totp.test.js": {
+      "filePath": "frontend/src/features/profile/__tests__/security-and-totp.test.js",
+      "contentHash": "c4d980adbc93cfcc070a1f0d4eb3d53c1bcc58177375e5bab1357aca3e5f44ba",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 151,
+      "hasStructuralAnalysis": true
+    },
     "frontend/src/features/profile/components/DangerZoneTab.jsx": {
       "filePath": "frontend/src/features/profile/components/DangerZoneTab.jsx",
       "contentHash": "6785e76a33a73c0c9f2e89f5c604bf03f93112f7611647387cda2394ef63b9a3",
@@ -95393,7 +97891,7 @@
     },
     "frontend/src/features/profile/components/MyProfileTab.jsx": {
       "filePath": "frontend/src/features/profile/components/MyProfileTab.jsx",
-      "contentHash": "6abbef7ddbb866779fe925a79599875ece9897abfd6cbf254b65a7833e1fede8",
+      "contentHash": "9266141d97ba88ce0f4226fb8467b812c6be0dfc7108e39a42e3e00cf7f19f4e",
       "functions": [
         {
           "name": "MyProfileTab",
@@ -95463,13 +97961,13 @@
     },
     "frontend/src/features/profile/components/NotificationsTab.jsx": {
       "filePath": "frontend/src/features/profile/components/NotificationsTab.jsx",
-      "contentHash": "fd2a80bda532bdc7215d9b1de26ae29e7cb41c05e1091e8b441d09f29752e8b1",
+      "contentHash": "b6c31763b9f0581abcd422bfd91af2115038ff7e001c1aba7cb05dc6e60710be",
       "functions": [
         {
           "name": "NotificationsTab",
           "params": [],
           "exported": true,
-          "lineCount": 74
+          "lineCount": 75
         }
       ],
       "classes": [],
@@ -95502,12 +98000,12 @@
       "exports": [
         "NotificationsTab"
       ],
-      "totalLines": 84,
+      "totalLines": 85,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/profile/components/PreferencesTab.jsx": {
       "filePath": "frontend/src/features/profile/components/PreferencesTab.jsx",
-      "contentHash": "fbcbce21953f659bb70386bce606abe658758ac2932aca1346bebc554e36d546",
+      "contentHash": "c78b9123a32accbc3b7f291c11d719f47d7d806bc58a7e78edf2d4b4db9af2f8",
       "functions": [
         {
           "name": "PreferencesTab",
@@ -95670,13 +98168,13 @@
     },
     "frontend/src/features/profile/components/SecurityOptionsTab.jsx": {
       "filePath": "frontend/src/features/profile/components/SecurityOptionsTab.jsx",
-      "contentHash": "3829c7a303832150314903a0e825f888015c58a5a6579a38033e2197aa66bf2d",
+      "contentHash": "6db7b27727f33e99399648190bc3efde7427abfda8a478853e6c6ddbef849eba",
       "functions": [
         {
           "name": "SecurityOptionsTab",
           "params": [],
           "exported": true,
-          "lineCount": 626
+          "lineCount": 628
         }
       ],
       "classes": [],
@@ -95730,7 +98228,7 @@
       "exports": [
         "SecurityOptionsTab"
       ],
-      "totalLines": 645,
+      "totalLines": 647,
       "hasStructuralAnalysis": true
     },
     "frontend/src/features/profile/constants.js": {
@@ -95920,7 +98418,7 @@
     },
     "frontend/src/shared/auth/AuthContext.js": {
       "filePath": "frontend/src/shared/auth/AuthContext.js",
-      "contentHash": "77332ff3b56f9e4ca341192cc6d10ebad4eebe42dc767340f1dd90c252c12737",
+      "contentHash": "121a0c1c32ed114760bd04d25862557f2a426df1c69d813d3f564e2723f24cdf",
       "functions": [
         {
           "name": "buildLockoutNotice",
@@ -95996,6 +98494,7 @@
         }
       ],
       "exports": [
+        "AuthContext",
         "AuthProvider",
         "useAuth",
         "withAuth"
@@ -96984,13 +99483,13 @@
     },
     "frontend/src/shared/ui/brand/cointrack-hero-mockup.jsx": {
       "filePath": "frontend/src/shared/ui/brand/cointrack-hero-mockup.jsx",
-      "contentHash": "1b8db764efc5b4308fd8e7eec6aecc9a33452c197db5e08e7c3f0fa19bd0fe40",
+      "contentHash": "bdd6317f6fd39635f1a8901741bdfe6350a810a23242295a801efa964f785d2b",
       "functions": [
         {
           "name": "CoinTrackHeroMockup",
           "params": [],
           "exported": true,
-          "lineCount": 549
+          "lineCount": 643
         }
       ],
       "classes": [],
@@ -97009,43 +99508,38 @@
           ]
         },
         {
-          "source": "@/shared/ui/primitives/button",
+          "source": "lucide-react",
           "specifiers": [
-            "Button"
+            "ArrowUpRight",
+            "Bell",
+            "Calendar",
+            "CheckCircle2",
+            "Coins",
+            "Home",
+            "Landmark",
+            "LayoutGrid",
+            "Link2",
+            "PieChart",
+            "Search",
+            "Share2",
+            "ShieldCheck",
+            "SlidersHorizontal",
+            "StickyNote",
+            "TrendingUp",
+            "User"
           ]
         },
         {
-          "source": "lucide-react",
+          "source": "@/shared/ui/primitives/button",
           "specifiers": [
-            "LayoutGrid",
-            "Inbox",
-            "Users",
-            "LineChart",
-            "GitFork",
-            "Search",
-            "Bell",
-            "Home",
-            "MessageSquare",
-            "User",
-            "Clock",
-            "SlidersHorizontal",
-            "Calendar",
-            "Upload",
-            "Share2",
-            "Flame",
-            "CornerUpLeft",
-            "Timer",
-            "CreditCard",
-            "ArrowUpRight",
-            "Sparkles",
-            "MoreHorizontal"
+            "Button"
           ]
         }
       ],
       "exports": [
         "CoinTrackHeroMockup"
       ],
-      "totalLines": 607,
+      "totalLines": 731,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/brand/cointrack-inbox-section.jsx": {
@@ -97289,6 +99783,39 @@
       "totalLines": 516,
       "hasStructuralAnalysis": true
     },
+    "frontend/src/shared/ui/data-display/__tests__/data-table.test.jsx": {
+      "filePath": "frontend/src/shared/ui/data-display/__tests__/data-table.test.jsx",
+      "contentHash": "ebeccb4f4d1efbb7596123d5a3fc8da1e81ddbbcde197d6a7d8ea8f4a19a1bc5",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen"
+          ]
+        },
+        {
+          "source": "@testing-library/jest-dom",
+          "specifiers": []
+        },
+        {
+          "source": "../data-table",
+          "specifiers": [
+            "parseSymbol",
+            "SymbolBadge",
+            "BrokerBadge",
+            "PnLCell",
+            "DayChangeCell",
+            "DataTable"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 127,
+      "hasStructuralAnalysis": true
+    },
     "frontend/src/shared/ui/data-display/announcement-card.jsx": {
       "filePath": "frontend/src/shared/ui/data-display/announcement-card.jsx",
       "contentHash": "21dedf2369f5135b3c7809162e8c811d6cef930d31034d486b0307777561ec8d",
@@ -97403,6 +99930,91 @@
         "ChartStyle"
       ],
       "totalLines": 324,
+      "hasStructuralAnalysis": true
+    },
+    "frontend/src/shared/ui/data-display/data-table.jsx": {
+      "filePath": "frontend/src/shared/ui/data-display/data-table.jsx",
+      "contentHash": "c667482b259cea0763cbc6324b4f99cc92b893d8eaca0e38ad0b9b307b9e4df0",
+      "functions": [
+        {
+          "name": "parseSymbol",
+          "params": [
+            "rawSymbol"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "SymbolBadge",
+          "params": [],
+          "exported": true,
+          "lineCount": 30
+        },
+        {
+          "name": "BrokerBadge",
+          "params": [],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "PnLCell",
+          "params": [],
+          "exported": true,
+          "lineCount": 46
+        },
+        {
+          "name": "DayChangeCell",
+          "params": [],
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "DataTable",
+          "params": [],
+          "exported": true,
+          "lineCount": 78
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo"
+          ]
+        },
+        {
+          "source": "lucide-react",
+          "specifiers": [
+            "ArrowDownRight",
+            "ArrowUpRight",
+            "Inbox"
+          ]
+        },
+        {
+          "source": "@/shared/lib/utils",
+          "specifiers": [
+            "cn"
+          ]
+        },
+        {
+          "source": "@/shared/formatters",
+          "specifiers": [
+            "formatCurrency",
+            "formatPercent"
+          ]
+        }
+      ],
+      "exports": [
+        "BROKER_CONFIG",
+        "parseSymbol",
+        "SymbolBadge",
+        "BrokerBadge",
+        "PnLCell",
+        "DayChangeCell",
+        "DataTable"
+      ],
+      "totalLines": 273,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/data-display/pending-verification-banner.jsx": {
@@ -99612,7 +102224,7 @@
     },
     "frontend/src/shared/ui/primitives/table.jsx": {
       "filePath": "frontend/src/shared/ui/primitives/table.jsx",
-      "contentHash": "8af670d5458f4af41d4b8619126360462e038c4359c4f42c146d2cfbc6f6f2fc",
+      "contentHash": "ef880d7ac231490224b642f3ae53949e537eb88cf08bd1cfbf414f8ea4ddc0be",
       "functions": [
         {
           "name": "Table",
@@ -99624,7 +102236,7 @@
           "name": "TableHeader",
           "params": [],
           "exported": true,
-          "lineCount": 9
+          "lineCount": 12
         },
         {
           "name": "TableBody",
@@ -99682,7 +102294,7 @@
         "TableCell",
         "TableCaption"
       ],
-      "totalLines": 112,
+      "totalLines": 115,
       "hasStructuralAnalysis": true
     },
     "frontend/src/shared/ui/primitives/tabs.jsx": {
@@ -100522,7 +103134,7 @@
     },
     "frontend/src/widgets/broker-status-banner/BrokerStatusBanner.jsx": {
       "filePath": "frontend/src/widgets/broker-status-banner/BrokerStatusBanner.jsx",
-      "contentHash": "2ca11028ba8057acf9a77d26e04c185b3b82cf9299b6bf579af1f4ecde7d7ec7",
+      "contentHash": "acbfd3265a70a862b8c05bffd289f9db374cffe39235a8ea9eef02376b1883c6",
       "functions": [
         {
           "name": "relativeTime",
@@ -100536,7 +103148,7 @@
           "name": "BrokerStatusBanner",
           "params": [],
           "exported": true,
-          "lineCount": 109
+          "lineCount": 111
         }
       ],
       "classes": [],
@@ -100558,8 +103170,6 @@
           "specifiers": [
             "AlertCircle",
             "ArrowRight",
-            "Clock",
-            "RefreshCw",
             "X"
           ]
         },
@@ -100579,7 +103189,7 @@
       "exports": [
         "BrokerStatusBanner"
       ],
-      "totalLines": 142,
+      "totalLines": 144,
       "hasStructuralAnalysis": true
     },
     "frontend/src/widgets/broker-status-banner/index.js": {
@@ -100951,6 +103561,16 @@
       "totalLines": 222,
       "hasStructuralAnalysis": false
     },
+    "local/TODOs/Left-TODOs/RAG-CAG-GEMINI-COPILOT-RFC.md": {
+      "filePath": "local/TODOs/Left-TODOs/RAG-CAG-GEMINI-COPILOT-RFC.md",
+      "contentHash": "42dbc3963bb6449c1fc3e01e4740ca3a3fad0dc270107866caf03a97f42ef2cf",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 181,
+      "hasStructuralAnalysis": false
+    },
     "local/TODOs/Left-TODOs/TODO_FAMILY_HOUSEHOLD_ARCHITECTURE.md": {
       "filePath": "local/TODOs/Left-TODOs/TODO_FAMILY_HOUSEHOLD_ARCHITECTURE.md",
       "contentHash": "e4d492ccf32aea703a06572d8a5a6f1a48da272dfd53eb056a2ed5312c6a0926",
@@ -101053,22 +103673,22 @@
     },
     "local/memory/README.md": {
       "filePath": "local/memory/README.md",
-      "contentHash": "f38784c856833cea9ed9a49b9a5e5ec8af4e6d3bc26f8ff73e1c3c3182639939",
+      "contentHash": "f473b02c82455c243240f47e1b53a65659b047a07c8dbf1b3d766028d8a1110b",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 26,
+      "totalLines": 29,
       "hasStructuralAnalysis": false
     },
     "local/memory/app_shell_and_profile_settings.md": {
       "filePath": "local/memory/app_shell_and_profile_settings.md",
-      "contentHash": "5367a8ca0d6576eb3ee266cbad3df4b8371e7b6637fd6e0a1682f692b54ed607",
+      "contentHash": "f14fb2fdd89b091d0055cad01aa4e80a4c0e74a072be9b8dc782f5e3bca281fd",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 166,
+      "totalLines": 177,
       "hasStructuralAnalysis": false
     },
     "local/memory/auth_design_system.md": {
@@ -101083,12 +103703,22 @@
     },
     "local/memory/broker_connections_unslop_redesign.md": {
       "filePath": "local/memory/broker_connections_unslop_redesign.md",
-      "contentHash": "82f9d874f5c909c2bd99a308c58eda84b8ea336e14b2c3f2bc5b3f82a3a7814b",
+      "contentHash": "e2cd82338fd8bef6b8422f925f3992776d6b87051793748b0ecee401f9dd8979",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 84,
+      "totalLines": 102,
+      "hasStructuralAnalysis": false
+    },
+    "local/memory/broker_dynamic_telemetry_invariants.md": {
+      "filePath": "local/memory/broker_dynamic_telemetry_invariants.md",
+      "contentHash": "d10906dfdd8b65c83b153db77a790754575c87e6560f12e6b0e7911905a92918",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
       "hasStructuralAnalysis": false
     },
     "local/memory/dashboard_and_auth_session_recovery.md": {
@@ -101099,6 +103729,16 @@
       "imports": [],
       "exports": [],
       "totalLines": 69,
+      "hasStructuralAnalysis": false
+    },
+    "local/memory/dashboard_unslop_and_shared_tables.md": {
+      "filePath": "local/memory/dashboard_unslop_and_shared_tables.md",
+      "contentHash": "ce85dad7eea881248647f1a31e307702164d7214a1a8c7b25d409520225a8d5e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 115,
       "hasStructuralAnalysis": false
     },
     "local/memory/notes_subsystem_and_unslop_redesign.md": {
@@ -101119,6 +103759,16 @@
       "imports": [],
       "exports": [],
       "totalLines": 103,
+      "hasStructuralAnalysis": false
+    },
+    "local/memory/unified_sync_feeds_architecture.md": {
+      "filePath": "local/memory/unified_sync_feeds_architecture.md",
+      "contentHash": "6cd0af4d154718a29c33857b2b0171cf639900608bdd0acf2b1a6d561591b2e2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 107,
       "hasStructuralAnalysis": false
     },
     "local/rules/01-inventory-readmes-config.md": {
