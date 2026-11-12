@@ -202,7 +202,7 @@ The application consumes environment variables injected at container startup. Be
 
 ### 2. Backend Service (`backend`)
 - **Dockerfile Path:** `./backend/Dockerfile`
-- **Base Build Image:** `maven:3.9.9-eclipse-temurin-25-alpine`
+- **Base Build Image:** `maven:3.9.11-eclipse-temurin-25-alpine`
 - **Base Runtime Image:** `eclipse-temurin:25-jre-alpine`
 - **Security Context:** Runs under non-root user `appuser`
 - **JVM Optimization Flags:**
